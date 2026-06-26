@@ -629,7 +629,6 @@
   }
 }
 
-
 /* ── Pager mobile : #k-grid = rail horizontal, .k-cat-section = pages ── */
 /* Cage : #k-page-scroll.k-pager-active est déjà fixed dans layout.css */
 
@@ -699,14 +698,6 @@
     left: 7px;
   }
 
-  /* Stepper inline dans la carte desktop */
-  .k-card-add.in-cart {
-    width: 100px;
-    border-radius: 20px;
-    background-color: var(--white);
-    box-shadow: var(--elev-2);
-  }
-
   /* Section header desktop */
   .k-sec-header {
     display: flex;
@@ -753,8 +744,6 @@
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  .k-card { position: relative; }
-
   /* Fav natif : masqué par défaut, révélé au hover, toujours visible si liké */
   .k-card-fav { opacity: 0; }
   .k-card:hover .k-card-fav { opacity: 1; }
@@ -790,15 +779,10 @@
   }
 }
 
-
 /* ══════════════════════════════════════════════════════════════════
    6. ANIMATION ENTRÉE CARTES — stagger Temu-style
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-
-  .k-card {
-    animation: k-card-in .22s var(--ease) both;
-  }
 
   @keyframes k-card-in {
     from { opacity: 0; transform: translateY(16px) scale(.97); }
@@ -815,11 +799,7 @@
   .k-card:nth-child(8)  { animation-delay: .16s; }
   .k-card:nth-child(9)  { animation-delay: .18s; }
   .k-card:nth-child(10) { animation-delay: .20s; }
-
-  .k-card:hover { transform: translateY(-1px); }
 }
-
-
 
 /* Carte produit — look glass desktop (PALETTE-FIX-01, ex desktop-commerce-skeleton.css) */
 @media (min-width: 900px) {
@@ -836,7 +816,6 @@
     box-shadow: 0 12px 28px rgba(100,175,90, .10);
   }
 }
-
 
 /* ══════════════════════════════════════════════════════════════════
    GRILLE — Animations slide (pager Temu) + sections

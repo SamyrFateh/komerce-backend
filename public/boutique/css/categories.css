@@ -3,135 +3,13 @@
    Chips catégories + sous-catégories + promo rail.
    Mobile-first, zéro !important.
    ═══════════════════════════════════════════════════════════════ */
-
-/* ── CHIPS SHELL + FADES ─────────────────────────────────────── */
-.k-cats-shell { position: relative; }
 .k-cats-wrap-fade-left,
-.k-cats-wrap-fade-right {
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 20px;
-  pointer-events: none;
-  z-index: 2;
-}
 .k-cats-wrap-fade-left  { left: 0;  background: linear-gradient(to right, var(--sand-warm) 35%, transparent); }
-.k-cats-wrap-fade-right { right: 0; background: linear-gradient(to left,  var(--sand-warm) 35%, transparent); }
-
-/* ── CHIPS RAIL ─────────────────────────────────────────────── */
-.k-cats {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 4px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
-  scroll-padding-left: 12px;
-  scrollbar-width: none;
-  padding: 8px 4px;
-  align-items: stretch;
-  overscroll-behavior-x: contain;
-  background: transparent;
-}
-.k-cats::-webkit-scrollbar { display: none; }
 .k-cats::before,
-.k-cats::after { content: ""; flex: 0 0 12px; }
-
-/* ── CHIP (mobile-first : legacy horizontal rail fallback) ───── */
-.k-chip {
-  flex: 0 0 38px;
-  min-width: 38px;
-  max-width: 38px;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 16px;
-  cursor: pointer;
-  text-align: center;
-  transition: transform .18s ease, opacity .18s ease;
-  scroll-snap-align: start;
-  overflow: hidden;
-}
-.k-chip:active { transform: scale(.95); }
-
-/* Mobile target state — compact 2×4 pill grid, image left + label right. */
-.k-cats-shell {
-  margin-top: 0;
-  border-radius: 20px;
-  /* POLISH — fond lumineux cohérent avec hero, séparé visuellement */
-  background: var(--sand-bright);
-  border: 1px solid rgba(198,168,93,.13);
-  box-shadow:
-    0 6px 18px rgba(198,168,93,.09),
-    0 1px 0 rgba(198,168,93,.07);
-  overflow: hidden;
-}
 
 .k-cats-wrap-fade-left,
-.k-cats-wrap-fade-right {
-  display: none;
-}
-
-.k-cats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px 6px;
-  padding: 6px 9px 6px;
-  overflow: visible;
-  scroll-snap-type: none;
-  scroll-padding-left: 0;
-  align-items: stretch;
-}
 
 .k-cats::before,
-.k-cats::after {
-  display: none;
-}
-
-.k-chip {
-  min-width: 0;
-  max-width: none;
-  width: 100%;
-  flex: none;
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr);
-  align-items: center;
-  justify-content: start;
-  gap: 5px;
-  min-height: 36px;
-  padding: 3px 5px 3px 3px;
-  border-radius: 999px;
-  /* POLISH — fond plus opaque, lecture des images améliorée */
-  background: rgba(255, 255, 255, .84);
-  border: 1px solid rgba(198, 168, 93, .14);
-  box-shadow: 0 1px 4px rgba(28, 26, 23, .048);
-  overflow: hidden;
-  text-align: left;
-  scroll-snap-align: none;
-}
-
-/* Photo circle */
-.k-chip-photo {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  margin: 0 auto;
-  border-radius: 11px;
-  overflow: hidden;
-  flex-shrink: 0;
-  border: 1px solid var(--overlay-black-xs);
-  background: var(--sand-dark);
-  box-shadow: var(--elev-1);
-  transition: box-shadow .2s var(--ease), transform .2s var(--ease);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.k-chip-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
 .k-chip-photo > span {
   display: flex;
   align-items: center;
@@ -144,23 +22,6 @@
 }
 .k-chip[data-cat="all"] .k-chip-photo > span { font-size: 9px; }
 .k-chip-photo svg { width: 15px; height: 15px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-.k-chip-photo {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  margin: 0;
-  border-radius: 10px;
-  border-width: 1px;
-  /* POLISH — bord interne lumineux pour soulever l'image du fond */
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.58);
-}
-
-.k-chip-photo img {
-  border-radius: 9px;
-  /* POLISH — saturation + micro-contraste pour lisibilité à petite taille */
-  filter: saturate(1.22) contrast(1.05);
-}
 
 /* Fond par catégorie */
 /* POLISH — fonds enrichis par catégorie */
@@ -195,62 +56,15 @@
   border: 1.5px solid var(--border);
   flex-shrink: 0;
 }
-
-/* Label */
-.k-chip-label {
-  font-size: 8.5px;
-  font-weight: 700;
-  line-height: 1.1;
-  width: 100%;
-  max-width: 42px;
-  margin: 0;
-  padding: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text-muted);
-}
-
-.k-chip-label {
-  width: auto;
-  max-width: none;
-  min-width: 0;
-  margin: 0;
-  font-size: 10.8px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -.025em;
-  /* POLISH — texte quasi-plein pour contraste sur fond blanc */
-  color: var(--text);
-  text-align: left;
-}
-
-/* État actif mobile */
-.k-chip.active .k-chip-photo {
-  border-color: var(--ocean-dark);
-  box-shadow: 0 0 0 2.5px var(--ocean-dark), var(--elev-2);
-  transform: scale(1.05);
-}
 .k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--ocean-dark); }
 .k-chip.active[data-cat="all"] .k-chip-photo > span { color: var(--white); }
 .k-chip.active .k-chip-photo svg { stroke: var(--white); }
 .k-chip.active .k-chip-emoji { background: var(--ocean-dark); border-color: var(--ocean-dark); color: var(--white); }
-.k-chip.active .k-chip-label { color: var(--white); font-weight: 800; }
-
-.k-chip.active {
-  background: var(--ocean-dark);
-  border-color: var(--ocean-dark);
-  box-shadow: 0 2px 8px rgba(74, 144, 64, .30);
-}
 
 .k-chip.active .k-chip-photo {
   border-color: var(--ocean-dark);
   box-shadow: 0 0 0 1.25px rgba(74, 144, 64, .50);
   transform: none;
-}
-
-.k-chip.active .k-chip-label {
-  color: var(--white);
 }
 
 /* Sentinel spacer */
@@ -263,30 +77,6 @@
    Tout le visuel (rail, subchip, couleurs par catégorie, animations)
    vit dans boutique-desktop.css depuis le Lot I2-A.
    ──────────────────────────────────────────────────────────── */
-
-/* Section subcats (dans chaque section catalogue) */
-.k-cat-section  { margin-bottom: 4px; }
-
-/* Padding interne des sections dans le pager mobile */
-.k-cat-section { padding: 0 12px; }
-.k-sec-grid    { padding: 4px 0 12px; }
-.k-sec-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 0 8px;
-  border-bottom: 2px solid var(--coral); /* mobile → écrasé desktop par products.css (var(--sand-dark)) */
-  margin-bottom: 4px;
-  position: relative;
-  scroll-margin-top: 70px;
-}
-.k-sec-header-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
-.k-sec-header-name  { font-size: 16px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; }
-.k-sec-header-count {
-  font-size: 12px; font-weight: 500; color: var(--text-muted);
-  padding: 2px 8px; background: var(--overlay-black-xs); border-radius: 20px;
-  flex-shrink: 0; white-space: nowrap;
-}
 .k-sec-see-all {
   flex-shrink: 0;
   background: none; border: none;
@@ -321,11 +111,6 @@
   isolation: isolate;
 }
 .k-promo-rail::before,
-.k-promo-rail::after {
-  content: '';
-  position: absolute; top: 0; bottom: 4px;
-  width: 18px; z-index: 3; pointer-events: none;
-}
 .k-promo-rail::before { left: 0;  background: linear-gradient(to right, var(--sand) 40%, transparent); }
 .k-promo-rail::after  { right: 0; background: linear-gradient(to left,  var(--sand) 40%, transparent); }
 
@@ -406,7 +191,6 @@
   .k-sec-see-all:hover { background: rgba(67,160,71,.08); }
 }
 
-
 /* ── PROMO RAIL WRAPPERS — déplacés depuis interactions.css ───── */
 .k-promo-rail-wrap   { position: relative; overflow: hidden; }
 .k-promo-rail-more   {
@@ -440,13 +224,6 @@
   .k-cats-wrap-fade-left, .k-cats-wrap-fade-right { display: none; }
 }
 
-/* ── MOBILE POLISH — entrée catalogue sous rail catégories ───── */
-.k-sec-header {
-  padding: 10px 0 6px;
-  margin-bottom: 2px;
-  border-bottom: 1.5px solid rgba(200, 92, 45, .72);
-}
-
 .k-sec-header-emoji {
   font-size: 17px;
 }
@@ -465,7 +242,6 @@
 .k-sec-grid {
   padding-top: 2px;
 }
-
 
 /* ══════════════════════════════════════════════════════════════
    MOBILE PILL RAIL — max-width: 767px  (v4 — icône + label compact)
@@ -869,7 +645,6 @@
 #k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: var(--cat-perso-bg); }
 .k-chip[data-cat="Auto"] ~ * .k-subchip.active,
 #k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: var(--cat-auto-bg); }
-
 
 /* Chip animation — migré depuis interactions.css (Sprint 4 — S4.2) */
 /* Chip en surbrillance pendant la transition (scale + ring) */

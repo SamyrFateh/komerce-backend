@@ -56,7 +56,6 @@
 .k-modal-back svg { width: 18px; height: 18px; flex-shrink: 0; }
 #k-modal-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .k-modal-back:active { opacity: .7; }
-#k-modal-nav { display: flex; align-items: center; gap: 6px; }
 /* PR-D3 — nav-btn pill texte sobre (← produit précédent / → produit suivant) */
 .k-modal-nav-btn {
   display: flex; align-items: center; gap: 4px;
@@ -91,15 +90,6 @@
   display: flex; align-items: center; justify-content: center; transition: background .2s;
 }
 .k-modal-close:active { background: var(--sand); }
-
-/* ── SCROLL AREA (mobile : seul scroll owner) ────────────────── */
-.k-modal-scroll {
-  box-sizing: border-box; max-width: 100%; /* S2.1 */
-  flex: 1; overflow-y: auto; overflow-x: hidden;
-  -webkit-overflow-scrolling: touch; scrollbar-width: thin; min-height: 0;
-  display: flex; flex-direction: column; padding-top: 0;
-  padding-bottom: 0;
-}
 
 /* ── PRODUCT-ZONE : transparent sur mobile (display:contents) ── */
 /* Les enfants (img-wrap, details, actions, suggestions) participent
@@ -149,20 +139,6 @@
 .k-modal-search-mic.is-listening { background: var(--hero-red); animation: k-mic-pulse 1s ease-in-out infinite; }
 .k-modal-search-mic.is-listening svg { stroke: var(--white); }
 @keyframes k-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.35); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
-
-/* ── ACTIONS (mobile : sticky bas, flex-shrink:0) ────────────── */
-.k-modal-actions {
-  box-sizing: border-box; max-width: 100%; /* S2.1 — garantit que la barre CTA ne déborde jamais */
-  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
-  gap: 10px; align-items: center;
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 12px));
-  border-top: 1px solid var(--sand-dark);
-  flex-shrink: 0;
-  background: var(--white);
-  touch-action: none;
-  pointer-events: auto;
-  position: relative; z-index: 30;
-}
 /* Restaurer un effet glass quand le navigateur le supporte ET qu'on n'est
    pas en sticky (desktop column) — le rgba se réactive seulement là. */
 @media (min-width: 900px) {
@@ -176,11 +152,6 @@
 }
 /* Fix panier flottant transparent : forcer fond opaque sur mobile/tablette
    (backdrop-filter déclaré supporté mais non rendu sur Samsung/Chrome Android) */
-#k-modal .k-modal-actions {
-  background: var(--white);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
 /* Sur mobile, avec display:contents sur product-zone, actions sort du flux normal.
    order:3 la place après img(order:0), details(order:0), suggestions(order:2). */
 .k-modal-actions {
@@ -208,9 +179,6 @@
 /* VIS-3D FIX — Remplace le magic-number 150px par la hauteur CTA réellement mesurée
    (--k-modal-cta-h, posée par _syncScrollPadding en JS). Fallback 150px si JS pas encore
    passé. Le safe-area fallback 12px est cohérent avec VIS-3C (actions padding). */
-.k-modal-scroll {
-  padding-bottom: calc(var(--k-modal-cta-h, 150px) + env(safe-area-inset-bottom, 12px));
-}
 .k-modal-suggestions { order: 2; }
 
 /* FIX ARCHITECTURE v5: .k-modal-actions sorti du scroll par JS (setupModal)
@@ -259,7 +227,6 @@
 .k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--coral); line-height: 1.2; margin-top: 2px; }
 .k-topbar-price-val { font-size: 12px; font-weight: 800; color: var(--coral); }
 .k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
-.k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }
 
@@ -274,7 +241,6 @@
 .k-modal-breadcrumb { display: none; } /* visible desktop uniquement */
 .k-modal-zoom-lens { display: none; }
 .k-modal-zoom-preview { display: none; }
-
 
 /* ══════════════════════════════════════════════════════════════
    2. MOBILE GUARD @max-width:899px
@@ -352,7 +318,6 @@
 #k-modal .k-add-cart-btn { overflow: hidden; text-overflow: ellipsis; }
 #k-modal .k-topbar-search-expanded { width: 100%; max-width: 100%; overflow-x: hidden; }
 
-
 /* ══════════════════════════════════════════════════════════════
    2b. MOBILE EXPLICIT WIDTH FIX — ancrage fixed pleine largeur
    VIS-6 — voir docs/BOUTIQUE_VISUAL_FIXES.md
@@ -422,22 +387,8 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* ── Overlay ─────────────────────────────────────────────── */
-  .k-modal-overlay.open { align-items: center; justify-content: center; padding: 28px; background: var(--overlay-dark-md); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-
-  /* ── Shell ───────────────────────────────────────────────── */
-  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px var(--overlay-dark-sm); animation: none; }
-
   /* Quand le side-cart est visible, la modal se décale pour ne pas le chevaucher.
      336px = width(312) + right-gap(24). Transition douce si le panier apparaît en cours. */
-  body.modal-has-cart #k-modal.k-modal {
-    width: min(1280px, calc(100vw - 56px - 336px));
-    margin-right: 336px;
-    transition: width .22s ease, margin-right .22s ease;
-  }
-
-  /* ── Topbar ──────────────────────────────────────────────── */
-  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: rgba(253,250,245,.97); border-bottom: 1px solid var(--border-text-08); box-shadow: 0 8px 24px var(--border-text-06); flex-shrink: 0; }
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
   #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
@@ -456,26 +407,6 @@
     display: flex; flex-direction: column;
     overflow-y: auto; overflow-x: hidden;
     padding: 0; background: var(--white);
-  }
-
-  /* ── Product-zone : grid 2 colonnes (colonnes dans §6, B-M-11) */
-  #k-modal .k-modal-product-zone {
-    display: grid;
-    grid-template-rows: 1fr auto;
-    flex: 0 0 auto;
-    min-height: calc(min(880px, 100vh - 56px) - 58px);
-    width: 100%;
-    background: var(--white);
-  }
-
-  /* ── Image : col gauche sticky ───────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    grid-column: 1; grid-row: 1 / 3;
-    height: calc(min(880px, 100vh - 56px) - 58px);
-    position: sticky; top: 0; align-self: start;
-    overflow: hidden; border-radius: 0; margin: 0; max-height: none;
-    background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%),
-                linear-gradient(135deg, var(--sand) 0%, var(--sand-warm) 100%);
   }
   #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: zoom-in; }
   #k-modal .k-modal-carousel-track { height: 100%; }
@@ -517,16 +448,6 @@
     transition: opacity .12s var(--ease);
   }
   .k-modal-zoom-lens.is-active { opacity: 1; }
-
-  /* ── Détails : col droite, row 1 ────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-details {
-    grid-column: 2; grid-row: 1;
-    display: flex; flex-direction: column;
-    overflow-y: auto; overflow-x: hidden; min-height: 0;
-    padding: 0 24px; background: linear-gradient(180deg, var(--white) 0%, var(--white) 74%, var(--sand) 100%);
-    border-radius: 0; box-shadow: none; margin: 0;
-  }
-  #k-modal .k-modal-product-zone .k-modal-info { flex: 0 0 auto; overflow: visible; max-height: none; padding: 18px 0 12px; }
 
   /* ── Chantier 2 — Réordonnancement visuel desktop ──
      DOM intact (cf. index.html), .k-modal-info est en flex-direction: column.
@@ -576,7 +497,6 @@
   #k-modal .k-modal-price-unit { font-size: .44em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
   #k-modal .k-modal-old-price { font-size: 16px; color: var(--text-light); text-decoration: line-through; }
   #k-modal .k-modal-old-price .k-modal-price-val,
-  #k-modal .k-modal-old-price .k-modal-price-unit { color: inherit; font-weight: 400; text-decoration: inherit; }
   #k-modal .k-modal-old-price .k-modal-price-unit { font-size: .82em; letter-spacing: .04em; }
 
   /* ── Trust, Partage, Specs ───────────────────────────────── */
@@ -613,30 +533,11 @@
   .k-modal-inner-search-input { font-size: 14px; }
   .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
   #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
-
-  /* ── Actions : col droite, row 2, sticky bas ─────────────── */
-  #k-modal .k-modal-product-zone .k-modal-actions {
-    order: unset; /* annule le order mobile */
-    grid-column: 2; grid-row: 2;
-    position: sticky; bottom: 0; z-index: 70;
-    margin: 0; padding: 12px 24px 16px;
-    background: rgba(255,255,255,.98);
-    border-top: 1px solid rgba(31,48,36,.10);
-    box-shadow: 0 -12px 28px var(--border-text-06);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    display: grid;
-    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
-    grid-template-rows: auto;
-    align-items: center; gap: 10px;
-  }
   /* PR-D3 — CTA redesign desktop : Acheter vert solid, Ajouter outlined, sous-total coral */
   #k-modal .k-modal-product-zone .k-modal-actions .k-qty { grid-column: 1; grid-row: 1; height: 44px; }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
     grid-column: 2; grid-row: 1; height: 44px; border-radius: 999px;
     background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark);
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover {
-    border-color: var(--ocean); background: var(--ocean-bg-08);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     grid-column: 3; grid-row: 1; height: 44px; border-radius: 999px;
@@ -661,9 +562,7 @@
     order: unset; /* annule le order mobile */
     flex: 0 0 auto; overflow: visible; min-height: unset;
     display: block; width: 100%;
-    padding: 28px 36px 48px;
     border-top: 2px solid var(--sand-dark);
-    background: linear-gradient(180deg, var(--sand) 0%, var(--sand) 100%);
     margin-top: 0;
   }
   #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
@@ -673,7 +572,7 @@
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 16px; flex-direction: unset; padding: 0;
+    flex-direction: unset; padding: 0;
   }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
     display: flex; flex-direction: column;
@@ -699,13 +598,10 @@
   .k-msearch-group-more:hover { background: var(--sand); color: var(--coral-dark); }
   .k-msearch-recent-item:hover { background: var(--sand); }
   .k-msearch-recent-remove:hover { background: var(--sand-dark); color: var(--text); }
-  .k-modal, .k-modal * { -webkit-tap-highlight-color: transparent; }
   .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
   .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }
   button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid rgba(42,122,62,.45); outline-offset: 2px; }
 }
-
-
 
 /* ── Suggestions desktop ≥1200px : grille plus dense ─────── */
 @media (min-width: 1200px) {
@@ -713,8 +609,6 @@
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 }
-
-
 
 /* ══════════════════════════════════════════════════════════════
    §6. LAYOUT DESKTOP — Pleine page Temu-style (source de vérité grille)
@@ -777,7 +671,6 @@
     height: calc(100dvh - 58px);
     max-height: calc(100dvh - 58px);
     overflow: hidden;
-    grid-template-columns: minmax(380px, 43%) minmax(0, 57%);
   }
 
   /* ── Image : pleine hauteur, jamais réduite par la col droite ── */
@@ -795,7 +688,6 @@
     max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0 clamp(24px, 4vw, 64px);
   }
 
   /* ── Actions sticky : padding-inline aligné sur les détails  */
@@ -847,7 +739,6 @@
     grid-column: 3; grid-row: 1;
   }
 }
-
 
 /* ══════════════════════════════════════════════════════════════════
    MODAL — Règles desktop & interactions

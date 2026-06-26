@@ -1,7 +1,6 @@
 /* Flux simplifié panier collectif */
 .k-group-flow-overlay{position:fixed;inset:0;z-index:1800;background:rgba(31,48,36,.52);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}.k-group-flow-sheet{width:100%;max-width:420px;background:var(--white);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.22);animation:kGroupFlowUp .22s ease}.k-group-flow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.k-group-flow-title{font-size:18px;font-weight:900;color:var(--text);margin:0}.k-group-flow-close{border:0;background:var(--sand);width:34px;height:34px;border-radius:999px;cursor:pointer;font-weight:900}.k-group-flow-hero{text-align:center;padding:8px 4px 16px}.k-group-flow-icon{font-size:46px;line-height:1;margin-bottom:8px}.k-group-flow-big{font-size:20px;font-weight:950;color:var(--text);margin:0 0 6px}.k-group-flow-sub{font-size:13px;color:var(--text-muted);line-height:1.35;margin:0}.k-group-flow-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}.k-group-flow-stat{background:var(--sand);border:1px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center}.k-group-flow-stat b{display:block;font-size:14px;color:var(--text);font-weight:950}.k-group-flow-stat span{display:block;font-size:10px;color:var(--text-muted);font-weight:800;margin-top:2px}.k-group-flow-link{display:flex;align-items:center;gap:8px;background:var(--sand);border:1px dashed var(--border);border-radius:14px;padding:10px 12px;margin:10px 0 12px}.k-group-flow-link span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-muted)}.k-group-flow-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.k-group-flow-btn{border:0;border-radius:14px;padding:13px 10px;font-size:14px;font-weight:950;cursor:pointer;min-height:46px}.k-group-flow-btn:active{transform:scale(.98)}.k-group-flow-btn--primary{background:var(--cta-green);color:var(--white)}.k-group-flow-btn--wa{background:var(--whatsapp);color:var(--white)}.k-group-flow-btn--ghost{background:var(--sand);color:var(--text);border:1px solid var(--border);grid-column:1/-1}.k-group-flow-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 0;font-weight:900;color:var(--text)}.k-group-flow-spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--sand-dark);border-top-color:var(--cta-green);animation:kGroupSpin .8s linear infinite}.k-cart-event-btn,.k-sc-btn-group{font-weight:950}.k-cart-event-btn{font-size:0}.k-cart-event-btn:after{content:'📤 Partager';font-size:14px}.k-sc-btn-group-label{font-size:0}.k-sc-btn-group-label:after{content:'📤 Partager';font-size:12px}@media(min-width:900px){.k-group-flow-overlay{align-items:center}.k-group-flow-sheet{border-radius:22px;padding:20px;max-width:390px}}@keyframes kGroupFlowUp{from{transform:translateY(24px);opacity:.6}to{transform:translateY(0);opacity:1}}@keyframes kGroupSpin{to{transform:rotate(360deg)}}
 
-
 /* ══════════════════════════════════════════════════════════════════
  * GROUPE COCKPIT — owner officiel des sélecteurs .k-group-*
  * Migré depuis b-group-view.js → injectStyles() (PR-1)
@@ -11,69 +10,15 @@
 /* ── BUG-VIEW-1 — Masquage par défaut (symétrique à .k-fav-view/.k-track-view dans cart.css)
    Sans ce display:none, la vue groupe reste visible même quand elle ne devrait pas l'être,
    provoquant un mélange de contenus entre onglets Suivi / Groupe / Commandes. ──────────── */
-#k-group-view.k-group-view { display: none; }
 #k-group-view.k-group-view.show { display: block; }
-
-/* ── Bloc A — Structure de base ─────────────────────────────────── */
-
-.k-group-view {
-  max-width: 1180px;
-  margin: 24px auto 80px;
-  padding: 0 24px;
-  box-sizing: border-box;
-}
-.k-group-view > * {
-  max-width: 720px;
-}
-.k-group-view .k-group-header {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-bottom: 0;
-  border-radius: 24px 24px 0 0;
-  padding: 20px 28px 8px;
-  box-shadow: 0 18px 50px var(--border-text-08);
-}
-.k-group-view .k-group-header h2 {
-  margin: 0 0 8px;
-  font-size: 23px;
-  line-height: 1.2;
-  color: var(--text);
-}
-.k-group-view .k-group-subhead {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--text-muted);
-}
-.k-group-view .k-group-progress-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 0 0 24px 24px;
-  padding: 20px 28px 22px;
-  margin: 0 0 16px;
-  box-shadow: 0 18px 50px var(--border-text-08);
-}
 .k-group-view .k-group-card,
 .k-group-view .k-group-actions-card,
 .k-group-view .k-group-contribute-card,
-.k-group-view .k-group-items-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 20px 28px;
-  margin: 12px 0 0;
-  box-shadow: 0 14px 42px var(--border-text-06);
-}
 .k-group-view .k-group-section-title {
   font-size: 18px;
   font-weight: 800;
   margin: 0 0 14px;
   color: var(--text);
-}
-.k-group-view .k-group-creator-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
 }
 .k-group-view .k-group-btn {
   min-height: 50px;
@@ -91,13 +36,6 @@
 .k-group-view .k-group-progress-wrap {
   position: relative;
   margin-bottom: 6px;
-}
-.k-group-view .k-group-progress {
-  position: relative;
-  height: 10px;
-  background: var(--green-alpha-12, rgba(100,175,90,.12));
-  border-radius: 999px;
-  overflow: hidden;
 }
 /* Couche intention — fond, représente les engagements (plafonnée à 100 %) */
 .k-group-view .k-group-progress-bar--engaged {
@@ -128,32 +66,10 @@
   background: var(--cta-green);
   border-radius: 999px;
 }
-/* Badge sur-couvert */
-.k-group-progress-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 2px 9px;
-  border-radius: 999px;
-  margin-bottom: 5px;
-  letter-spacing: .01em;
-}
 .k-group-progress-badge--over {
   background: rgba(100,175,90,.15);
   color: var(--ocean-dark);
   border: 1px solid rgba(100,175,90,.30);
-}
-/* Légende sous la barre */
-.k-group-progress-legend {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 5px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
 }
 .k-group-progress-legend-paid    { color: var(--ocean-dark); }
 .k-group-progress-legend-engaged { color: rgba(100,175,90,.75); }
@@ -179,13 +95,6 @@
 .k-group-view > * {
   max-width: none;
 }
-.k-group-view .k-group-header {
-  padding: 20px 18px 8px;
-  border-radius: 20px 20px 0 0;
-}
-.k-group-view .k-group-header h2 {
-  font-size: 21px;
-}
 .k-group-view .k-group-progress-card {
   padding: 18px;
   border-radius: 0 0 20px 20px;
@@ -193,10 +102,6 @@
 .k-group-view .k-group-card,
 .k-group-view .k-group-actions-card,
 .k-group-view .k-group-contribute-card,
-.k-group-view .k-group-items-card {
-  padding: 18px;
-  border-radius: 20px;
-}
 .k-group-view .k-group-creator-actions {
   grid-template-columns: 1fr;
 }
@@ -205,221 +110,47 @@
 /* Note : breakpoint 1000px, exception documentée (standard projet = 900px) */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    margin: 0 auto 56px;
-    padding: 0 32px;
-  }
-  #k-group-view.k-group-view > * {
-    width: 700px;
-    max-width: 700px;
-  }
-  .k-group-view .k-group-header {
-    padding: 16px 24px 8px;
-    border-radius: 20px 20px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 22px;
-    margin: 0 0 4px;
-  }
-  .k-group-view .k-group-subhead {
-    font-size: 14px;
-    line-height: 1.35;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 16px 24px 18px;
-    margin: 0 0 14px;
-    border-radius: 0 0 20px 20px;
-  }
   .k-group-view .k-group-card,
   .k-group-view .k-group-actions-card,
   .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 16px 24px;
-    margin: 12px 0 0;
-    border-radius: 20px;
-  }
   .k-group-view .k-group-section-title,
-  .k-group-view h3 {
-    font-size: 18px;
-    margin: 0 0 10px;
-  }
-  .k-group-view .k-group-self-toggle {
-    margin: 10px 0 0;
-    padding: 13px 16px;
-    border-radius: 18px;
-    min-height: 46px;
-  }
-  .k-group-view .k-group-creator-actions {
-    gap: 10px;
-  }
-  .k-group-view .k-group-btn {
-    min-height: 44px;
-    padding: 10px 16px;
-  }
   .k-group-view .k-group-share-hint,
-  .k-group-view .k-group-finalize-hint {
-    margin: 8px 0 0;
-    font-size: 12px;
-    line-height: 1.35;
-  }
-  .k-group-view hr {
-    margin: 12px 0;
-  }
   .k-group-view select,
   .k-group-view input,
-  .k-group-view textarea {
-    min-height: 42px;
-  }
-}
-
-#k-group-view.k-group-view {
-  margin: 10px auto 56px;
-}
-.k-group-view .k-group-header {
-  padding: 16px 16px 8px;
 }
 .k-group-view .k-group-progress-card,
 .k-group-view .k-group-card,
 .k-group-view .k-group-actions-card,
 .k-group-view .k-group-contribute-card,
-.k-group-view .k-group-items-card {
-  padding: 16px;
-  margin-top: 10px;
-}
 
 /* ── Desktop cockpit layout : colonne gauche + réserve articles droite ── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    max-width: 1240px;
-    width: 100%;
-    margin: 8px auto 64px;
-    padding: 0 32px;
-    box-sizing: border-box;
-  }
-  #k-group-view.k-group-view > * {
-    width: 720px;
-    max-width: 720px;
-    margin-left: 0;
-    margin-right: auto;
-  }
 }
 
 @media ((min-width: 1200px)) {
-  #k-group-view.k-group-view {
-    max-width: 1280px;
-  }
   #k-group-view.k-group-view > * {
     width: 740px;
     max-width: 740px;
   }
 }
 
-#k-group-view.k-group-view {
-  max-width: none;
-  width: 100%;
-  margin: 12px auto 64px;
-  padding: 0 14px;
-}
-#k-group-view.k-group-view > * {
-  width: auto;
-  max-width: none;
-  margin-left: 0;
-  margin-right: 0;
-}
-
 /* ── SAFE V2 — cockpit groupe compact desktop ──────────────────── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    max-width: 1240px;
-    width: 100%;
-    margin: 0 auto 56px;
-    padding: 0 32px;
-    box-sizing: border-box;
-  }
-  #k-group-view.k-group-view > * {
-    width: 700px;
-    max-width: 700px;
-    margin-left: 0;
-    margin-right: auto;
-  }
-  .k-group-view .k-group-header {
-    padding: 14px 22px 8px;
-    border-radius: 18px 18px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 22px;
-    margin: 0 0 3px;
-    line-height: 1.15;
-  }
-  .k-group-view .k-group-subhead {
-    font-size: 14px;
-    line-height: 1.3;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 14px 22px 16px;
-    margin: 0 0 10px;
-    border-radius: 0 0 18px 18px;
-  }
   .k-group-view .k-group-card,
   .k-group-view .k-group-actions-card,
   .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 14px 22px;
-    margin: 10px 0 0;
-    border-radius: 18px;
-  }
-  .k-group-view .k-group-self-toggle {
-    margin: 10px 0 0;
-    padding: 11px 14px;
-    min-height: 42px;
-    border-radius: 16px;
-    font-size: 14px;
-  }
-  .k-group-view .k-group-creator-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .k-group-view .k-group-btn {
-    min-height: 42px;
-    padding: 9px 14px;
-    border-radius: 999px;
-  }
   .k-group-view h3,
-  .k-group-view .k-group-section-title {
-    font-size: 18px;
-    margin: 0 0 9px;
-  }
   .k-group-view .k-group-share-hint,
-  .k-group-view .k-group-finalize-hint {
-    margin: 7px 0 0;
-    font-size: 12px;
-    line-height: 1.3;
-  }
-  .k-group-view hr {
-    margin: 10px 0;
-  }
   .k-group-view select,
   .k-group-view input,
-  .k-group-view textarea {
-    min-height: 40px;
-  }
-}
-
-#k-group-view.k-group-view {
-  margin: 10px auto 56px;
-  padding: 0 14px;
 }
 #k-group-view.k-group-view > * {
   width: auto;
   max-width: none;
   margin-left: 0;
   margin-right: 0;
-}
-.k-group-view .k-group-header {
-  padding: 15px 16px 8px;
 }
 .k-group-view .k-group-progress-card,
 .k-group-view .k-group-card,
@@ -440,13 +171,6 @@
 }
 .k-group-side-panel {
   margin-top: 12px;
-}
-.k-group-side-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 14px;
-  box-shadow: 0 14px 42px var(--border-text-06);
 }
 .k-group-side-card + .k-group-side-card {
   margin-top: 10px;
@@ -534,25 +258,9 @@
 }
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    max-width: 1240px;
-    margin: 0 auto 56px;
-    padding: 0 32px;
-  }
   #k-group-view.k-group-view > * {
     width: auto;
     max-width: none;
-  }
-  .k-group-cockpit {
-    display: grid;
-    grid-template-columns: minmax(620px, 700px) minmax(300px, 360px);
-    gap: 20px;
-    align-items: start;
-  }
-  .k-group-side-panel {
-    margin-top: 0;
-    position: sticky;
-    top: 96px;
   }
 }
 
@@ -563,142 +271,20 @@
 /* ── SAFE V2-C — condensation cockpit groupe ───────────────────── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    margin: -18px auto 44px;
-    padding: 0 32px;
-  }
-  .k-group-cockpit {
-    grid-template-columns: minmax(600px, 680px) minmax(300px, 340px);
-    gap: 16px;
-  }
-  .k-group-view .k-group-header {
-    padding: 12px 20px 7px;
-    border-radius: 16px 16px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 21px;
-    margin: 0 0 2px;
-    line-height: 1.12;
-  }
-  .k-group-view .k-group-subhead {
-    font-size: 13px;
-    line-height: 1.25;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 12px 20px 14px;
-    margin: 0 0 8px;
-    border-radius: 0 0 16px 16px;
-  }
   .k-group-view .k-group-progress-card h3,
-  .k-group-view .k-group-progress-card strong {
-    margin-top: 0;
-  }
-  .k-group-view .k-group-progress {
-    height: 6px;
-    margin: 7px 0;
-  }
-  .k-group-view .k-group-self-toggle {
-    margin: 8px 0 0;
-    padding: 9px 12px;
-    min-height: 38px;
-    border-radius: 14px;
-    font-size: 13px;
-  }
   .k-group-view .k-group-card,
   .k-group-view .k-group-actions-card,
   .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 12px 20px;
-    margin: 8px 0 0;
-    border-radius: 16px;
-  }
   .k-group-view h3,
-  .k-group-view .k-group-section-title {
-    font-size: 17px;
-    margin: 0 0 8px;
-  }
-  .k-group-view .k-group-creator-actions {
-    gap: 8px;
-  }
-  .k-group-view .k-group-btn {
-    min-height: 38px;
-    padding: 8px 12px;
-    font-size: 13px;
-  }
   .k-group-view .k-group-share-hint,
-  .k-group-view .k-group-finalize-hint {
-    margin: 6px 0 0;
-    font-size: 11.5px;
-    line-height: 1.25;
-  }
-  .k-group-view hr {
-    margin: 8px 0;
-  }
-  .k-group-view label {
-    font-size: 12px;
-    margin-bottom: 4px;
-  }
   .k-group-view select,
   .k-group-view input,
-  .k-group-view textarea {
-    min-height: 36px;
-    padding-top: 7px;
-    padding-bottom: 7px;
-    font-size: 13px;
-  }
-  .k-group-side-panel {
-    top: 84px;
-  }
-  .k-group-side-card {
-    padding: 12px;
-    border-radius: 16px;
-  }
-  .k-group-side-card + .k-group-side-card {
-    margin-top: 8px;
-  }
-  .k-group-side-head {
-    margin-bottom: 8px;
-  }
-  .k-group-side-head strong {
-    font-size: 14px;
-  }
-  .k-group-side-head span {
-    font-size: 11.5px;
-  }
-  .k-group-side-list {
-    gap: 7px;
-  }
-  .k-group-side-item {
-    grid-template-columns: 38px 1fr;
-    gap: 8px;
-  }
   .k-group-side-item img,
-  .k-group-side-item-fallback {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-  }
-  .k-group-side-item-main strong {
-    font-size: 12.5px;
-  }
-  .k-group-side-item-main span {
-    font-size: 11.5px;
-    margin-top: 2px;
-  }
-  .k-group-side-total {
-    margin-top: 8px;
-    padding-top: 8px;
-    font-size: 12px;
-  }
   .k-group-side-help ol {
     margin-top: 6px;
     font-size: 12px;
     line-height: 1.35;
   }
-}
-
-#k-group-view.k-group-view {
-  margin: 6px auto 48px;
 }
 .k-group-view .k-group-header,
 .k-group-view .k-group-progress-card,
@@ -706,22 +292,6 @@
 .k-group-view .k-group-actions-card,
 .k-group-view .k-group-contribute-card,
 .k-group-view .k-group-items-card,
-.k-group-side-card {
-  padding: 13px 14px;
-}
-
-/* ── Bloc E — Mini guide créateur (SAFE V2-D) ──────────────────── */
-
-.k-group-mini-guide {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  background: var(--green-alpha-06);
-  border: 1px solid var(--green-alpha-14);
-  border-radius: 14px;
-  padding: 9px 10px;
-  margin: 8px 0;
-}
 .k-group-mini-guide span {
   display: flex;
   align-items: center;
@@ -746,60 +316,9 @@
   font-weight: 800;
 }
 
-.k-group-mini-guide {
-  grid-template-columns: 1fr;
-  gap: 6px;
-}
-
 /* ── SAFE V2-E — cockpit ultra compact desktop ─────────────────── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    margin: -34px auto 36px;
-    padding: 0 32px;
-  }
-  .k-group-cockpit {
-    grid-template-columns: minmax(580px, 660px) minmax(280px, 330px);
-    gap: 14px;
-  }
-  .k-group-view .k-group-header {
-    padding: 10px 18px 6px;
-    border-radius: 14px 14px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 20px;
-    margin: 0;
-    line-height: 1.1;
-  }
-  .k-group-view .k-group-subhead {
-    font-size: 12.5px;
-    line-height: 1.22;
-    margin-top: 3px;
-  }
-  .k-group-mini-guide {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    margin: 6px 0;
-    border-radius: 12px;
-  }
-  .k-group-mini-guide span {
-    font-size: 11.5px;
-    line-height: 1.1;
-    white-space: nowrap;
-  }
-  .k-group-mini-guide b {
-    width: 16px;
-    height: 16px;
-    flex-basis: 16px;
-    font-size: 10px;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 10px 18px 12px;
-    margin: 0 0 6px;
-    border-radius: 0 0 14px 14px;
-  }
   .k-group-view .k-group-progress-card h3 {
     font-size: 15px;
     margin: 0 0 2px;
@@ -809,37 +328,13 @@
   .k-group-view .k-group-progress-card p {
     font-size: 12px;
   }
-  .k-group-view .k-group-progress {
-    height: 5px;
-    margin: 5px 0;
-  }
-  .k-group-view .k-group-self-toggle {
-    margin: 6px 0 0;
-    padding: 7px 10px;
-    min-height: 34px;
-    border-radius: 12px;
-    font-size: 12.5px;
-  }
   .k-group-view .k-group-card,
   .k-group-view .k-group-actions-card,
   .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 10px 18px;
-    margin: 6px 0 0;
-    border-radius: 14px;
-  }
   .k-group-view h3,
   .k-group-view .k-group-section-title {
     font-size: 16px;
     margin: 0 0 7px;
-  }
-  .k-group-view .k-group-creator-actions {
-    gap: 7px;
-  }
-  .k-group-view .k-group-btn {
-    min-height: 34px;
-    padding: 7px 10px;
-    font-size: 12.5px;
   }
   .k-group-view .k-group-share-hint,
   .k-group-view .k-group-finalize-hint {
@@ -856,61 +351,10 @@
   }
   .k-group-view select,
   .k-group-view input,
-  .k-group-view textarea {
-    min-height: 32px;
-    padding: 6px 10px;
-    font-size: 12.5px;
-    border-radius: 10px;
-  }
-  .k-group-side-panel {
-    top: 76px;
-  }
-  .k-group-side-card {
-    padding: 10px;
-    border-radius: 14px;
-  }
   .k-group-side-card + .k-group-side-card {
     margin-top: 7px;
   }
-  .k-group-side-head {
-    margin-bottom: 7px;
-  }
-  .k-group-side-head strong {
-    font-size: 13.5px;
-  }
-  .k-group-side-head span {
-    font-size: 11px;
-  }
-  .k-group-side-list {
-    gap: 6px;
-  }
-  .k-group-side-item {
-    grid-template-columns: 34px 1fr;
-    gap: 7px;
-  }
   .k-group-side-item img,
-  .k-group-side-item-fallback {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-  }
-  .k-group-side-item-main strong {
-    font-size: 12px;
-    line-height: 1.15;
-  }
-  .k-group-side-item-main span {
-    font-size: 11px;
-    margin-top: 1px;
-  }
-  .k-group-side-total {
-    margin-top: 7px;
-    padding-top: 7px;
-    font-size: 11.5px;
-  }
-}
-
-.k-group-mini-guide {
-  padding: 8px 10px;
 }
 
 /* ── Bloc F — Switcher paniers multi-groupe ─────────────────────── */
@@ -945,17 +389,6 @@
   scrollbar-width: thin;
   padding-bottom: 1px;
 }
-.k-group-cart-tab {
-  flex: 0 0 auto;
-  min-width: 150px;
-  max-width: 210px;
-  text-align: left;
-  border: 1px solid var(--border);
-  background: var(--sand);
-  border-radius: 12px;
-  padding: 7px 9px;
-  cursor: pointer;
-}
 .k-group-cart-tab.is-active {
   background: var(--coral-bg-12);
   border-color: var(--coral-bg-38);
@@ -980,44 +413,9 @@
   text-overflow: ellipsis;
 }
 
-.k-group-cart-tab {
-  min-width: 140px;
-}
-
-/* ── Bloc G — Note identité engagement ─────────────────────────── */
-
-.k-group-identity-note {
-  background: var(--coral-bg-09);
-  border: 1px solid rgba(239,125,95,.22);
-  border-radius: 12px;
-  padding: 8px 10px;
-  margin: 6px 0 10px;
-}
-.k-group-identity-note strong {
-  display: block;
-  font-size: 12.5px;
-  line-height: 1.2;
-  color: var(--text);
-}
-.k-group-identity-note span {
-  display: block;
-  margin-top: 2px;
-  font-size: 11.5px;
-  line-height: 1.3;
-  color: var(--text-muted);
-}
-
 /* ── ULTRA COMPACT — Groupe cockpit dense ──────────────────────── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    margin: -42px auto 32px;
-    padding: 0 28px;
-  }
-  .k-group-cockpit {
-    grid-template-columns: minmax(560px, 640px) minmax(270px, 320px);
-    gap: 12px;
-  }
   .k-group-view .k-group-header {
     padding: 8px 16px 5px;
     border-radius: 13px 13px 0 0;
@@ -1209,11 +607,6 @@
     font-size: 10.8px;
   }
 }
-
-#k-group-view.k-group-view {
-  margin: 4px auto 46px;
-  padding: 0 10px;
-}
 .k-group-view .k-group-header,
 .k-group-view .k-group-progress-card,
 .k-group-view .k-group-card,
@@ -1222,9 +615,6 @@
 .k-group-view .k-group-items-card,
 .k-group-side-card {
   padding: 11px 12px;
-}
-.k-group-mini-guide {
-  padding: 7px 8px;
 }
 
 /* ── POSITION — remonter le cockpit sous le header ─────────────── */
@@ -1244,99 +634,13 @@
     margin-top: -132px;
   }
 }
-
-#k-group-view.k-group-view {
-  margin-top: 0;
-}
-
-/* ════════════════════════════════════════════════════════════════════
- * GROUP MOBILE COMPACT
- * Vue participant — panier collectif — affichage 1 écran
- *
- * UX goal : le participant voit en un coup d'œil
- *   1. le panier concerné (header + items)
- *   2. le total + statut (phase badge)
- *   3. le montant à engager (section-title + montant)
- *   4. l'identité sécurisée OTP (identity-note — CONSERVÉ)
- *   5. le message optionnel (champ msg)
- *   6. le bouton d'action (submit btn — TOUJOURS VISIBLE)
- *
- * Masqué sur mobile (non essentiel à la confiance) :
- *   - .k-group-subhead           → sous-titre descriptif du header
- *   - .k-group-contribute-card > p.k-group-desc-text
- *                                → paragraphe explicatif long
- *
- * Conservé intentionnellement :
- *   - .k-group-identity-note strong  "Identité sécurisée par OTP"
- *   - .k-group-identity-note span    possibilité d'utiliser un autre n°
- *   - montant, message, CTA
- *
- * Owner : group-cart-flow.css — ne pas réintroduire dans b-group-view.js
- * ════════════════════════════════════════════════════════════════════ */
-
-/* ── GROUP MOBILE COMPACT — max-width: 700px ───────────────────── */
-
-
-/* — .k-group-view : conteneur principal — */
-#k-group-view.k-group-view {
-  margin-top: -6px;
-  padding: 0 10px 80px; /* bas 80px : CTA toujours dégagé du bas */
-}
-
-/* — .k-group-header : en-tête du panier — */
-.k-group-view .k-group-header {
-  padding: 9px 12px 6px;
-  border-radius: 16px 16px 0 0;
-}
-.k-group-view .k-group-header h2 {
-  font-size: 18px;
-  line-height: 1.05;
-  margin: 0;
-}
 /* Masqué mobile : sous-titre descriptif non essentiel */
 .k-group-view .k-group-subhead {
   display: none;
 }
-
-/* — .k-group-items-card : bloc résumé panier (collapsible) — */
-.k-group-items-card {
-  margin-top: 8px;
-  padding: 10px 12px;
-  border-radius: 16px;
-}
-.k-group-items-toggle {
-  min-height: 44px; /* zone tactile confortable */
-  padding: 0;
-}
-.k-group-items-toggle strong {
-  font-size: 17px;
-  line-height: 1.1;
-}
 .k-group-items-toggle span span {
   font-size: 13px;
   line-height: 1.2;
-}
-
-/* — .k-group-contribute-card : carte engagement/paiement — */
-.k-group-contribute-card {
-  margin-top: 8px;
-  padding: 12px;
-  border-radius: 16px;
-}
-
-/* — .k-group-phase-badge : statut ouvert / règlement — */
-.k-group-phase-badge {
-  font-size: 11px;
-  padding: 5px 9px;
-  margin-bottom: 8px;
-  border-radius: 999px;
-}
-
-/* — .k-group-section-title : titre de la carte contribution — */
-.k-group-contribute-card .k-group-section-title {
-  font-size: 22px;
-  line-height: 1.05;
-  margin: 0 0 8px;
 }
 
 /* Masqué mobile : texte explicatif long non essentiel */
@@ -1358,48 +662,9 @@
 /* — .k-group-identity-note : identité OTP — CONSERVÉ INTENTIONNELLEMENT —
    "Identité sécurisée par OTP" + "vous pouvez utiliser un autre numéro"
    Ces informations sont nécessaires à la confiance du participant. */
-.k-group-identity-note {
-  padding: 7px 9px;
-  margin: 6px 0 9px;
-  border-radius: 11px;
-}
-.k-group-identity-note strong {
-  font-size: 13px;
-  line-height: 1.1;
-}
-.k-group-identity-note span {
-  font-size: 11px;
-  line-height: 1.15;
-  margin-top: 2px;
-  /* NE PAS masquer : indique la possibilité d'utiliser un autre numéro */
-}
-
-/* — .k-group-field : champs du formulaire engagement — */
-.k-group-field {
-  margin-bottom: 8px;
-}
 
 /* — Labels — */
 .k-group-label,
-.k-group-contribute-card label {
-  font-size: 11px;
-  margin-bottom: 3px;
-  letter-spacing: .02em;
-}
-
-/* — .k-group-input : champs texte/nombre — */
-/* reset.css pose `input { border:none }` : on restaure ici un cadre visible. */
-.k-group-input {
-  width: 100%;
-  min-height: 42px;
-  height: 42px;
-  padding: 7px 10px;
-  font-size: 15px; /* 15px : évite le zoom auto iOS */
-  border-radius: 12px;
-  border: 1.5px solid var(--border);
-  background: var(--white);
-  color: var(--text);
-}
 .k-group-input:focus {
   border-color: var(--violet);
   box-shadow: 0 0 0 3px var(--violet-light);
@@ -1425,9 +690,6 @@
 .k-group-mypart .k-group-field      { margin-bottom: 2px; }
 /* Champ message : hauteur réduite car 1 ligne suffit */
 #k-ge-msg,
-#k-gp-msg {
-  height: 40px;
-}
 
 /* — Erreurs inline — */
 .k-group-input-error {
@@ -1435,53 +697,25 @@
   margin: 0 0 5px;
   font-size: 11px;
 }
-
-/* — .k-group-btn : bouton d'action principal — */
-.k-group-btn {
-  min-height: 48px; /* zone tactile large — visible au premier scroll */
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 800;
-}
 /* Bouton submit spécifique : ancré visuellement en bas de carte */
 #k-ge-submit-btn,
-#k-gp-pay-btn {
-  min-height: 48px;
-  height: 48px;
-  margin-top: 6px;
-  font-size: 15px;
-  border-radius: 999px;
-}
 
 /* — Ombres allégées sur mobile — */
 .k-group-card,
 .k-group-actions-card,
 .k-group-progress-card,
 .k-group-items-card,
-.k-group-contribute-card {
-  box-shadow: 0 8px 24px rgba(30,40,25,.05);
-}
-
-/* — Mini-guide : 1 colonne sur mobile (déjà dans Bloc E, rappel explicite) — */
-.k-group-mini-guide {
-  grid-template-columns: 1fr;
-  gap: 6px;
-  padding: 8px 10px;
-}
 
 /* — Switcher multi-panier : tab plus petite sur mobile — */
 .k-group-cart-tab {
   min-width: 130px;
 }
 
-
-
 /* ── GROUP MOBILE COMPACT — sous-mode max-width: 390px (petits écrans) ── */
 /* Cible iPhone SE, Galaxy A, et tout écran < 390px.
    Densification supplémentaire uniquement — on ne masque pas
    l'identité OTP (strong conservé), seul le span détail peut être omis
    car le titre "Identité sécurisée par OTP" suffit à la confiance. */
-
 
 /* Conteneur encore plus serré */
 #k-group-view.k-group-view {
@@ -1503,13 +737,6 @@
 .k-group-contribute-card .k-group-section-title {
   font-size: 20px;
   margin: 0 0 6px;
-}
-
-/* Phase badge encore plus petit */
-.k-group-phase-badge {
-  font-size: 10px;
-  padding: 4px 7px;
-  margin-bottom: 6px;
 }
 
 /* Identity note : on masque le span détail (le titre OTP reste)
@@ -1563,32 +790,10 @@
 .k-group-items-card {
   padding: 8px 10px;
 }
-.k-group-items-toggle {
-  min-height: 40px;
-}
-.k-group-items-toggle strong {
-  font-size: 15px;
-}
 
 /* Mini-guide masqué sur très petits écrans (non essentiel) */
 .k-group-mini-guide {
   display: none;
-}
-
-
-/* ── Bloc H — Sélecteurs utilitaires flat ──────────────────────── */
-
-.k-group-phase-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-.k-group-phase-badge--open {
-  background: var(--green-alpha-12);
-  color: var(--green-text-sett);
 }
 .k-group-phase-badge--settlement {
   background: var(--amber-bg-12);
@@ -1735,13 +940,6 @@
   line-height: 1.3;
 }
 .k-group-commitment-list { margin: 8px 0 0; }
-.k-group-commitment-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
 .k-group-commitment-row:last-child { border-bottom: none; }
 .k-group-commitment-name { flex: 1; font-size: 14px; font-weight: 600; }
 .k-group-commitment-amount { font-size: 14px; color: var(--text); }
@@ -2354,21 +1552,6 @@
   appearance: none;
   cursor: pointer;
 }
-
-/* ── Participants : colonnes prénom+phone / montant+statut ─────────── */
-.k-group-commitment-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 7px 0;
-}
-.k-group-commitment-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
 .k-group-commitment-right {
   display: flex;
   align-items: center;
@@ -2751,4 +1934,3 @@
   background:var(--violet,#6b4eff);color:var(--white,#fff);border:none;border-radius:50px;
   font-size:15px;font-weight:700;cursor:pointer}
 .k-gsnap-back:hover{filter:brightness(.95)}
-

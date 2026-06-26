@@ -8,135 +8,13 @@
    Chips catégories + sous-catégories + promo rail.
    Mobile-first, zéro !important.
    ═══════════════════════════════════════════════════════════════ */
-
-/* ── CHIPS SHELL + FADES ─────────────────────────────────────── */
-.k-cats-shell { position: relative; }
 .k-cats-wrap-fade-left,
-.k-cats-wrap-fade-right {
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 20px;
-  pointer-events: none;
-  z-index: 2;
-}
 .k-cats-wrap-fade-left  { left: 0;  background: linear-gradient(to right, var(--sand-warm) 35%, transparent); }
-.k-cats-wrap-fade-right { right: 0; background: linear-gradient(to left,  var(--sand-warm) 35%, transparent); }
-
-/* ── CHIPS RAIL ─────────────────────────────────────────────── */
-.k-cats {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 4px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
-  scroll-padding-left: 12px;
-  scrollbar-width: none;
-  padding: 8px 4px;
-  align-items: stretch;
-  overscroll-behavior-x: contain;
-  background: transparent;
-}
-.k-cats::-webkit-scrollbar { display: none; }
 .k-cats::before,
-.k-cats::after { content: ""; flex: 0 0 12px; }
-
-/* ── CHIP (mobile-first : legacy horizontal rail fallback) ───── */
-.k-chip {
-  flex: 0 0 38px;
-  min-width: 38px;
-  max-width: 38px;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 16px;
-  cursor: pointer;
-  text-align: center;
-  transition: transform .18s ease, opacity .18s ease;
-  scroll-snap-align: start;
-  overflow: hidden;
-}
-.k-chip:active { transform: scale(.95); }
-
-/* Mobile target state — compact 2×4 pill grid, image left + label right. */
-.k-cats-shell {
-  margin-top: 0;
-  border-radius: 20px;
-  /* POLISH — fond lumineux cohérent avec hero, séparé visuellement */
-  background: var(--sand-bright);
-  border: 1px solid rgba(198,168,93,.13);
-  box-shadow:
-    0 6px 18px rgba(198,168,93,.09),
-    0 1px 0 rgba(198,168,93,.07);
-  overflow: hidden;
-}
 
 .k-cats-wrap-fade-left,
-.k-cats-wrap-fade-right {
-  display: none;
-}
-
-.k-cats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px 6px;
-  padding: 6px 9px 6px;
-  overflow: visible;
-  scroll-snap-type: none;
-  scroll-padding-left: 0;
-  align-items: stretch;
-}
 
 .k-cats::before,
-.k-cats::after {
-  display: none;
-}
-
-.k-chip {
-  min-width: 0;
-  max-width: none;
-  width: 100%;
-  flex: none;
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr);
-  align-items: center;
-  justify-content: start;
-  gap: 5px;
-  min-height: 36px;
-  padding: 3px 5px 3px 3px;
-  border-radius: 999px;
-  /* POLISH — fond plus opaque, lecture des images améliorée */
-  background: rgba(255, 255, 255, .84);
-  border: 1px solid rgba(198, 168, 93, .14);
-  box-shadow: 0 1px 4px rgba(28, 26, 23, .048);
-  overflow: hidden;
-  text-align: left;
-  scroll-snap-align: none;
-}
-
-/* Photo circle */
-.k-chip-photo {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  margin: 0 auto;
-  border-radius: 11px;
-  overflow: hidden;
-  flex-shrink: 0;
-  border: 1px solid var(--overlay-black-xs);
-  background: var(--sand-dark);
-  box-shadow: var(--elev-1);
-  transition: box-shadow .2s var(--ease), transform .2s var(--ease);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.k-chip-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
 .k-chip-photo > span {
   display: flex;
   align-items: center;
@@ -149,23 +27,6 @@
 }
 .k-chip[data-cat="all"] .k-chip-photo > span { font-size: 9px; }
 .k-chip-photo svg { width: 15px; height: 15px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-.k-chip-photo {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  margin: 0;
-  border-radius: 10px;
-  border-width: 1px;
-  /* POLISH — bord interne lumineux pour soulever l'image du fond */
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.58);
-}
-
-.k-chip-photo img {
-  border-radius: 9px;
-  /* POLISH — saturation + micro-contraste pour lisibilité à petite taille */
-  filter: saturate(1.22) contrast(1.05);
-}
 
 /* Fond par catégorie */
 /* POLISH — fonds enrichis par catégorie */
@@ -200,62 +61,15 @@
   border: 1.5px solid var(--border);
   flex-shrink: 0;
 }
-
-/* Label */
-.k-chip-label {
-  font-size: 8.5px;
-  font-weight: 700;
-  line-height: 1.1;
-  width: 100%;
-  max-width: 42px;
-  margin: 0;
-  padding: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text-muted);
-}
-
-.k-chip-label {
-  width: auto;
-  max-width: none;
-  min-width: 0;
-  margin: 0;
-  font-size: 10.8px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -.025em;
-  /* POLISH — texte quasi-plein pour contraste sur fond blanc */
-  color: var(--text);
-  text-align: left;
-}
-
-/* État actif mobile */
-.k-chip.active .k-chip-photo {
-  border-color: var(--ocean-dark);
-  box-shadow: 0 0 0 2.5px var(--ocean-dark), var(--elev-2);
-  transform: scale(1.05);
-}
 .k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--ocean-dark); }
 .k-chip.active[data-cat="all"] .k-chip-photo > span { color: var(--white); }
 .k-chip.active .k-chip-photo svg { stroke: var(--white); }
 .k-chip.active .k-chip-emoji { background: var(--ocean-dark); border-color: var(--ocean-dark); color: var(--white); }
-.k-chip.active .k-chip-label { color: var(--white); font-weight: 800; }
-
-.k-chip.active {
-  background: var(--ocean-dark);
-  border-color: var(--ocean-dark);
-  box-shadow: 0 2px 8px rgba(74, 144, 64, .30);
-}
 
 .k-chip.active .k-chip-photo {
   border-color: var(--ocean-dark);
   box-shadow: 0 0 0 1.25px rgba(74, 144, 64, .50);
   transform: none;
-}
-
-.k-chip.active .k-chip-label {
-  color: var(--white);
 }
 
 /* Sentinel spacer */
@@ -268,30 +82,6 @@
    Tout le visuel (rail, subchip, couleurs par catégorie, animations)
    vit dans boutique-desktop.css depuis le Lot I2-A.
    ──────────────────────────────────────────────────────────── */
-
-/* Section subcats (dans chaque section catalogue) */
-.k-cat-section  { margin-bottom: 4px; }
-
-/* Padding interne des sections dans le pager mobile */
-.k-cat-section { padding: 0 12px; }
-.k-sec-grid    { padding: 4px 0 12px; }
-.k-sec-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 0 8px;
-  border-bottom: 2px solid var(--coral); /* mobile → écrasé desktop par products.css (var(--sand-dark)) */
-  margin-bottom: 4px;
-  position: relative;
-  scroll-margin-top: 70px;
-}
-.k-sec-header-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
-.k-sec-header-name  { font-size: 16px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; }
-.k-sec-header-count {
-  font-size: 12px; font-weight: 500; color: var(--text-muted);
-  padding: 2px 8px; background: var(--overlay-black-xs); border-radius: 20px;
-  flex-shrink: 0; white-space: nowrap;
-}
 .k-sec-see-all {
   flex-shrink: 0;
   background: none; border: none;
@@ -326,11 +116,6 @@
   isolation: isolate;
 }
 .k-promo-rail::before,
-.k-promo-rail::after {
-  content: '';
-  position: absolute; top: 0; bottom: 4px;
-  width: 18px; z-index: 3; pointer-events: none;
-}
 .k-promo-rail::before { left: 0;  background: linear-gradient(to right, var(--sand) 40%, transparent); }
 .k-promo-rail::after  { right: 0; background: linear-gradient(to left,  var(--sand) 40%, transparent); }
 
@@ -411,7 +196,6 @@
   .k-sec-see-all:hover { background: rgba(67,160,71,.08); }
 }
 
-
 /* ── PROMO RAIL WRAPPERS — déplacés depuis interactions.css ───── */
 .k-promo-rail-wrap   { position: relative; overflow: hidden; }
 .k-promo-rail-more   {
@@ -445,13 +229,6 @@
   .k-cats-wrap-fade-left, .k-cats-wrap-fade-right { display: none; }
 }
 
-/* ── MOBILE POLISH — entrée catalogue sous rail catégories ───── */
-.k-sec-header {
-  padding: 10px 0 6px;
-  margin-bottom: 2px;
-  border-bottom: 1.5px solid rgba(200, 92, 45, .72);
-}
-
 .k-sec-header-emoji {
   font-size: 17px;
 }
@@ -470,7 +247,6 @@
 .k-sec-grid {
   padding-top: 2px;
 }
-
 
 /* ══════════════════════════════════════════════════════════════
    MOBILE PILL RAIL — max-width: 767px  (v4 — icône + label compact)
@@ -874,7 +650,6 @@
 #k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: var(--cat-perso-bg); }
 .k-chip[data-cat="Auto"] ~ * .k-subchip.active,
 #k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: var(--cat-auto-bg); }
-
 
 /* Chip animation — migré depuis interactions.css (Sprint 4 — S4.2) */
 /* Chip en surbrillance pendant la transition (scale + ring) */
@@ -1714,7 +1489,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 }
 
-
 /* ── Pager mobile : #k-grid = rail horizontal, .k-cat-section = pages ── */
 /* Cage : #k-page-scroll.k-pager-active est déjà fixed dans layout.css */
 
@@ -1784,14 +1558,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     left: 7px;
   }
 
-  /* Stepper inline dans la carte desktop */
-  .k-card-add.in-cart {
-    width: 100px;
-    border-radius: 20px;
-    background-color: var(--white);
-    box-shadow: var(--elev-2);
-  }
-
   /* Section header desktop */
   .k-sec-header {
     display: flex;
@@ -1838,8 +1604,6 @@ html.k-mobile-premium-v1 .k-chip-label {
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  .k-card { position: relative; }
-
   /* Fav natif : masqué par défaut, révélé au hover, toujours visible si liké */
   .k-card-fav { opacity: 0; }
   .k-card:hover .k-card-fav { opacity: 1; }
@@ -1875,15 +1639,10 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 }
 
-
 /* ══════════════════════════════════════════════════════════════════
    6. ANIMATION ENTRÉE CARTES — stagger Temu-style
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-
-  .k-card {
-    animation: k-card-in .22s var(--ease) both;
-  }
 
   @keyframes k-card-in {
     from { opacity: 0; transform: translateY(16px) scale(.97); }
@@ -1900,11 +1659,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-card:nth-child(8)  { animation-delay: .16s; }
   .k-card:nth-child(9)  { animation-delay: .18s; }
   .k-card:nth-child(10) { animation-delay: .20s; }
-
-  .k-card:hover { transform: translateY(-1px); }
 }
-
-
 
 /* Carte produit — look glass desktop (PALETTE-FIX-01, ex desktop-commerce-skeleton.css) */
 @media (min-width: 900px) {
@@ -1921,7 +1676,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     box-shadow: 0 12px 28px rgba(100,175,90, .10);
   }
 }
-
 
 /* ══════════════════════════════════════════════════════════════════
    GRILLE — Animations slide (pager Temu) + sections
@@ -2107,7 +1861,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-back svg { width: 18px; height: 18px; flex-shrink: 0; }
 #k-modal-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .k-modal-back:active { opacity: .7; }
-#k-modal-nav { display: flex; align-items: center; gap: 6px; }
 /* PR-D3 — nav-btn pill texte sobre (← produit précédent / → produit suivant) */
 .k-modal-nav-btn {
   display: flex; align-items: center; gap: 4px;
@@ -2142,15 +1895,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   display: flex; align-items: center; justify-content: center; transition: background .2s;
 }
 .k-modal-close:active { background: var(--sand); }
-
-/* ── SCROLL AREA (mobile : seul scroll owner) ────────────────── */
-.k-modal-scroll {
-  box-sizing: border-box; max-width: 100%; /* S2.1 */
-  flex: 1; overflow-y: auto; overflow-x: hidden;
-  -webkit-overflow-scrolling: touch; scrollbar-width: thin; min-height: 0;
-  display: flex; flex-direction: column; padding-top: 0;
-  padding-bottom: 0;
-}
 
 /* ── PRODUCT-ZONE : transparent sur mobile (display:contents) ── */
 /* Les enfants (img-wrap, details, actions, suggestions) participent
@@ -2200,20 +1944,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-search-mic.is-listening { background: var(--hero-red); animation: k-mic-pulse 1s ease-in-out infinite; }
 .k-modal-search-mic.is-listening svg { stroke: var(--white); }
 @keyframes k-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.35); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
-
-/* ── ACTIONS (mobile : sticky bas, flex-shrink:0) ────────────── */
-.k-modal-actions {
-  box-sizing: border-box; max-width: 100%; /* S2.1 — garantit que la barre CTA ne déborde jamais */
-  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
-  gap: 10px; align-items: center;
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 12px));
-  border-top: 1px solid var(--sand-dark);
-  flex-shrink: 0;
-  background: var(--white);
-  touch-action: none;
-  pointer-events: auto;
-  position: relative; z-index: 30;
-}
 /* Restaurer un effet glass quand le navigateur le supporte ET qu'on n'est
    pas en sticky (desktop column) — le rgba se réactive seulement là. */
 @media (min-width: 900px) {
@@ -2227,11 +1957,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 /* Fix panier flottant transparent : forcer fond opaque sur mobile/tablette
    (backdrop-filter déclaré supporté mais non rendu sur Samsung/Chrome Android) */
-#k-modal .k-modal-actions {
-  background: var(--white);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
 /* Sur mobile, avec display:contents sur product-zone, actions sort du flux normal.
    order:3 la place après img(order:0), details(order:0), suggestions(order:2). */
 .k-modal-actions {
@@ -2259,9 +1984,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 /* VIS-3D FIX — Remplace le magic-number 150px par la hauteur CTA réellement mesurée
    (--k-modal-cta-h, posée par _syncScrollPadding en JS). Fallback 150px si JS pas encore
    passé. Le safe-area fallback 12px est cohérent avec VIS-3C (actions padding). */
-.k-modal-scroll {
-  padding-bottom: calc(var(--k-modal-cta-h, 150px) + env(safe-area-inset-bottom, 12px));
-}
 .k-modal-suggestions { order: 2; }
 
 /* FIX ARCHITECTURE v5: .k-modal-actions sorti du scroll par JS (setupModal)
@@ -2310,7 +2032,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--coral); line-height: 1.2; margin-top: 2px; }
 .k-topbar-price-val { font-size: 12px; font-weight: 800; color: var(--coral); }
 .k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
-.k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }
 
@@ -2325,7 +2046,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-breadcrumb { display: none; } /* visible desktop uniquement */
 .k-modal-zoom-lens { display: none; }
 .k-modal-zoom-preview { display: none; }
-
 
 /* ══════════════════════════════════════════════════════════════
    2. MOBILE GUARD @max-width:899px
@@ -2403,7 +2123,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 #k-modal .k-add-cart-btn { overflow: hidden; text-overflow: ellipsis; }
 #k-modal .k-topbar-search-expanded { width: 100%; max-width: 100%; overflow-x: hidden; }
 
-
 /* ══════════════════════════════════════════════════════════════
    2b. MOBILE EXPLICIT WIDTH FIX — ancrage fixed pleine largeur
    VIS-6 — voir docs/BOUTIQUE_VISUAL_FIXES.md
@@ -2473,22 +2192,8 @@ html.k-mobile-premium-v1 .k-chip-label {
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* ── Overlay ─────────────────────────────────────────────── */
-  .k-modal-overlay.open { align-items: center; justify-content: center; padding: 28px; background: var(--overlay-dark-md); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-
-  /* ── Shell ───────────────────────────────────────────────── */
-  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px var(--overlay-dark-sm); animation: none; }
-
   /* Quand le side-cart est visible, la modal se décale pour ne pas le chevaucher.
      336px = width(312) + right-gap(24). Transition douce si le panier apparaît en cours. */
-  body.modal-has-cart #k-modal.k-modal {
-    width: min(1280px, calc(100vw - 56px - 336px));
-    margin-right: 336px;
-    transition: width .22s ease, margin-right .22s ease;
-  }
-
-  /* ── Topbar ──────────────────────────────────────────────── */
-  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: rgba(253,250,245,.97); border-bottom: 1px solid var(--border-text-08); box-shadow: 0 8px 24px var(--border-text-06); flex-shrink: 0; }
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
   #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
@@ -2507,26 +2212,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex; flex-direction: column;
     overflow-y: auto; overflow-x: hidden;
     padding: 0; background: var(--white);
-  }
-
-  /* ── Product-zone : grid 2 colonnes (colonnes dans §6, B-M-11) */
-  #k-modal .k-modal-product-zone {
-    display: grid;
-    grid-template-rows: 1fr auto;
-    flex: 0 0 auto;
-    min-height: calc(min(880px, 100vh - 56px) - 58px);
-    width: 100%;
-    background: var(--white);
-  }
-
-  /* ── Image : col gauche sticky ───────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    grid-column: 1; grid-row: 1 / 3;
-    height: calc(min(880px, 100vh - 56px) - 58px);
-    position: sticky; top: 0; align-self: start;
-    overflow: hidden; border-radius: 0; margin: 0; max-height: none;
-    background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%),
-                linear-gradient(135deg, var(--sand) 0%, var(--sand-warm) 100%);
   }
   #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: zoom-in; }
   #k-modal .k-modal-carousel-track { height: 100%; }
@@ -2568,16 +2253,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     transition: opacity .12s var(--ease);
   }
   .k-modal-zoom-lens.is-active { opacity: 1; }
-
-  /* ── Détails : col droite, row 1 ────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-details {
-    grid-column: 2; grid-row: 1;
-    display: flex; flex-direction: column;
-    overflow-y: auto; overflow-x: hidden; min-height: 0;
-    padding: 0 24px; background: linear-gradient(180deg, var(--white) 0%, var(--white) 74%, var(--sand) 100%);
-    border-radius: 0; box-shadow: none; margin: 0;
-  }
-  #k-modal .k-modal-product-zone .k-modal-info { flex: 0 0 auto; overflow: visible; max-height: none; padding: 18px 0 12px; }
 
   /* ── Chantier 2 — Réordonnancement visuel desktop ──
      DOM intact (cf. index.html), .k-modal-info est en flex-direction: column.
@@ -2627,7 +2302,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-price-unit { font-size: .44em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
   #k-modal .k-modal-old-price { font-size: 16px; color: var(--text-light); text-decoration: line-through; }
   #k-modal .k-modal-old-price .k-modal-price-val,
-  #k-modal .k-modal-old-price .k-modal-price-unit { color: inherit; font-weight: 400; text-decoration: inherit; }
   #k-modal .k-modal-old-price .k-modal-price-unit { font-size: .82em; letter-spacing: .04em; }
 
   /* ── Trust, Partage, Specs ───────────────────────────────── */
@@ -2664,30 +2338,11 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-inner-search-input { font-size: 14px; }
   .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
   #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
-
-  /* ── Actions : col droite, row 2, sticky bas ─────────────── */
-  #k-modal .k-modal-product-zone .k-modal-actions {
-    order: unset; /* annule le order mobile */
-    grid-column: 2; grid-row: 2;
-    position: sticky; bottom: 0; z-index: 70;
-    margin: 0; padding: 12px 24px 16px;
-    background: rgba(255,255,255,.98);
-    border-top: 1px solid rgba(31,48,36,.10);
-    box-shadow: 0 -12px 28px var(--border-text-06);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    display: grid;
-    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
-    grid-template-rows: auto;
-    align-items: center; gap: 10px;
-  }
   /* PR-D3 — CTA redesign desktop : Acheter vert solid, Ajouter outlined, sous-total coral */
   #k-modal .k-modal-product-zone .k-modal-actions .k-qty { grid-column: 1; grid-row: 1; height: 44px; }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
     grid-column: 2; grid-row: 1; height: 44px; border-radius: 999px;
     background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark);
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover {
-    border-color: var(--ocean); background: var(--ocean-bg-08);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     grid-column: 3; grid-row: 1; height: 44px; border-radius: 999px;
@@ -2712,9 +2367,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     order: unset; /* annule le order mobile */
     flex: 0 0 auto; overflow: visible; min-height: unset;
     display: block; width: 100%;
-    padding: 28px 36px 48px;
     border-top: 2px solid var(--sand-dark);
-    background: linear-gradient(180deg, var(--sand) 0%, var(--sand) 100%);
     margin-top: 0;
   }
   #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
@@ -2724,7 +2377,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 16px; flex-direction: unset; padding: 0;
+    flex-direction: unset; padding: 0;
   }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
     display: flex; flex-direction: column;
@@ -2750,13 +2403,10 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-msearch-group-more:hover { background: var(--sand); color: var(--coral-dark); }
   .k-msearch-recent-item:hover { background: var(--sand); }
   .k-msearch-recent-remove:hover { background: var(--sand-dark); color: var(--text); }
-  .k-modal, .k-modal * { -webkit-tap-highlight-color: transparent; }
   .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
   .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }
   button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid rgba(42,122,62,.45); outline-offset: 2px; }
 }
-
-
 
 /* ── Suggestions desktop ≥1200px : grille plus dense ─────── */
 @media (min-width: 1200px) {
@@ -2764,8 +2414,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 }
-
-
 
 /* ══════════════════════════════════════════════════════════════
    §6. LAYOUT DESKTOP — Pleine page Temu-style (source de vérité grille)
@@ -2828,7 +2476,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     height: calc(100dvh - 58px);
     max-height: calc(100dvh - 58px);
     overflow: hidden;
-    grid-template-columns: minmax(380px, 43%) minmax(0, 57%);
   }
 
   /* ── Image : pleine hauteur, jamais réduite par la col droite ── */
@@ -2846,7 +2493,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0 clamp(24px, 4vw, 64px);
   }
 
   /* ── Actions sticky : padding-inline aligné sur les détails  */
@@ -2898,7 +2544,6 @@ html.k-mobile-premium-v1 .k-chip-label {
     grid-column: 3; grid-row: 1;
   }
 }
-
 
 /* ══════════════════════════════════════════════════════════════════
    MODAL — Règles desktop & interactions
@@ -2964,11 +2609,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 /* Source de vérité unique pour .k-modal-img-wrap.
    top:auto et z-index:1 consolidés depuis interactions.css (fix carousel overlay mobile).
    background:var(--sand) retenu (interactions.css surchargeait le gradient — intentionnel). */
-.k-modal-img-wrap {
-  position: relative; flex: 0 0 auto; height: 45vh; max-height: 450px;
-  top: auto; z-index: 1;
-  background: var(--sand); overflow: hidden;
-}
 /* ── Skeleton shimmer pendant le chargement de l'image ───────
    Couche pseudo-élément animée. Disparaît dès qu'une image
    .k-modal-slide a la classe is-loaded (posée par b-modal.js
@@ -3044,7 +2684,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 /* ── EDGE-TO-EDGE mobile — supprimé Sprint 1 (30/05/2026)
    Les règles hauteur-image à largeur max ont été fusionnées dans la règle base
    .k-modal-img-wrap ci-dessus. Plus de fragmentation par breakpoint. ──── */
-
 
 /* ── BOUTON FAVORI MODALE (top-right de la zone détails) ─────────────
    FIX favori absent dans modale produit : bouton ❤️ universel
@@ -3257,7 +2896,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
   .k-modal-keyboard-hint span { margin-right: 8px; }
 }
-
 
 
 /* ── modal-product.css ───────────────────────────────────── */
@@ -3897,7 +3535,6 @@ html.k-mobile-premium-v1 .k-chip-label {
 /* Prevent body scroll when guide open (stacks with modal-open) */
 body.k-sg-open { /* handled by overlay pointer-events */ }
 
-
 /* ══════════════════════════════════════════════════════════════
    5. ZONES DESKTOP ENRICHIES — Temu-style full page
    Owner : modal.css (propriétaire de tous .k-modal-*)
@@ -4192,8 +3829,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   .k-modal-payment-opt .k-modal-pay-badge { display: none; }
 }
 
-
-
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM MOBILE V1 — modale produit / PDP (rapatrié de b-mobile-premium-v1.js,
    Lot 2/L2-S2). Scopé html.k-mobile-premium-v1, @media max 899px. Owner PDP.
@@ -4279,10 +3914,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   html.k-mobile-premium-v1 #k-modal .k-modal-actions .k-qty,
   html.k-mobile-premium-v1 #k-modal .k-modal-actions .k-add-cart-btn,
-  html.k-mobile-premium-v1 #k-modal .k-modal-actions .k-buy-now-btn {
-    border-radius: 999px;
-    min-height: 54px;
-  }
   html.k-mobile-premium-v1 #k-modal .k-modal-actions .k-qty {
     grid-column: 1;
     grid-row: 1;
@@ -4560,10 +4191,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-qty,
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn,
-  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
-    min-height: 50px;
-    border-radius: 999px;
-  }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-qty {
     background: var(--sand);
@@ -4801,18 +4428,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 body.cart-open .k-modal-overlay,
 body.cart-open .k-cats,
 body.cart-open .k-hero { pointer-events: none; }
-
-/* -- DRAWER --------------------------------------------------- */
-.k-cart-drawer {
-  position: fixed; top: 0; right: 0; bottom: 0;
-  width: 100%; max-width: 400px; z-index: 1150;
-  background: var(--white);
-  box-shadow: var(--elev-4);
-  display: flex; flex-direction: column;
-  transform: translateX(100%);
-  transition: transform .35s var(--ease);
-  border-radius: 16px 0 0 16px;
-}
 .k-cart-drawer.open { transform: translateX(0); }
 
 .k-cart-header {
@@ -4904,7 +4519,6 @@ body.cart-open .k-hero { pointer-events: none; }
 .kcf-btn { padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: .88rem; transition: all .2s var(--ease); display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border: none; min-height: 44px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #k-cart-continue { grid-column: 1; grid-row: 1; }
 #k-cart-clear    { grid-column: 2; grid-row: 1; min-width: 44px; padding: 10px 12px; }
-#k-cart-whatsapp { grid-column: 3; grid-row: 1; }
 #k-cart-checkout { grid-column: 1 / -1; grid-row: 2; }
 .kcf-full { width: 100%; padding: 14px 20px; border-radius: 50px; font-size: 15px; font-weight: 700; margin: 6px 0 12px; background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%); color: var(--white); box-shadow: 0 4px 14px rgba(42,122,62,.3); }
 .kcf-full:hover  { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(42,122,62,.4); }
@@ -4931,9 +4545,6 @@ body.cart-open .k-hero { pointer-events: none; }
 /* .k-order-overlay.open � source de v�rit� : voir L606 (structure flex compl�te + z-index) */
 /* BUG 4 FIX : overflow:clip au lieu de overflow:hidden � clippe visuellement
    sans bloquer les enfants flex hors scroll (= .ck-confirm-btn toujours visible) */
-.k-order-modal { width: 100%; height: 100vh; height: 100dvh; background: var(--white); border-radius: 0; overflow: clip; animation: k-slide-up .3s var(--ease); display: flex; flex-direction: column; }
-.k-order-header { display: flex; align-items: center; justify-content: space-between; padding: calc(10px + env(safe-area-inset-top)) 14px 10px; background: var(--checkout-accent); color: var(--checkout-accent-light); flex-shrink: 0; font-weight: 700; font-size: .96rem; }
-.k-order-body   { flex: 1; overflow-y: auto; padding: 0 10px 4px; }
 .k-of-group { margin-bottom: 5px; }
 .k-of-group label { display: block; font-size: .78rem; font-weight: 600; color: var(--text); margin-bottom: 2px; }
 .k-of-group input { width: 100%; padding: 6px 10px; border: 2px solid var(--border); border-radius: var(--radius); font-size: .9rem; transition: border-color .2s; outline: none; background: var(--white); }
@@ -5102,38 +4713,10 @@ body.cart-open .k-wa-fab {
    PAGER TEMU � scroll biaxial (horizontal cat�gories + vertical produits)
    -------------------------------------------------------------- */
 
-
 /* -- PAGER SLIDE � pas de layout sp�cial, juste animations --- */
 /* Le swipe change de cat�gorie via animation CSS slide            */
 /* Pas de position:absolute, pas d'overflow:hidden sur les parents */
 
-/* -- Indicateur bounce bas ? cat�gorie suivante --------------- */
-@keyframes k-pager-bounce-hint {
-  0%   { transform: translateY(0);   opacity: 0; }
-  20%  { opacity: 1; }
-  60%  { transform: translateY(8px);  opacity: 1; }
-  100% { transform: translateY(0);   opacity: 0; }
-}
-.k-pager-next-hint {
-  position: sticky;
-  bottom: calc(var(--bnav-h) + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  background: rgba(31,48,36,.82);
-  color: var(--white);
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 50px;
-  white-space: nowrap;
-  pointer-events: none;
-  animation: k-pager-bounce-hint .8s var(--ease) forwards;
-  z-index: 5;
-}
-.k-pager-next-hint::after { content: '?'; font-size: 14px; }
 
 /* -- Animations slide horizontal (chip ? section) -------------- */
 @keyframes k-pager-in-right  {
@@ -5162,11 +4745,6 @@ body.cart-open .k-wa-fab {
 .k-grid.k-grid-flat-subcat .k-card-carousel { overflow-x: hidden; scroll-snap-type: none; }
 
 #k-page-scroll { padding-bottom: 0; }
-
-/* -- PHONE INPUT COMPACT -------------------------------------- */
-.k-ck-phone-wrap { max-width: 100%; height: 34px; align-items: stretch; }
-.k-ck-phone-select { flex: 0 0 82px; height: 34px; font-size: .75rem; padding: 0 4px; }
-.k-ck-phone-input  { min-width: 0; height: 34px; font-size: .82rem; }
 
 /* Drawer plein �cran sous 768px � mobile �troit.
    Migr� depuis interactions.css (�tait isol� du reste des r�gles .k-cart-drawer). */
@@ -5197,117 +4775,12 @@ body.cart-open .k-wa-fab {
 .k-order-modal,
 .k-order-modal *,
 .k-order-header,
-.ck-confirm-btn {
-  font-family: var(--font-checkout);
-}
 
 /* Fond crème chaud sur le modal */
 .k-order-modal {
   background: var(--checkout-cream);
 }
 .k-order-body,
-.k-order-body--checkout {
-  background: var(--checkout-cream);
-}
-
-/* Header gradient vert marché */
-.k-order-header {
-  background: linear-gradient(135deg, var(--checkout-accent-deep) 0%, var(--checkout-accent-mid) 60%, var(--checkout-accent) 100%);
-  color: var(--white);
-}
-
-/* Bouton retour header */
-.ck-modal-back-btn--header {
-  background: rgba(255,255,255,0.18);
-  border: 1.5px solid rgba(255,255,255,0.4);
-  color: var(--white);
-  border-radius: 50px;
-}
-
-/* Carte identité : bord neutre doré (pas de coral) */
-.k-ck-id-card {
-  background: var(--checkout-id-bg);
-  border: 1.5px solid var(--checkout-id-border);
-  border-radius: 14px;
-}
-
-/* Format numéro Comores : +269 455 1256 */
-.k-ck-id-num {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: .01em;
-}
-
-/* Segment "Qui récupère ?" : coral uniquement sur le bouton actif */
-.ck-recip-seg {
-  background: rgba(0,0,0,.05);
-  border-radius: 12px;
-  padding: 3px;
-  border: 1.5px solid var(--checkout-seg-border);
-}
-.ck-recip-seg button {
-  background: transparent;
-  color: var(--checkout-seg-text);
-  font-family: var(--font-checkout);
-  border-radius: 9px;
-}
-.ck-recip-seg button.on {
-  background: var(--checkout-sel-bg);
-  color: var(--coral);
-  box-shadow: inset 0 0 0 2px var(--coral);
-}
-
-/* Toggle fulfillment : coral uniquement sur actif */
-.ck-fulfillment-btn {
-  background: var(--checkout-cream);
-  border: 1.5px solid var(--checkout-seg-border);
-  color: var(--checkout-seg-text);
-  font-family: var(--font-checkout);
-}
-.ck-fulfillment-btn.active {
-  background: var(--checkout-sel-bg);
-  border-color: var(--coral);
-  color: var(--coral-dark);
-  box-shadow: 0 0 0 1px var(--coral-focus-08);
-}
-
-/* Point de retrait sélectionné : contour coral */
-.ck-relais-summary {
-  background: var(--sage-bg);
-  border: 1px solid var(--border-sage-14, rgba(31,110,44,.14));
-  border-radius: 14px;
-}
-.ck-relais-summary-change {
-  color: var(--coral);
-  border: 1.5px solid var(--coral);
-  border-radius: 20px;
-  padding: 4px 11px;
-  font-size: .74rem;
-  font-weight: 800;
-  background: transparent;
-}
-
-/* Chips paiement : coral uniquement sur actif */
-.ck-pay-chip {
-  background: var(--checkout-cream);
-  border: 1.5px solid var(--checkout-seg-border);
-  font-family: var(--font-checkout);
-}
-.ck-pay-chip--active {
-  background: var(--checkout-chip-active-bg);
-  border: 2px solid var(--coral);
-  box-shadow: 0 0 0 2px var(--coral-focus-12);
-  color: var(--checkout-chip-active-text);
-}
-
-/* Bouton confirmer fond vert marché */
-.ck-confirm-btn {
-  background: var(--cta-green);
-  color: var(--white);
-  border-top: none;
-  box-shadow: 0 -2px 12px rgba(30,92,48,.20);
-  font-family: var(--font-checkout);
-}
-
 
 .ck-sum-qty   { font-size:.8rem; color:var(--text-muted); }
 .ck-sum-sep   { color:var(--text-muted); font-size:.8rem; }
@@ -5321,15 +4794,6 @@ body.cart-open .k-wa-fab {
 .ck-label::before {
   content:''; display:block; width:3px; height:14px;
   background:var(--coral); border-radius:2px; flex-shrink:0;
-}
-.ck-fulfillment-switch { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:0 0 10px; }
-.ck-fulfillment-btn {
-  min-height:32px; padding:0 6px;
-  border:1.5px solid rgba(31,48,36,.10); border-radius:13px;
-  background:var(--white); color:var(--text-muted-md);
-  font-size:.79rem; font-weight:700; line-height:1.15;
-  display:flex; align-items:center; justify-content:center;
-  box-shadow:0 4px 12px rgba(31,48,36,.04);
 }
 .ck-fulfillment-btn.active {
   border-color:var(--coral); background:var(--white); color:var(--coral-dark);
@@ -5377,15 +4841,10 @@ body.cart-open .k-wa-fab {
 .k-stripe-error.is-visible { display:block; }
 .k-stripe-eur          { display:none; text-align:center; font-size:.82rem; color:var(--ocean); font-weight:700; margin-top:6px; padding-bottom:4px; }
 .k-stripe-eur.is-visible { display:block; }
-
-/* Wallet */
-.k-wallet-section       { margin-top:5px; padding:7px 10px; border:2px dashed var(--ocean); border-radius:8px; background:linear-gradient(135deg,var(--green-bg-mid),var(--green-bg-warm)); display:none; }
 .k-wallet-section.is-visible { display:block; }
 .k-wallet-label         { display:flex; align-items:center; gap:10px; cursor:pointer; }
 .k-wallet-cb            { width:18px; height:18px; accent-color:var(--ocean); flex-shrink:0; }
 .k-wallet-info          { flex:1; }
-.k-wallet-title         { font-weight:700; font-size:.85rem; color:var(--ocean); }
-.k-wallet-balance       { font-size:.72rem; color:var(--text-form-light); margin-top:1px; }
 .k-wallet-ded           { margin-top:6px; padding:6px 8px; background:var(--white); border-radius:6px; font-size:.82rem; display:none; }
 .k-wallet-ded.is-visible { display:block; }
 .k-wal-row              { display:flex; justify-content:space-between; }
@@ -5401,15 +4860,9 @@ body.cart-open .k-wa-fab {
 .k-pay-title     { font-weight:700; font-size:.88rem; }
 .k-pay-subtitle  { font-size:.75rem; color:var(--text-form-light); margin-top:1px; }
 .k-pay-helper    { margin:4px 0 8px; padding:7px 9px; border:1px solid rgba(255,107,53,.18); border-left:3px solid var(--coral); border-radius:11px; background:var(--cream-peach); color:var(--coral-text); font-size:.73rem; line-height:1.3; }
-
-/* Chips paiement */
-.ck-pay-grid  { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:5px; }
-.ck-pay-chip  { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:42px; padding:2px 4px; border:1.5px solid var(--border-text-10); border-radius:13px; cursor:pointer; background:var(--white); text-align:center; gap:3px; transition:border-color .15s, background .15s; user-select:none; box-shadow:0 3px 10px rgba(31,48,36,.04); }
 .ck-pay-chip input[type=radio] { display:none; }
 .ck-pay-chip--active { border: 2px solid var(--coral); background: var(--white); box-shadow: 0 0 0 1px var(--border-coral-09), 0 2px 8px rgba(200,92,45,.08); color: var(--coral); }
 .ck-pay-chip--off    { opacity:.38; filter:saturate(.5) blur(.3px); cursor:not-allowed; pointer-events:none; }
-.ck-chip-icon { font-size:1.05rem; line-height:1; }
-.ck-chip-lbl  { font-size:.72rem; font-weight:700; color:var(--text); line-height:1.2; }
 .ck-chip-lbl em.ck-soon       { font-style:normal; font-size:.58rem; font-weight:600; background:var(--coral); color:var(--white); border-radius:4px; padding:1px 4px; display:inline-block; margin-top:2px; }
 .ck-chip-lbl em.ck-stripe-tag { font-style:normal; font-size:.58rem; font-weight:700; background:var(--blue-stripe-bg); color:var(--blue-stripe-text); border-radius:4px; padding:1px 4px; display:inline-block; margin-top:2px; }
 .ck-soon { font-size:.62rem; background:var(--coral); color:white; padding:1px 5px; border-radius:5px; font-weight:700; vertical-align:middle; }
@@ -5421,49 +4874,26 @@ body.cart-open .k-wa-fab {
 .ck-track-toggle { display:flex; align-items:center; gap:7px; font-size:.8rem; font-weight:600; cursor:pointer; padding:5px 0; color:var(--text); }
 .ck-track-toggle input[type=checkbox] { width:16px; height:16px; flex-shrink:0; accent-color:var(--coral); }
 .ck-track-details { margin-top:4px; border:1px solid rgba(31,48,36,.08); border-radius:11px; background:var(--sand); }
-.ck-track-details summary { list-style:none; cursor:pointer; padding:9px 11px; font-size:.8rem; font-weight:700; color:var(--text); display:flex; align-items:center; justify-content:space-between; }
 .ck-track-details summary::-webkit-details-marker { display:none; }
 .ck-track-details summary::after { content:"+"; font-size:.94rem; color:var(--text-muted); }
 .ck-track-details[open] summary::after { content:"-"; }
 .ck-track-details-body { padding:0 11px 10px; }
 .ck-track-extra { margin-top:6px; padding:10px; background:var(--sand); border-radius:8px; }
-.ck-track-hint  { font-size:.71rem; color:var(--text-muted); margin-top:3px; }
 
 /* Relais */
 .ck-relais-section   { margin-bottom:10px; }
 .ck-relais-section-title { font-size:.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
 .ck-relais-ile-label { font-size:.76rem; color:var(--text-muted); margin-bottom:5px; }
-.ck-relais-ile-grid  { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:6px; }
-.ck-relais-ile-btn   { min-height:36px; padding:0 8px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:var(--white); color:var(--text); font-size:.78rem; font-weight:700; text-align:center; }
 .ck-relais-ile-btn.active { border-color:var(--coral); background:var(--sage-bg-pale); color:var(--sage-dark); }
-.ck-relais-item      { position:relative; padding:5px 8px 5px 30px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:var(--white); cursor:pointer; box-shadow:0 3px 10px rgba(31,48,36,.04); }
 .ck-relais-item--compact { padding-top:9px; padding-bottom:9px; }
 .ck-relais-item.selected { border-color:var(--coral); background:var(--sage-bg); box-shadow:0 0 0 1px var(--border-coral-09), 0 6px 14px rgba(62,94,69,.07); }
 .ck-relais-item.selected::before { content:"\2713"; position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; border-radius:50%; background:var(--coral); color:var(--white); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
-.ck-relais-name { display:block; font-size:.9rem; font-weight:700; color:var(--text); }
-.ck-relais-addr { display:block; margin-top:2px; font-size:.72rem; line-height:1.25; color:var(--text-muted); }
 
 /* SMS sender */
 .ck-sms-body { padding:6px 0 4px; gap:4px; }
 .ck-sms-body .k-of-group { margin-bottom:0; }
-
-/* Bouton confirmer sticky */
-.ck-confirm-btn {
-  flex-shrink:0; width:100%;
-  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
-  border-radius:0;
-  background: var(--checkout-accent);
-  color: var(--checkout-accent-light); font-weight:800; font-size:1rem;
-  border:none; border-top:2.5px solid var(--checkout-accent-hover); cursor:pointer;
-  box-shadow: 0 -2px 12px rgba(99,56,6,.18);
-  transition: filter .2s, transform .15s; z-index:5; min-height:64px;
-}
 .ck-confirm-btn:active   { transform:scale(.97); filter:brightness(.95); }
 .ck-confirm-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-.ck-confirm-main    { font-size:1rem; font-weight:800; line-height:1.15; }
-.ck-confirm-amount  { font-size:1.1rem; font-weight:900; line-height:1.1; }
-.ck-confirm-subtext { font-size:.71rem; font-weight:600; line-height:1.15; color:var(--checkout-accent-light); opacity:.80; }
 
 /* Bouton retour panier */
 .ck-back-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; margin:0 0 14px; background:transparent; border:1px solid var(--border); border-radius:50px; color:var(--text-muted); font-size:13px; font-weight:600; cursor:pointer; transition:all .15s var(--ease); }
@@ -5543,7 +4973,6 @@ body.cart-open .k-wa-fab {
      il reste toujours dans le flux et visible, pas clipp� par le scroll. */
   .k-order-overlay.open .ck-confirm-btn { border-radius:0 0 var(--radius-lg) var(--radius-lg); }
 }
-
 
 /* ---------------------------------------------------------------
    �CRAN SUCC�S COMMANDE � d�plac� depuis interactions.css
@@ -5805,11 +5234,6 @@ body.cart-open .k-wa-fab {
    Réutilise les tokens checkout existants (.k-ck-* / --coral / --sand / --text)
    -------------------------------------------------------------------------- */
 
-.k-ck-identity-recap {
-  display: block;
-  margin-bottom: 18px;
-}
-
 .k-ck-id-label {
   font-size: .72rem;
   font-weight: 800;
@@ -6004,7 +5428,6 @@ body.cart-open .k-wa-fab {
   line-height: 1.2;
 }
 .k-ck-id-link:hover { text-decoration: underline; }
-.k-ck-id-sep { color: var(--border); }
 
 /* ── COMMIT 2 — Point de retrait : ligne repliée + picker pays → île ──────── */
 /* Ligne résumé (remplace les chips d'îles + la carte relais lourde). */
@@ -6080,10 +5503,6 @@ body.cart-open .k-wa-fab {
 }
 .ck-relais-country { display: flex; gap: 8px; margin-bottom: 20px; }
 .ck-relais-country button,
-.ck-relais-iles button {
-  flex: 1; border: 1px solid var(--border-text-10); border-radius: 12px;
-  background: var(--white); font: inherit; font-weight: 700; color: var(--text-muted); cursor: pointer;
-}
 .ck-relais-country button { padding: 12px; font-size: .85rem; }
 .ck-relais-iles { display: flex; gap: 8px; margin-bottom: 18px; }
 .ck-relais-iles button { padding: 11px 4px; font-size: .8rem; }
@@ -6308,22 +5727,6 @@ body.cart-open .k-wa-fab {
 .ck-spi-changed:hover,
 .ck-spi-notyou:hover { color: var(--sage-dark); }
 
-/* Guest hint plus compact */
-.k-ck-guest-hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--cream-peach);
-  border: 1px solid var(--border-coral-22, var(--border));
-  border-radius: 9px;
-  padding: 7px 10px;
-  margin-bottom: 8px;
-  font-size: .75rem;
-  line-height: 1.3;
-  color: var(--text);
-}
-.k-ck-guest-ic { font-size: 1rem; flex: 0 0 auto; }
-
 /* Recap identité compact */
 .k-ck-identity-recap {
   margin-bottom: 4px;
@@ -6333,14 +5736,6 @@ body.cart-open .k-wa-fab {
    CSS-only : le DOM reste identique, bindChangeIdentity() fonctionne.
    « Ce n'est pas vous ? » reste dans le DOM (câblé JS) mais masqué visuellement.
    Owner : cart.css — conforme R3/R4/R5. */
-.k-order-body--checkout .k-ck-id-card {
-  padding: 7px 12px;
-  border-radius: 10px;
-  gap: 8px;
-  box-shadow: none;
-  background: var(--sand);
-  border-color: var(--border);
-}
 .k-order-body--checkout .k-ck-id-avatar {
   width: 26px;
   height: 26px;
@@ -6403,7 +5798,6 @@ body.cart-open .k-wa-fab {
 }
 /* « Ce n'est pas vous ? » visible en mode Moi, masqué en mode Quelqu'un d'autre (via JS hidden) */
 
-
 /* Relais plus aéré mais compact */
 .ck-relais-ile-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6463,7 +5857,6 @@ body.cart-open .k-wa-fab {
   .ck-confirm-btn { min-height: 64px; }
   .ck-relais-ile-btn { min-height: 36px; font-size: .78rem; }
 }
-
 
 /* ── S3.2 — Mode édition panier collectif (tiré de b-cart.js inline styles) ── */
 /* Drawer panier (k-cart-edit-bar) */
@@ -6955,15 +6348,6 @@ body.ck-is-me .k-ck-id-btns-row { display: flex; }
 }
 .k-card-carousel-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--overlay-black-lg); transition: background .2s, transform .2s; }
 .k-card-carousel-dot.active { background: var(--coral); transform: scale(1.4); box-shadow: 0 0 0 2px rgba(200,92,45,.25); }
-
-/* → déplacé vers le fichier approprié */
-
-/* ── FAVORIS — badges promo ──────────────────────────────────── */
-.k-fav-promo-banner {
-  background: linear-gradient(135deg, var(--coral), var(--coral-dark));
-  color: var(--white); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;
-  display: flex; align-items: center; gap: 12px;
-}
 .k-fav-promo-banner-icon { font-size: 24px; flex-shrink: 0; }
 .k-fav-promo-banner-text { flex: 1; font-size: 14px; font-weight: 600; line-height: 1.4; }
 /* Style par défaut du bouton de partage — mobile, hors contexte promo (ghost neutre).
@@ -6995,16 +6379,6 @@ body.ck-is-me .k-ck-id-btns-row { display: flex; }
   position: fixed; bottom: calc(var(--bnav-h) + 12px + env(safe-area-inset-bottom)); right: 12px;
   z-index: 80; display: flex; flex-direction: column; gap: 6px;
 }
-.k-section-index-btn {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: var(--surface-white-92); border: 1px solid var(--overlay-black-xs);
-  box-shadow: 0 2px 10px var(--overlay-black-sm);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; cursor: pointer;
-  transition: transform .2s, background .15s;
-}
-.k-section-index-btn:active { transform: scale(.9); }
-.k-section-index-btn.active { background: var(--ocean-dark); border-color: var(--ocean-dark); }
 
 /* ── SCROLL FLUIDE ────────────────────────────────────────────── */
 .k-cats,
@@ -7028,21 +6402,6 @@ body.ck-is-me .k-ck-id-btns-row { display: flex; }
 }
 .k-fab-top.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 .k-fab-top:active { transform: scale(.9); }
-
-/* ── PAGER INDICATEURS ───────────────────────────────────────── */
-.k-pager-dots {
-  display: flex; justify-content: center; gap: 6px;
-  padding: 8px 0;
-}
-.k-pager-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--border); transition: all .2s;
-}
-.k-pager-dot.active {
-  background: var(--ocean-dark);
-  width: 20px; border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(74,144,64,.3);
-}
 
 /* ── TOPBAR ENRICHIE (modal paiement) — owner : cart.css
    Aucun usage détecté dans JS/HTML au 3 juin 2026 — conservé en attente de confirmation.
@@ -7182,17 +6541,13 @@ body.modal-open .k-bnav { opacity: .7; }
 /* ═══════════════════════════════════════════════════════════════
    INDEX FLOTTANT VERTICAL + GRID HAS SECTIONS
    ═══════════════════════════════════════════════════════════════ */
-
-#k-section-index { position:fixed; right:8px; top:50%; transform:translateY(-50%); z-index:50; display:flex; flex-direction:column; gap:4px; padding:6px 4px; background:var(--surface-white-92); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-radius:20px; box-shadow:0 2px 8px var(--overlay-black-sm), 0 0 0 1px var(--overlay-black-xs); opacity:.88; transition:opacity .2s ease, transform .2s ease; }
 #k-section-index:hover, #k-section-index:focus-within { opacity:1; }
-.k-section-index-btn       { display:flex; align-items:center; justify-content:center; width:36px; height:36px; padding:0; border:none; background:transparent; border-radius:50%; cursor:pointer; transition:background .15s ease, transform .15s ease; position:relative; }
 .k-section-index-btn:hover { background:var(--overlay-black-xs); }
 @media (hover:hover) and (pointer:fine) {
   .k-section-index-btn:hover { transform:scale(1.08); }
 }
 .k-section-index-btn:active { transform:scale(.94); }
 .k-section-index-btn.active { background:var(--coral); }
-.k-section-index-emoji { font-size:18px; line-height:1; }
 .k-section-index-label { display:none; font-size:12px; font-weight:600; color:var(--text); padding:0 8px; }
 @media (hover:hover) and (pointer:fine) {
   #k-section-index:hover .k-section-index-btn { width:auto; padding:0 10px 0 6px; justify-content:flex-start; gap:6px; }
@@ -7301,7 +6656,6 @@ body.cart-open  #k-section-index { display:none; }
 .ck-pay-helper       { margin:4px 0 8px; padding:7px 9px; border:1px solid rgba(255,107,53,.18); border-left:3px solid var(--coral); border-radius:11px; background:var(--cream-peach); color:var(--coral-text); font-size:.73rem; line-height:1.3; }
 .k-confirm-notice    { margin-top:12px; padding:10px 12px; background:var(--green-bg); border-radius:10px; font-size:.82rem; color:var(--text-strong-mid); line-height:1.6; text-align:left; }
 .k-confirm-notice-item { margin-top:4px; }
-
 
 /* ═══════════════════════════════════════════════════════════════
    PAGER TEMU — animations slide de catégorie + chip surbrillance
@@ -7431,7 +6785,6 @@ body.cart-open  #k-section-index { display:none; }
 /* Flux simplifié panier collectif */
 .k-group-flow-overlay{position:fixed;inset:0;z-index:1800;background:rgba(31,48,36,.52);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}.k-group-flow-sheet{width:100%;max-width:420px;background:var(--white);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.22);animation:kGroupFlowUp .22s ease}.k-group-flow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.k-group-flow-title{font-size:18px;font-weight:900;color:var(--text);margin:0}.k-group-flow-close{border:0;background:var(--sand);width:34px;height:34px;border-radius:999px;cursor:pointer;font-weight:900}.k-group-flow-hero{text-align:center;padding:8px 4px 16px}.k-group-flow-icon{font-size:46px;line-height:1;margin-bottom:8px}.k-group-flow-big{font-size:20px;font-weight:950;color:var(--text);margin:0 0 6px}.k-group-flow-sub{font-size:13px;color:var(--text-muted);line-height:1.35;margin:0}.k-group-flow-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}.k-group-flow-stat{background:var(--sand);border:1px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center}.k-group-flow-stat b{display:block;font-size:14px;color:var(--text);font-weight:950}.k-group-flow-stat span{display:block;font-size:10px;color:var(--text-muted);font-weight:800;margin-top:2px}.k-group-flow-link{display:flex;align-items:center;gap:8px;background:var(--sand);border:1px dashed var(--border);border-radius:14px;padding:10px 12px;margin:10px 0 12px}.k-group-flow-link span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-muted)}.k-group-flow-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.k-group-flow-btn{border:0;border-radius:14px;padding:13px 10px;font-size:14px;font-weight:950;cursor:pointer;min-height:46px}.k-group-flow-btn:active{transform:scale(.98)}.k-group-flow-btn--primary{background:var(--cta-green);color:var(--white)}.k-group-flow-btn--wa{background:var(--whatsapp);color:var(--white)}.k-group-flow-btn--ghost{background:var(--sand);color:var(--text);border:1px solid var(--border);grid-column:1/-1}.k-group-flow-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 0;font-weight:900;color:var(--text)}.k-group-flow-spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--sand-dark);border-top-color:var(--cta-green);animation:kGroupSpin .8s linear infinite}.k-cart-event-btn,.k-sc-btn-group{font-weight:950}.k-cart-event-btn{font-size:0}.k-cart-event-btn:after{content:'📤 Partager';font-size:14px}.k-sc-btn-group-label{font-size:0}.k-sc-btn-group-label:after{content:'📤 Partager';font-size:12px}@media(min-width:900px){.k-group-flow-overlay{align-items:center}.k-group-flow-sheet{border-radius:22px;padding:20px;max-width:390px}}@keyframes kGroupFlowUp{from{transform:translateY(24px);opacity:.6}to{transform:translateY(0);opacity:1}}@keyframes kGroupSpin{to{transform:rotate(360deg)}}
 
-
 /* ══════════════════════════════════════════════════════════════════
  * GROUPE COCKPIT — owner officiel des sélecteurs .k-group-*
  * Migré depuis b-group-view.js → injectStyles() (PR-1)
@@ -7441,69 +6794,15 @@ body.cart-open  #k-section-index { display:none; }
 /* ── BUG-VIEW-1 — Masquage par défaut (symétrique à .k-fav-view/.k-track-view dans cart.css)
    Sans ce display:none, la vue groupe reste visible même quand elle ne devrait pas l'être,
    provoquant un mélange de contenus entre onglets Suivi / Groupe / Commandes. ──────────── */
-#k-group-view.k-group-view { display: none; }
 #k-group-view.k-group-view.show { display: block; }
-
-/* ── Bloc A — Structure de base ─────────────────────────────────── */
-
-.k-group-view {
-  max-width: 1180px;
-  margin: 24px auto 80px;
-  padding: 0 24px;
-  box-sizing: border-box;
-}
-.k-group-view > * {
-  max-width: 720px;
-}
-.k-group-view .k-group-header {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-bottom: 0;
-  border-radius: 24px 24px 0 0;
-  padding: 20px 28px 8px;
-  box-shadow: 0 18px 50px var(--border-text-08);
-}
-.k-group-view .k-group-header h2 {
-  margin: 0 0 8px;
-  font-size: 23px;
-  line-height: 1.2;
-  color: var(--text);
-}
-.k-group-view .k-group-subhead {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--text-muted);
-}
-.k-group-view .k-group-progress-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 0 0 24px 24px;
-  padding: 20px 28px 22px;
-  margin: 0 0 16px;
-  box-shadow: 0 18px 50px var(--border-text-08);
-}
 .k-group-view .k-group-card,
 .k-group-view .k-group-actions-card,
 .k-group-view .k-group-contribute-card,
-.k-group-view .k-group-items-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 20px 28px;
-  margin: 12px 0 0;
-  box-shadow: 0 14px 42px var(--border-text-06);
-}
 .k-group-view .k-group-section-title {
   font-size: 18px;
   font-weight: 800;
   margin: 0 0 14px;
   color: var(--text);
-}
-.k-group-view .k-group-creator-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
 }
 .k-group-view .k-group-btn {
   min-height: 50px;
@@ -7521,13 +6820,6 @@ body.cart-open  #k-section-index { display:none; }
 .k-group-view .k-group-progress-wrap {
   position: relative;
   margin-bottom: 6px;
-}
-.k-group-view .k-group-progress {
-  position: relative;
-  height: 10px;
-  background: var(--green-alpha-12, rgba(100,175,90,.12));
-  border-radius: 999px;
-  overflow: hidden;
 }
 /* Couche intention — fond, représente les engagements (plafonnée à 100 %) */
 .k-group-view .k-group-progress-bar--engaged {
@@ -7558,32 +6850,10 @@ body.cart-open  #k-section-index { display:none; }
   background: var(--cta-green);
   border-radius: 999px;
 }
-/* Badge sur-couvert */
-.k-group-progress-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 2px 9px;
-  border-radius: 999px;
-  margin-bottom: 5px;
-  letter-spacing: .01em;
-}
 .k-group-progress-badge--over {
   background: rgba(100,175,90,.15);
   color: var(--ocean-dark);
   border: 1px solid rgba(100,175,90,.30);
-}
-/* Légende sous la barre */
-.k-group-progress-legend {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 5px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
 }
 .k-group-progress-legend-paid    { color: var(--ocean-dark); }
 .k-group-progress-legend-engaged { color: rgba(100,175,90,.75); }
@@ -7609,13 +6879,6 @@ body.cart-open  #k-section-index { display:none; }
 .k-group-view > * {
   max-width: none;
 }
-.k-group-view .k-group-header {
-  padding: 20px 18px 8px;
-  border-radius: 20px 20px 0 0;
-}
-.k-group-view .k-group-header h2 {
-  font-size: 21px;
-}
 .k-group-view .k-group-progress-card {
   padding: 18px;
   border-radius: 0 0 20px 20px;
@@ -7623,10 +6886,6 @@ body.cart-open  #k-section-index { display:none; }
 .k-group-view .k-group-card,
 .k-group-view .k-group-actions-card,
 .k-group-view .k-group-contribute-card,
-.k-group-view .k-group-items-card {
-  padding: 18px;
-  border-radius: 20px;
-}
 .k-group-view .k-group-creator-actions {
   grid-template-columns: 1fr;
 }
@@ -7635,221 +6894,47 @@ body.cart-open  #k-section-index { display:none; }
 /* Note : breakpoint 1000px, exception documentée (standard projet = 900px) */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    margin: 0 auto 56px;
-    padding: 0 32px;
-  }
-  #k-group-view.k-group-view > * {
-    width: 700px;
-    max-width: 700px;
-  }
-  .k-group-view .k-group-header {
-    padding: 16px 24px 8px;
-    border-radius: 20px 20px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 22px;
-    margin: 0 0 4px;
-  }
-  .k-group-view .k-group-subhead {
-    font-size: 14px;
-    line-height: 1.35;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 16px 24px 18px;
-    margin: 0 0 14px;
-    border-radius: 0 0 20px 20px;
-  }
   .k-group-view .k-group-card,
   .k-group-view .k-group-actions-card,
   .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 16px 24px;
-    margin: 12px 0 0;
-    border-radius: 20px;
-  }
   .k-group-view .k-group-section-title,
-  .k-group-view h3 {
-    font-size: 18px;
-    margin: 0 0 10px;
-  }
-  .k-group-view .k-group-self-toggle {
-    margin: 10px 0 0;
-    padding: 13px 16px;
-    border-radius: 18px;
-    min-height: 46px;
-  }
-  .k-group-view .k-group-creator-actions {
-    gap: 10px;
-  }
-  .k-group-view .k-group-btn {
-    min-height: 44px;
-    padding: 10px 16px;
-  }
   .k-group-view .k-group-share-hint,
-  .k-group-view .k-group-finalize-hint {
-    margin: 8px 0 0;
-    font-size: 12px;
-    line-height: 1.35;
-  }
-  .k-group-view hr {
-    margin: 12px 0;
-  }
   .k-group-view select,
   .k-group-view input,
-  .k-group-view textarea {
-    min-height: 42px;
-  }
-}
-
-#k-group-view.k-group-view {
-  margin: 10px auto 56px;
-}
-.k-group-view .k-group-header {
-  padding: 16px 16px 8px;
 }
 .k-group-view .k-group-progress-card,
 .k-group-view .k-group-card,
 .k-group-view .k-group-actions-card,
 .k-group-view .k-group-contribute-card,
-.k-group-view .k-group-items-card {
-  padding: 16px;
-  margin-top: 10px;
-}
 
 /* ── Desktop cockpit layout : colonne gauche + réserve articles droite ── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    max-width: 1240px;
-    width: 100%;
-    margin: 8px auto 64px;
-    padding: 0 32px;
-    box-sizing: border-box;
-  }
-  #k-group-view.k-group-view > * {
-    width: 720px;
-    max-width: 720px;
-    margin-left: 0;
-    margin-right: auto;
-  }
 }
 
 @media ((min-width: 1200px)) {
-  #k-group-view.k-group-view {
-    max-width: 1280px;
-  }
   #k-group-view.k-group-view > * {
     width: 740px;
     max-width: 740px;
   }
 }
 
-#k-group-view.k-group-view {
-  max-width: none;
-  width: 100%;
-  margin: 12px auto 64px;
-  padding: 0 14px;
-}
-#k-group-view.k-group-view > * {
-  width: auto;
-  max-width: none;
-  margin-left: 0;
-  margin-right: 0;
-}
-
 /* ── SAFE V2 — cockpit groupe compact desktop ──────────────────── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    max-width: 1240px;
-    width: 100%;
-    margin: 0 auto 56px;
-    padding: 0 32px;
-    box-sizing: border-box;
-  }
-  #k-group-view.k-group-view > * {
-    width: 700px;
-    max-width: 700px;
-    margin-left: 0;
-    margin-right: auto;
-  }
-  .k-group-view .k-group-header {
-    padding: 14px 22px 8px;
-    border-radius: 18px 18px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 22px;
-    margin: 0 0 3px;
-    line-height: 1.15;
-  }
-  .k-group-view .k-group-subhead {
-    font-size: 14px;
-    line-height: 1.3;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 14px 22px 16px;
-    margin: 0 0 10px;
-    border-radius: 0 0 18px 18px;
-  }
   .k-group-view .k-group-card,
   .k-group-view .k-group-actions-card,
   .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 14px 22px;
-    margin: 10px 0 0;
-    border-radius: 18px;
-  }
-  .k-group-view .k-group-self-toggle {
-    margin: 10px 0 0;
-    padding: 11px 14px;
-    min-height: 42px;
-    border-radius: 16px;
-    font-size: 14px;
-  }
-  .k-group-view .k-group-creator-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .k-group-view .k-group-btn {
-    min-height: 42px;
-    padding: 9px 14px;
-    border-radius: 999px;
-  }
   .k-group-view h3,
-  .k-group-view .k-group-section-title {
-    font-size: 18px;
-    margin: 0 0 9px;
-  }
   .k-group-view .k-group-share-hint,
-  .k-group-view .k-group-finalize-hint {
-    margin: 7px 0 0;
-    font-size: 12px;
-    line-height: 1.3;
-  }
-  .k-group-view hr {
-    margin: 10px 0;
-  }
   .k-group-view select,
   .k-group-view input,
-  .k-group-view textarea {
-    min-height: 40px;
-  }
-}
-
-#k-group-view.k-group-view {
-  margin: 10px auto 56px;
-  padding: 0 14px;
 }
 #k-group-view.k-group-view > * {
   width: auto;
   max-width: none;
   margin-left: 0;
   margin-right: 0;
-}
-.k-group-view .k-group-header {
-  padding: 15px 16px 8px;
 }
 .k-group-view .k-group-progress-card,
 .k-group-view .k-group-card,
@@ -7870,13 +6955,6 @@ body.cart-open  #k-section-index { display:none; }
 }
 .k-group-side-panel {
   margin-top: 12px;
-}
-.k-group-side-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 14px;
-  box-shadow: 0 14px 42px var(--border-text-06);
 }
 .k-group-side-card + .k-group-side-card {
   margin-top: 10px;
@@ -7964,25 +7042,9 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    max-width: 1240px;
-    margin: 0 auto 56px;
-    padding: 0 32px;
-  }
   #k-group-view.k-group-view > * {
     width: auto;
     max-width: none;
-  }
-  .k-group-cockpit {
-    display: grid;
-    grid-template-columns: minmax(620px, 700px) minmax(300px, 360px);
-    gap: 20px;
-    align-items: start;
-  }
-  .k-group-side-panel {
-    margin-top: 0;
-    position: sticky;
-    top: 96px;
   }
 }
 
@@ -7993,142 +7055,20 @@ body.cart-open  #k-section-index { display:none; }
 /* ── SAFE V2-C — condensation cockpit groupe ───────────────────── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    margin: -18px auto 44px;
-    padding: 0 32px;
-  }
-  .k-group-cockpit {
-    grid-template-columns: minmax(600px, 680px) minmax(300px, 340px);
-    gap: 16px;
-  }
-  .k-group-view .k-group-header {
-    padding: 12px 20px 7px;
-    border-radius: 16px 16px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 21px;
-    margin: 0 0 2px;
-    line-height: 1.12;
-  }
-  .k-group-view .k-group-subhead {
-    font-size: 13px;
-    line-height: 1.25;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 12px 20px 14px;
-    margin: 0 0 8px;
-    border-radius: 0 0 16px 16px;
-  }
   .k-group-view .k-group-progress-card h3,
-  .k-group-view .k-group-progress-card strong {
-    margin-top: 0;
-  }
-  .k-group-view .k-group-progress {
-    height: 6px;
-    margin: 7px 0;
-  }
-  .k-group-view .k-group-self-toggle {
-    margin: 8px 0 0;
-    padding: 9px 12px;
-    min-height: 38px;
-    border-radius: 14px;
-    font-size: 13px;
-  }
   .k-group-view .k-group-card,
   .k-group-view .k-group-actions-card,
   .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 12px 20px;
-    margin: 8px 0 0;
-    border-radius: 16px;
-  }
   .k-group-view h3,
-  .k-group-view .k-group-section-title {
-    font-size: 17px;
-    margin: 0 0 8px;
-  }
-  .k-group-view .k-group-creator-actions {
-    gap: 8px;
-  }
-  .k-group-view .k-group-btn {
-    min-height: 38px;
-    padding: 8px 12px;
-    font-size: 13px;
-  }
   .k-group-view .k-group-share-hint,
-  .k-group-view .k-group-finalize-hint {
-    margin: 6px 0 0;
-    font-size: 11.5px;
-    line-height: 1.25;
-  }
-  .k-group-view hr {
-    margin: 8px 0;
-  }
-  .k-group-view label {
-    font-size: 12px;
-    margin-bottom: 4px;
-  }
   .k-group-view select,
   .k-group-view input,
-  .k-group-view textarea {
-    min-height: 36px;
-    padding-top: 7px;
-    padding-bottom: 7px;
-    font-size: 13px;
-  }
-  .k-group-side-panel {
-    top: 84px;
-  }
-  .k-group-side-card {
-    padding: 12px;
-    border-radius: 16px;
-  }
-  .k-group-side-card + .k-group-side-card {
-    margin-top: 8px;
-  }
-  .k-group-side-head {
-    margin-bottom: 8px;
-  }
-  .k-group-side-head strong {
-    font-size: 14px;
-  }
-  .k-group-side-head span {
-    font-size: 11.5px;
-  }
-  .k-group-side-list {
-    gap: 7px;
-  }
-  .k-group-side-item {
-    grid-template-columns: 38px 1fr;
-    gap: 8px;
-  }
   .k-group-side-item img,
-  .k-group-side-item-fallback {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-  }
-  .k-group-side-item-main strong {
-    font-size: 12.5px;
-  }
-  .k-group-side-item-main span {
-    font-size: 11.5px;
-    margin-top: 2px;
-  }
-  .k-group-side-total {
-    margin-top: 8px;
-    padding-top: 8px;
-    font-size: 12px;
-  }
   .k-group-side-help ol {
     margin-top: 6px;
     font-size: 12px;
     line-height: 1.35;
   }
-}
-
-#k-group-view.k-group-view {
-  margin: 6px auto 48px;
 }
 .k-group-view .k-group-header,
 .k-group-view .k-group-progress-card,
@@ -8136,22 +7076,6 @@ body.cart-open  #k-section-index { display:none; }
 .k-group-view .k-group-actions-card,
 .k-group-view .k-group-contribute-card,
 .k-group-view .k-group-items-card,
-.k-group-side-card {
-  padding: 13px 14px;
-}
-
-/* ── Bloc E — Mini guide créateur (SAFE V2-D) ──────────────────── */
-
-.k-group-mini-guide {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  background: var(--green-alpha-06);
-  border: 1px solid var(--green-alpha-14);
-  border-radius: 14px;
-  padding: 9px 10px;
-  margin: 8px 0;
-}
 .k-group-mini-guide span {
   display: flex;
   align-items: center;
@@ -8176,60 +7100,9 @@ body.cart-open  #k-section-index { display:none; }
   font-weight: 800;
 }
 
-.k-group-mini-guide {
-  grid-template-columns: 1fr;
-  gap: 6px;
-}
-
 /* ── SAFE V2-E — cockpit ultra compact desktop ─────────────────── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    margin: -34px auto 36px;
-    padding: 0 32px;
-  }
-  .k-group-cockpit {
-    grid-template-columns: minmax(580px, 660px) minmax(280px, 330px);
-    gap: 14px;
-  }
-  .k-group-view .k-group-header {
-    padding: 10px 18px 6px;
-    border-radius: 14px 14px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 20px;
-    margin: 0;
-    line-height: 1.1;
-  }
-  .k-group-view .k-group-subhead {
-    font-size: 12.5px;
-    line-height: 1.22;
-    margin-top: 3px;
-  }
-  .k-group-mini-guide {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    margin: 6px 0;
-    border-radius: 12px;
-  }
-  .k-group-mini-guide span {
-    font-size: 11.5px;
-    line-height: 1.1;
-    white-space: nowrap;
-  }
-  .k-group-mini-guide b {
-    width: 16px;
-    height: 16px;
-    flex-basis: 16px;
-    font-size: 10px;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 10px 18px 12px;
-    margin: 0 0 6px;
-    border-radius: 0 0 14px 14px;
-  }
   .k-group-view .k-group-progress-card h3 {
     font-size: 15px;
     margin: 0 0 2px;
@@ -8239,37 +7112,13 @@ body.cart-open  #k-section-index { display:none; }
   .k-group-view .k-group-progress-card p {
     font-size: 12px;
   }
-  .k-group-view .k-group-progress {
-    height: 5px;
-    margin: 5px 0;
-  }
-  .k-group-view .k-group-self-toggle {
-    margin: 6px 0 0;
-    padding: 7px 10px;
-    min-height: 34px;
-    border-radius: 12px;
-    font-size: 12.5px;
-  }
   .k-group-view .k-group-card,
   .k-group-view .k-group-actions-card,
   .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 10px 18px;
-    margin: 6px 0 0;
-    border-radius: 14px;
-  }
   .k-group-view h3,
   .k-group-view .k-group-section-title {
     font-size: 16px;
     margin: 0 0 7px;
-  }
-  .k-group-view .k-group-creator-actions {
-    gap: 7px;
-  }
-  .k-group-view .k-group-btn {
-    min-height: 34px;
-    padding: 7px 10px;
-    font-size: 12.5px;
   }
   .k-group-view .k-group-share-hint,
   .k-group-view .k-group-finalize-hint {
@@ -8286,61 +7135,10 @@ body.cart-open  #k-section-index { display:none; }
   }
   .k-group-view select,
   .k-group-view input,
-  .k-group-view textarea {
-    min-height: 32px;
-    padding: 6px 10px;
-    font-size: 12.5px;
-    border-radius: 10px;
-  }
-  .k-group-side-panel {
-    top: 76px;
-  }
-  .k-group-side-card {
-    padding: 10px;
-    border-radius: 14px;
-  }
   .k-group-side-card + .k-group-side-card {
     margin-top: 7px;
   }
-  .k-group-side-head {
-    margin-bottom: 7px;
-  }
-  .k-group-side-head strong {
-    font-size: 13.5px;
-  }
-  .k-group-side-head span {
-    font-size: 11px;
-  }
-  .k-group-side-list {
-    gap: 6px;
-  }
-  .k-group-side-item {
-    grid-template-columns: 34px 1fr;
-    gap: 7px;
-  }
   .k-group-side-item img,
-  .k-group-side-item-fallback {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-  }
-  .k-group-side-item-main strong {
-    font-size: 12px;
-    line-height: 1.15;
-  }
-  .k-group-side-item-main span {
-    font-size: 11px;
-    margin-top: 1px;
-  }
-  .k-group-side-total {
-    margin-top: 7px;
-    padding-top: 7px;
-    font-size: 11.5px;
-  }
-}
-
-.k-group-mini-guide {
-  padding: 8px 10px;
 }
 
 /* ── Bloc F — Switcher paniers multi-groupe ─────────────────────── */
@@ -8375,17 +7173,6 @@ body.cart-open  #k-section-index { display:none; }
   scrollbar-width: thin;
   padding-bottom: 1px;
 }
-.k-group-cart-tab {
-  flex: 0 0 auto;
-  min-width: 150px;
-  max-width: 210px;
-  text-align: left;
-  border: 1px solid var(--border);
-  background: var(--sand);
-  border-radius: 12px;
-  padding: 7px 9px;
-  cursor: pointer;
-}
 .k-group-cart-tab.is-active {
   background: var(--coral-bg-12);
   border-color: var(--coral-bg-38);
@@ -8410,44 +7197,9 @@ body.cart-open  #k-section-index { display:none; }
   text-overflow: ellipsis;
 }
 
-.k-group-cart-tab {
-  min-width: 140px;
-}
-
-/* ── Bloc G — Note identité engagement ─────────────────────────── */
-
-.k-group-identity-note {
-  background: var(--coral-bg-09);
-  border: 1px solid rgba(239,125,95,.22);
-  border-radius: 12px;
-  padding: 8px 10px;
-  margin: 6px 0 10px;
-}
-.k-group-identity-note strong {
-  display: block;
-  font-size: 12.5px;
-  line-height: 1.2;
-  color: var(--text);
-}
-.k-group-identity-note span {
-  display: block;
-  margin-top: 2px;
-  font-size: 11.5px;
-  line-height: 1.3;
-  color: var(--text-muted);
-}
-
 /* ── ULTRA COMPACT — Groupe cockpit dense ──────────────────────── */
 
 @media ((min-width: 900px)) {
-  #k-group-view.k-group-view {
-    margin: -42px auto 32px;
-    padding: 0 28px;
-  }
-  .k-group-cockpit {
-    grid-template-columns: minmax(560px, 640px) minmax(270px, 320px);
-    gap: 12px;
-  }
   .k-group-view .k-group-header {
     padding: 8px 16px 5px;
     border-radius: 13px 13px 0 0;
@@ -8639,11 +7391,6 @@ body.cart-open  #k-section-index { display:none; }
     font-size: 10.8px;
   }
 }
-
-#k-group-view.k-group-view {
-  margin: 4px auto 46px;
-  padding: 0 10px;
-}
 .k-group-view .k-group-header,
 .k-group-view .k-group-progress-card,
 .k-group-view .k-group-card,
@@ -8652,9 +7399,6 @@ body.cart-open  #k-section-index { display:none; }
 .k-group-view .k-group-items-card,
 .k-group-side-card {
   padding: 11px 12px;
-}
-.k-group-mini-guide {
-  padding: 7px 8px;
 }
 
 /* ── POSITION — remonter le cockpit sous le header ─────────────── */
@@ -8674,99 +7418,13 @@ body.cart-open  #k-section-index { display:none; }
     margin-top: -132px;
   }
 }
-
-#k-group-view.k-group-view {
-  margin-top: 0;
-}
-
-/* ════════════════════════════════════════════════════════════════════
- * GROUP MOBILE COMPACT
- * Vue participant — panier collectif — affichage 1 écran
- *
- * UX goal : le participant voit en un coup d'œil
- *   1. le panier concerné (header + items)
- *   2. le total + statut (phase badge)
- *   3. le montant à engager (section-title + montant)
- *   4. l'identité sécurisée OTP (identity-note — CONSERVÉ)
- *   5. le message optionnel (champ msg)
- *   6. le bouton d'action (submit btn — TOUJOURS VISIBLE)
- *
- * Masqué sur mobile (non essentiel à la confiance) :
- *   - .k-group-subhead           → sous-titre descriptif du header
- *   - .k-group-contribute-card > p.k-group-desc-text
- *                                → paragraphe explicatif long
- *
- * Conservé intentionnellement :
- *   - .k-group-identity-note strong  "Identité sécurisée par OTP"
- *   - .k-group-identity-note span    possibilité d'utiliser un autre n°
- *   - montant, message, CTA
- *
- * Owner : group-cart-flow.css — ne pas réintroduire dans b-group-view.js
- * ════════════════════════════════════════════════════════════════════ */
-
-/* ── GROUP MOBILE COMPACT — max-width: 700px ───────────────────── */
-
-
-/* — .k-group-view : conteneur principal — */
-#k-group-view.k-group-view {
-  margin-top: -6px;
-  padding: 0 10px 80px; /* bas 80px : CTA toujours dégagé du bas */
-}
-
-/* — .k-group-header : en-tête du panier — */
-.k-group-view .k-group-header {
-  padding: 9px 12px 6px;
-  border-radius: 16px 16px 0 0;
-}
-.k-group-view .k-group-header h2 {
-  font-size: 18px;
-  line-height: 1.05;
-  margin: 0;
-}
 /* Masqué mobile : sous-titre descriptif non essentiel */
 .k-group-view .k-group-subhead {
   display: none;
 }
-
-/* — .k-group-items-card : bloc résumé panier (collapsible) — */
-.k-group-items-card {
-  margin-top: 8px;
-  padding: 10px 12px;
-  border-radius: 16px;
-}
-.k-group-items-toggle {
-  min-height: 44px; /* zone tactile confortable */
-  padding: 0;
-}
-.k-group-items-toggle strong {
-  font-size: 17px;
-  line-height: 1.1;
-}
 .k-group-items-toggle span span {
   font-size: 13px;
   line-height: 1.2;
-}
-
-/* — .k-group-contribute-card : carte engagement/paiement — */
-.k-group-contribute-card {
-  margin-top: 8px;
-  padding: 12px;
-  border-radius: 16px;
-}
-
-/* — .k-group-phase-badge : statut ouvert / règlement — */
-.k-group-phase-badge {
-  font-size: 11px;
-  padding: 5px 9px;
-  margin-bottom: 8px;
-  border-radius: 999px;
-}
-
-/* — .k-group-section-title : titre de la carte contribution — */
-.k-group-contribute-card .k-group-section-title {
-  font-size: 22px;
-  line-height: 1.05;
-  margin: 0 0 8px;
 }
 
 /* Masqué mobile : texte explicatif long non essentiel */
@@ -8788,48 +7446,9 @@ body.cart-open  #k-section-index { display:none; }
 /* — .k-group-identity-note : identité OTP — CONSERVÉ INTENTIONNELLEMENT —
    "Identité sécurisée par OTP" + "vous pouvez utiliser un autre numéro"
    Ces informations sont nécessaires à la confiance du participant. */
-.k-group-identity-note {
-  padding: 7px 9px;
-  margin: 6px 0 9px;
-  border-radius: 11px;
-}
-.k-group-identity-note strong {
-  font-size: 13px;
-  line-height: 1.1;
-}
-.k-group-identity-note span {
-  font-size: 11px;
-  line-height: 1.15;
-  margin-top: 2px;
-  /* NE PAS masquer : indique la possibilité d'utiliser un autre numéro */
-}
-
-/* — .k-group-field : champs du formulaire engagement — */
-.k-group-field {
-  margin-bottom: 8px;
-}
 
 /* — Labels — */
 .k-group-label,
-.k-group-contribute-card label {
-  font-size: 11px;
-  margin-bottom: 3px;
-  letter-spacing: .02em;
-}
-
-/* — .k-group-input : champs texte/nombre — */
-/* reset.css pose `input { border:none }` : on restaure ici un cadre visible. */
-.k-group-input {
-  width: 100%;
-  min-height: 42px;
-  height: 42px;
-  padding: 7px 10px;
-  font-size: 15px; /* 15px : évite le zoom auto iOS */
-  border-radius: 12px;
-  border: 1.5px solid var(--border);
-  background: var(--white);
-  color: var(--text);
-}
 .k-group-input:focus {
   border-color: var(--violet);
   box-shadow: 0 0 0 3px var(--violet-light);
@@ -8855,9 +7474,6 @@ body.cart-open  #k-section-index { display:none; }
 .k-group-mypart .k-group-field      { margin-bottom: 2px; }
 /* Champ message : hauteur réduite car 1 ligne suffit */
 #k-ge-msg,
-#k-gp-msg {
-  height: 40px;
-}
 
 /* — Erreurs inline — */
 .k-group-input-error {
@@ -8865,53 +7481,25 @@ body.cart-open  #k-section-index { display:none; }
   margin: 0 0 5px;
   font-size: 11px;
 }
-
-/* — .k-group-btn : bouton d'action principal — */
-.k-group-btn {
-  min-height: 48px; /* zone tactile large — visible au premier scroll */
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 800;
-}
 /* Bouton submit spécifique : ancré visuellement en bas de carte */
 #k-ge-submit-btn,
-#k-gp-pay-btn {
-  min-height: 48px;
-  height: 48px;
-  margin-top: 6px;
-  font-size: 15px;
-  border-radius: 999px;
-}
 
 /* — Ombres allégées sur mobile — */
 .k-group-card,
 .k-group-actions-card,
 .k-group-progress-card,
 .k-group-items-card,
-.k-group-contribute-card {
-  box-shadow: 0 8px 24px rgba(30,40,25,.05);
-}
-
-/* — Mini-guide : 1 colonne sur mobile (déjà dans Bloc E, rappel explicite) — */
-.k-group-mini-guide {
-  grid-template-columns: 1fr;
-  gap: 6px;
-  padding: 8px 10px;
-}
 
 /* — Switcher multi-panier : tab plus petite sur mobile — */
 .k-group-cart-tab {
   min-width: 130px;
 }
 
-
-
 /* ── GROUP MOBILE COMPACT — sous-mode max-width: 390px (petits écrans) ── */
 /* Cible iPhone SE, Galaxy A, et tout écran < 390px.
    Densification supplémentaire uniquement — on ne masque pas
    l'identité OTP (strong conservé), seul le span détail peut être omis
    car le titre "Identité sécurisée par OTP" suffit à la confiance. */
-
 
 /* Conteneur encore plus serré */
 #k-group-view.k-group-view {
@@ -8933,13 +7521,6 @@ body.cart-open  #k-section-index { display:none; }
 .k-group-contribute-card .k-group-section-title {
   font-size: 20px;
   margin: 0 0 6px;
-}
-
-/* Phase badge encore plus petit */
-.k-group-phase-badge {
-  font-size: 10px;
-  padding: 4px 7px;
-  margin-bottom: 6px;
 }
 
 /* Identity note : on masque le span détail (le titre OTP reste)
@@ -8993,32 +7574,10 @@ body.cart-open  #k-section-index { display:none; }
 .k-group-items-card {
   padding: 8px 10px;
 }
-.k-group-items-toggle {
-  min-height: 40px;
-}
-.k-group-items-toggle strong {
-  font-size: 15px;
-}
 
 /* Mini-guide masqué sur très petits écrans (non essentiel) */
 .k-group-mini-guide {
   display: none;
-}
-
-
-/* ── Bloc H — Sélecteurs utilitaires flat ──────────────────────── */
-
-.k-group-phase-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-.k-group-phase-badge--open {
-  background: var(--green-alpha-12);
-  color: var(--green-text-sett);
 }
 .k-group-phase-badge--settlement {
   background: var(--amber-bg-12);
@@ -9165,13 +7724,6 @@ body.cart-open  #k-section-index { display:none; }
   line-height: 1.3;
 }
 .k-group-commitment-list { margin: 8px 0 0; }
-.k-group-commitment-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
 .k-group-commitment-row:last-child { border-bottom: none; }
 .k-group-commitment-name { flex: 1; font-size: 14px; font-weight: 600; }
 .k-group-commitment-amount { font-size: 14px; color: var(--text); }
@@ -9784,21 +8336,6 @@ body.cart-open  #k-section-index { display:none; }
   appearance: none;
   cursor: pointer;
 }
-
-/* ── Participants : colonnes prénom+phone / montant+statut ─────────── */
-.k-group-commitment-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 7px 0;
-}
-.k-group-commitment-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
 .k-group-commitment-right {
   display: flex;
   align-items: center;
@@ -10181,7 +8718,6 @@ body.cart-open  #k-section-index { display:none; }
   background:var(--violet,#6b4eff);color:var(--white,#fff);border:none;border-radius:50px;
   font-size:15px;font-weight:700;cursor:pointer}
 .k-gsnap-back:hover{filter:brightness(.95)}
-
 
 
 /* ── share-cart.css ──────────────────────────────────────── */

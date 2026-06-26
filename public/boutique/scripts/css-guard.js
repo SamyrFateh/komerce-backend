@@ -50,6 +50,19 @@ const INVARIANTS = new Set([
   'overflow-y', 'z-index', 'object-fit', 'object-position', 'aspect-ratio',
 ]);
 
+// ── Whitelist : conflits inter-bundles légitimes ────────────────────────────
+// Format : 'sélecteur|||média|||propriété'
+// Ces conflits sont intentionnels (bundles distincts avec contextes différents)
+// et ne doivent jamais bloquer ni apparaître dans le rapport.
+const WHITELIST = new Set([
+  // event.css redéfinit body intentionnellement (typo + fond propres à la page événement)
+  'body|||global|||background',
+  'body|||global|||font-family',
+  'body|||global|||line-height',
+  // .k-sec-header desktop : surcharge responsive dans components.css
+  '.k-sec-header|||@media (min-width: 900px) {|||padding',
+]);
+
 // ── Parser CSS avec tracking @media par profondeur de braces ───────────────
 // (une règle à l'intérieur d'un @media donné n'est en conflit qu'avec une
 // règle du MÊME sélecteur dans le MÊME @media — un override responsive
@@ -146,6 +159,7 @@ function scan() {
       if (new Set(vals.map(v => v.val)).size < 2) continue;
 
       const key = group[0].selector + '|||' + group[0].media + '|||' + prop;
+      if (WHITELIST.has(key)) continue;
       perKey[key] = {
         selector: group[0].selector,
         media: group[0].media,

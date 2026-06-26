@@ -9,11 +9,6 @@
 /* Source de vérité unique pour .k-modal-img-wrap.
    top:auto et z-index:1 consolidés depuis interactions.css (fix carousel overlay mobile).
    background:var(--sand) retenu (interactions.css surchargeait le gradient — intentionnel). */
-.k-modal-img-wrap {
-  position: relative; flex: 0 0 auto; height: 45vh; max-height: 450px;
-  top: auto; z-index: 1;
-  background: var(--sand); overflow: hidden;
-}
 /* ── Skeleton shimmer pendant le chargement de l'image ───────
    Couche pseudo-élément animée. Disparaît dès qu'une image
    .k-modal-slide a la classe is-loaded (posée par b-modal.js
@@ -89,7 +84,6 @@
 /* ── EDGE-TO-EDGE mobile — supprimé Sprint 1 (30/05/2026)
    Les règles hauteur-image à largeur max ont été fusionnées dans la règle base
    .k-modal-img-wrap ci-dessus. Plus de fragmentation par breakpoint. ──── */
-
 
 /* ── BOUTON FAVORI MODALE (top-right de la zone détails) ─────────────
    FIX favori absent dans modale produit : bouton ❤️ universel
@@ -302,4 +296,3 @@
   }
   .k-modal-keyboard-hint span { margin-right: 8px; }
 }
-

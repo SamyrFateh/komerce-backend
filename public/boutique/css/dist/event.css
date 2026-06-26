@@ -9,265 +9,6 @@
    Règle : jamais de couleur/valeur en dur ailleurs dans le CSS.
    ═══════════════════════════════════════════════════════════════ */
 
-:root {
-
-  /* ── Couleurs principales ──────────────────────────────────── */
-  --ocean:        #64AF5A;
-  --ocean-light:  #82C478;
-  --violet:      #6c3fc5;   /* paiement groupé, workspace, événements */
-  --violet-dark:  #4a2d9e;
-  --violet-light: rgba(108,63,197,.08);
-  --violet-mid:   rgba(108,63,197,.18);   /* utilisé par les pages /event/* */
-  --ocean-dark:       #4A9040;
-  --ocean-dark-deep:  #2e6b28;  /* gradient stop profond — kpill background, group-cart-flow funded */
-  --cta-green:        #2a7a3e;
-
-  /* ── Sauge — palette checkout (remplace ocean/coral trop saturés dans le flow commande) ──
-     Sauge : vert désaturé, posé, lisible sur fond sable.
-     Terracotta : chaleur douce, remplace coral sans l'orange criard.
-     Les tokens --ocean/* restent actifs pour le catalogue et la modal produit. */
-  --sage:              #7A9E7E;  /* CTA principal checkout, boutons confirm */
-  --sage-dark:         #5C7D62;  /* hover, texte sur fond clair */
-  --sage-deeper:       #3E5E45;  /* focus ring, état actif profond */
-  --sage-light:        #A8C4AA;  /* border douce, icônes secondaires */
-  --sage-bg:           #EDF3EE;  /* fond carte identité, sections checkout */
-  --sage-bg-pale:      #F5F9F5;  /* fond très pâle, hover row */
-  --border-sage-14:    rgba(122,158,126,.14);
-  --border-sage-22:    rgba(122,158,126,.22);
-  --border-sage-35:    rgba(122,158,126,.35);
-  --shadow-sage-10:    0 4px 16px rgba(122,158,126,.10);
-  --shadow-sage-18:    0 6px 20px rgba(122,158,126,.18);
-
-  /* ── Checkout — crème + vert clair + coral
-     Remappings vers tokens existants uniquement, aucune valeur nouvelle. ── */
-  --checkout-bg:            var(--cream-pearl);        /* fond général modal                */
-  --checkout-surface:       var(--white);              /* cards internes                    */
-  --checkout-surface-warm:  var(--sage-bg-pale);       /* toggle bg, sections               */
-
-  --checkout-border:        var(--border-sage-22);     /* bordure cards douce               */
-  --checkout-border-mid:    var(--coral);              /* bordure hover / focus — coral     */
-
-  --checkout-text:          var(--text);               /* texte principal                   */
-  --checkout-text-muted:    var(--sage-dark);          /* labels section, sous-titres       */
-  --checkout-text-strong:   var(--ocean-dark-deep);    /* titres, relay name                */
-  --checkout-text-soft:     var(--text-form-soft);     /* sous-textes neutres               */
-
-  --checkout-accent:        #4DA668;                   /* CTA confirmer, header — vert éclatant mockup */
-  --checkout-accent-deep:   #2A6B3C;                   /* stop sombre du gradient header    */
-  --checkout-accent-mid:    #3A8A52;                   /* gradient stop milieu              */
-  --checkout-accent-bright: #4DA668;                   /* alias compat — gradient stop clair */
-  --checkout-accent-light:  var(--white);              /* texte sur CTA                     */
-  --checkout-accent-hover:  #3A8A52;                   /* hover CTA                         */
-  --checkout-link:          var(--coral);              /* "Changer", liens inline           */
-
-  --checkout-disabled-bg:   var(--gray-bg-lighter);   /* MVola "bientôt"                   */
-  --checkout-disabled-text: var(--border-soft);        /* texte désactivé                   */
-
-  --checkout-avatar-bg:     var(--sage-bg);            /* fond initiales                    */
-  --checkout-avatar-text:   var(--sage-dark);          /* texte initiales                   */
-
-  /* Palette interne checkout — hex sablés/dorés (jamais réutilisés hors checkout) */
-  --checkout-cream:         #FFFBF5;                   /* fond modal + body                 */
-  --checkout-id-bg:         #FFF8EE;                   /* fond carte identité               */
-  --checkout-id-border:     #E8D5B0;                   /* bordure carte identité            */
-  --checkout-seg-border:    #DDD0B8;                   /* bordure segments + chips          */
-  --checkout-seg-text:      #A07040;                   /* texte inactif segments            */
-  --checkout-sel-bg:        #FFF0E8;                   /* fond état sélectionné (coral pâle)*/
-  --checkout-chip-active-bg:#FFF4EE;                   /* fond chip paiement actif          */
-  --checkout-chip-active-text: #5A3010;                /* texte chip paiement actif         */
-
-
-
-
-  --terracotta:        #C47A5A;  /* accent chaud, badge prix, CTA secondaire */
-  --terracotta-dark:   #9E5C3E;  /* texte sur fond clair, hover */
-  --terracotta-bg:     #F5EDE8;  /* fond warm, sections récap */
-  --terracotta-bg-pale:#FBF5F2;  /* fond très pâle */
-  --border-terra-14:   rgba(196,122,90,.14);
-  --border-terra-22:   rgba(196,122,90,.22);
-
-  --sand:         #FDFAF5;
-  --sand-warm:    #f6f0e3;
-  --sand-dark:    #F0EBE0;
-  --sand-hover:   #f7f4ee;  /* hover row — kpill popover liste */
-  --sand-footer:  #faf6ed;  /* fond footer — kpill popover total */
-  /* POLISH — sable quasi-blanc pour hero + shell chips (sans casser --sand-warm) */
-  --sand-bright:  #FDFAF3;
-
-  /* ── Surfaces sémantiques ─────────────────────────────────── */
-  --page-bg:      var(--sand);
-  /* POLISH — hero lumineux (plus clair que --page-bg #FDFAF5) */
-  --hero-bg:      var(--sand-bright);
-  --hero-border:  transparent;
-  --hero-shadow:  none;
-  /* POLISH — hero logo-glow : halo lumineux du logo SVG (lignes/texte + stroke diffus) */
-  --hero-glow-bright: #f4fff7;  /* halo le plus clair — lignes + remplissage texte logo */
-  --hero-glow-mid:    #e8fff0;  /* stroke glow intermediaire */
-  --hero-glow-soft:   #c8ffe0;  /* stroke glow diffus */
-  /* POLISH — hero textes desatures (gris-sauge propres au hero, hors palette sage checkout) */
-  --hero-text-muted:  #5a6a58;
-  --hero-text-soft:   #7a8a78;
-  --hero-text-faint:  #b8cbb5;
-
-  --coral:        #C85C2D;
-  --coral-dark:   #A84820;
-  --hero-red:     #e53935;
-
-  --white:        #ffffff;
-  --whatsapp:     #25d366;
-  --whatsapp-dk:  #1db954;   /* WhatsApp variant foncé, gradient + pages /event/* */
-  --red:          #e53e3e;
-
-  /* ── Texte ────────────────────────────────────────────────── */
-  --text:         #1F3024;
-  --text-muted:   #6B7B63;
-  --text-light:   #9EAC95;
-  --border:       #E3D9C9;
-
-  /* ── Ombres (basées sur --text pour cohérence) ─────────────── */
-  --shadow-sm: 0 1px 3px rgba(31,48,36,.07);
-  --shadow-md: 0 4px 12px rgba(31,48,36,.09);
-  --shadow-lg: 0 8px 30px rgba(31,48,36,.12);
-
-  /* ── Typographie ─────────────────────────────────────────── */
-  --font:         'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
-  --font-display: 'Fraunces','Plus Jakarta Sans',Georgia,serif;
-  --font-checkout: 'DM Sans','Plus Jakarta Sans',system-ui,sans-serif;
-
-  /* ── Formes ──────────────────────────────────────────────── */
-  --radius:    12px;
-  --radius-sm: 8px;
-  --radius-lg: 20px;
-
-  /* ── Layout ──────────────────────────────────────────────── */
-  --container: 1400px;
-  --pad-x:     16px;
-  --header-h:  44px;
-  --bnav-h:    50px;
-
-  /* ── Animation ───────────────────────────────────────────── */
-  --ease:         cubic-bezier(.22,1,.36,1);
-  --ease-spring:  cubic-bezier(.34,1.56,.64,1);
-  --ease-in:      cubic-bezier(.4,0,1,1);
-
-  /* ── Élévations (remplacent les box-shadow inline) ──────── */
-  --elev-1: 0 1px 3px rgba(31,48,36,.06), 0 1px 2px rgba(31,48,36,.04);
-  --elev-2: 0 4px 12px rgba(31,48,36,.08), 0 2px 4px rgba(31,48,36,.04);
-  --elev-3: 0 8px 24px rgba(31,48,36,.10), 0 4px 8px rgba(31,48,36,.06);
-  --elev-4: 0 16px 40px rgba(31,48,36,.12), 0 8px 16px rgba(31,48,36,.08);
-
-  /* ── Overlays & surfaces semi-transparentes ────────────── */
-  --overlay-dark:      rgba(0,0,0,.5);
-  --overlay-dark-md:   rgba(0,0,0,.55);
-  --overlay-dark-sm:   rgba(0,0,0,.4);
-  --overlay-black-xs:  rgba(0,0,0,.06);
-  --overlay-black-sm:  rgba(0,0,0,.08);
-  --overlay-black-md:  rgba(0,0,0,.12);
-  --overlay-black-lg:  rgba(0,0,0,.3);
-
-  --surface-white-96:  rgba(255,255,255,.96);
-  --surface-white-92:  rgba(255,255,255,.92);
-  --surface-white-88:  rgba(255,255,255,.88);
-  --surface-white-64:  rgba(255,255,255,.64);
-
-  --surface-sand-97:   rgba(253,250,245,.97);
-  --surface-sand-96:   rgba(253,250,245,.96);
-  --surface-sand-94:   rgba(253,250,245,.94);
-  --surface-sand-91:   rgba(253,250,245,.91);  /* carte verre hero desktop */
-  /* ── Ocean alpha (side cart, cards) ─────────────────────── */
-  --border-ocean-14:   rgba(100,175,90,.14);
-  --border-ocean-10:   rgba(100,175,90,.10);
-  --border-ocean-08:   rgba(100,175,90,.08);
-  --ocean-label:       rgba(100,175,90,.80);  /* label sous-total side cart */
-  --ocean-bg-08:       rgba(100,175,90,.08);  /* fond livraison gratuite */
-  --shadow-ocean-10:   0 12px 30px rgba(100,175,90,.10);
-  --shadow-coral-22:   rgba(200,92,45,.22);   /* ombre bouton checkout */
-
-  /* ── Bordures coral alpha ───────────────────────────────── */
-  --border-coral-09:   rgba(200,92,45,.09);
-  --border-coral-13:   rgba(200,92,45,.13);
-  --border-coral-22:   rgba(200,92,45,.22);
-
-  /* ── Bordures & ombres text-alpha ───────────────────────── */
-  --border-text-04:  rgba(31,48,36,.04);
-  --border-text-06:  rgba(31,48,36,.06);
-  --border-text-07:  rgba(31,48,36,.07);
-  --border-text-08:  rgba(31,48,36,.08);
-  --border-text-10:  rgba(31,48,36,.10);
-  --border-text-12:  rgba(31,48,36,.12);
-  --border-text-15:  rgba(31,48,36,.15);
-
-  /* ── Couleurs sémantiques manquantes ────────────────────── */
-  --orange:           #ff6900;
-  --orange-dark:      #e55f00;
-  --orange-shadow:    rgba(255,105,0,.30);
-
-  --pink:             #e91e63;
-  --pink-light:       rgba(233,30,99,.10);
-  --pink-shadow:      rgba(233,30,99,.35);
-
-  --blue-dark:        #0c447c;
-  --blue-mid:         #1e3a5f;
-  --blue-light-bg:    #e6f1fb;
-  --blue-lighter-bg:  #cfe5f7;
-  --blue-border:      #b5d4f4;
-
-  --amber-text:       #6b3e0e;
-  --amber-text-light: #a06a1f;
-  --amber-bg:         #fff8ed;
-  --amber-bg-warm:    #fdf4e8;
-  --amber-border:     #f4c77a;
-  --amber-border-md:  #e8c78a;
-
-  /* ── Crèmes (restaurés depuis Lot 1 — migration var(--white)nnn cassée) ──
-     Ces hex étaient encodés en dur avant qu'une migration find-replace
-     ne les transforme en `var(--white)8e7` etc., invalide côté navigateur.
-     Tokens sémantiques par usage, pas par teinte. */
-  --cream-warm:       #fff8e7;  /* gradient haut — état actif rail desktop */
-  --cream-pearl:      #fffdf7;  /* gradient bas — état actif rail desktop */
-  --cream-amber-bg:   #fffbeb;  /* fond bannière cash, badge référence */
-  --cream-peach:      #fff4ed;  /* fond pay helper coral */
-  --cream-blush:      #fff8f8;  /* fond hover partage WhatsApp */
-
-  --green-dark-text:  #1d5b2a;
-  --green-text:       #1a7a3e;
-  --green-bg:         #e8f7ee;
-  --green-valid:      #22c55e;  /* bordure champ valide (ex: téléphone share-cart) */
-
-  --red-text:         #cc2200;
-  --red-text-md:      #cc4400;
-  --red-bg:           #fff0f0;
-  --red-border:       #ffbbbb;
-  --red-bg-hover:     #ffe0e0;
-
-  /* ── Couleurs catégories (chips & suggestions) ──────────── */
-  --cat-mode-bg:      #FDE8CD;
-  --cat-maison-bg:    #F3E7D3;
-  --cat-tech-bg:      #E0F0E8;
-  --cat-brico-bg:     #E8EDF0;
-  --cat-perso-bg:     #FCE8D4;
-  --cat-auto-bg:      #E8E4F5;
-  --cat-solaire-bg:   #FFF9D6;
-  --cat-beaute-bg:    #FDE5F0;
-  --cat-creatio-bg:   #EDE8FD;
-  /* POLISH — soldes : rouge-corail doux */
-  --cat-soldes-bg:    #FFE4D6;
-
-  /* ── Statuts commandes ──────────────────────────────────── */
-  --status-pending-bg:     #fff8ed;
-  --status-pending-text:   #a06a1f;
-  --status-confirmed-bg:   #e8f5ee;
-  --status-confirmed-text: #1d5b2a;
-  --status-processing-bg:  #eaf2fd;
-  --status-processing-text:#1d4f9e;
-  --status-shipped-bg:     #f0eafd;
-  --status-shipped-text:   #4f2b9e;
-  --status-available-bg:   #fef0e8;
-  --status-available-text: #8b3a0f;
-  --status-cancelled-bg:   #fce8e8;
-  --status-cancelled-text: #9e1d1d;
-}
-
 /* padding latéral tablette — intermédiaire entre mobile (16px) et desktop (28px) */
 @media (min-width: 900px) {
   :root {
@@ -284,107 +25,6 @@
 
 /* ── Tokens de précision (alpha non standards) ──────────────
    Ajoutés lors du Sprint 2 pour les derniers cas non couverts */
-:root {
-  --surface-sand-90:   rgba(255,252,244,.90);
-  --surface-sand-92:   rgba(253,250,245,.92);
-  --overlay-white-50:  rgba(255,255,255,.50);
-  --overlay-white-78:  rgba(255,255,255,.78);
-  --overlay-white-80:  rgba(255,255,255,.80);
-  --overlay-white-72:  rgba(255,255,255,.72);
-  --text-alpha-82:     rgba(32,51,37,.82);
-
-  --red-danger:        #dc2626;
-  --red-awaiting-bg:   #FCEBEB;   /* fond badge AWAITING_CHOICE (rouge doux) */
-  --red-awaiting-text: #791F1F;   /* texte badge AWAITING_CHOICE */
-  --red-danger-bg:     #fef5f5;
-  --red-danger-border: #e8a0a0;
-  --red-danger-text:   #c73a3a;
-  --whatsapp-bg-hover: #f0fdf4;
-
-  --text-form-muted:   #7a8078;
-  --text-form-light:   #888;
-  --text-form-mid:     #666;
-  /* ── Lot 5 : tokens supplémentaires (greys, ambers, greens, blues, etc.) ──
-     Voir PR_GUIDE_LOT5.md pour la justification sémantique. */
-  --black:                  #000      ;  /* Noir pur — pour ombres, rares texte premium */
-  --text-form-soft:         #999      ;  /* Texte gris moyen formulaires */
-  --text-strong-mid:        #555      ;  /* Texte gris-foncé secondaire */
-  --text-strong:            #222      ;  /* Texte presque noir (non-#000) */
-  --text-form-soft-md:      #777      ;  /* Texte gris formulaires (variation) */
-  --text-disabled:          #aaa      ;  /* Texte désactivé */
-  --border-soft:            #ccc      ;  /* Bordure douce neutre */
-  --border-light:           #ddd      ;  /* Bordure claire neutre */
-  --border-lighter:         #eee      ;  /* Bordure très claire neutre */
-  --border-soft-md:         #e0e0e0   ;  /* Bordure douce (variant) */
-  --text-form-mid-md:       #757575   ;  /* Texte formulaires (variation) */
-  --surface-warm-cool:      #f3f3f1   ;  /* Surface neutre quasi-blanche */
-  --gray-bg:                #f5f5f5   ;  /* Fond gris très clair neutre */
-  --gray-bg-lighter:        #f7f7f7   ;  /* Fond gris ultra clair */
-  --amber-mid:              #fcd34d   ;  /* Jaune amber moyen */
-  --amber-warm:             #f0bf67   ;  /* Or chaud (mention promo) */
-  --gold-soft:              #d4b87a   ;  /* Or doux (premium accent) */
-  --star-gold:              #F0A500   ;  /* Or punchy étoile notation produit (Temu-like) */
-  --amber-cta:              #e8a13a   ;  /* Amber CTA dynamique */
-  --amber-text-deep:        #8b5a1a   ;  /* Amber texte foncé */
-  --amber-light-bg:         #fde68a   ;  /* Fond amber clair badge */
-  --amber-bg-pale:          #fef3c7   ;  /* Fond amber pâle */
-  --amber-bg-light:         #fef3df   ;  /* Fond amber très clair */
-  --amber-text-mid:         #92400e   ;  /* Texte amber moyen-foncé */
-  --cream-amber-light:      #ffe8c2   ;  /* Crème ambré clair (banner fav) */
-  --green-bg-soft:          #f2faef   ;  /* Fond vert très pâle (success soft) */
-  --green-bg-mid:           #f0f5e6   ;  /* Fond vert pâle */
-  --green-bg-warm:          #e8eddb   ;  /* Fond vert chaud (sage) */
-  --green-bg-pale:          #dcfce7   ;  /* Fond vert ultra pâle */
-  --green-bg-mid-soft:      #a7f3d0   ;  /* Vert mid soft */
-  --green-soft:             #86efac   ;  /* Vert soft (success badge) */
-  --green-success:          #3d9e55   ;  /* Vert success solid */
-  --green-positive:         #20b858   ;  /* Vert positif (CTA payé) */
-  --green-bg-lightest:      #ecfdf5   ;  /* Vert bg ultra clair */
-  --green-deep-text:        #065f46   ;  /* Vert deep text */
-  --green-deep-mid:         #166534   ;  /* Vert deep mid */
-  --text-muted-dark:        #3a4a3d   ;  /* Texte muted variation foncée */
-  --text-muted-md:          #617064   ;  /* Texte muted variation */
-  --green-text-strong:      #3b6d11   ;  /* Texte vert solid foncé */
-  --green-bg-leaf:          #eaf3de   ;  /* Vert clair feuille */
-  --green-bg-mist:          #f4fbf2   ;  /* Vert mist */
-  --green-bg-warm-md:       #e0eddc   ;  /* Vert chaud variation */
-  --green-bg-warm-lt:       #eef2e4   ;  /* Vert chaud clair */
-  --blue-link-deep:         #185fa5   ;  /* Bleu lien externe foncé */
-  --blue-ocean-dark:        #0d4f74   ;  /* Bleu océan foncé (modal) */
-  --blue-stripe-text:       #315caa   ;  /* Bleu texte stripe badge */
-  --blue-stripe-bg:         #eef4ff   ;  /* Bleu fond stripe badge */
-  --coral-text:             #9a4e2d   ;  /* Coral texte foncé sur fond clair */
-  --coral-text-deep:        #a0461e   ;  /* Coral texte très foncé */
-  --violet-mid-bright:      #8b5cf6   ;  /* Violet mid bright */
-  --red-bg-soft:            #fef2f2   ;  /* Fond rouge très pâle (bannière erreur) */
-  --red-deep-text:          #991b1b   ;  /* Rouge deep text */
-  --red-soft:               #ff5e5e   ;  /* Rouge soft (alert léger) */
-  --whatsapp-deep:          #128c7e   ;  /* WhatsApp deep (gradient) */
-
-  /* ── Groupe / panier partagé — tokens alpha (refactor group-cart-flow) ── */
-  --collective-navy:       #1a4a6e;              /* S3.2 — bandeau mode édition panier collectif (bleu Komerce) */
-  --collective-err:        #e53935;              /* S3.2 — message d'erreur mode édition panier collectif */
-  --collective-err-light:  #ffe0e0;              /* S3.2 — message d'erreur side-cart mode édition (fond clair) */
-  --green-alpha-06:   rgba(31,122,84,.06);  /* mini-guide fond */
-  --green-alpha-09:   rgba(31,122,84,.09);  /* locked-amount, funded-callout fond */
-  --green-alpha-12:   rgba(31,122,84,.12);  /* badge phase ouverte fond */
-  --green-alpha-14:   rgba(31,122,84,.14);  /* mini-guide border */
-  --green-alpha-20:   rgba(31,122,84,.20);  /* locked-amount border */
-  --green-alpha-24:   rgba(31,122,84,.24);  /* saved-commitment border */
-  --green-alpha-28:   rgba(31,122,84,.28);  /* funded-callout border */
-  --green-text-sett:  #1f7a54;              /* badge phase ouverte text */
-  --coral-light:      #FAECE7;             /* fond badge coral, phase settlement   */
-  --coral-bg-09:      rgba(239,125,95,.09); /* identity-note fond */
-  --coral-bg-12:      rgba(239,125,95,.12); /* cart-tab is-active fond */
-  --coral-bg-18:      rgba(239,125,95,.18); /* cart-tab is-active shadow */
-  --coral-bg-38:      rgba(239,125,95,.38); /* cart-tab is-active border */
-  --amber-bg-08:      rgba(230,130,0,.08);  /* funded-callout gap fond */
-  --amber-bg-12:      rgba(230,130,0,.12);  /* badge settlement fond */
-  --amber-border-28:  rgba(230,130,0,.28);  /* funded-callout gap border */
-  --amber-text-sett:  #b45309;              /* badge settlement text / finalize gap btn */
-  --violet-bg-light:  #ede7f6;              /* split-hint fond lavande */
-  --danger:           #e53935;              /* bouton / texte annulation danger */
-}
 
 /* ── PR-G6 : tokens rgba manquants (audit 2026-05-28) ────────────────────
    FIX AUDIT 2026-06-11 : ces déclarations flottaient HORS de tout bloc
@@ -521,7 +161,6 @@
    Source : maquette payer-en-groupe v2
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-
 :root {
   /* â”€â”€ Aliases sÃ©mantiques pour les vues event â”€â”€
      Les couleurs/typographie/ombres de base viennent de tokens.css
@@ -561,15 +200,6 @@ body {
 .ev-wrap *::after {
   box-sizing: border-box;
 }
-
-/* â”€â”€â”€ WRAPPER â”€â”€â”€ */
-.ev-wrap { max-width: 680px; margin: 0 auto; padding: 12px 16px 80px; }
-
-/* â”€â”€â”€ HEADER â”€â”€â”€ */
-.ev-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 0 20px;
-}
 .ev-header-back {
   text-decoration: none; color: var(--text-muted);
   font-size: 13px; font-weight: 600;
@@ -593,130 +223,27 @@ body {
 }
 /* Dot couleur selon la vue courante â€” modifiÃ© par JS */
 .ev-step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--violet); }
-
-/* â”€â”€â”€ HERO violet (identitÃ© panier collectif) â”€â”€â”€ */
-.ev-hero {
-  background: linear-gradient(135deg, var(--violet) 0%, var(--violet-mid-bright) 100%);
-  border-radius: var(--radius-lg);
-  padding: 30px 24px 26px;
-  margin-bottom: 16px;
-  position: relative; overflow: hidden;
-  box-shadow: 0 8px 30px rgba(108,63,197,.28);
-}
-.ev-hero::before {
-  content: ''; position: absolute; top: -60px; right: -40px;
-  width: 200px; height: 200px; border-radius: 50%;
-  background: rgba(255,255,255,.06);
-}
-.ev-hero::after {
-  content: ''; position: absolute; bottom: -40px; left: -20px;
-  width: 130px; height: 130px; border-radius: 50%;
-  background: rgba(255,255,255,.04);
-}
 /* Hero variante verte pour vue "payer" (argent / confirmation) */
 .ev-hero--pay {
   background: linear-gradient(135deg, var(--cta-green) 0%, var(--green-success) 100%);
   box-shadow: 0 8px 30px rgba(42,122,62,.28);
 }
-.ev-hero-eyebrow {
-  font-size: 11px; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: rgba(255,255,255,.55);
-  margin-bottom: 10px;
-}
-.ev-hero-title {
-  font-family: var(--font-display);
-  font-size: 28px; font-weight: 600; line-height: 1.2;
-  color: white; margin-bottom: 6px;
-}
 .ev-hero-title em { font-style: italic; }
-.ev-hero-sub {
-  font-size: 14px; color: rgba(255,255,255,.68);
-  line-height: 1.6; max-width: 400px;
-}
 .ev-hero-sub strong { color: rgba(255,255,255,.92); font-weight: 600; }
-.ev-hero-amount {
-  display: inline-flex; align-items: baseline; gap: 6px;
-  background: rgba(255,255,255,.14);
-  border-radius: var(--radius); padding: 10px 16px;
-  margin-top: 16px;
-}
-.ev-hero-amount-num {
-  font-family: var(--font-display);
-  font-size: 30px; font-weight: 600; color: white;
-}
-.ev-hero-amount-cur { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.6); }
-.ev-hero-badge {
-  position: absolute; top: 18px; right: 18px;
-  font-size: 11px; font-weight: 700;
-  padding: 5px 12px; border-radius: 99px;
-  background: rgba(255,255,255,.15); color: rgba(255,255,255,.85);
-  letter-spacing: .04em;
-}
 .ev-hero-badge.paid { background: rgba(74,197,120,.25); color: var(--green-soft); }
-
-/* â”€â”€â”€ CARD â”€â”€â”€ */
-.ev-card {
-  background: var(--white);
-  border: 1.5px solid var(--border);
-  border-radius: var(--ev-radius-lg);
-  padding: 20px; margin-bottom: 12px;
-  box-shadow: var(--shadow-sm);
-}
-.ev-card-label {
-  font-size: 11px; font-weight: 700;
-  letter-spacing: .08em; text-transform: uppercase;
-  color: var(--text-light); margin-bottom: 14px;
-}
-.ev-card-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.2px; }
-.ev-card-sub { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
-
-/* â”€â”€â”€ AMOUNTS GRID â”€â”€â”€ */
-.ev-amounts {
-  display: grid; grid-template-columns: repeat(3,1fr);
-  gap: 10px; margin: 14px 0;
-}
-.ev-amount-cell {
-  background: var(--sand); border-radius: 10px;
-  padding: 12px 8px; text-align: center;
-}
-.ev-amount-label {
-  font-size: 10px; color: var(--text-muted);
-  font-weight: 700; text-transform: uppercase;
-  letter-spacing: .5px; margin-bottom: 4px;
-}
-.ev-amount-value {
-  font-size: 16px; font-weight: 700;
-  color: var(--text); letter-spacing: -0.4px;
-}
 .ev-amount-value.green  { color: var(--cta-green); }
 .ev-amount-value.coral  { color: var(--coral); }
 .ev-amount-value.violet { color: var(--coral); }
-.ev-amount-unit { font-size: 10px; font-weight: 700; color: var(--text-muted); margin-left: 1px; }
-
-/* â”€â”€â”€ PROGRESS â”€â”€â”€ */
-.ev-progress-wrap { margin: 14px 0 4px; }
-.ev-progress-bar {
-  height: 8px; background: var(--sand-dark);
-  border-radius: 999px; overflow: hidden;
-}
 .ev-progress-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--ocean-dark), var(--ocean));
   border-radius: 999px;
   transition: width .7s cubic-bezier(.16,1,.3,1);
 }
-.ev-progress-label {
-  display: flex; justify-content: space-between;
-  margin-top: 7px; font-size: 12px; color: var(--text-muted);
-}
 .ev-progress-label strong { color: var(--ocean-dark); font-weight: 700; }
 
 /* â”€â”€â”€ LIST â”€â”€â”€ */
 .ev-list { list-style: none; padding: 0; margin: 0; }
-.ev-list-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 0; border-bottom: 1px solid var(--sand-dark);
-}
 .ev-list-item:last-child { border-bottom: none; }
 .ev-list-avatar {
   width: 38px; height: 38px; border-radius: 50%;
@@ -726,21 +253,7 @@ body {
   flex-shrink: 0; letter-spacing: -0.3px;
 }
 .ev-list-avatar.creator { background: var(--violet); color: white; }
-.ev-list-emoji {
-  width: 36px; height: 36px; font-size: 18px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--sand); border-radius: 10px; flex-shrink: 0;
-}
 .ev-list-content { flex: 1; min-width: 0; }
-.ev-list-name {
-  font-size: 14px; font-weight: 600; margin-bottom: 2px;
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.ev-list-meta { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-.ev-list-right { text-align: right; flex-shrink: 0; }
-/* Prix en coral comme dans la boutique */
-.ev-list-amount { font-size: 14px; font-weight: 700; color: var(--coral); }
 .ev-list-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
 /* â”€â”€â”€ BADGES â”€â”€â”€ */
@@ -752,22 +265,12 @@ body {
   white-space: nowrap;
 }
 .ev-badge-creator { background: var(--text); color: white; font-size: 9px; padding: 2px 7px; }
-/* PayÃ© : ocean (statut positif final) */
-.ev-badge-paid    { background: rgba(100,175,90,.15); color: var(--ocean-dark); }
 /* AutorisÃ© : violet-light (en attente collective) */
 .ev-badge-auth    { background: var(--violet-light); color: var(--violet); }
 /* En attente : warm sand + coral */
 .ev-badge-pending { background: rgba(200,92,45,.1); color: var(--coral-dark); }
 /* Non confirmÃ© : neutre */
 .ev-badge-waiting { background: var(--sand-dark); color: var(--text-muted); }
-
-/* â”€â”€â”€ FORM â”€â”€â”€ */
-.ev-field { margin-bottom: 14px; }
-.ev-label {
-  display: block; font-size: 13px; font-weight: 600;
-  margin-bottom: 6px; color: var(--ev-text-soft);
-}
-.ev-label-opt { color: var(--text-light); font-weight: 400; font-size: 12px; }
 .ev-input, .ev-select, .ev-textarea {
   width: 100%; padding: 11px 14px; font-size: 14px;
   border: 1.5px solid var(--border); border-radius: 10px;
@@ -783,27 +286,9 @@ body {
   border-color: var(--coral);
   box-shadow: 0 0 0 3px rgba(200,92,45,.1);
 }
-.ev-textarea { resize: vertical; min-height: 76px; }
 .ev-phone-row { display: flex; gap: 8px; }
-.ev-phone-prefix {
-  display: flex; align-items: center; gap: 4px;
-  padding: 0 12px; border: 1.5px solid var(--border);
-  border-radius: 10px; background: var(--sand);
-  font-size: 13px; font-weight: 600; color: var(--ev-text-soft);
-  white-space: nowrap; cursor: pointer;
-  transition: border-color .15s;
-}
 .ev-phone-row .ev-input { flex: 1; }
-.ev-amount-row { position: relative; }
-.ev-amount-row .ev-input { padding-right: 52px; }
-.ev-amount-suffix {
-  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-  font-size: 12px; font-weight: 700; color: var(--text-muted);
-  pointer-events: none;
-}
 .ev-help { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
-.ev-char-count { font-size: 11px; color: var(--text-light); text-align: right; margin-top: 4px; }
-.ev-divider { border: none; border-top: 1px solid var(--sand-dark); margin: 18px 0; }
 
 /* â”€â”€â”€ STRIPE BOX â”€â”€â”€ */
 .ev-stripe-box {
@@ -822,23 +307,7 @@ body {
 }
 .ev-stripe-row { display: flex; gap: 12px; }
 .ev-stripe-row > div { flex: 1; }
-
-/* â”€â”€â”€ BUTTONS â”€â”€â”€ */
-.ev-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 12px 20px; font-size: 15px; font-weight: 600;
-  border-radius: 10px; border: none; cursor: pointer;
-  text-decoration: none; font-family: var(--font);
-  transition: background .15s, transform .1s, box-shadow .15s;
-  letter-spacing: -0.1px;
-}
 .ev-btn:active { transform: scale(.98); }
-/* Coral : action principale panier collectif */
-.ev-btn-violet {
-  background: var(--coral); color: white;
-  box-shadow: 0 2px 8px rgba(200,92,45,.3);
-}
-.ev-btn-violet:hover { background: var(--coral-dark); }
 .ev-btn-violet:disabled { background: var(--text-light); box-shadow: none; cursor: not-allowed; }
 /* Coral : CTA secondaire / invite (comme boutique) */
 .ev-btn-coral {
@@ -846,13 +315,6 @@ body {
   box-shadow: 0 2px 8px rgba(200,92,45,.25);
 }
 .ev-btn-coral:hover { background: var(--coral-dark); }
-/* cta-green : confirmation de paiement final */
-.ev-btn-confirm {
-  background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%);
-  color: white;
-  box-shadow: 0 4px 14px rgba(42,122,62,.3);
-}
-.ev-btn-confirm:hover { opacity: .92; }
 .ev-btn-confirm:disabled { background: var(--text-light); box-shadow: none; cursor: not-allowed; }
 /* Ocean-dark : nav active, actions positives */
 .ev-btn-ocean {
@@ -860,27 +322,7 @@ body {
   box-shadow: 0 2px 8px rgba(74,144,64,.25);
 }
 .ev-btn-ocean:hover { background: var(--ocean); }
-/* Ghost */
-.ev-btn-ghost {
-  background: white; color: var(--text-muted);
-  border: 1.5px solid var(--border);
-}
-.ev-btn-ghost:hover { background: var(--sand); border-color: var(--text-muted); }
-/* WhatsApp */
-.ev-btn-wa {
-  background: var(--whatsapp); color: white;
-  box-shadow: 0 2px 8px rgba(37,211,102,.2);
-}
-.ev-btn-wa:hover { background: var(--whatsapp-dk); }
-.ev-btn-block { width: 100%; }
-.ev-btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .ev-btn-sm { padding: 8px 14px; font-size: 13px; }
-
-/* â”€â”€â”€ ALERTS â”€â”€â”€ */
-.ev-alert {
-  padding: 12px 16px; border-radius: var(--radius);
-  font-size: 13px; line-height: 1.6; margin: 10px 0;
-}
 /* SuccÃ¨s : ocean */
 .ev-alert-success {
   background: rgba(100,175,90,.12); color: var(--ocean-dark);
@@ -896,34 +338,10 @@ body {
   background: var(--red-bg-soft); color: var(--red-deep-text);
   border: 1px solid rgba(220,38,38,.15);
 }
-/* Info : sable */
-.ev-alert-info {
-  background: var(--sand); color: var(--text-muted);
-  border: 1px solid var(--border);
-}
 /* Violet info (ex: prÃ©autorisÃ©) */
 .ev-alert-violet {
   background: var(--violet-light); color: var(--violet-dark);
   border: 1px solid var(--violet-mid);
-}
-
-/* â”€â”€â”€ TRUST â”€â”€â”€ */
-.ev-trust {
-  display: flex; align-items: flex-start; gap: 10px;
-  background: rgba(100,175,90,.08); border: 1px solid rgba(100,175,90,.2);
-  border-radius: var(--radius); padding: 12px 14px;
-  margin: 12px 0; font-size: 13px; color: var(--ocean-dark); line-height: 1.5;
-}
-.ev-trust-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-
-/* â”€â”€â”€ SHARE â”€â”€â”€ */
-.ev-share {
-  background: var(--sand-warm); border: 1.5px solid var(--border);
-  border-radius: var(--radius); padding: 14px; margin: 12px 0;
-}
-.ev-share-label {
-  font-size: 11px; font-weight: 700; color: var(--text-muted);
-  margin-bottom: 8px; text-transform: uppercase; letter-spacing: .4px;
 }
 .ev-share-row { display: flex; gap: 6px; align-items: center; }
 .ev-share-row input {
@@ -947,40 +365,12 @@ body {
 }
 .ev-cta-card .ev-card-label { color: var(--ocean-dark); }
 .ev-cta-card--green .ev-card-label { color: var(--cta-green); }
-
-/* â”€â”€â”€ STEPS â”€â”€â”€ */
-.ev-steps { display: flex; gap: 0; margin: 12px 0; }
-.ev-step { flex: 1; text-align: center; position: relative; padding: 4px; }
 .ev-step:not(:last-child)::after {
   content: 'â†’'; position: absolute;
   top: 13px; right: -6px; font-size: 11px; color: var(--border);
 }
-.ev-step-num {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: var(--violet-light); color: var(--violet);
-  font-weight: 700; font-size: 12px;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 6px;
-}
 .ev-step-num.active { background: var(--violet); color: white; }
-.ev-step-text { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
-
-/* â”€â”€â”€ DOCTRINE â”€â”€â”€ */
-.ev-doctrine {
-  font-size: 12px; color: var(--text-light);
-  text-align: center; padding: 18px 0 8px; line-height: 1.8;
-}
 .ev-doctrine strong { color: var(--text-muted); font-weight: 500; }
-
-/* â”€â”€â”€ TOTALS â”€â”€â”€ */
-.ev-totals { background: var(--sand); border-radius: 10px; padding: 14px; margin-top: 14px; }
-.ev-totals-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
-.ev-totals-row--final {
-  border-top: 1px solid var(--sand-dark); padding-top: 10px;
-  margin-top: 6px; font-size: 15px; font-weight: 700;
-}
-/* Total en cta-green comme dans k-cart-total-val */
-.ev-totals-row--final span:last-child { color: var(--cta-green); }
 
 /* â”€â”€â”€ SECTION TITLE â”€â”€â”€ */
 .ev-section-title {
@@ -1036,14 +426,8 @@ body {
   width: 36px; height: 4px; border-radius: 2px;
   background: var(--border); margin: 0 auto 20px;
 }
-
-/* â”€â”€â”€ RESPONSIVE â”€â”€â”€ */
-.ev-hero-title { font-size: 23px; }
-.ev-hero-amount-num { font-size: 24px; }
 .ev-btn-row { flex-direction: column; }
 .ev-btn-row .ev-btn { width: 100%; }
-.ev-amounts { gap: 6px; }
-.ev-amount-value { font-size: 14px; }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    ALIAS DE RÃ‰TROCOMPATIBILITÃ‰
@@ -1118,16 +502,6 @@ body {
   border-top: 1px solid var(--sand-dark);
 }
 .ev-totals-row--final span:last-child { color: var(--cta-green); }
-
-/* Champs hÃ©ritÃ©s */
-.ev-textarea {
-  width: 100%; padding: 11px 14px;
-  border: 1.5px solid var(--border); border-radius: 10px;
-  background: var(--white); color: var(--text);
-  font-family: var(--font); font-size: 14px;
-  resize: vertical; min-height: 60px;
-  transition: border-color .15s, box-shadow .15s;
-}
 .ev-textarea:focus {
   outline: none; border-color: var(--coral);
   box-shadow: 0 0 0 3px rgba(200,92,45,.1);
@@ -1138,36 +512,8 @@ body {
 .ev-label-opt {
   font-weight: 400; color: var(--text-light); font-size: 11px; margin-left: 4px;
 }
-
-/* Trust line hÃ©ritÃ©e (event-create) */
-.ev-trust { display: flex; gap: 8px; align-items: flex-start;
-  background: var(--sand-warm); border-radius: 10px;
-  padding: 12px 14px; margin: 14px 0;
-  font-size: 12.5px; color: var(--text-muted); line-height: 1.5;
-}
-.ev-trust-icon { font-size: 16px; flex-shrink: 0; line-height: 1; }
 .ev-trust strong { color: var(--text); }
-
-/* Char counter (event-create) */
-.ev-char-count { font-size: 11px; color: var(--text-light); text-align: right; margin-top: 4px; }
-
-/* Share box (event-manage) */
-.ev-share { margin: 12px 0; padding: 12px; background: var(--sand-warm); border-radius: 10px; }
-.ev-share-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--text-muted); margin-bottom: 6px; }
 .ev-share-actions { display: flex; gap: 6px; align-items: stretch; }
-.ev-share-url {
-  flex: 1; min-width: 0; padding: 8px 10px;
-  border: 1px solid var(--border); border-radius: 8px;
-  background: var(--white); font-family: var(--ev-mono); font-size: 11px;
-}
-
-/* Phone row dÃ©jÃ  partiellement dÃ©fini, on s'assure */
-.ev-phone-prefix {
-  flex: 0 0 auto; padding: 11px 8px;
-  border: 1.5px solid var(--border); border-radius: 10px;
-  background: var(--white); font-family: var(--font); font-size: 13px; cursor: pointer;
-}
 
 /* Amount row (event-public) */
 .ev-amount-row { display: flex; align-items: center; gap: 8px; }
@@ -1184,10 +530,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; flex-shrink: 0;
 }
-.ev-list-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.ev-list-amount { font-size: 14px; font-weight: 700; color: var(--coral); }
 .ev-list-right { margin-left: auto; }
-
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    COMPACT MODE â€” rÃ©duire la hauteur des 4 pages event pour tenir
@@ -1239,13 +582,6 @@ body {
 
 /* Phone row : compact */
 .ev-phone-prefix { padding: 9px 6px; font-size: 12px; }
-
-/* Trust line (event-create) : compact */
-.ev-trust {
-  padding: 9px 11px; margin: 9px 0;
-  font-size: 11.5px; line-height: 1.45;
-  gap: 7px;
-}
 .ev-trust-icon { font-size: 14px; }
 
 /* Buttons : compact */
@@ -1292,12 +628,6 @@ body {
 .ev-share { margin: 8px 0; padding: 9px; }
 .ev-share-label { font-size: 10px; margin-bottom: 4px; }
 .ev-share-url   { padding: 6px 8px; font-size: 10.5px; }
-
-/* Doctrine footer text : compact */
-.ev-doctrine {
-  font-size: 11px; line-height: 1.5;
-  margin-top: 10px; padding: 0 6px;
-}
 
 /* Alerts */
 .ev-alert { padding: 10px 12px; font-size: 12.5px; line-height: 1.45; }
@@ -1374,4 +704,3 @@ body[data-event-page="public"] .ev-card {
 .ev-collapsible[open] > .ev-card-summary > .ev-card-summary-icon {
   transform: rotate(-180deg);
 }
-

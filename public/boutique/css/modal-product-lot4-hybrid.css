@@ -140,10 +140,6 @@
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-qty,
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn,
-  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
-    min-height: 50px;
-    border-radius: 999px;
-  }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-qty {
     background: var(--sand);
