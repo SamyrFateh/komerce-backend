@@ -36,7 +36,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
 // ── Configuration ─────────────────────────────────────────────────────────────
-const SCAN_DIRS = ['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'dashboards/admin/js'];
+const SCAN_DIRS = ['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'public/dashboards/admin/js'];
 
 const IGNORE_PATTERNS = [
   /node_modules/,
@@ -316,6 +316,8 @@ const RULES = [
         if (!/^(return|throw)\b/.test(stripped)) continue;
         // Ignorer si la ligne se termine par une virgule/paren/accolade ouvrante — multi-ligne
         if (/[,({]$/.test(stripped)) continue;
+        // Ignorer si la ligne ouvre un template literal non fermé (backticks impairs)
+        if ((stripped.match(/`/g) || []).length % 2 === 1) continue;
         // Ignorer les return de fonctions fléchées imbriquées : `=> {` juste avant
         // n'est pas un indicateur fiable, on ignore ce cas
 

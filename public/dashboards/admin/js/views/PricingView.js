@@ -15,6 +15,8 @@
  * @impact-areas  pricing, cost-components, economic-engine, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /* ═══════════════════════════════════════════════════════════════════════════
  *  PricingView.js — Komerce Control Tower
  *  🧮 Construction du Prix — Atelier de décision produit
@@ -481,8 +483,7 @@ function _bindEvents(container) {
       if (!confirm('Appliquer le scénario "' + scenarioLabel + '" ?\n\nPrix : ' + price.toLocaleString('fr-FR') + ' KMF' + (levier ? '\nLevier : ' + levier : '') + '\n\nL\'audit sera enregistré dans price_history.')) return;
       t.disabled = true; t.textContent = '⏳ Application...';
       try {
-        const res = await fetch('/api/pricing/apply-price/' + encodeURIComponent(productId), { method:'PUT', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ price_kmf:price, source:'scenario', scenario_id:scenarioId, scenario_label:scenarioLabel, levier, survival_price_kmf:survival }) });
-        if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.error||'HTTP '+res.status); }
+        await _api('PUT', '/api/pricing/apply-price/' + encodeURIComponent(productId), { price_kmf:price, source:'scenario', scenario_id:scenarioId, scenario_label:scenarioLabel, levier, survival_price_kmf:survival });
         t.textContent = '✅ Appliqué !';
         setTimeout(() => _scheduleRecalc(container, 100), 800);
       } catch (err) { alert('Erreur : ' + err.message); t.disabled = false; }

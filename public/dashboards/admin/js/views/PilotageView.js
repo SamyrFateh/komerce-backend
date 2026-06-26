@@ -15,6 +15,8 @@
  * @impact-areas  pilotage, kpi, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Vue unifiée /admin/pilotage
  * ════════════════════════════════════════════════════════════════════════

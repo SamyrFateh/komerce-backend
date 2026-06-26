@@ -15,6 +15,8 @@
  * @impact-areas  pricing, strategy, sourcing, economic-engine, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Vue Stratégie de Prix /admin/pricing-strategy
  * ═══════════════════════════════════════════════════════════════════════════

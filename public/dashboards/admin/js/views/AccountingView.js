@@ -15,6 +15,8 @@
  * @impact-areas  accounting, finance, cash-reconciliation
  * @version       2026-06
  */
+
+'use strict';
 /* ═══════════════════════════════════════════════════════════════════════════
    AccountingView — /admin/accounting
    Lot 7 — parité ct-views-accounting.js (legacy)

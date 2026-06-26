@@ -15,6 +15,8 @@
  * @impact-areas  admin-dashboard, data-visualization
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Charts (LineChart, DonutChart, Funnel)
  * ════════════════════════════════════════════════════════════════════════

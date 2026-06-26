@@ -49,7 +49,7 @@
 
   async function loadCategories() {
     if (_categoriesPayload) return _categoriesPayload;
-    const res = await fetch(API_CATEGORIES, { credentials: 'include' });
+    const res = await fetch(API_CATEGORIES, { credentials: 'include' }); // kmc-api-allow: référentiel catégories, endpoint distinct de API_PRODUCTS (apiFetch hardcodé)
     if (!res.ok) throw new Error('Impossible de charger les catégories');
     _categoriesPayload = await res.json();
     return _categoriesPayload;
@@ -455,7 +455,7 @@
     container.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Chargement du diagnostic…</div>';
 
     const [prodRes] = await Promise.all([
-      fetch(API_PRODUCTS + '?limit=500', { credentials: 'include' }).then(r => r.json()),
+      apiFetch('?limit=500'),
     ]);
 
     const products = prodRes.products || [];
@@ -635,7 +635,7 @@
 
       tableWrap.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Chargement…</div>';
 
-      const data = await fetch(`${API_PRODUCTS}?${qs}`, { credentials: 'include' }).then(r => r.json());
+      const data = await apiFetch(`?${qs}`);
       const products = data.products || [];
       const total    = data.total    || 0;
       const totalPages = Math.ceil(total / PAGE_SIZE);

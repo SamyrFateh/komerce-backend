@@ -15,6 +15,8 @@
  * @impact-areas  catalog, categories, boutique
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Vue /admin/categories
  * ════════════════════════════════════════════════════════════════════════
@@ -25,7 +27,22 @@
 (function (global) {
   'use strict';
 
+  const API = '/api/admin/boutique-categories';
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  async function apiFetch(path, opts = {}) {
+    const res = await fetch(API + path, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      ...opts,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.status === 204 ? null : res.json();
+  }
 
   function toast(msg, type = 'success') {
     const t = document.createElement('div');
@@ -161,7 +178,9 @@
     `, async (fd) => {
       const dbKeysRaw = (fd.get('db_keys') || '').trim();
       const dbKeys = dbKeysRaw ? dbKeysRaw.split(',').map(k => k.trim()).filter(Boolean) : [];
-      await global.KmcApi.createBoutiqueCategory({
+      await apiFetch('/', {
+        method: 'POST',
+        body: JSON.stringify({
           key:            fd.get('key').trim(),
           label:          fd.get('label').trim(),
           short_label:    fd.get('short_label').trim() || undefined,
@@ -173,6 +192,7 @@
           image_url:      fd.get('image_url').trim() || null,
           theme_token:    fd.get('theme_token').trim() || null,
           accent_token:   fd.get('accent_token').trim() || null,
+        }),
       });
       toast('Catégorie créée !');
       await onRefresh();
@@ -196,7 +216,9 @@
     `, async (fd) => {
       const dbKeysRaw = (fd.get('db_keys') || '').trim();
       const dbKeys = dbKeysRaw ? dbKeysRaw.split(',').map(k => k.trim()).filter(Boolean) : [];
-      await global.KmcApi.updateBoutiqueCategory(cat.key, {
+      await apiFetch(`/${encodeURIComponent(cat.key)}`, {
+        method: 'PUT',
+        body: JSON.stringify({
           label:          fd.get('label').trim(),
           short_label:    fd.get('short_label').trim() || undefined,
           section_emoji:  fd.get('section_emoji').trim() || '📦',
@@ -207,6 +229,7 @@
           image_url:      fd.get('image_url').trim() || null,
           theme_token:    fd.get('theme_token').trim() || null,
           accent_token:   fd.get('accent_token').trim() || null,
+        }),
       });
       toast('Catégorie modifiée !');
       await onRefresh();
@@ -216,7 +239,10 @@
   async function toggleCat(key, isActive, onRefresh) {
     const verb = isActive ? 'désactiver' : 'activer';
     if (!confirm(`Confirmer : ${verb} la catégorie "${key}" ?`)) return;
-    await global.KmcApi.updateBoutiqueCategory(key, { is_active: !isActive });
+    await apiFetch(`/${encodeURIComponent(key)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_active: !isActive }),
+    });
     toast(isActive ? 'Catégorie désactivée.' : 'Catégorie activée.');
     await onRefresh();
   }
@@ -228,11 +254,14 @@
       <label>Icône (emoji)<br><input name="icon" class="form-input" value="✨" style="width:80px;"></label><br><br>
       <label>Ordre d'affichage<br><input name="display_order" type="number" class="form-input" value="99" style="width:80px;"></label>
     `, async (fd) => {
-      await global.KmcApi.createBoutiqueSubcategory(catKey, {
+      await apiFetch(`/${encodeURIComponent(catKey)}/subcategories`, {
+        method: 'POST',
+        body: JSON.stringify({
           key:           fd.get('key').trim(),
           label:         fd.get('label').trim(),
           icon:          fd.get('icon').trim() || '✨',
           display_order: parseInt(fd.get('display_order') || '99'),
+        }),
       });
       toast('Sous-catégorie ajoutée !');
       await onRefresh();
@@ -246,10 +275,13 @@
       <label>Icône (emoji)<br><input name="icon" value="${sub.icon || '✨'}" class="form-input" style="width:80px;"></label><br><br>
       <label>Ordre d'affichage<br><input name="display_order" type="number" value="${sub.display_order || 99}" class="form-input" style="width:80px;"></label>
     `, async (fd) => {
-      await global.KmcApi.updateBoutiqueSubcategory(catKey, subKey, {
+      await apiFetch(`/${encodeURIComponent(catKey)}/subcategories/${encodeURIComponent(subKey)}`, {
+        method: 'PUT',
+        body: JSON.stringify({
           label:         fd.get('label').trim(),
           icon:          fd.get('icon').trim() || '✨',
           display_order: parseInt(fd.get('display_order') || '99'),
+        }),
       });
       toast('Sous-catégorie modifiée !');
       await onRefresh();
@@ -258,7 +290,9 @@
 
   async function deleteSubcat(catKey, subKey, onRefresh) {
     if (!confirm(`Supprimer la sous-catégorie "${subKey}" ?`)) return;
-    await global.KmcApi.deleteBoutiqueSubcategory(catKey, subKey);
+    await apiFetch(`/${encodeURIComponent(catKey)}/subcategories/${encodeURIComponent(subKey)}`, {
+      method: 'DELETE',
+    });
     toast('Sous-catégorie supprimée.');
     await onRefresh();
   }
@@ -282,7 +316,7 @@
     async function refresh() {
       container.innerHTML = '<div class="loading-state"><span class="loader"></span></div>';
       try {
-        const cats = await global.KmcApi.getBoutiqueCategories();
+        const cats = await apiFetch('');
         container.innerHTML = '';
         if (!cats || cats.length === 0) {
           container.innerHTML = '<div class="empty-state">Aucune catégorie — migration 061 jouée ?</div>';

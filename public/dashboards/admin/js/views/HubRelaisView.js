@@ -44,6 +44,8 @@
  *   «  ── Mutations à ajouter dans api-client.js ──  » en bas de ce fichier.
  */
 
+'use strict';
+
 (function (global) {
   'use strict';
 

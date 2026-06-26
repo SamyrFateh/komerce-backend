@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-20T14:01:10.745Z",
+  "generatedAt": "2026-06-26T15:34:35.429Z",
   "summary": {
     "modules": 40,
     "routes": 30,
@@ -8,7 +8,7 @@
     "orphanRoutes": 0,
     "deadApiMethods": 17,
     "missingApiMethods": 0,
-    "doctrineViolations": 6,
+    "doctrineViolations": 1,
     "unprovenContracts": 59
   },
   "modules": [
@@ -26,7 +26,7 @@
       "depends": [],
       "usedBy": [],
       "apiCalls": [],
-      "rawFetchCount": 1
+      "rawFetchCount": 0
     },
     {
       "file": "api-client.js",
@@ -322,7 +322,7 @@
         "none"
       ],
       "apiCalls": [],
-      "rawFetchCount": 1
+      "rawFetchCount": 0
     },
     {
       "file": "views/ClientsView.js",
@@ -439,7 +439,7 @@
         "createCustomsShipment",
         "getCustomsShipment"
       ],
-      "rawFetchCount": 1
+      "rawFetchCount": 0
     },
     {
       "file": "views/EconomicFlowView.js",
@@ -752,7 +752,7 @@
         "none"
       ],
       "apiCalls": [],
-      "rawFetchCount": 2
+      "rawFetchCount": 0
     },
     {
       "file": "views/PricingWorkshopView.js",
@@ -776,7 +776,7 @@
         "none"
       ],
       "apiCalls": [],
-      "rawFetchCount": 1
+      "rawFetchCount": 0
     },
     {
       "file": "views/ProblemsView.js",
@@ -829,7 +829,7 @@
         "none"
       ],
       "apiCalls": [],
-      "rawFetchCount": 4
+      "rawFetchCount": 0
     },
     {
       "file": "views/SalesView.js",
@@ -2376,16 +2376,9 @@
     ],
     "missingApiMethods": [],
     "doctrineViolations": [
-      "views/CategoriesView.js (1 fetch() brut)",
-      "views/CustomsView.js (1 fetch() brut)",
-      "views/PricingView.js (2 fetch() brut)",
-      "views/PricingWorkshopView.js (1 fetch() brut)",
-      "views/ProductsView.js (4 fetch() brut)",
       "views/SourcingScannerView.js (1 fetch() brut)"
     ],
-    "rawFetchDebt": [
-      "api-client-unsold.js (1 fetch() brut)"
-    ],
+    "rawFetchDebt": [],
     "unprovenContracts": [
       "GET /api/admin/costing/orders",
       "GET /api/admin/costing/products",

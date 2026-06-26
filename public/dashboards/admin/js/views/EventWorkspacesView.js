@@ -15,6 +15,8 @@
  * @impact-areas  group-cart, event-workspaces, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Vue Panier événement /admin/event-workspaces
  * ════════════════════════════════════════════════════════════════════════

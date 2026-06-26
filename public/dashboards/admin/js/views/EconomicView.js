@@ -15,6 +15,8 @@
  * @impact-areas  economic, finance, margins, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Santé économique /admin/economic  (v2 — alignée doctrine)
  * ════════════════════════════════════════════════════════════════════════════

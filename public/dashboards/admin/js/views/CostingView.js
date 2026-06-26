@@ -15,6 +15,8 @@
  * @impact-areas  costing, logistics, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Vue Coût rendu relais /admin/costing
  * ════════════════════════════════════════════════════════════════════════

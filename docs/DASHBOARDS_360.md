@@ -1,7 +1,7 @@
 # Dashboards 360 — carte d'architecture admin (générée)
 
 > ⚠️ Fichier **généré** par `scripts/gen-dashboards-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-20T14:01:10.745Z.
+> Régénéré le 2026-06-26T15:34:35.429Z.
 > Pendant front du graphe backend : les dashboards se couplent par la chaîne **route → vue → KmcApi → endpoint → contrat**, pas par un bus ni par les imports.
 
 ## Synthèse
@@ -9,7 +9,7 @@
 - Modules JS : **40** (40 header complet, 0 lite, **0 sans header**)
 - Routes SPA : **30**
 - Méthodes `KmcApi` : **117** exportées, 98 appelées par au moins une vue
-- Santé chaîne : 0 route(s) orpheline(s), 17 méthode(s) API morte(s), 0 méthode(s) API absente(s) (crash garanti), 6 violation(s) de doctrine
+- Santé chaîne : 0 route(s) orpheline(s), 17 méthode(s) API morte(s), 0 méthode(s) API absente(s) (crash garanti), 1 violation(s) de doctrine
 - Contrats non prouvés réellement appelés : **59** (signal de risque, cf. bug `getOps()`/`.orders`)
 
 ## 1. Routeur SPA → Vues
@@ -293,7 +293,7 @@ graph LR
 ## 3. Anomalies bloquantes (cliquet)
 
 - 🟠 **Méthodes API mortes** (exportées, jamais appelées) : `createEconomicCharge`, `createLoyaltyAction`, `deleteCostBenchmark`, `getCostBenchmarks`, `getLoyaltyHistory`, `getLoyaltyPending`, `getParcelAlerts`, `getParcelCritical`, `getParcelKpis`, `getPricingCompetitors`, `redistributeEconomic`, `sourcingBulkRail`, `updateCustomsShipment`, `updateEconomicCharge`, `updateEconomicVariable`, `updateFinanceConfig`, `upsertCostBenchmark`
-- 🟣 **Violations de doctrine `kmc_api_only`** (fetch() brut malgré la doctrine déclarée) : `views/CategoriesView.js (1 fetch() brut)`, `views/CustomsView.js (1 fetch() brut)`, `views/PricingView.js (2 fetch() brut)`, `views/PricingWorkshopView.js (1 fetch() brut)`, `views/ProductsView.js (4 fetch() brut)`, `views/SourcingScannerView.js (1 fetch() brut)`
+- 🟣 **Violations de doctrine `kmc_api_only`** (fetch() brut malgré la doctrine déclarée) : `views/SourcingScannerView.js (1 fetch() brut)`
 
 ## 4. Signaux informatifs (non bloquants)
 
@@ -301,7 +301,6 @@ graph LR
 - ❔ **Endpoints résolus mais absents du contrat OpenAPI** (à vérifier — route peut-être non montée ou contrat backend pas régénéré) : `POST /api/v2/scan`
 - 🔵 **URLs construites dynamiquement** (segment avec id/paramètre concaténé — non comparables au contrat tel quel, à vérifier à la main si besoin) : `acknowledgeSignal (préfixe: POST /api/admin/signals/…)`, `deletePartner (préfixe: DELETE /api/admin/partners/…)`, `deletePricingCompetitor (préfixe: DELETE /api/pricing/strategy/competitors/…)`, `getCustomsShipment (préfixe: GET /api/admin/customs-shipments/…)`, `getSourcingCandidate (préfixe: GET /api/admin/sourcing/candidates/…)`, `importSourcingProduct (préfixe: POST /api/admin/sourcing/candidates/…)`, `rejectSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `relaisConfirmCash (préfixe: POST /api/v2/orders/…)`, `resolveSignal (préfixe: POST /api/admin/signals/…)`, `scanSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `snoozeSignal (préfixe: POST /api/admin/signals/…)`, `updatePartner (préfixe: PUT /api/admin/partners/…)`, `updateSourcingCandidate (préfixe: PUT /api/admin/sourcing/candidates/…)`, `updateSourcingProduct (préfixe: PUT /api/admin/sourcing/products/…)`, `watchlistSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`
 - ❓ **Méthodes API dont l'URL n'a pas pu être résolue statiquement** (à vérifier à la main) : `expireSharedCart`, `extendSharedCart`, `getSettingRule`, `getSettings`, `getSettingsAudit`, `getSettingsDims`, `getSettingsTaxes`, `getSharedCart`, `getSharedCarts`, `getUnsoldStats`, `noteSharedCart`, `patchSettingRule`, `putSettingsDims`, `putSettingsTaxes`, `resetSettingRule`, `simCleanup`, `simJournal`, `simStart`, `simStatus`, `simStop`
-- ⚠️ **fetch() brut sans doctrine déclarée** (écart au standard, pas une violation formelle) : `api-client-unsold.js (1 fetch() brut)`
 
 ## 5. Couverture des headers
 

@@ -20,7 +20,7 @@
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 665,
-    "edges": 2957,
+    "edges": 2960,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 114,
@@ -3718,12 +3718,12 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "customs_shipments"
       ],
       "dbWrite": [
-        "customs_shipments",
         "customs_shipment_parcels",
+        "customs_shipments",
         "order_item_real_cost_allocations",
         "orders",
         "parcels",
@@ -5679,8 +5679,8 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "orders",
-        "invoices"
+        "invoices",
+        "orders"
       ],
       "dbWrite": [
         "invoices"
@@ -7982,7 +7982,9 @@
       ],
       "dbRead": [
         "orders",
-        "users"
+        "users",
+        "wallet_credit_lots",
+        "wallets"
       ],
       "dbWrite": [
         "transaction_documents",
@@ -8925,7 +8927,8 @@
       "dbWrite": [
         "customs_shipment_parcels",
         "customs_shipments",
-        "orders"
+        "orders",
+        "parcels"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -9186,8 +9189,8 @@
         "services/customs-shipment-service.js (post-declaration)"
       ],
       "dbRead": [
-        "customs_shipments",
         "customs_shipment_parcels",
+        "customs_shipments",
         "order_items",
         "orders",
         "parcel_items",
@@ -10678,10 +10681,10 @@
         "routes/pickup-pay-cash.js"
       ],
       "dbRead": [
+        "order_items",
         "orders",
         "pickup_print_tokens",
         "pickup_reveal_codes",
-        "order_items",
         "products",
         "relais",
         "users"
@@ -14066,14 +14069,14 @@
       "table": "v_unsold_pipeline"
     },
     {
-      "id": "db:wallet_consumptions",
-      "type": "db-table",
-      "table": "wallet_consumptions"
-    },
-    {
       "id": "db:wallet_credit_lots",
       "type": "db-table",
       "table": "wallet_credit_lots"
+    },
+    {
+      "id": "db:wallet_consumptions",
+      "type": "db-table",
+      "table": "wallet_consumptions"
     },
     {
       "id": "db:alerts",
@@ -19868,12 +19871,6 @@
     },
     {
       "from": "routes/admin-customs-shipments.js",
-      "to": "db:customs_shipments",
-      "type": "db-read",
-      "label": "customs_shipments"
-    },
-    {
-      "from": "routes/admin-customs-shipments.js",
       "to": "db:customs_shipment_parcels",
       "type": "db-read",
       "label": "customs_shipment_parcels"
@@ -19881,7 +19878,7 @@
     {
       "from": "routes/admin-customs-shipments.js",
       "to": "db:customs_shipments",
-      "type": "db-write",
+      "type": "db-read",
       "label": "customs_shipments"
     },
     {
@@ -19889,6 +19886,12 @@
       "to": "db:customs_shipment_parcels",
       "type": "db-write",
       "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "routes/admin-customs-shipments.js",
+      "to": "db:customs_shipments",
+      "type": "db-write",
+      "label": "customs_shipments"
     },
     {
       "from": "routes/admin-customs-shipments.js",
@@ -22568,15 +22571,15 @@
     },
     {
       "from": "routes/invoices.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "routes/invoices.js",
       "to": "db:invoices",
       "type": "db-read",
       "label": "invoices"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
     },
     {
       "from": "routes/invoices.js",
@@ -26072,6 +26075,18 @@
     },
     {
       "from": "routes/wallet.js",
+      "to": "db:wallet_credit_lots",
+      "type": "db-read",
+      "label": "wallet_credit_lots"
+    },
+    {
+      "from": "routes/wallet.js",
+      "to": "db:wallets",
+      "type": "db-read",
+      "label": "wallets"
+    },
+    {
+      "from": "routes/wallet.js",
       "to": "db:transaction_documents",
       "type": "db-write",
       "label": "transaction_documents"
@@ -27218,6 +27233,12 @@
     },
     {
       "from": "services/customs-shipment-service.js",
+      "to": "db:parcels",
+      "type": "db-write",
+      "label": "parcels"
+    },
+    {
+      "from": "services/customs-shipment-service.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -27590,15 +27611,15 @@
     },
     {
       "from": "services/documents/customs-invoice.js",
-      "to": "db:customs_shipments",
-      "type": "db-read",
-      "label": "customs_shipments"
-    },
-    {
-      "from": "services/documents/customs-invoice.js",
       "to": "db:customs_shipment_parcels",
       "type": "db-read",
       "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
     },
     {
       "from": "services/documents/customs-invoice.js",
@@ -29732,6 +29753,12 @@
     },
     {
       "from": "services/pickup-secret-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
@@ -29747,12 +29774,6 @@
       "to": "db:pickup_reveal_codes",
       "type": "db-read",
       "label": "pickup_reveal_codes"
-    },
-    {
-      "from": "services/pickup-secret-service.js",
-      "to": "db:order_items",
-      "type": "db-read",
-      "label": "order_items"
     },
     {
       "from": "services/pickup-secret-service.js",
@@ -36766,12 +36787,12 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "customs_shipments",
-        "customs_shipment_parcels"
+        "customs_shipment_parcels",
+        "customs_shipments"
       ],
       "dbWrite": [
-        "customs_shipments",
         "customs_shipment_parcels",
+        "customs_shipments",
         "order_item_real_cost_allocations",
         "orders",
         "parcels",
@@ -38505,8 +38526,8 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "orders",
-        "invoices"
+        "invoices",
+        "orders"
       ],
       "dbWrite": [
         "invoices"
@@ -40628,7 +40649,9 @@
       "ownedFiles": [],
       "dbRead": [
         "orders",
-        "users"
+        "users",
+        "wallet_credit_lots",
+        "wallets"
       ],
       "dbWrite": [
         "transaction_documents",
@@ -41448,7 +41471,8 @@
       "dbWrite": [
         "customs_shipment_parcels",
         "customs_shipments",
-        "orders"
+        "orders",
+        "parcels"
       ],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -41697,8 +41721,8 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "customs_shipments",
         "customs_shipment_parcels",
+        "customs_shipments",
         "order_items",
         "orders",
         "parcel_items",
@@ -43060,10 +43084,10 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "order_items",
         "orders",
         "pickup_print_tokens",
         "pickup_reveal_codes",
-        "order_items",
         "products",
         "relais",
         "users"

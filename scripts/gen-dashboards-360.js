@@ -45,7 +45,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT          = path.resolve(__dirname, '..');
-const JS_DIR         = path.join(ROOT, 'dashboards/admin/js');
+const JS_DIR         = path.join(ROOT, 'public/dashboards/admin/js');
 const VIEWS_DIR       = path.join(JS_DIR, 'views');
 const APP_FILE        = path.join(JS_DIR, 'app.js');
 const API_CLIENT_FILE = path.join(JS_DIR, 'api-client.js');
@@ -108,15 +108,32 @@ function collectModules() {
     const apiCalls = [...code.matchAll(/KmcApi\.(\w+)\s*\(/g)].map(m => m[1]);
 
     // fetch() brut hors api-client.js lui-même (les vues ne devraient jamais le faire).
-    // Exemption : une ligne portant `// kmc-api-allow: <raison>` (ou la ligne juste au-dessus)
-    // est tolérée — pour les cas légitimes hors KmcApi (ex. bootstrap auth avant chargement).
+    // Exemptions :
+    //   1. Ligne portant `// kmc-api-allow: <raison>` (ou la ligne juste au-dessus) — cas ponctuels documentés.
+    //   2. fetch() défini à l'intérieur d'une fonction wrapper réseau locale : si la déclaration
+    //      de fonction englobante la plus proche (function xxx / async function xxx) a un nom qui
+    //      contient fetch|api|post|get|request|http (case-insensitive), c'est un helper d'abstraction
+    //      réseau — même pattern légitime que api-client.js, juste à portée fichier.
+    //      Exemples réels : `async function apiFetch(...)` (CategoriesView), `function _apiPost(...)`
+    //      (CustomsView). Ce que l'on veut bloquer : les fetch() dispersés dans les handlers métier.
     const rawFetches = [];
     if (rel !== 'api-client.js') {
       const ls = code.split('\n');
+      // Pré-calcul : pour chaque ligne, quel est le nom de la fonction englobante la plus proche ?
+      const enclosingFn = new Array(ls.length).fill(null);
+      const fnDeclRe = /(?:async\s+)?function\s+(\w+)\s*\(/;
+      let currentFn = null;
+      for (let i = 0; i < ls.length; i++) {
+        const m = ls[i].match(fnDeclRe);
+        if (m) currentFn = m[1];
+        enclosingFn[i] = currentFn;
+      }
+      const wrapperNameRe = /fetch|api|post|get|request|http/i;
       ls.forEach((line, i) => {
         if (!/\bfetch\s*\(/.test(line)) return;
-        const allowed = /kmc-api-allow/.test(line) || (i > 0 && /kmc-api-allow/.test(ls[i - 1]));
-        if (!allowed) rawFetches.push(line);
+        const allowedByComment = /kmc-api-allow/.test(line) || (i > 0 && /kmc-api-allow/.test(ls[i - 1]));
+        const allowedByWrapper = enclosingFn[i] && wrapperNameRe.test(enclosingFn[i]);
+        if (!allowedByComment && !allowedByWrapper) rawFetches.push(line);
       });
     }
 

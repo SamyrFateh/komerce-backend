@@ -15,6 +15,8 @@
  * @impact-areas  product-catalog, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * @module product-card-model.admin
  * @brief Version autonome de resolveProductCardModel pour le dashboard admin.
@@ -38,7 +40,7 @@
 
   // ─── Whitelist des sources autorisées ───────────────────────────────────────
 
-  var ALLOWED_SOURCES = new Set([
+  const ALLOWED_SOURCES = new Set([
     'product.name',
     'product.image_url',
     'product.price_kmf',
@@ -56,7 +58,7 @@
 
   // ─── Whitelist des conditions autorisées ────────────────────────────────────
 
-  var ALLOWED_CONDITIONS = new Set([
+  const ALLOWED_CONDITIONS = new Set([
     'always',
     'not_empty',
     'gt_zero',
@@ -66,7 +68,7 @@
 
   // ─── Config par défaut ──────────────────────────────────────────────────────
 
-  var DEFAULT_CARD_CONFIG = {
+  const DEFAULT_CARD_CONFIG = {
     version: 1,
     template: 'standard_card_v1',
     image: {
@@ -105,13 +107,13 @@
 
   // ─── Helpers internes ────────────────────────────────────────────────────────
 
-  var PLACEHOLDER_IMAGE = '/images/placeholder-product.png';
-  var DEFAULT_NAME      = 'Produit Komerce';
+  const PLACEHOLDER_IMAGE = '/images/placeholder-product.png';
+  const DEFAULT_NAME      = 'Produit Komerce';
 
   function resolveSource(source, product, category) {
     if (!source || !ALLOWED_SOURCES.has(source)) return undefined;
-    var parts = source.split('.');
-    var ns = parts[0], field = parts[1];
+    const parts = source.split('.');
+    const ns = parts[0], field = parts[1];
     if (ns === 'product')  return product  ? product[field]  : undefined;
     if (ns === 'category') return category ? category[field] : undefined;
     return undefined;
@@ -129,7 +131,7 @@
   }
 
   function formatKmf(kmf) {
-    var n = Number(kmf);
+    const n = Number(kmf);
     if (!Number.isFinite(n) || n <= 0) return 'Prix à confirmer';
     return new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' KMF';
   }
@@ -141,14 +143,14 @@
 
   function resolveImage(imageCfg, product, category) {
     if (!imageCfg) return PLACEHOLDER_IMAGE;
-    var primary = resolveSource(imageCfg.source, product, category);
+    let primary = resolveSource(imageCfg.source, product, category);
     if (primary && typeof primary === 'string' && primary.trim()) return primary.trim();
 
-    var fallbacks = Array.isArray(imageCfg.fallback) ? imageCfg.fallback : [];
-    for (var i = 0; i < fallbacks.length; i++) {
-      var fb = fallbacks[i];
+    const fallbacks = Array.isArray(imageCfg.fallback) ? imageCfg.fallback : [];
+    for (let i = 0; i < fallbacks.length; i++) {
+      let fb = fallbacks[i];
       if (ALLOWED_SOURCES.has(fb)) {
-        var val = resolveSource(fb, product, category);
+        const val = resolveSource(fb, product, category);
         if (val && typeof val === 'string' && val.trim()) return val.trim();
       } else if (typeof fb === 'string' && fb.trim()) {
         return fb.trim();
@@ -159,14 +161,14 @@
 
   function resolveBadges(badgesCfg, product, category) {
     if (!Array.isArray(badgesCfg)) return [];
-    var out = [];
-    for (var i = 0; i < badgesCfg.length; i++) {
-      var b = badgesCfg[i];
+    const out = [];
+    for (let i = 0; i < badgesCfg.length; i++) {
+      const b = badgesCfg[i];
       if (!b || typeof b !== 'object') continue;
-      var condition = b.condition || 'always';
-      var value     = resolveSource(b.source, product, category);
+      const condition = b.condition || 'always';
+      const value     = resolveSource(b.source, product, category);
       if (!evalCondition(condition, value)) continue;
-      var label = b.format
+      const label = b.format
         ? formatBadgeLabel(b.format, value)
         : (value != null ? String(value) : '');
       if (!label) continue;
@@ -177,10 +179,10 @@
 
   function resolveSubtitle(subtitleCfg, product, category) {
     if (!subtitleCfg) return '';
-    var primary = resolveSource(subtitleCfg.source, product, category);
+    let primary = resolveSource(subtitleCfg.source, product, category);
     if (primary && String(primary).trim()) return String(primary).trim();
     if (subtitleCfg.fallback) {
-      var fb = resolveSource(subtitleCfg.fallback, product, category);
+      let fb = resolveSource(subtitleCfg.fallback, product, category);
       if (fb && String(fb).trim()) return String(fb).trim();
     }
     return '';
@@ -199,25 +201,25 @@
   function resolve(product, category, config) {
     product  = product  || {};
     category = category || {};
-    var cfg  = (config && config.version === 1) ? config : DEFAULT_CARD_CONFIG;
+    const cfg  = (config && config.version === 1) ? config : DEFAULT_CARD_CONFIG;
 
-    var imageUrl    = resolveImage(cfg.image, product, category);
-    var rawTitle    = resolveSource(cfg.title && cfg.title.source, product, category);
-    var title       = (rawTitle && String(rawTitle).trim()) ? String(rawTitle).trim() : DEFAULT_NAME;
-    var subtitle    = resolveSubtitle(cfg.subtitle, product, category);
-    var rawPrice    = resolveSource(cfg.price && cfg.price.source, product, category);
-    var priceLabel  = (cfg.price && cfg.price.format === 'kmf')
+    const imageUrl    = resolveImage(cfg.image, product, category);
+    const rawTitle    = resolveSource(cfg.title && cfg.title.source, product, category);
+    const title       = (rawTitle && String(rawTitle).trim()) ? String(rawTitle).trim() : DEFAULT_NAME;
+    const subtitle    = resolveSubtitle(cfg.subtitle, product, category);
+    const rawPrice    = resolveSource(cfg.price && cfg.price.source, product, category);
+    const priceLabel  = (cfg.price && cfg.price.format === 'kmf')
       ? formatKmf(rawPrice)
       : (rawPrice != null ? String(rawPrice) : 'Prix à confirmer');
-    var badges      = resolveBadges(cfg.badges, product, category);
-    var rawStock    = resolveSource(cfg.stock && cfg.stock.source, product, category);
-    var showStock   = cfg.stock && cfg.stock.show_when
+    const badges      = resolveBadges(cfg.badges, product, category);
+    const rawStock    = resolveSource(cfg.stock && cfg.stock.source, product, category);
+    const showStock   = cfg.stock && cfg.stock.show_when
       ? evalCondition(cfg.stock.show_when, rawStock)
       : Boolean(cfg.stock && cfg.stock.visible);
-    var stockLabel  = (showStock && rawStock !== undefined) ? String(rawStock) : '';
-    var themeToken  = resolveSource(cfg.theme && cfg.theme.source, product, category);
-    var accentToken = resolveSource(cfg.theme && cfg.theme.accent,  product, category);
-    var isAvailable = product.is_available !== false
+    const stockLabel  = (showStock && rawStock !== undefined) ? String(rawStock) : '';
+    const themeToken  = resolveSource(cfg.theme && cfg.theme.source, product, category);
+    const accentToken = resolveSource(cfg.theme && cfg.theme.accent,  product, category);
+    const isAvailable = product.is_available !== false
       && (product.stock == null || Number(product.stock) > 0);
 
     return {
