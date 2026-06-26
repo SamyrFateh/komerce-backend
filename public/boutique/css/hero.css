@@ -213,12 +213,12 @@ html.k-mobile-premium-v1 .k-hero-img {
 /* GUARD mobile uniquement — desktop @900px override ci-dessous prend le relais. */
 @media (max-width: 899px) {
   .k-hero-img {
-    /* Affiche le webp à sa vraie proportion sans crop.
-       Sur 390px de large → ~94px de haut (390 × 260/1080). */
+    /* Asset 1080×310, affiché à 1080/260 : object-fit:cover rogne le surplus.
+       object-position 50% 30% : lune visible en haut, logo K visible en bas. */
     height: auto;
     aspect-ratio: 1080 / 260;
     object-fit: cover;
-    object-position: 50% 50%;
+    object-position: 50% 30%;
   }
 }
 
@@ -373,7 +373,7 @@ html.k-mobile-premium-v1 .k-hero-img {
     height: auto;
     aspect-ratio: 1080 / 260;
     object-fit: cover;
-    object-position: 50% 50%; /* centré — smart recompose 1080×260 */
+    object-position: 50% 30%; /* asset 1080×310 : lune + logo K visibles */
   }
 
   html.k-mobile-premium-v1 .k-hero-mini-slogan--premium {
