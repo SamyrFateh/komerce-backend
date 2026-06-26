@@ -94,11 +94,11 @@ Les docs sous `public/boutique/docs/` restent utiles en contexte local, mais ell
 - Aucun CSS structurel durable ne doit être injecté par JS.
 - Les sources CSS vivent dans `css/*.css`.
 - La prod charge uniquement `css/dist/*.css`.
-- Toute modification CSS source doit être suivie de `npm run deploy:css` ou `npm run bundle:css`.
+- Toute modification CSS source doit produire des bundles régénérés. Si les hooks git sont installés (`scripts/setup-hooks.sh`), le pre-commit le fait automatiquement. Sinon, lancer `npm run deploy:css` manuellement avant commit.
 - Les fichiers `css/dist/*.css` ne se modifient jamais à la main.
 - Un composant = un owner documenté.
 - Un fichier source Boutique = un header complet ou un owner lite dans le graphe.
-- Les seules règles `!important` actives acceptées au 3 juin 2026 sont les guards desktop du drawer mobile dans `boutique-desktop.css`.
+- Les règles `!important` sont contrôlées par cliquet (`check:important`). Dette résiduelle connue au 20 juin 2026 : **6** occurrences (4 dans `hero.css`, 2 dans `share-cart.css`) — sous cliquet, non croissantes. Tout ajout doit être accompagné de `npm run check:important:save` et justifié en message de commit.
 
 ---
 
@@ -106,19 +106,56 @@ Les docs sous `public/boutique/docs/` restent utiles en contexte local, mais ell
 
 Tous les scripts se lancent depuis `public/boutique`.
 
+**Bundler CSS**
+
 | Commande | Rôle |
 |---|---|
 | `npm run deploy:css` | Bundler officiel : sources CSS → dist + cache-buster |
 | `npm run bundle:css` | Alias de compatibilité vers `deploy-css.js` |
-| `npm run check:cache` | Dry-run du bundler/cache-buster |
-| `npm run check:html` | Vérifie l'équilibre HTML et les IDs critiques |
-| `npm run check:imports` | Vérifie imports JS, existence, cycles, dead exports |
-| `npm run check:body-classes` | Vérifie les classes body ajoutées/retirées |
-| `npm run check:breakpoints` | Garde-fou breakpoints |
-| `npm run audit:arch` | Audit architecture Boutique |
+| `npm run deploy:css:sw` | Bundler + bump version service-worker |
+| `npm run check:cache` | Dry-run du bundler (vérifie cohérence dist/sources) |
+
+**Portes bloquantes (pré-commit + CI)**
+
+| Commande | Rôle |
+|---|---|
+| `npm run check:group-wording` | Wording panier groupe — bloquant |
+| `npm run check:html` | Équilibre HTML + IDs critiques — bloquant |
+| `npm run check:imports` | Imports JS : existence, cycles, dead exports — bloquant |
+| `npm run check:body-classes` | Classes body cohérentes — bloquant |
+| `npm run check:no-injection` | Pas de CSS injecté par JS (`createElement('style')`, `innerHTML` CSS) — bloquant |
+| `npm run check:important` | Cliquet `!important` — bloquant si dépassement |
+| `npm run check:important:save` | Mettre à jour le cliquet (acte conscient, justifier en commit) |
+| `npm run check:css-guard` | Guard CSS général — bloquant |
+| `npm run check:css-guard:save` | Mettre à jour le guard CSS |
+| `npm run check:css-dist-only` | La prod ne charge que `css/dist/*` — bloquant |
+| `npm run check:breakpoints` | Cliquet breakpoints — bloquant si dépassement |
+| `npm run check:breakpoints:save` | Mettre à jour le cliquet breakpoints (acte conscient) |
+
+**Audit architecture**
+
+| Commande | Rôle |
+|---|---|
+| `npm run audit:arch` | Audit architecture Boutique (ownership, hex, bundle) |
 | `npm run audit:arch:live` | Génère la photo d'architecture réelle |
 | `npm run audit:ownership` | Génère la carte d'ownership live |
-| `npm run check:all` | Chaîne complète de garde-fous + e2e |
+
+**Chaînes complètes**
+
+| Commande | Rôle |
+|---|---|
+| `npm run check:fast` | Toutes les portes statiques (pre-commit, sans e2e) |
+| `npm run check:all` | `check:fast` + e2e Playwright — rejoué en CI |
+
+**Lint CSS & tests**
+
+| Commande | Rôle |
+|---|---|
+| `npm run lint:css` | Stylelint sur les sources CSS |
+| `npm run lint:css:fix` | Stylelint avec auto-fix |
+| `npm run test:e2e` | Playwright headless |
+| `npm run test:e2e:headed` | Playwright avec UI |
+| `npm run test:e2e:debug` | Playwright debug |
 
 ---
 
@@ -160,12 +197,15 @@ cd public/boutique
 # 1. Modifier uniquement les sources CSS
 # exemple : css/cart.css, css/modal-product.css, css/boutique-desktop.css
 
-# 2. Rebuilder les bundles et bumper les ?v= nécessaires
+# 2. Rebuild bundles
+#    → Si les hooks git sont installés (scripts/setup-hooks.sh à la racine) :
+#      le pre-commit le fait automatiquement et re-stage css/dist, index.html,
+#      .cache-buster-state.json. Rien de manuel.
+#    → Sinon, rebuilder manuellement :
 npm run deploy:css
 
-# 3. Vérifier
-npm run check:cache
-npm run audit:arch
+# 3. Vérifier (toutes les portes statiques, sans e2e)
+npm run check:fast
 
 # 4. Commit depuis la racine repo
 cd ../..
@@ -173,7 +213,7 @@ git add public/boutique/css/ public/boutique/index.html public/boutique/.cache-b
 git commit -m "style(boutique): ..."
 ```
 
-Pour une PR Boutique non-CSS, lancer au minimum les garde-fous applicables (`check:html`, `check:imports`, `check:body-classes`, `audit:arch`) et vérifier la doctrine graphe si le comportement change.
+Pour une PR Boutique non-CSS, lancer au minimum `npm run check:fast` et vérifier la doctrine graphe si le comportement change.
 
 ---
 
@@ -202,4 +242,4 @@ Modifier ces fichiers sans review explicite est interdit. Ils portent la mécani
 
 ---
 
-*Ce README est aligné sur l'état du repo au 16 juin 2026 après mise en place de la doctrine graphe obligatoire.*
+*Ce README est aligné sur l'état du repo au 26 juin 2026 (après mise en place des cliquets invariants et du pre-commit auto-bundler).*
