@@ -1,0 +1,20 @@
+[
+  {
+    "file": "services/dashboard-metrics.js",
+    "category": "sqlInjection",
+    "contains": "prevQuery.where",
+    "reason": "AUD-07: buildFiltersClause() produces $N parameterized WHERE clauses"
+  },
+  {
+    "file": "routes/admin-costing.js",
+    "category": "sqlInjection",
+    "contains": "updates.join",
+    "reason": "AUD-07: updates[] contains hardcoded column assignments, values in params[]"
+  },
+  {
+    "file": "routes/parcels.js",
+    "category": "sqlInjection",
+    "contains": "${where}",
+    "reason": "AUD-07: where is built from parameterized $N condition templates"
+  }
+]
