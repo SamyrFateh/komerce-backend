@@ -11,6 +11,9 @@ body {
 }
 
 #k-page-scroll,
+#k-catalog-section {
+  background: var(--page-bg);
+}
 
 /* ── HERO FIXED WRAP — mobile : fixe en haut sous le header ─── */
 /* Desktop : remis à static dans layout.css @900px               */
@@ -36,12 +39,22 @@ body {
   border-bottom: 1px solid var(--border-text-07);
 }
 
+.k-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+}
+
 /* MOBILE — ré-ordonnancement visuel (2026-06-09) :
    DOM = logo → search → actions (préservé pour l'accessibilité / DOM order).
    Affiché = logo → search → dame/panier.
    La dame reste à droite (visible, non collée au bord grâce à margin-right:-2px) ;
    la barre de recherche prend le milieu. Reset à 900px (desktop). */
 @media (max-width: 899px) {
+  .k-logo            { order: 1; }
   .k-header-actions  { order: 3; }
   .k-search          { order: 2; }
 
@@ -285,6 +298,13 @@ body {
 
 /* Boutons nav desktop (favoris, suivi) */
 .k-header-nav-btn { display: none; }
+
+/* ── SECTIONS ────────────────────────────────────────────────── */
+.k-section {
+  max-width: var(--container);
+  margin: 0 auto 8px;
+  padding: 4px var(--pad-x);
+}
 .k-section-head {
   display: flex;
   align-items: center;
@@ -342,6 +362,18 @@ body {
 }
 .k-bnav-btn.active, .k-bnav-item.active { color: var(--ocean-dark); }
 .k-bnav-btn svg, .k-bnav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+.k-bnav-badge {
+  top: 4px;
+  right: calc(50% - 18px);
+  height: 16px;
+  color: var(--white);
+  font-weight: 800;
+  padding: 0 4px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--white);
+}
+
 /* ── LOADING + SKELETON ──────────────────────────────────────── */
 .k-loading { display: none; padding: 40px; text-align: center; }
 .k-loading.show { display: block; }
@@ -365,6 +397,12 @@ body {
 .k-skeleton-img,
 .k-skel-line,
 .k-skeleton-title,
+.k-skeleton-price {
+  background: linear-gradient(90deg, var(--sand-dark) 25%, var(--sand-warm) 50%, var(--sand-dark) 75%);
+  background-size: 200% 100%;
+  animation: k-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius);
+}
 .k-skel-card,
 .k-card-skeleton {
   border-radius: var(--radius);
@@ -376,6 +414,7 @@ body {
 .k-skeleton-img { width: 100%; aspect-ratio: 1/1; border-radius: 0; }
 .k-skel-line,
 .k-skeleton-title,
+.k-skeleton-price { margin: 6px 6px 0; border-radius: 4px; height: 10px; }
 .k-skel-line.short,
 .k-skeleton-price { width: 55%; margin-bottom: 8px; }
 .k-skeleton-title  { width: 72%; }
@@ -457,6 +496,7 @@ body:has(#k-page-scroll.k-pager-active) {
      et .k-grid (cf. lignes ~610, 635, 655). Si une scrollbar horizontale
      parasite apparaît, identifier l'élément débordant et lui appliquer
      overflow-x: clip plutôt que de remettre cette règle. */
+  html { overflow-x: visible; }
 
   /* #k-page-scroll reset desktop — source de vérité : body:not(.modal-open):not(.cart-open) #k-page-scroll @media 900px (ligne ~756) */
 
@@ -489,6 +529,22 @@ body:has(#k-page-scroll.k-pager-active) {
     max-width: var(--container);
     margin: 0 auto;
     padding: 0 clamp(16px, 3vw, 40px);
+  }
+
+  /* ── Header desktop (fusionné) ───────────────────────────── */
+  .k-header {
+    height: 68px;
+    position: sticky;
+    top: 0;
+    left: auto;   /* reset PATCH header-fixed */
+    right: auto;  /* reset PATCH header-fixed */
+  }
+
+  .k-header-inner {
+    height: 68px;
+    margin: 0 auto;
+    gap: 18px;
+    padding-inline: clamp(24px, 3vw, 32px);
   }
 
   .k-logo { min-width: 148px; }
@@ -626,6 +682,21 @@ body:has(#k-page-scroll.k-pager-active) {
    Il neutralise le style.top inline de setupMobile().
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
+  html {
+    height: auto;
+    overflow-y: auto;
+    /* overflow-x:hidden sur html crée un scroll container et casse position:sticky.
+       On utilise visible ici — le clip horizontal est assuré par body (overflow-x:clip). */
+    overflow-x: visible;
+  }
+  body {
+    height: auto;
+    overflow-y: auto;
+    /* overflow-x:clip retiré ici : créait un containing block qui ancrait
+       .k-side-cart (position:fixed) au body au lieu du viewport. Le clip
+       horizontal est désormais assuré par #k-catalog-section/.k-section/.k-grid. */
+    overflow-x: visible;
+  }
 
   /* Neutraliser tout overflow blocking hérité */
   body.modal-open { overflow: hidden; }
@@ -646,6 +717,19 @@ body:has(#k-page-scroll.k-pager-active) {
      side-cart (240px réservé par body padding-right). Marges
      latérales visuelles ~20px de chaque côté pour respirer.
      PR-SC2 v3.3 (chantier 1, marges symétriques). */
+  #k-desktop-catalog-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    /* FIX décalage gauche :
+       body:has(.k-side-cart.has-items) pose padding-right:240px sur body.
+       margin:0 auto centrait dans (100vw - 240px) → contenu décalé à gauche de 120px.
+       On supprime margin:0 auto et on laisse le wrap s'étirer naturellement
+       dans l'espace utile du body (width:100% implicite suffit).
+       Le side-cart fixed reste collé à droite, hors du flux. */
+    margin: 0;
+    padding: 12px 20px 0;
+  }
 
   /* ── Catalogue : prend le reste de la largeur ─────────────── */
   #k-desktop-catalog-wrap #k-catalog-section {
@@ -679,8 +763,25 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 }
 
+
+
 /* PATCH #227 — desktop stabilization (consolidé) */
 @media (min-width: 900px) {
+
+  /* 1. Stabilisation scroll desktop */
+  html {
+    width: 100%;
+    max-width: 100%;
+    /* overflow-x sur html casse position:sticky — géré séparément ligne ~396 */
+  }
+  body {
+    width: 100%;
+    max-width: 100%;
+    /* overflow-x:clip retiré : créait un containing block sur body qui
+       ancrait .k-side-cart (position:fixed) au body au lieu du viewport.
+       Le clip est assuré par #k-catalog-section/.k-section/.k-grid. */
+    overflow-x: visible;
+  }
 
   body:not(.modal-open):not(.cart-open) #k-page-scroll {
     position: static;
@@ -710,6 +811,11 @@ body:has(#k-page-scroll.k-pager-active) {
   /* Fix sticky side-cart: #k-desktop-catalog-wrap NE DOIT PAS avoir overflow-x:clip
      car cela crée un scroll container qui casse position:sticky des enfants.
      On utilise overflow-x:visible — le clip horizontal est géré par html/body. */
+  #k-desktop-catalog-wrap {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: visible;
+  }
 
   /* 3. Zoom modal — curseur zoom-in (source de vérité : boutique-desktop.css) */
   /* Note : tap-highlight, focus, perf cartes → boutique-desktop.css */
@@ -756,6 +862,7 @@ body:has(#k-page-scroll.k-pager-active) {
      BOUTIQUE_DESKTOP_LAYOUT_CONTRACT.md. */
 }
 
+
 @media ((min-width: 1200px)) {
   /*
     Padding-bottom du catalogue pour respirer en fin de page.
@@ -786,6 +893,7 @@ body:has(#k-page-scroll.k-pager-active) {
 
 /* Hero desktop compact : voir boutique-desktop.css (BANDEAU PREMIUM, source de vérité). */
 /* margin-top side-cart : 52px, intégré dans le bloc consolidé LOT 9 ci-dessus. */
+
 
 /* ══════════════════════════════════════════════════════════════════
    HEADER — owner unique : layout.css
@@ -889,6 +997,11 @@ body:has(#k-page-scroll.k-pager-active) {
 @media (min-width: 900px) {
   /* Filet de sécurité : avatar dame toujours visible (ex hero-cart-proxy.css) */
   .k-header .k-cart-btn,
+  .k-cart-btn.k-header-action {
+    display: flex;
+    visibility: visible;
+    opacity: 1;
+  }
   .k-header .k-cart-avatar {
     display: block;
     visibility: visible;
