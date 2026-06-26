@@ -15,8 +15,6 @@
  * @impact-areas  pricing, simulation, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — SimulatorView /admin/simulator
  * ════════════════════════════════════════════════════════════════════════

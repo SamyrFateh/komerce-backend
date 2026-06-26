@@ -15,8 +15,6 @@
  * @impact-areas  shared-cart, support, checkout, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — SharedCartsView /admin/shared-carts
  * ════════════════════════════════════════════════════════════════════════

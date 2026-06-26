@@ -15,8 +15,6 @@
  * @impact-areas  admin-dashboard, alerts-display
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — AlertList component
  * ════════════════════════════════════════════════════════════════════════ */

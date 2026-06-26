@@ -15,8 +15,6 @@
  * @impact-areas  health, kpi, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — Vue Santé Business /admin/sante
  * ════════════════════════════════════════════════════════════════════════

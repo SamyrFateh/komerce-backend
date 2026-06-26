@@ -15,8 +15,6 @@
  * @impact-areas  orders, logistics, parcels, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — Vue Commandes & logistique /admin/orders-logistics
  * ════════════════════════════════════════════════════════════════════════

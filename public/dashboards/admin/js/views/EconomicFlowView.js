@@ -15,8 +15,6 @@
  * @impact-areas  pricing, economic-flow, sourcing, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /* ═══════════════════════════════════════════════════════════════════════════
  *  EconomicFlowView.js — Komerce Control Tower  (v2 — boîtes éditables)
  *  🔭 Carte économique : chaque boîte édite ses variables, les flèches montrent

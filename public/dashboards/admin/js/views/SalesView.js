@@ -15,8 +15,6 @@
  * @impact-areas  sales, revenue, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — Vue Ventes /admin/sales
  * ════════════════════════════════════════════════════════════════════════

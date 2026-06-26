@@ -15,8 +15,6 @@
  * @impact-areas  invoices, finance, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — Vue Factures /admin/invoices
  * ════════════════════════════════════════════════════════════════════════

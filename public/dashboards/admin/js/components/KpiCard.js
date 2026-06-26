@@ -15,8 +15,6 @@
  * @impact-areas  admin-dashboard, kpi-display
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — KpiCard component
  * ════════════════════════════════════════════════════════════════════════

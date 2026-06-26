@@ -15,8 +15,6 @@
  * @impact-areas  hub-relais, ops, control-tower, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — Vue Tour de contrôle /admin/control-tower
  * ════════════════════════════════════════════════════════════════════════

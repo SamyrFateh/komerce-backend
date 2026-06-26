@@ -15,8 +15,6 @@
  * @impact-areas  suppliers, sourcing, finance, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — Vue Fournisseurs /admin/suppliers
  * ═══════════════════════════════════════════════════════════════════════════
@@ -116,6 +114,11 @@
   ];
 
   /* ── Helpers ─────────────────────────────────────────────────────────── */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
   function fmtPct(n) { return (Number(n) || 0).toFixed(1) + '%'; }
   function rating(n) { let s = ''; for (let i = 1; i <= 5; i++) s += i <= n ? '★' : '☆'; return s; }
 

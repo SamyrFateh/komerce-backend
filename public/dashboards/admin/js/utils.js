@@ -15,8 +15,6 @@
  * @impact-areas  admin-dashboard (XSS prevention — must be loaded before any view)
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE — Helpers admin moderne (FRESH-104)
  *

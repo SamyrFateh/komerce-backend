@@ -15,8 +15,6 @@
  * @impact-areas  alerts, signals, incidents, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — Vue Centre d'actions /admin/action-center
  * ════════════════════════════════════════════════════════════════

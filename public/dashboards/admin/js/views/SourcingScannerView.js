@@ -15,8 +15,6 @@
  * @impact-areas  sourcing, catalog, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — Vue Scanner Catalogue Fournisseur /admin/sourcing-scanner
  * ═══════════════════════════════════════════════════════════════════════════

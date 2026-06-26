@@ -8,8 +8,6 @@
  * @impact-areas  control-tower, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 (function (global) {
   'use strict';
 

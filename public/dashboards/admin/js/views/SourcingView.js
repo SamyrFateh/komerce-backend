@@ -15,8 +15,6 @@
  * @impact-areas  sourcing, suppliers, pricing, admin-dashboard
  * @version       2026-06
  */
-
-'use strict';
 /**
  * KOMERCE Dashboard — Vue Sourcing Intelligence /admin/sourcing
  * ════════════════════════════════════════════════════════════════════════
