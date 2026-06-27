@@ -134,7 +134,7 @@ const STEPS = [
   {
     label:    'Gate 5 — Linter anti-historique hors archive',
     category: 'gate',
-    cmd:      'node scripts/docs-history-lint.js',
+    cmd:      'node scripts/docs-history-lint.js --strict',
   },
 ];
 
