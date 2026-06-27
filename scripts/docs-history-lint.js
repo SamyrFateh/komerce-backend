@@ -4,7 +4,7 @@
  * @domain platform-ops
  * @owner platform-ops
  * @responsibility Bloque la réintroduction de bruit documentaire historique hors archive.
- * @inputs git-tracked markdown paths
+ * @inputs git-tracked markdown paths, git diff
  * @outputs process exit code + diagnostic report
  * @depends child_process
  * @used-by npm run docs:history-lint, npm run map:check
@@ -17,6 +17,8 @@
 'use strict';
 
 const { execFileSync } = require('child_process');
+
+const ALL_MODE = process.argv.includes('--all');
 
 const HISTORICAL_PATTERNS = [
   /(^|\/)(AUDIT|RAPPORT|REPORT|SUMMARY|REFACTOR_SUMMARY|CORRECTIONS|CORRECTIONS_APPLIQUEES|CHANGELOG-lot|PROMPT_)/i,
@@ -34,9 +36,26 @@ const ALLOWED_LIVE = new Set([
   'docs/SCHEMA.md',
 ]);
 
-function listMarkdownFiles() {
-  const out = execFileSync('git', ['ls-files', '*.md'], { encoding: 'utf8' });
+function git(args) {
+  return execFileSync('git', args, { encoding: 'utf8' }).trim();
+}
+
+function splitLines(out) {
   return out.split('\n').map((line) => line.trim()).filter(Boolean);
+}
+
+function listAllMarkdownFiles() {
+  return splitLines(git(['ls-files', '*.md']));
+}
+
+function listChangedMarkdownFiles() {
+  const base = process.env.BASE_REF || 'origin/main';
+  try {
+    const mergeBase = git(['merge-base', 'HEAD', base]);
+    return splitLines(git(['diff', '--name-only', `${mergeBase}...HEAD`, '--', '*.md']));
+  } catch (_) {
+    return splitLines(git(['diff', '--name-only', 'HEAD~1..HEAD', '--', '*.md']));
+  }
 }
 
 function isHistoricalNoise(path) {
@@ -46,16 +65,19 @@ function isHistoricalNoise(path) {
 }
 
 function main() {
-  const offenders = listMarkdownFiles().filter(isHistoricalNoise);
+  const files = ALL_MODE ? listAllMarkdownFiles() : listChangedMarkdownFiles();
+  const offenders = files.filter(isHistoricalNoise);
 
   if (offenders.length > 0) {
-    console.error('❌ Documents à signal historique trouvés hors archive/:');
+    const mode = ALL_MODE ? 'all' : 'changed';
+    console.error(`❌ Documents à signal historique trouvés hors archive/ (${mode}):`);
     for (const file of offenders) console.error(` - ${file}`);
     console.error('\nDéplacer vers archive/YYYY-MM/<chemin-origine>/ ou renommer/classer explicitement vivant.');
     process.exit(1);
   }
 
-  console.log('✅ docs-history-lint: aucun bruit historique évident hors archive/.');
+  const mode = ALL_MODE ? 'all' : 'changed';
+  console.log(`✅ docs-history-lint (${mode}): aucun bruit historique évident hors archive/.`);
 }
 
 main();
