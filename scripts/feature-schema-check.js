@@ -60,8 +60,30 @@ const TESTS_BASELINE_FILE = path.join(__dirname, '.feature-schema-tests-baseline
 // bon), jamais l'agrandir silencieusement : une carte absente de la baseline
 // qui échoue est une VRAIE régression, pas une dette à absorber automatiquement.
 function loadTestsBaseline() {
-  try { return new Set(JSON.parse(fs.readFileSync(TESTS_BASELINE_FILE, 'utf8')).exempt || []); }
-  catch { return new Set(); }
+  if (!fs.existsSync(TESTS_BASELINE_FILE)) {
+    console.log(`${C.dim}(pas de baseline trouvée à ${TESTS_BASELINE_FILE} — toutes les cartes seront jugées sans dette grand-fathered)${C.r}`);
+    return new Set();
+  }
+  let raw;
+  try { raw = fs.readFileSync(TESTS_BASELINE_FILE, 'utf8'); }
+  catch (e) {
+    console.log(`${C.ylw}⚠ Baseline illisible (${e.message}) — traitée comme vide.${C.r}`);
+    return new Set();
+  }
+  // BOM UTF-8 fréquent sous Windows (PowerShell `>`, Notepad "Enregistrer sous",
+  // certains téléchargements de navigateur) : fait planter JSON.parse sinon,
+  // silencieusement avant ce fix (catch générique = baseline vide sans alerte).
+  raw = raw.replace(/^\uFEFF/, '');
+  try {
+    const parsed = JSON.parse(raw);
+    const set = new Set(parsed.exempt || []);
+    if (set.size === 0) console.log(`${C.ylw}⚠ Baseline trouvée mais "exempt" est vide ou absent — vérifier le contenu de ${path.basename(TESTS_BASELINE_FILE)}.${C.r}`);
+    return set;
+  } catch (e) {
+    console.log(`${C.red}⚠ Baseline présente mais JSON invalide (${e.message.slice(0,80)}) — traitée comme vide, donc toutes les cartes apparaîtront "hors baseline".${C.r}`);
+    console.log(`${C.dim}  Cause fréquente : BOM résiduel ou fichier tronqué. Vérifier avec : node -e "console.log(Buffer.from(require('fs').readFileSync('${TESTS_BASELINE_FILE.replace(/\\/g,'/')}')).slice(0,4))"${C.r}`);
+    return new Set();
+  }
 }
 function saveTestsBaseline(stillMissing, oldBaseline, isBootstrap) {
   // Amorçage (première exécution, aucune baseline sur disque) : on fige la
