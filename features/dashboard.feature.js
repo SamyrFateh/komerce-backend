@@ -105,4 +105,31 @@ module.exports = {
     'dashboard n\'ecrit jamais dans le domaine d\'une autre feature — toute action ecrite redirige vers la feature proprietaire',
   ],
 
+  // ── Contrats positifs exécutables ────────────────────────────────────────
+  // Rendent l'invariant prose ci-dessus vérifiable par machine, par couche.
+  contracts: {
+
+    // BACKEND — lecture seule : aucun fichier service de dashboard ne doit
+    // contenir d'écriture SQL ni de mutation. L'invariant n'est plus une promesse,
+    // c'est un test. (SKIP propre tant que services/ n'est pas dans le checkout.)
+    boundary: {
+      scope: 'services',
+      forbid: [
+        { rx: /\b(INSERT\s+INTO|UPDATE\s+\w|DELETE\s+FROM)\b/i, why: 'écriture SQL dans une feature lecture-seule' },
+        { rx: /\.(create|update|destroy|save|insert)\s*\(/,      why: 'mutation ORM dans une feature lecture-seule' },
+      ],
+    },
+
+    // DASHBOARD (frontend) — même doctrine de rendu que la boutique : les écrans
+    // critiques doivent contenir leurs ancres de montage. C'est la dette que ce
+    // manifeste documentait lui-même (« à construire sur le modèle boutique »).
+    'render-static': [
+      {
+        artifact: 'dashboards/admin/index.html',
+        label:    'écran admin = conteneur pilotage présent',
+        mustContain: [ /id=["']portal-pilotage["']|data-dashboard-root/ ],
+      },
+    ],
+  },
+
 };
