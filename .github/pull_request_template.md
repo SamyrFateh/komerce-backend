@@ -12,6 +12,16 @@ Feature(s) :
 
 Operation :
 
+### Plan d'attaque
+
+- [ ] J'ai annonce le plan d'attaque avant de coder.
+- [ ] Le plan nomme le perimetre probable.
+- [ ] Le plan nomme le hors perimetre.
+- [ ] Le plan nomme les invariants a proteger.
+- [ ] Le plan nomme les gates ou tests prevus.
+
+Plan annonce :
+
 ### Intention
 
 - [ ] L'intention ne change pas.
