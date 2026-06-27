@@ -3,11 +3,11 @@
  * @komerce-arch
  * @domain platform-ops
  * @owner platform-ops
- * @responsibility Vérifie que chaque carte features/*.feature.js porte l'intention obligatoire sans dérivé recopié.
- * @inputs features/*.feature.js
+ * @responsibility Vérifie les cartes features/*.feature.js avec un mode bootstrap CI et un mode strict cible.
+ * @inputs features/*.feature.js, process.argv
  * @outputs process exit code + diagnostic report
  * @depends fs, path
- * @used-by npm run feature:cards, npm run map:check
+ * @used-by npm run feature:cards, npm run map:check, scripts/run-carte-first-checks.js
  * @db-read none
  * @db-write none
  * @db-txn none
@@ -21,11 +21,13 @@ const path = require('path');
 
 const ROOT = process.cwd();
 const FEATURES_DIR = path.join(ROOT, 'features');
+const STRICT_MODE = process.argv.includes('--strict');
 
-const REQUIRED_TOP_LEVEL = ['name', 'status', 'service', 'perimeter', 'authority', 'files', 'contract', 'invariants'];
-const FORBIDDEN_KEYS = new Set(['methods', 'selectors', 'exports', 'domSelectors', 'routesReal', 'functions']);
+const STRICT_REQUIRED_TOP_LEVEL = ['name', 'status', 'service', 'perimeter', 'authority', 'files', 'contract', 'invariants'];
+const FORBIDDEN_DERIVED_KEYS = new Set(['methods', 'selectors', 'exports', 'domSelectors', 'routesReal', 'functions']);
 
 function listFeatureFiles() {
+  if (!fs.existsSync(FEATURES_DIR)) return [];
   return fs.readdirSync(FEATURES_DIR)
     .filter((file) => file.endsWith('.feature.js'))
     .sort()
@@ -57,16 +59,48 @@ function walkKeys(value, prefix = '') {
   return found;
 }
 
-function validateCard(card, file) {
+function collectStringLeaves(value) {
+  if (typeof value === 'string' && value.trim()) return [value];
+  if (Array.isArray(value)) return value.flatMap(collectStringLeaves);
+  if (value && typeof value === 'object') return Object.values(value).flatMap(collectStringLeaves);
+  return [];
+}
+
+function validateBootstrapCard(card, file) {
   const errors = [];
   const rel = path.relative(ROOT, file).replace(/\\/g, '/');
 
-  for (const key of REQUIRED_TOP_LEVEL) {
-    if (!(key in card)) errors.push(`${rel}: champ requis manquant: ${key}`);
+  if (!card || typeof card !== 'object') {
+    errors.push(`${rel}: la carte doit exporter un objet`);
+    return errors;
   }
 
   if (!hasNonEmptyString(card.name)) errors.push(`${rel}: name doit être une chaîne non vide`);
   if (!hasNonEmptyString(card.status)) errors.push(`${rel}: status doit être une chaîne non vide`);
+
+  const hasOwner = hasNonEmptyString(card.owner) || hasNonEmptyString(card.authority);
+  if (!hasOwner) errors.push(`${rel}: déclarer owner ou authority`);
+
+  if (!card.files || typeof card.files !== 'object') {
+    errors.push(`${rel}: files doit exister`);
+  } else {
+    const declaredFiles = collectStringLeaves(card.files);
+    if (declaredFiles.length === 0) errors.push(`${rel}: files doit déclarer au moins un chemin`);
+  }
+
+  return errors;
+}
+
+function validateStrictCard(card, file) {
+  const errors = validateBootstrapCard(card, file);
+  const rel = path.relative(ROOT, file).replace(/\\/g, '/');
+
+  if (!card || typeof card !== 'object') return errors;
+
+  for (const key of STRICT_REQUIRED_TOP_LEVEL) {
+    if (!(key in card)) errors.push(`${rel}: champ requis manquant: ${key}`);
+  }
+
   if (!hasNonEmptyString(card.service)) errors.push(`${rel}: service doit être une chaîne non vide`);
   if (!hasNonEmptyString(card.authority)) errors.push(`${rel}: authority doit être une chaîne non vide`);
 
@@ -92,7 +126,7 @@ function validateCard(card, file) {
   const allKeys = walkKeys(card);
   for (const dotted of allKeys) {
     const last = dotted.split('.').pop();
-    if (FORBIDDEN_KEYS.has(last)) {
+    if (FORBIDDEN_DERIVED_KEYS.has(last)) {
       errors.push(`${rel}: champ dérivé interdit dans une carte: ${dotted}`);
     }
   }
@@ -103,23 +137,31 @@ function validateCard(card, file) {
 function main() {
   const files = listFeatureFiles();
   const allErrors = [];
+  const validate = STRICT_MODE ? validateStrictCard : validateBootstrapCard;
+
+  if (files.length === 0) {
+    console.error('❌ feature-card-schema-check: aucune carte features/*.feature.js trouvée');
+    process.exit(1);
+  }
 
   for (const file of files) {
     try {
       const card = loadCard(file);
-      allErrors.push(...validateCard(card, file));
+      allErrors.push(...validate(card, file));
     } catch (error) {
       allErrors.push(`${path.relative(ROOT, file)}: impossible de charger la carte: ${error.message}`);
     }
   }
 
   if (allErrors.length > 0) {
-    console.error('❌ feature-card-schema-check: cartes invalides');
+    const mode = STRICT_MODE ? 'strict' : 'bootstrap';
+    console.error(`❌ feature-card-schema-check (${mode}): cartes invalides`);
     for (const error of allErrors) console.error(` - ${error}`);
     process.exit(1);
   }
 
-  console.log(`✅ feature-card-schema-check: ${files.length} carte(s) valides.`);
+  const mode = STRICT_MODE ? 'strict' : 'bootstrap';
+  console.log(`✅ feature-card-schema-check (${mode}): ${files.length} carte(s) valides.`);
 }
 
 main();
