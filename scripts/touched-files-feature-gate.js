@@ -1,0 +1,125 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * touched-files-feature-gate.js — Gate 1 (clé de voûte).
+ *
+ *   Tout fichier applicatif modifié dans une PR doit appartenir au `files` d'une
+ *   carte de feature, ou à un périmètre transversal déclaré. Sinon → merge bloqué.
+ *
+ *   Effet : « toute demande entre par une feature » cesse d'être une intention et
+ *   devient une condition de merge. Et les `files` des cartes restent honnêtes
+ *   mécaniquement — toucher un fichier force à le déclarer quelque part.
+ *
+ *   Le transversal (auth, db, cache, middleware, infra…) n'est PAS une feature
+ *   métier : il est couvert soit par une carte `type:'transversal'`, soit par
+ *   governance/transversal-paths.json (globs), pour ne pas tordre l'abstraction.
+ *
+ * Usage :
+ *   node scripts/touched-files-feature-gate.js                 # git diff vs origin/main
+ *   node scripts/touched-files-feature-gate.js --base <ref>
+ *   node scripts/touched-files-feature-gate.js --files a,b,c   # test / CI custom
+ *   node scripts/touched-files-feature-gate.js --root DIR
+ */
+const fs = require('fs'), path = require('path'), cp = require('child_process');
+const args = process.argv.slice(2);
+const ROOT = path.resolve(argVal('--root') || process.cwd());
+function argVal(f) { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; }
+const C = { red: '\x1b[31m', grn: '\x1b[32m', ylw: '\x1b[33m', dim: '\x1b[2m', bld: '\x1b[1m', r: '\x1b[0m' };
+
+// ── Fichiers applicatifs à gouverner (le reste = non concerné) ──────────────
+// On gouverne le code source. On exclut : docs, archive, généré (dist), infra de
+// dépôt, dépendances. Les fichiers générés sont couverts par le gate --check.
+const ENFORCE_EXT = /\.(js|mjs|cjs|ts|css|html)$/;
+const EXCLUDE = [
+  /^archive\//, /node_modules\//, /\/dist\//, /\.github\//, /(^|\/)docs\//,
+  /\.md$/, /\.feature\.js$/, /(^|\/)tests?\//, /\.spec\.js$/, /\.test\.js$/,
+  /(^|\/)migrations\//, /(^|\/)scripts\//,        // infra repo (gouvernée à part)
+  /package(-lock)?\.json$/, /\.config\.(js|cjs|mjs)$/,
+];
+
+// ── Périmètres ──────────────────────────────────────────────────────────────
+function loadCards() {
+  const cards = [];
+  for (const dir of ['features', 'public/boutique/features']) {
+    const abs = path.join(ROOT, dir); if (!fs.existsSync(abs)) continue;
+    for (const f of fs.readdirSync(abs)) {
+      if (!f.endsWith('.feature.js')) continue;
+      try { const m = require(path.join(abs, f)); m.__base = abs; cards.push(m); } catch {}
+    }
+  }
+  return cards;
+}
+
+// repo-relative file set + owner index
+function ownershipIndex(cards) {
+  const owner = {};                  // repoRelPath -> feature name
+  const transversalCards = [];
+  for (const m of cards) {
+    const files = Object.values(m.files || {}).flat();
+    for (const rel of files) {
+      const repoRel = path.relative(ROOT, path.resolve(m.__base, rel)).replace(/\\/g, '/');
+      owner[repoRel] = m.name;
+    }
+    if (m.type === 'transversal') transversalCards.push(m.name);
+  }
+  return { owner, transversalCards };
+}
+
+function loadTransversalGlobs() {
+  const f = path.join(ROOT, 'governance', 'transversal-paths.json');
+  let globs = [
+    // défauts raisonnables — surchargés par governance/transversal-paths.json
+    'core/', 'bootstrap/', 'middleware/', 'db/', 'db.js',
+  ];
+  if (fs.existsSync(f)) {
+    try { globs = JSON.parse(fs.readFileSync(f, 'utf8')).paths || globs; } catch {}
+  }
+  return globs;
+}
+
+// ── Liste des fichiers touchés ──────────────────────────────────────────────
+function touched() {
+  const explicit = argVal('--files');
+  if (explicit) return explicit.split(',').map(s => s.trim()).filter(Boolean);
+  const base = argVal('--base') || 'origin/main';
+  try {
+    const out = cp.execSync(`git diff --name-only ${base}...HEAD`, { cwd: ROOT, encoding: 'utf8' });
+    return out.split('\n').map(s => s.trim()).filter(Boolean);
+  } catch (e) {
+    console.error(`${C.ylw}⚠ git diff impossible (${e.message.split('\n')[0]}). Utilise --files pour tester.${C.r}`);
+    process.exit(2);
+  }
+}
+
+const cards = loadCards();
+const { owner, transversalCards } = ownershipIndex(cards);
+const transversalGlobs = loadTransversalGlobs();
+const changed = touched().map(f => f.replace(/\\/g, '/'));
+
+const enforced = changed.filter(f => ENFORCE_EXT.test(f) && !EXCLUDE.some(rx => rx.test(f)));
+const skipped  = changed.filter(f => !enforced.includes(f));
+
+console.log(`\n${C.bld}Gate 1 — Fichiers touchés → carte${C.r}  ${C.dim}(${changed.length} modifié(s), ${enforced.length} gouverné(s))${C.r}\n`);
+
+const orphans = [];
+for (const f of enforced) {
+  if (owner[f]) { console.log(`${C.grn}✔${C.r} ${f} ${C.dim}→ ${owner[f]}${C.r}`); continue; }
+  const tg = transversalGlobs.find(g => f.startsWith(g));
+  if (tg) { console.log(`${C.grn}✔${C.r} ${f} ${C.dim}→ transversal (${tg})${C.r}`); continue; }
+  orphans.push(f);
+}
+
+if (skipped.length) {
+  console.log(`${C.dim}(${skipped.length} fichier(s) hors périmètre de gouvernance : docs, dist, tests, scripts, config)${C.r}`);
+}
+
+if (orphans.length) {
+  console.log(`\n${C.red}${C.bld}✖ ${orphans.length} fichier(s) sans propriétaire feature/transversal :${C.r}`);
+  orphans.forEach(f => console.log(`${C.red}   ↳ ${f}${C.r}`));
+  console.log(`${C.dim}  → ajoute-les au \`files\` d'une carte features/*.feature.js,${C.r}`);
+  console.log(`${C.dim}    ou déclare-les transversaux dans governance/transversal-paths.json.${C.r}`);
+  process.exit(1);
+}
+
+console.log(`\n${C.grn}${C.bld}✔ Tout fichier gouverné appartient à une feature ou à un transversal.${C.r}`);

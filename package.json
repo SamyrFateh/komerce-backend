@@ -63,7 +63,15 @@
     "feature:registry:report": "node scripts/feature-registry-check.js",
     "feature:registry:orphans": "node scripts/feature-registry-check.js --orphans",
     "feature:check": "node scripts/feature-guard.js --strict",
-    "css:guard": "node public/boutique/scripts/css-guard.js --strict"
+    "css:guard": "node public/boutique/scripts/css-guard.js --strict",
+    "gate:touched-files": "node scripts/touched-files-feature-gate.js",
+    "gate:schema": "node scripts/feature-schema-check.js --strict",
+    "gate:schema:full": "node scripts/feature-schema-check.js --strict --full",
+    "gate:feature-audit": "node scripts/feature-audit.js --strict",
+    "gate:docs-lint": "node scripts/docs-history-lint.js",
+    "map:check": "node scripts/map-check.js",
+    "map:check:verbose": "node scripts/map-check.js --verbose",
+    "map:check:bail": "node scripts/map-check.js --bail"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
