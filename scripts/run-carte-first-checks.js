@@ -3,11 +3,11 @@
  * @komerce-arch
  * @domain platform-ops
  * @owner platform-ops
- * @responsibility Lance les checks carte-first ajoutés sur cette branche, avec bootstrap CI par défaut et strict sur demande.
- * @inputs local repository checkout, process.argv
+ * @responsibility Lance les checks carte-first avec bootstrap CI par défaut et strict sur demande.
+ * @inputs local repository checkout, process.argv, package.json scripts
  * @outputs process exit code + diagnostics
  * @depends child_process
- * @used-by manual governance bootstrap, future npm run map:check
+ * @used-by npm run carte-first:check, npm run map:check
  * @db-read none
  * @db-write none
  * @db-txn none
@@ -19,13 +19,11 @@
 const { spawnSync } = require('child_process');
 
 const strict = process.argv.includes('--strict');
-const featureCardArgs = ['scripts/feature-card-schema-check.js'];
-if (strict) featureCardArgs.push('--strict');
 
 const STEPS = [
-  ['node', featureCardArgs],
-  ['node', ['scripts/docs-history-lint.js']],
-  ['node', ['scripts/touched-files-feature-gate.js']],
+  ['npm', ['run', strict ? 'feature:cards:strict' : 'feature:cards']],
+  ['npm', ['run', 'docs:history-lint']],
+  ['npm', ['run', 'feature:touched']],
 ];
 
 function run(command, args) {
