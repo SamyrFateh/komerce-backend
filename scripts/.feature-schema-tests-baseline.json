@@ -1,0 +1,21 @@
+{
+  "_doctrine": "Cliquet : ne peut que rétrécir. Une carte retirée d'ici doit le rester (régression sinon). Régénéré par --save.",
+  "_updated": "2026-06-27",
+  "exempt": [
+    "auth-identity",
+    "catalog",
+    "customs",
+    "documents",
+    "economic-engine",
+    "inventory",
+    "logistics",
+    "notifications",
+    "orders",
+    "payments",
+    "platform-ops",
+    "recommendations",
+    "refunds",
+    "shared-cart",
+    "wallet-loyalty"
+  ]
+}

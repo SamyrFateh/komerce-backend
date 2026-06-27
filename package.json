@@ -67,6 +67,7 @@
     "gate:touched-files": "node scripts/touched-files-feature-gate.js",
     "gate:schema": "node scripts/feature-schema-check.js --strict",
     "gate:schema:full": "node scripts/feature-schema-check.js --strict --full",
+    "gate:schema:save": "node scripts/feature-schema-check.js --save",
     "gate:feature-audit": "node scripts/feature-audit.js --strict",
     "gate:docs-lint": "node scripts/docs-history-lint.js --strict",
     "map:check": "node scripts/map-check.js",

@@ -419,26 +419,93 @@ function checkI9_noOrphanTests() {
 // ════════════════════════════════════════════════════════════════
 // I-BACK-10 — Aucune collision de numéro dans migrations/
 // ════════════════════════════════════════════════════════════════
+//
+// Historique : la version d'origine ne détectait QUE le motif "bare" (ex.
+// 060.sql coexistant avec 060_description.sql). Elle ratait le motif réel
+// d'AUD-10 (clos 2026-06-23, STATUS.md) : DEUX fichiers DÉCRITS partageant
+// le même préfixe numérique (ex. 014_parcels_final_cleanup.sql ET
+// 014_transaction_documents.sql) — aucun des deux n'est "bare", donc
+// l'ancienne regex ne voyait rien, alors que l'ordre d'exécution réel des
+// deux migrations reste ambigu pour un humain qui relit l'historique.
+//
+// Détection généralisée : on groupe les fichiers par TOKEN = préfixe
+// numérique + suffixe lettre optionnel (014, 072, 072a, 015b…), avant le
+// premier "_" (ou avant ".sql" pour un bare file). Tout token porté par
+// 2+ fichiers est une collision, SAUF s'il est explicitement documenté
+// dans migrations/GAPS.md (section "COLLISION:" — dette connue, traitée
+// à part, jamais bloquante ici tant qu'elle reste documentée).
 function checkI10_noMigrationCollisions() {
   if (!fs.existsSync(MIGRATIONS_DIR)) return;
 
-  const files  = fs.readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const files = fs.readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+  const acceptedSets = loadAcceptedMigrationCollisions(); // Map<token, Set<filename>>
 
-  // Convention intentionnelle : 015b_, 016b_, 037b_ etc. = addendums numérotés → OK
-  // Vrai doublon : NNN.sql (bare, sans description) coexiste avec NNN_description.sql
-  // → le bare file est ambigu sur l'ordre d'exécution
-  const bareFiles = files.filter(f => /^\d+\.sql$/.test(f)); // ex: 060.sql
-
-  for (const bare of bareFiles) {
-    const num = bare.replace('.sql', '');
-    const siblings = files.filter(f => f !== bare && f.startsWith(`${num}_`));
-    if (siblings.length > 0) {
-      violate('I-BACK-10',
-        `Collision migration : ${bare} et ${siblings.join(', ')}`,
-        `Renommer ${bare} en ${num}_description.sql (même contenu, nom explicite)`
-      );
-    }
+  const groups = new Map(); // token -> [filenames]
+  for (const f of files) {
+    const m = f.match(/^(\d+[a-z]?)(?:_|\.sql$)/);
+    if (!m) continue;
+    const token = m[1];
+    if (!groups.has(token)) groups.set(token, []);
+    groups.get(token).push(f);
   }
+
+  for (const [token, group] of groups) {
+    if (group.length < 2) continue;
+    const accepted = acceptedSets.get(token);
+    const currentSet = new Set(group);
+
+    // Allowlist ancrée sur l'ENSEMBLE EXACT, pas sur le token seul : un token
+    // déjà amnistié ne couvre QUE les fichiers documentés. Tout fichier en
+    // plus (ou différent) sous ce préfixe est une collision NEUVE, distincte,
+    // jamais absorbée silencieusement par une dette ancienne.
+    if (accepted && setsEqual(accepted, currentSet)) {
+      warn('I-BACK-10',
+        `Collision migration documentée (préfixe ${token}) : ${group.join(', ')}`,
+        `Dette connue listée dans migrations/GAPS.md — à nettoyer dès que possible, ne bloque pas`
+      );
+      continue;
+    }
+
+    if (accepted) {
+      const extra = group.filter(f => !accepted.has(f));
+      violate('I-BACK-10',
+        `Collision migration sur le préfixe ${token} : ${group.join(', ')} ` +
+        `— ${extra.length ? `fichier(s) NON couvert(s) par l'allowlist existante : ${extra.join(', ')}` : 'ensemble different de celui documenté'}`,
+        `migrations/GAPS.md n'amnistie que ${[...accepted].join(', ')} pour ce préfixe — ` +
+        `mettre à jour la ligne COLLISION si le nouveau fichier est légitime, sinon le renommer`
+      );
+      continue;
+    }
+
+    violate('I-BACK-10',
+      `Collision migration NON documentée sur le préfixe ${token} : ${group.join(', ')}`,
+      `Renommer l'un des deux avec un numéro libre, OU si le doublon est connu/accepté, ` +
+      `l'ajouter à migrations/GAPS.md avec une ligne "- COLLISION: \`${token}\` = ${group.join(', ')}"`
+    );
+  }
+}
+
+function setsEqual(a, b) {
+  if (a.size !== b.size) return false;
+  for (const x of a) if (!b.has(x)) return false;
+  return true;
+}
+
+// migrations/GAPS.md documente des collisions de préfixe ACCEPTÉES (dette
+// connue, pas une régression) via des lignes au format :
+//   - COLLISION: `014` = fichier_a.sql, fichier_b.sql
+// L'ensemble de fichiers fait partie intégrante de l'allowlist : ce n'est
+// pas le préfixe seul qui est amnistié, c'est CETTE liste précise.
+function loadAcceptedMigrationCollisions() {
+  const gapsFile = path.join(MIGRATIONS_DIR, 'GAPS.md');
+  const content = readFile(gapsFile);
+  const accepted = new Map(); // token -> Set<filename>
+  for (const m of content.matchAll(/COLLISION:\s*`([^`]+)`\s*=\s*([^\n]+)/g)) {
+    const token = m[1];
+    const fileSet = new Set(m[2].split(',').map(s => s.trim()).filter(Boolean));
+    accepted.set(token, fileSet);
+  }
+  return accepted;
 }
 
 // ════════════════════════════════════════════════════════════════

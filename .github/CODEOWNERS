@@ -1,0 +1,37 @@
+# CODEOWNERS — Komerce
+#
+# Objectif : forcer une review humaine explicite sur les fichiers où un script
+# ne peut pas tout vérifier (intention métier, schéma DB, gouvernance même).
+# Les gates (pre-commit + CI) couvrent la cohérence mécanique ; CODEOWNERS
+# couvre la décision humaine. Les deux sont complémentaires, ni l'un ni
+# l'autre ne remplace l'autre.
+#
+# ⚠️  À FAIRE AVANT QUE CE FICHIER SOIT UTILE : remplacer @TON-HANDLE-GITHUB
+#     ci-dessous par ton identifiant GitHub réel (ou une équipe @komerce/core).
+#     Un owner invalide = règle silencieusement ignorée par GitHub, sans erreur.
+#
+# ⚠️  CODEOWNERS seul ne bloque RIEN. Il faut en plus, côté GitHub :
+#     Settings → Branches → règle sur `main` → cocher
+#     "Require review from Code Owners". Sans ça ce fichier est juste informatif
+#     (GitHub annote la PR, mais n'empêche pas le merge).
+
+# Défaut : pas d'owner forcé sur le reste du repo.
+
+# Schéma et migrations — un renommage/suppression mal jugé ici a cassé le
+# tracking schema_migrations une fois déjà (AUD-10). Review humaine obligatoire.
+/migrations/                  @TON-HANDLE-GITHUB
+/db/schema.sql                @TON-HANDLE-GITHUB
+/db.js                        @TON-HANDLE-GITHUB
+
+# Cartes feature-first — l'intention métier ne se valide pas par un script.
+/features/                    @TON-HANDLE-GITHUB
+/public/boutique/features/    @TON-HANDLE-GITHUB
+
+# Gouvernance elle-même — gates, hooks, CI. Modifier ce qui surveille le code
+# ne doit jamais passer en silence (cf. risque "qui audite l'auditeur").
+/scripts/                     @TON-HANDLE-GITHUB
+/governance/                  @TON-HANDLE-GITHUB
+/.github/workflows/           @TON-HANDLE-GITHUB
+/.github/CODEOWNERS           @TON-HANDLE-GITHUB
+/AGENTS.md                    @TON-HANDLE-GITHUB
+/docs/CARTE_FIRST_INDEX.md    @TON-HANDLE-GITHUB
