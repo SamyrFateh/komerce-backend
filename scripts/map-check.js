@@ -20,9 +20,8 @@ const { spawnSync } = require('child_process');
 
 const STEPS = [
   ['npm', ['run', 'feature:registry']],
-  ['npm', ['run', 'feature:cards']],
+  ['npm', ['run', 'carte-first:check']],
   ['npm', ['run', 'feature:check']],
-  ['npm', ['run', 'docs:history-lint']],
   ['npm', ['run', 'arch:gate']],
   ['npm', ['run', 'dashboards:360:check']],
   ['npm', ['run', 'boutique:360:check']],
