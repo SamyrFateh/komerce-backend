@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <script>
-/* Nuclear SW reset v302 — runs ONCE to clear all old caches */
+/* Nuclear SW reset v334 — runs ONCE to clear all old caches */
 (function(){
-  if(localStorage.getItem('sw_reset_v333'))return;
-  localStorage.setItem('sw_reset_v333','1');
+  if(localStorage.getItem('sw_reset_v334'))return;
+  localStorage.setItem('sw_reset_v334','1');
   if(!('serviceWorker' in navigator))return;
   navigator.serviceWorker.getRegistrations().then(function(regs){
     Promise.all(regs.map(function(r){return r.unregister();})).then(function(){
@@ -14,7 +14,7 @@
     }).then(function(keys){
       return Promise.all(keys.map(function(k){return caches.delete(k);}));
     }).then(function(){
-      console.log('[RESET v326] All SWs unregistered, all caches cleared. Reloading...');
+      console.log('[RESET v334] All SWs unregistered, all caches cleared. Reloading...');
       location.reload();
     });
   });
@@ -36,7 +36,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v333') === -1) caches.delete(n);
+        if(n.indexOf('komerce-v334') === -1) caches.delete(n);
       });
     });
   }
