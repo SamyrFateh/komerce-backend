@@ -1,0 +1,42 @@
+name: Carte First
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+concurrency:
+  group: carte-first-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  governance:
+    name: Carte-first governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Feature card schema
+        run: npm run gate:schema
+
+      - name: Touched files ownership
+        run: npm run gate:touched-files
+
+      - name: Docs history lint
+        run: npm run gate:docs-lint
+
+      - name: Feature audit
+        run: npm run gate:feature-audit
+
+      - name: Map reconstruction
+        run: npm run map:check
