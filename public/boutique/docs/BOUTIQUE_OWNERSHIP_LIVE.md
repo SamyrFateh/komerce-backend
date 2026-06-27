@@ -2,7 +2,7 @@
 
 > ⚠️ **NE PAS ÉDITER À LA MAIN.** Généré par `scripts/gen-ownership.js` depuis le code réel.
 > Régénérer après chaque PR : `node scripts/gen-ownership.js`
-> Dernière génération : 2026-06-26
+> Dernière génération : 2026-06-27
 
 Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'impacte ?**
 
@@ -14,7 +14,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
-| **Modal produit** `.k-modal*` | modal-shell.css (14), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
+| **Modal produit** `.k-modal*` | modal-shell.css (17), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
 | **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (20), layout.css (10), hero.css (1) | 3 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |

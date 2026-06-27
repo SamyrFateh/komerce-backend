@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-06-26T20:25:06.803Z
+> Régénération : `npm run boutique:arch`. Date : 2026-06-27T10:45:52.669Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -27,7 +27,7 @@
 | `modal-media.css` | 299 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 357 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1154 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 793 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 899 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 962 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
@@ -41,9 +41,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=114
- 2. /boutique/css/dist/components.css?v=126
- 3. /boutique/css/dist/desktop.css?v=49
+ 1. /boutique/css/dist/base.css?v=116
+ 2. /boutique/css/dist/components.css?v=129
+ 3. /boutique/css/dist/desktop.css?v=51
  4. /boutique/css/dist/event.css?v=31
 ```
 
@@ -66,7 +66,7 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 | `#k-desktop-catalog-wrap` | `layout.css` (1/7) |
 | `.k-header` | `layout.css` (9/7) |
 | `.k-hero-media` | `hero.css` (4/5) |
-| `.k-modal` ⚠️ | `modal-product.css` (0/1)<br>`modal-shell.css` (5/2) |
+| `.k-modal` ⚠️ | `modal-product.css` (0/1)<br>`modal-shell.css` (5/3) |
 
 > ⚠️ = sélecteur défini dans plus d'un fichier. Vérifier que c'est conforme à `BOUTIQUE_ARCHITECTURE.md` §3.
 
@@ -99,11 +99,11 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×2) ⚠️ multi-owner |
-| `--pager-w` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--bnav-h` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--modal-scroll-y` | `js\b-modal-core.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--pager-top` | `js/b-pager.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×2) ⚠️ multi-owner |
+| `--pager-w` | `js/b-pager.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--bnav-h` | `js/b-pager.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--modal-scroll-y` | `js/b-modal-core.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 
