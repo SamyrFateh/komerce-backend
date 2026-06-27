@@ -27,8 +27,8 @@ jobs:
       - name: "Niveau 0 — Registre des features (cohérence)"
         run: npm run feature:registry
 
-      - name: "Niveau 0 — Cartes feature (schema carte-first)"
-        run: node scripts/feature-card-schema-check.js
+      - name: "Niveau 0 — Cartes feature (bootstrap carte-first)"
+        run: npm run feature:cards
 
       - name: "Niveau 1-4 — Pyramide qualité (code)"
         run: npm run quality:gate
@@ -123,7 +123,10 @@ jobs:
         run: npm ci
 
       - name: Carte-first bootstrap checks
-        run: node scripts/run-carte-first-checks.js
+        run: npm run carte-first:check
+
+      - name: Map reconstruction check
+        run: npm run map:check
 
   boutique-quality:
     name: "🛡️ Boutique Quality Gates"
