@@ -1,85 +1,20 @@
-# Komerce — Règles Agent Cursor
+# Komerce - Regles Agent Cursor
 
-## Instruction obligatoire — lire avant toute action
+Avant toute modification :
 
-Avant de modifier, corriger, supprimer ou implémenter quoi que ce soit dans ce projet, tu dois lire et suivre la gouvernance active du dépôt.
+1. Lire AGENTS.md.
+2. Lire docs/CARTE_FIRST_INDEX.md.
+3. Lire la carte feature ou le transversal concerne.
 
-## Lecture obligatoire dans cet ordre
+Ne pas commencer par un audit, un rapport date, un prompt historique ou une sortie generee.
 
-1. `AGENTS.md`
-2. `docs/README.md`
-3. `docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`
-4. `docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`
-5. `docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`
-6. `docs/KOMERCE_ARCH_HEADER_GRAPH.md`
-7. `docs/komerce-arch-header-graph.json`
-8. `docs/SCHEMA.md`
-9. `docs/chantier/STATUS.md`
-10. Les docs actives de la zone touchée listées dans `docs/README.md`
+Gates utiles :
 
-Ne pas démarrer depuis un ancien audit, une ancienne roadmap, un prompt historique ou un document non listé par `docs/README.md`.
+- npm run feature:registry
+- npm run gate:schema
+- npm run gate:touched-files
+- npm run gate:docs-lint
+- npm run gate:feature-audit
+- npm run map:check
 
-## Doctrine graphe obligatoire
-
-La cartographie `@komerce-arch` est un contrat d'intervention.
-
-Toute création, modification ou suppression de feature fonctionnelle doit :
-
-- lire le header `@komerce-arch` ou `@komerce-arch-lite` de chaque fichier touché ;
-- lire `interventionIndex["<file>"]` dans `docs/komerce-arch-header-graph.json` ;
-- créer un header pour tout nouveau fichier source ;
-- mettre à jour les champs du header si le contrat change ;
-- nettoyer `@depends`, `@used-by`, `@owner` en cas de suppression ou fusion ;
-- régénérer le graphe avec `node scripts/generate-komerce-arch-graph.js` ;
-- vérifier `files without headers: 0` et `lite headers without owner: 0`.
-
-Un changement fonctionnel sans cartographie à jour est incomplet.
-
-## Doctrine DB obligatoire
-
-Toute migration ou modification de table, colonne, enum, index, trigger, fonction ou contrainte doit suivre :
-
-```txt
-docs/KOMERCE_DB_SCHEMA_DOCTRINE.md
-```
-
-Un changement DB est incomplet tant que `docs/SCHEMA.md`, les headers DB concernés et le graphe ne sont pas alignés.
-
-## Workflow
-
-```txt
-AVANT de coder :
-1. Lire AGENTS.md
-2. Lire docs/README.md
-3. Lire KOMERCE_ARCH_GRAPH_DOCTRINE
-4. Lire KOMERCE_DB_SCHEMA_DOCTRINE si la DB est touchée
-5. Lire le graphe et l'interventionIndex des fichiers touchés
-6. Lire SCHEMA.md si une table ou migration est concernée
-7. Lire les docs actives de la zone
-8. Seulement alors implémenter
-
-APRÈS avoir codé :
-1. Mettre à jour les headers architecture impactés
-2. Mettre à jour SCHEMA.md si le schéma DB change
-3. Régénérer le graphe si nécessaire
-4. Mettre à jour la doc active concernée
-5. Mettre à jour STATUS.md si l'état courant change
-6. Vérifier les garde-fous/tests applicables
-```
-
-## Boutique
-
-Si tu touches `public/boutique/**`, lire aussi :
-
-- `docs/boutique/README.md`
-- `public/boutique/README.md`
-
-La Boutique n'est pas exemptée de la doctrine graphe.
-
-## Règles absolues
-
-- Jamais de nouveau fichier source muet.
-- Jamais de changement DB sans mise à jour `docs/SCHEMA.md`, `@db-read`, `@db-write`, `@db-txn`.
-- Jamais de suppression/fusion sans nettoyage des liens de graphe.
-- Jamais d'invention de précision : utiliser `@unknown` ou `resolve_before_behavior_change` si nécessaire.
-- Toujours lire depuis le repo, jamais se fier à un état local obsolète.
+Si public/boutique est touche, lire aussi public/boutique/README.md et la carte parente.
