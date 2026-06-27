@@ -23,20 +23,35 @@ const path = require('path');
 const ROOT = process.cwd();
 const FEATURES_DIR = path.join(ROOT, 'features');
 
-const APP_PREFIXES = ['services/', 'routes/', 'middleware/', 'utils/', 'validators/', 'core/', 'bootstrap/', 'public/boutique/js/', 'public/boutique/scripts/'];
+const APP_PREFIXES = [
+  'services/',
+  'routes/',
+  'middleware/',
+  'utils/',
+  'validators/',
+  'core/',
+  'bootstrap/',
+  'public/boutique/js/',
+  'public/boutique/css/',
+  'public/boutique/scripts/',
+];
 const IGNORE_PREFIXES = ['archive/', 'docs/', '.github/', 'tests/', 'scripts/'];
 
 function git(args) {
   return execFileSync('git', args, { encoding: 'utf8' }).trim();
 }
 
+function splitLines(out) {
+  return out.split('\n').map((line) => line.trim()).filter(Boolean);
+}
+
 function diffFiles() {
   const base = process.env.BASE_REF || 'origin/main';
   try {
     const mergeBase = git(['merge-base', 'HEAD', base]);
-    return git(['diff', '--name-only', `${mergeBase}...HEAD`]).split('\n').filter(Boolean);
+    return splitLines(git(['diff', '--name-only', `${mergeBase}...HEAD`]));
   } catch (_) {
-    return git(['diff', '--name-only', 'HEAD~1..HEAD']).split('\n').filter(Boolean);
+    return splitLines(git(['diff', '--name-only', 'HEAD~1..HEAD']));
   }
 }
 
@@ -47,12 +62,18 @@ function listFeatureFiles() {
     .map((file) => path.join(FEATURES_DIR, file));
 }
 
+function normalizeOwnedPath(value) {
+  const normalized = value.replace(/\\/g, '/');
+  if (normalized.startsWith('js/') || normalized.startsWith('css/')) return `public/boutique/${normalized}`;
+  return normalized;
+}
+
 function flattenFiles(filesValue) {
   const out = new Set();
   function visit(value) {
     if (!value) return;
     if (typeof value === 'string') {
-      out.add(value.replace(/\\/g, '/'));
+      out.add(normalizeOwnedPath(value));
       return;
     }
     if (Array.isArray(value)) {
