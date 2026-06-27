@@ -23,7 +23,7 @@ Ordre obligatoire :
 6. Vérifier que chaque fichier touché appartient à la carte ou à un transversal déclaré.
 7. Si l'intention métier change, mettre à jour la carte dans la même PR.
 8. Régénérer les sorties dérivées pertinentes.
-9. Lancer les gates applicables, puis `npm run map:check` quand disponible.
+9. Lancer les gates applicables : `npm run carte-first:check`, puis `npm run map:check` lorsque la reconstruction complète est exigée.
 
 Un agent ne doit pas démarrer depuis un ancien audit, un prompt historique, un rapport daté, un `_LIVE.md`, un `MEMO_*` ou une sortie générée. Ces fichiers peuvent informer, mais ne sont pas porte d'entrée.
 
@@ -43,6 +43,8 @@ Un agent ne doit pas démarrer depuis un ancien audit, un prompt historique, un 
  ║      docs/doctrine/APP_FEATURE_REGISTRY.md                            ║
  ║      features/<feature>.feature.js → service, périmètre, autorité    ║
  ║      🔒 npm run feature:registry                                     ║
+ ║      🔒 npm run feature:cards                                        ║
+ ║      🔒 npm run feature:touched                                      ║
  ║                                                                       ║
  ║  N5  SLICE ────── Le découpage technique est-il cohérent ?           ║
  ║      docs/doctrine/FEATURE_SLICE_DOCTRINE.md                          ║
@@ -60,8 +62,11 @@ Un agent ne doit pas démarrer depuis un ancien audit, un prompt historique, un 
  ║      docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md                        ║
  ║      🔒 npm run quality:gate                                         ║
  ║                                                                       ║
- ║  N1  DEPS+TESTS ─ npm audit, jest                                    ║
- ║      🔒 npm run audit:gate + npm test                                ║
+ ║  DOCS ─────────── Pas de bruit historique hors archive               ║
+ ║      🔒 npm run docs:history-lint                                    ║
+ ║                                                                       ║
+ ║  MAP ──────────── Reconstruction globale                             ║
+ ║      🔒 npm run map:check                                            ║
  ║                                                                       ║
  ║  CSS BOUTIQUE ─── 0 conflit CSS (baseline verrouillé)                ║
  ║      🔒 npm run css:guard                                            ║
@@ -77,19 +82,44 @@ Chaque 🔒 est un gate automatisé. Un gate rouge bloque le merge — pas de co
 | Job | Step | Gate | Bloquant |
 |-----|------|------|----------|
 | unit | 1 | `npm run feature:registry` — Registre N0 | ✅ oui |
-| unit | 2 | `npm run quality:gate` — Pyramide N2 | ✅ oui |
-| unit | 3 | `npm run backend:audit` — Architecture N4 | ✅ oui |
-| unit | 4 | `npm run audit:gate` — npm audit | ✅ oui |
-| unit | 5 | `npx jest tests/unit` — Tests unitaires | ✅ oui |
-| unit | 6 | `npm run feature:check` — Feature Slice Guard | ✅ oui |
-| integration | 1 | `npm run arch:drift` — Schema drift N3 | ✅ oui |
+| unit | 2 | `npm run feature:cards` — Cartes bootstrap | ✅ oui |
+| unit | 3 | `npm run quality:gate` — Pyramide N2 | ✅ oui |
+| unit | 4 | `npm run backend:audit` — Architecture backend | ✅ oui |
+| unit | 5 | `npm run audit:gate` — npm audit | ✅ oui |
+| unit | 6 | `npx jest tests/unit` — Tests unitaires | ✅ oui |
+| unit | 7 | `npm run feature:check` — Feature Slice Guard | ✅ oui |
+| integration | 1 | `node scripts/check-schema-freshness.js` | ✅ oui |
 | integration | 2 | `npx jest tests/integration` | ✅ oui |
-| governance | - | `npm run arch:gate` — Headers + graph | ✅ oui |
-| deploy | build | `npm run css:guard` — CSS 0 conflit | ✅ oui |
+| carte-first-governance | 1 | `npm run carte-first:check` — cartes, docs touchées, fichiers touchés | ✅ oui |
+| carte-first-governance | 2 | `npm run map:check` — reconstruction globale | ✅ oui |
+| boutique-quality | 1 | `npm run audit:gate` boutique | ✅ oui |
+| boutique-quality | 2 | `npm run check:fast` boutique | ✅ oui |
 
 ---
 
-## 3. Feature (N0) — toujours en premier
+## 3. Gates carte-first
+
+| Commande | Rôle | Mode |
+|----------|------|------|
+| `npm run feature:cards` | Validation bootstrap des cartes | bloquant CI |
+| `npm run feature:cards:strict` | Validation cible complète des cartes | rapport / future promotion bloquante |
+| `npm run feature:touched` | Fichiers applicatifs touchés → carte/transversal | bloquant CI |
+| `npm run docs:history-lint` | Bruit historique dans les docs touchées | bloquant CI |
+| `npm run docs:history-lint:all` | Scan complet avant passe d'archive | rapport / passe dédiée |
+| `npm run carte-first:check` | Agrégat bootstrap carte-first | bloquant CI |
+| `npm run carte-first:check:strict` | Agrégat strict cible | rapport / future promotion |
+| `npm run map:check` | Big map reconstructible par cartes + générateurs | bloquant quand branché CI |
+
+PowerShell Windows :
+
+```powershell
+./scripts/run-carte-first-checks.ps1
+./scripts/run-carte-first-checks.ps1 -Strict
+```
+
+---
+
+## 4. Feature (N0) — toujours en premier
 
 Avant de toucher la moindre logique métier :
 
@@ -99,23 +129,34 @@ Avant de toucher la moindre logique métier :
 4. Tout fichier ajouté → le déclarer dans le manifest ou dans un transversal dans la même PR.
 5. Tout header `@domain` doit correspondre au manifest de sa feature.
 
-Gate : `node scripts/feature-registry-check.js --strict`
+Gates :
+
+```bash
+npm run feature:registry
+npm run feature:cards
+npm run feature:touched
+```
 
 ---
 
-## 4. Feature Slice (N5)
+## 5. Feature Slice (N5)
 
 Le manifest porte le détail technique : fichiers, contrat, migrations, tests.
 
 Doctrine : `docs/doctrine/FEATURE_SLICE_DOCTRINE.md`
-Gate : `node scripts/feature-guard.js --strict`
+Gate : `npm run feature:check`
 
 ---
 
-## 5. Architecture (N4)
+## 6. Architecture (N4)
 
 Tout fichier source naît avec un header `@komerce-arch`.
-Après modification : `node scripts/generate-komerce-arch-graph.js && npm run arch:gate`
+Après modification :
+
+```bash
+npm run arch:gen
+npm run arch:gate
+```
 
 Fichier avec shebang (`#!/usr/bin/env node`) : ordre obligatoire = shebang ligne 1 → header `@komerce-arch` → `'use strict'` → reste.
 
@@ -123,7 +164,7 @@ Doctrine : `docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`
 
 ---
 
-## 6. DB (N3)
+## 7. DB (N3)
 
 Toute migration met à jour `docs/SCHEMA.md` et les headers `@db-read/@db-write/@db-txn`.
 
@@ -131,7 +172,7 @@ Doctrine : `docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`
 
 ---
 
-## 7. Code Quality (N2)
+## 8. Code Quality (N2)
 
 Conventions vérifiées automatiquement par `scripts/code-quality-gate.js` :
 
@@ -144,25 +185,10 @@ Gate : `npm run quality:gate`
 
 ---
 
-## 8. CSS Boutique
+## 9. CSS Boutique
 
 Baseline verrouillé à **0 conflit**. Scanner : `public/boutique/scripts/css-guard.js`.
 Gate : `npm run css:guard`.
-
----
-
-## 9. Règles techniques non négociables
-
-- Statuts commande : `services/order-status-machine.js`.
-- Paiements Stripe/cash/wallet/shared-cart : services propriétaires.
-- Webhooks Stripe : body brut avant `express.json`.
-- Wallet : créditer, débiter, contre-passer (jamais supprimer).
-- Pricing : composantes DB, jamais de coefficient dur.
-- Toute transition laisse une trace.
-
----
-
-## 10. Règle Boutique
 
 Si la modification touche `public/boutique/**` :
 
@@ -174,6 +200,17 @@ Si la modification touche `public/boutique/**` :
 
 ---
 
+## 10. Règles techniques non négociables
+
+- Statuts commande : `services/order-status-machine.js`.
+- Paiements Stripe/cash/wallet/shared-cart : services propriétaires.
+- Webhooks Stripe : body brut avant `express.json`.
+- Wallet : créditer, débiter, contre-passer (jamais supprimer).
+- Pricing : composantes DB, jamais de coefficient dur.
+- Toute transition laisse une trace.
+
+---
+
 ## 11. Fin de session
 
 Avant commit : mettre à jour headers `@komerce-arch`, manifest `features/`, `SCHEMA.md`, `STATUS.md` selon ce qui a changé.
@@ -181,10 +218,10 @@ Avant commit : mettre à jour headers `@komerce-arch`, manifest `features/`, `SC
 Vérification minimale :
 
 ```bash
-npm run feature:registry && npm run quality:gate
+npm run feature:registry && npm run carte-first:check && npm run quality:gate
 ```
 
-Vérification cible carte-first :
+Vérification cible :
 
 ```bash
 npm run map:check
