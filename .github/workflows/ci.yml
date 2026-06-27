@@ -5,15 +5,11 @@ on:
     branches: [ main, master ]
   pull_request:
 
-# Annule les runs obsolètes sur une même branche
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
-  # Job 1 — Tests unitaires : rapides, aucune base de données.
-  # ─────────────────────────────────────────────────────────────
   unit:
     name: Unit tests + backend audit (no DB)
     runs-on: ubuntu-latest
@@ -30,6 +26,9 @@ jobs:
 
       - name: "Niveau 0 — Registre des features (cohérence)"
         run: npm run feature:registry
+
+      - name: "Niveau 0 — Cartes feature (schema carte-first)"
+        run: node scripts/feature-card-schema-check.js
 
       - name: "Niveau 1-4 — Pyramide qualité (code)"
         run: npm run quality:gate
@@ -48,12 +47,6 @@ jobs:
       - name: "Niveau 5 — Feature Slice Guard (périmètre complet, montage/démontage)"
         run: npm run feature:check
 
-  # ─────────────────────────────────────────────────────────────
-  # Job 2 — Tests d'intégration : Postgres jetable (service container).
-  # Charge docs/db/railway-live-schema.sql via ci-migrate.js,
-  # qui baseline dynamiquement (git) les migrations déjà dans le dump
-  # et n'applique que les migrations post-snapshot.
-  # ─────────────────────────────────────────────────────────────
   integration:
     name: Integration tests (Postgres)
     runs-on: ubuntu-latest
@@ -98,16 +91,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Vérifie que docs/db/railway-live-schema.sql est frais avant tout.
-      # Bloque si une migration récente a ajouté une colonne absente du dump.
-      # Correctif : merger le PR auto créé par schema-refresh.yml.
       - name: Check schema freshness
         run: node scripts/check-schema-freshness.js
 
-      # Charge le dump Railway (schéma complet) dans le Postgres CI,
-      # puis baseline dynamiquement les migrations déjà présentes dans le dump
-      # (via git log/ls-tree — plus de liste hardcodée).
-      # N'applique que les migrations vraiment nouvelles (post-snapshot).
       - name: Load DB schema + run pending migrations
         run: |
           psql "$DATABASE_URL" -f docs/db/railway-live-schema.sql
@@ -120,20 +106,25 @@ jobs:
             npx jest "$f" --ci --forceExit || exit 1
           done
 
-  # ─────────────────────────────────────────────────────────────
-  # Job 3 — Gates boutique (frontend) : périmètre et dépendances
-  # propres à public/boutique (stylelint, playwright), absentes du
-  # package.json racine -> npm ci dédié, working-directory dédié.
-  # Reprend le job qui vivait (mort, jamais déclenché par GitHub
-  # Actions) dans public/boutique/.github/workflows/ci.yml : seul
-  # un fichier sous .github/workflows/ à la RACINE du repo est lu
-  # par Actions. check:fast = même suite que le hook pre-commit
-  # local (scripts/setup-hooks.sh, étape 6), moins l'e2e Playwright
-  # (nécessite un serveur + DB — hors périmètre de ce job statique).
-  # N1 (audit:gate) ajouté : scripts/npm-audit-gate.js --cwd=. réutilise
-  # le gate racine sans le dupliquer ; jusqu'ici les deps boutique
-  # (stylelint, @playwright/test) n'étaient jamais auditées.
-  # ─────────────────────────────────────────────────────────────
+  carte-first-governance:
+    name: Carte-first governance checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Carte-first bootstrap checks
+        run: node scripts/run-carte-first-checks.js
+
   boutique-quality:
     name: "🛡️ Boutique Quality Gates"
     runs-on: ubuntu-latest
