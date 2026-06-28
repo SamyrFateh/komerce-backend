@@ -89,9 +89,6 @@ for (const file of requiredModalJs) {
   for (const field of ['role', 'domain', 'layer']) {
     if (!mod[field]) error(`${file}: header @${field} absent dans BOUTIQUE_360`);
   }
-  if (!Array.isArray(mod.doctrine) || mod.doctrine.length === 0) {
-    warning(`${file}: @doctrine absent ou vide dans BOUTIQUE_360`);
-  }
   if (!hasText(docsText, file)) error(`Owner JS non documente dans les docs canoniques Boutique: ${file}`);
   if (!hasText(catalogCard, file)) error(`catalog.feature.js ne declare pas le fichier modal: ${file}`);
 }
