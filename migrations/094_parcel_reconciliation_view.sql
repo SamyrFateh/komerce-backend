@@ -20,7 +20,7 @@ WITH last_event AS (
 coverage AS (
   SELECT oi.order_id,
          COUNT(oi.id)                                                    AS items_total,
-         COUNT(pi.order_item_id) FILTER (WHERE pa.status <> 'cancelled') AS items_packed
+         COUNT(pi.order_item_id) FILTER (WHERE pa.status <> 'cancelled'::parcel_status) AS items_packed
   FROM order_items oi
   LEFT JOIN parcel_items pi ON pi.order_item_id = oi.id
   LEFT JOIN parcels      pa ON pa.id = pi.parcel_id
@@ -39,7 +39,7 @@ SELECT
   (p.seal_code IS NOT NULL)  AS has_seal,
   ARRAY_REMOVE(ARRAY[
     -- 1) La projection (parcels.status) diverge du journal d'événements
-    CASE WHEN le.event_type IS NOT NULL AND le.event_type <> p.status
+    CASE WHEN le.event_type IS NOT NULL AND le.event_type <> p.status::text
          THEN 'projection_vs_event_drift' END,
     -- 2) Colis expédié (ou plus loin) mais articles manquants
     CASE WHEN p.status IN ('shipped','in_transit','arrived','available','collected')
@@ -60,7 +60,7 @@ FROM parcels p
 JOIN orders o           ON o.id = p.order_id
 LEFT JOIN last_event le ON le.parcel_id = p.id
 LEFT JOIN coverage cov  ON cov.order_id = p.order_id
-WHERE p.status <> 'cancelled';
+WHERE p.status <> 'cancelled'::parcel_status;
 
 -- Liste de travail :
 --   SELECT parcel_ref, order_ref, parcel_status, order_status, issues
