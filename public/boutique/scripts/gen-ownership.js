@@ -133,13 +133,12 @@ function render() {
   const dom = domOwnership();
   const bp  = breakpoints();
   const d   = debt();
-  const now = new Date().toISOString().slice(0, 10);
+
 
   let md = `# Boutique — Carte de propriété (LIVE / auto-générée)
 
 > ⚠️ **NE PAS ÉDITER À LA MAIN.** Généré par \`scripts/gen-ownership.js\` depuis le code réel.
 > Régénérer après chaque PR : \`node scripts/gen-ownership.js\`
-> Dernière génération : ${now}
 
 Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'impacte ?**
 

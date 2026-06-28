@@ -219,7 +219,6 @@ function jsVarOwners() {
 // RENDU MARKDOWN
 // ════════════════════════════════════════════════════════════════
 function render() {
-  const stamp = new Date().toISOString();
   const inv   = inventoryCss();
   const map   = selectorMap();
   const links = loadOrder();
@@ -231,7 +230,7 @@ function render() {
   let md = '';
   md += `# Komerce Boutique — Architecture LIVE\n\n`;
   md += `> **Document généré automatiquement.** Ne pas éditer à la main.\n`;
-  md += `> Régénération : \`npm run boutique:arch\`. Date : ${stamp}\n>\n`;
+  md += `> Régénération : \`npm run boutique:arch\`.\n>\n`;
   md += `> Le pendant normatif est \`BOUTIQUE_ARCHITECTURE.md\` — édité à la main.\n`;
   md += `> Comparer les deux montre l'écart entre l'état souhaité et l'état réel.\n\n`;
   md += `---\n\n`;

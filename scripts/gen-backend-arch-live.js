@@ -171,10 +171,8 @@ function render() {
   const collisions  = inventoryMigrationCollisions();
   const audit       = runAudit();
 
-  const now = new Date().toISOString();
-
   let md = `# Backend Komerce — Architecture LIVE (généré)\n\n`;
-  md += `> Généré le ${now} par \`scripts/gen-backend-arch-live.js\` (\`npm run backend:arch\`).\n`;
+  md += `> Généré par \`scripts/gen-backend-arch-live.js\` (\`npm run backend:arch\`).\n`;
   md += `> Ne jamais éditer ce fichier à la main — régénérer. Document normatif : \`docs/backend/BACKEND_ARCHITECTURE.md\`.\n\n`;
   md += `---\n\n`;
 

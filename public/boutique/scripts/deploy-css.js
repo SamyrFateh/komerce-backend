@@ -104,7 +104,6 @@ console.log('');
 
 if (!fs.existsSync(DIST_DIR)) fs.mkdirSync(DIST_DIR, { recursive: true });
 
-const stamp = new Date().toISOString().slice(0, 10);
 const newHashes = {};
 
 console.log(`${BOLD}1. Compilation des bundles${R}`);
@@ -121,7 +120,7 @@ for (const bundle of BUNDLES) {
 
   const header = [
     `/* ${'═'.repeat(63)}`,
-    `   KOMERCE — ${bundle.out} (${stamp})`,
+    `   KOMERCE — ${bundle.out}`,
     `   Généré par deploy-css.js — éditer les sources CSS.`,
     `   ${'═'.repeat(63)} */`,
     '',
