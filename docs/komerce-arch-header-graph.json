@@ -13,26 +13,26 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 318,
-    "filesWithFullHeaders": 289,
+    "scannedCodeFiles": 319,
+    "filesWithFullHeaders": 290,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 318,
+    "filesWithAnyHeaders": 319,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 665,
-    "edges": 2960,
+    "graphNodes": 666,
+    "edges": 2972,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 114,
-    "unresolvedCodeEdges": 272
+    "unresolvedCodeEdges": 273
   },
   "byDomain": {
     "bootstrap": 9,
     "notifications": 2,
     "auth": 18,
     "boutique": 36,
-    "catalog": 27,
+    "catalog": 28,
     "checkout": 2,
     "shared-cart": 35,
     "recommendations": 7,
@@ -80,7 +80,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 108,
+    "service": 109,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -89,7 +89,7 @@
   },
   "byCriticality": {
     "critical": 67,
-    "medium": 97,
+    "medium": 98,
     "high": 122,
     "low": 32
   },
@@ -7729,7 +7729,8 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/*",
+        "services/suppliers/catalog-import-orchestrator.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -12727,6 +12728,53 @@
       "impactAreas": [
         "catalog",
         "product-discovery"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/suppliers/catalog-import-orchestrator.js",
+      "file": "services/suppliers/catalog-import-orchestrator.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-import-orchestrator",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db.js",
+        "services/supplier-catalog-scanner.js",
+        "services/pricing-engine.js"
+      ],
+      "usedBy": [
+        "routes/sourcing-scanner.js"
+      ],
+      "dbRead": [
+        "sourcing_candidates"
+      ],
+      "dbWrite": [
+        "products",
+        "sourcing_candidate_events",
+        "sourcing_candidates",
+        "supplier_catalog_imports"
+      ],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "catalog"
       ],
       "version": "2026-06"
     },
@@ -25657,6 +25705,12 @@
       "label": "services/*"
     },
     {
+      "from": "routes/sourcing-scanner.js",
+      "to": "services/suppliers/catalog-import-orchestrator.js",
+      "type": "depends",
+      "label": "services/suppliers/catalog-import-orchestrator.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/sourcing-scanner.js",
       "type": "uses",
@@ -32423,6 +32477,72 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "services/supplier-catalog-scanner.js",
+      "type": "depends",
+      "label": "services/supplier-catalog-scanner.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "services/pricing-engine.js",
+      "type": "depends",
+      "label": "services/pricing-engine.js"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "services/suppliers/catalog-import-orchestrator.js",
+      "type": "uses",
+      "label": "routes/sourcing-scanner.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "db:products",
+      "type": "db-write",
+      "label": "products"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "db:sourcing_candidate_events",
+      "type": "db-write",
+      "label": "sourcing_candidate_events"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-write",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-write",
+      "label": "supplier_catalog_imports"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
     },
     {
       "from": "services/suppliers/connectors/api-connector.base.js",
@@ -40415,7 +40535,8 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/*",
+        "services/suppliers/catalog-import-orchestrator.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -40446,7 +40567,8 @@
         "db:supplier_catalog_imports",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
     "routes/tracking.js": {
@@ -43259,7 +43381,8 @@
         "db:orders",
         "db:products",
         "doctrine:resolve_before_behavior_change",
-        "impact:economic-engine"
+        "impact:economic-engine",
+        "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
     "services/pricing-guards.js": {
@@ -44896,7 +45019,51 @@
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
         "impact:catalog",
-        "impact:product-discovery"
+        "impact:product-discovery",
+        "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    "services/suppliers/catalog-import-orchestrator.js": {
+      "role": "catalog-import-orchestrator",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/supplier-catalog-scanner.js",
+        "services/pricing-engine.js"
+      ],
+      "directUsedBy": [
+        "routes/sourcing-scanner.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "sourcing_candidates"
+      ],
+      "dbWrite": [
+        "products",
+        "sourcing_candidate_events",
+        "sourcing_candidates",
+        "supplier_catalog_imports"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "mustCheck": [
+        "db:products",
+        "db:sourcing_candidate_events",
+        "db:sourcing_candidates",
+        "db:supplier_catalog_imports",
+        "doctrine:resolve_before_behavior_change",
+        "impact:catalog",
+        "routes/sourcing-scanner.js",
+        "services/pricing-engine.js",
+        "services/supplier-catalog-scanner.js"
       ]
     },
     "services/suppliers/connectors/api-connector.base.js": {
@@ -47226,6 +47393,12 @@
       "to": "doctrine/V4.1",
       "type": "depends",
       "label": "doctrine/V4.1"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/verify-qr-collection.js",

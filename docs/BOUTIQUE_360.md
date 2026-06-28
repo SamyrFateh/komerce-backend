@@ -1,14 +1,14 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-28T13:01:40.608Z.
+> Régénéré le 2026-06-28T13:56:30.081Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **70** (70 headés) · Événements bus : **16** · Bundles CSS : **4**
+- Modules JS : **70** (70 headés) · Événements bus : **17** · Bundles CSS : **4**
 - Endpoints appelés : **55** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 28 dynamiques
-- Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
+- Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 8 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
 
@@ -85,6 +85,7 @@
 | `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-modal-suggestions, b-product-open-contract | 🟢 sain |
 | `modal:opened` | b-modal-core | b-mobile-modal-v1, b-mobile-premium-v1, b-modal-approche-c-hybrid, b-modal-desktop-enhancers, b-pager, b-pdp-curation-suggestions | 🟡 non déclaré |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
+| `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟡 non déclaré |
 | `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
 | `side-cart:render` | b-cart, b-cart-core, b-group-view | b-cart | 🟢 sain |
 | `sidebar:built` | b-desktop-sidebar | — | 🔴 émission orpheline |
@@ -129,6 +130,7 @@ graph LR
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_approche_c_hybrid["b-modal-approche-c-hybrid"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_pager["b-pager"]
   b_modal_product["b-modal-product"] -->|carousel:changed| b_modal_image_ux["b-modal-image-ux"]
+  b_modal_suggestions["b-modal-suggestions"] -->|modal:suggestions-rendered| b_pdp_curation_suggestions["b-pdp-curation-suggestions"]
 ```
 
 ## 3. Bundles CSS

@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-06-28T13:01:40.608Z",
+  "generatedAt": "2026-06-28T13:56:30.081Z",
   "summary": {
     "modules": 70,
     "withHeader": 70,
-    "events": 16,
+    "events": 17,
     "declaredActive": 10,
     "declaredDead": 5,
     "cssBundles": 4,
     "endpoints": 55,
     "orphanEmit": 2,
     "orphanListen": 1,
-    "undeclared": 7,
+    "undeclared": 8,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 30,
     "dynamicEndpoints": 28
@@ -991,7 +991,8 @@
         "b-modal-core.js"
       ],
       "emits": [
-        "modal:open"
+        "modal:open",
+        "modal:suggestions-rendered"
       ],
       "listens": [
         "modal:open"
@@ -1150,7 +1151,8 @@
       "usedBy": [],
       "emits": [],
       "listens": [
-        "modal:opened"
+        "modal:opened",
+        "modal:suggestions-rendered"
       ],
       "imports": [
         "b-bus",
@@ -2145,6 +2147,14 @@
         "b-modal-social-proof"
       ]
     },
+    "modal:suggestions-rendered": {
+      "emitters": [
+        "b-modal-suggestions"
+      ],
+      "listeners": [
+        "b-pdp-curation-suggestions"
+      ]
+    },
     "product:open-from-cart": {
       "emitters": [
         "b-product-open-contract"
@@ -2836,6 +2846,7 @@
       "modal:closed",
       "modal:opened",
       "modal:product-changed",
+      "modal:suggestions-rendered",
       "sidebar:built",
       "toast",
       "view:changed"

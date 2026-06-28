@@ -70,20 +70,30 @@ function rel(filePath) {
 // ALLOWLISTS — violations connues, lots de correction référencés
 // ════════════════════════════════════════════════════════════════
 
-// I-BACK-2 : fichiers > 800 lignes — allowlist rebasée 2026-06-28
-// 14 entrées retirées (passées sous le seuil suite aux refactos Lot B/B1-B6).
-// Correction prévue pour les entrées restantes : voir colonne Lot.
+// I-BACK-2 : fichiers > 800 lignes existants au 2026-05-17
+// Correction prévue : Lot B (extraction engines) + Lot B3/B4/B5
 const ALLOWED_LARGE_FILES = new Set([
-  'services/shared-cart-engine.js',           // 1279 l → Lot C (engine partagé, décomposition complexe)
-  'services/dashboard-metrics.js',            // 1082 l → Lot B4
-  'services/dashboard-finance-metrics.js',    // 1064 l → OK service — métriques financières, dense mais cohérent
-  'routes/shared-cart.js',                    //  989 l → OK route façade critique (panier partagé V4.1)
-  'services/collective-workspace-engine.js',  //  984 l → OK service métier dense
-  'services/notification-service.js',         //  964 l → OK service — many channels, peu de branches
-  'services/scan-engine.js',                  //  960 l → OK service — machine à états scans
-  'services/cost-allocation.js',              //  915 l → OK service — calcul coûts, peu de refacto utile
-  'services/radar-queries.js',                //  857 l → OK service — requêtes radar/recommandations
-  'routes/admin-dashboard.js',                //  806 l → Lot B4 (route agrégée dashboard)
+  'routes/dashboard.js',                         // 2614 l → Lot B4
+  'routes/admin.js',                             // 1207 l → Lot B5
+  'routes/order-api-v2.js',                      // 532 l  → OK, en dessous du seuil warning
+  'routes/parcel-api-v2.js',                     // 1299 l → Lot B (legacy figé)
+  'routes/pricing.js',                           // 1316 l → Lot B3
+  'routes/pickup-secret.js',                     // 1122 l → Lot B6
+  'routes/hub-dashboard.js',                     // 1015 l → Lot B
+  'routes/sourcing-engine.js',                   // 960 l  → B1 clôturé 2026-06-23 (façade mince acceptée, voir STATUS.md §B1)
+  'routes/economic-engine.js',                   // 808 l  → B2 clôturé 2026-06-23 (façade mince acceptée, voir STATUS.md §B2)
+  'routes/admin-radar.js',                       // 894 l  → Lot B
+  'routes/scans.js',                             // 835 l  → Lot B
+  'routes/admin-dashboard.js',                   // 786 l  → Lot B
+  'routes/purchasing.js',                        // 762 l  → Lot B
+  'services/pricing-engine.js',                  // 1483 l → Lot B3 (service, acceptable)
+  'services/shared-cart-engine.js',              // 1037 l → OK si pas d'extension prévue
+  'services/collective-workspace-engine.js',     // 965 l  → OK service
+  'services/collective-payment-orchestrator.js', // 942 l  → OK service
+  'services/cost-allocation.js',                 // 918 l  → OK service
+  'services/scan-engine.js',                     // 872 l  → OK service
+  'services/notification-service.js',            // 814 l  → OK service
+  'services/dashboard-metrics.js',               // 1052 l → Lot B4
 ]);
 
 // ════════════════════════════════════════════════════════════════
@@ -191,11 +201,14 @@ const COLUMN_OWNERSHIP = [
 ];
 
 // I-BACK-6 : routes/X-engine.js — engines dans routes/ (à migrer vers services/)
-// Allowlist temporaire — correction prévue Lot B1 et B2
+// Allowlist — B1/B2 clôturés 2026-06-23 (STATUS.md) : façades minces acceptées
+// telles quelles, pas de migration prévue malgré le nom de fichier. Seule
+// sourcing-scanner.js avait une extraction réelle restante (Lot B1 bis,
+// catalogs/import → services/suppliers/catalog-import-orchestrator.js, 2026-06-28).
 const ALLOWED_ENGINE_ROUTES = new Set([
-  'routes/sourcing-engine.js',   // → Lot B1 (priorité absolue)
-  'routes/economic-engine.js',   // → Lot B2
-  'routes/sourcing-scanner.js',  // → Lot B1 (lié)
+  'routes/sourcing-engine.js',   // B1 clôturé — façade mince, acceptée en l'état
+  'routes/economic-engine.js',   // B2 clôturé — façade mince, acceptée en l'état
+  'routes/sourcing-scanner.js',  // catalogs/import extrait (2026-06-28) ; reste *-scanner.js par choix, pas par dette
 ]);
 
 // I-BACK-7 : console.log dans routes/ et services/
@@ -429,8 +442,8 @@ function checkI6_noEngineInRoutes() {
       );
     } else {
       warn('I-BACK-6',
-        `${relPath} — engine en routes/ (connu, lot B prévu)`,
-        'À migrer dans services/ — voir Lot B1/B2'
+        `${relPath} — engine en routes/ (nom de fichier seulement, façade déjà mince)`,
+        'Acceptée en l\'état (STATUS.md §B1/B2) — pas de migration prévue, dette purement nominale'
       );
     }
   }

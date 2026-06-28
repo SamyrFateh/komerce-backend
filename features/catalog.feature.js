@@ -56,6 +56,7 @@ module.exports = {
       'services/suppliers/connectors/csv-connector.js',
       'services/suppliers/connectors/noon-connector.js',
       'services/supplier-catalog-scanner.js',
+      'services/suppliers/catalog-import-orchestrator.js',
     ],
     routes: [
       'routes/products.js',

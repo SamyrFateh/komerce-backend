@@ -1,6 +1,6 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-06-28T12:53:26.481Z — 475 endpoints
+> 2026-06-28T13:47:09.776Z — 475 endpoints
 
 | Niveau | Compte |
 |---|---|

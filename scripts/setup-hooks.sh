@@ -184,7 +184,7 @@ echo ""
 echo "🛡️  Komerce — reprise gouvernance (pre-commit)..."
 
 # 0a. Registre features (N0) — tout fichier doit appartenir à une feature déclarée.
-_OUT=$(node scripts/feature-registry-check.js --strict 2>&1); _RC=$?
+{ _OUT=$(node scripts/feature-registry-check.js --strict 2>&1); _RC=$?; } || true
 if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Registre features : orphelin ou désaccord header↔manifest.${NC}"
   echo "$_OUT"
@@ -192,7 +192,7 @@ if [ $_RC -ne 0 ]; then
 fi
 
 # 0b. Code quality (N2) — use strict, const/let, pas de SQL concat.
-_OUT=$(node scripts/code-quality-gate.js --strict 2>&1); _RC=$?
+{ _OUT=$(node scripts/code-quality-gate.js --strict 2>&1); _RC=$?; } || true
 if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Qualité code : violation N2 (strict/var/SQL).${NC}"
   echo "$_OUT"
@@ -230,20 +230,20 @@ fi
 git add docs/komerce-arch-header-graph.json docs/KOMERCE_ARCH_HEADER_GRAPH.md scripts/arch-debt-budget.json 2>/dev/null || true
 
 # 4. Portes : ne bloquer que sur un vrai probleme restant
-_OUT=$(node scripts/arch-db-check.js 2>&1); _RC=$?
+{ _OUT=$(node scripts/arch-db-check.js 2>&1); _RC=$?; } || true
 if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Hygiene headers : violation bloquante.${NC}"
   echo "$_OUT"
   exit 1
 fi
-_OUT=$(node scripts/arch-schema-drift-check.js 2>&1); _RC=$?
+{ _OUT=$(node scripts/arch-schema-drift-check.js 2>&1); _RC=$?; } || true
 if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Drift SCHEMA.md <-> DB live non resolu automatiquement.${NC}"
   echo "$_OUT"
   echo "   (fiction hors liste = vrai bug ; fantome = retirer de SCHEMA.md ; cliquet depasse = documenter)"
   exit 1
 fi
-_OUT=$(node scripts/arch-header-sql-check.js 2>&1); _RC=$?
+{ _OUT=$(node scripts/arch-header-sql-check.js 2>&1); _RC=$?; } || true
 if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Sous-declaration headers<->SQL au-dela du cliquet.${NC}"
   echo "$_OUT"
@@ -253,7 +253,7 @@ if [ $_RC -ne 0 ]; then
 fi
 # 5. Doctrine sanitize_before_render : ne bloque QUE si une source externe (req/params/
 #    location/URL…) atterrit non echappee dans un sink HTML, sur les lignes ajoutees.
-_OUT=$(node scripts/arch-doctrine-sanitize-check.js 2>&1); _RC=$?
+{ _OUT=$(node scripts/arch-doctrine-sanitize-check.js 2>&1); _RC=$?; } || true
 if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Doctrine sanitize_before_render : entree externe rendue sans echappement.${NC}"
   echo "$_OUT"
@@ -263,7 +263,7 @@ fi
 
 # 5b. Audit d'architecture backend (invariants I-BACK-*) : 100% statique, rapide.
 #     SQL non parametre, owner unique payment_status, auth admin, etc.
-_OUT=$(node scripts/audit-backend-arch.js 2>&1); _RC=$?
+{ _OUT=$(node scripts/audit-backend-arch.js 2>&1); _RC=$?; } || true
 if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Audit backend : violation d'invariant (SQL non parametre / owner payment_status / auth admin).${NC}"
   echo "$_OUT"

@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/*, services/suppliers/catalog-import-orchestrator.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
  * @db-write      products, sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
@@ -26,12 +26,16 @@
  *
  * Aucune logique fournisseur dans ce fichier.
  *
+ * Lot B1 (2026-06-28) : l'orchestration métier de POST /catalogs/import
+ * (upsert idempotent, verrou champs manuels, archivage full-snapshot) a été
+ * extraite iso-comportement vers services/suppliers/catalog-import-orchestrator.js.
+ * Cette route ne fait plus que dispatcher et appeler le service.
+ *
  * Pipeline complet :
  *   1. POST /catalogs/import     reçoit { source_type, supplier_name, ... }
  *   2. Dispatch vers le bon connector
  *   3. Connector → NormalizedSupplierProduct[]
- *   4. Scanner   → normalize + scan via pricing-engine
- *   5. Persist   → INSERT INTO sourcing_candidates
+ *   4. catalogImportOrchestrator.importCatalog() → normalize + scan + persist
  *
  * Routes :
  *   POST   /catalogs/import
@@ -55,6 +59,7 @@ const router = express.Router();
 const db = require('../db');
 const scanner = require('../services/supplier-catalog-scanner');
 const pricingEngine = require('../services/pricing-engine');
+const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const { authenticate } = require('../middleware/auth');
 
 // ── Connecteurs ──
@@ -150,221 +155,8 @@ async function dispatchToConnector(body) {
 // ═══════════════════════════════════════════════════════════════════════
 router.post('/catalogs/import', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
-    const b = req.body || {};
-    const supplierName = (b.supplier_name || '').trim();
-    const sourceType = b.source_type || 'manual';
-
-    if (!supplierName) return res.status(400).json({ error: 'supplier_name requis' });
-    if (!['csv', 'manual', 'api'].includes(sourceType)) {
-      return res.status(400).json({ error: 'source_type doit être csv, manual ou api' });
-    }
-
-    // 1. Dispatcher vers le connecteur → NormalizedSupplierProduct[]
-    let connectorResult;
-    try {
-      connectorResult = await dispatchToConnector(b);
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-
-    const products = connectorResult.products || [];
-    const invalidFromConnector = connectorResult.invalid || [];
-
-    if (!products.length) {
-      return res.status(400).json({
-        error: 'Aucun produit valide trouvé',
-        invalid: invalidFromConnector,
-      });
-    }
-
-    // 2. Charger config Komerce une seule fois
-    const config = await pricingEngine.loadGlobalConfig();
-
-    // 3. Créer l'import
-    const importRes = await db.query(
-      `INSERT INTO supplier_catalog_imports
-         (supplier_name, source_type, source_filename, notes, total_items, imported_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [supplierName, sourceType, b.source_filename || null, b.notes || null, products.length, req.user?.id || null]
-    );
-    const importId = importRes.rows[0].id;
-
-    // 4. Pour chaque NormalizedSupplierProduct : normaliser Komerce + scanner + persister
-    const results = { created: 0, errors: [...invalidFromConnector] };
-    for (const product of products) {
-      try {
-        const normalized = await scanner.normalizeCandidate(product, { config });
-        const scan = await scanner.scanCandidate(normalized, { config });
-
-        // DSC-E1 — UPSERT idempotent sur (supplier_name, supplier_product_id)
-        // Les états terminaux (imported_to_catalog, rejected) ne sont jamais régressés.
-        const scanJson = JSON.stringify({ ...scan.scan_result, sourcing_decision: scan.sourcing_decision, reason: scan.reason, recommended_action: scan.recommended_action });
-        const incomingDataSources = JSON.stringify(normalized.data_sources);
-
-        const upsertRes = await db.query(
-          `INSERT INTO sourcing_candidates (
-             import_id, supplier_name, supplier_product_id,
-             product_name, supplier_category, purchase_price, currency,
-             image_url, product_url, description,
-             stock_available, min_order_qty, supplier_delay_days,
-             weight_kg, dim_l_cm, dim_w_cm, dim_h_cm,
-             komerce_category, estimated_weight_kg, estimated_volume_m3,
-             purchase_price_kmf, target_margin_pct,
-             data_sources, scan_result, scan_at, confidence,
-             state, updated_by
-           ) VALUES (
-             $1, $2, $3,
-             $4, $5, $6, $7,
-             $8, $9, $10,
-             $11, $12, $13,
-             $14, $15, $16, $17,
-             $18, $19, $20,
-             $21, $22,
-             $23::jsonb, $24, NOW(), $25,
-             'scanned', $26
-           )
-           ON CONFLICT (supplier_name, supplier_product_id)
-             WHERE supplier_product_id IS NOT NULL
-           DO UPDATE SET
-             import_id           = EXCLUDED.import_id,
-             product_name        = EXCLUDED.product_name,
-             supplier_category   = EXCLUDED.supplier_category,
-             -- DSC-E2 : préserver les champs édités manuellement (data_sources[champ] = 'manual')
-             purchase_price      = CASE WHEN (sourcing_candidates.data_sources->>'purchase_price') = 'manual'
-                                        THEN sourcing_candidates.purchase_price
-                                        ELSE EXCLUDED.purchase_price END,
-             currency            = CASE WHEN (sourcing_candidates.data_sources->>'purchase_price') = 'manual'
-                                        THEN sourcing_candidates.currency
-                                        ELSE EXCLUDED.currency END,
-             purchase_price_kmf  = CASE WHEN (sourcing_candidates.data_sources->>'purchase_price') = 'manual'
-                                        THEN sourcing_candidates.purchase_price_kmf
-                                        ELSE EXCLUDED.purchase_price_kmf END,
-             komerce_category    = CASE WHEN (sourcing_candidates.data_sources->>'category') = 'manual'
-                                        THEN sourcing_candidates.komerce_category
-                                        ELSE EXCLUDED.komerce_category END,
-             estimated_weight_kg = CASE WHEN (sourcing_candidates.data_sources->>'weight') = 'manual'
-                                        THEN sourcing_candidates.estimated_weight_kg
-                                        ELSE EXCLUDED.estimated_weight_kg END,
-             estimated_volume_m3 = CASE WHEN (sourcing_candidates.data_sources->>'volume') = 'manual'
-                                        THEN sourcing_candidates.estimated_volume_m3
-                                        ELSE EXCLUDED.estimated_volume_m3 END,
-             target_margin_pct   = CASE WHEN (sourcing_candidates.data_sources->>'target_margin') = 'manual'
-                                        THEN sourcing_candidates.target_margin_pct
-                                        ELSE EXCLUDED.target_margin_pct END,
-             image_url           = EXCLUDED.image_url,
-             product_url         = EXCLUDED.product_url,
-             description         = EXCLUDED.description,
-             stock_available     = EXCLUDED.stock_available,
-             min_order_qty       = EXCLUDED.min_order_qty,
-             supplier_delay_days = EXCLUDED.supplier_delay_days,
-             weight_kg           = EXCLUDED.weight_kg,
-             dim_l_cm            = EXCLUDED.dim_l_cm,
-             dim_w_cm            = EXCLUDED.dim_w_cm,
-             dim_h_cm            = EXCLUDED.dim_h_cm,
-             -- Fusionner data_sources : les marques 'manual' existantes priment
-             data_sources        = sourcing_candidates.data_sources || EXCLUDED.data_sources,
-             scan_result         = EXCLUDED.scan_result,
-             scan_at             = NOW(),
-             confidence          = EXCLUDED.confidence,
-             -- Ne pas régresser un état terminal
-             state               = CASE WHEN sourcing_candidates.state IN ('imported_to_catalog', 'rejected')
-                                        THEN sourcing_candidates.state
-                                        ELSE 'scanned' END,
-             updated_by          = EXCLUDED.updated_by
-           RETURNING *, (xmax <> 0) AS was_updated`,
-          [
-            importId, supplierName, product.supplier_product_id || null,
-            product.product_name, product.supplier_category || null, product.purchase_price || null, product.currency || 'AED',
-            product.image_url || null, product.product_url || null, product.description || null,
-            product.stock_available || null, product.min_order_qty || null, product.supplier_delay_days || null,
-            product.weight_kg || null, product.dimensions?.l_cm || null, product.dimensions?.w_cm || null, product.dimensions?.h_cm || null,
-            normalized.komerce_category, normalized.estimated_weight_kg, normalized.estimated_volume_m3,
-            normalized.purchase_price_kmf, normalized.target_margin_pct,
-            incomingDataSources, scanJson, scan.confidence,
-            req.user?.id || null,
-          ]
-        );
-
-        const row = upsertRes.rows[0];
-        const wasUpdated = row.was_updated;
-
-        if (wasUpdated) {
-          // DSC-E2 : journaliser les champs ignorés pour cause de verrou 'manual'
-          const manualSources = row.data_sources || {};
-          const lockedFields = Object.entries(manualSources)
-            .filter(([, v]) => v === 'manual')
-            .map(([k]) => k);
-
-          await db.query(
-            `INSERT INTO sourcing_candidate_events
-               (candidate_id, event_type, changes, notes, triggered_by)
-             VALUES ($1, 'data_correction', $2, $3, $4)`,
-            [
-              row.id,
-              JSON.stringify({ re_import: true, locked_manual_fields: lockedFields }),
-              lockedFields.length
-                ? `Re-import : ${lockedFields.join(', ')} conservé(s) (édition manuelle).`
-                : 'Re-import sans champ manuel verrouillé.',
-              req.user?.id || null,
-            ]
-          );
-          results.updated = (results.updated || 0) + 1;
-        } else {
-          results.created++;
-        }
-      } catch (errOne) {
-        results.errors.push({ product_name: product.product_name || '?', error: errOne.message });
-      }
-    }
-
-    // DSC-E3 — Archivage des candidats disparus (full snapshot uniquement)
-    // Activé si is_full_snapshot=true dans le body.
-    // Passe à 'archived' les candidats du même supplier_name absents du lot
-    // et pas dans un état terminal (imported_to_catalog, rejected).
-    if (b.is_full_snapshot) {
-      const importedIds = products
-        .map(p => p.supplier_product_id)
-        .filter(Boolean);
-
-      const archiveRes = await db.query(
-        `UPDATE sourcing_candidates
-            SET state = 'archived', updated_by = $1
-          WHERE supplier_name = $2
-            AND supplier_product_id IS NOT NULL
-            AND supplier_product_id <> ALL($3::text[])
-            AND state NOT IN ('imported_to_catalog', 'rejected', 'archived')
-          RETURNING id, supplier_product_id, state`,
-        [req.user?.id || null, supplierName, importedIds]
-      );
-
-      for (const archived of archiveRes.rows) {
-        await db.query(
-          `INSERT INTO sourcing_candidate_events
-             (candidate_id, event_type, old_state, new_state, notes, triggered_by)
-           VALUES ($1, 'state_change', $2, 'archived', $3, $4)`,
-          [
-            archived.id,
-            archived.state,
-            `Absent du full-snapshot import ${importId}`,
-            req.user?.id || null,
-          ]
-        );
-      }
-
-      results.archived = archiveRes.rows.length;
-    }
-
-    res.json({
-      import_id: importId,
-      supplier_name: supplierName,
-      source_type: sourceType,
-      total_items: products.length,
-      created: results.created,
-      updated: results.updated || 0,
-      archived: results.archived || 0,
-      errors: results.errors,
-    });
+    const result = await catalogImportOrchestrator.importCatalog(req.body, req.user?.id, dispatchToConnector);
+    res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });
 
