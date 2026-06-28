@@ -24,7 +24,7 @@ module.exports = {
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Emettre une alerte ou un message sortant (WhatsApp, notification interne) declenche par une autre feature.',
 
-  // ── Perimetre ────────────────────────────────────────────────────────────
+  // ── Perimetre ───────────────────────────────────────────────────────────
   perimeter: {
     in: [
       'envoi WhatsApp via Meta',
@@ -46,7 +46,8 @@ module.exports = {
     ],
     services: [
       'services/whatsapp-meta.js',
-      'services/notification-service.js',        // barrel — Lot C2 2026-06-28
+      'services/notification-service.js',        // barrel historique
+      'services/notifications/notification-service.js', // barrel interne — Lot C2 2026-06-28
       'services/notifications/internals.js',     // helpers partagés, logNotification
       'services/notifications/order.js',         // notifyOrder*
       'services/notifications/parcel.js',        // notifyParcel*, _loadOrderFromParcel
