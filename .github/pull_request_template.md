@@ -14,11 +14,10 @@ Operation :
 
 ### Plan d'attaque
 
-- [ ] J'ai annonce le plan d'attaque avant de coder.
-- [ ] Le plan nomme le perimetre probable.
-- [ ] Le plan nomme le hors perimetre.
-- [ ] Le plan nomme les invariants a proteger.
-- [ ] Le plan nomme les gates ou tests prevus.
+- [ ] J'ai annonce un plan d'attaque avant de coder.
+- [ ] Le plan est court : 8 a 12 lignes dans le cas standard.
+- [ ] Le plan nomme les fichiers lus, sans paraphraser les docs.
+- [ ] Le plan nomme perimetre, hors perimetre, invariants et tests.
 
 Plan annonce :
 
