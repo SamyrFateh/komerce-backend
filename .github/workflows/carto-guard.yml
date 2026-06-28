@@ -15,7 +15,7 @@ jobs:
       - name: 🔍 Vérifier si des fichiers code ont changé
         id: code_changes
         run: |
-          CODE_CHANGED=$(git diff --name-only origin/main...HEAD | grep -E '^(routes/|middleware/|utils/|validators/|db/|scripts/|public/|dashboard-app/|server\.js|db\.js|package\.json|\.github/workflows/)' || true)
+          CODE_CHANGED=$(git diff --name-only origin/main...HEAD | grep -E '^(routes/|middleware/|utils/|validators/|db/|scripts/|public/|dashboard-app/|server\.js|db\.js|package\.json)' || true)
           if [ -n "$CODE_CHANGED" ]; then
             echo "code_changed=true" >> $GITHUB_OUTPUT
             echo "files<<ENDFILES" >> $GITHUB_OUTPUT
