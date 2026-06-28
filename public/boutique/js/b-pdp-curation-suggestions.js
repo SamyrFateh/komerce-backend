@@ -177,15 +177,18 @@ function enhanceCuration() {
   }
 }
 
+function scheduleEnhanceCuration() {
+  if (!isDesktop()) return;
+  requestAnimationFrame(function() {
+    requestAnimationFrame(enhanceCuration);
+  });
+}
+
 export function setupPdpCurationSuggestions() {
   if (_installed) return;
   _installed = true;
   injectStyles();
 
-  bus.on('modal:opened', function() {
-    if (!isDesktop()) return;
-    requestAnimationFrame(function() {
-      requestAnimationFrame(enhanceCuration);
-    });
-  });
+  bus.on('modal:opened', scheduleEnhanceCuration);
+  bus.on('modal:suggestions-rendered', scheduleEnhanceCuration);
 }
