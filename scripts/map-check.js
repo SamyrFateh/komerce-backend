@@ -109,6 +109,12 @@ const STEPS = [
     cmd:       'npm run boutique:360:check',
   },
   {
+    label:     'Boutique ownership check',
+    category:  'gate',
+    npmScript: 'gate:boutique-ownership',
+    cmd:       'npm run gate:boutique-ownership',
+  },
+  {
     label:     'Security 360 check',
     category:  'reconstruction',
     npmScript: 'security:360:check',
