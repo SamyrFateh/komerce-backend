@@ -321,7 +321,7 @@ const admin = {
     }).min(1),
   },
   deletePartner: { params: Joi.object({ id: uuid.required() }) },
-  reset: { body: Joi.object({ mode: Joi.string().valid('orders', 'users', 'factory').default('orders') }) },
+  reset: { body: Joi.object({ mode: Joi.string().valid('orders', 'users', 'factory').default('orders'), confirm: Joi.boolean().valid(true).required() }) },
   seedTest: { body: Joi.object({ confirm: Joi.boolean().valid(true).required(), months: Joi.number().integer().min(1).max(24).default(3) }) },
 };
 

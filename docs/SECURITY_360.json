@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-06-21T12:09:01.928Z",
+  "generatedAt": "2026-06-28T12:53:26.481Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 467,
-    "protected": 411,
+    "total": 475,
+    "protected": 420,
     "public": 5,
-    "unprotected": 45,
+    "unprotected": 48,
     "admin_no_guard": 0,
-    "unknown": 6
+    "unknown": 2
   },
   "flagged": [
     {
@@ -281,27 +281,21 @@
       "roles": []
     },
     {
-      "key": "GET /health/metrics",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
       "key": "GET /health/ready",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
       "key": "GET /health/version",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
       "key": "GET /health",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
@@ -564,7 +558,21 @@
       ]
     },
     {
+      "key": "GET /api/admin/customs-shipments/{id}/analytics",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "POST /api/admin/customs-shipments/{id}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/declare",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -592,7 +600,28 @@
       ]
     },
     {
+      "key": "GET /api/admin/customs-shipments/analytics/trends",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-shipments/analytics",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /api/admin/customs-shipments/rates/effective",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-shipments/status/pending",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -837,6 +866,13 @@
       ]
     },
     {
+      "key": "POST /api/admin/orders/{id}/refund",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "DELETE /api/admin/orders/{id}",
       "level": "PROTECTED",
       "roles": [
@@ -957,6 +993,13 @@
     },
     {
       "key": "GET /api/admin/pricing-matrices/taxes",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/purchasing/repair-ordered-without-pos",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -3451,23 +3494,32 @@
       "roles": []
     },
     {
+      "key": "GET /health/detailed",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /health/metrics",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /health/ready",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
       "key": "GET /health/version",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
       "key": "GET /health",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {

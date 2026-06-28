@@ -68,6 +68,13 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
   const validModes = ['orders', 'users', 'factory'];
   if (!validModes.includes(mode)) return res.status(400).json({ error: `Mode invalide. Utilisez: ${validModes.join(', ')}` });
 
+  if (!req.body.confirm) {
+    return res.status(400).json({
+      error: 'Confirmation obligatoire',
+      hint: 'Envoyez { "confirm": true, "mode": "orders" } — cette action est irréversible',
+    });
+  }
+
   const report = { mode, deleted: {}, reseeded: [], timestamp: new Date().toISOString() };
   const client = await db.getClient();
 

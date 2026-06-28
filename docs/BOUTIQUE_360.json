@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-06-28T12:22:52.665Z",
+  "generatedAt": "2026-06-28T13:01:40.608Z",
   "summary": {
     "modules": 70,
     "withHeader": 70,
     "events": 16,
     "declaredActive": 10,
     "declaredDead": 5,
-    "cssBundles": 0,
+    "cssBundles": 4,
     "endpoints": 55,
     "orphanEmit": 2,
     "orphanListen": 1,
@@ -2154,7 +2154,50 @@
       ]
     }
   },
-  "bundles": [],
+  "bundles": [
+    {
+      "out": "base.css",
+      "files": [
+        "tokens",
+        "reset",
+        "layout",
+        "hero"
+      ]
+    },
+    {
+      "out": "components.css",
+      "files": [
+        "categories",
+        "products",
+        "modal-shell",
+        "modal-media",
+        "modal-product",
+        "modal-product-lot4-hybrid",
+        "cart",
+        "interactions",
+        "hero-cart-proxy",
+        "group-cart-flow",
+        "share-cart",
+        "shared-followup",
+        "identity",
+        "paypal",
+        "wallet"
+      ]
+    },
+    {
+      "out": "desktop.css",
+      "files": [
+        "boutique-desktop"
+      ]
+    },
+    {
+      "out": "event.css",
+      "files": [
+        "tokens",
+        "event"
+      ]
+    }
+  ],
   "callEdges": [
     {
       "module": "b-cart",

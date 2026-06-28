@@ -1,14 +1,14 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-06-21T12:09:01.928Z — 467 endpoints
+> 2026-06-28T12:53:26.481Z — 475 endpoints
 
 | Niveau | Compte |
 |---|---|
-| 🟢 PROTECTED | 411 |
+| 🟢 PROTECTED | 420 |
 | ⚪ PUBLIC (légitime) | 5 |
-| 🟠 UNPROTECTED | 45 |
+| 🟠 UNPROTECTED | 48 |
 | 🔴 ADMIN_NO_GUARD | 0 |
-| ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 6 |
+| ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 2 |
 
 ## Flaggés
 
@@ -57,9 +57,8 @@
 - 🟠 `POST /api/shares` — UNPROTECTED
 - 🟠 `POST /api/tracking/{token}/verify-pickup` — UNPROTECTED
 - 🟠 `GET /api/tracking/{token}` — UNPROTECTED
-- ❔ `GET /health/metrics` — UNKNOWN
-- ❔ `GET /health/ready` — UNKNOWN
-- ❔ `GET /health/version` — UNKNOWN
-- ❔ `GET /health` — UNKNOWN
+- 🟠 `GET /health/ready` — UNPROTECTED
+- 🟠 `GET /health/version` — UNPROTECTED
+- 🟠 `GET /health` — UNPROTECTED
 - ❔ `GET /webhook/meta-whatsapp` — UNKNOWN
 - ❔ `POST /webhook/meta-whatsapp` — UNKNOWN

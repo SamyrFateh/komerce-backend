@@ -1,12 +1,12 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-28T12:22:52.665Z.
+> Régénéré le 2026-06-28T13:01:40.608Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **70** (70 headés) · Événements bus : **16** · Bundles CSS : **0**
+- Modules JS : **70** (70 headés) · Événements bus : **16** · Bundles CSS : **4**
 - Endpoints appelés : **55** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 28 dynamiques
 - Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
 
@@ -135,6 +135,10 @@ graph LR
 
 | Bundle | Sources |
 |---|---|
+| `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
+| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `cart`, `interactions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal`, `wallet` |
+| `css/dist/desktop.css` | `boutique-desktop` |
+| `css/dist/event.css` | `tokens`, `event` |
 
 ---
 *Carte vérifiée en pre-commit par `boutique:360:check` (cliquet bus + endpoints hors contrat).*
