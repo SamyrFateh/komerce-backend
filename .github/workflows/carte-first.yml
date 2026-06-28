@@ -13,6 +13,18 @@ jobs:
   governance:
     name: Carte-first governance
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
         with:
