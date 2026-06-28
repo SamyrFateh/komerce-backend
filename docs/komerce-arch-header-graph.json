@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 350,
-    "filesWithFullHeaders": 321,
+    "scannedCodeFiles": 351,
+    "filesWithFullHeaders": 322,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 350,
+    "filesWithAnyHeaders": 351,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 700,
-    "edges": 3395,
+    "graphNodes": 702,
+    "edges": 3403,
     "dbTables": 108,
     "doctrines": 125,
-    "impactAreas": 117,
-    "unresolvedCodeEdges": 320
+    "impactAreas": 118,
+    "unresolvedCodeEdges": 321
   },
   "byDomain": {
     "bootstrap": 9,
@@ -44,13 +44,13 @@
     "douane": 5,
     "dashboard": 30,
     "orders": 29,
+    "documents": 6,
     "notification": 13,
     "logistics": 34,
     "operations": 4,
     "inventory": 3,
     "platform-ops": 8,
     "customs": 1,
-    "documents": 5,
     "payments": 1,
     "refunds": 2,
     "unknown": 5,
@@ -78,7 +78,7 @@
     "state-store": 1,
     "schema": 1,
     "view-model": 3,
-    "route": 97,
+    "route": 98,
     "entrypoint": 1,
     "service": 140,
     "machine": 2,
@@ -91,7 +91,7 @@
     "critical": 78,
     "medium": 101,
     "high": 139,
-    "low": 32
+    "low": 33
   },
   "nodes": [
     {
@@ -4283,6 +4283,53 @@
         "orders",
         "checkout",
         "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "routes/admin/documents.js",
+      "file": "routes/admin/documents.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "admin-documents",
+      "domain": "documents",
+      "layer": "route",
+      "criticality": "low",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "query filters (document_type",
+        "order_id",
+        "from",
+        "to",
+        "limit",
+        "offset)"
+      ],
+      "outputs": [
+        "transaction_documents rows + résumé par type"
+      ],
+      "depends": [
+        "db.js",
+        "middleware/auth.js"
+      ],
+      "usedBy": [
+        "routes/admin/index.js"
+      ],
+      "dbRead": [
+        "transaction_documents",
+        "users"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "(none)"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents"
       ],
       "version": "2026-06"
     },
@@ -15458,6 +15505,11 @@
       "table": "sms_log"
     },
     {
+      "id": "db:(none)",
+      "type": "db-table",
+      "table": "(none)"
+    },
+    {
       "id": "db:recipients",
       "type": "db-table",
       "table": "recipients"
@@ -15596,11 +15648,6 @@
       "id": "db:parcel_events",
       "type": "db-table",
       "table": "parcel_events"
-    },
-    {
-      "id": "db:(none)",
-      "type": "db-table",
-      "table": "(none)"
     },
     {
       "id": "db:stripe_events_processed",
@@ -16123,6 +16170,11 @@
       "doctrine": "taxonomy_source_db"
     },
     {
+      "id": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "doctrine": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
       "id": "doctrine:personnalisation_navigation",
       "type": "doctrine",
       "doctrine": "personnalisation_navigation"
@@ -16236,11 +16288,6 @@
       "id": "doctrine:douane_declaration_pivot",
       "type": "doctrine",
       "doctrine": "douane_declaration_pivot"
-    },
-    {
-      "id": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
-      "type": "doctrine",
-      "doctrine": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
     },
     {
       "id": "doctrine:couts_repartis_par_commande",
@@ -16841,6 +16888,11 @@
       "id": "impact:admin-dashboard",
       "type": "impact-area",
       "area": "admin-dashboard"
+    },
+    {
+      "id": "impact:documents",
+      "type": "impact-area",
+      "area": "documents"
     },
     {
       "id": "impact:notification",
@@ -22283,6 +22335,54 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin/index.js",
+      "to": "routes/admin/documents.js",
+      "type": "uses",
+      "label": "routes/admin/index.js"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "db:transaction_documents",
+      "type": "db-read",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
     },
     {
       "from": "routes/admin/index.js",
@@ -37846,6 +37946,7 @@
         "routes/admin/customs.js",
         "routes/admin/dashboard.js",
         "routes/admin/delete-order-cascade.js",
+        "routes/admin/documents.js",
         "routes/admin/index.js",
         "routes/admin/orders.js",
         "routes/admin/partners.js",
@@ -41537,6 +41638,44 @@
         "middleware/auth.js"
       ]
     },
+    "routes/admin/documents.js": {
+      "role": "admin-documents",
+      "domain": "documents",
+      "criticality": "low",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "middleware/auth.js"
+      ],
+      "directUsedBy": [
+        "routes/admin/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "transaction_documents",
+        "users"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:transaction_documents",
+        "db:users",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:documents",
+        "middleware/auth.js",
+        "routes/admin/index.js"
+      ]
+    },
     "routes/admin/index.js": {
       "role": "dashboard-index",
       "domain": "dashboard",
@@ -41567,7 +41706,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "routes/admin/documents.js"
       ]
     },
     "routes/admin/orders.js": {
@@ -51860,6 +52000,12 @@
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
+    },
+    {
+      "from": "routes/admin/documents.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "routes/admin/index.js",

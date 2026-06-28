@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 350
-- Files with full headers: 321
+- Scanned code files: 351
+- Files with full headers: 322
 - Files with lite headers: 29
-- Files with any headers: 350
+- Files with any headers: 351
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 700
-- Edges: 3395
+- Graph nodes: 702
+- Edges: 3403
 - DB tables: 108
 - Doctrines: 125
-- Impact areas: 117
-- Unresolved code edges: 320
+- Impact areas: 118
+- Unresolved code edges: 321
 
 ## Domains
 
@@ -30,7 +30,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - collective-workspace: 3
 - customs: 1
 - dashboard: 30
-- documents: 5
+- documents: 6
 - douane: 5
 - economic-engine: 36
 - inventory: 3
@@ -63,7 +63,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 10
 - policy: 1
-- route: 97
+- route: 98
 - route-manifest: 1
 - schema: 1
 - service: 140
@@ -336,6 +336,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## DB Write Edges
 
+- WRITE routes/admin/documents.js -> (none)
 - WRITE routes/payments-paypal.js -> (none)
 - WRITE services/collective-workspace-reads.js -> (none)
 - WRITE services/cost-allocation/_helpers.js -> (none)
@@ -455,7 +456,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/simulator/state-advancer.js -> notification_log
 - WRITE routes/hub-dashboard.js -> order_comments
 - WRITE routes/hub-mark-ordered.js -> order_comments
-- WRITE routes/relay-dashboard.js -> order_comments
 
 ## Unresolved Code Edges
 
@@ -538,6 +538,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/admin/dashboard.js -> services/* (services/*)
 - depends: routes/admin/delete-order-cascade.js -> db.js (db.js)
 - depends: routes/admin/delete-order-cascade.js -> services/* (services/*)
+- depends: routes/admin/documents.js -> db.js (db.js)
 - depends: routes/admin/index.js -> db.js (db.js)
 - depends: routes/admin/index.js -> services/* (services/*)
 - depends: routes/admin/orders.js -> db.js (db.js)
@@ -578,7 +579,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/dashboard-finance.js -> db.js (db.js)
 - depends: routes/dashboard-finance.js -> services/* (services/*)
 - depends: routes/dashboard-hub.js -> db.js (db.js)
-- depends: routes/dashboard-hub.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 

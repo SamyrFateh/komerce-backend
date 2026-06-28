@@ -10,7 +10,7 @@
 
 ## 0. Tampon de validation — livraison code
 
-Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23 · SESSION B2/B6 — 2026-06-23 · SESSION GOV-04/C5 — 2026-06-24 · SESSION GOV-04 (gate Schemathesis) — 2026-06-24 · SESSION C5bis (incident déploiement 089) — 2026-06-24 · SESSION N1/N2/N3 (bugs non-bloquants) — 2026-06-24**.
+Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23 · SESSION B2/B6 — 2026-06-23 · SESSION GOV-04/C5 — 2026-06-24 · SESSION GOV-04 (gate Schemathesis) — 2026-06-24 · SESSION C5bis (incident déploiement 089) — 2026-06-24 · SESSION N1/N2/N3 (bugs non-bloquants) — 2026-06-24 · SESSION C2/C6/B7 — 2026-06-28 · SESSION DOUANE B/C (clôture) — 2026-06-28**.
 
 Validation effectuee (2026-06-15) :
 
@@ -1174,9 +1174,9 @@ Spec fonctionnelle : `docs/specs/SPEC_KEYSTONE_DOUANE.md`
 - Invariants `I-DOUANE-1` et `I-DOUANE-6` dans `tests/integration/isweep-invariants.test.js`
 - `db/schema.sql` mis à jour (CI drift)
 
-**Lot B — facture classifiée par colis :** ouvert — `services/documents/customs-invoice.js` à créer.
+**Lot B — facture classifiée par colis :** ✅ **clôturé — 2026-06-28**. `services/documents/customs-invoice.js` livré : idempotent (un seul doc par `(customs_invoice, parcel, parcel_id)`), construit les lignes classifiées depuis `order_items` figés via `parcel_items`, snapshot CIF depuis `customs_shipment_parcels`, drapeau `has_defaulted_lines`. `issueForShipment()` couvre tous les colis d'une expédition de façon non-bloquante. Câblage prévu dans `customs-shipment-service.js` post-`declareCustomsPayment`. Carte `documents.feature.js` à jour.
 
-**Lot C — droit attendu vs payé global :** ouvert — dérivation calculée depuis lignes figées → `customs_shipments.customs_paid_kmf`.
+**Lot C — droit attendu vs payé global :** ✅ **clôturé — 2026-06-28**. `services/customs-analytics.js` livré : `getShipmentAnalytics()`, `listShipmentsAnalytics()` (filtres date/transitaire), `getTrendAnalytics()` (agrégats mensuels). Dérive `expected_customs_kmf` depuis `douane_pct × price_kmf × quantity` figés (Lot A), calcule `ecart_kmf`/`ecart_pct`/`ecart_direction`, expose `coverage` (confiance : % items classifiés vs pré-091). Câblé dans `routes/admin-customs-shipments.js`. Carte `customs.feature.js` à jour.
 
 **Moteur colisage (`parcelOptimizationService.js`) :** démantelé. Rationnel douane fermé — douane non déterministe, agent lit le papier pas le carton.
 
@@ -1243,3 +1243,40 @@ Résultat : `backend:audit` passe de 6 à **2 warnings** (sourcing-scanner engin
 - `routes/admin/system.js:110` — identifiant SQL interpolé (whitelist littérale, documenté AUD-07)
 
 Suite unit : **1054/1055** (1 échec `validators.test.js` pré-existant non lié à cette session).
+
+---
+
+## 20. Session — Clôture DOUANE Lot B/C (2026-06-28)
+
+> Constat d'audit : les deux lots étaient déjà implémentés dans le code uploadé — le STATUS.md était en retard. Correction documentaire uniquement, 0 ligne de code produite cette session.
+
+### DOUANE Lot B — `services/documents/customs-invoice.js`
+
+Statut : **clôturé — 2026-06-28** (implémentation pré-existante confirmée).
+
+Le fichier était présent et complet :
+- Header `@komerce-arch` conforme (role `customs-invoice`, domain `documents`, layer `service`)
+- `issue(parcelId, shipmentId, opts)` : idempotent via `documentService.findExistingDocument`, construit les lignes classifiées depuis `order_items` figés (Lot A) via `parcel_items`, snapshot CIF depuis `customs_shipment_parcels`, drapeau `has_defaulted_lines`
+- `issueForShipment(parcelIds, shipmentId, issuedBy)` : boucle non-bloquante sur colis d'une expédition
+- Référence `DOC-{YYYY}-{seq}` via séquence `customs_invoice_seq`
+- Carte `documents.feature.js` liste `services/documents/customs-invoice.js` dans `files.services`
+
+### DOUANE Lot C — `services/customs-analytics.js`
+
+Statut : **clôturé — 2026-06-28** (implémentation pré-existante confirmée).
+
+Le fichier était présent et complet :
+- Header `@komerce-arch` conforme (role `customs-analytics`, domain `douane`, layer `service`, criticality `low`)
+- `getShipmentAnalytics(pool, shipmentId)` : écart pour une expédition
+- `listShipmentsAnalytics(pool, { from, to, transitaire })` : liste filtrée
+- `getTrendAnalytics(pool, { months })` : agrégats mensuels (taux effectif moyen, variance, couverture classification)
+- `_enrichRow()` dérive : `expected_customs_kmf`, `ecart_kmf`, `ecart_pct`, `ecart_direction`, `coverage.pct`, `confidence`
+- Items pré-091 (douane_pct IS NULL) exclus du calcul, comptés dans `unclassified_items`
+- Carte `customs.feature.js` liste `services/customs-analytics.js` dans `files.services`
+
+### Dettes différées (inchangées après cette session)
+
+- **Migration 089** — `DROP COLUMN cost_price_kmf / weight_g` — garde-fou **2026-07-08**
+- **SRC-03** — consolidation PO par fournisseur — bloqué ARCH-COUTURE-00
+- **TRACK-02** — timeline frontend — P2, différé
+- **ARCH-COUTURE-00** — architecture couture/variantes — en attente décision produit

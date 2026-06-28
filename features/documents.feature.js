@@ -43,13 +43,18 @@ module.exports = {
       'services/documents/customs-invoice.js',
       'services/documents/wallet-receipt.js',
     ],
-    routes: [],
+    routes: [
+      'routes/admin/documents.js',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   contract: {
     exposes: [
       'fonctions internes generatePickupProof / generateCustomsInvoice / generateWalletReceipt / generateRefundReceipt',
+      'GET /api/admin/documents (liste + filtres)',
+      'GET /api/admin/documents/summary (diagnostic état émission)',
+      'GET /api/admin/documents/:id (détail)',
     ],
     consumes: [
       'orders, customs, wallet-loyalty, refunds (donnees source du document)',

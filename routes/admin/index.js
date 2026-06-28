@@ -30,6 +30,9 @@
 const express = require('express');
 const router  = express.Router();
 
+// Groupe Documents — visibilité transaction_documents (diagnostic + admin)
+router.use('/', require('./documents'));
+
 // Groupe B — douane (stub)
 router.use('/', require('./customs'));
 
