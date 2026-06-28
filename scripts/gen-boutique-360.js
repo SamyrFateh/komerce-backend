@@ -32,17 +32,17 @@
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT     = path.resolve(__dirname, '..');
-const BTQ      = path.join(ROOT, 'public', 'boutique');
-const JS_DIR   = path.join(BTQ, 'js');
-const BUS_FILE = path.join(JS_DIR, 'b-bus.js');
-const DEPLOY   = path.join(BTQ, 'scripts', 'deploy-css.js');
-const INDEX    = path.join(BTQ, 'index.html');
-const OPENAPI  = path.join(ROOT, 'docs', 'contract', 'openapi.json');
-const DOCS     = path.join(ROOT, 'docs');
-const OUT_JSON = path.join(DOCS, 'BOUTIQUE_360.json');
-const OUT_MD   = path.join(DOCS, 'BOUTIQUE_360.md');
-const BASELINE = path.join(__dirname, '.boutique-360-baseline.json');
+const ROOT        = path.resolve(__dirname, '..');
+const BTQ         = path.join(ROOT, 'public', 'boutique');
+const JS_DIR      = path.join(BTQ, 'js');
+const BUS_FILE    = path.join(JS_DIR, 'b-bus.js');
+const CSS_BUNDLES = path.join(BTQ, 'scripts', 'css-bundles.js');
+const INDEX       = path.join(BTQ, 'index.html');
+const OPENAPI     = path.join(ROOT, 'docs', 'contract', 'openapi.json');
+const DOCS        = path.join(ROOT, 'docs');
+const OUT_JSON    = path.join(DOCS, 'BOUTIQUE_360.json');
+const OUT_MD      = path.join(DOCS, 'BOUTIQUE_360.md');
+const BASELINE    = path.join(__dirname, '.boutique-360-baseline.json');
 
 const args = process.argv.slice(2);
 const CHECK = args.includes('--check'), SAVE = args.includes('--save');
@@ -139,10 +139,17 @@ function parseBusRegistry() {
 }
 
 function parseBundles() {
-  const raw = fs.readFileSync(DEPLOY,'utf8'), bundles=[];
-  for (const m of raw.matchAll(/out:\s*'([^']+)'[\s\S]*?files:\s*\[([\s\S]*?)\]/g))
-    bundles.push({ out:m[1], files:[...m[2].matchAll(/'([^']+)'/g)].map(x=>x[1]) });
-  return bundles;
+  try {
+    delete require.cache[require.resolve(CSS_BUNDLES)];
+    const { BUNDLES } = require(CSS_BUNDLES);
+    return (BUNDLES || []).map(bundle => ({
+      out: bundle.out,
+      files: Array.isArray(bundle.files) ? bundle.files.slice() : [],
+    }));
+  } catch (e) {
+    console.warn(`${YLW}⚠ Impossible de lire css-bundles.js: ${e.message}${R}`);
+    return [];
+  }
 }
 
 function build() {
