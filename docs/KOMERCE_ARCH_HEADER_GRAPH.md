@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 319
-- Files with full headers: 290
+- Scanned code files: 324
+- Files with full headers: 295
 - Files with lite headers: 29
-- Files with any headers: 319
+- Files with any headers: 324
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 666
-- Edges: 2972
+- Graph nodes: 671
+- Edges: 3061
 - DB tables: 108
 - Doctrines: 125
 - Impact areas: 114
-- Unresolved code edges: 273
+- Unresolved code edges: 278
 
 ## Domains
 
@@ -44,7 +44,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - platform-ops: 8
 - recommendations: 7
 - refunds: 2
-- shared-cart: 35
+- shared-cart: 40
 - tracking: 1
 - unknown: 5
 - validation: 1
@@ -66,7 +66,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
-- service: 109
+- service: 114
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -145,8 +145,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/repair-ordered-without-purchase-orders.js — orders-repair-ordered-without-purchase-orders (orders, critical, full)
 - services/shared-cart-cash-service.js — shared-cart-shared-cart-cash-service (shared-cart, critical, full)
 - services/shared-cart-commitment-service.js — shared-cart-shared-cart-commitment-service (shared-cart, critical, full)
+- services/shared-cart-contributions.js — shared-cart-contributions (shared-cart, critical, full)
+- services/shared-cart-creation.js — shared-cart-creation (shared-cart, critical, full)
 - services/shared-cart-engine.js — shared-cart-state-machine (shared-cart, critical, full)
 - services/shared-cart-financial-guard.js — shared-cart-financial-guard (shared-cart, critical, full)
+- services/shared-cart-internals.js — shared-cart-internals (shared-cart, critical, full)
+- services/shared-cart-lifecycle.js — shared-cart-lifecycle (shared-cart, critical, full)
+- services/shared-cart-reads.js — shared-cart-reads (shared-cart, critical, full)
 - services/shared-cart-refund-queue.js — shared-cart-shared-cart-refund-queue (shared-cart, critical, full)
 - services/shared-cart-v4-settlement.js — shared-cart-shared-cart-v4-settlement (shared-cart, critical, full)
 - services/shared-cart-v41-transitions.js — shared-cart-v41-transition-projector (shared-cart, critical, full)
@@ -330,10 +335,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE utils/parcelSync.js -> alerts
 - WRITE routes/admin/system.js -> basket_items
 - WRITE routes/admin/users.js -> basket_items
+- WRITE services/shared-cart-creation.js -> basket_items
 - WRITE services/shared-cart-engine.js -> basket_items
+- WRITE services/shared-cart-lifecycle.js -> basket_items
 - WRITE routes/admin/system.js -> baskets
 - WRITE routes/admin/users.js -> baskets
+- WRITE services/shared-cart-creation.js -> baskets
 - WRITE services/shared-cart-engine.js -> baskets
+- WRITE services/shared-cart-lifecycle.js -> baskets
 - WRITE routes/admin-boutique-categories.js -> boutique_categories
 - WRITE routes/admin-boutique-categories.js -> boutique_subcategories
 - WRITE utils/rules.js -> business_rules_history
@@ -406,6 +415,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/parcel-operations.js -> order_items
 - WRITE services/scan-engine.js -> order_items
 - WRITE services/shared-cart-engine.js -> order_items
+- WRITE services/shared-cart-lifecycle.js -> order_items
 - WRITE routes/admin/delete-order-cascade.js -> order_status_history
 - WRITE routes/admin/system.js -> order_status_history
 - WRITE routes/admin/users.js -> order_status_history
@@ -415,6 +425,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/parcel-operations.js -> order_status_history
 - WRITE services/payment-paypal.js -> order_status_history
 - WRITE services/shared-cart-engine.js -> order_status_history
+- WRITE services/shared-cart-lifecycle.js -> order_status_history
 - WRITE routes/admin-customs-shipments.js -> orders
 - WRITE routes/admin/delete-order-cascade.js -> orders
 - WRITE routes/admin/system.js -> orders
@@ -422,12 +433,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/create.js -> orders
 - WRITE routes/orders/qr.js -> orders
 - WRITE routes/orders/status.js -> orders
-- WRITE routes/parcels.js -> orders
-- WRITE routes/pickup-secret.js -> orders
-- WRITE routes/tracking.js -> orders
-- WRITE services/admin-order-refund.js -> orders
-- WRITE services/cash-reminder-service.js -> orders
-- WRITE services/create-stripe-order-intent.js -> orders
 
 ## Unresolved Code Edges
 

@@ -11,10 +11,11 @@
     "modal:closed",
     "modal:opened",
     "modal:product-changed",
+    "modal:suggestions-rendered",
     "sidebar:built",
     "toast",
     "view:changed"
   ],
   "notFoundEndpoints": [],
-  "savedAt": "2026-06-20T14:00:53.089Z"
+  "savedAt": "2026-06-28T13:56:08.983Z"
 }

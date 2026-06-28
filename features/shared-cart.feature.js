@@ -45,7 +45,12 @@ module.exports = {
   // ── Périmètre fichiers ────────────────────────────────────────────────────
   files: {
     services: [
-      'services/shared-cart-engine.js',
+      'services/shared-cart-engine.js',          // barrel — Lot C1 2026-06-28
+      'services/shared-cart-internals.js',       // CONFIG, helpers, audit
+      'services/shared-cart-creation.js',        // createFromBasket, createFromCartItems, clearCreatorBasket
+      'services/shared-cart-reads.js',           // getForPublic, getForOwner, listMy, incrementViewCount
+      'services/shared-cart-contributions.js',   // startContribution, attachStripe, markFailed
+      'services/shared-cart-lifecycle.js',       // closeCart, convertToOrder, cancel, stateMachine, expire
       'services/shared-cart-financial-guard.js',
       'services/shared-cart-queries.js',
       'services/shared-cart-items-service.js',

@@ -52,12 +52,12 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-catalog.js` | 11 | 2 | 3/1 | Carte produit, Grille produits, Chips catégories, Section catalogue |
 | `b-modal-image-ux.js` | 8 | 5 | 4/0 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
-| `b-pdp-curation-suggestions.js` | 12 | 0 | 1/0 | Modal produit |
+| `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
 | `event-pay.js` | 2 | 8 | 0/0 | — |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `event-manage.js` | 2 | 7 | 0/0 | — |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
-| `b-modal-suggestions.js` | 6 | 0 | 2/3 | Modal produit |
+| `b-modal-suggestions.js` | 6 | 0 | 2/4 | Modal produit |
 | `b-nav.js` | 5 | 1 | 0/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
 | `b-favs.js` | 5 | 0 | 0/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `b-paypal.js` | 5 | 0 | 0/0 | — |
