@@ -34,6 +34,7 @@
  *   cat:select       { cat }            — filtrer catalogue sur catégorie [b-modal → b-catalog]
  *   chip:center      { chip }           — centrer chip active dans le pager [b-pager → b-catalog]
  *   catalog:cat-changed { cat }         — catégorie active changée [b-catalog → b-desktop-upgrade]
+ *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
  *
  * Événements retirés du JSDoc (déclarés mais jamais émis ni consommés) :
  *   cart:add, cart:open, cart:close, search:query, pager:navigate
@@ -92,4 +93,3 @@ if (
 ) {
   window._kbus = bus;
 }
-
