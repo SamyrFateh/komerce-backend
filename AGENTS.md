@@ -23,15 +23,15 @@ Un agent ne doit pas démarrer depuis un ancien audit, un rapport daté, un prom
 
 Avant toute modification substantielle, l'agent doit annoncer un plan d'attaque court avant de coder.
 
-Le plan d'attaque doit contenir :
+Le plan d'attaque doit être opérationnel, pas narratif : 8 à 12 lignes maximum dans le cas standard. Il ne doit pas paraphraser `AGENTS.md`, l'index, la carte ou les README ; il doit seulement nommer les fichiers lus et les décisions utiles.
+
+Le plan doit contenir :
 
 - la demande comprise ;
 - la feature ou le transversal concerné ;
 - l'opération : Create, Read, Update, Delete/Archive/Deprecate ;
-- la carte à lire ;
-- le périmètre probable ;
-- les fichiers ou familles de fichiers probablement concernés ;
-- les fichiers ou zones à ne pas toucher ;
+- les fichiers de gouvernance lus ;
+- le périmètre probable et le hors périmètre ;
 - les invariants à protéger ;
 - les risques ou points à vérifier ;
 - les gates et tests prévus.
@@ -41,33 +41,18 @@ Format recommandé :
 ```md
 ## Plan d'attaque
 
-Demande comprise :
-- ...
-
-Feature / transversal :
-- ...
-
-Opération :
-- ...
-
-Carte à lire :
-- features/<feature>.feature.js
-
-Périmètre probable :
-- ...
-
-Hors périmètre :
-- ...
-
-Invariants à protéger :
-- ...
-
-Risques / points à vérifier :
-- ...
-
-Vérification prévue :
-- npm run ...
+Demande : ...
+Feature/transversal : ...
+Opération : ...
+Fichiers lus : AGENTS.md, docs/CARTE_FIRST_INDEX.md, features/<feature>.feature.js, <README si applicable>
+Périmètre : ...
+Hors périmètre : ...
+Invariants : ...
+Risques : ...
+Vérification : npm run ...
 ```
+
+Un plan plus long est acceptable seulement pour une intervention risquée, multi-feature, DB, paiement, sécurité, migration ou architecture transverse. Dans ce cas, il doit expliquer pourquoi il dépasse le format court.
 
 Exceptions : lecture simple, explication sans modification, commande triviale explicitement demandée, ou correction purement typographique sans impact métier. Même dans ces cas, l'agent doit rester capable de nommer la carte ou le transversal si la demande touche au produit.
 
