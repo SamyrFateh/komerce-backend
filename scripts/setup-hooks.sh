@@ -184,17 +184,19 @@ echo ""
 echo "🛡️  Komerce — reprise gouvernance (pre-commit)..."
 
 # 0a. Registre features (N0) — tout fichier doit appartenir à une feature déclarée.
-if ! node scripts/feature-registry-check.js --strict >/dev/null 2>&1; then
+_OUT=$(node scripts/feature-registry-check.js --strict 2>&1); _RC=$?
+if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Registre features : orphelin ou désaccord header↔manifest.${NC}"
-  echo "   Détail : npm run feature:registry"
+  echo "$_OUT"
   exit 1
 fi
 
 # 0b. Code quality (N2) — use strict, const/let, pas de SQL concat.
-if ! node scripts/code-quality-gate.js --strict >/dev/null 2>&1; then
+_OUT=$(node scripts/code-quality-gate.js --strict 2>&1); _RC=$?
+if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Qualité code : violation N2 (strict/var/SQL).${NC}"
+  echo "$_OUT"
   echo "   Auto-fix : node scripts/code-quality-gate.js --fix"
-  echo "   Détail   : npm run quality:gate"
   exit 1
 fi
 
@@ -228,37 +230,43 @@ fi
 git add docs/komerce-arch-header-graph.json docs/KOMERCE_ARCH_HEADER_GRAPH.md scripts/arch-debt-budget.json 2>/dev/null || true
 
 # 4. Portes : ne bloquer que sur un vrai probleme restant
-if ! node scripts/arch-db-check.js >/dev/null 2>&1; then
-  echo -e "${RED}🚫 Hygiene headers : violation bloquante.${NC} Lance: npm run arch:check"
+_OUT=$(node scripts/arch-db-check.js 2>&1); _RC=$?
+if [ $_RC -ne 0 ]; then
+  echo -e "${RED}🚫 Hygiene headers : violation bloquante.${NC}"
+  echo "$_OUT"
   exit 1
 fi
-if ! node scripts/arch-schema-drift-check.js >/dev/null 2>&1; then
+_OUT=$(node scripts/arch-schema-drift-check.js 2>&1); _RC=$?
+if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Drift SCHEMA.md <-> DB live non resolu automatiquement.${NC}"
-  echo "   Detail : npm run arch:drift"
+  echo "$_OUT"
   echo "   (fiction hors liste = vrai bug ; fantome = retirer de SCHEMA.md ; cliquet depasse = documenter)"
   exit 1
 fi
-if ! node scripts/arch-header-sql-check.js >/dev/null 2>&1; then
+_OUT=$(node scripts/arch-header-sql-check.js 2>&1); _RC=$?
+if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Sous-declaration headers<->SQL au-dela du cliquet.${NC}"
-  echo "   Detail   : npm run arch:headers-sql"
+  echo "$_OUT"
   echo "   Auto-fix : npm run arch:enrich:write   (declare les tables depuis le vrai SQL, puis re-commit)"
   echo "   Sinon    : declarer a la main dans @db-read/@db-write, ou npm run arch:reconcile:write si baisse legitime"
   exit 1
 fi
 # 5. Doctrine sanitize_before_render : ne bloque QUE si une source externe (req/params/
 #    location/URL…) atterrit non echappee dans un sink HTML, sur les lignes ajoutees.
-if ! node scripts/arch-doctrine-sanitize-check.js >/dev/null 2>&1; then
+_OUT=$(node scripts/arch-doctrine-sanitize-check.js 2>&1); _RC=$?
+if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Doctrine sanitize_before_render : entree externe rendue sans echappement.${NC}"
-  echo "   Detail : npm run arch:doctrine    (sweep complet : npm run arch:doctrine:all)"
+  echo "$_OUT"
   echo "   (echappe la donnee avec sanitize(...) / escapeHtml(...) avant le rendu)"
   exit 1
 fi
 
 # 5b. Audit d'architecture backend (invariants I-BACK-*) : 100% statique, rapide.
 #     SQL non parametre, owner unique payment_status, auth admin, etc.
-if ! node scripts/audit-backend-arch.js >/dev/null 2>&1; then
+_OUT=$(node scripts/audit-backend-arch.js 2>&1); _RC=$?
+if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Audit backend : violation d'invariant (SQL non parametre / owner payment_status / auth admin).${NC}"
-  echo "   Detail : npm run backend:audit"
+  echo "$_OUT"
   exit 1
 fi
 
@@ -280,9 +288,10 @@ if [ -d public/boutique ]; then
   fi
 
   # 6b. Invariants boutique (apres rebuild : check:cache est donc forcement vert ici).
-  if ! ( cd public/boutique && npm run --silent check:fast >/dev/null 2>&1 ); then
+  _OUT=$( cd public/boutique && npm run --silent check:fast 2>&1 ); _RC=$?
+  if [ $_RC -ne 0 ]; then
     echo -e "${RED}🚫 Invariants boutique : violation.${NC}"
-    echo "   Detail : ( cd public/boutique && npm run check:fast )"
+    echo "$_OUT"
     echo "   (ownership CSS / hex hors tokens / breakpoints / injection CSS — corrige avant commit)"
     exit 1
   fi

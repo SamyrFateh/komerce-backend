@@ -246,6 +246,53 @@ const ALLOWED_RAW_SQL_PATTERNS = [
 ];
 
 // ════════════════════════════════════════════════════════════════
+// I-BACK-15 : Cohérence de la state machine orders
+//
+// Deux vérifications complémentaires :
+//
+//   A) SOURCES : toute valeur de `source` passée à transitionOrderStatus()
+//      doit être déclarée dans STATE_MACHINE_ALL_SOURCES. Une source inconnue
+//      = branche de validation implicite (tombe dans le else forward-only sans
+//      décision explicite).
+//
+//   B) TRANSITIONS PATCH : pour les appels avec source='patch', la paire
+//      (newStatus) doit exister dans VALID_TRANSITIONS. Les sources forward-only
+//      (scan/system/…) utilisent isForwardTransition() — non vérifiables
+//      statiquement sans connaître le statut courant, donc on les tolère.
+// ════════════════════════════════════════════════════════════════
+
+// Sources dont la validation est forward-only (branche else de la machine) :
+const STATE_MACHINE_FORWARD_SOURCES = new Set([
+  'scan', 'system', 'simulator', 'cancel',
+  // Sources applicatives connues — branche forward-only délibérée
+  'transitaire_ship', 'hub_mark_ordered', 'hub_start_prep', 'hub_auto_prepare',
+  'auto_parcel', 'scan_engine_sync',
+]);
+
+// Sources dont la validation est STRICT (VALID_TRANSITIONS) :
+const STATE_MACHINE_PATCH_SOURCES = new Set(['patch']);
+
+// Sources dont la validation est payment-only (pending → confirmed uniquement) :
+const STATE_MACHINE_PAYMENT_SOURCES = new Set([
+  'stripe_webhook', 'cash_confirm', 'wallet_full_payment',
+  'shared_cart_full_payment', 'paypal_capture',
+]);
+
+// Union : toutes les sources reconnues
+const STATE_MACHINE_ALL_SOURCES = new Set([
+  ...STATE_MACHINE_FORWARD_SOURCES,
+  ...STATE_MACHINE_PATCH_SOURCES,
+  ...STATE_MACHINE_PAYMENT_SOURCES,
+]);
+
+// Exemptions : chaos-testing — transitions délibérément incohérentes
+const ALLOWED_STATE_MACHINE_BYPASS = new Set([
+  'services/simulator/state-advancer.js',
+]);
+
+
+
+// ════════════════════════════════════════════════════════════════
 // I-BACK-1 — Aucun fichier doublon actif dans routes/
 // ════════════════════════════════════════════════════════════════
 function checkI1_noDuplicates() {
@@ -660,6 +707,86 @@ function checkI13_destructiveSql() {
 
 
 
+// ════════════════════════════════════════════════════════════════
+// I-BACK-15 — Cohérence de la state machine orders
+// ════════════════════════════════════════════════════════════════
+function checkI15_stateMachineCoherence() {
+  const files = [...walkJs(ROUTES_DIR), ...walkJs(SERVICES_DIR)];
+
+  // Lire VALID_TRANSITIONS depuis order-status-machine.js (source de vérité)
+  const machineFile = path.join(ROOT, 'services', 'order-status-machine.js');
+  const machineContent = readFile(machineFile);
+
+  // Extraire la matrice VALID_TRANSITIONS par parsing léger du source
+  // Format attendu : "  from: ['to1', 'to2', ...],\n"
+  const validTransitions = {}; // from → Set<to>
+  const matrixMatch = machineContent.match(/const VALID_TRANSITIONS\s*=\s*Object\.freeze\(\{([\s\S]*?)\}\)/);
+  if (matrixMatch) {
+    const matrixBody = matrixMatch[1];
+    for (const m of matrixBody.matchAll(/(\w+)\s*:\s*\[([^\]]*)\]/g)) {
+      const from = m[1];
+      const tos  = [...m[2].matchAll(/'(\w+)'/g)].map(x => x[1]);
+      validTransitions[from] = new Set(tos);
+    }
+  } else {
+    warn('I-BACK-15',
+      'services/order-status-machine.js — VALID_TRANSITIONS introuvable (parsing échoué)',
+      'Vérifier que la matrice est bien exportée sous ce nom exact'
+    );
+    return;
+  }
+
+  // Regex pour détecter un appel transitionOrderStatus({ ... }) sur plusieurs lignes
+  // On capture le bloc d'arguments en cherchant source et newStatus
+  const callRe = /transitionOrderStatus\s*\(\s*\{([^}]+)\}/g;
+  const sourceRe = /source\s*:\s*'([\w_]+)'/;
+  const newStatusRe = /newStatus\s*:\s*'([\w_]+)'/;
+
+  for (const file of files) {
+    const relPath = rel(file);
+    if (relPath === 'services/order-status-machine.js') continue;
+    if (ALLOWED_STATE_MACHINE_BYPASS.has(relPath)) continue;
+
+    const content = readFile(file);
+    let match;
+    while ((match = callRe.exec(content)) !== null) {
+      const block = match[1];
+
+      // ── A) Source inconnue ───────────────────────────────────────────────
+      const srcMatch = sourceRe.exec(block);
+      if (srcMatch) {
+        const src = srcMatch[1];
+        if (!STATE_MACHINE_ALL_SOURCES.has(src)) {
+          // Calculer le numéro de ligne approximatif
+          const lineNo = content.slice(0, match.index).split('\n').length;
+          violate('I-BACK-15',
+            `${relPath}:${lineNo} — source '${src}' inconnue de la state machine`,
+            `Ajouter '${src}' dans STATE_MACHINE_FORWARD_SOURCES (forward-only) ou STATE_MACHINE_PATCH_SOURCES (strict) selon la sémantique voulue`
+          );
+        }
+      }
+
+      // ── B) Transition patch sur statut inexistant dans VALID_TRANSITIONS ─
+      const srcVal = srcMatch ? srcMatch[1] : null;
+      if (srcVal && STATE_MACHINE_PATCH_SOURCES.has(srcVal)) {
+        const nsMatch = newStatusRe.exec(block);
+        if (nsMatch) {
+          const to = nsMatch[1];
+          const lineNo = content.slice(0, match.index).split('\n').length;
+          // Vérifier que 'to' est une cible dans au moins un from de la matrice
+          const reachable = Object.values(validTransitions).some(tos => tos.has(to));
+          if (!reachable) {
+            violate('I-BACK-15',
+              `${relPath}:${lineNo} — newStatus '${to}' (source=patch) absent de toute transition dans VALID_TRANSITIONS`,
+              `Ajouter la transition dans services/order-status-machine.js ou corriger le newStatus`
+            );
+          }
+        }
+      }
+    }
+  }
+}
+
 console.log('\n  🔍  Audit architecture Komerce backend\n');
 
 checkI1_noDuplicates();
@@ -673,6 +800,7 @@ checkI9_noOrphanTests();
 checkI10_noMigrationCollisions();
 checkI11_webhookSignature();
 checkI13_destructiveSql();
+checkI15_stateMachineCoherence();
 
 // ════════════════════════════════════════════════════════════════
 // RAPPORT
@@ -693,6 +821,7 @@ const RULE_LABELS = {
   'I-BACK-12': 'Propriété wallet_transactions / store_credits',
   'I-BACK-13': 'DELETE/TRUNCATE non borné',
   'I-BACK-14': 'Propriété parcels.status',
+  'I-BACK-15': 'Cohérence state machine orders (sources + transitions)',
 };
 
 if (warnings.length > 0) {
