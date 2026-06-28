@@ -30,6 +30,7 @@ const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const { syncScanToParcels } = require('../utils/parcelSync');
 const log = require('../utils/logger').child({ module: 'transitaire-api' });
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_transitaire'])];
@@ -108,17 +109,17 @@ router.post('/ship', ...guard, async (req, res, next) => {
         }
       }
 
-      // 3. Update parcel status: shipped → in_transit (dans la même transaction)
-      await client.query(
-        `UPDATE parcels SET status = 'in_transit', updated_at = NOW() WHERE id = $1`,
-        [parcel_id]
-      );
-
-      // 4. Log scan event (dans la transaction — pas "best effort" séparé)
-      await client.query(`
-        INSERT INTO scan_events (parcel_id, order_id, event_type, actor_name, actor_role, location, notes, status)
-        VALUES ($1, $2, 'transit_confirmed', $3, $4, 'transitaire', $5, 'applied')
-      `, [parcel_id, parcel.order_id, req.user.full_name || req.user.email, req.user.role, notes || 'Transit confirmé']);
+      // 3. Transition parcel shipped → in_transit via parcelSync
+      //    (alimente parcels.status + parcel_events + recompute order dans la transaction)
+      //    La transition order (étape 2) a déjà été faite ci-dessus — parcelSync
+      //    la retentera en no-op (idempotent par design).
+      await syncScanToParcels({
+        order_id:   parcel.order_id,
+        step:       'in_transit',
+        scan_id:    null,
+        scanned_by: req.user.id,
+        notes:      notes || 'Transit confirmé par transitaire',
+      }, client);
 
       await client.query('COMMIT');
     } catch (err) {

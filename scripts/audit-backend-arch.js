@@ -96,44 +96,109 @@ const ALLOWED_LARGE_FILES = new Set([
   'services/dashboard-metrics.js',               // 1052 l → Lot B4
 ]);
 
-// I-BACK-3 : UPDATE orders SET status= hors order-status-machine.js
-// Ces occurrences sont des migrations SQL ou des scripts de fix — légitimes
-const ALLOWED_STATUS_UPDATE_FILES = new Set([
-  'scripts/fix-schema.js',       // migrations inline légitimes
-  'scripts/reset-admin.js',      // script admin one-shot
-  'scripts/seed.js',             // seed de données test
-
-  // ── Exception délibérée (P3-A.4, 2026-06) — PAS une dette à fermer ──────────
-  // refundPaypalOrder force status='refunded' depuis N'IMPORTE QUEL statut payé
-  // (seule précondition : payment_status='paid' + capture existante — cf.
-  // docs/audit/REFACTO_ROUTES_VERIFICATION_2026-06-14.md). order-status-machine
-  // n'autorise 'refunded' que depuis 'cancelled' (VALID_TRANSITIONS) : y passer
-  // bloquerait ce refund APRÈS que l'argent ait déjà été rendu via
-  // paypal.refundCapture() — incohérence DB pire que le statu quo. Décision :
-  // payment_status (I4) centralisé via payment-service.js, status (I3) reste
-  // ici intentionnellement. Resoumettre à revue si la précondition métier change.
-  'services/payment-paypal.js',
-]);
-
-// I-BACK-4 : UPDATE orders SET payment_status= hors order-status-machine.js
-// La machine à états elle-même set payment_status — c'est son rôle.
-const ALLOWED_PAYMENT_STATUS_FILES = new Set([
-  'services/order-status-machine.js', // owner légitime (machine à états)
-  'services/payment-service.js',       // owner légitime (P3-A : owner cible payment_status)
-  'scripts/fix-schema.js',
-  'scripts/reset-admin.js',
-
-  // ── Owners paiement reconnus — DETTE TRACÉE → Lot P3-A ──────────────────────
-  // Les 4 sites identifiés par le découpage P3-A ont tous été migrés derrière
-  // payment-service.js (markPaid/markRefunded/markFailed) — P3-A.1 à .4, 2026-06.
-  // Liste laissée en place (vide) comme cliquet : tout NOUVEAU site non listé
-  // sera bloqué par I-BACK-4.
-
-  // ── Outil de test/chaos — PAS de la prod paiement ──────────────────────────
-  // Pose volontairement des états (in)cohérents pour les scénarios de simulation.
-  // Ne doit PAS passer par payment-service.js (ce serait dénaturer le chaos-testing).
-  'services/simulator/state-advancer.js',
-]);
+// ════════════════════════════════════════════════════════════════
+// MATRICE DE PROPRIÉTÉ DES COLONNES SENSIBLES
+// Remplace les anciens ALLOWED_STATUS_UPDATE_FILES (I-BACK-3),
+// ALLOWED_PAYMENT_STATUS_FILES (I-BACK-4) et ALLOWED_WALLET_WRITERS
+// (I-BACK-12) par une configuration déclarative unique.
+//
+// Format par entrée :
+//   id          — identifiant de règle (ex: 'orders.status')
+//   rule        — code I-BACK affiché dans le rapport
+//   ops         — opérations surveillées : 'UPDATE', 'INSERT'
+//   table       — nom de la table SQL
+//   column      — nom de la colonne (null = toute écriture sur la table)
+//   owners      — fichiers autorisés à écrire (chemins repo-relatifs)
+//   allowlist   — fichiers supplémentaires tolérés (scripts, exceptions documentées)
+//   remedy      — message d'aide affiché en cas de violation
+// ════════════════════════════════════════════════════════════════
+const COLUMN_OWNERSHIP = [
+  {
+    id:      'orders.status',
+    rule:    'I-BACK-3',
+    ops:     ['UPDATE'],
+    table:   'orders',
+    column:  'status',
+    owners:  new Set(['services/order-status-machine.js']),
+    allowlist: new Set([
+      'scripts/fix-schema.js',
+      'scripts/reset-admin.js',
+      'scripts/seed.js',
+      // ── Exception délibérée (P3-A.4, 2026-06) — PAS une dette à fermer ──
+      // refundPaypalOrder force status='refunded' depuis N'IMPORTE QUEL statut
+      // payé (seule précondition : payment_status='paid' + capture existante).
+      // order-status-machine n'autorise 'refunded' que depuis 'cancelled' :
+      // y passer bloquerait ce refund APRÈS que l'argent ait déjà été rendu.
+      // Resoumettre à revue si la précondition métier change.
+      'services/payment-paypal.js',
+    ]),
+    remedy: 'Passer par transitionOrderStatus() de services/order-status-machine.js',
+  },
+  {
+    id:      'orders.payment_status',
+    rule:    'I-BACK-4',
+    ops:     ['UPDATE'],
+    table:   'orders',
+    column:  'payment_status',
+    owners:  new Set([
+      'services/order-status-machine.js', // owner historique (machine à états)
+      'services/payment-service.js',       // owner cible P3-A
+    ]),
+    allowlist: new Set([
+      'scripts/fix-schema.js',
+      'scripts/reset-admin.js',
+      // ── Chaos-testing — PAS de la prod paiement ──────────────────────────
+      // Pose volontairement des états incohérents. Ne doit PAS passer par
+      // payment-service.js (ce serait dénaturer le chaos-testing).
+      'services/simulator/state-advancer.js',
+    ]),
+    remedy: 'Passer par services/payment-service.js (markPaid/markRefunded/markFailed)',
+  },
+  {
+    id:      'parcels.status',
+    rule:    'I-BACK-14',
+    ops:     ['UPDATE'],
+    table:   'parcels',
+    column:  'status',
+    owners:  new Set(['utils/parcelSync.js']),
+    allowlist: new Set([
+      'scripts/fix-schema.js',
+      'scripts/seed.js',
+      // ── Chaos-testing — même raison que orders.payment_status ci-dessus ──
+      'services/simulator/state-advancer.js',
+    ]),
+    remedy: 'Passer par utils/parcelSync.js pour alimenter parcel_events en même temps',
+  },
+  {
+    id:      'wallet_transactions',
+    rule:    'I-BACK-12',
+    ops:     ['UPDATE', 'INSERT'],
+    table:   'wallet_transactions',
+    column:  null, // toute écriture sur la table
+    owners:  new Set(['services/wallet-service.js']),
+    allowlist: new Set([
+      'scripts/fix-schema.js',
+      'scripts/seed.js',
+      // ── Chaos-testing ────────────────────────────────────────────────────
+      'services/simulator/state-advancer.js',
+    ]),
+    remedy: 'Passer par services/wallet-service.js',
+  },
+  {
+    id:      'store_credits',
+    rule:    'I-BACK-12',
+    ops:     ['UPDATE', 'INSERT'],
+    table:   'store_credits',
+    column:  null,
+    owners:  new Set(['services/store-credit-service.js']),
+    allowlist: new Set([
+      'scripts/fix-schema.js',
+      'scripts/seed.js',
+      'services/simulator/state-advancer.js',
+    ]),
+    remedy: 'Passer par services/store-credit-service.js',
+  },
+];
 
 // I-BACK-6 : routes/X-engine.js — engines dans routes/ (à migrer vers services/)
 // Allowlist temporaire — correction prévue Lot B1 et B2
@@ -154,24 +219,8 @@ const CONSOLE_LOG_BASELINE = {
 };
 
 // I-BACK-11 : webhook paiement sans vérification de signature
-// Les handlers légitimes vérifient la signature AVANT tout traitement.
-// Un fichier webhook qui n'a pas de vérification de signature = risque critique.
 const ALLOWED_WEBHOOK_NO_SIG = new Set([
   // Aucun pour l'instant — tout nouveau webhook DOIT vérifier la signature.
-]);
-
-// I-BACK-12 : écriture directe dans wallet_transactions / store_credits
-// hors des owners légitimes (wallet-service.js, store-credit-service.js).
-const ALLOWED_WALLET_WRITERS = new Set([
-  'services/wallet-service.js',
-  'services/store-credit-service.js',
-  'scripts/fix-schema.js',
-  'scripts/seed.js',
-
-  // ── Outil de test/chaos — PAS de la prod wallet ──────────────────────────
-  // Pose volontairement des états incohérents pour les scénarios de simulation.
-  // Ne doit PAS passer par wallet-service.js (ce serait dénaturer le chaos-testing).
-  'services/simulator/state-advancer.js',
 ]);
 
 // I-BACK-13 : DELETE ou TRUNCATE sans clause WHERE (destructif non borné)
@@ -249,53 +298,47 @@ function checkI2_fileSize() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// I-BACK-3 — UPDATE orders SET status hors order-status-machine.js
+// I-BACK-3 / I-BACK-4 / I-BACK-12 / I-BACK-14
+// Checker générique piloté par COLUMN_OWNERSHIP
 // ════════════════════════════════════════════════════════════════
-function checkI3_statusMachineOnly() {
+function checkColumnOwnership() {
   const files = [...walkJs(ROUTES_DIR), ...walkJs(SERVICES_DIR)];
-  const pattern = /UPDATE\s+orders\s+SET\s+status\s*=/i;
 
-  for (const file of files) {
-    const relPath = rel(file);
-    if (relPath === 'services/order-status-machine.js') continue;
-    if (ALLOWED_STATUS_UPDATE_FILES.has(relPath)) continue;
+  for (const entry of COLUMN_OWNERSHIP) {
+    // Construire le pattern de détection selon les ops et la colonne
+    // ex: UPDATE orders SET status=  |  INSERT INTO wallet_transactions
+    const patterns = entry.ops.map(op => {
+      if (op === 'UPDATE') {
+        return entry.column
+          ? new RegExp(`UPDATE\\s+${entry.table}\\s+SET\\s+${entry.column}\\s*=`, 'i')
+          : new RegExp(`UPDATE\\s+${entry.table}\\b`, 'i');
+      }
+      if (op === 'INSERT') {
+        return new RegExp(`INSERT\\s+INTO\\s+${entry.table}\\b`, 'i');
+      }
+      return null;
+    }).filter(Boolean);
 
-    const content = readFile(file);
-    const lines   = content.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (pattern.test(lines[i]) && !lines[i].trim().startsWith('//')) {
-        violate('I-BACK-3',
-          `${relPath}:${i + 1} — UPDATE orders SET status= hors order-status-machine.js`,
-          'Passer par transitionOrderStatus() de services/order-status-machine.js'
-        );
+    for (const file of files) {
+      const relPath = rel(file);
+      if (entry.owners.has(relPath) || entry.allowlist.has(relPath)) continue;
+
+      const content = readFile(file);
+      const lines   = content.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('//')) continue;
+        if (patterns.some(p => p.test(lines[i]))) {
+          violate(entry.rule,
+            `${relPath}:${i + 1} — écriture non autorisée sur ${entry.table}${entry.column ? '.' + entry.column : ''} (${entry.ops.join('/')})`,
+            entry.remedy
+          );
+        }
       }
     }
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-// I-BACK-4 — UPDATE orders SET payment_status hors owners légitimes
-// ════════════════════════════════════════════════════════════════
-function checkI4_paymentStatusOwner() {
-  const files = [...walkJs(ROUTES_DIR), ...walkJs(SERVICES_DIR)];
-  const pattern = /UPDATE\s+orders\s+SET\s+payment_status\s*=/i;
 
-  for (const file of files) {
-    const relPath = rel(file);
-    if (ALLOWED_PAYMENT_STATUS_FILES.has(relPath)) continue;
-
-    const content = readFile(file);
-    const lines   = content.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (pattern.test(lines[i]) && !lines[i].trim().startsWith('//')) {
-        violate('I-BACK-4',
-          `${relPath}:${i + 1} — UPDATE orders SET payment_status= hors owner légitime`,
-          'Passer par order-status-machine.js ou le futur payment-service.js'
-        );
-      }
-    }
-  }
-}
 
 // ════════════════════════════════════════════════════════════════
 // I-BACK-5 — Toute route /admin/* doit avoir authenticate + requireRole/requireAdmin
@@ -579,32 +622,6 @@ function checkI11_webhookSignature() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// I-BACK-12 — Écriture directe dans wallet_transactions / store_credits
-// hors des owners légitimes
-// ════════════════════════════════════════════════════════════════
-function checkI12_walletWriteOwner() {
-  const files = [...walkJs(ROUTES_DIR), ...walkJs(SERVICES_DIR)];
-  // INSERT INTO ou UPDATE sur les tables wallet, hors DELETE qui est I-BACK-13
-  const pattern = /\b(INSERT\s+INTO|UPDATE)\s+(wallet_transactions|store_credits)\b/i;
-
-  for (const file of files) {
-    const relPath = rel(file);
-    if (ALLOWED_WALLET_WRITERS.has(relPath)) continue;
-    const content = readFile(file);
-    const lines   = content.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('//')) continue;
-      if (pattern.test(lines[i])) {
-        violate('I-BACK-12',
-          `${relPath}:${i + 1} — écriture directe dans wallet_transactions/store_credits hors owner légitime`,
-          'Passer par services/wallet-service.js ou services/store-credit-service.js'
-        );
-      }
-    }
-  }
-}
-
-// ════════════════════════════════════════════════════════════════
 // I-BACK-13 — DELETE ou TRUNCATE sans clause WHERE (destructif non borné)
 // ════════════════════════════════════════════════════════════════
 function checkI13_destructiveSql() {
@@ -647,8 +664,7 @@ console.log('\n  🔍  Audit architecture Komerce backend\n');
 
 checkI1_noDuplicates();
 checkI2_fileSize();
-checkI3_statusMachineOnly();
-checkI4_paymentStatusOwner();
+checkColumnOwnership();   // I-BACK-3, I-BACK-4, I-BACK-12, I-BACK-14
 checkI5_adminAuth();
 checkI6_noEngineInRoutes();
 checkI7_noConsoleLog();
@@ -656,7 +672,6 @@ checkI8_noRawSqlInterpolation();
 checkI9_noOrphanTests();
 checkI10_noMigrationCollisions();
 checkI11_webhookSignature();
-checkI12_walletWriteOwner();
 checkI13_destructiveSql();
 
 // ════════════════════════════════════════════════════════════════
@@ -666,8 +681,8 @@ checkI13_destructiveSql();
 const RULE_LABELS = {
   'I-BACK-1':  'Doublons de fichiers actifs',
   'I-BACK-2':  'Taille des fichiers',
-  'I-BACK-3':  'Propriété UPDATE orders.status',
-  'I-BACK-4':  'Propriété UPDATE orders.payment_status',
+  'I-BACK-3':  'Propriété orders.status',
+  'I-BACK-4':  'Propriété orders.payment_status',
   'I-BACK-5':  'Auth routes admin',
   'I-BACK-6':  'Engines dans routes/',
   'I-BACK-7':  'console.log dans nouveaux fichiers',
@@ -675,8 +690,9 @@ const RULE_LABELS = {
   'I-BACK-9':  'Tests orphelins à la racine',
   'I-BACK-10': 'Collisions numéros migrations',
   'I-BACK-11': 'Webhook sans vérification de signature',
-  'I-BACK-12': 'Écriture directe wallet hors owner',
+  'I-BACK-12': 'Propriété wallet_transactions / store_credits',
   'I-BACK-13': 'DELETE/TRUNCATE non borné',
+  'I-BACK-14': 'Propriété parcels.status',
 };
 
 if (warnings.length > 0) {
