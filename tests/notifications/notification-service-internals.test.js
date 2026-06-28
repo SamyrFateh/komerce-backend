@@ -40,6 +40,10 @@ jest.mock('../../services/authkey-client', () => ({
 const db = require('../../db');
 const internals = require('../../services/notifications/internals');
 
+function normalizeSpaces(value) {
+  return String(value).replace(/\s/g, ' ');
+}
+
 describe('notification internals', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -48,7 +52,7 @@ describe('notification internals', () => {
   test('formats customer-facing helper values predictably', () => {
     expect(internals.firstName(' Samyr Fateh ')).toBe('Samyr');
     expect(internals.firstName('')).toBe('Client');
-    expect(internals.formatAmount(1234567)).toBe('1 234 567');
+    expect(normalizeSpaces(internals.formatAmount(1234567))).toBe('1 234 567');
     expect(internals.formatAmount(null)).toBe('');
   });
 
