@@ -57,6 +57,10 @@ const warnings = [];
 function error(msg) { errors.push(msg); }
 function warning(msg) { warnings.push(msg); }
 function hasText(haystack, needle) { return haystack.includes(needle); }
+function catalogDeclaresBoutiqueFile(file) {
+  const normalized = file.replace(/^public\/boutique\//, '');
+  return hasText(catalogCard, file) || hasText(catalogCard, normalized);
+}
 
 let boutique360;
 try {
@@ -90,12 +94,12 @@ for (const file of requiredModalJs) {
     if (!mod[field]) error(`${file}: header @${field} absent dans BOUTIQUE_360`);
   }
   if (!hasText(docsText, file)) error(`Owner JS non documente dans les docs canoniques Boutique: ${file}`);
-  if (!hasText(catalogCard, file)) error(`catalog.feature.js ne declare pas le fichier modal: ${file}`);
+  if (!catalogDeclaresBoutiqueFile(file)) error(`catalog.feature.js ne declare pas le fichier modal: ${file}`);
 }
 
 for (const file of requiredModalCss) {
   if (!hasText(docsText, file)) error(`Owner CSS non documente dans les docs canoniques Boutique: ${file}`);
-  if (!hasText(catalogCard, file)) error(`catalog.feature.js ne declare pas le fichier CSS modal: ${file}`);
+  if (!catalogDeclaresBoutiqueFile(file)) error(`catalog.feature.js ne declare pas le fichier CSS modal: ${file}`);
 }
 
 const imageUx = modules.get('public/boutique/js/b-modal-image-ux.js');
