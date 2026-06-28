@@ -66,7 +66,13 @@ module.exports = {
       'services/collective-payment-orchestrator.js',
       'services/collective-ready-to-order-orchestrator.js',
       'services/collective-stock-reservation-service.js',
-      'services/collective-workspace-engine.js',
+      'services/collective-workspace-engine.js',        // barrel C4 2026-06-28
+      'services/collective-workspace-internals.js',     // CONFIG, _generateToken, _hashToken, logEvent
+      'services/collective-workspace-creation.js',      // createWorkspace
+      'services/collective-workspace-reads.js',         // getWorkspace*, getTokenInfo, deriveWorkspacePhase
+      'services/collective-workspace-items.js',         // addItem, updateItem, removeItem
+      'services/collective-workspace-contributions.js', // addContribution, cancelContribution*
+      'services/collective-workspace-lifecycle.js',     // finalizationReview, finalizeWorkspace, resumeWorkspace
       'services/repair-collective-ready-to-capture.js',
       'services/repair-collective-stock-reservations.js',],
     routes: [

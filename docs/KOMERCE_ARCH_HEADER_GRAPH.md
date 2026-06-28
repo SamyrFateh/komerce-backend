@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 336
-- Files with full headers: 307
+- Scanned code files: 342
+- Files with full headers: 313
 - Files with lite headers: 29
-- Files with any headers: 336
+- Files with any headers: 342
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 686
-- Edges: 3224
+- Graph nodes: 692
+- Edges: 3292
 - DB tables: 108
 - Doctrines: 125
 - Impact areas: 117
-- Unresolved code edges: 306
+- Unresolved code edges: 307
 
 ## Domains
 
@@ -44,7 +44,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - platform-ops: 8
 - recommendations: 7
 - refunds: 2
-- shared-cart: 40
+- shared-cart: 46
 - tracking: 1
 - unknown: 5
 - validation: 1
@@ -66,7 +66,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
-- service: 126
+- service: 132
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -125,7 +125,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/collective-payment-orchestrator.js — shared-cart-collective-payment-orchestrator (shared-cart, critical, full)
 - services/collective-ready-to-order-orchestrator.js — shared-cart-collective-ready-to-order-orchestrator (shared-cart, critical, full)
 - services/collective-stock-reservation-service.js — shared-cart-collective-stock-reservation-service (shared-cart, critical, full)
+- services/collective-workspace-contributions.js — collective-workspace-contributions (shared-cart, critical, full)
+- services/collective-workspace-creation.js — collective-workspace-creation (shared-cart, critical, full)
 - services/collective-workspace-engine.js — shared-cart-collective-workspace-engine (shared-cart, critical, full)
+- services/collective-workspace-internals.js — collective-workspace-internals (shared-cart, critical, full)
+- services/collective-workspace-items.js — collective-workspace-items (shared-cart, critical, full)
+- services/collective-workspace-lifecycle.js — collective-workspace-lifecycle (shared-cart, critical, full)
+- services/collective-workspace-reads.js — collective-workspace-reads (shared-cart, critical, full)
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
 - services/create-stripe-order-intent.js — payment-create-stripe-order-intent (payment, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
@@ -324,6 +330,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## DB Write Edges
 
 - WRITE routes/payments-paypal.js -> (none)
+- WRITE services/collective-workspace-reads.js -> (none)
 - WRITE services/customs-analytics.js -> (none)
 - WRITE services/customs-classification.js -> (none)
 - WRITE services/dashboard-metrics/_helpers.js -> (none)
@@ -373,12 +380,25 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE bootstrap/startup-migrations.js -> charges
 - WRITE services/economic-engine-queries.js -> charges
 - WRITE services/collective-workspace-engine.js -> collective_payment_sessions
+- WRITE services/collective-workspace-lifecycle.js -> collective_payment_sessions
 - WRITE services/collective-workspace-engine.js -> collective_payment_tokens
+- WRITE services/collective-workspace-lifecycle.js -> collective_payment_tokens
 - WRITE services/collective-stock-reservation-service.js -> collective_stock_reservations
+- WRITE services/collective-workspace-contributions.js -> collective_workspace_contributions
 - WRITE services/collective-workspace-engine.js -> collective_workspace_contributions
+- WRITE services/collective-workspace-lifecycle.js -> collective_workspace_contributions
+- WRITE services/collective-workspace-contributions.js -> collective_workspace_events
+- WRITE services/collective-workspace-creation.js -> collective_workspace_events
 - WRITE services/collective-workspace-engine.js -> collective_workspace_events
+- WRITE services/collective-workspace-internals.js -> collective_workspace_events
+- WRITE services/collective-workspace-items.js -> collective_workspace_events
+- WRITE services/collective-workspace-lifecycle.js -> collective_workspace_events
 - WRITE services/collective-workspace-engine.js -> collective_workspace_items
+- WRITE services/collective-workspace-items.js -> collective_workspace_items
+- WRITE services/collective-workspace-lifecycle.js -> collective_workspace_items
+- WRITE services/collective-workspace-creation.js -> collective_workspaces
 - WRITE services/collective-workspace-engine.js -> collective_workspaces
+- WRITE services/collective-workspace-lifecycle.js -> collective_workspaces
 - WRITE services/pricing-strategy-service.js -> competitor_prices
 - WRITE routes/pricing.js -> cost_benchmarks
 - WRITE routes/admin-cost-components.js -> cost_component_events
@@ -429,20 +449,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/relay-dashboard.js -> order_comments
 - WRITE routes/hub-dashboard.js -> order_incidents
 - WRITE routes/relay-dashboard.js -> order_incidents
-- WRITE services/order-cost-snapshot.js -> order_item_cost_imputations
-- WRITE routes/admin-customs-shipments.js -> order_item_real_cost_allocations
-- WRITE services/cost-allocation.js -> order_item_real_cost_allocations
-- WRITE routes/admin/delete-order-cascade.js -> order_items
-- WRITE routes/admin/system.js -> order_items
-- WRITE routes/orders/create.js -> order_items
-- WRITE services/parcel-operations.js -> order_items
-- WRITE services/scan-engine.js -> order_items
-- WRITE services/shared-cart-engine.js -> order_items
-- WRITE services/shared-cart-lifecycle.js -> order_items
-- WRITE routes/admin/delete-order-cascade.js -> order_status_history
-- WRITE routes/admin/system.js -> order_status_history
-- WRITE routes/admin/users.js -> order_status_history
-- WRITE routes/orders/cancel.js -> order_status_history
 
 ## Unresolved Code Edges
 

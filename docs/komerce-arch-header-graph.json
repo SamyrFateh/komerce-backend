@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 336,
-    "filesWithFullHeaders": 307,
+    "scannedCodeFiles": 342,
+    "filesWithFullHeaders": 313,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 336,
+    "filesWithAnyHeaders": 342,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 686,
-    "edges": 3224,
+    "graphNodes": 692,
+    "edges": 3292,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 117,
-    "unresolvedCodeEdges": 306
+    "unresolvedCodeEdges": 307
   },
   "byDomain": {
     "bootstrap": 9,
@@ -34,7 +34,7 @@
     "boutique": 36,
     "catalog": 28,
     "checkout": 2,
-    "shared-cart": 40,
+    "shared-cart": 46,
     "recommendations": 7,
     "payment": 15,
     "tracking": 1,
@@ -80,7 +80,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 126,
+    "service": 132,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -88,7 +88,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 72,
+    "critical": 78,
     "medium": 100,
     "high": 132,
     "low": 32
@@ -8630,6 +8630,98 @@
       "version": "2026-06"
     },
     {
+      "id": "services/collective-workspace-contributions.js",
+      "file": "services/collective-workspace-contributions.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-contributions",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "public_token",
+        "creator_token",
+        "payload",
+        "contribution_id"
+      ],
+      "outputs": [
+        "contribution",
+        "ok"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "dbRead": [
+        "collective_workspaces"
+      ],
+      "dbWrite": [
+        "collective_workspace_contributions",
+        "collective_workspace_events"
+      ],
+      "dbTxn": [
+        "required_for_state_transition"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-creation.js",
+      "file": "services/collective-workspace-creation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-creation",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "event_name",
+        "creator_name",
+        "creator_phone",
+        "recipient_name",
+        "relais_id"
+      ],
+      "outputs": [
+        "workspace",
+        "public_token",
+        "creator_token"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "collective_workspace_events",
+        "collective_workspaces"
+      ],
+      "dbTxn": [
+        "required_for_state_transition"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
       "id": "services/collective-workspace-engine.js",
       "file": "services/collective-workspace-engine.js",
       "type": "file",
@@ -8648,8 +8740,18 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-reads.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "usedBy": [
+        "routes/collective-workspaces.js",
+        "services/collective-stock-reservation-service.js"
+      ],
       "dbRead": [
         "collective_payment_sessions",
         "collective_payment_tokens",
@@ -8669,6 +8771,205 @@
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-internals.js",
+      "file": "services/collective-workspace-internals.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-internals",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "(none)"
+      ],
+      "outputs": [
+        "(none)"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-reads.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "collective_workspace_events"
+      ],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-items.js",
+      "file": "services/collective-workspace-items.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-items",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "creator_token",
+        "product_id",
+        "quantity",
+        "item_id"
+      ],
+      "outputs": [
+        "item",
+        "ok"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "dbRead": [
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_workspace_events",
+        "collective_workspace_items"
+      ],
+      "dbTxn": [
+        "required_for_state_transition"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-lifecycle.js",
+      "file": "services/collective-workspace-lifecycle.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-lifecycle",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "creator_token",
+        "duration_hours",
+        "idempotency_key"
+      ],
+      "outputs": [
+        "review_report",
+        "session_tokens",
+        "workspace_status"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-reads.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_events",
+        "collective_workspace_items",
+        "collective_workspaces"
+      ],
+      "dbTxn": [
+        "required_for_state_transition"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-reads.js",
+      "file": "services/collective-workspace-reads.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-reads",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "public_token",
+        "creator_token",
+        "raw_token",
+        "workspace",
+        "opts"
+      ],
+      "outputs": [
+        "workspace",
+        "items",
+        "contributions",
+        "session",
+        "token_info",
+        "phase"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "relais"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "(none)"
       ],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15032,16 +15333,6 @@
       "table": "collective_workspace_items"
     },
     {
-      "id": "db:collective_payment_sessions",
-      "type": "db-table",
-      "table": "collective_payment_sessions"
-    },
-    {
-      "id": "db:collective_payment_tokens",
-      "type": "db-table",
-      "table": "collective_payment_tokens"
-    },
-    {
       "id": "db:collective_workspace_contributions",
       "type": "db-table",
       "table": "collective_workspace_contributions"
@@ -15050,6 +15341,16 @@
       "id": "db:collective_workspace_events",
       "type": "db-table",
       "table": "collective_workspace_events"
+    },
+    {
+      "id": "db:collective_payment_sessions",
+      "type": "db-table",
+      "table": "collective_payment_sessions"
+    },
+    {
+      "id": "db:collective_payment_tokens",
+      "type": "db-table",
+      "table": "collective_payment_tokens"
     },
     {
       "id": "db:customs_effective_rates",
@@ -27765,6 +28066,138 @@
       "label": "shared-cart"
     },
     {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-contributions.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-write",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-creation.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "db:collective_workspaces",
+      "type": "db-write",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-creation.js",
+      "type": "depends",
+      "label": "services/collective-workspace-creation.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-reads.js",
+      "type": "depends",
+      "label": "services/collective-workspace-reads.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-items.js",
+      "type": "depends",
+      "label": "services/collective-workspace-items.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-contributions.js",
+      "type": "depends",
+      "label": "services/collective-workspace-contributions.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-lifecycle.js",
+      "type": "depends",
+      "label": "services/collective-workspace-lifecycle.js"
+    },
+    {
+      "from": "routes/collective-workspaces.js",
+      "to": "services/collective-workspace-engine.js",
+      "type": "uses",
+      "label": "routes/collective-workspaces.js"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "services/collective-workspace-engine.js",
+      "type": "uses",
+      "label": "services/collective-stock-reservation-service.js"
+    },
+    {
       "from": "services/collective-workspace-engine.js",
       "to": "db:collective_payment_sessions",
       "type": "db-read",
@@ -27850,6 +28283,282 @@
     },
     {
       "from": "services/collective-workspace-engine.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-creation.js"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-reads.js"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-items.js"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-contributions.js"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-lifecycle.js"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-items.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-write",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "services/collective-workspace-reads.js",
+      "type": "depends",
+      "label": "services/collective-workspace-reads.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-lifecycle.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-read",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-write",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_payment_tokens",
+      "type": "db-write",
+      "label": "collective_payment_tokens"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-write",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-write",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspaces",
+      "type": "db-write",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-reads.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "services/collective-workspace-reads.js",
+      "type": "uses",
+      "label": "services/collective-workspace-lifecycle.js"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_payment_tokens",
+      "type": "db-read",
+      "label": "collective_payment_tokens"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-read",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
       "to": "impact:shared-cart",
       "type": "impact",
       "label": "shared-cart"
@@ -40515,7 +41224,8 @@
         "middleware/auth.js",
         "public/boutique/js/event-manage.js",
         "public/boutique/js/event-pay.js",
-        "public/boutique/js/event-public.js"
+        "public/boutique/js/event-public.js",
+        "services/collective-workspace-engine.js"
       ]
     },
     "routes/config.js": {
@@ -43755,7 +44465,82 @@
         "db:collective_workspaces",
         "db:products",
         "doctrine:resolve_before_behavior_change",
-        "impact:shared-cart"
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js"
+      ]
+    },
+    "services/collective-workspace-contributions.js": {
+      "role": "collective-workspace-contributions",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_workspaces"
+      ],
+      "dbWrite": [
+        "collective_workspace_contributions",
+        "collective_workspace_events"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_events",
+        "db:collective_workspaces",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js"
+      ]
+    },
+    "services/collective-workspace-creation.js": {
+      "role": "collective-workspace-creation",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "collective_workspace_events",
+        "collective_workspaces"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:collective_workspace_events",
+        "db:collective_workspaces",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js"
       ]
     },
     "services/collective-workspace-engine.js": {
@@ -43765,8 +44550,18 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-reads.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "directUsedBy": [
+        "routes/collective-workspaces.js",
+        "services/collective-stock-reservation-service.js"
+      ],
       "ownedFiles": [],
       "dbRead": [
         "collective_payment_sessions",
@@ -43801,7 +44596,195 @@
         "db:products",
         "db:relais",
         "doctrine:resolve_before_behavior_change",
-        "impact:shared-cart"
+        "impact:shared-cart",
+        "routes/collective-workspaces.js",
+        "services/collective-stock-reservation-service.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-lifecycle.js",
+        "services/collective-workspace-reads.js"
+      ]
+    },
+    "services/collective-workspace-internals.js": {
+      "role": "collective-workspace-internals",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-reads.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "collective_workspace_events"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:collective_workspace_events",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-lifecycle.js",
+        "services/collective-workspace-reads.js"
+      ]
+    },
+    "services/collective-workspace-items.js": {
+      "role": "collective-workspace-items",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_workspace_events",
+        "collective_workspace_items"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_workspace_events",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:products",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js"
+      ]
+    },
+    "services/collective-workspace-lifecycle.js": {
+      "role": "collective-workspace-lifecycle",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-reads.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_events",
+        "collective_workspace_items",
+        "collective_workspaces"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_payment_sessions",
+        "db:collective_payment_tokens",
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_events",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:products",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-reads.js"
+      ]
+    },
+    "services/collective-workspace-reads.js": {
+      "role": "collective-workspace-reads",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "relais"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:collective_payment_sessions",
+        "db:collective_payment_tokens",
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:relais",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-lifecycle.js"
       ]
     },
     "services/confirm-pickup-cash-payment.js": {
@@ -50438,6 +51421,12 @@
     },
     {
       "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
