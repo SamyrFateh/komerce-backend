@@ -2,6 +2,8 @@
  *
  * Changements vs v328 :
  *   - Bump de version (v328 → v335) : force la purge de l'ancien cache sur tous les clients.
+ *   - Le nom de cache garde le préfixe v334 car index.html conserve temporairement
+ *     uniquement les caches qui contiennent "komerce-v334".
  *   - Ne met plus en cache une réponse dont le Content-Type ne correspond pas à
  *     la ressource demandée. Cas typique : un .js / .css qui renvoie en fait du
  *     HTML (fallback SPA, page d'erreur, redirection 200). Avant, ce HTML était
@@ -9,7 +11,7 @@
  *     stylée ou cassée. Désormais on renvoie la réponse réseau mais on ne la cache pas.
  *   - Ne cache que les réponses same-origin "basic" et 200 OK.
  */
-const CACHE = 'komerce-v335';
+const CACHE = 'komerce-v334-v335';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
