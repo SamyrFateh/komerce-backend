@@ -14,12 +14,12 @@
  * Toujours exit 0 — jamais bloquant. Mode --report uniquement.
  *
  * Sources agrégées :
- *   • audit-backend-arch.js     → allowlists I-BACK-2/3/4/6/7/12/13/14
+ *   • audit-backend-arch.js     → COLUMN_OWNERSHIP (auto-découverte), allowlists I-BACK-*
  *   • code-quality-gate.js      → RULE_FILE_EXEMPT + inline quality-disable
  *   • governance/test-exemptions.json
  *   • scripts/arch-debt-budget.json
  *   • scripts/code-quality-baseline.json  (si présente)
- *   • scripts/*.baseline.json   (feature-guard, dashboards-360, boutique-360…)
+ *   • scripts/.*baseline*.json  (tous les gates avec baseline — auto-découverte)
  */
 
 'use strict';
@@ -53,7 +53,6 @@ function countMatches(src, re) {
 
 /** Extrait les entrées d'un Set littéral JS par son nom de variable. */
 function extractSet(src, varName) {
-  // cherche "const <varName> = new Set([\n  ...entrées...\n]);"
   const re = new RegExp(`(?:const|var|let)\\s+${varName}\\s*=\\s*new Set\\(\\[([^\\]]*?)\\]\\)`, 's');
   const m = src.match(re);
   if (!m) return [];
@@ -63,21 +62,78 @@ function extractSet(src, varName) {
     .filter(Boolean);
 }
 
-/** Extrait toutes les allowlists dans COLUMN_OWNERSHIP. */
-function extractColumnOwnershipAllowlists(src) {
-  // Parcourt les blocs allowlist: new Set([...]) dans COLUMN_OWNERSHIP
+/**
+ * Auto-découverte : parse COLUMN_OWNERSHIP depuis la source de audit-backend-arch.js.
+ * Extrait { id, rule, remedy, allowlist[] } pour chaque entrée — sans map statique.
+ * Si audit-backend-arch expose un RULE_LABELS, on s'en sert pour les labels.
+ */
+function extractColumnOwnership(src) {
   const results = [];
-  const colOwnerRe = /\{\s*id:\s*'([^']+)'[^}]*?allowlist:\s*new Set\(\[([^\]]*?)\]\)/gs;
+  const colOwnerRe = /\{\s*id:\s*'([^']+)'[\s\S]*?rule:\s*'([^']+)'[\s\S]*?allowlist:\s*new Set\(\[([^\]]*?)\]\)[\s\S]*?remedy:\s*'([^']+)'/gs;
   let m;
   while ((m = colOwnerRe.exec(src)) !== null) {
-    const id = m[1];
-    const entries = m[2]
+    const id      = m[1];
+    const rule    = m[2];
+    const remedy  = m[4];
+    const entries = m[3]
       .split('\n')
       .map(l => l.replace(/\/\/.*$/, '').trim().replace(/['"`,]/g, ''))
       .filter(Boolean);
-    if (entries.length) results.push({ id, entries });
+    results.push({ id, rule, remedy, entries });
   }
   return results;
+}
+
+/**
+ * Auto-découverte : extrait RULE_LABELS depuis la source de audit-backend-arch.js.
+ * Retourne un Map rule → label, ou Map vide si absent.
+ */
+function extractRuleLabels(src) {
+  const map = {};
+  const blockRe = /const RULE_LABELS\s*=\s*\{([^}]+)\}/s;
+  const bm = src.match(blockRe);
+  if (!bm) return map;
+  const lineRe = /'(I-BACK-\d+)':\s*'([^']+)'/g;
+  let m;
+  while ((m = lineRe.exec(bm[1])) !== null) map[m[1]] = m[2];
+  return map;
+}
+
+/**
+ * Auto-découverte : liste tous les dossiers sources JS existants dans ROOT,
+ * en excluant les dossiers non-source connus.
+ * Remplace la liste SCAN_DIRS statique.
+ */
+function discoverSourceDirs() {
+  const EXCLUDE = new Set([
+    'node_modules', '.git', 'scripts', 'tests', 'migrations',
+    'docs', 'governance', 'features', 'coverage', 'dist', 'bootstrap',
+  ]);
+  const dirs = [];
+  let entries;
+  try { entries = fs.readdirSync(ROOT, { withFileTypes: true }); }
+  catch { return []; }
+  for (const e of entries) {
+    if (!e.isDirectory()) continue;
+    if (EXCLUDE.has(e.name) || e.name.startsWith('.')) continue;
+    // Ne garder que les dossiers qui contiennent au moins un .js
+    const full = path.join(ROOT, e.name);
+    if (hasJsFiles(full)) dirs.push(e.name);
+  }
+  // Ajouter les sous-dossiers standards connus (profondeur 2 non récursive)
+  const KNOWN_SUBDIRS = ['public/dashboards/admin/js', 'dashboards/admin/js'];
+  for (const sub of KNOWN_SUBDIRS) {
+    const full = path.join(ROOT, sub);
+    if (fs.existsSync(full) && hasJsFiles(full)) dirs.push(sub);
+  }
+  return dirs;
+}
+
+function hasJsFiles(dir) {
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    return entries.some(e => e.isFile() && e.name.endsWith('.js'));
+  } catch { return false; }
 }
 
 /** Compte les commentaires // quality-disable dans un répertoire. */
@@ -109,6 +165,29 @@ function scanDir(dir, cb) {
   }
 }
 
+/**
+ * Auto-découverte : liste tous les fichiers .*baseline*.json dans scripts/.
+ * Dérive le label depuis le nom de fichier.
+ * Remplace la liste baselineFiles statique.
+ */
+function discoverBaselineFiles() {
+  const scriptsDir = path.join(ROOT, 'scripts');
+  let entries;
+  try { entries = fs.readdirSync(scriptsDir, { withFileTypes: true }); }
+  catch { return []; }
+  return entries
+    .filter(e => e.isFile() && e.name.startsWith('.') && e.name.includes('baseline') && e.name.endsWith('.json'))
+    .map(e => ({
+      file: `scripts/${e.name}`,
+      label: e.name
+        .replace(/^\./, '')
+        .replace(/-baseline\.json$/, '')
+        .replace(/-/g, ' ')
+        // capitalise première lettre
+        .replace(/^\w/, c => c.toUpperCase()),
+    }));
+}
+
 // ════════════════════════════════════════════════════════════════
 // COLLECTE DES DETTES
 // ════════════════════════════════════════════════════════════════
@@ -136,26 +215,22 @@ if (auditSrc) {
     note: 'Extraction engines + routes volumineuses',
   });
 
-  // I-BACK-3/4/12/14 : COLUMN_OWNERSHIP allowlists
-  const colAllowlists = extractColumnOwnershipAllowlists(auditSrc);
-  const colRuleMap = {
-    'orders.status':        { rule: 'I-BACK-3',  label: 'Écritures orders.status hors machine à états' },
-    'orders.payment_status':{ rule: 'I-BACK-4',  label: 'Écritures orders.payment_status hors payment-service' },
-    'wallet_transactions':  { rule: 'I-BACK-12', label: 'Écritures wallet_transactions hors wallet-service' },
-    'store_credits':        { rule: 'I-BACK-12', label: 'Écritures store_credits hors store-credit-service' },
-    'parcels.status':       { rule: 'I-BACK-14', label: 'Écritures parcels.status hors parcelSync' },
-  };
-  for (const { id, entries } of colAllowlists) {
-    // Exclure les scripts utilitaires communs (seed, fix-schema) du décompte — toujours légitimes
-    const realDebt = entries.filter(e => !['scripts/fix-schema.js','scripts/seed.js','scripts/reset-admin.js'].includes(e));
+  // I-BACK-3/4/12/14 : COLUMN_OWNERSHIP — auto-découverte depuis la source
+  const ruleLabels   = extractRuleLabels(auditSrc);
+  const colOwnership = extractColumnOwnership(auditSrc);
+  const SCRIPT_LEGIT = new Set(['scripts/fix-schema.js', 'scripts/seed.js', 'scripts/reset-admin.js']);
+
+  for (const { id, rule, remedy, entries } of colOwnership) {
+    const realDebt = entries.filter(e => !SCRIPT_LEGIT.has(e));
     if (realDebt.length === 0) continue;
-    const meta = colRuleMap[id] || { rule: 'I-BACK-?', label: `Colonne ${id}` };
+    // label : RULE_LABELS si disponible, sinon construit depuis id + remedy
+    const ruleLabel = ruleLabels[rule] || `Propriété ${id}`;
     addDebt({
-      rule: meta.rule,
-      label: meta.label,
+      rule,
+      label: `${ruleLabel} — allowlist hors scripts légitimes`,
       lot: 'Exception documentée (voir commentaire in-source)',
       entries: realDebt,
-      note: 'scripts/seed.js et fix-schema.js exclus (toujours légitimes)',
+      note: `Remedy : ${remedy}`,
     });
   }
 
@@ -191,7 +266,6 @@ if (auditSrc) {
 
   // I-BACK-13 : DELETE/TRUNCATE non borné
   const destructiveSql = extractSet(auditSrc, 'ALLOWED_DESTRUCTIVE_SQL');
-  // Ne compter que les non-scripts (routes/ et services/ = vraie dette)
   const destructiveDebt = destructiveSql.filter(e => !e.startsWith('scripts/'));
   if (destructiveDebt.length > 0) {
     addDebt({
@@ -243,9 +317,9 @@ if (cqSrc) {
     note: 'console.log autorisé dans logger/error-handler (bootstrap pino)',
   });
 
-  // Inline quality-disable
-  const SCAN_DIRS = ['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'public/dashboards/admin/js'];
-  const inlineDisables = countInlineDisables(SCAN_DIRS, ROOT);
+  // Inline quality-disable — dossiers sources auto-découverts
+  const sourceDirs = discoverSourceDirs();
+  const inlineDisables = countInlineDisables(sourceDirs, ROOT);
   const totalInline = Object.values(inlineDisables).reduce((a, b) => a + b, 0);
   if (totalInline > 0) {
     const inlineEntries = Object.entries(inlineDisables)
@@ -256,7 +330,7 @@ if (cqSrc) {
       label: 'Suppressions inline // quality-disable dans le code',
       lot: 'Revue au cas par cas',
       entries: inlineEntries,
-      note: `${totalInline} suppression(s) totale(s) — chacune est une exception locale documentée`,
+      note: `${totalInline} suppression(s) totale(s) — dossiers scannés : ${sourceDirs.join(', ')}`,
     });
   }
 
@@ -324,23 +398,15 @@ if (archBudget) {
   }
 }
 
-// ── 5. Baselines feature-guard et 360 ────────────────────────
+// ── 5. Baselines gates — auto-découverte scripts/.*baseline*.json ──────────
 
-const baselineFiles = [
-  { file: 'scripts/feature-guard-baseline.json', label: 'Feature-guard baseline' },
-  { file: 'scripts/.dashboards-360-baseline.json', label: 'Dashboards-360 baseline' },
-  { file: 'scripts/.boutique-360-baseline.json',   label: 'Boutique-360 baseline' },
-  { file: 'scripts/.security-360-baseline.json',   label: 'Security-360 baseline' },
-  { file: 'scripts/.meta-graph-baseline.json',     label: 'Meta-graph baseline' },
-];
+const baselineFiles = discoverBaselineFiles();
 
 for (const { file, label } of baselineFiles) {
   const data = readJson(file);
   if (!data) continue;
-  // Cherche des compteurs de dette dans la baseline
   const errorCount = typeof data.totalErrors === 'number' ? data.totalErrors : null;
   const warnCount  = typeof data.totalWarnings === 'number' ? data.totalWarnings : null;
-  // feature-guard-baseline : { sliceName: { errors, warnings } }
   const sliceTotal = typeof data === 'object' && !Array.isArray(data) && errorCount === null
     ? Object.entries(data)
         .filter(([k]) => !k.startsWith('_'))
@@ -359,7 +425,7 @@ for (const { file, label } of baselineFiles) {
       ? [`${sliceTotal.errors} erreur(s), ${sliceTotal.warnings} avertissement(s) cumulés sur ${Object.keys(data).filter(k => !k.startsWith('_')).length} slices`]
       : ['(format inconnu — voir fichier)'];
 
-  if (summary[0].startsWith('0 erreur(s), 0')) continue; // rien à signaler
+  if (summary[0].startsWith('0 erreur(s), 0')) continue;
 
   addDebt({
     rule: label,
@@ -379,8 +445,8 @@ const openDebts = debts.filter(d =>
   d.count > 0 &&
   !d.note.startsWith('✅') &&
   !d.lot.includes('légitime') &&
-  !d.lot.startsWith('Exception documentée') &&  // exceptions in-source délibérées
-  d.lot !== 'Revue individuelle requise'          // exceptions routes admin documentées
+  !d.lot.startsWith('Exception documentée') &&
+  d.lot !== 'Revue individuelle requise'
 );
 
 if (JSON_MODE) {
