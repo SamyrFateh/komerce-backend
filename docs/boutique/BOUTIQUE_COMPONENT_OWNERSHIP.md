@@ -1,6 +1,6 @@
 # Boutique — Component Ownership
 
-> Mis à jour : **2026-06-14**  
+> Mis à jour : **2026-06-28**  
 > Statut : document actif pour savoir **où toucher le code Boutique**.
 
 ---
@@ -42,13 +42,20 @@ Les anciennes notions `panier collectif`, `workspace`, `event`, `settlement`, `e
 | Schéma boutique | `public/boutique/js/shop-schema.js` | catégories, sous-catégories, images, ordre, `dbKeys`, normalisation | DOM, listeners, layout, scroll |
 | Rail catégories markup | `public/boutique/js/render/render-categories.js` | HTML des chips catégories | clics, état actif, pager, scroll |
 | Orchestration accueil | `public/boutique/js/controllers/home-controller.js` | montage rail, clics catégories, active state, subcats desktop | données catégories, cartes produit, internals pager |
-| Catalogue | `public/boutique/js/b-catalog.js` | chargement produits, filtrage, pagination, appel renderers | schéma catégories, markup rail, HTML carte dupliqué |
+| Catalogue | `public/boutique/js/b-catalog.js` | chargement produits, filtrage, pagination, appel renderers, ouverture modal via contrat | schéma catégories, markup rail, HTML carte dupliqué, internals modal |
 | Pager catégories mobile | `public/boutique/js/b-pager.js` | cage mobile, scroll sync, ghost loop, auto-advance | rendu rail, cartes produit, layout desktop |
 | Sous-catégories mobile | `public/boutique/js/b-subcat.js` | mode flat sous-catégorie mobile | pager catégories principales, données catégories |
 | Sections home | `public/boutique/js/render/render-home-sections.js` | markup sections catalogue | filtrage, pagination, rail catégories |
 | Carte produit | `public/boutique/js/render/render-product-card.js` | HTML d'une carte produit | mutation panier/favoris, ouverture modale globale |
 | Panier personnel | `public/boutique/js/b-cart.js` et modules cart dédiés | état panier, rendu panier, actions panier | rendu produit global, panier partagé |
-| Modal produit | `public/boutique/js/b-modal.js` | cycle ouverture/fermeture modal, rendu détail produit | pager, hero, navigation globale |
+| Modal produit — façade | `public/boutique/js/b-modal.js` | compatibilité surface publique, délégation modal | pager, hero, rendu catalogue, panier partagé |
+| Modal produit — orchestration | `public/boutique/js/b-modal-core.js` | cycle ouverture/fermeture, body lock, topbar, recherche interne, composition modules modal | détail métier produit isolé, CSS durable |
+| Modal produit — contenu | `public/boutique/js/b-modal-product.js` | rendu produit, prix, variantes, livraison/trust mobile, actions produit | lightbox image, navigation globale, panier partagé |
+| Modal image / Voir en grand | `public/boutique/js/b-modal-image-ux.js` + `public/boutique/css/modal-media.css` | carousel, compteur, bouton **Voir en grand**, fullscreen image | rendu produit, prix, grille catalogue |
+| Modal social proof | `public/boutique/js/b-modal-social-proof.js` | rank/sold/rating conditionnels, zéro chiffre inventé | données inventées, layout global |
+| Modal navigation | `public/boutique/js/b-modal-nav.js` | précédent/suivant produit dans la modal | pager catégories, navigation page |
+| Modal suggestions | `public/boutique/js/b-modal-suggestions.js` | suggestions et produits liés dans la modal | classement global recommandations |
+| Modal panier | `public/boutique/js/b-modal-cart.js` | actions panier personnel depuis la modal | checkout final, panier partagé |
 | Partage panier | `public/boutique/js/b-share-cart.js` | création lien panier partagé, choix `ready_to_pay/needs_validation`, message WhatsApp | rendu complet vue participant, paiement direct hors boutique |
 | Vue panier partagé | `public/boutique/js/b-group-view.js` | rendu participant/créateur, `?p=TOKEN`, lecture seule snapshot, bouton `Régler ma part` | panier personnel, catalogue live, mutation participant |
 | API panier partagé frontend | `public/boutique/js/group/group-api.js` | appels HTTP panier partagé | rendu UI, mapping de statut humain |
@@ -57,15 +64,59 @@ Les anciennes notions `panier collectif`, `workspace`, `event`, `settlement`, `e
 | Styles catégories | `public/boutique/css/categories.css` | `.k-cats`, `.k-chip`, catégories mobile/base | pager, desktop global, produits |
 | Hero base/mobile | `public/boutique/css/hero.css` | hero mobile/base, sticky bar visuelle | neutralisation cage pager mobile |
 | Grille produits + cartes | `public/boutique/css/products.css` | `.k-grid`, `.k-sec-grid`, `.k-card` | side-cart, modal, catégories |
-| Desktop premium | `public/boutique/css/boutique-desktop.css` | layout desktop, side-cart, hero desktop, sous-catégories desktop | comportement mobile, cage `#k-page-scroll` |
+| Desktop premium | `public/boutique/css/boutique-desktop.css` | layout desktop, side-cart, hero desktop, sous-catégories desktop, guards desktop | comportement mobile, cage `#k-page-scroll` |
 | Panier / checkout CSS | `public/boutique/css/cart.css` | panier personnel, side-cart, checkout, OTP | panier partagé si sélecteurs `.k-group-*` |
 | Panier partagé CSS | `public/boutique/css/group-cart-flow.css` | vue groupe/partagée, suivi, lecture seule, états Boutique First | catalogue, modal produit globale |
-| Modal CSS | `modal-shell.css`, `modal-media.css`, `modal-product.css`, extensions documentées | shell, media, détails produit | panier partagé, catégories, grille |
+| Modal CSS shell | `public/boutique/css/modal-shell.css` | shell, overlay, topbar, scroll, actions | media/carousel, panier partagé, catégories |
+| Modal CSS media | `public/boutique/css/modal-media.css` | images, carousel, media, bouton **Voir en grand** | rendu produit, grille catalogue |
+| Modal CSS produit | `public/boutique/css/modal-product.css` | détails produit, prix, zones d'action produit | shell, media, panier partagé |
+| Modal CSS extension desktop | `public/boutique/css/modal-product-lot4-hybrid.css` | extension PDP hybride desktop | mobile global, panier partagé |
 | Event legacy | `public/boutique/css/event.css` | compatibilité event/workspace legacy | nouvelle UX Boutique First |
 
 ---
 
 ## 4. Contrats par zone sensible
+
+### Modal produit catalogue
+
+Fichiers clés :
+
+```txt
+public/boutique/js/b-modal.js
+public/boutique/js/b-modal-core.js
+public/boutique/js/b-modal-product.js
+public/boutique/js/b-modal-image-ux.js
+public/boutique/js/b-modal-social-proof.js
+public/boutique/js/b-modal-nav.js
+public/boutique/js/b-modal-suggestions.js
+public/boutique/js/b-modal-cart.js
+public/boutique/js/view-models/modal-view-model.js
+public/boutique/css/modal-shell.css
+public/boutique/css/modal-media.css
+public/boutique/css/modal-product.css
+public/boutique/css/modal-product-lot4-hybrid.css
+```
+
+Interdits :
+
+```txt
+Ne pas corriger le bouton Voir en grand depuis b-catalog.js.
+Ne pas corriger le media modal depuis products.css.
+Ne pas afficher un article snapshot panier partagé avec la modal catalogue vivante.
+Ne pas déplacer le comportement lightbox hors de b-modal-image-ux.js sans mettre à jour cette table et la carte catalog.
+```
+
+Tests :
+
+```bash
+npm run gate:boutique-ownership
+cd public/boutique
+npm run check:imports
+npm run check:html
+npm run audit:arch
+```
+
+---
 
 ### Panier partagé Boutique First
 
@@ -132,6 +183,8 @@ hero fixe
 ```
 
 Ne pas corriger un problème mobile depuis `boutique-desktop.css`.
+
+Pour la modal mobile, lire `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`. Le parcours **Voir en grand** appartient à `public/boutique/js/b-modal-image-ux.js` et `public/boutique/css/modal-media.css`.
 
 ---
 

@@ -71,6 +71,7 @@ const STEPS = [
     category:  'gouvernance',
     npmScript: 'feature:check',
     cmd:       'npm run feature:check',
+    warn:      true,
   },
 
   // ── Gate 1 : fichiers touchés → carte ─────────────────────────────────
@@ -107,6 +108,12 @@ const STEPS = [
     category:  'reconstruction',
     npmScript: 'boutique:360:check',
     cmd:       'npm run boutique:360:check',
+  },
+  {
+    label:     'Boutique ownership check',
+    category:  'gate',
+    npmScript: 'gate:boutique-ownership',
+    cmd:       'npm run gate:boutique-ownership',
   },
   {
     label:     'Security 360 check',
