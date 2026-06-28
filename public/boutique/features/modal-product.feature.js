@@ -71,6 +71,16 @@ module.exports = {
           /\.k-modal-view-full\s*\{[^}]*position:\s*absolute[^}]*bottom:\s*12px[^}]*left:\s*10px/m,
         ],
       },
+      {
+        artifact: '../css/modal-media.css',
+        label:    'mobile product image cannot collapse in modal flex scroll',
+        mustContain: [
+          // .k-modal-img-wrap est enfant flex de .k-modal-scroll sur mobile.
+          // Sans flex:0 0 auto, Android peut compresser l'image derrière les détails.
+          /\.k-modal-img-wrap\s*\{[^}]*flex:\s*0\s+0\s+auto[^}]*\}/m,
+          /\.k-modal-img-wrap\s*\{[^}]*min-height:\s*260px[^}]*\}/m,
+        ],
+      },
     ],
 
     // Dette de doctrine token scopée à la modal, sous cliquet (les 4 rgba du fix
