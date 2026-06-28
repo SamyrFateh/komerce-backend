@@ -17,7 +17,7 @@
  */
 
 /**
- * KOMERCE — services/notification-service.js
+ * KOMERCE — services/notifications/notification-service.js
  * ═══════════════════════════════════════════════════════════════════════
  * Barrel de ré-export — API publique inchangée.
  *
@@ -36,11 +36,11 @@
 
 'use strict';
 
-const { notifyOrderCreated, notifyPaymentConfirmed, notifyStatusChange, notifyCancellation } = require('./notifications/order');
-const { _loadOrderFromParcel, notifyParcelScan, notifyParcelCreated } = require('./notifications/parcel');
-const { sendOtpMessage, sendMagicLink } = require('./notifications/otp-auth');
-const { notifyLoyaltyEarned } = require('./notifications/loyalty');
-const { notifyText } = require('./notifications/misc');
+const { notifyOrderCreated, notifyPaymentConfirmed, notifyStatusChange, notifyCancellation } = require('./order');
+const { _loadOrderFromParcel, notifyParcelScan, notifyParcelCreated } = require('./parcel');
+const { sendOtpMessage, sendMagicLink } = require('./otp-auth');
+const { notifyLoyaltyEarned } = require('./loyalty');
+const { notifyText } = require('./misc');
 
 module.exports = {
   // Flux commande

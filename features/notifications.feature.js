@@ -40,6 +40,10 @@ module.exports = {
   files: {
     tests: [
       'core/test-whatsapp-notifications.js',
+      'tests/notifications/notification-service-internals.test.js',
+      'tests/notifications/notification-service-order-parcel-otp-auth-loyalty-misc.test.js',
+      'tests/notifications/whatsapp-meta-alert-engine.test.js',
+      'tests/notifications/notification-api-meta-whatsapp-alerts.test.js',
     ],
     utils: [
       'utils/email.js',
