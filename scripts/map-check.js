@@ -116,6 +116,13 @@ const STEPS = [
     cmd:       'npm run gate:boutique-ownership',
   },
   {
+    label:     'Boutique full ownership scan',
+    category:  'gate',
+    npmScript: 'gate:boutique-ownership:full',
+    cmd:       'npm run gate:boutique-ownership:full',
+    warn:      true,
+  },
+  {
     label:     'Security 360 check',
     category:  'reconstruction',
     npmScript: 'security:360:check',
