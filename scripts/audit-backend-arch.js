@@ -88,12 +88,16 @@ const ALLOWED_LARGE_FILES = new Set([
   'services/shared-cart-engine.js',              // 1037 l → OK si pas d'extension prévue
   'services/collective-workspace-engine.js',     // 965 l  → OK service
   'services/collective-payment-orchestrator.js', // 942 l  → OK service
-  'services/cost-allocation.js',                 // 918 l  → OK service
   'services/scan-engine.js',                     // 872 l  → OK service
   'services/notification-service.js',            // 814 l  → OK service
   // 'services/dashboard-metrics.js' retiré — Lot C3 clôturé 2026-06-28 :
   // découpé en services/dashboard-metrics/{_helpers,control-tower,costing,logistics,workspaces,index}.js,
   // aucun fragment > 800L. Voir tests/unit/dashboard-metrics.test.js (49 cas, caractérisation pré-split).
+  // 'services/cost-allocation.js' retiré — Lot C5 clôturé 2026-06-28 :
+  // découpé en services/cost-allocation/{_helpers,allocate,variance,index}.js,
+  // aucun fragment > 800L. Voir tests/unit/cost-allocation.test.js (helpers +
+  // variance) et tests/unit/cost-allocation-allocate.test.js (12 cas, les 4
+  // allocate* — caractérisation pré-split, calcul financier).
 ]);
 
 // ════════════════════════════════════════════════════════════════

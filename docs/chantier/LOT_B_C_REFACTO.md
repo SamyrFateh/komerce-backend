@@ -73,7 +73,7 @@ Aucune action — `routes/economic-engine.js` (173L) est une façade mince accep
 | C2 | `notification-service.js` | 963 | 8 | 18 fichiers (routes + services) | Élevé — rayon d'impact |
 | C3 | `dashboard-metrics.js` | 1081 | 0 | `routes/admin-dashboard.js` | Moyen — mécanique mais aveugle |
 | C4 | `collective-workspace-engine.js` | 983 | 0 | `services/collective-stock-reservation-service.js` | Moyen |
-| C5 | `cost-allocation.js` | 914 | 0 | `routes/admin-costing.js`, `services/customs-shipment-service.js` | Élevé — calcul financier sans test |
+| C5 | `cost-allocation.js` | 914 → **0** (découpé) | 34 (22 + 12) | `routes/admin-costing.js`, `services/customs-shipment-service.js` | ✅ **Fait 2026-06-28** |
 | C6 | `scan-engine.js` | 959 | 1 | `routes/parcel-api-v2/scans.js` | Élevé — état physique colis |
 
 ### C1 — `shared-cart-engine.js` (à traiter en premier, sert de gabarit)
@@ -111,11 +111,28 @@ C'est la seule façon de découper sans PR géant touchant les 18 fichiers appel
 
 Même forme que C1 (cousin « collectif » du panier partagé) : tokens, CRUD workspace, items, contributions, finalisation (`finalizeWorkspace` = 218 lignes, à décomposer en interne aussi). À traiter après C1 pour réutiliser le découpage validé.
 
-### C5 — `cost-allocation.js` (le plus sensible)
+### C5 — `cost-allocation.js` — ✅ clôturé 2026-06-28
 
 Verrouillage (`lockEstimatedCostsForOrder`), allocation réelle (`allocateShipmentRealCosts` = 194 lignes, `allocateParcelRealCosts`, `allocateMonthlyFixedCosts`, `allocateProductPurchaseCosts`), variance (`computeOrderCostVariance/ProductCostVariance`, `getOrderCostTruth`).
 
-**Ne pas toucher sans tests de caractérisation d'abord** — calcul financier, 0 test, régression silencieuse coûteuse.
+**Tests de caractérisation posés avant tout split** (doctrine respectée) :
+- `tests/unit/cost-allocation.test.js` (22 cas) — constantes, `shareByWeight`/`taxableWeight` (helpers purs), `computeOrderCostVariance`, `computeProductCostVariance`, `getOrderCostTruth`.
+- `tests/unit/cost-allocation-allocate.test.js` (12 cas, ajoutés en session) — les 4 `allocate*`, jusque-là **non couverts** (transactions longues, 10+ requêtes chacune). Mock `db.pool.connect()` via le harness `makeClient` (différent du mock `{ query }` simple utilisé par l'autre fichier — les `allocate*` gèrent leur propre transaction).
+
+**Split réalisé** : `services/cost-allocation.js` (914L) → `services/cost-allocation/` :
+- `_helpers.js` (115L) — constantes doctrine, `shareByWeight`, `taxableWeight`, `lockEstimatedCostsForOrder` (délègue à `order-cost-snapshot`)
+- `allocate.js` (575L) — les 4 `allocate*`, dépend de `_helpers.js` pour `shareByWeight`
+- `variance.js` (283L) — `computeOrderCostVariance`, `computeProductCostVariance`, `getOrderCostTruth`
+- `index.js` (99L) — barrel, ré-exporte l'interface publique à l'identique (mêmes 15 clés, mêmes signatures)
+
+Aucun fragment > 800L. Les deux appelants (`routes/admin-costing.js`, `services/customs-shipment-service.js`) continuent de faire `require('../services/cost-allocation')` sans modification — résolution Node vers `index.js` automatique.
+
+**Vérifié après coup** :
+- `npx jest tests/unit/cost-allocation.test.js tests/unit/cost-allocation-allocate.test.js` → 34/34 verts, aucune modification des tests nécessaire.
+- `npx jest tests/unit` (suite complète) → 1017/1032 verts, 1 seul échec pré-existant et sans rapport (`validators.test.js` — schéma `admin.reset`), 0 régression imputable au split.
+- `node scripts/audit-backend-arch.js` → exit 0, `cost-allocation.js` ne figure plus dans les avertissements (entrée retirée de `ALLOWED_LARGE_FILES`).
+- `node scripts/code-quality-gate.js --strict` → 0 erreur bloquante.
+- Comparaison programmatique des exports (`Object.keys` + diff fonction par fonction) entre le monolithe original et le barrel : clés identiques, arité identique pour chaque fonction.
 
 ### C6 — `scan-engine.js`
 

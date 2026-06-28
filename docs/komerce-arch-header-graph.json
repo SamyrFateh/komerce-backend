@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 342,
-    "filesWithFullHeaders": 313,
+    "scannedCodeFiles": 345,
+    "filesWithFullHeaders": 316,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 342,
+    "filesWithAnyHeaders": 345,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 692,
-    "edges": 3292,
+    "graphNodes": 695,
+    "edges": 3328,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 117,
-    "unresolvedCodeEdges": 307
+    "unresolvedCodeEdges": 315
   },
   "byDomain": {
     "bootstrap": 9,
@@ -40,7 +40,7 @@
     "tracking": 1,
     "wallet": 6,
     "collective-workspace": 3,
-    "economic-engine": 28,
+    "economic-engine": 31,
     "douane": 5,
     "dashboard": 30,
     "orders": 29,
@@ -80,7 +80,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 132,
+    "service": 135,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -89,8 +89,8 @@
   },
   "byCriticality": {
     "critical": 78,
-    "medium": 100,
-    "high": 132,
+    "medium": 101,
+    "high": 134,
     "low": 32
   },
   "nodes": [
@@ -9021,11 +9021,11 @@
       "version": "2026-06"
     },
     {
-      "id": "services/cost-allocation.js",
-      "file": "services/cost-allocation.js",
+      "id": "services/cost-allocation/_helpers.js",
+      "file": "services/cost-allocation/_helpers.js",
       "type": "file",
       "headerType": "full",
-      "role": "economic-engine-cost-allocation",
+      "role": "economic-engine-cost-allocation-helpers",
       "domain": "economic-engine",
       "layer": "service",
       "criticality": "medium",
@@ -9039,8 +9039,108 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "../order-cost-snapshot"
+      ],
+      "usedBy": [
+        "allocate.js",
+        "variance.js (services/cost-allocation/*)"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/cost-allocation/allocate.js",
+      "file": "services/cost-allocation/allocate.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-cost-allocation-allocate",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "_helpers (shareByWeight)"
+      ],
+      "usedBy": [
+        "services/cost-allocation/index.js"
+      ],
+      "dbRead": [
+        "customs_shipment_parcels",
+        "customs_shipments",
+        "finance_config",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "products"
+      ],
+      "dbWrite": [
+        "order_item_real_cost_allocations"
+      ],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/cost-allocation/index.js",
+      "file": "services/cost-allocation/index.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-cost-allocation",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "_helpers",
+        "allocate",
+        "variance"
+      ],
+      "usedBy": [
+        "routes/admin-costing.js",
+        "services/customs-shipment-service.js"
+      ],
       "dbRead": [
         "customs_shipment_parcels",
         "customs_shipments",
@@ -9064,6 +9164,52 @@
       ],
       "impactAreas": [
         "economic-engine"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/cost-allocation/variance.js",
+      "file": "services/cost-allocation/variance.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-cost-allocation-variance",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db"
+      ],
+      "usedBy": [
+        "services/cost-allocation/index.js"
+      ],
+      "dbRead": [
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-costing"
       ],
       "version": "2026-06"
     },
@@ -16553,6 +16699,11 @@
       "area": "crons"
     },
     {
+      "id": "impact:admin-costing",
+      "type": "impact-area",
+      "area": "admin-costing"
+    },
+    {
       "id": "impact:douane",
       "type": "impact-area",
       "area": "douane"
@@ -16561,11 +16712,6 @@
       "id": "impact:marge",
       "type": "impact-area",
       "area": "marge"
-    },
-    {
-      "id": "impact:admin-costing",
-      "type": "impact-area",
-      "area": "admin-costing"
     },
     {
       "id": "impact:orders-logistics",
@@ -28606,82 +28752,298 @@
       "label": "checkout"
     },
     {
-      "from": "services/cost-allocation.js",
-      "to": "db:customs_shipment_parcels",
-      "type": "db-read",
-      "label": "customs_shipment_parcels"
+      "from": "services/cost-allocation/_helpers.js",
+      "to": "../order-cost-snapshot",
+      "type": "depends",
+      "label": "../order-cost-snapshot"
     },
     {
-      "from": "services/cost-allocation.js",
-      "to": "db:customs_shipments",
-      "type": "db-read",
-      "label": "customs_shipments"
+      "from": "services/cost-allocation/allocate.js",
+      "to": "services/cost-allocation/_helpers.js",
+      "type": "uses",
+      "label": "allocate.js"
     },
     {
-      "from": "services/cost-allocation.js",
-      "to": "db:finance_config",
-      "type": "db-read",
-      "label": "finance_config"
+      "from": "variance.js (services/cost-allocation/*)",
+      "to": "services/cost-allocation/_helpers.js",
+      "type": "uses",
+      "label": "variance.js (services/cost-allocation/*)"
     },
     {
-      "from": "services/cost-allocation.js",
-      "to": "db:order_item_cost_imputations",
+      "from": "services/cost-allocation/_helpers.js",
+      "to": "db:(none)",
       "type": "db-read",
-      "label": "order_item_cost_imputations"
+      "label": "(none)"
     },
     {
-      "from": "services/cost-allocation.js",
-      "to": "db:order_item_real_cost_allocations",
-      "type": "db-read",
-      "label": "order_item_real_cost_allocations"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:order_items",
-      "type": "db-read",
-      "label": "order_items"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:parcel_items",
-      "type": "db-read",
-      "label": "parcel_items"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:products",
-      "type": "db-read",
-      "label": "products"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:order_item_real_cost_allocations",
+      "from": "services/cost-allocation/_helpers.js",
+      "to": "db:(none)",
       "type": "db-write",
-      "label": "order_item_real_cost_allocations"
+      "label": "(none)"
     },
     {
-      "from": "services/cost-allocation.js",
+      "from": "services/cost-allocation/_helpers.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
     },
     {
-      "from": "services/cost-allocation.js",
+      "from": "services/cost-allocation/_helpers.js",
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "_helpers (shareByWeight)",
+      "type": "depends",
+      "label": "_helpers (shareByWeight)"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "services/cost-allocation/allocate.js",
+      "type": "uses",
+      "label": "services/cost-allocation/index.js"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db:finance_config",
+      "type": "db-read",
+      "label": "finance_config"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-write",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "allocate",
+      "type": "depends",
+      "label": "allocate"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "variance",
+      "type": "depends",
+      "label": "variance"
+    },
+    {
+      "from": "routes/admin-costing.js",
+      "to": "services/cost-allocation/index.js",
+      "type": "uses",
+      "label": "routes/admin-costing.js"
+    },
+    {
+      "from": "services/customs-shipment-service.js",
+      "to": "services/cost-allocation/index.js",
+      "type": "uses",
+      "label": "services/customs-shipment-service.js"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:finance_config",
+      "type": "db-read",
+      "label": "finance_config"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-write",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "services/cost-allocation/variance.js",
+      "type": "uses",
+      "label": "services/cost-allocation/index.js"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "impact:admin-costing",
+      "type": "impact",
+      "label": "admin-costing"
     },
     {
       "from": "services/create-stripe-order-intent.js",
@@ -39976,7 +40338,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:economic-engine",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/cost-allocation/index.js"
       ]
     },
     "routes/admin-customs-categories.js": {
@@ -44822,15 +45185,106 @@
         "impact:payment"
       ]
     },
-    "services/cost-allocation.js": {
-      "role": "economic-engine-cost-allocation",
+    "services/cost-allocation/_helpers.js": {
+      "role": "economic-engine-cost-allocation-helpers",
       "domain": "economic-engine",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "../order-cost-snapshot"
+      ],
+      "directUsedBy": [
+        "services/cost-allocation/allocate.js",
+        "variance.js (services/cost-allocation/*)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:resolve_before_behavior_change",
+        "impact:economic-engine",
+        "services/cost-allocation/allocate.js"
+      ]
+    },
+    "services/cost-allocation/allocate.js": {
+      "role": "economic-engine-cost-allocation-allocate",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "_helpers (shareByWeight)"
+      ],
+      "directUsedBy": [
+        "services/cost-allocation/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "customs_shipment_parcels",
+        "customs_shipments",
+        "finance_config",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "products"
+      ],
+      "dbWrite": [
+        "order_item_real_cost_allocations"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "db:customs_shipment_parcels",
+        "db:customs_shipments",
+        "db:finance_config",
+        "db:order_item_real_cost_allocations",
+        "db:order_items",
+        "db:orders",
+        "db:parcel_items",
+        "db:parcels",
+        "db:products",
+        "doctrine:resolve_before_behavior_change",
+        "impact:economic-engine",
+        "services/cost-allocation/_helpers.js",
+        "services/cost-allocation/index.js"
+      ]
+    },
+    "services/cost-allocation/index.js": {
+      "role": "economic-engine-cost-allocation",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "_helpers",
+        "allocate",
+        "variance"
+      ],
+      "directUsedBy": [
+        "routes/admin-costing.js",
+        "services/customs-shipment-service.js"
+      ],
       "ownedFiles": [],
       "dbRead": [
         "customs_shipment_parcels",
@@ -44865,7 +45319,53 @@
         "db:parcels",
         "db:products",
         "doctrine:resolve_before_behavior_change",
-        "impact:economic-engine"
+        "impact:economic-engine",
+        "routes/admin-costing.js",
+        "services/cost-allocation/allocate.js",
+        "services/cost-allocation/variance.js",
+        "services/customs-shipment-service.js"
+      ]
+    },
+    "services/cost-allocation/variance.js": {
+      "role": "economic-engine-cost-allocation-variance",
+      "domain": "economic-engine",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db"
+      ],
+      "directUsedBy": [
+        "services/cost-allocation/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "order_items",
+        "orders"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-costing"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:order_item_cost_imputations",
+        "db:order_item_real_cost_allocations",
+        "db:order_items",
+        "db:orders",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-costing",
+        "impact:economic-engine",
+        "services/cost-allocation/index.js"
       ]
     },
     "services/create-stripe-order-intent.js": {
@@ -45024,7 +45524,8 @@
         "db:parcels",
         "db:products",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown"
+        "impact:unknown",
+        "services/cost-allocation/index.js"
       ]
     },
     "services/dashboard-cache.js": {
@@ -51430,6 +51931,54 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/cost-allocation/_helpers.js",
+      "to": "../order-cost-snapshot",
+      "type": "depends",
+      "label": "../order-cost-snapshot"
+    },
+    {
+      "from": "variance.js (services/cost-allocation/*)",
+      "to": "services/cost-allocation/_helpers.js",
+      "type": "uses",
+      "label": "variance.js (services/cost-allocation/*)"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/cost-allocation/allocate.js",
+      "to": "_helpers (shareByWeight)",
+      "type": "depends",
+      "label": "_helpers (shareByWeight)"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "allocate",
+      "type": "depends",
+      "label": "allocate"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "variance",
+      "type": "depends",
+      "label": "variance"
+    },
+    {
+      "from": "services/cost-allocation/variance.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "services/customs-analytics.js",

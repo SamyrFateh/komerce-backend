@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 342
-- Files with full headers: 313
+- Scanned code files: 345
+- Files with full headers: 316
 - Files with lite headers: 29
-- Files with any headers: 342
+- Files with any headers: 345
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 692
-- Edges: 3292
+- Graph nodes: 695
+- Edges: 3328
 - DB tables: 108
 - Doctrines: 125
 - Impact areas: 117
-- Unresolved code edges: 307
+- Unresolved code edges: 315
 
 ## Domains
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 30
 - documents: 5
 - douane: 5
-- economic-engine: 28
+- economic-engine: 31
 - inventory: 3
 - logistics: 34
 - notification: 13
@@ -66,7 +66,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
-- service: 132
+- service: 135
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -239,6 +239,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/apply-pricing-updates.js — economic-engine-apply-pricing-updates (economic-engine, high, full)
 - services/authkey-client.js — auth-authkey-client (auth, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
+- services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
+- services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
 - services/customs-classification.js — customs-classification (douane, high, full)
 - services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
 - services/dashboard-clients-queries.js — dashboard-dashboard-clients-queries (dashboard, high, full)
@@ -331,6 +333,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 - WRITE routes/payments-paypal.js -> (none)
 - WRITE services/collective-workspace-reads.js -> (none)
+- WRITE services/cost-allocation/_helpers.js -> (none)
+- WRITE services/cost-allocation/variance.js -> (none)
 - WRITE services/customs-analytics.js -> (none)
 - WRITE services/customs-classification.js -> (none)
 - WRITE services/dashboard-metrics/_helpers.js -> (none)
@@ -447,8 +451,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/hub-dashboard.js -> order_comments
 - WRITE routes/hub-mark-ordered.js -> order_comments
 - WRITE routes/relay-dashboard.js -> order_comments
-- WRITE routes/hub-dashboard.js -> order_incidents
-- WRITE routes/relay-dashboard.js -> order_incidents
 
 ## Unresolved Code Edges
 
