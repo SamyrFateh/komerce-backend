@@ -13,17 +13,6 @@
     "public/boutique/js"
   ],
   "totals": {
-<<<<<<< HEAD
-    "scannedCodeFiles": 346,
-    "filesWithFullHeaders": 317,
-    "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 346,
-    "filesWithoutHeaders": 0,
-    "filesWithMisplacedHeaders": 0,
-    "liteWithoutOwner": 0,
-    "graphNodes": 696,
-    "edges": 3341,
-=======
     "scannedCodeFiles": 350,
     "filesWithFullHeaders": 321,
     "filesWithLiteHeaders": 29,
@@ -33,7 +22,6 @@
     "liteWithoutOwner": 0,
     "graphNodes": 700,
     "edges": 3395,
->>>>>>> 3ce93292 (refacto fin issue audit dette)
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 117,
@@ -52,11 +40,7 @@
     "tracking": 1,
     "wallet": 6,
     "collective-workspace": 3,
-<<<<<<< HEAD
-    "economic-engine": 32,
-=======
     "economic-engine": 36,
->>>>>>> 3ce93292 (refacto fin issue audit dette)
     "douane": 5,
     "dashboard": 30,
     "orders": 29,
@@ -96,11 +80,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-<<<<<<< HEAD
-    "service": 136,
-=======
     "service": 140,
->>>>>>> 3ce93292 (refacto fin issue audit dette)
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -109,13 +89,8 @@
   },
   "byCriticality": {
     "critical": 78,
-<<<<<<< HEAD
-    "medium": 102,
-    "high": 134,
-=======
     "medium": 101,
     "high": 139,
->>>>>>> 3ce93292 (refacto fin issue audit dette)
     "low": 32
   },
   "nodes": [
@@ -9042,53 +9017,6 @@
       "impactAreas": [
         "payment",
         "checkout"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "services/cost-allocation.js",
-      "file": "services/cost-allocation.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "economic-engine-cost-allocation",
-      "domain": "economic-engine",
-      "layer": "service",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [
-        "customs_shipment_parcels",
-        "customs_shipments",
-        "finance_config",
-        "order_item_cost_imputations",
-        "order_item_real_cost_allocations",
-        "order_items",
-        "orders",
-        "parcel_items",
-        "parcels",
-        "products"
-      ],
-      "dbWrite": [
-        "order_item_real_cost_allocations"
-      ],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "economic-engine"
       ],
       "version": "2026-06"
     },
@@ -29053,84 +28981,6 @@
       "label": "checkout"
     },
     {
-      "from": "services/cost-allocation.js",
-      "to": "db:customs_shipment_parcels",
-      "type": "db-read",
-      "label": "customs_shipment_parcels"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:customs_shipments",
-      "type": "db-read",
-      "label": "customs_shipments"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:finance_config",
-      "type": "db-read",
-      "label": "finance_config"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:order_item_cost_imputations",
-      "type": "db-read",
-      "label": "order_item_cost_imputations"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:order_item_real_cost_allocations",
-      "type": "db-read",
-      "label": "order_item_real_cost_allocations"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:order_items",
-      "type": "db-read",
-      "label": "order_items"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:parcel_items",
-      "type": "db-read",
-      "label": "parcel_items"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:products",
-      "type": "db-read",
-      "label": "products"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "db:order_item_real_cost_allocations",
-      "type": "db-write",
-      "label": "order_item_real_cost_allocations"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "services/cost-allocation.js",
-      "to": "impact:economic-engine",
-      "type": "impact",
-      "label": "economic-engine"
-    },
-    {
       "from": "services/cost-allocation/_helpers.js",
       "to": "../order-cost-snapshot",
       "type": "depends",
@@ -45970,52 +45820,6 @@
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:payment"
-      ]
-    },
-    "services/cost-allocation.js": {
-      "role": "economic-engine-cost-allocation",
-      "domain": "economic-engine",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [
-        "customs_shipment_parcels",
-        "customs_shipments",
-        "finance_config",
-        "order_item_cost_imputations",
-        "order_item_real_cost_allocations",
-        "order_items",
-        "orders",
-        "parcel_items",
-        "parcels",
-        "products"
-      ],
-      "dbWrite": [
-        "order_item_real_cost_allocations"
-      ],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "economic-engine"
-      ],
-      "mustCheck": [
-        "db:customs_shipment_parcels",
-        "db:customs_shipments",
-        "db:finance_config",
-        "db:order_item_cost_imputations",
-        "db:order_item_real_cost_allocations",
-        "db:order_items",
-        "db:orders",
-        "db:parcel_items",
-        "db:parcels",
-        "db:products",
-        "doctrine:resolve_before_behavior_change",
-        "impact:economic-engine"
       ]
     },
     "services/cost-allocation/_helpers.js": {
