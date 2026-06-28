@@ -960,4 +960,6 @@ module.exports = {
   _getStatusOrder: getStatusOrder,
   _checkSequence: checkSequence,
   _buildQtySnapshot: buildQtySnapshot,
+  _processContentVerification: processContentVerification,
+  _logScanEventDirect: logScanEventDirect,
 };

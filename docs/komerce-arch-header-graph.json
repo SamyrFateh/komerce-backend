@@ -13,6 +13,7 @@
     "public/boutique/js"
   ],
   "totals": {
+<<<<<<< HEAD
     "scannedCodeFiles": 346,
     "filesWithFullHeaders": 317,
     "filesWithLiteHeaders": 29,
@@ -22,10 +23,21 @@
     "liteWithoutOwner": 0,
     "graphNodes": 696,
     "edges": 3341,
+=======
+    "scannedCodeFiles": 350,
+    "filesWithFullHeaders": 321,
+    "filesWithLiteHeaders": 29,
+    "filesWithAnyHeaders": 350,
+    "filesWithoutHeaders": 0,
+    "filesWithMisplacedHeaders": 0,
+    "liteWithoutOwner": 0,
+    "graphNodes": 700,
+    "edges": 3395,
+>>>>>>> 3ce93292 (refacto fin issue audit dette)
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 117,
-    "unresolvedCodeEdges": 315
+    "unresolvedCodeEdges": 320
   },
   "byDomain": {
     "bootstrap": 9,
@@ -40,7 +52,11 @@
     "tracking": 1,
     "wallet": 6,
     "collective-workspace": 3,
+<<<<<<< HEAD
     "economic-engine": 32,
+=======
+    "economic-engine": 36,
+>>>>>>> 3ce93292 (refacto fin issue audit dette)
     "douane": 5,
     "dashboard": 30,
     "orders": 29,
@@ -80,7 +96,11 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
+<<<<<<< HEAD
     "service": 136,
+=======
+    "service": 140,
+>>>>>>> 3ce93292 (refacto fin issue audit dette)
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -89,8 +109,13 @@
   },
   "byCriticality": {
     "critical": 78,
+<<<<<<< HEAD
     "medium": 102,
     "high": 134,
+=======
+    "medium": 101,
+    "high": 139,
+>>>>>>> 3ce93292 (refacto fin issue audit dette)
     "low": 32
   },
   "nodes": [
@@ -9530,15 +9555,17 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
         "request_or_service_payload"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "response_or_domain_result"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "services/finance-metrics/index.js"
+      ],
+      "usedBy": [
+        "routes/dashboard-finance.js"
+      ],
       "dbRead": [
         "age",
         "finance_config",
@@ -10198,6 +10225,242 @@
       "version": "2026-06"
     },
     {
+      "id": "services/finance-metrics/annulations.js",
+      "file": "services/finance-metrics/annulations.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-annulations-parcels",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result"
+      ],
+      "depends": [
+        "db.js",
+        "routes/dashboard-shared.js"
+      ],
+      "usedBy": [
+        "services/finance-metrics/index.js"
+      ],
+      "dbRead": [
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "refunds",
+        "relais",
+        "store_credits"
+      ],
+      "dbWrite": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/finance-metrics/finance-summary.js",
+      "file": "services/finance-metrics/finance-summary.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-finance-summary",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result"
+      ],
+      "depends": [
+        "db.js",
+        "routes/dashboard-shared.js"
+      ],
+      "usedBy": [
+        "services/finance-metrics/index.js"
+      ],
+      "dbRead": [
+        "finance_config",
+        "order_items",
+        "orders",
+        "products",
+        "refunds"
+      ],
+      "dbWrite": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/finance-metrics/index.js",
+      "file": "services/finance-metrics/index.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-dashboard-finance-metrics",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result"
+      ],
+      "depends": [
+        "finance-summary",
+        "annulations",
+        "payments",
+        "sales-analysis"
+      ],
+      "usedBy": [
+        "routes/dashboard-finance.js"
+      ],
+      "dbRead": [
+        "age",
+        "finance_config",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "products",
+        "recipients",
+        "refunds",
+        "relais",
+        "store_credits",
+        "users"
+      ],
+      "dbWrite": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/finance-metrics/payments.js",
+      "file": "services/finance-metrics/payments.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-payments-detail",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result"
+      ],
+      "depends": [
+        "db.js",
+        "routes/dashboard-shared.js"
+      ],
+      "usedBy": [
+        "services/finance-metrics/index.js"
+      ],
+      "dbRead": [
+        "age",
+        "orders",
+        "parcels",
+        "recipients",
+        "refunds",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/finance-metrics/sales-analysis.js",
+      "file": "services/finance-metrics/sales-analysis.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-sales-analysis",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result"
+      ],
+      "depends": [
+        "db.js",
+        "routes/dashboard-shared.js"
+      ],
+      "usedBy": [
+        "services/finance-metrics/index.js"
+      ],
+      "dbRead": [
+        "finance_config",
+        "order_items",
+        "orders",
+        "parcels",
+        "products",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
       "id": "services/hub-dashboard-queries.js",
       "file": "services/hub-dashboard-queries.js",
       "type": "file",
@@ -10548,26 +10811,21 @@
       "inputs": [
         "phone",
         "template_context",
-        "notification_event",
-        "channel_preferences"
+        "notification_event"
       ],
       "outputs": [
         "whatsapp_message",
         "sms_fallback",
-        "email_fallback",
         "delivery_log"
       ],
       "depends": [
-        "services/whatsapp-meta.js",
-        "providers/authkey",
-        "email-provider"
+        "services/notifications/notification-service.js"
       ],
       "usedBy": [
         "otp.js",
         "payment-stripe.js",
         "order-status-machine.js",
-        "shared-cart-engine.js",
-        "reminders"
+        "shared-cart-engine.js"
       ],
       "dbRead": [
         "orders",
@@ -10581,21 +10839,17 @@
         "notification_log"
       ],
       "dbTxn": [
-        "notification_non_blocking",
-        "failure_logged_not_rolled_back"
+        "notification_non_blocking"
       ],
       "doctrine": [
-        "notification_non_bloquante",
-        "otp_message_lisible",
-        "fallback_trace"
+        "notification_non_bloquante"
       ],
       "impactAreas": [
         "otp",
         "checkout",
         "shared-cart",
         "orders",
-        "customer-support",
-        "whatsapp"
+        "customer-support"
       ],
       "version": "2026-06"
     },
@@ -16091,14 +16345,14 @@
       "doctrine": "notification_non_bloquante"
     },
     {
-      "id": "doctrine:otp_message_lisible",
-      "type": "doctrine",
-      "doctrine": "otp_message_lisible"
-    },
-    {
       "id": "doctrine:fallback_trace",
       "type": "doctrine",
       "doctrine": "fallback_trace"
+    },
+    {
+      "id": "doctrine:otp_message_lisible",
+      "type": "doctrine",
+      "doctrine": "otp_message_lisible"
     },
     {
       "id": "doctrine:transaction_existante_obligatoire",
@@ -29490,6 +29744,18 @@
     },
     {
       "from": "services/dashboard-finance-metrics.js",
+      "to": "services/finance-metrics/index.js",
+      "type": "depends",
+      "label": "services/finance-metrics/index.js"
+    },
+    {
+      "from": "routes/dashboard-finance.js",
+      "to": "services/dashboard-finance-metrics.js",
+      "type": "uses",
+      "label": "routes/dashboard-finance.js"
+    },
+    {
+      "from": "services/dashboard-finance-metrics.js",
       "to": "db:age",
       "type": "db-read",
       "label": "age"
@@ -30593,6 +30859,432 @@
       "label": "finance-config"
     },
     {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "routes/dashboard-shared.js",
+      "type": "depends",
+      "label": "routes/dashboard-shared.js"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "services/finance-metrics/annulations.js",
+      "type": "uses",
+      "label": "services/finance-metrics/index.js"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "db:store_credits",
+      "type": "db-read",
+      "label": "store_credits"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "routes/dashboard-shared.js",
+      "type": "depends",
+      "label": "routes/dashboard-shared.js"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "services/finance-metrics/finance-summary.js",
+      "type": "uses",
+      "label": "services/finance-metrics/index.js"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "db:finance_config",
+      "type": "db-read",
+      "label": "finance_config"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "finance-summary",
+      "type": "depends",
+      "label": "finance-summary"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "annulations",
+      "type": "depends",
+      "label": "annulations"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "payments",
+      "type": "depends",
+      "label": "payments"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "sales-analysis",
+      "type": "depends",
+      "label": "sales-analysis"
+    },
+    {
+      "from": "routes/dashboard-finance.js",
+      "to": "services/finance-metrics/index.js",
+      "type": "uses",
+      "label": "routes/dashboard-finance.js"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:age",
+      "type": "db-read",
+      "label": "age"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:finance_config",
+      "type": "db-read",
+      "label": "finance_config"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:store_credits",
+      "type": "db-read",
+      "label": "store_credits"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "routes/dashboard-shared.js",
+      "type": "depends",
+      "label": "routes/dashboard-shared.js"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "services/finance-metrics/payments.js",
+      "type": "uses",
+      "label": "services/finance-metrics/index.js"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "db:age",
+      "type": "db-read",
+      "label": "age"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "routes/dashboard-shared.js",
+      "type": "depends",
+      "label": "routes/dashboard-shared.js"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "services/finance-metrics/sales-analysis.js",
+      "type": "uses",
+      "label": "services/finance-metrics/index.js"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db:finance_config",
+      "type": "db-read",
+      "label": "finance_config"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/hub-dashboard-queries.js",
       "to": "db:order_comments",
       "type": "db-read",
@@ -30996,21 +31688,9 @@
     },
     {
       "from": "services/notification-service.js",
-      "to": "services/whatsapp-meta.js",
+      "to": "services/notifications/notification-service.js",
       "type": "depends",
-      "label": "services/whatsapp-meta.js"
-    },
-    {
-      "from": "services/notification-service.js",
-      "to": "providers/authkey",
-      "type": "depends",
-      "label": "providers/authkey"
-    },
-    {
-      "from": "services/notification-service.js",
-      "to": "email-provider",
-      "type": "depends",
-      "label": "email-provider"
+      "label": "services/notifications/notification-service.js"
     },
     {
       "from": "routes/otp.js",
@@ -31035,12 +31715,6 @@
       "to": "services/notification-service.js",
       "type": "uses",
       "label": "shared-cart-engine.js"
-    },
-    {
-      "from": "reminders",
-      "to": "services/notification-service.js",
-      "type": "uses",
-      "label": "reminders"
     },
     {
       "from": "services/notification-service.js",
@@ -31092,18 +31766,6 @@
     },
     {
       "from": "services/notification-service.js",
-      "to": "doctrine:otp_message_lisible",
-      "type": "doctrine",
-      "label": "otp_message_lisible"
-    },
-    {
-      "from": "services/notification-service.js",
-      "to": "doctrine:fallback_trace",
-      "type": "doctrine",
-      "label": "fallback_trace"
-    },
-    {
-      "from": "services/notification-service.js",
       "to": "impact:otp",
       "type": "impact",
       "label": "otp"
@@ -31131,12 +31793,6 @@
       "to": "impact:customer-support",
       "type": "impact",
       "label": "customer-support"
-    },
-    {
-      "from": "services/notification-service.js",
-      "to": "impact:whatsapp",
-      "type": "impact",
-      "label": "whatsapp"
     },
     {
       "from": "services/notifications/internals.js",
@@ -41810,7 +42466,9 @@
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:economic-engine",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/dashboard-finance-metrics.js",
+        "services/finance-metrics/index.js"
       ]
     },
     "routes/dashboard-hub.js": {
@@ -41922,7 +42580,11 @@
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/finance-metrics/annulations.js",
+        "services/finance-metrics/finance-summary.js",
+        "services/finance-metrics/payments.js",
+        "services/finance-metrics/sales-analysis.js"
       ]
     },
     "routes/dashboard.js": {
@@ -45773,8 +46435,12 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "services/finance-metrics/index.js"
+      ],
+      "directUsedBy": [
+        "routes/dashboard-finance.js"
+      ],
       "ownedFiles": [],
       "dbRead": [
         "age",
@@ -45813,7 +46479,9 @@
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
-        "impact:economic-engine"
+        "impact:economic-engine",
+        "routes/dashboard-finance.js",
+        "services/finance-metrics/index.js"
       ]
     },
     "services/dashboard-metrics/_helpers.js": {
@@ -46425,6 +47093,255 @@
         "utils/eco-bridge.js"
       ]
     },
+    "services/finance-metrics/annulations.js": {
+      "role": "economic-engine-annulations-parcels",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "routes/dashboard-shared.js"
+      ],
+      "directUsedBy": [
+        "services/finance-metrics/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "refunds",
+        "relais",
+        "store_credits"
+      ],
+      "dbWrite": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:order_items",
+        "db:orders",
+        "db:parcel_items",
+        "db:parcels",
+        "db:refunds",
+        "db:relais",
+        "db:store_credits",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "routes/dashboard-shared.js",
+        "services/finance-metrics/index.js"
+      ]
+    },
+    "services/finance-metrics/finance-summary.js": {
+      "role": "economic-engine-finance-summary",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "routes/dashboard-shared.js"
+      ],
+      "directUsedBy": [
+        "services/finance-metrics/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "finance_config",
+        "order_items",
+        "orders",
+        "products",
+        "refunds"
+      ],
+      "dbWrite": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:finance_config",
+        "db:order_items",
+        "db:orders",
+        "db:products",
+        "db:refunds",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "routes/dashboard-shared.js",
+        "services/finance-metrics/index.js"
+      ]
+    },
+    "services/finance-metrics/index.js": {
+      "role": "economic-engine-dashboard-finance-metrics",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "finance-summary",
+        "annulations",
+        "payments",
+        "sales-analysis"
+      ],
+      "directUsedBy": [
+        "routes/dashboard-finance.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "age",
+        "finance_config",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "products",
+        "recipients",
+        "refunds",
+        "relais",
+        "store_credits",
+        "users"
+      ],
+      "dbWrite": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:age",
+        "db:finance_config",
+        "db:order_items",
+        "db:orders",
+        "db:parcel_items",
+        "db:parcels",
+        "db:products",
+        "db:recipients",
+        "db:refunds",
+        "db:relais",
+        "db:store_credits",
+        "db:users",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "routes/dashboard-finance.js",
+        "services/dashboard-finance-metrics.js",
+        "services/finance-metrics/annulations.js",
+        "services/finance-metrics/finance-summary.js",
+        "services/finance-metrics/payments.js",
+        "services/finance-metrics/sales-analysis.js"
+      ]
+    },
+    "services/finance-metrics/payments.js": {
+      "role": "economic-engine-payments-detail",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "routes/dashboard-shared.js"
+      ],
+      "directUsedBy": [
+        "services/finance-metrics/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "age",
+        "orders",
+        "parcels",
+        "recipients",
+        "refunds",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:age",
+        "db:orders",
+        "db:parcels",
+        "db:recipients",
+        "db:refunds",
+        "db:relais",
+        "db:users",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "routes/dashboard-shared.js",
+        "services/finance-metrics/index.js"
+      ]
+    },
+    "services/finance-metrics/sales-analysis.js": {
+      "role": "economic-engine-sales-analysis",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "routes/dashboard-shared.js"
+      ],
+      "directUsedBy": [
+        "services/finance-metrics/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "finance_config",
+        "order_items",
+        "orders",
+        "parcels",
+        "products",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:finance_config",
+        "db:order_items",
+        "db:orders",
+        "db:parcels",
+        "db:products",
+        "db:recipients",
+        "db:relais",
+        "db:users",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:economic-engine",
+        "routes/dashboard-shared.js",
+        "services/finance-metrics/index.js"
+      ]
+    },
     "services/hub-dashboard-queries.js": {
       "role": "dashboard-hub-dashboard-queries",
       "domain": "dashboard",
@@ -46727,16 +47644,13 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/whatsapp-meta.js",
-        "providers/authkey",
-        "email-provider"
+        "services/notifications/notification-service.js"
       ],
       "directUsedBy": [
         "routes/otp.js",
         "services/payment-stripe.js",
         "services/order-status-machine.js",
-        "services/shared-cart-engine.js",
-        "reminders"
+        "services/shared-cart-engine.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -46751,17 +47665,14 @@
         "notification_log"
       ],
       "doctrines": [
-        "notification_non_bloquante",
-        "otp_message_lisible",
-        "fallback_trace"
+        "notification_non_bloquante"
       ],
       "impactAreas": [
         "otp",
         "checkout",
         "shared-cart",
         "orders",
-        "customer-support",
-        "whatsapp"
+        "customer-support"
       ],
       "mustCheck": [
         "db:alerts",
@@ -46771,27 +47682,24 @@
         "db:recipients",
         "db:relais",
         "db:users",
-        "doctrine:fallback_trace",
         "doctrine:notification_non_bloquante",
-        "doctrine:otp_message_lisible",
         "impact:checkout",
         "impact:customer-support",
         "impact:orders",
         "impact:otp",
         "impact:shared-cart",
-        "impact:whatsapp",
         "routes/orders.js",
         "routes/otp.js",
         "services/notifications/loyalty.js",
         "services/notifications/misc.js",
+        "services/notifications/notification-service.js",
         "services/notifications/order.js",
         "services/notifications/otp-auth.js",
         "services/notifications/parcel.js",
         "services/order-status-machine.js",
         "services/payment-stripe.js",
         "services/shared-cart-engine.js",
-        "services/verify-qr-collection.js",
-        "services/whatsapp-meta.js"
+        "services/verify-qr-collection.js"
       ]
     },
     "services/notifications/internals.js": {
@@ -46982,6 +47890,7 @@
         "impact:shared-cart",
         "impact:whatsapp",
         "routes/otp.js",
+        "services/notification-service.js",
         "services/order-status-machine.js",
         "services/payment-stripe.js",
         "services/shared-cart-engine.js",
@@ -50292,7 +51201,6 @@
         "impact:shared-cart",
         "impact:whatsapp",
         "routes/meta-whatsapp.js",
-        "services/notification-service.js",
         "services/notifications/notification-service.js",
         "services/shared-cart-engine.js",
         "services/shared-cart-lifecycle.js"
@@ -52362,28 +53270,58 @@
       "label": "admin-dashboards"
     },
     {
+      "from": "services/finance-metrics/annulations.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/finance-metrics/finance-summary.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "finance-summary",
+      "type": "depends",
+      "label": "finance-summary"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "annulations",
+      "type": "depends",
+      "label": "annulations"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "payments",
+      "type": "depends",
+      "label": "payments"
+    },
+    {
+      "from": "services/finance-metrics/index.js",
+      "to": "sales-analysis",
+      "type": "depends",
+      "label": "sales-analysis"
+    },
+    {
+      "from": "services/finance-metrics/payments.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/finance-metrics/sales-analysis.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/invoice-public-token.js",
       "to": "crypto",
       "type": "depends",
       "label": "crypto"
-    },
-    {
-      "from": "services/notification-service.js",
-      "to": "providers/authkey",
-      "type": "depends",
-      "label": "providers/authkey"
-    },
-    {
-      "from": "services/notification-service.js",
-      "to": "email-provider",
-      "type": "depends",
-      "label": "email-provider"
-    },
-    {
-      "from": "reminders",
-      "to": "services/notification-service.js",
-      "type": "uses",
-      "label": "reminders"
     },
     {
       "from": "services/notifications/internals.js",

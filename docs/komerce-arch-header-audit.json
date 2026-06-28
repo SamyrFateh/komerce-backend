@@ -1,0 +1,2546 @@
+{
+  "version": "2026-06",
+  "generatedAt": "2026-06-28T20:43:37.146Z",
+  "scope": [
+    "server.js",
+    "bootstrap",
+    "routes",
+    "services",
+    "middleware",
+    "utils",
+    "public/boutique/js"
+  ],
+  "totals": {
+    "files": 277,
+    "covered": 277,
+    "missing": 0
+  },
+  "byLayer": {
+    "bootstrap": {
+      "total": 8,
+      "covered": 8,
+      "missing": 0
+    },
+    "middleware": {
+      "total": 10,
+      "covered": 10,
+      "missing": 0
+    },
+    "route": {
+      "total": 97,
+      "covered": 97,
+      "missing": 0
+    },
+    "entrypoint": {
+      "total": 1,
+      "covered": 1,
+      "missing": 0
+    },
+    "service": {
+      "total": 145,
+      "covered": 145,
+      "missing": 0
+    },
+    "util": {
+      "total": 16,
+      "covered": 16,
+      "missing": 0
+    }
+  },
+  "files": [
+    {
+      "file": "bootstrap/api-routes.js",
+      "hasHeader": true,
+      "role": "api-route-manifest",
+      "layer": "bootstrap",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 189
+    },
+    {
+      "file": "bootstrap/app.js",
+      "hasHeader": true,
+      "role": "bootstrap-app",
+      "layer": "bootstrap",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 300
+    },
+    {
+      "file": "bootstrap/crons.js",
+      "hasHeader": true,
+      "role": "operational-crons",
+      "layer": "bootstrap",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 226
+    },
+    {
+      "file": "bootstrap/env.js",
+      "hasHeader": true,
+      "role": "bootstrap-env",
+      "layer": "bootstrap",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 114
+    },
+    {
+      "file": "bootstrap/html-routes.js",
+      "hasHeader": true,
+      "role": "bootstrap-html-routes",
+      "layer": "bootstrap",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 179
+    },
+    {
+      "file": "bootstrap/security.js",
+      "hasHeader": true,
+      "role": "bootstrap-security",
+      "layer": "bootstrap",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 84
+    },
+    {
+      "file": "bootstrap/server-lifecycle.js",
+      "hasHeader": true,
+      "role": "bootstrap-server-lifecycle",
+      "layer": "bootstrap",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 80
+    },
+    {
+      "file": "bootstrap/startup-migrations.js",
+      "hasHeader": true,
+      "role": "bootstrap-startup-migrations",
+      "layer": "bootstrap",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 645
+    },
+    {
+      "file": "middleware/auth-guest.js",
+      "hasHeader": true,
+      "role": "auth-auth-guest",
+      "layer": "middleware",
+      "domainHint": "auth",
+      "criticalityHint": "medium",
+      "lines": 258
+    },
+    {
+      "file": "middleware/auth.js",
+      "hasHeader": true,
+      "role": "auth-auth",
+      "layer": "middleware",
+      "domainHint": "auth",
+      "criticalityHint": "medium",
+      "lines": 121
+    },
+    {
+      "file": "middleware/error-handler.js",
+      "hasHeader": true,
+      "role": "auth-error-handler",
+      "layer": "middleware",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 148
+    },
+    {
+      "file": "middleware/rate-limit.js",
+      "hasHeader": true,
+      "role": "auth-rate-limit",
+      "layer": "middleware",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 166
+    },
+    {
+      "file": "middleware/request-id.js",
+      "hasHeader": true,
+      "role": "auth-request-id",
+      "layer": "middleware",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 57
+    },
+    {
+      "file": "middleware/require-verified-identity.js",
+      "hasHeader": true,
+      "role": "auth-require-verified-identity",
+      "layer": "middleware",
+      "domainHint": "auth",
+      "criticalityHint": "high",
+      "lines": 143
+    },
+    {
+      "file": "middleware/soft-auth.js",
+      "hasHeader": true,
+      "role": "auth-soft-auth",
+      "layer": "middleware",
+      "domainHint": "auth",
+      "criticalityHint": "medium",
+      "lines": 110
+    },
+    {
+      "file": "middleware/upload.js",
+      "hasHeader": true,
+      "role": "auth-upload",
+      "layer": "middleware",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 129
+    },
+    {
+      "file": "middleware/validate.js",
+      "hasHeader": true,
+      "role": "auth-validate",
+      "layer": "middleware",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 169
+    },
+    {
+      "file": "middleware/verify-authkey-webhook.js",
+      "hasHeader": true,
+      "role": "auth-verify-authkey-webhook",
+      "layer": "middleware",
+      "domainHint": "auth",
+      "criticalityHint": "medium",
+      "lines": 90
+    },
+    {
+      "file": "routes/admin-boutique-categories.js",
+      "hasHeader": true,
+      "role": "boutique-taxonomy-admin-api",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 323
+    },
+    {
+      "file": "routes/admin-collective-repairs.js",
+      "hasHeader": true,
+      "role": "shared-cart-admin-collective-repairs",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 73
+    },
+    {
+      "file": "routes/admin-cost-components.js",
+      "hasHeader": true,
+      "role": "economic-engine-admin-cost-components",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 417
+    },
+    {
+      "file": "routes/admin-costing.js",
+      "hasHeader": true,
+      "role": "economic-engine-admin-costing",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 665
+    },
+    {
+      "file": "routes/admin-customs-categories.js",
+      "hasHeader": true,
+      "role": "dashboard-admin-customs-categories",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 170
+    },
+    {
+      "file": "routes/admin-customs-shipments.js",
+      "hasHeader": true,
+      "role": "dashboard-admin-customs-shipments",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 178
+    },
+    {
+      "file": "routes/admin-dashboard.js",
+      "hasHeader": true,
+      "role": "dashboard-admin-dashboard",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 806
+    },
+    {
+      "file": "routes/admin-finance-config.js",
+      "hasHeader": true,
+      "role": "economic-engine-admin-finance-config",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 266
+    },
+    {
+      "file": "routes/admin-loyalty.js",
+      "hasHeader": true,
+      "role": "dashboard-admin-loyalty",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 242
+    },
+    {
+      "file": "routes/admin-pricing-components.js",
+      "hasHeader": true,
+      "role": "economic-engine-admin-pricing-components",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 266
+    },
+    {
+      "file": "routes/admin-pricing-matrices.js",
+      "hasHeader": true,
+      "role": "economic-engine-admin-pricing-matrices",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 246
+    },
+    {
+      "file": "routes/admin-radar.js",
+      "hasHeader": true,
+      "role": "dashboard-admin-radar",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 89
+    },
+    {
+      "file": "routes/admin-risk-provisions.js",
+      "hasHeader": true,
+      "role": "dashboard-admin-risk-provisions",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 210
+    },
+    {
+      "file": "routes/admin-rules.js",
+      "hasHeader": true,
+      "role": "dashboard-admin-rules",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 155
+    },
+    {
+      "file": "routes/admin.js",
+      "hasHeader": true,
+      "role": "dashboard-admin",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 23
+    },
+    {
+      "file": "routes/admin/customs.js",
+      "hasHeader": true,
+      "role": "dashboard-customs",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 37
+    },
+    {
+      "file": "routes/admin/dashboard.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 43
+    },
+    {
+      "file": "routes/admin/delete-order-cascade.js",
+      "hasHeader": true,
+      "role": "orders-delete-order-cascade",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 53
+    },
+    {
+      "file": "routes/admin/index.js",
+      "hasHeader": true,
+      "role": "dashboard-index",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 52
+    },
+    {
+      "file": "routes/admin/orders.js",
+      "hasHeader": true,
+      "role": "orders-orders",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 126
+    },
+    {
+      "file": "routes/admin/partners.js",
+      "hasHeader": true,
+      "role": "dashboard-partners",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 191
+    },
+    {
+      "file": "routes/admin/system.js",
+      "hasHeader": true,
+      "role": "dashboard-system",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 678
+    },
+    {
+      "file": "routes/admin/users.js",
+      "hasHeader": true,
+      "role": "dashboard-users",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 216
+    },
+    {
+      "file": "routes/alerts.js",
+      "hasHeader": true,
+      "role": "notification-alerts",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 69
+    },
+    {
+      "file": "routes/auth.js",
+      "hasHeader": true,
+      "role": "auth-auth",
+      "layer": "route",
+      "domainHint": "auth",
+      "criticalityHint": "medium",
+      "lines": 355
+    },
+    {
+      "file": "routes/auto-distribute-api.js",
+      "hasHeader": true,
+      "role": "auto-distribute-api",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 77
+    },
+    {
+      "file": "routes/baskets.js",
+      "hasHeader": true,
+      "role": "baskets",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 50
+    },
+    {
+      "file": "routes/boutique-suggestions.js",
+      "hasHeader": true,
+      "role": "boutique-suggestions-http-facade",
+      "layer": "route",
+      "domainHint": "recommendations",
+      "criticalityHint": "high",
+      "lines": 84
+    },
+    {
+      "file": "routes/carriers.js",
+      "hasHeader": true,
+      "role": "logistics-carriers",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 182
+    },
+    {
+      "file": "routes/cash.js",
+      "hasHeader": true,
+      "role": "payment-cash",
+      "layer": "route",
+      "domainHint": "payment",
+      "criticalityHint": "medium",
+      "lines": 621
+    },
+    {
+      "file": "routes/categories.js",
+      "hasHeader": true,
+      "role": "categories",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 106
+    },
+    {
+      "file": "routes/client-auth.js",
+      "hasHeader": true,
+      "role": "auth-client-auth",
+      "layer": "route",
+      "domainHint": "auth",
+      "criticalityHint": "medium",
+      "lines": 265
+    },
+    {
+      "file": "routes/client-tracking.js",
+      "hasHeader": true,
+      "role": "logistics-client-tracking",
+      "layer": "route",
+      "domainHint": "tracking",
+      "criticalityHint": "high",
+      "lines": 256
+    },
+    {
+      "file": "routes/collective-workspaces.js",
+      "hasHeader": true,
+      "role": "shared-cart-collective-workspaces",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 63
+    },
+    {
+      "file": "routes/config.js",
+      "hasHeader": true,
+      "role": "config",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 181
+    },
+    {
+      "file": "routes/dashboard-clients.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard-clients",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 103
+    },
+    {
+      "file": "routes/dashboard-finance.js",
+      "hasHeader": true,
+      "role": "economic-engine-dashboard-finance",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 67
+    },
+    {
+      "file": "routes/dashboard-hub.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard-hub",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 145
+    },
+    {
+      "file": "routes/dashboard-ops.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard-ops",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 117
+    },
+    {
+      "file": "routes/dashboard-shared.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard-shared",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 91
+    },
+    {
+      "file": "routes/dashboard.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 62
+    },
+    {
+      "file": "routes/economic.js",
+      "hasHeader": true,
+      "role": "economic-router",
+      "layer": "route",
+      "domainHint": "economic-engine",
+      "criticalityHint": "medium",
+      "lines": 174
+    },
+    {
+      "file": "routes/finance.js",
+      "hasHeader": true,
+      "role": "economic-engine-finance",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 353
+    },
+    {
+      "file": "routes/health.js",
+      "hasHeader": true,
+      "role": "health",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 258
+    },
+    {
+      "file": "routes/hub-dashboard.js",
+      "hasHeader": true,
+      "role": "dashboard-hub-dashboard",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 598
+    },
+    {
+      "file": "routes/hub-mark-ordered.js",
+      "hasHeader": true,
+      "role": "orders-hub-mark-ordered",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 81
+    },
+    {
+      "file": "routes/hub.js",
+      "hasHeader": true,
+      "role": "hub",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 221
+    },
+    {
+      "file": "routes/inventory-api.js",
+      "hasHeader": true,
+      "role": "inventory-inventory-api",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 117
+    },
+    {
+      "file": "routes/invoices.js",
+      "hasHeader": true,
+      "role": "invoices",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 190
+    },
+    {
+      "file": "routes/logistics.js",
+      "hasHeader": true,
+      "role": "logistics-logistics",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 330
+    },
+    {
+      "file": "routes/loyalty.js",
+      "hasHeader": true,
+      "role": "loyalty",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 157
+    },
+    {
+      "file": "routes/meta-whatsapp.js",
+      "hasHeader": true,
+      "role": "notification-meta-whatsapp",
+      "layer": "route",
+      "domainHint": "notification",
+      "criticalityHint": "medium",
+      "lines": 103
+    },
+    {
+      "file": "routes/modules.js",
+      "hasHeader": true,
+      "role": "modules",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 510
+    },
+    {
+      "file": "routes/notification-api.js",
+      "hasHeader": true,
+      "role": "notification-notification-api",
+      "layer": "route",
+      "domainHint": "notification",
+      "criticalityHint": "medium",
+      "lines": 109
+    },
+    {
+      "file": "routes/ops-api.js",
+      "hasHeader": true,
+      "role": "ops-api",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 633
+    },
+    {
+      "file": "routes/order-api-v2.js",
+      "hasHeader": true,
+      "role": "orders-order-api-v2",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 308
+    },
+    {
+      "file": "routes/orders.js",
+      "hasHeader": true,
+      "role": "orders-http-facade",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 61
+    },
+    {
+      "file": "routes/orders/cancel.js",
+      "hasHeader": true,
+      "role": "orders-cancel",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 281
+    },
+    {
+      "file": "routes/orders/create.js",
+      "hasHeader": true,
+      "role": "orders-create",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 553
+    },
+    {
+      "file": "routes/orders/detail.js",
+      "hasHeader": true,
+      "role": "orders-detail",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 173
+    },
+    {
+      "file": "routes/orders/list.js",
+      "hasHeader": true,
+      "role": "orders-list",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 384
+    },
+    {
+      "file": "routes/orders/parcels.js",
+      "hasHeader": true,
+      "role": "orders-parcels",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 157
+    },
+    {
+      "file": "routes/orders/qr.js",
+      "hasHeader": true,
+      "role": "orders-qr",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 228
+    },
+    {
+      "file": "routes/orders/status.js",
+      "hasHeader": true,
+      "role": "orders-status",
+      "layer": "route",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 205
+    },
+    {
+      "file": "routes/otp.js",
+      "hasHeader": true,
+      "role": "client-otp-session",
+      "layer": "route",
+      "domainHint": "auth",
+      "criticalityHint": "high",
+      "lines": 470
+    },
+    {
+      "file": "routes/parcel-api-v2.js",
+      "hasHeader": true,
+      "role": "logistics-parcel-api-v2",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 22
+    },
+    {
+      "file": "routes/parcel-api-v2/helpers.js",
+      "hasHeader": true,
+      "role": "logistics-helpers",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 416
+    },
+    {
+      "file": "routes/parcel-api-v2/index.js",
+      "hasHeader": true,
+      "role": "logistics-index",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 45
+    },
+    {
+      "file": "routes/parcel-api-v2/read.js",
+      "hasHeader": true,
+      "role": "logistics-read",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 718
+    },
+    {
+      "file": "routes/parcel-api-v2/scans.js",
+      "hasHeader": true,
+      "role": "logistics-scans",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 126
+    },
+    {
+      "file": "routes/parcel-label.js",
+      "hasHeader": true,
+      "role": "logistics-parcel-label",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 275
+    },
+    {
+      "file": "routes/parcels.js",
+      "hasHeader": true,
+      "role": "logistics-parcels",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 452
+    },
+    {
+      "file": "routes/payments-paypal.js",
+      "hasHeader": true,
+      "role": "route-payment-paypal",
+      "layer": "route",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 186
+    },
+    {
+      "file": "routes/payments.js",
+      "hasHeader": true,
+      "role": "payment-http-facade",
+      "layer": "route",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 149
+    },
+    {
+      "file": "routes/pickup-pay-cash.js",
+      "hasHeader": true,
+      "role": "payment-pickup-pay-cash",
+      "layer": "route",
+      "domainHint": "payment",
+      "criticalityHint": "medium",
+      "lines": 52
+    },
+    {
+      "file": "routes/pickup-secret.js",
+      "hasHeader": true,
+      "role": "pickup-secret",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 771
+    },
+    {
+      "file": "routes/pricing-strategy.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-strategy",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 144
+    },
+    {
+      "file": "routes/pricing.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 281
+    },
+    {
+      "file": "routes/products.js",
+      "hasHeader": true,
+      "role": "products-http-facade",
+      "layer": "route",
+      "domainHint": "catalog",
+      "criticalityHint": "high",
+      "lines": 382
+    },
+    {
+      "file": "routes/purchasing.js",
+      "hasHeader": true,
+      "role": "purchasing",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 325
+    },
+    {
+      "file": "routes/relais.js",
+      "hasHeader": true,
+      "role": "relais",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 69
+    },
+    {
+      "file": "routes/relay-dashboard.js",
+      "hasHeader": true,
+      "role": "dashboard-relay-dashboard",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 184
+    },
+    {
+      "file": "routes/scans.js",
+      "hasHeader": true,
+      "role": "logistics-scans",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 161
+    },
+    {
+      "file": "routes/shared-cart-cash.js",
+      "hasHeader": true,
+      "role": "shared-cart-shared-cart-cash",
+      "layer": "route",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 78
+    },
+    {
+      "file": "routes/shared-cart-from-order.js",
+      "hasHeader": true,
+      "role": "shared-cart-shared-cart-from-order",
+      "layer": "route",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 300
+    },
+    {
+      "file": "routes/shared-cart-refund-admin.js",
+      "hasHeader": true,
+      "role": "shared-cart-shared-cart-refund-admin",
+      "layer": "route",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 66
+    },
+    {
+      "file": "routes/shared-cart.js",
+      "hasHeader": true,
+      "role": "shared-cart-http-facade",
+      "layer": "route",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 990
+    },
+    {
+      "file": "routes/shares.js",
+      "hasHeader": true,
+      "role": "shares",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 273
+    },
+    {
+      "file": "routes/signals.js",
+      "hasHeader": true,
+      "role": "signals",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 270
+    },
+    {
+      "file": "routes/simulator.js",
+      "hasHeader": true,
+      "role": "simulator",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 99
+    },
+    {
+      "file": "routes/sourcing-scanner.js",
+      "hasHeader": true,
+      "role": "logistics-sourcing-scanner",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 520
+    },
+    {
+      "file": "routes/sourcing.js",
+      "hasHeader": true,
+      "role": "sourcing-router",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 114
+    },
+    {
+      "file": "routes/tracking.js",
+      "hasHeader": true,
+      "role": "logistics-tracking",
+      "layer": "route",
+      "domainHint": "tracking",
+      "criticalityHint": "high",
+      "lines": 380
+    },
+    {
+      "file": "routes/transit-dashboard.js",
+      "hasHeader": true,
+      "role": "logistics-transit-dashboard",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 86
+    },
+    {
+      "file": "routes/transitaire-api.js",
+      "hasHeader": true,
+      "role": "logistics-transitaire-api",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 185
+    },
+    {
+      "file": "routes/unsold.js",
+      "hasHeader": true,
+      "role": "unsold",
+      "layer": "route",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 167
+    },
+    {
+      "file": "routes/wallet.js",
+      "hasHeader": true,
+      "role": "wallet-http-facade",
+      "layer": "route",
+      "domainHint": "wallet",
+      "criticalityHint": "high",
+      "lines": 333
+    },
+    {
+      "file": "server.js",
+      "hasHeader": true,
+      "role": "api-server-entrypoint",
+      "layer": "entrypoint",
+      "domainHint": "unknown",
+      "criticalityHint": "critical",
+      "lines": 247
+    },
+    {
+      "file": "services/admin-order-refund.js",
+      "hasHeader": true,
+      "role": "orders-admin-order-refund",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 210
+    },
+    {
+      "file": "services/alert-engine.js",
+      "hasHeader": true,
+      "role": "notification-alert-engine",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 289
+    },
+    {
+      "file": "services/apply-pricing-updates.js",
+      "hasHeader": true,
+      "role": "economic-engine-apply-pricing-updates",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 232
+    },
+    {
+      "file": "services/authkey-client.js",
+      "hasHeader": true,
+      "role": "auth-authkey-client",
+      "layer": "service",
+      "domainHint": "auth",
+      "criticalityHint": "medium",
+      "lines": 520
+    },
+    {
+      "file": "services/auto-parcel.js",
+      "hasHeader": true,
+      "role": "logistics-auto-parcel",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 404
+    },
+    {
+      "file": "services/boutique-ranking-engine.js",
+      "hasHeader": true,
+      "role": "recommendations-boutique-ranking-engine",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 251
+    },
+    {
+      "file": "services/cancel-order-purchase-orders.js",
+      "hasHeader": true,
+      "role": "orders-cancel-order-purchase-orders",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 127
+    },
+    {
+      "file": "services/cancel-shared-cart-with-refunds.js",
+      "hasHeader": true,
+      "role": "shared-cart-cancel-shared-cart-with-refunds",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 351
+    },
+    {
+      "file": "services/cash-operations.js",
+      "hasHeader": true,
+      "role": "payment-cash-operations",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "medium",
+      "lines": 175
+    },
+    {
+      "file": "services/cash-reminder-service.js",
+      "hasHeader": true,
+      "role": "payment-cash-reminder-service",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "medium",
+      "lines": 210
+    },
+    {
+      "file": "services/collective-close-order-service.js",
+      "hasHeader": true,
+      "role": "shared-cart-collective-close-order-service",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 42
+    },
+    {
+      "file": "services/collective-payment-orchestrator.js",
+      "hasHeader": true,
+      "role": "shared-cart-collective-payment-orchestrator",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 70
+    },
+    {
+      "file": "services/collective-ready-to-order-orchestrator.js",
+      "hasHeader": true,
+      "role": "shared-cart-collective-ready-to-order-orchestrator",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 52
+    },
+    {
+      "file": "services/collective-stock-reservation-service.js",
+      "hasHeader": true,
+      "role": "shared-cart-collective-stock-reservation-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 178
+    },
+    {
+      "file": "services/collective-workspace-contributions.js",
+      "hasHeader": true,
+      "role": "collective-workspace-contributions",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 205
+    },
+    {
+      "file": "services/collective-workspace-creation.js",
+      "hasHeader": true,
+      "role": "collective-workspace-creation",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 81
+    },
+    {
+      "file": "services/collective-workspace-engine.js",
+      "hasHeader": true,
+      "role": "shared-cart-collective-workspace-engine",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 67
+    },
+    {
+      "file": "services/collective-workspace-internals.js",
+      "hasHeader": true,
+      "role": "collective-workspace-internals",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 56
+    },
+    {
+      "file": "services/collective-workspace-items.js",
+      "hasHeader": true,
+      "role": "collective-workspace-items",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 163
+    },
+    {
+      "file": "services/collective-workspace-lifecycle.js",
+      "hasHeader": true,
+      "role": "collective-workspace-lifecycle",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 372
+    },
+    {
+      "file": "services/collective-workspace-reads.js",
+      "hasHeader": true,
+      "role": "collective-workspace-reads",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 148
+    },
+    {
+      "file": "services/confirm-pickup-cash-payment.js",
+      "hasHeader": true,
+      "role": "payment-confirm-pickup-cash-payment",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 244
+    },
+    {
+      "file": "services/cost-allocation/_helpers.js",
+      "hasHeader": true,
+      "role": "economic-engine-cost-allocation-helpers",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 116
+    },
+    {
+      "file": "services/cost-allocation/allocate.js",
+      "hasHeader": true,
+      "role": "economic-engine-cost-allocation-allocate",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 576
+    },
+    {
+      "file": "services/cost-allocation/index.js",
+      "hasHeader": true,
+      "role": "economic-engine-cost-allocation",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 100
+    },
+    {
+      "file": "services/cost-allocation/variance.js",
+      "hasHeader": true,
+      "role": "economic-engine-cost-allocation-variance",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 284
+    },
+    {
+      "file": "services/create-stripe-order-intent.js",
+      "hasHeader": true,
+      "role": "payment-create-stripe-order-intent",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 117
+    },
+    {
+      "file": "services/customs-analytics.js",
+      "hasHeader": true,
+      "role": "customs-analytics",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 292
+    },
+    {
+      "file": "services/customs-classification.js",
+      "hasHeader": true,
+      "role": "customs-classification",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 133
+    },
+    {
+      "file": "services/customs-shipment-service.js",
+      "hasHeader": true,
+      "role": "customs-shipment-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 715
+    },
+    {
+      "file": "services/dashboard-cache.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard-cache",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 207
+    },
+    {
+      "file": "services/dashboard-clients-queries.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard-clients-queries",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 566
+    },
+    {
+      "file": "services/dashboard-finance-metrics.js",
+      "hasHeader": true,
+      "role": "economic-engine-dashboard-finance-metrics",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 31
+    },
+    {
+      "file": "services/dashboard-metrics/_helpers.js",
+      "hasHeader": true,
+      "role": "dashboard-metrics-helpers",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 179
+    },
+    {
+      "file": "services/dashboard-metrics/control-tower.js",
+      "hasHeader": true,
+      "role": "dashboard-metrics-control-tower",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 276
+    },
+    {
+      "file": "services/dashboard-metrics/costing.js",
+      "hasHeader": true,
+      "role": "dashboard-metrics-costing",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 352
+    },
+    {
+      "file": "services/dashboard-metrics/index.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard-metrics",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 130
+    },
+    {
+      "file": "services/dashboard-metrics/logistics.js",
+      "hasHeader": true,
+      "role": "dashboard-metrics-logistics",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 171
+    },
+    {
+      "file": "services/dashboard-metrics/workspaces.js",
+      "hasHeader": true,
+      "role": "dashboard-metrics-workspaces",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 253
+    },
+    {
+      "file": "services/dashboard-ops-queries.js",
+      "hasHeader": true,
+      "role": "dashboard-dashboard-ops-queries",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 486
+    },
+    {
+      "file": "services/documents/customs-invoice.js",
+      "hasHeader": true,
+      "role": "customs-invoice",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 265
+    },
+    {
+      "file": "services/documents/document-service.js",
+      "hasHeader": true,
+      "role": "document-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 158
+    },
+    {
+      "file": "services/documents/pickup-proof.js",
+      "hasHeader": true,
+      "role": "pickup-proof",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 177
+    },
+    {
+      "file": "services/documents/refund-receipt.js",
+      "hasHeader": true,
+      "role": "refund-receipt",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 203
+    },
+    {
+      "file": "services/documents/wallet-receipt.js",
+      "hasHeader": true,
+      "role": "wallet-receipt",
+      "layer": "service",
+      "domainHint": "wallet",
+      "criticalityHint": "high",
+      "lines": 150
+    },
+    {
+      "file": "services/economic-engine-queries.js",
+      "hasHeader": true,
+      "role": "economic-engine-calculation-service",
+      "layer": "service",
+      "domainHint": "economic-engine",
+      "criticalityHint": "medium",
+      "lines": 612
+    },
+    {
+      "file": "services/finance-metrics/annulations.js",
+      "hasHeader": true,
+      "role": "economic-engine-annulations-parcels",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 207
+    },
+    {
+      "file": "services/finance-metrics/finance-summary.js",
+      "hasHeader": true,
+      "role": "economic-engine-finance-summary",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 150
+    },
+    {
+      "file": "services/finance-metrics/index.js",
+      "hasHeader": true,
+      "role": "economic-engine-dashboard-finance-metrics",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 29
+    },
+    {
+      "file": "services/finance-metrics/payments.js",
+      "hasHeader": true,
+      "role": "economic-engine-payments-detail",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 508
+    },
+    {
+      "file": "services/finance-metrics/sales-analysis.js",
+      "hasHeader": true,
+      "role": "economic-engine-sales-analysis",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 260
+    },
+    {
+      "file": "services/hub-dashboard-queries.js",
+      "hasHeader": true,
+      "role": "dashboard-hub-dashboard-queries",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 480
+    },
+    {
+      "file": "services/hub-operations.js",
+      "hasHeader": true,
+      "role": "hub-operations",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 329
+    },
+    {
+      "file": "services/incident-service.js",
+      "hasHeader": true,
+      "role": "incident-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 366
+    },
+    {
+      "file": "services/inventory-service.js",
+      "hasHeader": true,
+      "role": "inventory-inventory-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 283
+    },
+    {
+      "file": "services/invoice-public-token.js",
+      "hasHeader": true,
+      "role": "invoice-public-token",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 102
+    },
+    {
+      "file": "services/invoice-service.js",
+      "hasHeader": true,
+      "role": "invoice-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 319
+    },
+    {
+      "file": "services/loyalty-service.js",
+      "hasHeader": true,
+      "role": "loyalty-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 253
+    },
+    {
+      "file": "services/monitoring.js",
+      "hasHeader": true,
+      "role": "monitoring",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 272
+    },
+    {
+      "file": "services/notification-service.js",
+      "hasHeader": true,
+      "role": "customer-notification-orchestrator",
+      "layer": "service",
+      "domainHint": "notification",
+      "criticalityHint": "medium",
+      "lines": 34
+    },
+    {
+      "file": "services/notifications/internals.js",
+      "hasHeader": true,
+      "role": "notification-internals",
+      "layer": "service",
+      "domainHint": "notification",
+      "criticalityHint": "medium",
+      "lines": 173
+    },
+    {
+      "file": "services/notifications/loyalty.js",
+      "hasHeader": true,
+      "role": "notification-loyalty",
+      "layer": "service",
+      "domainHint": "notification",
+      "criticalityHint": "medium",
+      "lines": 121
+    },
+    {
+      "file": "services/notifications/misc.js",
+      "hasHeader": true,
+      "role": "notification-misc",
+      "layer": "service",
+      "domainHint": "notification",
+      "criticalityHint": "medium",
+      "lines": 63
+    },
+    {
+      "file": "services/notifications/notification-service.js",
+      "hasHeader": true,
+      "role": "customer-notification-orchestrator",
+      "layer": "service",
+      "domainHint": "notification",
+      "criticalityHint": "medium",
+      "lines": 69
+    },
+    {
+      "file": "services/notifications/order.js",
+      "hasHeader": true,
+      "role": "notification-order",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 279
+    },
+    {
+      "file": "services/notifications/otp-auth.js",
+      "hasHeader": true,
+      "role": "notification-otp-auth",
+      "layer": "service",
+      "domainHint": "auth",
+      "criticalityHint": "high",
+      "lines": 322
+    },
+    {
+      "file": "services/notifications/parcel.js",
+      "hasHeader": true,
+      "role": "notification-parcel",
+      "layer": "service",
+      "domainHint": "notification",
+      "criticalityHint": "medium",
+      "lines": 319
+    },
+    {
+      "file": "services/order-cost-snapshot.js",
+      "hasHeader": true,
+      "role": "orders-order-cost-snapshot",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 231
+    },
+    {
+      "file": "services/order-payment-confirmation.js",
+      "hasHeader": true,
+      "role": "payment-to-stock-single-entry",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 251
+    },
+    {
+      "file": "services/order-service.js",
+      "hasHeader": true,
+      "role": "order-domain-helpers",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 84
+    },
+    {
+      "file": "services/order-status-machine.js",
+      "hasHeader": true,
+      "role": "order-status-state-machine",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "critical",
+      "lines": 436
+    },
+    {
+      "file": "services/otp-test-mode.js",
+      "hasHeader": true,
+      "role": "auth-otp-test-mode",
+      "layer": "service",
+      "domainHint": "auth",
+      "criticalityHint": "high",
+      "lines": 88
+    },
+    {
+      "file": "services/parcel-auto-create-service.js",
+      "hasHeader": true,
+      "role": "logistics-parcel-auto-create-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 332
+    },
+    {
+      "file": "services/parcel-guards.js",
+      "hasHeader": true,
+      "role": "logistics-parcel-guards",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 189
+    },
+    {
+      "file": "services/parcel-operations.js",
+      "hasHeader": true,
+      "role": "logistics-parcel-operations",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 643
+    },
+    {
+      "file": "services/parcel-security.js",
+      "hasHeader": true,
+      "role": "logistics-parcel-security",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 276
+    },
+    {
+      "file": "services/parcel-service.js",
+      "hasHeader": true,
+      "role": "logistics-parcel-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 85
+    },
+    {
+      "file": "services/parcelOptimizationService.js",
+      "hasHeader": true,
+      "role": "logistics-parcel-optimization-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 553
+    },
+    {
+      "file": "services/payment-cash-confirm.js",
+      "hasHeader": true,
+      "role": "cash-payment-confirmation-service",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 180
+    },
+    {
+      "file": "services/payment-paypal-events.js",
+      "hasHeader": true,
+      "role": "payment-payment-paypal-events",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 38
+    },
+    {
+      "file": "services/payment-paypal.js",
+      "hasHeader": true,
+      "role": "payment-paypal",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 611
+    },
+    {
+      "file": "services/payment-service.js",
+      "hasHeader": true,
+      "role": "payment-status-owner",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 88
+    },
+    {
+      "file": "services/payment-stripe.js",
+      "hasHeader": true,
+      "role": "stripe-payment-service",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "critical",
+      "lines": 376
+    },
+    {
+      "file": "services/paypal-client.js",
+      "hasHeader": true,
+      "role": "payment-paypal-client",
+      "layer": "service",
+      "domainHint": "payment",
+      "criticalityHint": "medium",
+      "lines": 361
+    },
+    {
+      "file": "services/pickup-secret-service.js",
+      "hasHeader": true,
+      "role": "pickup-secret-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 631
+    },
+    {
+      "file": "services/pricing-apply.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-apply",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 154
+    },
+    {
+      "file": "services/pricing-cdr.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-cdr",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 335
+    },
+    {
+      "file": "services/pricing-dashboard.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-dashboard",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 373
+    },
+    {
+      "file": "services/pricing-engine.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-engine",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 414
+    },
+    {
+      "file": "services/pricing-guards.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-guards",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 73
+    },
+    {
+      "file": "services/pricing-output.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-output",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 696
+    },
+    {
+      "file": "services/pricing-rates.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-rates",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 91
+    },
+    {
+      "file": "services/pricing-recommend.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-recommend",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 559
+    },
+    {
+      "file": "services/pricing-strategy-service.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-strategy-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 452
+    },
+    {
+      "file": "services/product-admin-service.js",
+      "hasHeader": true,
+      "role": "catalog-product-admin-service",
+      "layer": "service",
+      "domainHint": "catalog",
+      "criticalityHint": "high",
+      "lines": 538
+    },
+    {
+      "file": "services/product-price-audit.js",
+      "hasHeader": true,
+      "role": "catalog-product-price-audit",
+      "layer": "service",
+      "domainHint": "catalog",
+      "criticalityHint": "high",
+      "lines": 89
+    },
+    {
+      "file": "services/product-publication-guard.js",
+      "hasHeader": true,
+      "role": "catalog-product-publication-guard",
+      "layer": "service",
+      "domainHint": "catalog",
+      "criticalityHint": "high",
+      "lines": 104
+    },
+    {
+      "file": "services/purchasing-admin-service.js",
+      "hasHeader": true,
+      "role": "dashboard-purchasing-admin-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 209
+    },
+    {
+      "file": "services/purchasing-receive-service.js",
+      "hasHeader": true,
+      "role": "purchasing-receive-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 177
+    },
+    {
+      "file": "services/purchasing-trigger-service.js",
+      "hasHeader": true,
+      "role": "purchasing-trigger-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 310
+    },
+    {
+      "file": "services/radar-queries.js",
+      "hasHeader": true,
+      "role": "radar-queries",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 858
+    },
+    {
+      "file": "services/receive-purchase-order.js",
+      "hasHeader": true,
+      "role": "orders-receive-purchase-order",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 158
+    },
+    {
+      "file": "services/reconciliation-service.js",
+      "hasHeader": true,
+      "role": "reconciliation-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 442
+    },
+    {
+      "file": "services/refund-service.js",
+      "hasHeader": true,
+      "role": "refund-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 233
+    },
+    {
+      "file": "services/relay-dashboard-queries.js",
+      "hasHeader": true,
+      "role": "dashboard-relay-dashboard-queries",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 334
+    },
+    {
+      "file": "services/repair-collective-ready-to-capture.js",
+      "hasHeader": true,
+      "role": "shared-cart-repair-collective-ready-to-capture",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 109
+    },
+    {
+      "file": "services/repair-collective-stock-reservations.js",
+      "hasHeader": true,
+      "role": "shared-cart-repair-collective-stock-reservations",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 144
+    },
+    {
+      "file": "services/repair-ordered-purchasing.js",
+      "hasHeader": true,
+      "role": "orders-repair-ordered-purchasing",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 105
+    },
+    {
+      "file": "services/repair-ordered-without-purchase-orders.js",
+      "hasHeader": true,
+      "role": "orders-repair-ordered-without-purchase-orders",
+      "layer": "service",
+      "domainHint": "orders",
+      "criticalityHint": "high",
+      "lines": 110
+    },
+    {
+      "file": "services/routing.js",
+      "hasHeader": true,
+      "role": "routing",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 242
+    },
+    {
+      "file": "services/scan-engine.js",
+      "hasHeader": true,
+      "role": "logistics-scan-engine",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 966
+    },
+    {
+      "file": "services/scan-operations.js",
+      "hasHeader": true,
+      "role": "logistics-scan-operations",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 683
+    },
+    {
+      "file": "services/shared-cart-cash-service.js",
+      "hasHeader": true,
+      "role": "shared-cart-shared-cart-cash-service",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 229
+    },
+    {
+      "file": "services/shared-cart-commitment-service.js",
+      "hasHeader": true,
+      "role": "shared-cart-shared-cart-commitment-service",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 308
+    },
+    {
+      "file": "services/shared-cart-contributions.js",
+      "hasHeader": true,
+      "role": "shared-cart-contributions",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 147
+    },
+    {
+      "file": "services/shared-cart-creation.js",
+      "hasHeader": true,
+      "role": "shared-cart-creation",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 391
+    },
+    {
+      "file": "services/shared-cart-engine.js",
+      "hasHeader": true,
+      "role": "shared-cart-state-machine",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "critical",
+      "lines": 68
+    },
+    {
+      "file": "services/shared-cart-estimation-service.js",
+      "hasHeader": true,
+      "role": "shared-cart-estimation-service",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 347
+    },
+    {
+      "file": "services/shared-cart-financial-guard.js",
+      "hasHeader": true,
+      "role": "shared-cart-financial-guard",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 238
+    },
+    {
+      "file": "services/shared-cart-internals.js",
+      "hasHeader": true,
+      "role": "shared-cart-internals",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 77
+    },
+    {
+      "file": "services/shared-cart-items-service.js",
+      "hasHeader": true,
+      "role": "shared-cart-items-update-service",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 365
+    },
+    {
+      "file": "services/shared-cart-lifecycle.js",
+      "hasHeader": true,
+      "role": "shared-cart-lifecycle",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 553
+    },
+    {
+      "file": "services/shared-cart-queries.js",
+      "hasHeader": true,
+      "role": "shared-cart-db-query-service",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 369
+    },
+    {
+      "file": "services/shared-cart-reads.js",
+      "hasHeader": true,
+      "role": "shared-cart-reads",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 154
+    },
+    {
+      "file": "services/shared-cart-refund-queue.js",
+      "hasHeader": true,
+      "role": "shared-cart-shared-cart-refund-queue",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 256
+    },
+    {
+      "file": "services/shared-cart-v4-settlement.js",
+      "hasHeader": true,
+      "role": "shared-cart-shared-cart-v4-settlement",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 171
+    },
+    {
+      "file": "services/shared-cart-v41-transitions.js",
+      "hasHeader": true,
+      "role": "shared-cart-v41-transition-projector",
+      "layer": "service",
+      "domainHint": "shared-cart",
+      "criticalityHint": "high",
+      "lines": 206
+    },
+    {
+      "file": "services/signal-service.js",
+      "hasHeader": true,
+      "role": "signal-service",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 384
+    },
+    {
+      "file": "services/simulator/cleanup.js",
+      "hasHeader": true,
+      "role": "cleanup",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 62
+    },
+    {
+      "file": "services/simulator/engine.js",
+      "hasHeader": true,
+      "role": "engine",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 262
+    },
+    {
+      "file": "services/simulator/journal.js",
+      "hasHeader": true,
+      "role": "journal",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 48
+    },
+    {
+      "file": "services/simulator/scenarios.js",
+      "hasHeader": true,
+      "role": "scenarios",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 372
+    },
+    {
+      "file": "services/simulator/state-advancer.js",
+      "hasHeader": true,
+      "role": "state-advancer",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 300
+    },
+    {
+      "file": "services/sourcing-analysis.js",
+      "hasHeader": true,
+      "role": "sourcing-analysis",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 710
+    },
+    {
+      "file": "services/sourcing-mutations.js",
+      "hasHeader": true,
+      "role": "sourcing-mutations",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 340
+    },
+    {
+      "file": "services/supplier-catalog-scanner.js",
+      "hasHeader": true,
+      "role": "catalog-supplier-catalog-scanner",
+      "layer": "service",
+      "domainHint": "catalog",
+      "criticalityHint": "high",
+      "lines": 314
+    },
+    {
+      "file": "services/suppliers/catalog-import-orchestrator.js",
+      "hasHeader": true,
+      "role": "catalog-import-orchestrator",
+      "layer": "service",
+      "domainHint": "catalog",
+      "criticalityHint": "high",
+      "lines": 282
+    },
+    {
+      "file": "services/suppliers/connectors/api-connector.base.js",
+      "hasHeader": true,
+      "role": "api-connector-base",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 176
+    },
+    {
+      "file": "services/suppliers/connectors/csv-connector.js",
+      "hasHeader": true,
+      "role": "csv-connector",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 191
+    },
+    {
+      "file": "services/suppliers/connectors/manual-connector.js",
+      "hasHeader": true,
+      "role": "manual-connector",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 114
+    },
+    {
+      "file": "services/suppliers/connectors/noon-connector.js",
+      "hasHeader": true,
+      "role": "noon-connector",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 100
+    },
+    {
+      "file": "services/suppliers/normalized-product.js",
+      "hasHeader": true,
+      "role": "catalog-normalized-product",
+      "layer": "service",
+      "domainHint": "catalog",
+      "criticalityHint": "high",
+      "lines": 108
+    },
+    {
+      "file": "services/verify-qr-collection.js",
+      "hasHeader": true,
+      "role": "verify-qr-collection",
+      "layer": "service",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 203
+    },
+    {
+      "file": "services/wallet-service.js",
+      "hasHeader": true,
+      "role": "wallet-wallet-service",
+      "layer": "service",
+      "domainHint": "wallet",
+      "criticalityHint": "high",
+      "lines": 553
+    },
+    {
+      "file": "services/whatsapp-meta.js",
+      "hasHeader": true,
+      "role": "meta-whatsapp-adapter",
+      "layer": "service",
+      "domainHint": "notification",
+      "criticalityHint": "medium",
+      "lines": 80
+    },
+    {
+      "file": "utils/categories-cache.js",
+      "hasHeader": true,
+      "role": "categories-cache",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 102
+    },
+    {
+      "file": "utils/eco-bridge.js",
+      "hasHeader": true,
+      "role": "eco-bridge",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 174
+    },
+    {
+      "file": "utils/email.js",
+      "hasHeader": true,
+      "role": "email",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 234
+    },
+    {
+      "file": "utils/logger.js",
+      "hasHeader": true,
+      "role": "logger",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 209
+    },
+    {
+      "file": "utils/orderParcelLinkRules.js",
+      "hasHeader": true,
+      "role": "orders-order-parcel-link-rules",
+      "layer": "util",
+      "domainHint": "orders",
+      "criticalityHint": "medium",
+      "lines": 91
+    },
+    {
+      "file": "utils/parcelSync.js",
+      "hasHeader": true,
+      "role": "logistics-parcel-sync",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 278
+    },
+    {
+      "file": "utils/parcels.js",
+      "hasHeader": true,
+      "role": "logistics-parcels",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 598
+    },
+    {
+      "file": "utils/phone.js",
+      "hasHeader": true,
+      "role": "phone",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 100
+    },
+    {
+      "file": "utils/pickup-receipt-html.js",
+      "hasHeader": true,
+      "role": "pickup-receipt-html",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 304
+    },
+    {
+      "file": "utils/pricing-cache.js",
+      "hasHeader": true,
+      "role": "economic-engine-pricing-cache",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 59
+    },
+    {
+      "file": "utils/rates.js",
+      "hasHeader": true,
+      "role": "rates",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 97
+    },
+    {
+      "file": "utils/reference.js",
+      "hasHeader": true,
+      "role": "reference",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 127
+    },
+    {
+      "file": "utils/refunds.js",
+      "hasHeader": true,
+      "role": "refunds",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 126
+    },
+    {
+      "file": "utils/rules.js",
+      "hasHeader": true,
+      "role": "rules",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 267
+    },
+    {
+      "file": "utils/store-credits.js",
+      "hasHeader": true,
+      "role": "wallet-store-credits",
+      "layer": "util",
+      "domainHint": "wallet",
+      "criticalityHint": "medium",
+      "lines": 49
+    },
+    {
+      "file": "utils/user-cache.js",
+      "hasHeader": true,
+      "role": "user-cache",
+      "layer": "util",
+      "domainHint": "unknown",
+      "criticalityHint": "medium",
+      "lines": 62
+    }
+  ],
+  "missingPriority": []
+}

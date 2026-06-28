@@ -1179,3 +1179,67 @@ Spec fonctionnelle : `docs/specs/SPEC_KEYSTONE_DOUANE.md`
 **Lot C — droit attendu vs payé global :** ouvert — dérivation calculée depuis lignes figées → `customs_shipments.customs_paid_kmf`.
 
 **Moteur colisage (`parcelOptimizationService.js`) :** démantelé. Rationnel douane fermé — douane non déterministe, agent lit le papier pas le carton.
+
+---
+
+## 19. Session — Lot C2/C6/B7 + collisions migrations (2026-06-28)
+
+> Lots : C2 finalisation, C6 tests, B7 (dashboard-finance-metrics split + allowlists), AUD-10 cleanup.
+
+### C2 — Swap notification-service.js → barrel
+
+Statut : **clôturé — 2026-06-28**.
+
+`services/notification-service.js` (963L monolithe) remplacé par un barrel 16L pointant vers `./notifications/notification-service`. Exports identiques vérifiés par grep. Entrée retirée de l'allowlist `audit-backend-arch.js` (commentaire de clôture déjà présent dans le fichier uploadé). Tests notifications : 13/13 ✅.
+
+### C6 — Tests scan-engine : processContentVerification + logScanEventDirect
+
+Statut : **clôturé — 2026-06-28**.
+
+Deux fonctions internes sans test exposées via `@test-only` dans `services/scan-engine.js` :
+- `_processContentVerification` : processus de vérification de contenu colis (7 cas : all_ok, unexpected_item, missing_item critical/high, surplus, not_checked, fallback qty_packed)
+- `_logScanEventDirect` : insertion scan_events hors transaction (2 cas : nominal + valeurs par défaut)
+
+9 nouveaux tests dans `tests/unit/scan-engine-content-verification.test.js` — tous verts. 0 régression sur les 16 tests scan-engine existants.
+
+### B7 — dashboard-finance-metrics.js : tests + split + allowlists
+
+Statut : **clôturé — 2026-06-28**.
+
+**Tests de caractérisation** (14/14 verts) dans `tests/unit/dashboard-finance-metrics.test.js` :
+- `getFinanceSummary` : 3 cas (clés top-level, shape kpi, clamp period)
+- `getAnnulationsParcels` : 4 cas (top-level, remboursements, cache hit, setCache)
+- `getPaymentsDetail` : 3 cas (top-level, fraud_relais.alert_level, pending_orders tableau)
+- `getSalesAnalysis` : 4 cas (top-level, kpi shape, funnel 5 étapes, marges.couverture_pct)
+
+**Split** : `services/dashboard-finance-metrics.js` (1064L) → barrel 13L + `services/finance-metrics/{finance-summary,annulations,payments,sales-analysis,index}.js` (max 490L par fragment).
+
+**Allowlists** :
+- `services/radar-queries.js` (857L) — allowlisté : 29 tests présents, seul appelant admin-radar.js, pas de croissance prévue.
+- `routes/shared-cart.js` (989L) — allowlisté : webhook Stripe inline, service déjà extrait côté C1.
+
+### AUD-10 cleanup — suppression fichiers migration orphelins
+
+Statut : **clôturé — 2026-06-28**.
+
+AUD-10 (2026-06-23) avait renommé `014→083`, `072→084`, `073→085`, `074→086` mais laissé les anciens noms dans le dépôt — ce qui causait 4 warnings "collision" dans `backend:audit`.
+
+Supprimés :
+- `migrations/014_transaction_documents.sql` (→ 083)
+- `migrations/072_jwt_revocation.sql` (→ 084)
+- `migrations/073_shared_cart_cash_contributions.sql` (→ 085)
+- `migrations/074_invoice_public_token.sql` (→ 086)
+- `migrations/072a_boutique_category_images.sql` (artéfact)
+- `migrations/072b_boutique_category_images.sql` (artéfact)
+- `migrations/073a_shared_cart_cash_contributions.sql` (artéfact)
+- `migrations/073b_shared_cart_cash_contributions.sql` (artéfact)
+
+Résultat : `backend:audit` passe de 6 à **2 warnings** (sourcing-scanner engine nominal + system.js SQL interpolé avec allowlist — tous deux légitimes). **0 violation**.
+
+### État audit post-session
+
+`backend:audit` : 0 violation · 2 warnings (↓ de 6) :
+- `routes/sourcing-scanner.js` — engine dans routes/ (façade mince, dette nominale acceptée)
+- `routes/admin/system.js:110` — identifiant SQL interpolé (whitelist littérale, documenté AUD-07)
+
+Suite unit : **1054/1055** (1 échec `validators.test.js` pré-existant non lié à cette session).

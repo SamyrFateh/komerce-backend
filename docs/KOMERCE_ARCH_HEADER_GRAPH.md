@@ -6,6 +6,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
+<<<<<<< HEAD
 - Scanned code files: 346
 - Files with full headers: 317
 - Files with lite headers: 29
@@ -15,10 +16,21 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Lite headers without owner: 0
 - Graph nodes: 696
 - Edges: 3341
+=======
+- Scanned code files: 350
+- Files with full headers: 321
+- Files with lite headers: 29
+- Files with any headers: 350
+- Files without headers: 0
+- Files with misplaced headers (shebang/code before block): 0
+- Lite headers without owner: 0
+- Graph nodes: 700
+- Edges: 3395
+>>>>>>> 3ce93292 (refacto fin issue audit dette)
 - DB tables: 108
 - Doctrines: 125
 - Impact areas: 117
-- Unresolved code edges: 315
+- Unresolved code edges: 320
 
 ## Domains
 
@@ -32,7 +44,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 30
 - documents: 5
 - douane: 5
+<<<<<<< HEAD
 - economic-engine: 32
+=======
+- economic-engine: 36
+>>>>>>> 3ce93292 (refacto fin issue audit dette)
 - inventory: 3
 - logistics: 34
 - notification: 13
@@ -66,7 +82,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
+<<<<<<< HEAD
 - service: 136
+=======
+- service: 140
+>>>>>>> 3ce93292 (refacto fin issue audit dette)
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -254,6 +274,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/dashboard-ops-queries.js — dashboard-dashboard-ops-queries (dashboard, high, full)
 - services/documents/customs-invoice.js — customs-invoice (documents, high, full)
 - services/economic-engine-queries.js — economic-engine-calculation-service (economic-engine, high, full)
+- services/finance-metrics/annulations.js — economic-engine-annulations-parcels (economic-engine, high, full)
+- services/finance-metrics/finance-summary.js — economic-engine-finance-summary (economic-engine, high, full)
+- services/finance-metrics/index.js — economic-engine-dashboard-finance-metrics (economic-engine, high, full)
+- services/finance-metrics/payments.js — economic-engine-payments-detail (economic-engine, high, full)
+- services/finance-metrics/sales-analysis.js — economic-engine-sales-analysis (economic-engine, high, full)
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/invoice-public-token.js — invoice-public-token (orders, high, full)
 - services/notification-service.js — customer-notification-orchestrator (notification, high, full)
@@ -495,7 +520,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
 - uses: railway-runtime -> server.js (railway-runtime)
 - uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
-- uses: reminders -> services/notification-service.js (reminders)
 - uses: reminders -> services/notifications/notification-service.js (reminders)
 - uses: renderers -> public/boutique/js/shop-schema.js (renderers)
 - uses: routes/* -> validators/index.js (routes/*)
@@ -574,6 +598,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/dashboard-finance.js -> db.js (db.js)
 - depends: routes/dashboard-finance.js -> services/* (services/*)
 - depends: routes/dashboard-hub.js -> db.js (db.js)
+- depends: routes/dashboard-hub.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 
