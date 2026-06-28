@@ -49,6 +49,51 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
 // RANK-01 — Map productId → cardElement pour mises à jour ciblées (évite re-render complet)
 const _sugCardMap = new Map();
 
+function _productId(p) {
+  return String(p && (p.id ?? p.product_id) != null ? (p.id ?? p.product_id) : '');
+}
+
+/**
+ * Garantit deux niveaux de suggestions quand le catalogue local le permet.
+ * L'API ranking peut renvoyer uniquement du same-category ; on la conserve,
+ * puis on complète localement le niveau manquant pour éviter une PDP à un seul rail.
+ * @param {Array<Object>} sameCat
+ * @param {Array<Object>} otherCat
+ * @returns {{sameCat: Array<Object>, otherCat: Array<Object>}}
+ */
+function _ensureTwoSuggestionLevels(sameCat, otherCat) {
+  const product = state.modalProduct;
+  if (!product || !Array.isArray(state.products)) return { sameCat, otherCat };
+
+  const currentId = _productId(product);
+  const seen = new Set([currentId].filter(Boolean));
+  sameCat.concat(otherCat).forEach(function(p) {
+    const id = _productId(p);
+    if (id) seen.add(id);
+  });
+
+  if (sameCat.length === 0) {
+    sameCat = state.products
+      .filter(function(p) {
+        const id = _productId(p);
+        return p.category === product.category && id && !seen.has(id);
+      })
+      .slice(0, 20);
+    sameCat.forEach(function(p) { const id = _productId(p); if (id) seen.add(id); });
+  }
+
+  if (otherCat.length === 0) {
+    otherCat = state.products
+      .filter(function(p) {
+        const id = _productId(p);
+        return p.category !== product.category && id && !seen.has(id);
+      })
+      .slice(0, 16);
+  }
+
+  return { sameCat, otherCat };
+}
+
 /**
  * Met à jour uniquement la zone actions d'une carte suggestion existante.
  * Préserve le DOM de la carte (image, nom, prix, reason_label).
@@ -143,13 +188,15 @@ function _bindCardActions(card) {
   }
 
   function renderSuggestions(sameCat, otherCat, categoryName) {
-        sameCat = sameCat || [];
+    sameCat = sameCat || [];
     otherCat = otherCat || [];
+    ({ sameCat, otherCat } = _ensureTwoSuggestionLevels(sameCat, otherCat));
+
     const sugSection = document.getElementById('k-modal-suggestions');
-        if (!sugSection) return;
+    if (!sugSection) return;
 
     if (sameCat.length === 0 && otherCat.length === 0) {
-            sugSection.classList.add('u-hidden');
+      sugSection.classList.add('u-hidden');
       return;
     }
     sugSection.classList.remove('u-hidden');
