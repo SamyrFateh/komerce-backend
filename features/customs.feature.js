@@ -49,7 +49,12 @@ module.exports = {
       'routes/admin-customs-shipments.js',
       'routes/admin-customs-categories.js',
     ],
-  },
+      dash: [
+      // dashboards/admin views — Lot 4
+      'dashboards/admin/js/views/CustomsView.js',
+      'dashboards/admin/js/views/TransitaireView.js',
+    ],
+},
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   contract: {

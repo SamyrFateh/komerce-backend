@@ -118,7 +118,12 @@ module.exports = {
       'css/hero-cart-proxy.css',
       'css/shared-followup.css',
     ],
-  },
+      dash: [
+      // dashboards/admin views — Lot 4
+      'dashboards/admin/js/views/SharedCartsView.js',
+      'dashboards/admin/js/views/EventWorkspacesView.js',
+    ],
+},
 
   // ── Dépôts ───────────────────────────────────────────────────────────────
   // Cette feature est répartie sur 2 dépôts distincts (pas un monorepo) :

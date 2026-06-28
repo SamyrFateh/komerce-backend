@@ -73,7 +73,16 @@ module.exports = {
       'routes/admin-pricing-components.js',
     
       'routes/sourcing-engine.js',],
-  },
+      dash: [
+      // dashboards/admin views — Lot 4
+      'dashboards/admin/js/views/PricingView.js',
+      'dashboards/admin/js/views/PricingStrategyView.js',
+      'dashboards/admin/js/views/PricingWorkshopView.js',
+      'dashboards/admin/js/views/CostingView.js',
+      'dashboards/admin/js/views/EconomicView.js',
+      'dashboards/admin/js/views/EconomicFlowView.js',
+    ],
+},
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   contract: {

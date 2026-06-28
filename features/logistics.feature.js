@@ -85,7 +85,12 @@ module.exports = {
     boutique: [
       'js/b-tracking.js',
     ],
-  },
+      dash: [
+      // dashboards/admin views — Lot 4
+      'dashboards/admin/js/views/HubRelaisView.js',
+      'dashboards/admin/js/views/OrdersLogisticsView.js',
+    ],
+},
 
   // ── Dépôts ───────────────────────────────────────────────────────────────
   repos: {

@@ -43,7 +43,11 @@ module.exports = {
       'routes/inventory-api.js',
     
       'routes/unsold.js',],
-  },
+      dash: [
+      // dashboards/admin views — Lot 4
+      'dashboards/admin/js/views/InventoryView.js',
+    ],
+},
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   contract: {

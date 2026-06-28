@@ -55,20 +55,25 @@ function repoRel(abs) {
   return path.relative(ROOT, abs).replace(/\\/g, '/');
 }
 
-function declaredPath(cardBase, rel) {
+// Préfixes par catégorie (même logique que feature-guard.js).
+// Pas de vérification filesystem — repos dash/boutique séparés du backend.
+const CATEGORY_PREFIX = { boutique: 'public/boutique', dash: 'public' };
+
+function declaredPath(cardBase, rel, category) {
   const clean = String(rel || '').replace(/\\/g, '/').replace(/^\/+/, '');
   if (!clean || clean.endsWith('/')) return null;
 
   if (clean.startsWith('../')) return repoRel(path.resolve(cardBase, clean));
+
+  // Category-based prefix — résolution sans filesystem
+  const prefix = CATEGORY_PREFIX[category];
+  if (prefix) return `${prefix}/${clean}`;
 
   const rootCandidate = path.join(ROOT, clean);
   if (fs.existsSync(rootCandidate)) return clean;
 
   const localCandidate = path.resolve(cardBase, clean);
   if (fs.existsSync(localCandidate)) return repoRel(localCandidate);
-
-  const boutiqueCandidate = path.join(ROOT, 'public/boutique', clean);
-  if (fs.existsSync(boutiqueCandidate)) return `public/boutique/${clean}`;
 
   // New files may be declared before they exist locally. Treat those as
   // repo-relative by default; the touched file itself will still be checked.
@@ -80,10 +85,11 @@ function ownershipIndex(cards) {
   const owner = {};                  // repoRelPath -> feature name
   const transversalCards = [];
   for (const m of cards) {
-    const files = Object.values(m.files || {}).flat();
-    for (const rel of files) {
-      const repoRelPath = declaredPath(m.__base, rel);
-      if (repoRelPath) owner[repoRelPath] = m.name;
+    for (const [category, files] of Object.entries(m.files || {})) {
+      for (const rel of (files || [])) {
+        const repoRelPath = declaredPath(m.__base, rel, category);
+        if (repoRelPath) owner[repoRelPath] = m.name;
+      }
     }
     if (m.type === 'transversal') transversalCards.push(m.name);
   }

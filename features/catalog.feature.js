@@ -97,7 +97,13 @@ module.exports = {
       'public/boutique/css/modal-product.css',
       'public/boutique/css/modal-product-lot4-hybrid.css',
     ],
-  },
+      dash: [
+      // dashboards/admin views — Lot 4
+      'dashboards/admin/js/views/SuppliersView.js',
+      'dashboards/admin/js/views/SourcingView.js',
+      'dashboards/admin/js/views/SourcingScannerView.js',
+    ],
+},
 
   // ── Dépôts ───────────────────────────────────────────────────────────────
   repos: {
