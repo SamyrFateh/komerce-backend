@@ -81,6 +81,22 @@ module.exports = {
           /\.k-modal-img-wrap\s*\{[^}]*min-height:\s*260px[^}]*\}/m,
         ],
       },
+      {
+        artifact: '../js/b-modal-suggestions.js',
+        label:    'suggestions lifecycle emits curation-ready event',
+        mustContain: [
+          /bus\.emit\('modal:suggestions-rendered'/m,
+          /delete\s+sugSection\.dataset\.curationProductId/m,
+        ],
+      },
+      {
+        artifact: '../js/b-pdp-curation-suggestions.js',
+        label:    'PDP curation waits for rendered suggestions',
+        mustContain: [
+          /bus\.on\('modal:suggestions-rendered',\s*scheduleEnhanceCuration\)/m,
+          /k-pdp-curation-section--complements/m,
+        ],
+      },
     ],
 
     // Dette de doctrine token scopée à la modal, sous cliquet (les 4 rgba du fix
