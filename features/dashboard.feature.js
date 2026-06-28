@@ -78,6 +78,12 @@ module.exports = {
     'auth-guard.js protège toutes les routes admin ; aucune route admin sans vérification de token',
   ],
 
+  // ── Vérification gouvernance ───────────────────────────────────────────
+  verification: [
+    'npm run dashboards:360:check',
+    'npm run map:check',
+  ],
+
   // ── Périmètre fichiers ─────────────────────────────────────────────────
   files: {
     services: [
