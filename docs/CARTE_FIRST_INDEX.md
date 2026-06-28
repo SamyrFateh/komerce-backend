@@ -15,17 +15,20 @@ Point d'entree documentaire apres AGENTS.md.
 
 Avant une modification substantielle, l'agent annonce comment il va traiter la demande avant de coder.
 
+Le plan est court par defaut : 8 a 12 lignes maximum. Il ne paraphrase pas les docs lues ; il nomme les fichiers lus et les decisions utiles.
+
 Le plan doit nommer :
 
 - la demande comprise ;
 - la feature ou le transversal ;
 - l'operation CRUD ;
-- la carte lue ;
-- le perimetre probable ;
-- le hors perimetre ;
+- les fichiers de gouvernance lus ;
+- le perimetre probable et le hors perimetre ;
 - les invariants a proteger ;
 - les risques ou points a verifier ;
 - les gates et tests prevus.
+
+Un plan plus long est reserve aux changements multi-feature, DB, paiement, securite, migrations ou architecture transverse.
 
 ## Gates
 
