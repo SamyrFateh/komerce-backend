@@ -90,6 +90,14 @@ module.exports = {
         ],
       },
       {
+        artifact: '../js/b-modal-suggestions.js',
+        label:    'modal suggestions keep discovery level when API is narrow',
+        mustContain: [
+          /function\s+_ensureTwoSuggestionLevels\(sameCat,\s*otherCat\)/m,
+          /p\.category\s*!==\s*product\.category/m,
+        ],
+      },
+      {
         artifact: '../js/b-pdp-curation-suggestions.js',
         label:    'PDP curation waits for rendered suggestions',
         mustContain: [
