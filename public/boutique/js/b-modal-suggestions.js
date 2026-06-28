@@ -153,6 +153,8 @@ function _bindCardActions(card) {
       return;
     }
     sugSection.classList.remove('u-hidden');
+    sugSection.classList.remove('k-pdp-curation');
+    delete sugSection.dataset.curationProductId;
     if (categoryName) sugSection.dataset.cat = categoryName;
     
     // Template carte suggestion — stepper −/qty/+ en bas + reason_label (RANK-01)
@@ -279,6 +281,8 @@ function _bindCardActions(card) {
     dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
       _bindCardActions(card);
     });
+
+    bus.emit('modal:suggestions-rendered', { product: state.modalProduct });
 
     // ── Modal infini : auto-advance subcats quand fin de scroll ──
     if (window.innerWidth < 900) {
