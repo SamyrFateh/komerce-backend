@@ -1,7 +1,7 @@
 # Cartographie 360 Komerce
 
 > **Statut** : cartographie documentaire canonique  
-> **Dernière consolidation** : 15 juin 2026  
+> **Dernière consolidation** : 28 juin 2026  
 > **Méthode** : version maintenable, vérifiée contre `server.js`, `bootstrap/api-routes.js`, `bootstrap/html-routes.js`, `bootstrap/env.js` et les services critiques.  
 > **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes. Pour le schéma DB complet, voir `SCHEMA.md`.
 
@@ -36,6 +36,7 @@ Le point d'entrée applicatif est `server.js`.
 | Routage logistique | `services/routing.js` |
 | Sécurité pickup/collecte | `routes/pickup-secret.js`, `services/parcel-security.js` |
 | Boutique canonique | `public/boutique/index.html` |
+| Ownership Boutique / modal produit | `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` + `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` + `features/catalog.feature.js` + `npm run gate:boutique-ownership` |
 | Admin moderne | `public/dashboards/admin/index.html` |
 | Panier partagé Boutique First | `docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md` + `docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md` |
 
@@ -380,6 +381,7 @@ Ces divergences sont connues et ne doivent pas contaminer les docs de référenc
 3. Les documents temporaires de prompts/roadmaps Sonnet/Temu/mobile sont historiques sauf s'ils sont listés dans `docs/README.md`.
 4. Certains noms providers email/notification varient selon les périodes ; vérifier le code avant d'affirmer un provider actif.
 5. Le code garde des noms internes V4.1 (`shared-cart-engine`, statuts DB, tests `v41`). Ce n'est pas une preuve que la doctrine V4.1 est active côté produit : la doctrine active est Boutique First.
+6. Pour la modal produit Boutique, l'ancien document local mobile n'est plus source de vérité. La source active est `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`, contrôlée par `npm run gate:boutique-ownership`.
 
 ---
 
@@ -394,4 +396,4 @@ Pour maintenir cette cartographie :
 5. ne pas recopier un audit ancien sans confrontation au code ;
 6. documenter toute divergence code/doc dans cette section.
 
-Ce document est l'un des documents socle référencés par `docs/README.md`. Toute modification structurelle du backend doit le mettre à jour dans la même PR. La règle de divergence doc <-> code <-> DB est définie dans `AGENTS.md`.
+Ce document est l'un des documents socle référencés par `docs/README.md`. Toute modification structurelle du backend ou de la gouvernance Boutique doit le mettre à jour dans la même PR. La règle de divergence doc <-> code <-> DB est définie dans `AGENTS.md`.
