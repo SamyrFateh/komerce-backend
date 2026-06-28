@@ -5,21 +5,20 @@ Avant toute modification :
 1. Lire AGENTS.md.
 2. Lire docs/CARTE_FIRST_INDEX.md.
 3. Lire la carte feature ou le transversal concerne.
-4. Annoncer un plan d'attaque avant de coder.
+4. Annoncer un plan d'attaque court avant de coder.
 
 Ne pas commencer par un audit, un rapport date, un prompt historique ou une sortie generee.
 
 Plan d'attaque obligatoire :
 
-- demande comprise ;
-- feature ou transversal ;
-- operation CRUD ;
-- carte lue ;
-- perimetre probable ;
-- hors perimetre ;
-- invariants a proteger ;
-- risques ou points a verifier ;
-- gates et tests prevus.
+- 8 a 12 lignes maximum dans le cas standard ;
+- pas de paraphrase des docs lues ;
+- nommer les fichiers lus ;
+- nommer demande, feature/transversal, operation CRUD ;
+- nommer perimetre, hors perimetre, invariants, risques ;
+- nommer gates et tests prevus.
+
+Un plan plus long est reserve aux changements multi-feature, DB, paiement, securite, migrations ou architecture transverse.
 
 Gates utiles :
 
