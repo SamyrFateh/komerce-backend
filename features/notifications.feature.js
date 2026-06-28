@@ -46,7 +46,13 @@ module.exports = {
     ],
     services: [
       'services/whatsapp-meta.js',
-      'services/notification-service.js',
+      'services/notification-service.js',        // barrel — Lot C2 2026-06-28
+      'services/notifications/internals.js',     // helpers partagés, logNotification
+      'services/notifications/order.js',         // notifyOrder*
+      'services/notifications/parcel.js',        // notifyParcel*, _loadOrderFromParcel
+      'services/notifications/otp-auth.js',      // sendOtpMessage, sendMagicLink
+      'services/notifications/loyalty.js',       // notifyLoyaltyEarned
+      'services/notifications/misc.js',          // notifyText
       'services/alert-engine.js',
     ],
     routes: [

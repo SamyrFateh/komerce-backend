@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 324
-- Files with full headers: 295
+- Scanned code files: 331
+- Files with full headers: 302
 - Files with lite headers: 29
-- Files with any headers: 324
+- Files with any headers: 331
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 671
-- Edges: 3061
+- Graph nodes: 678
+- Edges: 3158
 - DB tables: 108
 - Doctrines: 125
 - Impact areas: 114
-- Unresolved code edges: 278
+- Unresolved code edges: 285
 
 ## Domains
 
@@ -35,7 +35,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - economic-engine: 28
 - inventory: 3
 - logistics: 34
-- notification: 6
+- notification: 13
 - notifications: 2
 - operations: 4
 - orders: 29
@@ -66,7 +66,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
-- service: 114
+- service: 121
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -244,6 +244,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/invoice-public-token.js — invoice-public-token (orders, high, full)
 - services/notification-service.js — customer-notification-orchestrator (notification, high, full)
+- services/notifications/internals.js — notification-internals (notification, high, full)
+- services/notifications/notification-service.js — customer-notification-orchestrator (notification, high, full)
+- services/notifications/order.js — notification-order (notification, high, full)
+- services/notifications/otp-auth.js — notification-otp-auth (notification, high, full)
+- services/notifications/parcel.js — notification-parcel (notification, high, full)
 - services/order-service.js — order-domain-helpers (orders, high, full)
 - services/otp-test-mode.js — auth-otp-test-mode (auth, high, full)
 - services/parcel-auto-create-service.js — logistics-parcel-auto-create-service (logistics, high, full)
@@ -322,6 +327,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/cash-operations.js -> alerts
 - WRITE services/confirm-pickup-cash-payment.js -> alerts
 - WRITE services/notification-service.js -> alerts
+- WRITE services/notifications/notification-service.js -> alerts
 - WRITE services/order-payment-confirmation.js -> alerts
 - WRITE services/payment-cash-confirm.js -> alerts
 - WRITE services/payment-paypal.js -> alerts
@@ -400,6 +406,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
 - WRITE services/notification-service.js -> notification_log
+- WRITE services/notifications/internals.js -> notification_log
+- WRITE services/notifications/loyalty.js -> notification_log
+- WRITE services/notifications/misc.js -> notification_log
+- WRITE services/notifications/notification-service.js -> notification_log
+- WRITE services/notifications/order.js -> notification_log
+- WRITE services/notifications/otp-auth.js -> notification_log
+- WRITE services/notifications/parcel.js -> notification_log
 - WRITE services/simulator/state-advancer.js -> notification_log
 - WRITE routes/hub-dashboard.js -> order_comments
 - WRITE routes/hub-mark-ordered.js -> order_comments
@@ -425,14 +438,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/parcel-operations.js -> order_status_history
 - WRITE services/payment-paypal.js -> order_status_history
 - WRITE services/shared-cart-engine.js -> order_status_history
-- WRITE services/shared-cart-lifecycle.js -> order_status_history
-- WRITE routes/admin-customs-shipments.js -> orders
-- WRITE routes/admin/delete-order-cascade.js -> orders
-- WRITE routes/admin/system.js -> orders
-- WRITE routes/orders/cancel.js -> orders
-- WRITE routes/orders/create.js -> orders
-- WRITE routes/orders/qr.js -> orders
-- WRITE routes/orders/status.js -> orders
 
 ## Unresolved Code Edges
 
@@ -457,6 +462,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: modal-modules -> public/boutique/js/b-scroll-owner.js (modal-modules)
 - uses: modal-suggestions -> routes/boutique-suggestions.js (modal-suggestions)
 - uses: modal-surfaces -> public/boutique/js/b-modal-approche-c-hybrid.js (modal-surfaces)
+- uses: notification-service.js -> services/whatsapp-meta.js (notification-service.js)
 - uses: paypal-flows -> services/order-payment-confirmation.js (paypal-flows)
 - uses: public_event_links -> public/boutique/js/event-public.js (public_event_links)
 - uses: public_event_payment_links -> public/boutique/js/event-pay.js (public_event_payment_links)
@@ -476,6 +482,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: railway-runtime -> server.js (railway-runtime)
 - uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
 - uses: reminders -> services/notification-service.js (reminders)
+- uses: reminders -> services/notifications/notification-service.js (reminders)
 - uses: renderers -> public/boutique/js/shop-schema.js (renderers)
 - uses: routes/* -> validators/index.js (routes/*)
 - depends: routes/admin-boutique-categories.js -> db.js (db.js)
@@ -554,8 +561,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/dashboard-finance.js -> services/* (services/*)
 - depends: routes/dashboard-hub.js -> db.js (db.js)
 - depends: routes/dashboard-hub.js -> services/* (services/*)
-- depends: routes/dashboard-ops.js -> db.js (db.js)
-- depends: routes/dashboard-ops.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 

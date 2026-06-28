@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 324,
-    "filesWithFullHeaders": 295,
+    "scannedCodeFiles": 331,
+    "filesWithFullHeaders": 302,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 324,
+    "filesWithAnyHeaders": 331,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 671,
-    "edges": 3061,
+    "graphNodes": 678,
+    "edges": 3158,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 114,
-    "unresolvedCodeEdges": 278
+    "unresolvedCodeEdges": 285
   },
   "byDomain": {
     "bootstrap": 9,
@@ -44,7 +44,7 @@
     "douane": 5,
     "dashboard": 25,
     "orders": 29,
-    "notification": 6,
+    "notification": 13,
     "logistics": 34,
     "operations": 4,
     "inventory": 3,
@@ -80,7 +80,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 114,
+    "service": 121,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -89,8 +89,8 @@
   },
   "byCriticality": {
     "critical": 72,
-    "medium": 98,
-    "high": 122,
+    "medium": 100,
+    "high": 127,
     "low": 32
   },
   "nodes": [
@@ -9852,6 +9852,368 @@
         "otp",
         "checkout",
         "shared-cart",
+        "orders",
+        "customer-support",
+        "whatsapp"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/notifications/internals.js",
+      "file": "services/notifications/internals.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "notification-internals",
+      "domain": "notification",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context"
+      ],
+      "outputs": [
+        "helpers",
+        "log_entry",
+        "alert"
+      ],
+      "depends": [
+        "db.js",
+        "services/authkey-client.js",
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "services/notifications/order.js",
+        "services/notifications/parcel.js",
+        "services/notifications/otp-auth.js",
+        "services/notifications/loyalty.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "dbTxn": [
+        "notification_non_blocking"
+      ],
+      "doctrine": [
+        "notification_non_bloquante",
+        "fallback_trace"
+      ],
+      "impactAreas": [
+        "otp",
+        "checkout",
+        "shared-cart",
+        "orders",
+        "customer-support",
+        "whatsapp"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/notifications/loyalty.js",
+      "file": "services/notifications/loyalty.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "notification-loyalty",
+      "domain": "notification",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "user_id",
+        "user_name",
+        "phone",
+        "order_ref",
+        "basket_count"
+      ],
+      "outputs": [
+        "whatsapp_message"
+      ],
+      "depends": [
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "usedBy": [
+        "services/notification-service.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "dbTxn": [
+        "notification_non_blocking"
+      ],
+      "doctrine": [
+        "notification_non_bloquante"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "whatsapp"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/notifications/misc.js",
+      "file": "services/notifications/misc.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "notification-misc",
+      "domain": "notification",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "phone",
+        "message",
+        "event",
+        "order_id"
+      ],
+      "outputs": [
+        "whatsapp_message"
+      ],
+      "depends": [
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "usedBy": [
+        "services/notification-service.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "dbTxn": [
+        "notification_non_blocking"
+      ],
+      "doctrine": [
+        "notification_non_bloquante"
+      ],
+      "impactAreas": [
+        "customer-support",
+        "whatsapp"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/notifications/notification-service.js",
+      "file": "services/notifications/notification-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "customer-notification-orchestrator",
+      "domain": "notification",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "phone",
+        "template_context",
+        "notification_event",
+        "channel_preferences"
+      ],
+      "outputs": [
+        "whatsapp_message",
+        "sms_fallback",
+        "email_fallback",
+        "delivery_log"
+      ],
+      "depends": [
+        "services/whatsapp-meta.js",
+        "providers/authkey",
+        "email-provider"
+      ],
+      "usedBy": [
+        "otp.js",
+        "payment-stripe.js",
+        "order-status-machine.js",
+        "shared-cart-engine.js",
+        "reminders"
+      ],
+      "dbRead": [
+        "orders",
+        "parcels",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "alerts",
+        "notification_log"
+      ],
+      "dbTxn": [
+        "notification_non_blocking",
+        "failure_logged_not_rolled_back"
+      ],
+      "doctrine": [
+        "notification_non_bloquante",
+        "otp_message_lisible",
+        "fallback_trace"
+      ],
+      "impactAreas": [
+        "otp",
+        "checkout",
+        "shared-cart",
+        "orders",
+        "customer-support",
+        "whatsapp"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/notifications/order.js",
+      "file": "services/notifications/order.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "notification-order",
+      "domain": "notification",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order",
+        "payment_event",
+        "status_change",
+        "cancellation"
+      ],
+      "outputs": [
+        "whatsapp_message",
+        "sms_fallback",
+        "email_fallback"
+      ],
+      "depends": [
+        "db.js",
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "usedBy": [
+        "services/notification-service.js"
+      ],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "dbTxn": [
+        "notification_non_blocking"
+      ],
+      "doctrine": [
+        "notification_non_bloquante",
+        "fallback_trace"
+      ],
+      "impactAreas": [
+        "checkout",
+        "orders",
+        "customer-support",
+        "whatsapp"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/notifications/otp-auth.js",
+      "file": "services/notifications/otp-auth.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "notification-otp-auth",
+      "domain": "notification",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "phone",
+        "code",
+        "name",
+        "expiry_min",
+        "magic_link"
+      ],
+      "outputs": [
+        "whatsapp_otp",
+        "sms_fallback"
+      ],
+      "depends": [
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "usedBy": [
+        "services/notification-service.js"
+      ],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "dbTxn": [
+        "notification_non_blocking"
+      ],
+      "doctrine": [
+        "notification_non_bloquante",
+        "otp_message_lisible"
+      ],
+      "impactAreas": [
+        "otp",
+        "customer-support",
+        "whatsapp"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/notifications/parcel.js",
+      "file": "services/notifications/parcel.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "notification-parcel",
+      "domain": "notification",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "parcel_id",
+        "parcel_reference",
+        "parcel_status",
+        "order_id"
+      ],
+      "outputs": [
+        "whatsapp_message",
+        "sms_fallback"
+      ],
+      "depends": [
+        "db.js",
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "usedBy": [
+        "services/notification-service.js"
+      ],
+      "dbRead": [
+        "orders",
+        "parcels",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "dbTxn": [
+        "notification_non_blocking"
+      ],
+      "doctrine": [
+        "notification_non_bloquante",
+        "fallback_trace"
+      ],
+      "impactAreas": [
         "orders",
         "customer-support",
         "whatsapp"
@@ -28923,6 +29285,588 @@
       "label": "whatsapp"
     },
     {
+      "from": "services/notifications/internals.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "services/authkey-client.js",
+      "type": "depends",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "utils/logger.js",
+      "type": "depends",
+      "label": "utils/logger.js"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "services/notifications/internals.js",
+      "type": "uses",
+      "label": "services/notifications/order.js"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "services/notifications/internals.js",
+      "type": "uses",
+      "label": "services/notifications/parcel.js"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "services/notifications/internals.js",
+      "type": "uses",
+      "label": "services/notifications/otp-auth.js"
+    },
+    {
+      "from": "services/notifications/loyalty.js",
+      "to": "services/notifications/internals.js",
+      "type": "uses",
+      "label": "services/notifications/loyalty.js"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "db:notification_log",
+      "type": "db-write",
+      "label": "notification_log"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "doctrine:notification_non_bloquante",
+      "type": "doctrine",
+      "label": "notification_non_bloquante"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "doctrine:fallback_trace",
+      "type": "doctrine",
+      "label": "fallback_trace"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "impact:otp",
+      "type": "impact",
+      "label": "otp"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "impact:customer-support",
+      "type": "impact",
+      "label": "customer-support"
+    },
+    {
+      "from": "services/notifications/internals.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "services/notifications/loyalty.js",
+      "to": "services/authkey-client.js",
+      "type": "depends",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/notifications/loyalty.js",
+      "to": "services/notifications/internals.js",
+      "type": "depends",
+      "label": "services/notifications/internals.js"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "services/notifications/loyalty.js",
+      "type": "uses",
+      "label": "services/notification-service.js"
+    },
+    {
+      "from": "services/notifications/loyalty.js",
+      "to": "db:notification_log",
+      "type": "db-write",
+      "label": "notification_log"
+    },
+    {
+      "from": "services/notifications/loyalty.js",
+      "to": "doctrine:notification_non_bloquante",
+      "type": "doctrine",
+      "label": "notification_non_bloquante"
+    },
+    {
+      "from": "services/notifications/loyalty.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/notifications/loyalty.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "services/notifications/misc.js",
+      "to": "services/authkey-client.js",
+      "type": "depends",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/notifications/misc.js",
+      "to": "services/notifications/internals.js",
+      "type": "depends",
+      "label": "services/notifications/internals.js"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "services/notifications/misc.js",
+      "type": "uses",
+      "label": "services/notification-service.js"
+    },
+    {
+      "from": "services/notifications/misc.js",
+      "to": "db:notification_log",
+      "type": "db-write",
+      "label": "notification_log"
+    },
+    {
+      "from": "services/notifications/misc.js",
+      "to": "doctrine:notification_non_bloquante",
+      "type": "doctrine",
+      "label": "notification_non_bloquante"
+    },
+    {
+      "from": "services/notifications/misc.js",
+      "to": "impact:customer-support",
+      "type": "impact",
+      "label": "customer-support"
+    },
+    {
+      "from": "services/notifications/misc.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "services/whatsapp-meta.js",
+      "type": "depends",
+      "label": "services/whatsapp-meta.js"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "providers/authkey",
+      "type": "depends",
+      "label": "providers/authkey"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "email-provider",
+      "type": "depends",
+      "label": "email-provider"
+    },
+    {
+      "from": "routes/otp.js",
+      "to": "services/notifications/notification-service.js",
+      "type": "uses",
+      "label": "otp.js"
+    },
+    {
+      "from": "services/payment-stripe.js",
+      "to": "services/notifications/notification-service.js",
+      "type": "uses",
+      "label": "payment-stripe.js"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "services/notifications/notification-service.js",
+      "type": "uses",
+      "label": "order-status-machine.js"
+    },
+    {
+      "from": "services/shared-cart-engine.js",
+      "to": "services/notifications/notification-service.js",
+      "type": "uses",
+      "label": "shared-cart-engine.js"
+    },
+    {
+      "from": "reminders",
+      "to": "services/notifications/notification-service.js",
+      "type": "uses",
+      "label": "reminders"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "db:notification_log",
+      "type": "db-write",
+      "label": "notification_log"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "doctrine:notification_non_bloquante",
+      "type": "doctrine",
+      "label": "notification_non_bloquante"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "doctrine:otp_message_lisible",
+      "type": "doctrine",
+      "label": "otp_message_lisible"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "doctrine:fallback_trace",
+      "type": "doctrine",
+      "label": "fallback_trace"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "impact:otp",
+      "type": "impact",
+      "label": "otp"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "impact:customer-support",
+      "type": "impact",
+      "label": "customer-support"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "services/authkey-client.js",
+      "type": "depends",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "services/notifications/internals.js",
+      "type": "depends",
+      "label": "services/notifications/internals.js"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "services/notifications/order.js",
+      "type": "uses",
+      "label": "services/notification-service.js"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "db:notification_log",
+      "type": "db-write",
+      "label": "notification_log"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "doctrine:notification_non_bloquante",
+      "type": "doctrine",
+      "label": "notification_non_bloquante"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "doctrine:fallback_trace",
+      "type": "doctrine",
+      "label": "fallback_trace"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "impact:customer-support",
+      "type": "impact",
+      "label": "customer-support"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "services/authkey-client.js",
+      "type": "depends",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "services/notifications/internals.js",
+      "type": "depends",
+      "label": "services/notifications/internals.js"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "services/notifications/otp-auth.js",
+      "type": "uses",
+      "label": "services/notification-service.js"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "db:notification_log",
+      "type": "db-write",
+      "label": "notification_log"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "doctrine:notification_non_bloquante",
+      "type": "doctrine",
+      "label": "notification_non_bloquante"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "doctrine:otp_message_lisible",
+      "type": "doctrine",
+      "label": "otp_message_lisible"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "impact:otp",
+      "type": "impact",
+      "label": "otp"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "impact:customer-support",
+      "type": "impact",
+      "label": "customer-support"
+    },
+    {
+      "from": "services/notifications/otp-auth.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "services/authkey-client.js",
+      "type": "depends",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "services/notifications/internals.js",
+      "type": "depends",
+      "label": "services/notifications/internals.js"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "services/notifications/parcel.js",
+      "type": "uses",
+      "label": "services/notification-service.js"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "db:notification_log",
+      "type": "db-write",
+      "label": "notification_log"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "doctrine:notification_non_bloquante",
+      "type": "doctrine",
+      "label": "notification_non_bloquante"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "doctrine:fallback_trace",
+      "type": "doctrine",
+      "label": "fallback_trace"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "impact:customer-support",
+      "type": "impact",
+      "label": "customer-support"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
       "from": "services/order-cost-snapshot.js",
       "to": "db:order_item_cost_imputations",
       "type": "db-read",
@@ -33669,7 +34613,7 @@
       "label": "env META_WA_*"
     },
     {
-      "from": "services/notification-service.js",
+      "from": "notification-service.js",
       "to": "services/whatsapp-meta.js",
       "type": "uses",
       "label": "notification-service.js"
@@ -40235,6 +41179,7 @@
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-tracking.js",
         "services/notification-service.js",
+        "services/notifications/notification-service.js",
         "services/otp-test-mode.js",
         "utils/phone.js"
       ]
@@ -41821,7 +42766,13 @@
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
         "impact:auth",
-        "services/invoice-public-token.js"
+        "services/invoice-public-token.js",
+        "services/notifications/internals.js",
+        "services/notifications/loyalty.js",
+        "services/notifications/misc.js",
+        "services/notifications/order.js",
+        "services/notifications/otp-auth.js",
+        "services/notifications/parcel.js"
       ]
     },
     "services/auto-parcel.js": {
@@ -43283,11 +44234,363 @@
         "impact:whatsapp",
         "routes/orders.js",
         "routes/otp.js",
+        "services/notifications/loyalty.js",
+        "services/notifications/misc.js",
+        "services/notifications/order.js",
+        "services/notifications/otp-auth.js",
+        "services/notifications/parcel.js",
         "services/order-status-machine.js",
         "services/payment-stripe.js",
         "services/shared-cart-engine.js",
         "services/verify-qr-collection.js",
         "services/whatsapp-meta.js"
+      ]
+    },
+    "services/notifications/internals.js": {
+      "role": "notification-internals",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/authkey-client.js",
+        "utils/logger.js"
+      ],
+      "directUsedBy": [
+        "services/notifications/order.js",
+        "services/notifications/parcel.js",
+        "services/notifications/otp-auth.js",
+        "services/notifications/loyalty.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "doctrines": [
+        "notification_non_bloquante",
+        "fallback_trace"
+      ],
+      "impactAreas": [
+        "otp",
+        "checkout",
+        "shared-cart",
+        "orders",
+        "customer-support",
+        "whatsapp"
+      ],
+      "mustCheck": [
+        "db:notification_log",
+        "doctrine:fallback_trace",
+        "doctrine:notification_non_bloquante",
+        "impact:checkout",
+        "impact:customer-support",
+        "impact:orders",
+        "impact:otp",
+        "impact:shared-cart",
+        "impact:whatsapp",
+        "services/authkey-client.js",
+        "services/notifications/loyalty.js",
+        "services/notifications/misc.js",
+        "services/notifications/order.js",
+        "services/notifications/otp-auth.js",
+        "services/notifications/parcel.js",
+        "utils/logger.js"
+      ]
+    },
+    "services/notifications/loyalty.js": {
+      "role": "notification-loyalty",
+      "domain": "notification",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "directUsedBy": [
+        "services/notification-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "doctrines": [
+        "notification_non_bloquante"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "whatsapp"
+      ],
+      "mustCheck": [
+        "db:notification_log",
+        "doctrine:notification_non_bloquante",
+        "impact:shared-cart",
+        "impact:whatsapp",
+        "services/authkey-client.js",
+        "services/notification-service.js",
+        "services/notifications/internals.js"
+      ]
+    },
+    "services/notifications/misc.js": {
+      "role": "notification-misc",
+      "domain": "notification",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "directUsedBy": [
+        "services/notification-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "doctrines": [
+        "notification_non_bloquante"
+      ],
+      "impactAreas": [
+        "customer-support",
+        "whatsapp"
+      ],
+      "mustCheck": [
+        "db:notification_log",
+        "doctrine:notification_non_bloquante",
+        "impact:customer-support",
+        "impact:whatsapp",
+        "services/authkey-client.js",
+        "services/notification-service.js",
+        "services/notifications/internals.js"
+      ]
+    },
+    "services/notifications/notification-service.js": {
+      "role": "customer-notification-orchestrator",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/whatsapp-meta.js",
+        "providers/authkey",
+        "email-provider"
+      ],
+      "directUsedBy": [
+        "routes/otp.js",
+        "services/payment-stripe.js",
+        "services/order-status-machine.js",
+        "services/shared-cart-engine.js",
+        "reminders"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "parcels",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "alerts",
+        "notification_log"
+      ],
+      "doctrines": [
+        "notification_non_bloquante",
+        "otp_message_lisible",
+        "fallback_trace"
+      ],
+      "impactAreas": [
+        "otp",
+        "checkout",
+        "shared-cart",
+        "orders",
+        "customer-support",
+        "whatsapp"
+      ],
+      "mustCheck": [
+        "db:alerts",
+        "db:notification_log",
+        "db:orders",
+        "db:parcels",
+        "db:recipients",
+        "db:relais",
+        "db:users",
+        "doctrine:fallback_trace",
+        "doctrine:notification_non_bloquante",
+        "doctrine:otp_message_lisible",
+        "impact:checkout",
+        "impact:customer-support",
+        "impact:orders",
+        "impact:otp",
+        "impact:shared-cart",
+        "impact:whatsapp",
+        "routes/otp.js",
+        "services/order-status-machine.js",
+        "services/payment-stripe.js",
+        "services/shared-cart-engine.js",
+        "services/whatsapp-meta.js"
+      ]
+    },
+    "services/notifications/order.js": {
+      "role": "notification-order",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "directUsedBy": [
+        "services/notification-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "doctrines": [
+        "notification_non_bloquante",
+        "fallback_trace"
+      ],
+      "impactAreas": [
+        "checkout",
+        "orders",
+        "customer-support",
+        "whatsapp"
+      ],
+      "mustCheck": [
+        "db:notification_log",
+        "db:orders",
+        "db:recipients",
+        "db:relais",
+        "db:users",
+        "doctrine:fallback_trace",
+        "doctrine:notification_non_bloquante",
+        "impact:checkout",
+        "impact:customer-support",
+        "impact:orders",
+        "impact:whatsapp",
+        "services/authkey-client.js",
+        "services/notification-service.js",
+        "services/notifications/internals.js"
+      ]
+    },
+    "services/notifications/otp-auth.js": {
+      "role": "notification-otp-auth",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "directUsedBy": [
+        "services/notification-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "doctrines": [
+        "notification_non_bloquante",
+        "otp_message_lisible"
+      ],
+      "impactAreas": [
+        "otp",
+        "customer-support",
+        "whatsapp"
+      ],
+      "mustCheck": [
+        "db:notification_log",
+        "db:orders",
+        "db:recipients",
+        "db:relais",
+        "db:users",
+        "doctrine:notification_non_bloquante",
+        "doctrine:otp_message_lisible",
+        "impact:customer-support",
+        "impact:otp",
+        "impact:whatsapp",
+        "services/authkey-client.js",
+        "services/notification-service.js",
+        "services/notifications/internals.js"
+      ]
+    },
+    "services/notifications/parcel.js": {
+      "role": "notification-parcel",
+      "domain": "notification",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/authkey-client.js",
+        "services/notifications/internals.js"
+      ],
+      "directUsedBy": [
+        "services/notification-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "parcels",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "notification_log"
+      ],
+      "doctrines": [
+        "notification_non_bloquante",
+        "fallback_trace"
+      ],
+      "impactAreas": [
+        "orders",
+        "customer-support",
+        "whatsapp"
+      ],
+      "mustCheck": [
+        "db:notification_log",
+        "db:orders",
+        "db:parcels",
+        "db:recipients",
+        "db:relais",
+        "db:users",
+        "doctrine:fallback_trace",
+        "doctrine:notification_non_bloquante",
+        "impact:customer-support",
+        "impact:orders",
+        "impact:whatsapp",
+        "services/authkey-client.js",
+        "services/notification-service.js",
+        "services/notifications/internals.js"
       ]
     },
     "services/order-cost-snapshot.js": {
@@ -43506,6 +44809,7 @@
         "routes/orders.js",
         "services/admin-order-refund.js",
         "services/notification-service.js",
+        "services/notifications/notification-service.js",
         "services/order-payment-confirmation.js",
         "services/pickup-secret-service.js",
         "services/verify-qr-collection.js"
@@ -43978,6 +45282,7 @@
         "routes/pickup-secret.js",
         "services/loyalty-service.js",
         "services/notification-service.js",
+        "services/notifications/notification-service.js",
         "services/order-payment-confirmation.js",
         "services/payment-service.js",
         "services/pickup-secret-service.js"
@@ -45294,6 +46599,7 @@
         "routes/shared-cart.js",
         "services/customs-classification.js",
         "services/notification-service.js",
+        "services/notifications/notification-service.js",
         "services/order-payment-confirmation.js",
         "services/order-service.js",
         "services/routing.js",
@@ -46410,7 +47716,7 @@
         "env META_WA_*"
       ],
       "directUsedBy": [
-        "services/notification-service.js",
+        "notification-service.js",
         "routes/meta-whatsapp.js"
       ],
       "ownedFiles": [],
@@ -46439,6 +47745,7 @@
         "impact:whatsapp",
         "routes/meta-whatsapp.js",
         "services/notification-service.js",
+        "services/notifications/notification-service.js",
         "services/shared-cart-engine.js",
         "services/shared-cart-lifecycle.js"
       ]
@@ -46539,7 +47846,8 @@
       ],
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown"
+        "impact:unknown",
+        "services/notifications/internals.js"
       ]
     },
     "utils/orderParcelLinkRules.js": {
@@ -48350,6 +49658,42 @@
       "label": "reminders"
     },
     {
+      "from": "services/notifications/internals.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "providers/authkey",
+      "type": "depends",
+      "label": "providers/authkey"
+    },
+    {
+      "from": "services/notifications/notification-service.js",
+      "to": "email-provider",
+      "type": "depends",
+      "label": "email-provider"
+    },
+    {
+      "from": "reminders",
+      "to": "services/notifications/notification-service.js",
+      "type": "uses",
+      "label": "reminders"
+    },
+    {
+      "from": "services/notifications/order.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/notifications/parcel.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/order-payment-confirmation.js",
       "to": "db.js",
       "type": "depends",
@@ -48552,6 +49896,12 @@
       "to": "env META_WA_*",
       "type": "depends",
       "label": "env META_WA_*"
+    },
+    {
+      "from": "notification-service.js",
+      "to": "services/whatsapp-meta.js",
+      "type": "uses",
+      "label": "notification-service.js"
     },
     {
       "from": "validators/index.js",
