@@ -1,7 +1,7 @@
-/* Komerce SW v328 — network-first + garde anti-empoisonnement de cache
+/* Komerce SW v335 — network-first + garde anti-empoisonnement de cache
  *
- * Changements vs v327 :
- *   - Bump de version (v327 → v328) : force la purge de l'ancien cache sur tous les clients.
+ * Changements vs v328 :
+ *   - Bump de version (v328 → v335) : force la purge de l'ancien cache sur tous les clients.
  *   - Ne met plus en cache une réponse dont le Content-Type ne correspond pas à
  *     la ressource demandée. Cas typique : un .js / .css qui renvoie en fait du
  *     HTML (fallback SPA, page d'erreur, redirection 200). Avant, ce HTML était
@@ -9,7 +9,7 @@
  *     stylée ou cassée. Désormais on renvoie la réponse réseau mais on ne la cache pas.
  *   - Ne cache que les réponses same-origin "basic" et 200 OK.
  */
-const CACHE = 'komerce-v328';
+const CACHE = 'komerce-v335';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -21,14 +21,14 @@ self.addEventListener('activate', (e) => {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => {
         if (k !== CACHE) {
-          console.log('[SW v328] Purge ancien cache :', k);
+          console.log('[SW v335] Purge ancien cache :', k);
           return caches.delete(k);
         }
       }));
       await self.clients.claim();
       const clients = await self.clients.matchAll({ type: 'window' });
       clients.forEach(client => {
-        client.postMessage({ type: 'sw-updated', version: 'v328' });
+        client.postMessage({ type: 'sw-updated', version: 'v335' });
       });
     })()
   );
