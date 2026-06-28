@@ -61,6 +61,16 @@ module.exports = {
           /#k-modal\s+\.k-modal-product-zone[^{]*\{[^}]*grid-template-columns/m,
         ],
       },
+      {
+        artifact: '../css/modal-media.css',
+        label:    'mobile image overlays anchored to image wrap',
+        mustContain: [
+          // Le bouton "Voir en grand" est injecté dans .k-modal-img-wrap.
+          // Sans position:relative sur le wrap, son absolute tombe sur le CTA Acheter.
+          /\.k-modal-img-wrap\s*\{[^}]*position:\s*relative[^}]*\}/m,
+          /\.k-modal-view-full\s*\{[^}]*position:\s*absolute[^}]*bottom:\s*12px[^}]*left:\s*10px/m,
+        ],
+      },
     ],
 
     // Dette de doctrine token scopée à la modal, sous cliquet (les 4 rgba du fix
