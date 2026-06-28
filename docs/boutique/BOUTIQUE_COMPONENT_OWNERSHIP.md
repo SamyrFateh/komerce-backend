@@ -205,3 +205,44 @@ Une modification est acceptable si :
 - les tests automatiques applicables passent ;
 - les tests manuels du parcours touché sont faits ;
 - le guide `docs/boutique/README.md` reste le point d'entrée pratique.
+
+---
+
+## 6. Backfill rattachement global Boutique (governance/boutique-global-ownership)
+
+> Passe de backfill : rattacher les fichiers Boutique aux cartes `features/*.feature.js`
+> existantes (jamais une carte "boutique" unique qui possède tout). Voir `AGENTS.md` §0/§2.
+
+### 6.1 Rattachements effectués
+
+| Fichier Boutique | Carte | Justification |
+|---|---|---|
+| `js/group/group-api.js`, `js/group/group-helpers.js`, `js/group/group-render-creator.js`, `js/group/group-state.js` | `shared-cart` | Header `@komerce-arch` `domain=shared-cart` confirmé dans `docs/BOUTIQUE_360.json` |
+| `js/collective-close-order-service.js`, `js/collective-ready-to-order-orchestrator.js` | `shared-cart` | Idem — `domain=shared-cart`, miroir frontend des services backend `services/collective-*` déjà dans la carte |
+| `css/paypal.css` | `payments` | Seul CSS payment-specific univoque (cf. 6.2 pour `cart.css`) |
+| `js/b-identity.js`, `js/b-phone.js`, `css/identity.css` | `auth-identity` | Header `domain=auth` confirmé |
+| `js/main.js`, `js/komerce-api.js`, `js/b-store.js`, `js/b-bus.js`, `js/b-utils.js`, `js/b-scroll-owner.js`, `index.html` | `platform-ops` (transversal) | Socle technique Boutique, aucune règle métier propre — header `layer=state/api-client/ui-infrastructure/util`, transverse à toutes les features |
+| `public/boutique/scripts/**` | déjà couvert | Exclu nativement par `EXCLUDE` dans `scripts/touched-files-feature-gate.js` (`/(^|\/)scripts\//`) — aucune déclaration supplémentaire nécessaire |
+| `js/shop-schema.js`, `js/b-pager.js`, `js/b-subcat.js` | `catalog` | Header `domain=catalog` — schéma/navigation catégories, déjà dans `perimeter.in` de la carte |
+
+### 6.2 Dette explicite — non rattaché volontairement
+
+Ces fichiers restent **sans carte** après cette passe. Ne pas les rattacher au hasard ; statuer dans une PR dédiée.
+
+| Fichier | Domaine observé (header) | Raison du report |
+|---|---|---|
+| `js/b-cart.js`, `js/b-cart-core.js`, `js/b-cart-pill.js`, `js/b-mini-cart.js`, `js/b-favs.js`, `js/b-cart-product-open-style.js` | `boutique`/`catalog`, criticité moyenne à critique | Aucune carte "panier personnel" ou "favoris" n'existe dans `features/*.feature.js`. Créer une telle carte dépasse le périmètre de ce backfill (pas de méga-feature, pas de carte inventée sans validation produit). |
+| `css/cart.css` | — | CSS multi-domaine (panier personnel, side-cart, checkout, OTP) sans owner unique propre — ne peut pas être rattaché à `payments` sans capturer aussi le panier personnel hors périmètre |
+| `js/b-modal-approche-c-hybrid.js`, `js/b-mobile-modal-v1.js` | `boutique`, `layer=ui-experiment` | Variantes/expérimentations modal hors de la liste curatée de `catalog.feature.js`. À trancher : promotion dans `catalog` ou dépréciation explicite. |
+| `js/event-manage.js`, `js/event-public.js` | `collective-workspace` | Domaine legacy "event/workspace" — `docs/boutique/README.md` §1 le classe comme historique sauf reprise explicite. Aucune carte active ne couvre ce domaine. |
+| `js/b-nav.js`, `js/boutique.js` | `boutique`, criticité haute/critique | Candidats plausibles pour `platform-ops`, mais hors de la liste explicite demandée pour ce backfill. Laissés en dette pour décision séparée plutôt que rattachement par extension non validée. |
+| `js/b-boutique-wow-style.js`, `js/b-desktop-global-cart-access.js`, `js/b-desktop-sidebar.js`, `js/b-desktop-upgrade.js`, `js/b-greeting.js`, `js/b-home-premium-v1.js`, `js/b-mobile-premium-v1.js`, `js/card-config.js` | `boutique`, criticité `None`, doctrine vide | Headers génériques sans signal sémantique fort — domaine réellement ambigu |
+| `css/boutique-desktop.css`, `css/event.css`, `css/hero.css`, `css/interactions.css`, `css/layout.css`, `css/reset.css`, `css/tokens.css` | — | CSS transverse/socle sans owner fonctionnel unique — candidats à un futur transversal CSS dédié, non créé dans cette passe |
+| `apply-komerce-cleanup.js` | — | Installeur idempotent ponctuel à la racine `public/boutique/`, pas un composant applicatif runtime — hors périmètre carte-first (même statut que `scripts/**`, mais hors du dossier `scripts/` donc non couvert par l'exclusion native) |
+| `playwright-report/index.html` | — | Artefact généré par les runs Playwright (rapport HTML), pas du code source — ne devrait probablement pas être committé ; signalé ici plutôt que rattaché à une feature |
+| `test-modal-view-model.html` | — | Page de test/redirection à la racine, hors flux applicatif Boutique courant |
+
+### 6.3 `recommendations.feature.js` — aucun ajout
+
+Aucun fichier Boutique frontend n'a de header `domain=recommendations`. Le rendu des suggestions (`b-modal-suggestions.js`, `b-pdp-curation-suggestions.js`) reste dans `catalog` par design : le contrat de `catalog.feature.js` déclare explicitement `recommendations` en `perimeter.out` ("mise en avant / classement"), `recommendations` ne fait que consommer `catalog` en lecture. C'est cohérent, pas une dette.
+

@@ -45,6 +45,13 @@ module.exports = {
       'routes/auth.js',
       'routes/otp.js',
     ],
+    boutique: [
+      // Backfill gouvernance globale : header @komerce-arch domain=auth confirmé
+      // dans docs/BOUTIQUE_360.json pour les 3 fichiers.
+      'js/b-identity.js',
+      'js/b-phone.js',
+      'css/identity.css',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

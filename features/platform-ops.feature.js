@@ -52,6 +52,19 @@ module.exports = {
       'routes/config.js',
     
       'routes/simulator.js',],
+    boutique: [
+      // Backfill gouvernance globale : socle technique Boutique (bus, state, api-client,
+      // utils, scroll, entrée page). Headers @komerce-arch domain=boutique,
+      // layer=state|api-client|ui-infrastructure|util — transverse à toutes les
+      // features Boutique, ne porte aucune règle métier propre (cf. perimeter.out).
+      'js/main.js',
+      'js/komerce-api.js',
+      'js/b-store.js',
+      'js/b-bus.js',
+      'js/b-utils.js',
+      'js/b-scroll-owner.js',
+      'index.html',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

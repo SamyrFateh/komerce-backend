@@ -64,6 +64,10 @@ module.exports = {
       'js/b-checkout-render.js',
       'js/b-paypal.js',
       'js/event-pay.js',
+      // Backfill gouvernance globale : css/paypal.css est le seul CSS payment-specific
+      // pertinent (cart.css est multi-domaine — panier personnel/checkout/OTP — laissé
+      // en dette explicite, voir BOUTIQUE_COMPONENT_OWNERSHIP.md §Backfill).
+      'css/paypal.css',
     ],
   },
 

@@ -104,6 +104,15 @@ module.exports = {
       'js/b-group-banner.js',
       'js/b-friendly-group-redirect.js',
       'js/b-share-phone-guard.js',
+      // Backfill gouvernance globale (governance/boutique-global-ownership) :
+      // header @komerce-arch confirme domain=shared-cart pour ces 6 fichiers
+      // (docs/BOUTIQUE_360.json) — non couverts avant cette passe.
+      'js/group/group-api.js',
+      'js/group/group-helpers.js',
+      'js/group/group-render-creator.js',
+      'js/group/group-state.js',
+      'js/collective-close-order-service.js',
+      'js/collective-ready-to-order-orchestrator.js',
       'css/group-cart-flow.css',
       'css/share-cart.css',
       'css/hero-cart-proxy.css',

@@ -84,6 +84,12 @@ module.exports = {
       'public/boutique/js/b-modal-desktop-enhancers.js',
       'public/boutique/js/b-pdp-curation-suggestions.js',
       'public/boutique/js/view-models/modal-view-model.js',
+      // Backfill gouvernance globale : header @komerce-arch domain=catalog confirmé
+      // (docs/BOUTIQUE_360.json) — schéma/navigation catégories, périmètre "catégories"
+      // déjà déclaré ci-dessus en perimeter.in.
+      'public/boutique/js/shop-schema.js',
+      'public/boutique/js/b-pager.js',
+      'public/boutique/js/b-subcat.js',
       'public/boutique/css/products.css',
       'public/boutique/css/categories.css',
       'public/boutique/css/modal-shell.css',
