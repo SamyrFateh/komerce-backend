@@ -71,6 +71,8 @@
     "gate:schema:save": "node scripts/feature-schema-check.js --save",
     "gate:feature-audit": "node scripts/feature-audit.js --strict",
     "gate:docs-lint": "node scripts/docs-history-lint.js --strict",
+    "gate:docs-lint:full": "node scripts/docs-history-lint.js --strict --full",
+    "gate:docs-lint:save": "node scripts/docs-history-lint.js --save",
     "map:check": "node scripts/map-check.js",
     "map:check:verbose": "node scripts/map-check.js --verbose",
     "map:check:bail": "node scripts/map-check.js --bail",
