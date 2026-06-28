@@ -25,7 +25,7 @@
  *   - setupModal : câblage complet (listeners, search inline, topbar, clavier,
  *     buyNowBtn, modalCartBtn, image-zone, …).
  *   - Gestion de l'historique navigateur (_modalHistoryPushed, _closingFromPopstate,
- *     handler popstate) — flags mutables, intra-module, non exportables.
+ *     _pendingHistoryBack, handler popstate) — flags mutables, intra-module, non exportables.
  *   - Image-zone : setupImageZoneDesktopClick, setupImageZoneTouch, openImageFullscreen.
  *   - Handlers bus modal:open / modal:close (openModal/closeModal accessibles
  *     directement ici, sans typeof-guard).
@@ -155,8 +155,31 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
   // de façon synchrone dans la même pile, rappelant closeModal() une seconde fois
   // (double scroll-restore, saut visuel). Le flag _closingFromPopstate coupe court.
   let _closingFromPopstate = false;
+  // BUG-03 — race condition mobile : ré-ouverture rapide après fermeture
+  // Scénario : closeModal() appelle history.back() [asynchrone]. Si l'utilisateur
+  // retouche un produit avant que le popstate arrive, openModal() a déjà posé un
+  // nouveau pushState + _modalHistoryPushed=true. Quand le popstate "retardé" de
+  // la fermeture précédente arrive, la modal est à nouveau open → closeModal() la
+  // ferme immédiatement. Sur mobile le délai est variable (50–300ms) selon le
+  // thread de navigation → le bug est intermittent mais fréquent.
+  //
+  // Solution : _pendingHistoryBack est posé juste avant history.back() programmatique
+  // (dans closeModal). Dans le popstate handler :
+  //   - _pendingHistoryBack=true  + _modalHistoryPushed=true
+  //     => une nouvelle modal a rouvert entre le back() et ce popstate => ignorer
+  //   - _pendingHistoryBack=false (bouton retour physique de l'utilisateur)
+  //     => fermer normalement
+  let _pendingHistoryBack = false;
   window.addEventListener('popstate', (e) => {
     if (_closingFromPopstate) return;
+    // Popstate entrant vers un etat kModal (navigation avant, pas retour) => ignorer.
+    if (e.state && e.state.kModal) return;
+    // Popstate cause par notre history.back() ET une nouvelle modal entre-temps => ignorer.
+    if (_pendingHistoryBack && _modalHistoryPushed) {
+      _pendingHistoryBack = false;
+      return;
+    }
+    _pendingHistoryBack = false;
     if (dom.modalOverlay && dom.modalOverlay.classList.contains('open')) {
       _closingFromPopstate = true;
       _modalHistoryPushed = false;
@@ -419,6 +442,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // rappeler history.back() : c'est le popstate lui-même qui a déjà consommé l'entrée.
     if (_modalHistoryPushed && !_closingFromPopstate) {
       _modalHistoryPushed = false;
+      _pendingHistoryBack = true; // BUG-03 : signale au handler popstate que ce back() est programmatique
       history.back();
     } else {
       _modalHistoryPushed = false;
