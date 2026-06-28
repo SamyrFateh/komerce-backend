@@ -955,5 +955,9 @@ module.exports = {
   correctScanEvent,
   getParcelTrace,
   syncOrderFromParcels,
-  ScanError
+  ScanError,
+  // @test-only — helpers internes exposés pour les tests de caractérisation
+  _getStatusOrder: getStatusOrder,
+  _checkSequence: checkSequence,
+  _buildQtySnapshot: buildQtySnapshot,
 };
