@@ -72,7 +72,10 @@
     "gate:docs-lint": "node scripts/docs-history-lint.js --strict",
     "map:check": "node scripts/map-check.js",
     "map:check:verbose": "node scripts/map-check.js --verbose",
-    "map:check:bail": "node scripts/map-check.js --bail"
+    "map:check:bail": "node scripts/map-check.js --bail",
+    "gate:pr-governance": "node scripts/pr-governance-check.js",
+    "gate:touched-tests": "node scripts/touched-tests-gate.js",
+    "gate:touched-tests:report": "node scripts/touched-tests-gate.js --report"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

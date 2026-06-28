@@ -155,6 +155,43 @@ const checkers = {
       : { status:'PASS', detail:`${exposes.length} endpoint(s) câblé(s)` };
   },
 
+  // interface-inverse : les routes possédées n'exposent aucun endpoint ABSENT
+  // de contract.exposes. Complément direct du checker `interface` : celui-ci
+  // vérifie déclaré→câblé, interface-inverse vérifie câblé→déclaré.
+  // Démarre en WARN (dette existante possible) ; passe FAIL si --strict.
+  // Seuls les verbes HTTP explicitement routés sont examinés
+  // (router.get / router.post / router.put / router.delete / router.patch).
+  'interface-inverse'(m) {
+    const exposes = (m.contract && m.contract.exposes) || [];
+    const routes = ownedFiles(m).filter(f => f.layer === 'routes' && fs.existsSync(f.abs));
+    if (!routes.length) return { status:'SKIP', detail:'routes absentes de ce checkout' };
+
+    // Construire l'ensemble des tails déclarés (ex. "wallet/balance")
+    const declaredTails = new Set(exposes.map(ep => {
+      const tail = ep.replace(/^[A-Z]+\s+/, '').replace(/\/\*$/, '').replace(/:[\w]+/g, '*');
+      return tail.split('/').filter(Boolean).slice(-2).join('/');
+    }).filter(Boolean));
+
+    // Scanner les routes réelles
+    const undeclared = [];
+    const routeRe = /router\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
+    for (const f of routes) {
+      const src = fs.readFileSync(f.abs, 'utf8');
+      let match;
+      while ((match = routeRe.exec(src)) !== null) {
+        const verb = match[1].toUpperCase();
+        const rawPath = match[2].replace(/:[\w]+/g, '*');
+        const tail = rawPath.split('/').filter(Boolean).slice(-2).join('/');
+        if (!tail) continue;
+        const declared = [...declaredTails].some(t => t === tail || tail.endsWith(t) || t.endsWith(tail));
+        if (!declared) undeclared.push(`${verb} ${match[2]} (${f.rel})`);
+      }
+    }
+    if (!undeclared.length) return { status:'PASS', detail:`toutes les routes câblées sont déclarées dans contract.exposes` };
+    // WARN par défaut — pas FAIL : dette initiale possible sur features existantes
+    return { status:'WARN', detail:`${undeclared.length} route(s) câblée(s) non déclarée(s): ${undeclared.slice(0,3).join(' | ')}${undeclared.length>3?` (+${undeclared.length-3})`:''}` };
+  },
+
   // doctrine : dette de doctrine token (couleurs en dur) scopée aux fichiers de
   // la feature, sous cliquet. Ce n'est pas un FAIL global (294 rgba cosmétiques
   // existent), mais une HAUSSE par feature bloque. Compte les littéraux interdits.
@@ -218,7 +255,7 @@ for (const m of manifests) {
 
   const declared = m.contracts || {};
   const toRun = new Set([...ALWAYS, ...Object.keys(declared)]);
-  if (m.contract && m.contract.exposes) toRun.add('interface');
+  if (m.contract && m.contract.exposes) { toRun.add('interface'); toRun.add('interface-inverse'); }
 
   for (const type of toRun) {
     const checker = checkers[type];

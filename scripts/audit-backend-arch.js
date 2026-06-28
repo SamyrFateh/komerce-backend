@@ -153,7 +153,40 @@ const CONSOLE_LOG_BASELINE = {
   // Mis à jour automatiquement par : npm run backend:arch (gen-backend-arch-live.js)
 };
 
-// I-BACK-8 : queries SQL non-paramétrées légitimes (savepoints, DDL)
+// I-BACK-11 : webhook paiement sans vérification de signature
+// Les handlers légitimes vérifient la signature AVANT tout traitement.
+// Un fichier webhook qui n'a pas de vérification de signature = risque critique.
+const ALLOWED_WEBHOOK_NO_SIG = new Set([
+  // Aucun pour l'instant — tout nouveau webhook DOIT vérifier la signature.
+]);
+
+// I-BACK-12 : écriture directe dans wallet_transactions / store_credits
+// hors des owners légitimes (wallet-service.js, store-credit-service.js).
+const ALLOWED_WALLET_WRITERS = new Set([
+  'services/wallet-service.js',
+  'services/store-credit-service.js',
+  'scripts/fix-schema.js',
+  'scripts/seed.js',
+
+  // ── Outil de test/chaos — PAS de la prod wallet ──────────────────────────
+  // Pose volontairement des états incohérents pour les scénarios de simulation.
+  // Ne doit PAS passer par wallet-service.js (ce serait dénaturer le chaos-testing).
+  'services/simulator/state-advancer.js',
+]);
+
+// I-BACK-13 : DELETE ou TRUNCATE sans clause WHERE (destructif non borné)
+// Patterns légitimes : migrations DDL, truncate sur table temporaire.
+const ALLOWED_DESTRUCTIVE_SQL = new Set([
+  'scripts/seed.js',
+  'scripts/fix-schema.js',
+
+  // ── Route admin système — TRUNCATE intentionnel ───────────────────────────
+  // Reset de données de démo / cache applicatif via interface admin.
+  // Accès restreint par authenticate + requireAdmin (I-BACK-5).
+  'routes/admin/system.js',
+]);
+
+
 const ALLOWED_RAW_SQL_PATTERNS = [
   /SAVEPOINT\s+\w+/i,
   /RELEASE\s+SAVEPOINT/i,
@@ -509,8 +542,106 @@ function loadAcceptedMigrationCollisions() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// RUN ALL CHECKS
+// I-BACK-11 — Webhook paiement sans vérification de signature
+// Tout fichier routes/webhook*.js ou routes/*-webhook.js doit
+// contenir un appel à une fonction de vérification de signature
+// (ex. verifySignature, validateWebhookSignature, crypto.timingSafeEqual,
+// stripe.webhooks.constructEvent, paypal.verifyWebhookSignature…)
+// AVANT tout accès à req.body ou traitement métier.
 // ════════════════════════════════════════════════════════════════
+function checkI11_webhookSignature() {
+  if (!fs.existsSync(ROUTES_DIR)) return;
+  const webhookFiles = fs.readdirSync(ROUTES_DIR)
+    .filter(f => (f.startsWith('webhook') || f.endsWith('-webhook.js')) && f.endsWith('.js'))
+    .map(f => path.join(ROUTES_DIR, f));
+
+  const SIG_PATTERNS = [
+    /verifySignature/i,
+    /validateWebhook/i,
+    /constructEvent/i,
+    /verifyWebhookSignature/i,
+    /crypto\.timingSafeEqual/,
+    /rawBody/,          // pattern express-raw-body pour vérif HMAC manuelle
+  ];
+
+  for (const file of webhookFiles) {
+    const relPath = rel(file);
+    if (ALLOWED_WEBHOOK_NO_SIG.has(relPath)) continue;
+    const content = readFile(file);
+    const hasSig = SIG_PATTERNS.some(p => p.test(content));
+    if (!hasSig) {
+      violate('I-BACK-11',
+        `${relPath} — webhook sans vérification de signature détectée`,
+        'Vérifier la signature (HMAC/stripe.webhooks.constructEvent/…) avant tout traitement req.body'
+      );
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// I-BACK-12 — Écriture directe dans wallet_transactions / store_credits
+// hors des owners légitimes
+// ════════════════════════════════════════════════════════════════
+function checkI12_walletWriteOwner() {
+  const files = [...walkJs(ROUTES_DIR), ...walkJs(SERVICES_DIR)];
+  // INSERT INTO ou UPDATE sur les tables wallet, hors DELETE qui est I-BACK-13
+  const pattern = /\b(INSERT\s+INTO|UPDATE)\s+(wallet_transactions|store_credits)\b/i;
+
+  for (const file of files) {
+    const relPath = rel(file);
+    if (ALLOWED_WALLET_WRITERS.has(relPath)) continue;
+    const content = readFile(file);
+    const lines   = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim().startsWith('//')) continue;
+      if (pattern.test(lines[i])) {
+        violate('I-BACK-12',
+          `${relPath}:${i + 1} — écriture directe dans wallet_transactions/store_credits hors owner légitime`,
+          'Passer par services/wallet-service.js ou services/store-credit-service.js'
+        );
+      }
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// I-BACK-13 — DELETE ou TRUNCATE sans clause WHERE (destructif non borné)
+// ════════════════════════════════════════════════════════════════
+function checkI13_destructiveSql() {
+  const files = [...walkJs(ROUTES_DIR), ...walkJs(SERVICES_DIR)];
+  // DELETE FROM table sans WHERE sur la même ligne (ou ligne suivante immédiate)
+  // TRUNCATE TABLE sans condition — toujours non borné
+  const deleteNoWhere = /\bDELETE\s+FROM\s+\w+\s*(?:;|`|$)/i;
+  const truncate      = /\bTRUNCATE\s+(?:TABLE\s+)?\w+/i;
+
+  for (const file of files) {
+    const relPath = rel(file);
+    if (ALLOWED_DESTRUCTIVE_SQL.has(relPath)) continue;
+    const content = readFile(file);
+    const lines   = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.trim().startsWith('//')) continue;
+      if (deleteNoWhere.test(line)) {
+        // Vérifier si la ligne suivante (dans le template literal) ajoute un WHERE
+        const nextLine = (lines[i + 1] || '').trim();
+        if (/^\s*WHERE\b/i.test(nextLine)) continue;
+        violate('I-BACK-13',
+          `${relPath}:${i + 1} — DELETE sans clause WHERE (destructif non borné)`,
+          'Ajouter une clause WHERE ou documenter l\'intention dans ALLOWED_DESTRUCTIVE_SQL'
+        );
+      }
+      if (truncate.test(line)) {
+        violate('I-BACK-13',
+          `${relPath}:${i + 1} — TRUNCATE détecté`,
+          'TRUNCATE est non borné par nature — utiliser DELETE avec WHERE ou documenter dans ALLOWED_DESTRUCTIVE_SQL'
+        );
+      }
+    }
+  }
+}
+
+
 
 console.log('\n  🔍  Audit architecture Komerce backend\n');
 
@@ -524,6 +655,9 @@ checkI7_noConsoleLog();
 checkI8_noRawSqlInterpolation();
 checkI9_noOrphanTests();
 checkI10_noMigrationCollisions();
+checkI11_webhookSignature();
+checkI12_walletWriteOwner();
+checkI13_destructiveSql();
 
 // ════════════════════════════════════════════════════════════════
 // RAPPORT
@@ -540,6 +674,9 @@ const RULE_LABELS = {
   'I-BACK-8':  'Queries SQL non-paramétrées',
   'I-BACK-9':  'Tests orphelins à la racine',
   'I-BACK-10': 'Collisions numéros migrations',
+  'I-BACK-11': 'Webhook sans vérification de signature',
+  'I-BACK-12': 'Écriture directe wallet hors owner',
+  'I-BACK-13': 'DELETE/TRUNCATE non borné',
 };
 
 if (warnings.length > 0) {
