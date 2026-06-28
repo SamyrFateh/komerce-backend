@@ -71,6 +71,7 @@ const STEPS = [
     category:  'gouvernance',
     npmScript: 'feature:check',
     cmd:       'npm run feature:check',
+    warn:      true,
   },
 
   // ── Gate 1 : fichiers touchés → carte ─────────────────────────────────
