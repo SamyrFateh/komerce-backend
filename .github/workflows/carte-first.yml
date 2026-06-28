@@ -26,11 +26,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Feature card schema
-        run: npm run gate:schema
+      - name: PR governance body
+        if: github.event_name == 'pull_request'
+        run: npm run gate:pr-governance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
 
       - name: Touched files ownership
+        if: github.event_name == 'pull_request'
         run: npm run gate:touched-files
+
+      - name: Touched tests signal
+        if: github.event_name == 'pull_request'
+        run: npm run gate:touched-tests
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+
+      - name: Feature card schema
+        run: npm run gate:schema
 
       - name: Docs history lint
         run: npm run gate:docs-lint
