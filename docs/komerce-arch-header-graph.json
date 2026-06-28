@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 331,
-    "filesWithFullHeaders": 302,
+    "scannedCodeFiles": 336,
+    "filesWithFullHeaders": 307,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 331,
+    "filesWithAnyHeaders": 336,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 678,
-    "edges": 3158,
+    "graphNodes": 686,
+    "edges": 3224,
     "dbTables": 108,
     "doctrines": 125,
-    "impactAreas": 114,
-    "unresolvedCodeEdges": 285
+    "impactAreas": 117,
+    "unresolvedCodeEdges": 306
   },
   "byDomain": {
     "bootstrap": 9,
@@ -42,7 +42,7 @@
     "collective-workspace": 3,
     "economic-engine": 28,
     "douane": 5,
-    "dashboard": 25,
+    "dashboard": 30,
     "orders": 29,
     "notification": 13,
     "logistics": 34,
@@ -80,7 +80,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 121,
+    "service": 126,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -90,7 +90,7 @@
   "byCriticality": {
     "critical": 72,
     "medium": 100,
-    "high": 127,
+    "high": 132,
     "low": 32
   },
   "nodes": [
@@ -5331,11 +5331,11 @@
       "version": "2026-06"
     },
     {
-      "id": "routes/economic-engine.js",
-      "file": "routes/economic-engine.js",
+      "id": "routes/economic.js",
+      "file": "routes/economic.js",
       "type": "file",
       "headerType": "full",
-      "role": "economic-engine-http-facade",
+      "role": "economic-router",
       "domain": "economic-engine",
       "layer": "route",
       "criticality": "high",
@@ -7665,49 +7665,6 @@
       "version": "2026-06"
     },
     {
-      "id": "routes/sourcing-engine.js",
-      "file": "routes/sourcing-engine.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "sourcing-engine",
-      "domain": "economic-engine",
-      "layer": "route",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [
-        "db.js",
-        "middleware/auth.js",
-        "services/*"
-      ],
-      "usedBy": [
-        "bootstrap/api-routes.js"
-      ],
-      "dbRead": [
-        "product_variants",
-        "products"
-      ],
-      "dbWrite": [],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "unknown"
-      ],
-      "version": "2026-06"
-    },
-    {
       "id": "routes/sourcing-scanner.js",
       "file": "routes/sourcing-scanner.js",
       "type": "file",
@@ -7754,6 +7711,49 @@
       ],
       "impactAreas": [
         "logistics"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "routes/sourcing.js",
+      "file": "routes/sourcing.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "sourcing-router",
+      "domain": "economic-engine",
+      "layer": "route",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db.js",
+        "middleware/auth.js",
+        "services/*"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [
+        "product_variants",
+        "products"
+      ],
+      "dbWrite": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "unknown"
       ],
       "version": "2026-06"
     },
@@ -9073,8 +9073,152 @@
       "version": "2026-06"
     },
     {
-      "id": "services/dashboard-metrics.js",
-      "file": "services/dashboard-metrics.js",
+      "id": "services/dashboard-metrics/_helpers.js",
+      "file": "services/dashboard-metrics/_helpers.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-metrics-helpers",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "@none"
+      ],
+      "usedBy": [
+        "control-tower.js",
+        "costing.js",
+        "logistics.js",
+        "workspaces.js (services/dashboard-metrics/*)"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/dashboard-metrics/control-tower.js",
+      "file": "services/dashboard-metrics/control-tower.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-metrics-control-tower",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "_helpers"
+      ],
+      "usedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "dbRead": [
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "scan_events",
+        "signals"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/dashboard-metrics/costing.js",
+      "file": "services/dashboard-metrics/costing.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-metrics-costing",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "_helpers",
+        "control-tower (getCAEncaisse",
+        "INV-1)"
+      ],
+      "usedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "dbRead": [
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "orders"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard",
+        "admin-costing"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/dashboard-metrics/index.js",
+      "file": "services/dashboard-metrics/index.js",
       "type": "file",
       "headerType": "full",
       "role": "dashboard-dashboard-metrics",
@@ -9091,7 +9235,13 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
+      "depends": [
+        "_helpers",
+        "control-tower",
+        "costing",
+        "logistics",
+        "workspaces"
+      ],
       "usedBy": [],
       "dbRead": [
         "collective_payment_sessions",
@@ -9115,6 +9265,103 @@
       "impactAreas": [
         "dashboard",
         "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/dashboard-metrics/logistics.js",
+      "file": "services/dashboard-metrics/logistics.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-metrics-logistics",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "_helpers",
+        "control-tower (getColisEnTransit",
+        "INV-3)"
+      ],
+      "usedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "dbRead": [
+        "orders",
+        "parcels"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard",
+        "orders-logistics"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/dashboard-metrics/workspaces.js",
+      "file": "services/dashboard-metrics/workspaces.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-metrics-workspaces",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "_helpers"
+      ],
+      "usedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "orders"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard",
+        "event-workspaces"
       ],
       "version": "2026-06"
     },
@@ -16015,6 +16262,21 @@
       "area": "marge"
     },
     {
+      "id": "impact:admin-costing",
+      "type": "impact-area",
+      "area": "admin-costing"
+    },
+    {
+      "id": "impact:orders-logistics",
+      "type": "impact-area",
+      "area": "orders-logistics"
+    },
+    {
+      "id": "impact:event-workspaces",
+      "type": "impact-area",
+      "area": "event-workspaces"
+    },
+    {
       "id": "impact:admin-economic",
       "type": "impact-area",
       "area": "admin-economic"
@@ -22793,79 +23055,79 @@
       "label": "admin-dashboard"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "services/economic-engine-queries.js",
       "type": "depends",
       "label": "services/economic-engine-queries.js"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "utils/eco-bridge.js",
       "type": "depends",
       "label": "utils/eco-bridge.js"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "middleware/auth.js",
       "type": "depends",
       "label": "middleware/auth.js"
     },
     {
       "from": "bootstrap/api-routes.js",
-      "to": "routes/economic-engine.js",
+      "to": "routes/economic.js",
       "type": "uses",
       "label": "bootstrap/api-routes.js"
     },
     {
       "from": "admin-dashboards",
-      "to": "routes/economic-engine.js",
+      "to": "routes/economic.js",
       "type": "uses",
       "label": "admin-dashboards"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "doctrine:moteur_economique_lisible",
       "type": "doctrine",
       "label": "moteur_economique_lisible"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "doctrine:route_facade_service",
       "type": "doctrine",
       "label": "route_facade_service"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "doctrine:invalidate_cache_after_mutation",
       "type": "doctrine",
       "label": "invalidate_cache_after_mutation"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "impact:pricing",
       "type": "impact",
       "label": "pricing"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "impact:margin",
       "type": "impact",
       "label": "margin"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "impact:cost-model",
       "type": "impact",
       "label": "cost-model"
     },
     {
-      "from": "routes/economic-engine.js",
+      "from": "routes/economic.js",
       "to": "impact:snapshots",
       "type": "impact",
       "label": "snapshots"
@@ -26279,54 +26541,6 @@
       "label": "unknown"
     },
     {
-      "from": "routes/sourcing-engine.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
-      "from": "routes/sourcing-engine.js",
-      "to": "middleware/auth.js",
-      "type": "depends",
-      "label": "middleware/auth.js"
-    },
-    {
-      "from": "routes/sourcing-engine.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
-    },
-    {
-      "from": "bootstrap/api-routes.js",
-      "to": "routes/sourcing-engine.js",
-      "type": "uses",
-      "label": "bootstrap/api-routes.js"
-    },
-    {
-      "from": "routes/sourcing-engine.js",
-      "to": "db:product_variants",
-      "type": "db-read",
-      "label": "product_variants"
-    },
-    {
-      "from": "routes/sourcing-engine.js",
-      "to": "db:products",
-      "type": "db-read",
-      "label": "products"
-    },
-    {
-      "from": "routes/sourcing-engine.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "routes/sourcing-engine.js",
-      "to": "impact:unknown",
-      "type": "impact",
-      "label": "unknown"
-    },
-    {
       "from": "routes/sourcing-scanner.js",
       "to": "db.js",
       "type": "depends",
@@ -26409,6 +26623,54 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "routes/sourcing.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/sourcing.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/sourcing.js",
+      "to": "services/*",
+      "type": "depends",
+      "label": "services/*"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/sourcing.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/sourcing.js",
+      "to": "db:product_variants",
+      "type": "db-read",
+      "label": "product_variants"
+    },
+    {
+      "from": "routes/sourcing.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "routes/sourcing.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "routes/sourcing.js",
+      "to": "impact:unknown",
+      "type": "impact",
+      "label": "unknown"
     },
     {
       "from": "routes/tracking.js",
@@ -28121,82 +28383,478 @@
       "label": "admin-dashboard"
     },
     {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:collective_payment_sessions",
-      "type": "db-read",
-      "label": "collective_payment_sessions"
+      "from": "services/dashboard-metrics/_helpers.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
     },
     {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:collective_workspace_contributions",
-      "type": "db-read",
-      "label": "collective_workspace_contributions"
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "services/dashboard-metrics/_helpers.js",
+      "type": "uses",
+      "label": "control-tower.js"
     },
     {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:collective_workspace_items",
-      "type": "db-read",
-      "label": "collective_workspace_items"
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "services/dashboard-metrics/_helpers.js",
+      "type": "uses",
+      "label": "costing.js"
     },
     {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:collective_workspaces",
-      "type": "db-read",
-      "label": "collective_workspaces"
+      "from": "routes/logistics.js",
+      "to": "services/dashboard-metrics/_helpers.js",
+      "type": "uses",
+      "label": "logistics.js"
     },
     {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:order_item_cost_imputations",
-      "type": "db-read",
-      "label": "order_item_cost_imputations"
+      "from": "workspaces.js (services/dashboard-metrics/*)",
+      "to": "services/dashboard-metrics/_helpers.js",
+      "type": "uses",
+      "label": "workspaces.js (services/dashboard-metrics/*)"
     },
     {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:order_item_real_cost_allocations",
+      "from": "services/dashboard-metrics/_helpers.js",
+      "to": "db:(none)",
       "type": "db-read",
-      "label": "order_item_real_cost_allocations"
+      "label": "(none)"
     },
     {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
+      "from": "services/dashboard-metrics/_helpers.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
     },
     {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:scan_events",
-      "type": "db-read",
-      "label": "scan_events"
-    },
-    {
-      "from": "services/dashboard-metrics.js",
-      "to": "db:signals",
-      "type": "db-read",
-      "label": "signals"
-    },
-    {
-      "from": "services/dashboard-metrics.js",
+      "from": "services/dashboard-metrics/_helpers.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
     },
     {
-      "from": "services/dashboard-metrics.js",
+      "from": "services/dashboard-metrics/_helpers.js",
       "to": "impact:dashboard",
       "type": "impact",
       "label": "dashboard"
     },
     {
-      "from": "services/dashboard-metrics.js",
+      "from": "services/dashboard-metrics/_helpers.js",
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "services/dashboard-metrics/control-tower.js",
+      "type": "uses",
+      "label": "services/dashboard-metrics/index.js"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db:scan_events",
+      "type": "db-read",
+      "label": "scan_events"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db:signals",
+      "type": "db-read",
+      "label": "signals"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "control-tower (getCAEncaisse",
+      "type": "depends",
+      "label": "control-tower (getCAEncaisse"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "INV-1)",
+      "type": "depends",
+      "label": "INV-1)"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "services/dashboard-metrics/costing.js",
+      "type": "uses",
+      "label": "services/dashboard-metrics/index.js"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "impact:admin-costing",
+      "type": "impact",
+      "label": "admin-costing"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "control-tower",
+      "type": "depends",
+      "label": "control-tower"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "costing",
+      "type": "depends",
+      "label": "costing"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "logistics",
+      "type": "depends",
+      "label": "logistics"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "workspaces",
+      "type": "depends",
+      "label": "workspaces"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-read",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:scan_events",
+      "type": "db-read",
+      "label": "scan_events"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "db:signals",
+      "type": "db-read",
+      "label": "signals"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "control-tower (getColisEnTransit",
+      "type": "depends",
+      "label": "control-tower (getColisEnTransit"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "INV-3)",
+      "type": "depends",
+      "label": "INV-3)"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "services/dashboard-metrics/logistics.js",
+      "type": "uses",
+      "label": "services/dashboard-metrics/index.js"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "impact:orders-logistics",
+      "type": "impact",
+      "label": "orders-logistics"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "services/dashboard-metrics/workspaces.js",
+      "type": "uses",
+      "label": "services/dashboard-metrics/index.js"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-read",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "impact:event-workspaces",
+      "type": "impact",
+      "label": "event-workspaces"
     },
     {
       "from": "services/dashboard-ops-queries.js",
@@ -35104,7 +35762,7 @@
         "routes/dashboard-ops.js",
         "routes/dashboard-shared.js",
         "routes/dashboard.js",
-        "routes/economic-engine.js",
+        "routes/economic.js",
         "routes/finance.js",
         "routes/health.js",
         "routes/hub-dashboard.js",
@@ -35152,8 +35810,8 @@
         "routes/shares.js",
         "routes/signals.js",
         "routes/simulator.js",
-        "routes/sourcing-engine.js",
         "routes/sourcing-scanner.js",
+        "routes/sourcing.js",
         "routes/tracking.js",
         "routes/transit-dashboard.js",
         "routes/transitaire-api.js",
@@ -35508,7 +36166,7 @@
         "routes/dashboard-ops.js",
         "routes/dashboard-shared.js",
         "routes/dashboard.js",
-        "routes/economic-engine.js",
+        "routes/economic.js",
         "routes/finance.js",
         "routes/health.js",
         "routes/hub-dashboard.js",
@@ -35553,8 +36211,8 @@
         "routes/shares.js",
         "routes/signals.js",
         "routes/simulator.js",
-        "routes/sourcing-engine.js",
         "routes/sourcing-scanner.js",
+        "routes/sourcing.js",
         "routes/tracking.js",
         "routes/transit-dashboard.js",
         "routes/transitaire-api.js",
@@ -40102,8 +40760,8 @@
         "middleware/auth.js"
       ]
     },
-    "routes/economic-engine.js": {
-      "role": "economic-engine-http-facade",
+    "routes/economic.js": {
+      "role": "economic-router",
       "domain": "economic-engine",
       "criticality": "high",
       "headerType": "full",
@@ -40477,7 +41135,8 @@
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/dashboard-metrics/_helpers.js"
       ]
     },
     "routes/loyalty.js": {
@@ -42251,42 +42910,6 @@
         "middleware/auth.js"
       ]
     },
-    "routes/sourcing-engine.js": {
-      "role": "sourcing-engine",
-      "domain": "economic-engine",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "db.js",
-        "middleware/auth.js",
-        "services/*"
-      ],
-      "directUsedBy": [
-        "bootstrap/api-routes.js"
-      ],
-      "ownedFiles": [],
-      "dbRead": [
-        "product_variants",
-        "products"
-      ],
-      "dbWrite": [],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "unknown"
-      ],
-      "mustCheck": [
-        "bootstrap/api-routes.js",
-        "db:product_variants",
-        "db:products",
-        "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
-        "middleware/auth.js"
-      ]
-    },
     "routes/sourcing-scanner.js": {
       "role": "logistics-sourcing-scanner",
       "domain": "logistics",
@@ -42331,6 +42954,42 @@
         "impact:logistics",
         "middleware/auth.js",
         "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    "routes/sourcing.js": {
+      "role": "sourcing-router",
+      "domain": "economic-engine",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "middleware/auth.js",
+        "services/*"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_variants",
+        "products"
+      ],
+      "dbWrite": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "unknown"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:product_variants",
+        "db:products",
+        "doctrine:resolve_before_behavior_change",
+        "impact:unknown",
+        "middleware/auth.js"
       ]
     },
     "routes/tracking.js": {
@@ -43502,14 +44161,154 @@
         "impact:economic-engine"
       ]
     },
-    "services/dashboard-metrics.js": {
+    "services/dashboard-metrics/_helpers.js": {
+      "role": "dashboard-metrics-helpers",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "@none"
+      ],
+      "directUsedBy": [
+        "services/dashboard-metrics/control-tower.js",
+        "services/dashboard-metrics/costing.js",
+        "routes/logistics.js",
+        "workspaces.js (services/dashboard-metrics/*)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:dashboard",
+        "routes/logistics.js",
+        "services/dashboard-metrics/control-tower.js",
+        "services/dashboard-metrics/costing.js"
+      ]
+    },
+    "services/dashboard-metrics/control-tower.js": {
+      "role": "dashboard-metrics-control-tower",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "_helpers"
+      ],
+      "directUsedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "scan_events",
+        "signals"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:order_item_cost_imputations",
+        "db:order_item_real_cost_allocations",
+        "db:orders",
+        "db:parcels",
+        "db:scan_events",
+        "db:signals",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:dashboard",
+        "services/dashboard-metrics/_helpers.js",
+        "services/dashboard-metrics/index.js"
+      ]
+    },
+    "services/dashboard-metrics/costing.js": {
+      "role": "dashboard-metrics-costing",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "_helpers",
+        "control-tower (getCAEncaisse",
+        "INV-1)"
+      ],
+      "directUsedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "orders"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard",
+        "admin-costing"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:order_item_cost_imputations",
+        "db:order_item_real_cost_allocations",
+        "db:orders",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-costing",
+        "impact:admin-dashboard",
+        "impact:dashboard",
+        "services/dashboard-metrics/_helpers.js",
+        "services/dashboard-metrics/index.js"
+      ]
+    },
+    "services/dashboard-metrics/index.js": {
       "role": "dashboard-dashboard-metrics",
       "domain": "dashboard",
       "criticality": "high",
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
+      "directDependsOn": [
+        "_helpers",
+        "control-tower",
+        "costing",
+        "logistics",
+        "workspaces"
+      ],
       "directUsedBy": [],
       "ownedFiles": [],
       "dbRead": [
@@ -43545,7 +44344,101 @@
         "db:signals",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
-        "impact:dashboard"
+        "impact:dashboard",
+        "services/dashboard-metrics/control-tower.js",
+        "services/dashboard-metrics/costing.js",
+        "services/dashboard-metrics/logistics.js",
+        "services/dashboard-metrics/workspaces.js"
+      ]
+    },
+    "services/dashboard-metrics/logistics.js": {
+      "role": "dashboard-metrics-logistics",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "_helpers",
+        "control-tower (getColisEnTransit",
+        "INV-3)"
+      ],
+      "directUsedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "parcels"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard",
+        "orders-logistics"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:orders",
+        "db:parcels",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:dashboard",
+        "impact:orders-logistics",
+        "services/dashboard-metrics/index.js"
+      ]
+    },
+    "services/dashboard-metrics/workspaces.js": {
+      "role": "dashboard-metrics-workspaces",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "_helpers"
+      ],
+      "directUsedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "orders"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard",
+        "event-workspaces"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:collective_payment_sessions",
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:orders",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:dashboard",
+        "impact:event-workspaces",
+        "services/dashboard-metrics/index.js"
       ]
     },
     "services/dashboard-ops-queries.js": {
@@ -43873,7 +44766,7 @@
         "impact:finance-config",
         "impact:margin",
         "impact:pricing",
-        "routes/economic-engine.js",
+        "routes/economic.js",
         "utils/eco-bridge.js"
       ]
     },
@@ -47799,7 +48692,7 @@
         "db:economic_variables",
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
-        "routes/economic-engine.js",
+        "routes/economic.js",
         "services/economic-engine-queries.js"
       ]
     },
@@ -48205,6 +49098,12 @@
     }
   },
   "unresolvedCodeEdges": [
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/economic-engine.js",
+      "type": "depends",
+      "label": "routes/economic-engine.js"
+    },
     {
       "from": "core/test-whatsapp-notifications.js",
       "to": "services/authkey-client",
@@ -48891,7 +49790,7 @@
     },
     {
       "from": "admin-dashboards",
-      "to": "routes/economic-engine.js",
+      "to": "routes/economic.js",
       "type": "uses",
       "label": "admin-dashboards"
     },
@@ -49442,25 +50341,25 @@
       "label": "services/*"
     },
     {
-      "from": "routes/sourcing-engine.js",
+      "from": "routes/sourcing-scanner.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
     },
     {
-      "from": "routes/sourcing-engine.js",
+      "from": "routes/sourcing-scanner.js",
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
     },
     {
-      "from": "routes/sourcing-scanner.js",
+      "from": "routes/sourcing.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
     },
     {
-      "from": "routes/sourcing-scanner.js",
+      "from": "routes/sourcing.js",
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
@@ -49556,6 +50455,120 @@
       "label": "db.js"
     },
     {
+      "from": "services/dashboard-metrics/_helpers.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "workspaces.js (services/dashboard-metrics/*)",
+      "to": "services/dashboard-metrics/_helpers.js",
+      "type": "uses",
+      "label": "workspaces.js (services/dashboard-metrics/*)"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "control-tower (getCAEncaisse",
+      "type": "depends",
+      "label": "control-tower (getCAEncaisse"
+    },
+    {
+      "from": "services/dashboard-metrics/costing.js",
+      "to": "INV-1)",
+      "type": "depends",
+      "label": "INV-1)"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "control-tower",
+      "type": "depends",
+      "label": "control-tower"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "costing",
+      "type": "depends",
+      "label": "costing"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "logistics",
+      "type": "depends",
+      "label": "logistics"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "workspaces",
+      "type": "depends",
+      "label": "workspaces"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "control-tower (getColisEnTransit",
+      "type": "depends",
+      "label": "control-tower (getColisEnTransit"
+    },
+    {
+      "from": "services/dashboard-metrics/logistics.js",
+      "to": "INV-3)",
+      "type": "depends",
+      "label": "INV-3)"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
       "from": "services/documents/customs-invoice.js",
       "to": "db.js",
       "type": "depends",
@@ -49626,6 +50639,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "routes/economic-engine.js",
+      "to": "services/economic-engine-queries.js",
+      "type": "uses",
+      "label": "routes/economic-engine.js"
     },
     {
       "from": "admin-dashboards",

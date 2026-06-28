@@ -1,6 +1,6 @@
 /**
  * @komerce-arch
- * @role          sourcing-engine
+ * @role          sourcing-router
  * @domain        economic-engine
  * @layer         route
  * @criticality   medium

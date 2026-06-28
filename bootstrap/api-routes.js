@@ -105,10 +105,10 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const sharesRouter = require('../routes/shares');
   const sharedCartCashRouter = require('../routes/shared-cart-cash').router;
   const metaWhatsAppRoutes = require('../routes/meta-whatsapp');
-  const economicEngineRouter  = require('../routes/economic-engine');
+  const economicEngineRouter  = require('../routes/economic');
   const adminFinanceConfig    = require('../routes/admin-finance-config');
   const adminLoyaltyRouter    = require('../routes/admin-loyalty');
-  const sourcingEngineRouter  = require('../routes/sourcing-engine');
+  const sourcingEngineRouter  = require('../routes/sourcing');
   const sourcingScannerRouter = require('../routes/sourcing-scanner');
   const signalsRouter         = require('../routes/signals');
   const adminRiskProvisionsRouter = require('../routes/admin-risk-provisions');

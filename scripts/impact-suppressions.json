@@ -1,6 +1,6 @@
 [
   {
-    "file": "services/dashboard-metrics.js",
+    "file": "services/dashboard-metrics/control-tower.js",
     "category": "sqlInjection",
     "contains": "prevQuery.where",
     "reason": "AUD-07: buildFiltersClause() produces $N parameterized WHERE clauses"

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-06-28T14:11:39.091Z",
+  "generatedAt": "2026-06-28T14:58:50.070Z",
   "sources": {
     "backend": {
-      "nodes": 678
+      "nodes": 686
     },
     "boutique": {
       "modules": 70,
@@ -576,9 +576,7 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/economic-engine.js",
-      "services": [
-        "services/economic-engine-queries.js"
-      ],
+      "services": [],
       "tables": []
     },
     "/api/cash/reconciliation": {
@@ -932,9 +930,7 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/economic-engine.js",
-      "services": [
-        "services/economic-engine-queries.js"
-      ],
+      "services": [],
       "tables": []
     },
     "/api/admin/economic/coherence": {
@@ -945,9 +941,7 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/economic-engine.js",
-      "services": [
-        "services/economic-engine-queries.js"
-      ],
+      "services": [],
       "tables": []
     },
     "/api/admin/dashboard/event-workspaces": {
@@ -1156,9 +1150,7 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/economic-engine.js",
-      "services": [
-        "services/economic-engine-queries.js"
-      ],
+      "services": [],
       "tables": []
     },
     "/api/admin/economic/variables": {
@@ -1169,9 +1161,7 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/economic-engine.js",
-      "services": [
-        "services/economic-engine-queries.js"
-      ],
+      "services": [],
       "tables": []
     },
     "/api/admin/dashboard/unified": {
@@ -1286,13 +1276,8 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/sourcing-engine.js",
-      "services": [
-        "services/*"
-      ],
-      "tables": [
-        "product_variants",
-        "products"
-      ]
+      "services": [],
+      "tables": []
     },
     "/api/admin/sourcing/candidates": {
       "boutique": [],
@@ -1302,13 +1287,8 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/sourcing-engine.js",
-      "services": [
-        "services/*"
-      ],
-      "tables": [
-        "product_variants",
-        "products"
-      ]
+      "services": [],
+      "tables": []
     },
     "/api/admin/sourcing/catalogs/import": {
       "boutique": [],
@@ -1318,13 +1298,8 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/sourcing-engine.js",
-      "services": [
-        "services/*"
-      ],
-      "tables": [
-        "product_variants",
-        "products"
-      ]
+      "services": [],
+      "tables": []
     },
     "/api/admin/sourcing/synthesis": {
       "boutique": [],
@@ -1334,13 +1309,8 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/sourcing-engine.js",
-      "services": [
-        "services/*"
-      ],
-      "tables": [
-        "product_variants",
-        "products"
-      ]
+      "services": [],
+      "tables": []
     },
     "/api/admin/sourcing/analysis": {
       "boutique": [],
@@ -1350,13 +1320,8 @@
       "inContract": true,
       "status": "UNKNOWN",
       "routeFile": "routes/sourcing-engine.js",
-      "services": [
-        "services/*"
-      ],
-      "tables": [
-        "product_variants",
-        "products"
-      ]
+      "services": [],
+      "tables": []
     },
     "/api/admin/partners/stats": {
       "boutique": [],
@@ -1504,8 +1469,7 @@
         "routes/pricing.js",
         "routes/products.js",
         "routes/scans.js",
-        "routes/shares.js",
-        "routes/sourcing-engine.js"
+        "routes/shares.js"
       ],
       "boutique": [
         "b-cart",
@@ -1517,9 +1481,7 @@
         "CostingView",
         "EconomicFlowView",
         "EconomicView",
-        "PricingStrategyView",
-        "SourcingScannerView",
-        "SourcingView"
+        "PricingStrategyView"
       ]
     },
     "relais": {
@@ -1857,17 +1819,14 @@
     },
     "product_variants": {
       "routes": [
-        "routes/products.js",
-        "routes/sourcing-engine.js"
+        "routes/products.js"
       ],
       "boutique": [
         "komerce-api"
       ],
       "dashboards": [
         "EconomicFlowView",
-        "PricingStrategyView",
-        "SourcingScannerView",
-        "SourcingView"
+        "PricingStrategyView"
       ]
     },
     "suppliers": {

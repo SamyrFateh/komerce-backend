@@ -80,8 +80,6 @@ const ALLOWED_LARGE_FILES = new Set([
   'routes/pricing.js',                           // 1316 l → Lot B3
   'routes/pickup-secret.js',                     // 1122 l → Lot B6
   'routes/hub-dashboard.js',                     // 1015 l → Lot B
-  'routes/sourcing-engine.js',                   // 960 l  → B1 clôturé 2026-06-23 (façade mince acceptée, voir STATUS.md §B1)
-  'routes/economic-engine.js',                   // 808 l  → B2 clôturé 2026-06-23 (façade mince acceptée, voir STATUS.md §B2)
   'routes/admin-radar.js',                       // 894 l  → Lot B
   'routes/scans.js',                             // 835 l  → Lot B
   'routes/admin-dashboard.js',                   // 786 l  → Lot B
@@ -93,7 +91,9 @@ const ALLOWED_LARGE_FILES = new Set([
   'services/cost-allocation.js',                 // 918 l  → OK service
   'services/scan-engine.js',                     // 872 l  → OK service
   'services/notification-service.js',            // 814 l  → OK service
-  'services/dashboard-metrics.js',               // 1052 l → Lot B4
+  // 'services/dashboard-metrics.js' retiré — Lot C3 clôturé 2026-06-28 :
+  // découpé en services/dashboard-metrics/{_helpers,control-tower,costing,logistics,workspaces,index}.js,
+  // aucun fragment > 800L. Voir tests/unit/dashboard-metrics.test.js (49 cas, caractérisation pré-split).
 ]);
 
 // ════════════════════════════════════════════════════════════════
@@ -201,14 +201,11 @@ const COLUMN_OWNERSHIP = [
 ];
 
 // I-BACK-6 : routes/X-engine.js — engines dans routes/ (à migrer vers services/)
-// Allowlist — B1/B2 clôturés 2026-06-23 (STATUS.md) : façades minces acceptées
-// telles quelles, pas de migration prévue malgré le nom de fichier. Seule
-// sourcing-scanner.js avait une extraction réelle restante (Lot B1 bis,
-// catalogs/import → services/suppliers/catalog-import-orchestrator.js, 2026-06-28).
+// Allowlist — B1 (sourcing-engine → sourcing.js) + B2 (economic-engine → economic.js) clôturés
+// par renommage 2026-06-28. sourcing-scanner.js : extraction catalogs/import déjà faite (B1-réel),
+// le suffixe -scanner.js reste par choix nominal, plus de dette logique.
 const ALLOWED_ENGINE_ROUTES = new Set([
-  'routes/sourcing-engine.js',   // B1 clôturé — façade mince, acceptée en l'état
-  'routes/economic-engine.js',   // B2 clôturé — façade mince, acceptée en l'état
-  'routes/sourcing-scanner.js',  // catalogs/import extrait (2026-06-28) ; reste *-scanner.js par choix, pas par dette
+  'routes/sourcing-scanner.js',  // catalogs/import extrait (2026-06-28) ; reste *-scanner.js par choix nominal
 ]);
 
 // I-BACK-7 : console.log dans routes/ et services/

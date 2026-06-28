@@ -68,11 +68,11 @@ module.exports = {
       'routes/finance.js',
       'routes/dashboard-finance.js',
       'routes/admin-costing.js',
-      'routes/economic-engine.js',
+      'routes/economic.js',
       'routes/admin-finance-config.js',
       'routes/admin-pricing-components.js',
     
-      'routes/sourcing-engine.js',],
+      'routes/sourcing.js',],
       dash: [
       // dashboards/admin views — Lot 4
       'dashboards/admin/js/views/PricingView.js',

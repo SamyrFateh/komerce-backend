@@ -89,7 +89,12 @@ module.exports = {
     services: [
       'services/dashboard-cache.js',
       'services/dashboard-clients-queries.js',
-      'services/dashboard-metrics.js',
+      'services/dashboard-metrics/_helpers.js',
+      'services/dashboard-metrics/control-tower.js',
+      'services/dashboard-metrics/costing.js',
+      'services/dashboard-metrics/index.js',
+      'services/dashboard-metrics/logistics.js',
+      'services/dashboard-metrics/workspaces.js',
       'services/dashboard-ops-queries.js',
       'services/hub-dashboard-queries.js',
       'services/purchasing-admin-service.js',

@@ -1,6 +1,6 @@
 /**
  * @komerce-arch
- * @role          economic-engine-http-facade
+ * @role          economic-router
  * @domain        economic-engine
  * @layer         route
  * @criticality   high

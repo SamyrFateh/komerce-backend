@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 331
-- Files with full headers: 302
+- Scanned code files: 336
+- Files with full headers: 307
 - Files with lite headers: 29
-- Files with any headers: 331
+- Files with any headers: 336
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 678
-- Edges: 3158
+- Graph nodes: 686
+- Edges: 3224
 - DB tables: 108
 - Doctrines: 125
-- Impact areas: 114
-- Unresolved code edges: 285
+- Impact areas: 117
+- Unresolved code edges: 306
 
 ## Domains
 
@@ -29,7 +29,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - checkout: 2
 - collective-workspace: 3
 - customs: 1
-- dashboard: 25
+- dashboard: 30
 - documents: 5
 - douane: 5
 - economic-engine: 28
@@ -66,7 +66,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
-- service: 121
+- service: 126
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -212,7 +212,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/dashboard-ops.js — dashboard-dashboard-ops (dashboard, high, full)
 - routes/dashboard-shared.js — dashboard-dashboard-shared (dashboard, high, full)
 - routes/dashboard.js — dashboard-dashboard (dashboard, high, full)
-- routes/economic-engine.js — economic-engine-http-facade (economic-engine, high, full)
+- routes/economic.js — economic-router (economic-engine, high, full)
 - routes/finance.js — economic-engine-finance (economic-engine, high, full)
 - routes/hub-dashboard.js — dashboard-hub-dashboard (dashboard, high, full)
 - routes/otp.js — client-otp-session (auth, high, full)
@@ -237,7 +237,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
 - services/dashboard-clients-queries.js — dashboard-dashboard-clients-queries (dashboard, high, full)
 - services/dashboard-finance-metrics.js — economic-engine-dashboard-finance-metrics (economic-engine, high, full)
-- services/dashboard-metrics.js — dashboard-dashboard-metrics (dashboard, high, full)
+- services/dashboard-metrics/_helpers.js — dashboard-metrics-helpers (dashboard, high, full)
+- services/dashboard-metrics/control-tower.js — dashboard-metrics-control-tower (dashboard, high, full)
+- services/dashboard-metrics/costing.js — dashboard-metrics-costing (dashboard, high, full)
+- services/dashboard-metrics/index.js — dashboard-dashboard-metrics (dashboard, high, full)
+- services/dashboard-metrics/logistics.js — dashboard-metrics-logistics (dashboard, high, full)
+- services/dashboard-metrics/workspaces.js — dashboard-metrics-workspaces (dashboard, high, full)
 - services/dashboard-ops-queries.js — dashboard-dashboard-ops-queries (dashboard, high, full)
 - services/documents/customs-invoice.js — customs-invoice (documents, high, full)
 - services/economic-engine-queries.js — economic-engine-calculation-service (economic-engine, high, full)
@@ -321,6 +326,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/payments-paypal.js -> (none)
 - WRITE services/customs-analytics.js -> (none)
 - WRITE services/customs-classification.js -> (none)
+- WRITE services/dashboard-metrics/_helpers.js -> (none)
+- WRITE services/dashboard-metrics/control-tower.js -> (none)
+- WRITE services/dashboard-metrics/costing.js -> (none)
+- WRITE services/dashboard-metrics/logistics.js -> (none)
+- WRITE services/dashboard-metrics/workspaces.js -> (none)
 - WRITE services/invoice-public-token.js -> (none)
 - WRITE services/admin-order-refund.js -> alerts
 - WRITE services/cancel-order-purchase-orders.js -> alerts
@@ -433,20 +443,16 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/system.js -> order_status_history
 - WRITE routes/admin/users.js -> order_status_history
 - WRITE routes/orders/cancel.js -> order_status_history
-- WRITE routes/orders/create.js -> order_status_history
-- WRITE services/order-status-machine.js -> order_status_history
-- WRITE services/parcel-operations.js -> order_status_history
-- WRITE services/payment-paypal.js -> order_status_history
-- WRITE services/shared-cart-engine.js -> order_status_history
 
 ## Unresolved Code Edges
 
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
-- uses: admin-dashboards -> routes/economic-engine.js (admin-dashboards)
+- uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- depends: bootstrap/api-routes.js -> routes/economic-engine.js (routes/economic-engine.js)
 - uses: cancellation-flows -> services/order-status-machine.js (cancellation-flows)
 - uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
 - uses: checkout-flows -> services/order-service.js (checkout-flows)
@@ -560,7 +566,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/dashboard-finance.js -> db.js (db.js)
 - depends: routes/dashboard-finance.js -> services/* (services/*)
 - depends: routes/dashboard-hub.js -> db.js (db.js)
-- depends: routes/dashboard-hub.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 
