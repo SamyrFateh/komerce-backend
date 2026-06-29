@@ -1,7 +1,7 @@
 {
   "name": "dashboards",
   "version": "1.0.0",
-  "description": "Komerce Dashboards — admin SPA, legacy control-tower, platform utilities",
+  "description": "Komerce Dashboards \u2014 admin SPA, legacy control-tower, platform utilities",
   "private": true,
   "scripts": {
     "test": "echo \"Utilise npm run check:all pour les garde-fous\" && exit 1",
@@ -9,9 +9,12 @@
     "audit:registry:report": "node scripts/feature-registry-check.js",
     "audit:registry:orphans": "node scripts/feature-registry-check.js --orphans",
     "audit:registry:json": "node scripts/feature-registry-check.js --json",
-    "check:all": "npm run audit:registry",
-    "check:fast": "npm run audit:registry",
-    "precommit": "npm run check:all"
+    "check:all": "npm run quality:gate && npm run audit:registry",
+    "check:fast": "npm run quality:gate && npm run audit:registry",
+    "precommit": "npm run check:all",
+    "quality:gate": "node scripts/code-quality-gate.js --strict",
+    "quality:gate:report": "node scripts/code-quality-gate.js",
+    "quality:gate:fix": "node scripts/code-quality-gate.js --fix"
   },
   "keywords": [],
   "author": "",

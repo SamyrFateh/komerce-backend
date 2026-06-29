@@ -1,0 +1,429 @@
+{
+  "savedAt": "2026-06-29T12:07:33.977Z",
+  "totalErrors": 31,
+  "totalWarnings": 18,
+  "files": [
+    {
+      "rel": "dashboards/admin/js/app.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 597,
+          "col": 1,
+          "message": "Code mort après \"throw new Error('constructeur de vue san\""
+        }
+      ]
+    },
+    {
+      "rel": "dashboards/admin/js/utils.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 54,
+          "col": 1,
+          "message": "Code mort après \"return String(s)\""
+        }
+      ]
+    },
+    {
+      "rel": "dashboards/admin/js/views/AccountingView.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 157,
+          "col": 1,
+          "message": "Code mort après \"return (s.includes(',') || s.includes('\"\""
+        }
+      ]
+    },
+    {
+      "rel": "dashboards/admin/js/views/ControlTowerView.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 213,
+          "col": 1,
+          "message": "Code mort après \"return String(s == null ? '' : s)\""
+        }
+      ]
+    },
+    {
+      "rel": "dashboards/admin/js/views/EconomicFlowView.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 80,
+          "col": 1,
+          "message": "Code mort après \"return `<select class=\"efv-edit\" data-ov\""
+        },
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 451,
+          "col": 1,
+          "message": "Code mort après \"return `<div class=\"efv-section-title\">P\""
+        }
+      ]
+    },
+    {
+      "rel": "dashboards/admin/js/views/HubRelaisView.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 109,
+          "col": 1,
+          "message": "Code mort après \"return String(s ?? '')\""
+        }
+      ]
+    },
+    {
+      "rel": "dashboards/admin/js/views/SalesView.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 344,
+          "col": 1,
+          "message": "Code mort après \"return [\""
+        }
+      ]
+    },
+    {
+      "rel": "dashboards/admin/js/views/SanteView.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 344,
+          "col": 1,
+          "message": "Code mort après \"return String(s == null ? '' : s)\""
+        }
+      ]
+    },
+    {
+      "rel": "dashboards/admin/js/views/SimulatorView.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 141,
+          "col": 1,
+          "message": "Code mort après \"return `<div class=\"jline ${cls}\"><span \""
+        }
+      ]
+    },
+    {
+      "rel": "dashboards/admin/js/views/SuppliersView.js",
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 184,
+          "col": 1,
+          "message": "Code mort après \"return state.partners\""
+        },
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 188,
+          "col": 1,
+          "message": "Code mort après \"return [p.name, p.contact_name, p.contac\""
+        }
+      ]
+    },
+    {
+      "rel": "js/auth-guard.js",
+      "violations": [
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 15,
+          "col": 3,
+          "message": "var → const ou let : \"var A\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 16,
+          "col": 3,
+          "message": "var → const ou let : \"var L\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 25,
+          "col": 5,
+          "message": "var → const ou let : \"var n\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 34,
+          "col": 7,
+          "message": "var → const ou let : \"var r\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 45,
+          "col": 7,
+          "message": "var → const ou let : \"var u\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 54,
+          "col": 3,
+          "message": "var → const ou let : \"var _\""
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "rel": "js/parcel-components.js",
+      "violations": [
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 55,
+          "col": 3,
+          "message": "var → const ou let : \"var d\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 61,
+          "col": 3,
+          "message": "var → const ou let : \"var h\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 69,
+          "col": 3,
+          "message": "var → const ou let : \"var s\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 75,
+          "col": 3,
+          "message": "var → const ou let : \"var s\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 90,
+          "col": 3,
+          "message": "var → const ou let : \"var a\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 91,
+          "col": 3,
+          "message": "var → const ou let : \"var a\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 95,
+          "col": 3,
+          "message": "var → const ou let : \"var h\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 140,
+          "col": 3,
+          "message": "var → const ou let : \"var n\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 154,
+          "col": 3,
+          "message": "var → const ou let : \"var h\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 155,
+          "col": 8,
+          "message": "var → const ou let : \"var i\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 156,
+          "col": 5,
+          "message": "var → const ou let : \"var s\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 157,
+          "col": 5,
+          "message": "var → const ou let : \"var s\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 177,
+          "col": 3,
+          "message": "var → const ou let : \"var h\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 178,
+          "col": 8,
+          "message": "var → const ou let : \"var i\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 179,
+          "col": 5,
+          "message": "var → const ou let : \"var c\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 184,
+          "col": 10,
+          "message": "var → const ou let : \"var j\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 185,
+          "col": 7,
+          "message": "var → const ou let : \"var o\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 192,
+          "col": 12,
+          "message": "var → const ou let : \"var k\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 193,
+          "col": 9,
+          "message": "var → const ou let : \"var i\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 208,
+          "col": 3,
+          "message": "var → const ou let : \"var r\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 209,
+          "col": 3,
+          "message": "var → const ou let : \"var s\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 210,
+          "col": 3,
+          "message": "var → const ou let : \"var s\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 212,
+          "col": 3,
+          "message": "var → const ou let : \"var h\""
+        },
+        {
+          "rule": "N2-NO-VAR",
+          "label": "var interdit (utiliser const ou let)",
+          "line": 223,
+          "col": 10,
+          "message": "var → const ou let : \"var i\""
+        }
+      ],
+      "warnings": [
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 57,
+          "col": 1,
+          "message": "Code mort après \"return dt.toLocaleDateString('fr-FR', { \""
+        },
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 71,
+          "col": 1,
+          "message": "Code mort après \"return '<span class=\"ct-badge\" style=\"ba\""
+        },
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 77,
+          "col": 1,
+          "message": "Code mort après \"return '<span class=\"ct-badge\" style=\"ba\""
+        },
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 83,
+          "col": 1,
+          "message": "Code mort après \"return '<div class=\"ct-kpi\" style=\"borde\""
+        },
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 119,
+          "col": 1,
+          "message": "Code mort après \"return '<div class=\"ct-order-card\">' +\""
+        },
+        {
+          "rule": "N2-DEAD-CODE",
+          "label": "Code mort après return/throw",
+          "line": 144,
+          "col": 1,
+          "message": "Code mort après \"return '<div class=\"ct-action-bar\">' +\""
+        }
+      ]
+    },
+    {
+      "rel": "sw.js",
+      "violations": [
+        {
+          "rule": "N2-NO-CONSOLE",
+          "label": "console.log interdit (utiliser utils/logger)",
+          "line": 38,
+          "col": 1,
+          "message": "console.log/info/debug → logger.info / logger.debug"
+        }
+      ],
+      "warnings": []
+    }
+  ]
+}

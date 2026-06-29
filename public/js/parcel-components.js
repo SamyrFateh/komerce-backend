@@ -8,6 +8,8 @@
  * @impact-areas  platform
  * @version       2026-06
  */
+
+'use strict';
 /* ===================================================================
    Komerce — parcel-components.js v2.0
    Composants réutilisables COLIS-FIRST pour la Control Tower

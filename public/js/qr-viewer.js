@@ -8,6 +8,8 @@
  * @impact-areas  platform
  * @version       2026-06
  */
+
+'use strict';
 // AUD-04: script QR externalisé depuis routes/orders/qr.js (retrait unsafe-inline CSP)
 (function () {
   const dataEl = document.getElementById('qr-data');

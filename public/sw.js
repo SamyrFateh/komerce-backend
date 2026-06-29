@@ -8,6 +8,8 @@
  * @impact-areas  platform
  * @version       2026-06
  */
+
+'use strict';
 /* Komerce SW v335 — network-first + garde anti-empoisonnement de cache
  *
  * Changements vs v328 :
