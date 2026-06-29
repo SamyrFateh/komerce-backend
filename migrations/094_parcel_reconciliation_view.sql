@@ -47,7 +47,7 @@ SELECT
          THEN 'shipped_incomplete' END,
     -- 3) La commande a avancé mais le colis est resté en draft
     CASE WHEN p.status = 'draft'
-          AND o.status IN ('shipped','in_transit','delivered','available','collected')
+          AND o.status IN ('shipped','in_transit','available','collected')
          THEN 'order_ahead_of_parcel' END,
     -- 4) Colis sans scellé (visibilité, pas blocage — décision métier à trancher)
     CASE WHEN p.seal_code IS NULL

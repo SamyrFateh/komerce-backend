@@ -244,7 +244,7 @@ describe('admin.reset', () => {
   const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid reset mode', () => {
-    const { error } = validate(schema, { mode: 'orders' });
+    const { error } = validate(schema, { mode: 'orders', confirm: true });
     expect(error).toBeUndefined();
   });
 
