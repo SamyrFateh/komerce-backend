@@ -1,3 +1,14 @@
+/**
+ * @komerce-arch-lite
+ * @role          legacy-ct-views-pricing-workshop
+ * @domain        legacy-control-tower
+ * @layer         ui-shell
+ * @status        deprecated
+ * @owner         dashboards (legacy - remplace par dashboards/admin/)
+ * @purpose       Conserve en lecture pour control-tower.html ; migration vers dashboards/admin/ en cours.
+ * @impact-areas  legacy-control-tower
+ * @version       2026-06
+ */
 /* ═══════════════════════════════════════════════════════════════════════════
  *  ct-views-pricing-workshop.js — Komerce Control Tower
  *

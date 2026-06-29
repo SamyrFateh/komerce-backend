@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          legacy-ct-views-sourcing-scanner
+ * @domain        legacy-control-tower
+ * @layer         ui-shell
+ * @status        deprecated
+ * @owner         dashboards (legacy - remplace par dashboards/admin/)
+ * @purpose       Conserve en lecture pour control-tower.html ; migration vers dashboards/admin/ en cours.
+ * @impact-areas  legacy-control-tower
+ * @version       2026-06
+ */
+/**
  * KOMERCE Control Tower — Scanner Catalogue Fournisseur (LOT D)
  *
  * "Sur 1 000 articles fournisseur, lesquels méritent d'être testés ?"

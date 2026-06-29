@@ -1,3 +1,13 @@
+/**
+ * @komerce-arch-lite
+ * @role          platform-parcel-components
+ * @domain        platform
+ * @layer         infrastructure
+ * @owner         dashboards
+ * @purpose       Composants partages colis (suivi, QR, etats) utilises par hub et relais.
+ * @impact-areas  platform
+ * @version       2026-06
+ */
 /* ===================================================================
    Komerce — parcel-components.js v2.0
    Composants réutilisables COLIS-FIRST pour la Control Tower

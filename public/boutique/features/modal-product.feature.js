@@ -43,7 +43,16 @@ module.exports = {
 
   contract: {
     // Pas d'API : feature de rendu pur. (interface checker → SKIP propre.)
+    exposes:  [],
+    consumes: [],
   },
+
+  // ── Autorité / invariants (niveau 0) ────────────────────────────────────
+  authority: 'boutique — tout changement de layout de la modal produit doit préserver les contrats render-static ci-dessous.',
+
+  invariants: [
+    'le product-zone desktop reste en display:grid avec grid-template-columns',
+  ],
 
   // ── Contrats positifs exécutables ────────────────────────────────────────
   contracts: {

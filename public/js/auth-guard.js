@@ -1,3 +1,13 @@
+/**
+ * @komerce-arch-lite
+ * @role          platform-auth-guard
+ * @domain        platform
+ * @layer         infrastructure
+ * @owner         dashboards
+ * @purpose       Garde d'authentification — redirige vers login si session absente.
+ * @impact-areas  platform
+ * @version       2026-06
+ */
 /* Komerce Auth Guard v3 — canonical cookie session check */
 (function () {
   'use strict';

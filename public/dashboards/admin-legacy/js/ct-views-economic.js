@@ -1,3 +1,14 @@
+/**
+ * @komerce-arch-lite
+ * @role          legacy-ct-views-economic
+ * @domain        legacy-control-tower
+ * @layer         ui-shell
+ * @status        deprecated
+ * @owner         dashboards (legacy - remplace par dashboards/admin/)
+ * @purpose       Conserve en lecture pour control-tower.html ; migration vers dashboards/admin/ en cours.
+ * @impact-areas  legacy-control-tower
+ * @version       2026-06
+ */
 /* ═══════════════════════════════════════════════════════════════════════════
  *  ct-views-economic.js — Komerce Control Tower
  *  SANTÉ ÉCONOMIQUE GLOBALE (Lot B — Doctrine §9)

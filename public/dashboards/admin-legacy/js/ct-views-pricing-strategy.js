@@ -1,3 +1,14 @@
+/**
+ * @komerce-arch-lite
+ * @role          legacy-ct-views-pricing-strategy
+ * @domain        legacy-control-tower
+ * @layer         ui-shell
+ * @status        deprecated
+ * @owner         dashboards (legacy - remplace par dashboards/admin/)
+ * @purpose       Conserve en lecture pour control-tower.html ; migration vers dashboards/admin/ en cours.
+ * @impact-areas  legacy-control-tower
+ * @version       2026-06
+ */
 /* ═══════════════════════════════════════════════════════════════════════════
  *  ct-views-pricing-strategy.js — Komerce Control Tower
  *  STRATEGIE DE PRIX (Phase 3 — ADR-013)

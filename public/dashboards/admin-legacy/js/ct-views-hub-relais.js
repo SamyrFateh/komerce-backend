@@ -1,3 +1,14 @@
+/**
+ * @komerce-arch-lite
+ * @role          legacy-ct-views-hub-relais
+ * @domain        legacy-control-tower
+ * @layer         ui-shell
+ * @status        deprecated
+ * @owner         dashboards (legacy - remplace par dashboards/admin/)
+ * @purpose       Conserve en lecture pour control-tower.html ; migration vers dashboards/admin/ en cours.
+ * @impact-areas  legacy-control-tower
+ * @version       2026-06
+ */
 /* ===================================================================
    Komerce Control Tower — ct-views-hub-relais.js v3 COMPACT
    Hub: 📋 À répartir → 📦 Colis → ✈️ Expédition

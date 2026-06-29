@@ -1,3 +1,13 @@
+/**
+ * @komerce-arch
+ * @role          admin-portal-pilotage-shell
+ * @domain        admin-dashboard
+ * @layer         ui-shell
+ * @owner         dashboards
+ * @purpose       Shell de pilotage multi-role (admin/finance/sourcing/hub/relais) — aiguille vers CT ou BO selon le role.
+ * @impact-areas  pilotage, roles, navigation
+ * @version       2026-06
+ */
 'use strict';
 const FMT=new Intl.NumberFormat('fr-FR');
 

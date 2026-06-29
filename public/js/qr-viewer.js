@@ -1,3 +1,13 @@
+/**
+ * @komerce-arch-lite
+ * @role          platform-qr-viewer
+ * @domain        platform
+ * @layer         infrastructure
+ * @owner         dashboards
+ * @purpose       Lecteur/afficheur QR code pour scan colis et validation.
+ * @impact-areas  platform
+ * @version       2026-06
+ */
 // AUD-04: script QR externalisé depuis routes/orders/qr.js (retrait unsafe-inline CSP)
 (function () {
   const dataEl = document.getElementById('qr-data');

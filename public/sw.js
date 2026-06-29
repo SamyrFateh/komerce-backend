@@ -1,3 +1,13 @@
+/**
+ * @komerce-arch-lite
+ * @role          platform-service-worker
+ * @domain        platform
+ * @layer         infrastructure
+ * @owner         dashboards
+ * @purpose       Service Worker — cache offline, pre-fetch assets, bump versions.
+ * @impact-areas  platform
+ * @version       2026-06
+ */
 /* Komerce SW v335 — network-first + garde anti-empoisonnement de cache
  *
  * Changements vs v328 :

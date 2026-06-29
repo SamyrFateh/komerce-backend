@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          legacy-ct-views-inventory
+ * @domain        legacy-control-tower
+ * @layer         ui-shell
+ * @status        deprecated
+ * @owner         dashboards (legacy - remplace par dashboards/admin/)
+ * @purpose       Conserve en lecture pour control-tower.html ; migration vers dashboards/admin/ en cours.
+ * @impact-areas  legacy-control-tower
+ * @version       2026-06
+ */
+/**
  * ═══════════════════════════════════════════════════════════════
  * CT Inventory Dashboard v3 — Proposals as GUIDANCE
  * 
