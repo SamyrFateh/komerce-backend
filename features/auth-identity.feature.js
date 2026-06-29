@@ -52,6 +52,13 @@ module.exports = {
       'js/b-phone.js',
       'css/identity.css',
     ],
+      tests: [
+      'tests/integration/admin-authz-probe.test.js',
+      'tests/integration/otp-no-guest.test.js',
+      'tests/unit/authkey-client.test.js',
+      'tests/unit/otp-test-mode.test.js',
+      'tests/unit/soft-auth.test.js',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

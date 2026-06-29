@@ -35,6 +35,7 @@ module.exports = {
       'paiement carte/PayPal lui-même (feature payments)',
       'création de la commande finale (feature orders, consommée en sortie)',
       'crédit wallet (feature wallet-loyalty, consommée en sortie)',
+      'tests/unit/collective-payment-orchestrator.test.js',
     ],
   },
 

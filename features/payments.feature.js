@@ -69,6 +69,15 @@ module.exports = {
       // en dette explicite, voir BOUTIQUE_COMPONENT_OWNERSHIP.md §Backfill).
       'css/paypal.css',
     ],
+    tests: [
+      'tests/unit/payment-cash-confirm.test.js',
+      'tests/unit/payment-paypal.test.js',
+      'tests/unit/payment-service.test.js',
+      'tests/unit/payment-stripe.test.js',
+      'tests/unit/payments-webhook.test.js',
+      'tests/unit/paypal-client.test.js',
+      'tests/unit/paypal-webhook.test.js',
+    ],
   },
 
   // ── Dépôts ───────────────────────────────────────────────────────────────

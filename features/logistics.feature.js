@@ -90,6 +90,15 @@ module.exports = {
       'dashboards/admin/js/views/HubRelaisView.js',
       'dashboards/admin/js/views/OrdersLogisticsView.js',
     ],
+    tests: [
+      'tests/integration/sourcing-engine-routes.test.js',
+      'tests/integration/sourcing-flow-g5.test.js',
+      'tests/unit/purchasing-admin-service.test.js',
+      'tests/unit/purchasing.test.js',
+      'tests/unit/sourcing-analysis.test.js',
+      'tests/unit/sourcing-mutations.test.js',
+    ],
+
 },
 
   // ── Dépôts ───────────────────────────────────────────────────────────────

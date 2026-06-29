@@ -65,6 +65,17 @@ module.exports = {
       'js/b-scroll-owner.js',
       'index.html',
     ],
+      tests: [
+      'tests/integration/api.test.js',
+      'tests/integration/isweep-invariants.test.js',
+      'tests/integration/isweep-services.test.js',
+      'tests/integration/isweep-transactional-flows.test.js',
+      'tests/integration/relais-idor-probe.test.js',
+      'tests/integration/security-grid.test.js',
+      'tests/unit/b-checkout-pure.test.js',
+      'tests/unit/relais-idor-probe.test.js',
+      'tests/unit/validators.test.js',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

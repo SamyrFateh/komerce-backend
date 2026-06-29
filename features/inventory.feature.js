@@ -47,7 +47,16 @@ module.exports = {
       // dashboards/admin views — Lot 4
       'dashboards/admin/js/views/InventoryView.js',
     ],
-},
+        tests: [
+      'tests/integration/parcel-auto-create-cash-payment.test.js',
+      'tests/parcelOptimization.test.js',
+      'tests/unit/hub-operations.test.js',
+      'tests/unit/parcel-auto-create-service.test.js',
+      'tests/unit/parcel-guards.test.js',
+      'tests/unit/parcel-operations.test.js',
+      'tests/unit/pickup-secret-service.test.js',
+    ],
+  },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   contract: {

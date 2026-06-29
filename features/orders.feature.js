@@ -78,6 +78,13 @@ module.exports = {
       'routes/order-api-v2.js',
     
       'routes/purchasing.js',],
+      tests: [
+      'tests/integration/admin-order-refund-payment-service.test.js',
+      'tests/unit/cash-operations.test.js',
+      'tests/unit/confirm-payment-cycle.test.js',
+      'tests/unit/order-status-machine.test.js',
+      'tests/unit/repair-ordered-without-purchase-orders.test.js',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

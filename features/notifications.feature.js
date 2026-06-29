@@ -33,6 +33,7 @@ module.exports = {
     ],
     out: [
       'decision de declencher une notification (reste a la feature emettrice : orders, payments, etc.)',
+      'tests/unit/notification-service.test.js',
     ],
   },
 

@@ -54,7 +54,10 @@ module.exports = {
       'dashboards/admin/js/views/CustomsView.js',
       'dashboards/admin/js/views/TransitaireView.js',
     ],
-},
+        tests: [
+      'tests/unit/customs-shipment-service.test.js',
+    ],
+  },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   contract: {

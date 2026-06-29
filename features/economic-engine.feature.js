@@ -90,7 +90,20 @@ module.exports = {
       'dashboards/admin/js/views/EconomicView.js',
       'dashboards/admin/js/views/EconomicFlowView.js',
     ],
-},
+        tests: [
+      'tests/unit/cost-allocation-allocate.test.js',
+      'tests/unit/cost-allocation.test.js',
+      'tests/unit/economic-engine-queries.test.js',
+      'tests/unit/pricing-apply.test.js',
+      'tests/unit/pricing-chain.test.js',
+      'tests/unit/pricing-dashboard-truth.test.js',
+      'tests/unit/pricing-flow-contract.test.js',
+      'tests/unit/pricing-guards.test.js',
+      'tests/unit/pricing-rates.test.js',
+      'tests/unit/pricing-strategy-service.test.js',
+      'tests/unit/pricing-surcharge-benchmarks.test.js',
+    ],
+  },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   contract: {

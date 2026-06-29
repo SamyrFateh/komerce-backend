@@ -53,6 +53,9 @@ module.exports = {
       'utils/documents/customs-invoice-html.js',
       'utils/documents/logo-base64.js',
     ],
+      tests: [
+      'tests/unit/invoice-service.test.js',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

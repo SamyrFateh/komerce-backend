@@ -104,6 +104,14 @@ module.exports = {
       'dashboards/admin/js/views/SourcingView.js',
       'dashboards/admin/js/views/SourcingScannerView.js',
     ],
+    tests: [
+      'tests/unit/catalog-import-orchestrator.test.js',
+      'tests/unit/scan-engine-content-verification.test.js',
+      'tests/unit/scan-engine-extras.test.js',
+      'tests/unit/scan-engine.test.js',
+      'tests/unit/scan-operations.test.js',
+    ],
+
 },
 
   // ── Dépôts ───────────────────────────────────────────────────────────────

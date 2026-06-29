@@ -52,6 +52,9 @@ module.exports = {
       'js/b-wallet.js',
       'css/wallet.css',
     ],
+    tests: [
+      'tests/unit/wallet-service.test.js',
+    ],
   },
 
   // ── Dépôts ───────────────────────────────────────────────────────────────

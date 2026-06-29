@@ -288,7 +288,7 @@ if [ -d public/boutique ]; then
   fi
 
   # 6b. Invariants boutique (apres rebuild : check:cache est donc forcement vert ici).
-  _OUT=$( cd public/boutique && npm run --silent check:fast 2>&1 ); _RC=$?
+  { _OUT=$( cd public/boutique && npm run --silent check:fast 2>&1 ); _RC=$?; } || true
   if [ $_RC -ne 0 ]; then
     echo -e "${RED}🚫 Invariants boutique : violation.${NC}"
     echo "$_OUT"
