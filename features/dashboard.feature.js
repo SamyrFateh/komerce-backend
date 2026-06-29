@@ -216,4 +216,25 @@ module.exports = {
       'css/ct-inventory.css',
     ],
   },
+
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    kind:     'business-transversal',
+    decision: 'aggregation-lecture',
+    signals: {
+      ownsTables:          false, // pas de tables propriétaires — agrège les données des features métier
+      ownsLifecycle:       false,
+      activeService:       false, // agréger = passif pour l'essentiel
+      multiConsumer:       false, // c'est dashboard qui consomme les autres, pas l'inverse
+      ownsMigrations:      false,
+      externalSideEffect:  'none',
+      surface:             'api+spa',
+    },
+    rationale: [
+      'pas de table propriétaire — consomme les données des features métier sans les posséder',
+      'lifecycle UI indépendant (SPA admin/hub/relais) justifie un manifest propre vs rattachement',
+      'certaines routes admin opérationnelles (hub, relay) écrivent des données — pas strictement lecture seule',
+      'cas particulier : agrégation + opérations admin — business-transversal reflète mieux la réalité',
+    ],
+  },
 };

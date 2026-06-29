@@ -1,6 +1,6 @@
 # Doctrine Feature — Komerce
 
-> **Version** : 1.0 — 2026-06
+> **Version** : 1.1 — 2026-06
 > **Statut** : doctrine active — **sommet de la pyramide**
 > **Hiérarchie** : complète `AGENTS.md` — en cas de conflit, `AGENTS.md` fait foi.
 > **Registre** : `docs/doctrine/APP_FEATURE_REGISTRY.md`
@@ -100,6 +100,284 @@ Règles du registre :
 5. **Mise à jour synchrone** : créer, fusionner, scinder ou retirer une feature met à jour
    le registre **et** son manifest dans la même PR. Le registre qui ne reflète pas le code
    réel est pire qu'absent — il fait croire à une cartographie qui n'existe pas.
+
+---
+
+## Schéma de classification — nouvelle feature ou rattachement ?
+
+> Cette section formalise les critères objectifs extraits des 16 features existantes.
+> Elle répond à la question que tout développeur ou agent IA doit poser **avant d'écrire
+> la première ligne** : est-ce que ce code appartient à une feature existante, ou est-ce
+> qu'il justifie la création d'une feature propre ?
+>
+> Vérifiable par machine : `npm run feature:classification`  
+> Strict en CI dès phase 3 : `npm run feature:classification:strict`
+
+---
+
+### Trois concepts distincts — `type`, `kind`, `decision`
+
+| Champ | Valeurs | Rôle |
+|---|---|---|
+| `type` | `feature` \| `transversal` | Classification binaire historique — conservée pour compatibilité |
+| `kind` | voir liste ci-dessous | Classification fine de la nature du manifest — nouvelle, machine-vérifiable |
+| `decision` | `feature-autonome` \| `feature-transverse` \| `transversal-technique` \| `aggregation-lecture` \| `rattachement` | Verdict final — ce qui est actionnellement fait avec le code |
+
+**`kind` — valeurs autorisées :**
+
+| Kind | Description | Exemple Komerce |
+|---|---|---|
+| `business-feature` | Feature métier autonome, possède ses tables, son cycle de vie, son service actif | `shared-cart`, `orders`, `payments` |
+| `business-transversal` | Rendu de service actif, consommée par plusieurs features, pas de domaine métier propre | `notifications`, `documents`, `refunds` |
+| `technical-transversal` | Infrastructure consommée par toutes, aucune règle métier | `auth-identity`, `platform-ops` |
+| `aggregation-readonly` | Surface admin/pilotage en lecture pure, interdit de muter le domaine d'une autre feature | `dashboard` |
+| `integration-adapter` | Adaptateur vers un système externe (Stripe, PayPal, Meta, AuthKey) | partie de `payments`, `notifications` |
+| `deprecated` | En cours de retrait — aucune nouvelle logique | (cf. workflow démontage) |
+
+> **`projection` n'est pas un `kind` assignable.** Une projection est un verdict de
+> rattachement : le fichier appartient à une feature existante, il n'a pas de manifest propre.
+> Créer un manifest pour une projection est une micro-feature — voir règle ci-dessous.
+
+---
+
+### Règle anti-micro-features
+
+Un manifest ne doit pas être créé pour :
+
+- un fichier qui ne fait que lire des tables appartenant à une feature existante (`@db-write: (none)`) ;
+- une route admin de consultation sur un domaine déjà géré en écriture ;
+- un utilitaire partagé sans état ni cycle de vie propre.
+
+Ces cas sont des **rattachements** : le fichier est ajouté au manifest de la feature hôte et la carte `files` est mise à jour. Le gate `gate:touched-files` le vérifie.
+
+Signal d'alarme : si formuler le `service` rendu nécessite les mots "voir", "lister", "consulter", "diagnostiquer" — c'est presque toujours un rattachement.
+
+---
+
+### Les cinq signaux — bottom-up
+
+Chaque signal est binaire et observable dans le code. L'arbre de décision suit après.
+
+---
+
+#### Signal 1 — Tables propriétaires
+
+> *Est-ce que ce code écrit (INSERT / UPDATE / DELETE) dans des tables qui n'appartiennent
+> à aucune feature déclarée ?*
+
+Si oui → **candidat nouvelle feature**.
+Si non — toutes les tables écrites appartiennent à une feature existante → **candidat rattachement**.
+
+**Base observable** : `@db-write` dans le header `@komerce-arch` du fichier.
+Un fichier qui n'écrit dans aucune table, ou qui écrit uniquement dans des tables déjà
+possédées par une feature existante, ne peut pas être une nouvelle feature — il en est
+une projection.
+
+Exemples réels :
+- `routes/admin/documents.js` — `@db-write: (none)`, `@db-read: transaction_documents`
+  (table possédée par `documents`) → **rattachement à `documents`**. ✓
+- `services/customs-shipment-service.js` — écrit dans `customs_shipments`,
+  `customs_shipment_parcels` (tables absentes du registre à sa création) → **nouvelle
+  feature `customs`**. ✓
+- `services/cancel-shared-cart-with-refunds.js` — écrit dans `refunds`,
+  `shared_cart_contributions`, `transaction_documents` (tables de 3 features existantes)
+  → **rattachement à `shared-cart`** (orchestrateur principal du flux). ✓
+
+---
+
+#### Signal 2 — Cycle de vie propre
+
+> *Est-ce que ce code a une state machine, une séquence de statuts, ou un invariant
+> d'idempotence qui lui est propre ?*
+
+Si oui → **candidat nouvelle feature**.
+Si non — il hérite du cycle de vie d'une feature hôte → **candidat rattachement**.
+
+**Base observable** : présence d'une machine de statut explicite, d'une séquence DB
+(`CREATE SEQUENCE`), d'un invariant d'idempotence documenté dans `invariants[]`.
+
+Exemples réels :
+- `shared-cart` : 5 statuts (`OPEN → CLOSED → AWAITING_CHOICE → ORDERED / CANCELLED`),
+  fenêtre 48h, idempotence webhook Stripe — **6 invariants** → feature autonome. ✓
+- `documents` : idempotence `findExistingDocument` par `(type, subject_id)` +
+  séquences propres (`refund_receipt_seq`, etc.) → feature autonome. ✓
+- `routes/admin/documents.js` : 0 state machine, 0 idempotence propre — il appelle
+  `findExistingDocument` de la feature `documents` → **rattachement**. ✓
+
+---
+
+#### Signal 3 — Service rendu autonome
+
+> *Est-ce qu'un utilisateur (client, opérateur, admin) percevrait ce code comme un
+> service distinct, ou comme une facette d'un service existant ?*
+
+Si le service rendu est **identifiable indépendamment** → **candidat nouvelle feature**.
+Si c'est une **projection, un accès, ou une vue** d'un service existant → **candidat
+rattachement**.
+
+**Règle pratique** : formuler le `service` en une phrase. Si la phrase contient
+"voir", "lister", "consulter", "diagnostiquer", "auditer" — c'est une projection →
+rattachement. Si elle contient "créer", "émettre", "calculer", "déclencher", "gérer" —
+c'est un service actif → vérifier les autres signaux.
+
+Exemples réels :
+- `documents` : *"Générer un document officiel à partir d'un événement métier confirmé."*
+  → verbe actif `générer`, artefact persistant, séquence propre → **feature**. ✓
+- `routes/admin/documents.js` : *"Consulter l'état réel de transaction_documents
+  (diagnostic + admin)."* → verbe passif `consulter`, aucun artefact créé → **rattachement
+  à `documents`**. ✓
+- `customs` : *"Classifier, déclarer, et analyser les droits de douane des expéditions."*
+  → 3 verbes actifs, tables propres, migration dédiée → **feature**. ✓
+
+---
+
+#### Signal 4 — Frontière de consommation
+
+> *Est-ce que plusieurs features existantes consommeraient ce code de façon symétrique ?*
+
+Si oui → le code est **transversal** : soit il rejoint un domaine transversal existant
+(`auth-identity`, `platform-ops`), soit il justifie une nouvelle feature transverse
+(`notifications`, `documents`, `refunds`).
+
+Si non — une seule feature en est le consommateur principal → **rattachement** à cette
+feature.
+
+**Base observable** : `contract.consumes` des features existantes qui appellent ce code.
+
+Exemples réels :
+- `notifications` est consommée par `orders`, `payments`, `shared-cart`, `refunds` de
+  façon symétrique → **feature transverse**. ✓
+- `documents` est consommée par `orders`, `customs`, `wallet-loyalty`, `refunds` → idem. ✓
+- `services/customs-analytics.js` est consommée uniquement par `customs` →
+  **rattachement à `customs`**. ✓
+
+---
+
+#### Signal 5 — Migrations dédiées
+
+> *Est-ce que ce code nécessite de nouvelles tables ou colonnes sans précédent dans le
+> schéma ?*
+
+Si oui → **candidat nouvelle feature** (une feature sans migration propre est souvent un
+rattachement mal positionné).
+Si non → **rattachement**.
+
+**Base observable** : migrations déclarées dans `files.migrations[]`. Une seule feature
+dans le projet (à ce jour) ne déclare aucune migration propre tout en étant une feature
+à part entière : `refunds` — parce qu'elle écrit dans la table `refunds` créée par la
+migration globale, et que son cycle de vie ne nécessite pas de table supplémentaire.
+C'est une exception documentée, pas la règle.
+
+---
+
+### Arbre de décision
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Ce code écrit-il dans des tables qui n'appartiennent à aucune      │
+│  feature déclarée ? (Signal 1)                                      │
+└──────────────────────────────────┬──────────────────────────────────┘
+                                   │
+              OUI                  │                NON
+               ▼                   │                 ▼
+   ┌───────────────────────┐       │   ┌─────────────────────────────┐
+   │  A-t-il un cycle de   │       │   │  Plusieurs features en sont │
+   │  vie propre (machine  │       │   │  les consommatrices symé-   │
+   │  de statuts, séquence │       │   │  triques ? (Signal 4)       │
+   │  idempotence) ?       │       │   └──────────────┬──────────────┘
+   │  (Signal 2)           │       │                  │
+   └──────────┬────────────┘       │       OUI        │       NON
+              │                    │        ▼         │        ▼
+     OUI      │      NON           │  ┌──────────┐   │  ┌──────────────┐
+      ▼        │       ▼            │  │ FEATURE  │   │  │ RATTACHEMENT │
+┌──────────┐  │  ┌──────────────┐  │  │transverse│   │  │ à la feature │
+│ FEATURE  │  │  │ RATTACHEMENT │  │  │          │   │  │ propriétaire │
+│          │  │  │ — probablement│  │  └──────────┘   │  └──────────────┘
+│ Créer un │  │  │ à la feature  │  │                 │
+│ manifest │  │  │ qui possède   │  │                 │
+│ dédié    │  │  │ ces tables    │  └─────────────────┘
+└──────────┘  │  └──────────────┘
+              │
+              ▼
+  ┌────────────────────────────────────────────────────────┐
+  │  Le service rendu est-il autonome et actif ? (Signal 3) │
+  └──────────────────────┬─────────────────────────────────┘
+                         │
+              OUI        │        NON
+               ▼         │         ▼
+         ┌──────────┐    │   ┌──────────────┐
+         │ FEATURE  │    │   │ RATTACHEMENT │
+         └──────────┘    │   └──────────────┘
+                         └──────────────────
+```
+
+---
+
+### Cas limite — le fichier hybride
+
+Un fichier est dit **hybride** s'il combine une projection lecture seule (→ rattachement)
+avec une mutation qui lui est propre (→ feature). Règle : regarder le `@db-write`.
+
+- Si `@db-write: (none)` → rattachement, même si le fichier est complexe.
+- Si `@db-write` pointe vers des tables existantes possédées par une feature → rattachement
+  à cette feature, le fichier en est une extension opérationnelle.
+- Si `@db-write` pointe vers des tables nouvelles → feature.
+
+Un fichier ne peut pas être à moitié dans une feature et à moitié dans une autre.
+Si l'analyse révèle un hybride irréductible, le fichier est **trop couplé** : le scinder
+est la bonne réponse, pas l'ignorer.
+
+---
+
+### Tableau récapitulatif — features existantes classifiées
+
+| Feature | Signal 1 (tables propres) | Signal 2 (cycle de vie) | Signal 3 (service actif) | Signal 4 (multi-consommatrices) | Signal 5 (migrations) | Verdict |
+|---|---|---|---|---|---|---|
+| `shared-cart` | ✅ 6 tables | ✅ 5 statuts, 6 invariants | ✅ | — | ✅ 8 migrations | Feature |
+| `orders` | ✅ orders, order_items… | ✅ state machine | ✅ | — | ✅ | Feature |
+| `payments` | ✅ stripe/paypal events | ✅ idempotence webhook | ✅ | — | ✅ | Feature |
+| `customs` | ✅ customs_shipments… | ✅ workflow déclaration | ✅ | — | ✅ 3 migrations | Feature |
+| `documents` | ✅ transaction_documents | ✅ idempotence + séquences | ✅ générer | ✅ 4 features | ✅ | Feature transverse |
+| `notifications` | ✅ notification_log | ✅ | ✅ émettre | ✅ toutes | ✅ | Feature transverse |
+| `refunds` | ⚠️ table partagée | ✅ idempotence anti-double | ✅ rembourser | ✅ orders/shared-cart/wallet | — | Feature transverse (exception Signal 5) |
+| `dashboard` | ❌ lecture seule | ❌ | ⚠️ agréger + opérations admin | ✅ toutes (lecture) | — | Feature `business-transversal` (routes hub/relay écrivent — pas strictement readonly) |
+| `routes/admin/documents.js` | ❌ db-write: none | ❌ | ❌ consulter | ❌ | — | **Rattachement** à `documents` |
+| `services/customs-analytics.js` | ❌ lecture seule | ❌ | ❌ analyser (passif) | ❌ (customs seul) | — | **Rattachement** à `customs` |
+
+> `dashboard` est un cas sui generis : feature d'agrégation en lecture pure, sans table
+> propriétaire, dont la raison d'être est de consolider toutes les autres. Elle existe
+> comme feature propre parce qu'elle a un cycle de vie UI indépendant (vues, SPA, rôles
+> admin/hub/relais distincts) et des invariants propres ("ne jamais écrire dans le domaine
+> d'une autre feature"). Ce n'est pas un template reproductible — c'est une exception
+> documentée.
+
+---
+
+### Ratchet — adoption progressive de `classification`
+
+La classification est **optionnelle aujourd'hui, obligatoire demain**. Le script
+`feature-classification-check.js` applique le ratchet suivant :
+
+| Phase | Condition | Comportement du script |
+|---|---|---|
+| **Phase 1** (actuelle) | `classification` absent sur la majorité des manifests | Warning-only — rapport lisible, pas d'exit(1) |
+| **Phase 2** | `classification` présent sur un manifest modifié | `--strict` requis localement pour ce manifest |
+| **Phase 3** | Backfill terminé par domaine | `--strict` activé par domaine (`map:check`) |
+| **Phase 4** | Tous les manifests classifiés | `--strict` global en CI |
+
+La phase 1 est active. Passer en phase 2 = ajouter `classification` dans la même PR que le
+premier changement d'un manifest non encore classifié. Ne pas backfiller le repo entier en
+une seule PR.
+
+---
+
+### Règle de mise à jour de cette section
+
+Ce schéma est **inductif** : il a été construit à partir des 16 features existantes, pas
+déduit a priori. S'il entre en contradiction avec un cas réel futur, c'est le schéma qui
+doit évoluer — pas le cas qu'on tord pour lui faire rentrer dans la grille. Toute mise à
+jour de cette section suit les mêmes règles que le registre : même PR que le code, trace
+dans `STATUS.md`.
 
 ---
 

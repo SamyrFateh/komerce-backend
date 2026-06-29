@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 5,
-    "total_routes": 426,
+    "unknown_responses": 8,
+    "total_routes": 429,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -4805,6 +4805,82 @@
         }
       }
     },
+    "/api/admin/documents": {
+      "get": {
+        "summary": "GET /api/admin/documents",
+        "x-route-file": "routes/admin.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/documents/summary": {
+      "get": {
+        "summary": "GET /api/admin/documents/summary",
+        "x-route-file": "routes/admin.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/documents/{id}": {
+      "get": {
+        "summary": "GET /api/admin/documents/{id}",
+        "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/customs": {
       "get": {
         "summary": "GET /api/admin/customs",
@@ -6091,7 +6167,7 @@
     "/api/admin/economic/executive": {
       "get": {
         "summary": "GET /api/admin/economic/executive",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6120,7 +6196,7 @@
     "/api/admin/economic/variables": {
       "get": {
         "summary": "GET /api/admin/economic/variables",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6149,7 +6225,7 @@
     "/api/admin/economic/variables/{key}": {
       "put": {
         "summary": "PUT /api/admin/economic/variables/{key}",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "parameters": [
           {
             "name": "key",
@@ -6188,7 +6264,7 @@
     "/api/admin/economic/charges": {
       "get": {
         "summary": "GET /api/admin/economic/charges",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6215,7 +6291,7 @@
       },
       "post": {
         "summary": "POST /api/admin/economic/charges",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6244,7 +6320,7 @@
     "/api/admin/economic/charges/{id}": {
       "put": {
         "summary": "PUT /api/admin/economic/charges/{id}",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "parameters": [
           {
             "name": "id",
@@ -6281,7 +6357,7 @@
       },
       "delete": {
         "summary": "DELETE /api/admin/economic/charges/{id}",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "parameters": [
           {
             "name": "id",
@@ -6320,7 +6396,7 @@
     "/api/admin/economic/charges/{id}/toggle": {
       "put": {
         "summary": "PUT /api/admin/economic/charges/{id}/toggle",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "parameters": [
           {
             "name": "id",
@@ -6359,7 +6435,7 @@
     "/api/admin/economic/coherence": {
       "get": {
         "summary": "GET /api/admin/economic/coherence",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6388,7 +6464,7 @@
     "/api/admin/economic/history": {
       "get": {
         "summary": "GET /api/admin/economic/history",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6417,7 +6493,7 @@
     "/api/admin/economic/redistribute": {
       "post": {
         "summary": "POST /api/admin/economic/redistribute",
-        "x-route-file": "routes/economic-engine.js",
+        "x-route-file": "routes/economic.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6712,7 +6788,7 @@
     "/api/admin/sourcing/analysis": {
       "get": {
         "summary": "GET /api/admin/sourcing/analysis",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6741,7 +6817,7 @@
     "/api/admin/sourcing/analysis/{id}": {
       "get": {
         "summary": "GET /api/admin/sourcing/analysis/{id}",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",
@@ -6780,7 +6856,7 @@
     "/api/admin/sourcing/synthesis": {
       "get": {
         "summary": "GET /api/admin/sourcing/synthesis",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6809,7 +6885,7 @@
     "/api/admin/sourcing/products/{id}": {
       "put": {
         "summary": "PUT /api/admin/sourcing/products/{id}",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",
@@ -6848,7 +6924,7 @@
     "/api/admin/sourcing/bulk-rail": {
       "post": {
         "summary": "POST /api/admin/sourcing/bulk-rail",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6877,7 +6953,7 @@
     "/api/admin/sourcing/config": {
       "get": {
         "summary": "GET /api/admin/sourcing/config",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6906,7 +6982,7 @@
     "/api/admin/sourcing/products/{id}/variants": {
       "get": {
         "summary": "GET /api/admin/sourcing/products/{id}/variants",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",
@@ -6951,7 +7027,7 @@
       },
       "put": {
         "summary": "PUT /api/admin/sourcing/products/{id}/variants",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",
@@ -6990,7 +7066,7 @@
     "/api/admin/sourcing/connectors": {
       "get": {
         "summary": "GET /api/admin/sourcing/connectors",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7019,7 +7095,7 @@
     "/api/admin/sourcing/catalogs/import": {
       "post": {
         "summary": "POST /api/admin/sourcing/catalogs/import",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7048,7 +7124,7 @@
     "/api/admin/sourcing/catalogs": {
       "get": {
         "summary": "GET /api/admin/sourcing/catalogs",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7077,7 +7153,7 @@
     "/api/admin/sourcing/candidates": {
       "get": {
         "summary": "GET /api/admin/sourcing/candidates",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7106,7 +7182,7 @@
     "/api/admin/sourcing/candidates/{id}": {
       "get": {
         "summary": "GET /api/admin/sourcing/candidates/{id}",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",
@@ -7143,7 +7219,7 @@
       },
       "put": {
         "summary": "PUT /api/admin/sourcing/candidates/{id}",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",
@@ -7182,7 +7258,7 @@
     "/api/admin/sourcing/candidates/{id}/scan": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/scan",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",
@@ -7221,7 +7297,7 @@
     "/api/admin/sourcing/candidates/scan-batch": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/scan-batch",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7250,7 +7326,7 @@
     "/api/admin/sourcing/candidates/{id}/import-product": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/import-product",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",
@@ -7289,7 +7365,7 @@
     "/api/admin/sourcing/candidates/{id}/reject": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/reject",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",
@@ -7328,7 +7404,7 @@
     "/api/admin/sourcing/candidates/{id}/watchlist": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/watchlist",
-        "x-route-file": "routes/sourcing-engine.js",
+        "x-route-file": "routes/sourcing.js",
         "parameters": [
           {
             "name": "id",

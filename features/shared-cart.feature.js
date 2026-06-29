@@ -177,4 +177,26 @@ module.exports = {
     'participant consulte en lecture seule — règle sa part seulement si panier payable',
   ],
 
+  // ── Classification ────────────────────────────────────────────────────────
+  // Vérifiable par : npm run feature:classification
+  classification: {
+    kind:     'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables:          true,  // shared_carts, shared_cart_contributions, collective_workspaces…
+      ownsLifecycle:       true,  // machine d'état v4.1 : OPEN→CLOSED→AWAITING_CHOICE→ORDERED/CANCELLED
+      activeService:       true,  // crée, contribue, clôture, annule
+      multiConsumer:       false, // consommée par orders en sortie, pas l'inverse
+      ownsMigrations:      true,  // 8 migrations dédiées
+      externalSideEffect:  'payment', // Stripe webhooks + PayPal
+      surface:             'api',
+    },
+    rationale: [
+      'écrit dans des tables propriétaires (shared_carts, shared_cart_contributions, collective_workspaces)',
+      'porte une machine de statut propre à 5 états avec invariant de fenêtre 48h',
+      'rend un service métier autonome de bout en bout (création → commande finale)',
+      'effet externe critique : idempotence Stripe sur webhook de contribution',
+    ],
+  },
+
 };

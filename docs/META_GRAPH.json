@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-28T21:42:15.884Z",
+  "generatedAt": "2026-06-29T06:00:32.061Z",
   "sources": {
     "backend": {
       "nodes": 702
@@ -13,7 +13,7 @@
       "callEdges": 111
     },
     "contract": {
-      "endpoints": 426
+      "endpoints": 429
     }
   },
   "summary": {
@@ -575,8 +575,10 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/economic-engine.js",
-      "services": [],
+      "routeFile": "routes/economic.js",
+      "services": [
+        "services/economic-engine-queries.js"
+      ],
       "tables": []
     },
     "/api/cash/reconciliation": {
@@ -929,8 +931,10 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/economic-engine.js",
-      "services": [],
+      "routeFile": "routes/economic.js",
+      "services": [
+        "services/economic-engine-queries.js"
+      ],
       "tables": []
     },
     "/api/admin/economic/coherence": {
@@ -940,8 +944,10 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/economic-engine.js",
-      "services": [],
+      "routeFile": "routes/economic.js",
+      "services": [
+        "services/economic-engine-queries.js"
+      ],
       "tables": []
     },
     "/api/admin/dashboard/event-workspaces": {
@@ -1149,8 +1155,10 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/economic-engine.js",
-      "services": [],
+      "routeFile": "routes/economic.js",
+      "services": [
+        "services/economic-engine-queries.js"
+      ],
       "tables": []
     },
     "/api/admin/economic/variables": {
@@ -1160,8 +1168,10 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/economic-engine.js",
-      "services": [],
+      "routeFile": "routes/economic.js",
+      "services": [
+        "services/economic-engine-queries.js"
+      ],
       "tables": []
     },
     "/api/admin/dashboard/unified": {
@@ -1275,9 +1285,14 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/sourcing-engine.js",
-      "services": [],
-      "tables": []
+      "routeFile": "routes/sourcing.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "product_variants",
+        "products"
+      ]
     },
     "/api/admin/sourcing/candidates": {
       "boutique": [],
@@ -1286,9 +1301,14 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/sourcing-engine.js",
-      "services": [],
-      "tables": []
+      "routeFile": "routes/sourcing.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "product_variants",
+        "products"
+      ]
     },
     "/api/admin/sourcing/catalogs/import": {
       "boutique": [],
@@ -1297,9 +1317,14 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/sourcing-engine.js",
-      "services": [],
-      "tables": []
+      "routeFile": "routes/sourcing.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "product_variants",
+        "products"
+      ]
     },
     "/api/admin/sourcing/synthesis": {
       "boutique": [],
@@ -1308,9 +1333,14 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/sourcing-engine.js",
-      "services": [],
-      "tables": []
+      "routeFile": "routes/sourcing.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "product_variants",
+        "products"
+      ]
     },
     "/api/admin/sourcing/analysis": {
       "boutique": [],
@@ -1319,9 +1349,14 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/sourcing-engine.js",
-      "services": [],
-      "tables": []
+      "routeFile": "routes/sourcing.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "product_variants",
+        "products"
+      ]
     },
     "/api/admin/partners/stats": {
       "boutique": [],
@@ -1469,7 +1504,8 @@
         "routes/pricing.js",
         "routes/products.js",
         "routes/scans.js",
-        "routes/shares.js"
+        "routes/shares.js",
+        "routes/sourcing.js"
       ],
       "boutique": [
         "b-cart",
@@ -1481,7 +1517,9 @@
         "CostingView",
         "EconomicFlowView",
         "EconomicView",
-        "PricingStrategyView"
+        "PricingStrategyView",
+        "SourcingScannerView",
+        "SourcingView"
       ]
     },
     "relais": {
@@ -1819,14 +1857,17 @@
     },
     "product_variants": {
       "routes": [
-        "routes/products.js"
+        "routes/products.js",
+        "routes/sourcing.js"
       ],
       "boutique": [
         "komerce-api"
       ],
       "dashboards": [
         "EconomicFlowView",
-        "PricingStrategyView"
+        "PricingStrategyView",
+        "SourcingScannerView",
+        "SourcingView"
       ]
     },
     "suppliers": {
