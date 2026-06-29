@@ -18,19 +18,22 @@ if [ ! -d ".git" ]; then
   echo "❌ Ce script doit être exécuté à la racine du dépôt Git"
   exit 1
 fi
+if ! command -v node &> /dev/null; then
+  echo "❌ Node.js requis"
+  exit 1
+fi
 
 mkdir -p "$HOOKS_DIR"
 
 if [ -f "$PRE_COMMIT_HOOK" ]; then
-  echo "⚠️  Hook pre-commit existant sauvegardé dans $PRE_COMMIT_HOOK.backup"
+  echo "⚠️  Hook existant sauvegardé dans $PRE_COMMIT_HOOK.backup"
   cp "$PRE_COMMIT_HOOK" "$PRE_COMMIT_HOOK.backup"
 fi
 
 cat > "$PRE_COMMIT_HOOK" << 'PCHOOK'
 #!/bin/bash
 # ============================================================
-# KOMERCE BOUTIQUE — Pre-commit hook
-# Lance les garde-fous avant chaque commit.
+# KOMERCE BOUTIQUE — Pre-commit hook (N0 + N2 + N5)
 # Bypass d'urgence : git commit --no-verify
 # ============================================================
 set -e
@@ -39,30 +42,51 @@ GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
 echo ""
 echo "🛡️  Komerce Boutique — garde-fous pre-commit..."
 
-# 1. Code quality (N2) — use strict, const/let
-if ! node scripts/code-quality-gate.js --strict >/dev/null 2>&1; then
-  echo -e "${RED}🚫 Qualité code : violation N2 (strict/var).${NC}"
-  echo "   Auto-fix : node scripts/code-quality-gate.js --fix"
+# N2 — Code quality
+{ _OUT=$(node scripts/code-quality-gate.js --strict 2>&1); _RC=$?; } || true
+if [ $_RC -ne 0 ]; then
+  echo -e "${RED}🚫 Quality gate N2 : violation bloquante.${NC}"
+  echo "$_OUT"
   exit 1
 fi
 
-# 2. Garde-fous boutique (HTML, imports, CSS, arch)
-if ! npm run --silent check:fast >/dev/null 2>&1; then
+# N0 — Feature registry
+{ _OUT=$(node scripts/feature-registry-check.js --strict 2>&1); _RC=$?; } || true
+if [ $_RC -ne 0 ]; then
+  echo -e "${RED}🚫 Registre features N0 : orphelin ou champ manquant.${NC}"
+  echo "$_OUT"
+  exit 1
+fi
+
+# N5 — Feature slice guard
+if [ -f scripts/feature-guard.js ]; then
+  { _OUT=$(node scripts/feature-guard.js --strict 2>&1); _RC=$?; } || true
+  if [ $_RC -ne 0 ]; then
+    echo -e "${RED}🚫 Feature slice guard N5 : incohérence détectée.${NC}"
+    echo "$_OUT"
+    exit 1
+  fi
+fi
+
+# Garde-fous boutique (N4 — arch, CSS, HTML, imports)
+{ _OUT=$(npm run --silent check:fast 2>&1); _RC=$?; } || true
+if [ $_RC -ne 0 ]; then
   echo -e "${RED}🚫 Garde-fous boutique : violation détectée.${NC}"
-  echo "   Détail : npm run check:fast"
+  echo "$_OUT"
   exit 1
 fi
 
-echo -e "${GREEN}✅ Boutique OK — garde-fous verts.${NC}"
+echo -e "${GREEN}✅ Boutique OK — N0 + N2 + N4 + N5 verts.${NC}"
 exit 0
 PCHOOK
 
 chmod +x "$PRE_COMMIT_HOOK"
-echo "✅ Hook pre-commit installé."
+echo "✅ Hook pre-commit installé (N2 + N0 + N5 + check:fast)."
 echo ""
 echo "📋 Ce qui tourne avant chaque commit :"
-echo "   ✓ Code quality (use strict, const/let)"
-echo "   ✓ Garde-fous boutique (HTML, imports, CSS, arch, ownership)"
+echo "   ✓ N2 — Code quality (use strict, const/let)"
+echo "   ✓ N0 — Feature registry (orphelins, champs obligatoires)"
+echo "   ✓ N5 — Feature slice guard (cohérence @domain, fichiers, contrats)"
+echo "   ✓ N4 — Garde-fous boutique (HTML, imports, CSS, arch)"
 echo ""
 echo "🔧 Bypass : git commit --no-verify"
-echo "   Désinstaller : rm $PRE_COMMIT_HOOK"

@@ -34,9 +34,9 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "check:all": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run test:e2e",
+    "check:all": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run feature:guard:strict && npm run test:e2e",
     "check:all:verbose": "npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:ownership && npm run audit:registry",
-    "check:fast": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry",
+    "check:fast": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run feature:guard:strict",
     "precommit": "npm run check:all",
     "audit:ownership": "node scripts/gen-ownership.js",
     "audit:registry": "node scripts/feature-registry-check.js --strict",
@@ -45,7 +45,10 @@
     "deploy:css": "node scripts/deploy-css.js",
     "deploy:css:sw": "node scripts/deploy-css.js --sw-bump",
     "quality:gate": "node scripts/code-quality-gate.js --strict",
-    "quality:gate:fix": "node scripts/code-quality-gate.js --fix"
+    "quality:gate:fix": "node scripts/code-quality-gate.js --fix",
+    "feature:guard": "node scripts/feature-guard.js",
+    "feature:guard:strict": "node scripts/feature-guard.js --strict",
+    "feature:guard:json": "node scripts/feature-guard.js --json"
   },
   "keywords": [],
   "author": "",
