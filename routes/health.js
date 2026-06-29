@@ -105,10 +105,10 @@ router.get('/metrics', authenticate, requireRole(['admin']), async (req, res, ne
     // Délai médian paiement → expédition (commandes des 30 derniers jours)
     const { rows: [delayStats] } = await db.query(`
       SELECT
-        ROUND(AVG(EXTRACT(EPOCH FROM (o.confirmed_at - o.created_at)) / 3600), 1)  AS avg_hours_creation_to_confirm,
+        ROUND(AVG(EXTRACT(EPOCH FROM (o.confirmed_at - o.created_at)) / 3600)::numeric, 1)  AS avg_hours_creation_to_confirm,
         ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (
           ORDER BY EXTRACT(EPOCH FROM (o.confirmed_at - o.created_at)) / 3600
-        ), 1) AS median_hours_creation_to_confirm
+        )::numeric, 1) AS median_hours_creation_to_confirm
       FROM orders o
       WHERE o.created_at > NOW() - INTERVAL '30 days'
         AND o.confirmed_at IS NOT NULL

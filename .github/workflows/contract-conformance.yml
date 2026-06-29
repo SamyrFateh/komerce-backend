@@ -110,7 +110,11 @@ jobs:
           if [ -z "$TOKEN" ]; then
             echo "::error::ci-probe-token.js n'a produit aucun token"; exit 1
           fi
-          echo "PROBE_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          {
+            echo "PROBE_TOKEN<<__PROBE_TOKEN_EOF__"
+            echo "$TOKEN"
+            echo "__PROBE_TOKEN_EOF__"
+          } >> "$GITHUB_ENV"
 
       - name: Boot the app
         run: |

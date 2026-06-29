@@ -133,7 +133,7 @@ describe('I-SWEEP invariants regression net', () => {
 
   test('I-DOUANE-1: tous les sites INSERT order_items gèlent la classification douanière', () => {
     const create   = read('routes/orders/create.js');
-    const engine   = read('services/shared-cart-engine.js');
+    const engine   = read('services/shared-cart-lifecycle.js'); // Lot C1 (2026-06-28) : INSERT order_items déplacé hors du barrel shared-cart-engine.js
     const adminSys = read('routes/admin/system.js');
     const clf      = read('services/customs-classification.js');
 
