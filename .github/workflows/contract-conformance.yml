@@ -106,7 +106,7 @@ jobs:
       # pas dans `echo`), donc un échec silencieux donnerait un PROBE_TOKEN vide.
       - name: Generate admin probe token
         run: |
-          TOKEN="$(node scripts/ci-probe-token.js)"
+          TOKEN="$(node scripts/ci-probe-token.js | tr -cd 'A-Za-z0-9._-')"
           if [ -z "$TOKEN" ]; then
             echo "::error::ci-probe-token.js n'a produit aucun token"; exit 1
           fi
