@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 351,
-    "filesWithFullHeaders": 322,
+    "scannedCodeFiles": 355,
+    "filesWithFullHeaders": 326,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 351,
+    "filesWithAnyHeaders": 355,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 702,
-    "edges": 3403,
+    "graphNodes": 706,
+    "edges": 3431,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 118,
-    "unresolvedCodeEdges": 321
+    "unresolvedCodeEdges": 325
   },
   "byDomain": {
     "bootstrap": 9,
@@ -44,7 +44,7 @@
     "douane": 5,
     "dashboard": 30,
     "orders": 29,
-    "documents": 6,
+    "documents": 10,
     "notification": 13,
     "logistics": 34,
     "operations": 4,
@@ -72,7 +72,7 @@
     "util-ui": 2,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 17,
+    "util": 21,
     "controller": 1,
     "api-client": 2,
     "state-store": 1,
@@ -89,9 +89,9 @@
   },
   "byCriticality": {
     "critical": 78,
-    "medium": 101,
-    "high": 139,
-    "low": 33
+    "medium": 102,
+    "high": 140,
+    "low": 35
   },
   "nodes": [
     {
@@ -14751,6 +14751,170 @@
       ],
       "impactAreas": [
         "unknown"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "utils/documents/customs-invoice-html.js",
+      "file": "utils/documents/customs-invoice-html.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "customs-invoice-html",
+      "domain": "documents",
+      "layer": "util",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "doc (ligne transaction_documents customs_invoice avec metadata)"
+      ],
+      "outputs": [
+        "string HTML A4 imprimable (facture douanière classifiée)"
+      ],
+      "depends": [
+        "services/documents/customs-invoice.js"
+      ],
+      "usedBy": [
+        "routes/documents-html.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "(none)"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "douane"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "utils/documents/pickup-proof-html.js",
+      "file": "utils/documents/pickup-proof-html.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-proof-html",
+      "domain": "documents",
+      "layer": "util",
+      "criticality": "low",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "displayData (résultat de pickup-proof.js::buildDisplayData)"
+      ],
+      "outputs": [
+        "string HTML imprimable (preuve de retrait)"
+      ],
+      "depends": [
+        "services/documents/pickup-proof.js"
+      ],
+      "usedBy": [
+        "routes/documents-html.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "(none)"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "orders"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "utils/documents/refund-receipt-html.js",
+      "file": "utils/documents/refund-receipt-html.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "refund-receipt-html",
+      "domain": "documents",
+      "layer": "util",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "displayData (résultat de refund-receipt.js::buildDisplayData)"
+      ],
+      "outputs": [
+        "string HTML imprimable (reçu de remboursement)"
+      ],
+      "depends": [
+        "services/documents/refund-receipt.js"
+      ],
+      "usedBy": [
+        "routes/documents-html.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "(none)"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "refunds"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "utils/documents/wallet-receipt-html.js",
+      "file": "utils/documents/wallet-receipt-html.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "wallet-receipt-html",
+      "domain": "documents",
+      "layer": "util",
+      "criticality": "low",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "doc (ligne transaction_documents wallet_receipt avec metadata)"
+      ],
+      "outputs": [
+        "string HTML imprimable (reçu wallet/avoir)"
+      ],
+      "depends": [
+        "services/documents/wallet-receipt.js"
+      ],
+      "usedBy": [
+        "routes/documents-html.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "(none)"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "wallet"
       ],
       "version": "2026-06"
     },
@@ -37145,6 +37309,174 @@
       "label": "unknown"
     },
     {
+      "from": "utils/documents/customs-invoice-html.js",
+      "to": "services/documents/customs-invoice.js",
+      "type": "depends",
+      "label": "services/documents/customs-invoice.js"
+    },
+    {
+      "from": "routes/documents-html.js",
+      "to": "utils/documents/customs-invoice-html.js",
+      "type": "uses",
+      "label": "routes/documents-html.js"
+    },
+    {
+      "from": "utils/documents/customs-invoice-html.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/customs-invoice-html.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/customs-invoice-html.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "utils/documents/customs-invoice-html.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "utils/documents/customs-invoice-html.js",
+      "to": "impact:douane",
+      "type": "impact",
+      "label": "douane"
+    },
+    {
+      "from": "utils/documents/pickup-proof-html.js",
+      "to": "services/documents/pickup-proof.js",
+      "type": "depends",
+      "label": "services/documents/pickup-proof.js"
+    },
+    {
+      "from": "routes/documents-html.js",
+      "to": "utils/documents/pickup-proof-html.js",
+      "type": "uses",
+      "label": "routes/documents-html.js"
+    },
+    {
+      "from": "utils/documents/pickup-proof-html.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/pickup-proof-html.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/pickup-proof-html.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "utils/documents/pickup-proof-html.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "utils/documents/pickup-proof-html.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "utils/documents/refund-receipt-html.js",
+      "to": "services/documents/refund-receipt.js",
+      "type": "depends",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "routes/documents-html.js",
+      "to": "utils/documents/refund-receipt-html.js",
+      "type": "uses",
+      "label": "routes/documents-html.js"
+    },
+    {
+      "from": "utils/documents/refund-receipt-html.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/refund-receipt-html.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/refund-receipt-html.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "utils/documents/refund-receipt-html.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "utils/documents/refund-receipt-html.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "utils/documents/wallet-receipt-html.js",
+      "to": "services/documents/wallet-receipt.js",
+      "type": "depends",
+      "label": "services/documents/wallet-receipt.js"
+    },
+    {
+      "from": "routes/documents-html.js",
+      "to": "utils/documents/wallet-receipt-html.js",
+      "type": "uses",
+      "label": "routes/documents-html.js"
+    },
+    {
+      "from": "utils/documents/wallet-receipt-html.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/wallet-receipt-html.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/wallet-receipt-html.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "utils/documents/wallet-receipt-html.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "utils/documents/wallet-receipt-html.js",
+      "to": "impact:wallet",
+      "type": "impact",
+      "label": "wallet"
+    },
+    {
       "from": "utils/eco-bridge.js",
       "to": "db:charges",
       "type": "db-read",
@@ -46808,7 +47140,8 @@
         "doctrine:douane_declaration_pivot",
         "impact:douane",
         "impact:orders",
-        "services/documents/document-service.js"
+        "services/documents/document-service.js",
+        "utils/documents/customs-invoice-html.js"
       ]
     },
     "services/documents/document-service.js": {
@@ -46893,7 +47226,8 @@
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:orders",
         "services/documents/document-service.js",
-        "services/verify-qr-collection.js"
+        "services/verify-qr-collection.js",
+        "utils/documents/pickup-proof-html.js"
       ]
     },
     "services/documents/refund-receipt.js": {
@@ -46938,7 +47272,8 @@
         "services/admin-order-refund.js",
         "services/documents/document-service.js",
         "services/payment-paypal.js",
-        "services/shared-cart-refund-queue.js"
+        "services/shared-cart-refund-queue.js",
+        "utils/documents/refund-receipt-html.js"
       ]
     },
     "services/documents/wallet-receipt.js": {
@@ -46978,7 +47313,8 @@
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:wallet",
         "services/documents/document-service.js",
-        "services/wallet-service.js"
+        "services/wallet-service.js",
+        "utils/documents/wallet-receipt-html.js"
       ]
     },
     "services/economic-engine-queries.js": {
@@ -51173,6 +51509,146 @@
         "impact:unknown"
       ]
     },
+    "utils/documents/customs-invoice-html.js": {
+      "role": "customs-invoice-html",
+      "domain": "documents",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/documents/customs-invoice.js"
+      ],
+      "directUsedBy": [
+        "routes/documents-html.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "douane"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:documents",
+        "impact:douane",
+        "services/documents/customs-invoice.js"
+      ]
+    },
+    "utils/documents/pickup-proof-html.js": {
+      "role": "pickup-proof-html",
+      "domain": "documents",
+      "criticality": "low",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/documents/pickup-proof.js"
+      ],
+      "directUsedBy": [
+        "routes/documents-html.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "orders"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:documents",
+        "impact:orders",
+        "services/documents/pickup-proof.js"
+      ]
+    },
+    "utils/documents/refund-receipt-html.js": {
+      "role": "refund-receipt-html",
+      "domain": "documents",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/documents/refund-receipt.js"
+      ],
+      "directUsedBy": [
+        "routes/documents-html.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "refunds"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:documents",
+        "impact:refunds",
+        "services/documents/refund-receipt.js"
+      ]
+    },
+    "utils/documents/wallet-receipt-html.js": {
+      "role": "wallet-receipt-html",
+      "domain": "documents",
+      "criticality": "low",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/documents/wallet-receipt.js"
+      ],
+      "directUsedBy": [
+        "routes/documents-html.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents",
+        "wallet"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:documents",
+        "impact:wallet",
+        "services/documents/wallet-receipt.js"
+      ]
+    },
     "utils/eco-bridge.js": {
       "role": "eco-bridge",
       "domain": "economic-engine",
@@ -53518,6 +53994,30 @@
       "to": "services/whatsapp-meta.js",
       "type": "uses",
       "label": "notification-service.js"
+    },
+    {
+      "from": "routes/documents-html.js",
+      "to": "utils/documents/customs-invoice-html.js",
+      "type": "uses",
+      "label": "routes/documents-html.js"
+    },
+    {
+      "from": "routes/documents-html.js",
+      "to": "utils/documents/pickup-proof-html.js",
+      "type": "uses",
+      "label": "routes/documents-html.js"
+    },
+    {
+      "from": "routes/documents-html.js",
+      "to": "utils/documents/refund-receipt-html.js",
+      "type": "uses",
+      "label": "routes/documents-html.js"
+    },
+    {
+      "from": "routes/documents-html.js",
+      "to": "utils/documents/wallet-receipt-html.js",
+      "type": "uses",
+      "label": "routes/documents-html.js"
     },
     {
       "from": "validators/index.js",

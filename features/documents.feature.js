@@ -46,6 +46,12 @@ module.exports = {
     routes: [
       'routes/admin/documents.js',
     ],
+    utils: [
+      'utils/documents/refund-receipt-html.js',
+      'utils/documents/wallet-receipt-html.js',
+      'utils/documents/pickup-proof-html.js',
+      'utils/documents/customs-invoice-html.js',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
@@ -55,6 +61,7 @@ module.exports = {
       'GET /api/admin/documents (liste + filtres)',
       'GET /api/admin/documents/summary (diagnostic état émission)',
       'GET /api/admin/documents/:id (détail)',
+      'GET /api/doc/:reference (rendu HTML imprimable — à câbler via routes/documents-html.js)',
     ],
     consumes: [
       'orders, customs, wallet-loyalty, refunds (donnees source du document)',

@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 351
-- Files with full headers: 322
+- Scanned code files: 355
+- Files with full headers: 326
 - Files with lite headers: 29
-- Files with any headers: 351
+- Files with any headers: 355
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 702
-- Edges: 3403
+- Graph nodes: 706
+- Edges: 3431
 - DB tables: 108
 - Doctrines: 125
 - Impact areas: 118
-- Unresolved code edges: 321
+- Unresolved code edges: 325
 
 ## Domains
 
@@ -30,7 +30,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - collective-workspace: 3
 - customs: 1
 - dashboard: 30
-- documents: 6
+- documents: 10
 - douane: 5
 - economic-engine: 36
 - inventory: 3
@@ -77,7 +77,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-renderer: 6
 - ui-service: 1
 - ui-state: 1
-- util: 17
+- util: 21
 - util-ui: 2
 - validators: 1
 - view-model: 3
@@ -297,6 +297,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
 - services/wallet-service.js — wallet-wallet-service (wallet, high, full)
 - services/whatsapp-meta.js — meta-whatsapp-adapter (notification, high, full)
+- utils/documents/customs-invoice-html.js — customs-invoice-html (documents, high, full)
 - utils/parcels.js — logistics-parcels (logistics, high, full)
 - utils/parcelSync.js — logistics-parcel-sync (logistics, high, full)
 - utils/pricing-cache.js — economic-engine-pricing-cache (economic-engine, high, full)
@@ -349,6 +350,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/dashboard-metrics/logistics.js -> (none)
 - WRITE services/dashboard-metrics/workspaces.js -> (none)
 - WRITE services/invoice-public-token.js -> (none)
+- WRITE utils/documents/customs-invoice-html.js -> (none)
+- WRITE utils/documents/pickup-proof-html.js -> (none)
+- WRITE utils/documents/refund-receipt-html.js -> (none)
+- WRITE utils/documents/wallet-receipt-html.js -> (none)
 - WRITE services/admin-order-refund.js -> alerts
 - WRITE services/cancel-order-purchase-orders.js -> alerts
 - WRITE services/cash-operations.js -> alerts
@@ -452,10 +457,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/notifications/notification-service.js -> notification_log
 - WRITE services/notifications/order.js -> notification_log
 - WRITE services/notifications/otp-auth.js -> notification_log
-- WRITE services/notifications/parcel.js -> notification_log
-- WRITE services/simulator/state-advancer.js -> notification_log
-- WRITE routes/hub-dashboard.js -> order_comments
-- WRITE routes/hub-mark-ordered.js -> order_comments
 
 ## Unresolved Code Edges
 
