@@ -1,0 +1,142 @@
+'use strict';
+
+jest.mock('../../services/pricing-engine', () => ({
+  loadGlobalConfig: jest.fn(),
+  recommend: jest.fn(),
+}));
+jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));
+
+const pricingEngine = require('../../services/pricing-engine');
+const { lockEstimatedCostsForOrder, _isActive } = require('../../services/order-cost-snapshot');
+
+describe('order-cost-snapshot', () => {
+  const previousFlag = process.env.ORDER_COST_SNAPSHOT_ACTIVE;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    delete process.env.ORDER_COST_SNAPSHOT_ACTIVE;
+  });
+
+  afterAll(() => {
+    if (previousFlag === undefined) delete process.env.ORDER_COST_SNAPSHOT_ACTIVE;
+    else process.env.ORDER_COST_SNAPSHOT_ACTIVE = previousFlag;
+  });
+
+  it('_isActive lit strictement ORDER_COST_SNAPSHOT_ACTIVE=true', () => {
+    expect(_isActive()).toBe(false);
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'TRUE';
+    expect(_isActive()).toBe(true);
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = '1';
+    expect(_isActive()).toBe(false);
+  });
+
+  it('no-op si feature flag desactive', async () => {
+    const client = { query: jest.fn() };
+
+    await expect(lockEstimatedCostsForOrder('order-001', client)).resolves.toEqual({
+      order_id: 'order-001',
+      imputations_count: 0,
+      skipped: true,
+      reason: 'ORDER_COST_SNAPSHOT_ACTIVE=false',
+      total_estimated_landed_kmf: 0,
+      total_estimated_business_kmf: 0,
+    });
+    expect(client.query).not.toHaveBeenCalled();
+  });
+
+  it('exige un dbClient transactionnel quand actif', async () => {
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
+
+    await expect(lockEstimatedCostsForOrder('order-001')).rejects.toThrow('dbClient is required');
+  });
+
+  it('skip sans order_items', async () => {
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
+    const client = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+
+    await expect(lockEstimatedCostsForOrder('order-empty', client)).resolves.toEqual({
+      order_id: 'order-empty',
+      imputations_count: 0,
+      skipped: true,
+      reason: 'no_order_items',
+      total_estimated_landed_kmf: 0,
+      total_estimated_business_kmf: 0,
+    });
+    expect(pricingEngine.loadGlobalConfig).not.toHaveBeenCalled();
+  });
+
+  it('fige les couts estimes par item et met a jour le cache order si insertion effective', async () => {
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
+    const items = [
+      { order_item_id: 'oi-1', product_id: 'prod-1', quantity: 2, price_kmf: 3000, category: 'food', weight_kg: 1, product_cost_kmf: 1000, volume_m3: 0.1 },
+      { order_item_id: 'oi-2', product_id: 'prod-2', quantity: 1, price_kmf: 5000, category: 'home', weight_kg: 2, product_cost_kmf: 2000, volume_m3: 0.2 },
+    ];
+    const client = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: items })
+      .mockResolvedValueOnce({ rows: [{ id: 'imp-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'imp-2' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) };
+    pricingEngine.loadGlobalConfig.mockResolvedValueOnce({ cfg: true });
+    pricingEngine.recommend
+      .mockResolvedValueOnce({
+        landed_relay_cost_kmf: 1200,
+        business_complete_cost_kmf: 2000,
+        cost_breakdown: { allocations: { freight: 100 }, allocation_averages: { confidence: 'high' } },
+        data_quality: { confidence: 'high' },
+      })
+      .mockResolvedValueOnce({
+        landed_relay_cost_kmf: 2500,
+        business_complete_cost_kmf: 4000,
+        cost_breakdown: { allocations: { freight: 200 }, allocation_averages: { confidence: 'medium' } },
+        data_quality: { confidence: 'medium' },
+      });
+
+    const result = await lockEstimatedCostsForOrder('order-001', client, { source: 'checkout' });
+
+    expect(result).toEqual({
+      order_id: 'order-001',
+      imputations_count: 2,
+      skipped: false,
+      total_estimated_landed_kmf: 4900,
+      total_estimated_business_kmf: 8000,
+    });
+    expect(pricingEngine.loadGlobalConfig).toHaveBeenCalledTimes(1);
+    expect(pricingEngine.recommend).toHaveBeenCalledWith(expect.objectContaining({ product_id: 'prod-1', current_price_kmf: 3000 }), { config: { cfg: true } });
+    expect(client.query.mock.calls[1][0]).toContain('INSERT INTO order_item_cost_imputations');
+    expect(client.query.mock.calls[1][1]).toEqual(expect.arrayContaining(['order-001', 'oi-1', 'prod-1', 2, 3000, 6000, 2400, 4000, 2000, 33.33]));
+    expect(client.query.mock.calls[3][0]).toContain('UPDATE orders');
+  });
+
+  it('reste idempotent si ON CONFLICT DO NOTHING ne retourne aucune ligne', async () => {
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
+    const client = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ order_item_id: 'oi-1', product_id: 'prod-1', quantity: 1, price_kmf: 3000 }] })
+      .mockResolvedValueOnce({ rows: [] }) };
+    pricingEngine.loadGlobalConfig.mockResolvedValueOnce({});
+    pricingEngine.recommend.mockResolvedValueOnce({ landed_relay_cost_kmf: 1000, business_complete_cost_kmf: 2000 });
+
+    await expect(lockEstimatedCostsForOrder('order-001', client)).resolves.toEqual({
+      order_id: 'order-001',
+      imputations_count: 0,
+      skipped: false,
+      total_estimated_landed_kmf: 0,
+      total_estimated_business_kmf: 0,
+    });
+    expect(client.query).toHaveBeenCalledTimes(2);
+  });
+
+  it('insere une imputation fallback si pricing-engine echoue', async () => {
+    process.env.ORDER_COST_SNAPSHOT_ACTIVE = 'true';
+    const client = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ order_item_id: 'oi-1', product_id: 'prod-1', quantity: 1, price_kmf: 3000 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'imp-fallback' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) };
+    pricingEngine.loadGlobalConfig.mockResolvedValueOnce({});
+    pricingEngine.recommend.mockRejectedValueOnce(new Error('pricing_down'));
+
+    const result = await lockEstimatedCostsForOrder('order-001', client);
+
+    expect(result).toMatchObject({ imputations_count: 1, total_estimated_landed_kmf: 0, total_estimated_business_kmf: 0 });
+    expect(client.query.mock.calls[1][1][15]).toBe('fallback');
+  });
+});
