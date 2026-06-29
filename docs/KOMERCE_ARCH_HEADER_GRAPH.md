@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 355
-- Files with full headers: 326
+- Scanned code files: 356
+- Files with full headers: 327
 - Files with lite headers: 29
-- Files with any headers: 355
+- Files with any headers: 356
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 706
-- Edges: 3431
+- Graph nodes: 707
+- Edges: 3437
 - DB tables: 108
 - Doctrines: 125
 - Impact areas: 118
-- Unresolved code edges: 325
+- Unresolved code edges: 327
 
 ## Domains
 
@@ -30,7 +30,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - collective-workspace: 3
 - customs: 1
 - dashboard: 30
-- documents: 10
+- documents: 11
 - douane: 5
 - economic-engine: 36
 - inventory: 3
@@ -77,7 +77,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-renderer: 6
 - ui-service: 1
 - ui-state: 1
-- util: 21
+- util: 22
 - util-ui: 2
 - validators: 1
 - view-model: 3
@@ -351,6 +351,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/dashboard-metrics/workspaces.js -> (none)
 - WRITE services/invoice-public-token.js -> (none)
 - WRITE utils/documents/customs-invoice-html.js -> (none)
+- WRITE utils/documents/logo-base64.js -> (none)
 - WRITE utils/documents/pickup-proof-html.js -> (none)
 - WRITE utils/documents/refund-receipt-html.js -> (none)
 - WRITE utils/documents/wallet-receipt-html.js -> (none)
@@ -456,7 +457,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/notifications/misc.js -> notification_log
 - WRITE services/notifications/notification-service.js -> notification_log
 - WRITE services/notifications/order.js -> notification_log
-- WRITE services/notifications/otp-auth.js -> notification_log
 
 ## Unresolved Code Edges
 

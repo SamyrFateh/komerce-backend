@@ -51,6 +51,7 @@ module.exports = {
       'utils/documents/wallet-receipt-html.js',
       'utils/documents/pickup-proof-html.js',
       'utils/documents/customs-invoice-html.js',
+      'utils/documents/logo-base64.js',
     ],
   },
 

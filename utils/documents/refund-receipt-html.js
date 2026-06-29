@@ -18,6 +18,8 @@
 
 'use strict';
 
+const { LOGO_KOMERCE_DATA_URI } = require('./logo-base64');
+
 /**
  * KOMERCE — utils/documents/refund-receipt-html.js
  *
@@ -83,10 +85,13 @@ function buildReceiptHTML(d) {
     text-align: center;
     border-top: 2px solid #000;
     border-bottom: 2px solid #000;
-    padding: 8px 0;
+    padding: 10px 0 8px;
     margin-bottom: 12px;
+  }
+  .header img.logo { height: 26px; display: block; margin: 0 auto 4px; }
+  .header .doc-type {
     font-weight: bold;
-    font-size: 14px;
+    font-size: 12px;
     letter-spacing: 1px;
   }
   .tag {
@@ -156,8 +161,8 @@ function buildReceiptHTML(d) {
 <div class="receipt">
 
   <div class="header">
-    KOMERCE<br>
-    REÇU DE REMBOURSEMENT
+    <img class="logo" src="${LOGO_KOMERCE_DATA_URI}" alt="Komerce">
+    <div class="doc-type">REÇU DE REMBOURSEMENT</div>
   </div>
 
   <div style="text-align:center">

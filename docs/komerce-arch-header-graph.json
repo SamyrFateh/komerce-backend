@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 355,
-    "filesWithFullHeaders": 326,
+    "scannedCodeFiles": 356,
+    "filesWithFullHeaders": 327,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 355,
+    "filesWithAnyHeaders": 356,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 706,
-    "edges": 3431,
+    "graphNodes": 707,
+    "edges": 3437,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 118,
-    "unresolvedCodeEdges": 325
+    "unresolvedCodeEdges": 327
   },
   "byDomain": {
     "bootstrap": 9,
@@ -44,7 +44,7 @@
     "douane": 5,
     "dashboard": 30,
     "orders": 29,
-    "documents": 10,
+    "documents": 11,
     "notification": 13,
     "logistics": 34,
     "operations": 4,
@@ -72,7 +72,7 @@
     "util-ui": 2,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 21,
+    "util": 22,
     "controller": 1,
     "api-client": 2,
     "state-store": 1,
@@ -91,7 +91,7 @@
     "critical": 78,
     "medium": 102,
     "high": 140,
-    "low": 35
+    "low": 36
   },
   "nodes": [
     {
@@ -14792,6 +14792,46 @@
       "impactAreas": [
         "documents",
         "douane"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "utils/documents/logo-base64.js",
+      "file": "utils/documents/logo-base64.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "logo-base64",
+      "domain": "documents",
+      "layer": "util",
+      "criticality": "low",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "(none)"
+      ],
+      "outputs": [
+        "string data-URI PNG (logo Komerce)"
+      ],
+      "depends": [
+        "(none)"
+      ],
+      "usedBy": [
+        "utils/documents/*-html.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "(none)"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents"
       ],
       "version": "2026-06"
     },
@@ -37351,6 +37391,42 @@
       "label": "douane"
     },
     {
+      "from": "utils/documents/logo-base64.js",
+      "to": "(none)",
+      "type": "depends",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/*-html.js",
+      "to": "utils/documents/logo-base64.js",
+      "type": "uses",
+      "label": "utils/documents/*-html.js"
+    },
+    {
+      "from": "utils/documents/logo-base64.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/logo-base64.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/logo-base64.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "utils/documents/logo-base64.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
       "from": "utils/documents/pickup-proof-html.js",
       "to": "services/documents/pickup-proof.js",
       "type": "depends",
@@ -51544,6 +51620,38 @@
         "services/documents/customs-invoice.js"
       ]
     },
+    "utils/documents/logo-base64.js": {
+      "role": "logo-base64",
+      "domain": "documents",
+      "criticality": "low",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "(none)"
+      ],
+      "directUsedBy": [
+        "utils/documents/*-html.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "documents"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:documents"
+      ]
+    },
     "utils/documents/pickup-proof-html.js": {
       "role": "pickup-proof-html",
       "domain": "documents",
@@ -54000,6 +54108,18 @@
       "to": "utils/documents/customs-invoice-html.js",
       "type": "uses",
       "label": "routes/documents-html.js"
+    },
+    {
+      "from": "utils/documents/logo-base64.js",
+      "to": "(none)",
+      "type": "depends",
+      "label": "(none)"
+    },
+    {
+      "from": "utils/documents/*-html.js",
+      "to": "utils/documents/logo-base64.js",
+      "type": "uses",
+      "label": "utils/documents/*-html.js"
     },
     {
       "from": "routes/documents-html.js",

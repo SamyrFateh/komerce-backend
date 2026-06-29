@@ -18,6 +18,8 @@
 
 'use strict';
 
+const { LOGO_KOMERCE_DATA_URI } = require('./logo-base64');
+
 /**
  * KOMERCE — utils/documents/customs-invoice-html.js
  *
@@ -114,8 +116,8 @@ function buildInvoiceHTML(doc) {
     padding-bottom: 12px;
     margin-bottom: 16px;
   }
-  .brand { font-size: 20px; font-weight: bold; letter-spacing: 2px; }
-  .brand-sub { font-size: 10px; color: #555; margin-top: 2px; }
+  .brand img.logo { height: 30px; display: block; }
+  .brand-sub { font-size: 10px; color: #555; margin-top: 4px; }
   .doc-title-block { text-align: right; }
   .doc-title {
     font-size: 16px;
@@ -256,7 +258,7 @@ function buildInvoiceHTML(doc) {
   <!-- En-tête -->
   <div class="doc-header">
     <div>
-      <div class="brand">KOMERCE</div>
+      <div class="brand"><img class="logo" src="${LOGO_KOMERCE_DATA_URI}" alt="Komerce"></div>
       <div class="brand-sub">Plateforme e-commerce diaspora comorienne<br>komerce.km</div>
     </div>
     <div class="doc-title-block">
