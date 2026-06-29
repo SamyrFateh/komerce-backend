@@ -45,6 +45,23 @@ function _buildIdempotencyKey(orderId, refundType, parcelId) {
   return `refund_${orderId}_${refundType}_${parcelId || 'full'}`;
 }
 
+function _isZeroRefund(amountKmf, amountEur) {
+  return Number(amountKmf || 0) === 0 && Number(amountEur || 0) === 0;
+}
+
+function _zeroRefundResult(amountKmf, amountEur) {
+  return {
+    method: 'none',
+    stripeRefundId: null,
+    walletTxId: null,
+    amountEur,
+    amountKmf,
+    refundRowId: null,
+    skipped: true,
+    reason: 'zero_amount',
+  };
+}
+
 /**
  * Traite un remboursement (Stripe ou wallet).
  * Doit être appelé dans une transaction DB existante.
@@ -52,6 +69,10 @@ function _buildIdempotencyKey(orderId, refundType, parcelId) {
 async function processRefund(dbClient, order, amountKmf, amountEur, refundType, reason, initiatedBy, parcelId = null) {
   let refundMethod, stripeRefundId = null, walletTxId = null;
   const idempotencyKey = _buildIdempotencyKey(order.id, refundType, parcelId);
+
+  if (_isZeroRefund(amountKmf, amountEur)) {
+    return _zeroRefundResult(amountKmf, amountEur);
+  }
 
   // PATCH P2-2 : INSERT refund en 'pending' AVANT l'appel Stripe.
   // Avant : INSERT après Stripe → si crash DB post-refund, argent remboursé sans trace.
@@ -143,6 +164,10 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
 async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, refundType, reason, initiatedBy, parcelId) {
   let refundMethod, stripeRefundId = null, walletTxId = null;
   const idempotencyKey = _buildIdempotencyKey(order.id, refundType, parcelId);
+
+  if (_isZeroRefund(amountKmf, amountEur)) {
+    return _zeroRefundResult(amountKmf, amountEur);
+  }
 
   // A-BE-06 : INSERT refund en 'pending' AVANT tout appel Stripe ou wallet.
   // ON CONFLICT sur (order_id, refund_type) — contrainte ajoutée en migration 014.
