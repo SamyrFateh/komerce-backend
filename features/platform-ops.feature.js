@@ -85,4 +85,25 @@ module.exports = {
     'aucune ecriture metier ne passe par platform-ops',
   ],
 
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    kind:     'technical-transversal',
+    decision: 'transversal-technique',
+    signals: {
+      ownsTables:          false, // pas de tables métier propriétaires
+      ownsLifecycle:       false,
+      activeService:       false, // expose la santé, ne rend pas de service métier
+      multiConsumer:       false, // platform-ops ne consomme pas d'autres features — c'est l'inverse
+      ownsMigrations:      false, // aucune migration métier dédiée
+      externalSideEffect:  'none',
+      surface:             'api',
+    },
+    rationale: [
+      'invariant explicite : aucune écriture métier ne passe par platform-ops',
+      'infrastructure pure — santé applicative, config, modules actifs',
+      'pas de règle métier propre (service = «pas de service métier»)',
+      'consommé transversalement par l\'outillage CI, monitoring, et toutes les features',
+    ],
+  },
+
 };

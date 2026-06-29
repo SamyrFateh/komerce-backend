@@ -83,6 +83,28 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'notifications est un puits d\'evenements — elle ne decide jamais elle-meme qu\'un evenement metier a eu lieu',
+    'livraison outbound best-effort — l\'echec d\'envoi WhatsApp ne doit jamais bloquer la transaction emettrice (fire-and-forget)',
   ],
+
+  // ── Classification ────────────────────────────────────────────────────────
+  classification: {
+    kind:     'business-transversal',
+    decision: 'feature-transverse',
+    signals: {
+      ownsTables:          true,  // notification_log, sms_log
+      ownsLifecycle:       false, // pas de machine de statut propre — reçoit un événement, émet, log
+      activeService:       true,  // émet activement vers Meta WhatsApp / canaux externes
+      multiConsumer:       true,  // consommée par orders, payments, shared-cart, refunds, auth-identity
+      ownsMigrations:      false,
+      externalSideEffect:  'outbound-message', // WhatsApp Meta API, SMS
+      surface:             'service',
+    },
+    rationale: [
+      'consommée symétriquement par toutes les features émettrices — pas rattachable à une seule',
+      'effet externe critique : appel WhatsApp Meta API — canal outbound',
+      'ne décide jamais elle-même l\'événement métier (invariant documenté)',
+      'pas de machine de statut propre — transverse par nature',
+    ],
+  },
 
 };

@@ -73,6 +73,13 @@ const STEPS = [
     cmd:       'npm run feature:check',
     warn:      true,
   },
+  {
+    label:     'Feature classification check (ratchet phase 1)',
+    category:  'gouvernance',
+    npmScript: 'feature:classification',
+    cmd:       'npm run feature:classification',
+    warn:      true,  // warning-only — passer en bloquant dès phase 3 (backfill terminé)
+  },
 
   // ── Gate 1 : fichiers touchés → carte ─────────────────────────────────
   {
