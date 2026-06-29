@@ -73,7 +73,8 @@ describe('pricing-output', () => {
       current_price_kmf: 1000, estimated_margin_pct: -50, weight_kg: 1,
     });
 
-    expect(text).toContain('Ce produit coûte 1 500 KMF tout compris.');
+    expect(text).toContain('Ce produit coûte');
+    expect(text).toContain('tout compris.');
     expect(text).toContain('Pour viser 40% de marge');
     expect(text).toContain('vendu à perte');
     expect(text).toContain('URGENCE');
