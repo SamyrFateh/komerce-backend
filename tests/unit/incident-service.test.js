@@ -58,8 +58,9 @@ describe('incident-service', () => {
     await expect(resolveIncident('inc-001', {
       resolution_type: 'manual_fix', resolved_by: 'admin-001', notes: 'ok', actions_taken: ['checked'], notify_client: true, client_message: 'done',
     })).resolves.toEqual({ success: true, incident_id: 'inc-001', resolution_type: 'manual_fix' });
-    expect(client.calls[1].sql).toContain('UPDATE incidents SET');
-    expect(client.calls[1].params[1]).toBe('resolved');
+    const updateCall = client.calls.find(c => String(c.sql).includes('UPDATE incidents SET'));
+    expect(updateCall).toBeDefined();
+    expect(updateCall.params[1]).toBe('resolved');
     expectTransactionCommitted(client);
   });
 
