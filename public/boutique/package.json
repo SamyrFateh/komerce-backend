@@ -10,8 +10,7 @@
     "lint:css": "stylelint \"css/*.css\" --ignore-path .stylelintignore",
     "lint:css:fix": "stylelint \"css/*.css\" --fix",
     "lint:css:report": "stylelint \"css/*.css\" --formatter json > stylelint-report.json || true",
-    "audit:gate": "node ../../scripts/npm-audit-gate.js --cwd=.",
-    "audit:gate:observe": "node ../../scripts/npm-audit-gate.js --cwd=. --observe",
+    "audit:gate": "node scripts/audit-gate.js --strict",
     "audit:arch": "node scripts/audit-boutique-arch.js",
     "audit:arch:live": "node scripts/gen-boutique-arch-live.js",
     "check:html": "node scripts/check-html-balance.js",
@@ -34,9 +33,9 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "check:all": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run feature:guard:strict && npm run test:e2e",
+    "check:all": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run audit:gate && npm run feature:guard:strict && npm run test:e2e",
     "check:all:verbose": "npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:ownership && npm run audit:registry",
-    "check:fast": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run feature:guard:strict",
+    "check:fast": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run audit:gate && npm run feature:guard:strict",
     "precommit": "npm run check:all",
     "audit:ownership": "node scripts/gen-ownership.js",
     "audit:registry": "node scripts/feature-registry-check.js --strict",
@@ -48,7 +47,10 @@
     "quality:gate:fix": "node scripts/code-quality-gate.js --fix",
     "feature:guard": "node scripts/feature-guard.js",
     "feature:guard:strict": "node scripts/feature-guard.js --strict",
-    "feature:guard:json": "node scripts/feature-guard.js --json"
+    "feature:guard:json": "node scripts/feature-guard.js --json",
+    "audit:gate:report": "node scripts/audit-gate.js",
+    "audit:gate:accept": "node scripts/audit-gate.js --accept",
+    "audit:gate:json": "node scripts/audit-gate.js --json"
   },
   "keywords": [],
   "author": "",
@@ -56,6 +58,7 @@
   "devDependencies": {
     "@playwright/test": "^1.44.0",
     "stylelint": "^17.11.1",
-    "stylelint-config-standard": "^40.0.0"
+    "stylelint-config-standard": "^40.0.0",
+    "serve": "^14.2.0"
   }
 }

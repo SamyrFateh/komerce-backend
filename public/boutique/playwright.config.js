@@ -1,5 +1,6 @@
 // playwright.config.js
 // @brief Configuration Playwright — Boutique Komerce (ARCH-7)
+// @version D7 — ajout webServer (résout ERR_CONNECTION_REFUSED en local et CI)
 
 const { defineConfig, devices } = require('@playwright/test');
 
@@ -17,6 +18,26 @@ module.exports = defineConfig({
   reporter: process.env.CI
     ? [['junit', { outputFile: 'test-results/results.xml' }], ['list']]
     : [['html', { open: 'never' }], ['list']],
+
+  // ── Serveur de développement intégré ──────────────────────────────────────
+  // Lance `npx serve . -p 3000` avant les tests et l'arrête après.
+  // En CI, réutilise un serveur déjà démarré si PORT 3000 est occupé.
+  // Pour pointer vers staging : BASE_URL=https://staging.example.com npx playwright test
+  // (webServer est ignoré si BASE_URL est défini sur une URL distante — voir condition ci-dessous)
+  ...(
+    !process.env.BASE_URL || process.env.BASE_URL.startsWith('http://localhost')
+      ? {
+          webServer: {
+            command: 'npx serve . --listen 3000 --no-clipboard',
+            url: 'http://localhost:3000',
+            reuseExistingServer: !process.env.CI,
+            timeout: 15_000,
+            stdout: 'ignore',
+            stderr: 'pipe',
+          },
+        }
+      : {}
+  ),
 
   use: {
     // URL de base — surcharger via BASE_URL=https://staging.railway.app

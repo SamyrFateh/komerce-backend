@@ -13,12 +13,16 @@
     "audit:arch:report": "node scripts/audit-arch.js",
     "audit:guard": "node scripts/feature-guard.js --strict",
     "audit:guard:report": "node scripts/feature-guard.js",
-    "check:all": "npm run quality:gate && npm run audit:registry && npm run audit:arch && npm run audit:guard && npm test",
+    "check:all": "npm run quality:gate && npm run audit:registry && npm run audit:arch && npm run audit:guard && npm run audit:gate && npm test",
     "check:fast": "npm run quality:gate && npm run audit:registry",
     "precommit": "npm run check:all",
     "quality:gate": "node scripts/code-quality-gate.js --strict",
     "quality:gate:report": "node scripts/code-quality-gate.js",
-    "quality:gate:fix": "node scripts/code-quality-gate.js --fix"
+    "quality:gate:fix": "node scripts/code-quality-gate.js --fix",
+    "audit:gate": "node scripts/audit-gate.js --strict",
+    "audit:gate:report": "node scripts/audit-gate.js",
+    "audit:gate:accept": "node scripts/audit-gate.js --accept",
+    "audit:gate:json": "node scripts/audit-gate.js --json"
   },
   "keywords": [],
   "author": "",
@@ -29,8 +33,12 @@
   },
   "jest": {
     "testEnvironment": "jest-environment-jsdom",
-    "testMatch": ["**/tests/**/*.test.js"],
-    "setupFiles": ["./tests/setup.js"],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "setupFiles": [
+      "./tests/setup.js"
+    ],
     "testTimeout": 15000
   }
 }
