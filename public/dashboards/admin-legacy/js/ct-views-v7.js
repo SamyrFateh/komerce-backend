@@ -748,6 +748,10 @@ CT.views.dashboard = async function(container) {
       if (el) { e.preventDefault(); CT.app.navigate(el.dataset.view); }
     });
   } catch (err) {
+    container.innerHTML = '<div class="ct-error">❌ ' + err.message + '</div>';
+  }
+};
+
 CT.views.finances = async function(container) {
   container.innerHTML = '<div class="ct-loading">💰 Chargement finances...</div>';
   try {
