@@ -145,10 +145,6 @@ describe('pricing-engine', () => {
 
   it('recommend applique les overrides finance sans muter la config passee', async () => {
     const config = baseConfig();
-    db.query
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
 
     await engine.recommend({
       category: 'food', cost_kmf: 1000, weight_kg: 1, current_price_kmf: 1800,
@@ -165,8 +161,6 @@ describe('pricing-engine', () => {
   });
 
   it('recommend classe strategy_risk destructive ou undercovered selon prix final', async () => {
-    db.query.mockResolvedValue({ rows: [] });
-
     await expect(engine.recommend({ category: 'food', cost_kmf: 1000, current_price_kmf: 0, pricing_strategy: 'manual', final_price_kmf: 1300 }, { config: baseConfig() }))
       .resolves.toMatchObject({ strategy_risk: 'destructive' });
     await expect(engine.recommend({ category: 'food', cost_kmf: 1000, current_price_kmf: 0, pricing_strategy: 'manual', final_price_kmf: 1450 }, { config: baseConfig() }))
