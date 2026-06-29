@@ -106,7 +106,9 @@ describe('confirm-pickup-cash-payment', () => {
         channel: 'cash_relais',
         dbClient: client,
       }));
-      expect(client.calls[2].sql).toContain('INSERT INTO cash_collections');
+      const cashInsert = client.calls.find(c => String(c.sql).includes('INSERT INTO cash_collections'));
+      expect(cashInsert).toBeTruthy();
+      expect(cashInsert.params).toEqual(['order-001', 18000, 'agent-001', 'relais-001']);
       expectTransactionCommitted(client);
     });
 
