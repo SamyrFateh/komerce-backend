@@ -1,0 +1,13 @@
+module.exports = {
+  testEnvironment: 'jsdom',
+  testMatch: ['**/tests/unit/**/*.test.js'],
+  transform: {
+    '\\.js$': ['babel-jest', {
+      presets: [['@babel/preset-env', { targets: { node: 'current' } }]],
+    }],
+  },
+  transformIgnorePatterns: ['/node_modules/'],
+  setupFiles: ['./tests/unit/setup.js'],
+  clearMocks: true,
+  restoreMocks: true,
+};
