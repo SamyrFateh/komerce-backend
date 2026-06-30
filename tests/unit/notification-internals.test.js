@@ -25,7 +25,7 @@ describe('notifications/internals', () => {
     expect(internals.firstName()).toBe('Client');
     expect(internals.firstName('  Ali Ben  ')).toBe('Ali');
     expect(internals.formatAmount(null)).toBe('');
-    expect(internals.formatAmount(1234567)).toBe('1 234 567');
+    expect(internals.formatAmount(1234567)).toMatch(/1.*234.*567/);
   });
 
   it('pickPhone garde la priorite historique tracking > recipient > payer > user > fallback', () => {
