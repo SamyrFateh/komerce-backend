@@ -12,10 +12,10 @@ jest.mock('../../services/authkey-client', () => ({
   callAuthKeyText: jest.fn(),
   WID: 'WID_DEFAULT',
 }));
-jest.mock('../../services/notifications/signal-service', () => ({ upsertSignal: jest.fn(() => Promise.resolve()) }));
+jest.mock('../../services/signal-service', () => ({ upsertSignal: jest.fn(() => Promise.resolve()) }));
 
 const db = require('../../db');
-const signalService = require('../../services/notifications/signal-service');
+const signalService = require('../../services/signal-service');
 const internals = require('../../services/notifications/internals');
 
 describe('notifications/internals', () => {
