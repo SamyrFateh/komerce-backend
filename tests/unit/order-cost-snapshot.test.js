@@ -4,7 +4,10 @@ jest.mock('../../services/pricing-engine', () => ({
   loadGlobalConfig: jest.fn(),
   recommend: jest.fn(),
 }));
-jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));
+jest.mock('../../utils/logger', () => {
+  const child = jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
+  return { child, forModule: child };
+});
 
 const pricingEngine = require('../../services/pricing-engine');
 const { lockEstimatedCostsForOrder, _isActive } = require('../../services/order-cost-snapshot');
