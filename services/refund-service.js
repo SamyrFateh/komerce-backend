@@ -141,6 +141,12 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
  * Maintenant : INSERT pending → Stripe/wallet → UPDATE completed.
  */
 async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, refundType, reason, initiatedBy, parcelId) {
+  // Garde montant zéro : aucun appel DB/Stripe/wallet pour un remboursement nul
+  // (évite une ligne `refunds` fantôme + un appel Stripe amount:0 inutile).
+  if (!amountKmf && !amountEur) {
+    return { method: 'none', skipped: true, reason: 'zero_amount', amountEur, amountKmf };
+  }
+
   let refundMethod, stripeRefundId = null, walletTxId = null;
   const idempotencyKey = _buildIdempotencyKey(order.id, refundType, parcelId);
 

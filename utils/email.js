@@ -26,6 +26,7 @@
 const BREVO_KEY = process.env.BREVO_API_KEY || '';
 const SENDER    = process.env.BREVO_SENDER_EMAIL || 'no-reply@komerce.km';
 const APP       = process.env.APP_URL || 'https://komerce-backend-production.up.railway.app';
+const log       = require('./logger').child({ module: 'email' });
 
 /* ─── template wrapper ──────────────────────────────────── */
 function wrap(title, body) {
