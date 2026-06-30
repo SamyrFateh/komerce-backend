@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 707,
-    "edges": 3437,
+    "edges": 3438,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 118,
@@ -10850,6 +10850,7 @@
       "depends": [
         "db.js",
         "services/authkey-client.js",
+        "services/signal-service.js",
         "utils/logger.js"
       ],
       "usedBy": [
@@ -31962,6 +31963,12 @@
     },
     {
       "from": "services/notifications/internals.js",
+      "to": "services/signal-service.js",
+      "type": "depends",
+      "label": "services/signal-service.js"
+    },
+    {
+      "from": "services/notifications/internals.js",
       "to": "utils/logger.js",
       "type": "depends",
       "label": "utils/logger.js"
@@ -48068,6 +48075,7 @@
       "directDependsOn": [
         "db.js",
         "services/authkey-client.js",
+        "services/signal-service.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
@@ -48109,6 +48117,7 @@
         "services/notifications/order.js",
         "services/notifications/otp-auth.js",
         "services/notifications/parcel.js",
+        "services/signal-service.js",
         "utils/logger.js"
       ]
     },
@@ -50994,7 +51003,8 @@
         "db:signals",
         "db:users",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown"
+        "impact:unknown",
+        "services/notifications/internals.js"
       ]
     },
     "services/simulator/cleanup.js": {
