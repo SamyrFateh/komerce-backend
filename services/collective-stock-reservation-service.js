@@ -168,6 +168,16 @@ async function consumeForWorkspace(workspaceId, client = db) {
   );
 }
 
+// BUGFIX (tests/missing-p1-finance) : ensureTable était référencé dans
+// module.exports sans jamais être défini, provoquant un ReferenceError au
+// chargement du module (et donc un crash de tout appelant, dont
+// repair-collective-stock-reservations.js qui l'invoque). Le DDL de
+// collective_stock_reservations est géré par
+// migrations/075_hub_shares_collective_schema.sql (cf. commentaire en tête
+// de fichier), donc ce hook reste un no-op idempotent : il ne doit pas
+// exécuter de DDL au runtime.
+async function ensureTable() {}
+
 module.exports = {
   ensureTable,
   reserveForCreatorToken,

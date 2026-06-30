@@ -1,0 +1,116 @@
+'use strict';
+
+jest.mock('../../services/order-cost-snapshot', () => ({
+  lockEstimatedCostsForOrder: jest.fn(),
+}));
+
+const orderCostSnapshot = require('../../services/order-cost-snapshot');
+const {
+  COST_TYPES,
+  ALLOCATION_METHODS,
+  VARIABLE_COST_TYPES,
+  FIXED_COST_TYPES,
+  EXCEPTIONAL_COST_TYPES,
+  shareByWeight,
+  taxableWeight,
+  lockEstimatedCostsForOrder,
+} = require('../../services/cost-allocation/_helpers');
+
+describe('cost-allocation/_helpers', () => {
+  describe('constantes doctrine', () => {
+    it('sont figees (Object.freeze) pour eviter une mutation accidentelle', () => {
+      expect(Object.isFrozen(COST_TYPES)).toBe(true);
+      expect(Object.isFrozen(ALLOCATION_METHODS)).toBe(true);
+      expect(Object.isFrozen(VARIABLE_COST_TYPES)).toBe(true);
+      expect(Object.isFrozen(FIXED_COST_TYPES)).toBe(true);
+      expect(Object.isFrozen(EXCEPTIONAL_COST_TYPES)).toBe(true);
+    });
+
+    it('chaque cost type variable/fixe/exceptionnel appartient bien a COST_TYPES', () => {
+      const all = [...VARIABLE_COST_TYPES, ...FIXED_COST_TYPES, ...EXCEPTIONAL_COST_TYPES];
+      all.forEach((type) => expect(COST_TYPES).toContain(type));
+    });
+
+    it('les sous-categories variable/fixe/exceptionnelle sont mutuellement exclusives', () => {
+      const variable = new Set(VARIABLE_COST_TYPES);
+      const fixed = new Set(FIXED_COST_TYPES);
+      const exceptional = new Set(EXCEPTIONAL_COST_TYPES);
+      FIXED_COST_TYPES.forEach((t) => expect(variable.has(t)).toBe(false));
+      EXCEPTIONAL_COST_TYPES.forEach((t) => {
+        expect(variable.has(t)).toBe(false);
+        expect(fixed.has(t)).toBe(false);
+      });
+    });
+  });
+
+  describe('shareByWeight', () => {
+    it('repartit un total proportionnellement aux poids', () => {
+      const result = shareByWeight(900, [
+        { id: 'a', weight: 1 },
+        { id: 'b', weight: 2 },
+      ]);
+      expect(result).toEqual([
+        { id: 'a', share: 300, share_pct: 33.33 },
+        { id: 'b', share: 600, share_pct: 66.67 },
+      ]);
+    });
+
+    it('retourne des shares a 0 si le poids total est nul', () => {
+      const result = shareByWeight(500, [
+        { id: 'a', weight: 0 },
+        { id: 'b', weight: 0 },
+      ]);
+      expect(result).toEqual([
+        { id: 'a', share: 0, share_pct: 0 },
+        { id: 'b', share: 0, share_pct: 0 },
+      ]);
+    });
+
+    it('retourne un tableau vide si aucune entree', () => {
+      expect(shareByWeight(100, [])).toEqual([]);
+    });
+
+    it('traite un poids manquant comme 0', () => {
+      const result = shareByWeight(100, [{ id: 'a' }, { id: 'b', weight: 1 }]);
+      expect(result).toEqual([
+        { id: 'a', share: 0, share_pct: 0 },
+        { id: 'b', share: 100, share_pct: 100 },
+      ]);
+    });
+  });
+
+  describe('taxableWeight', () => {
+    it('retient le poids volumetrique si superieur au poids reel (mode sea, facteur 1000)', () => {
+      // volume 0.5 m3 * 1000 = 500 kg > 100 kg reel
+      expect(taxableWeight(100, 0.5, 'sea')).toBe(500);
+    });
+
+    it('retient le poids reel si superieur au volumetrique', () => {
+      expect(taxableWeight(800, 0.1, 'sea')).toBe(800);
+    });
+
+    it('utilise le facteur 167 en mode air', () => {
+      // 0.1 m3 * 167 = 16.7 kg < poids reel 20 kg -> retient le reel
+      expect(taxableWeight(20, 0.1, 'air')).toBe(20);
+      // 1 m3 * 167 = 167 kg > 20 kg reel -> retient le volumetrique
+      expect(taxableWeight(20, 1, 'air')).toBe(167);
+    });
+
+    it('gere les valeurs manquantes/non numeriques comme 0', () => {
+      expect(taxableWeight(undefined, undefined)).toBe(0);
+      expect(taxableWeight('abc', null)).toBe(0);
+    });
+  });
+
+  describe('lockEstimatedCostsForOrder', () => {
+    it('delegue a order-cost-snapshot avec les memes arguments', async () => {
+      orderCostSnapshot.lockEstimatedCostsForOrder.mockResolvedValue({ order_id: 'o1', imputations_count: 2 });
+      const client = { query: jest.fn() };
+
+      const result = await lockEstimatedCostsForOrder('o1', client, { foo: 'bar' });
+
+      expect(orderCostSnapshot.lockEstimatedCostsForOrder).toHaveBeenCalledWith('o1', client, { foo: 'bar' });
+      expect(result).toEqual({ order_id: 'o1', imputations_count: 2 });
+    });
+  });
+});

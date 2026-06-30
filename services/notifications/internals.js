@@ -34,7 +34,7 @@ const WID_OTP        = process.env.WID_OTP        || null;
 const WID_MAGIC_LINK = process.env.WID_MAGIC_LINK || null;
 
 function _alertNotificationFailure({ event, orderRef, orderId, error }) {
-  const signalService = require('./signal-service');
+  const signalService = require('../signal-service');
   signalService.upsertSignal({
     signal_type:    'notification_failure',
     severity:       'warning',
