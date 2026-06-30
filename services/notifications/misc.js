@@ -22,6 +22,7 @@ const {
   callAuthKeyText,
   WID,
   logNotification,
+  _alertNotificationFailure,
 } = require('./internals');
 
 async function notifyText(phone, message, event, orderId = null) {
