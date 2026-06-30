@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context
  * @outputs       helpers, log_entry, alert
- * @depends       db.js, services/authkey-client.js, utils/logger.js
+ * @depends       db.js, services/authkey-client.js, services/signal-service.js, utils/logger.js
  * @used-by       services/notifications/order.js, services/notifications/parcel.js, services/notifications/otp-auth.js, services/notifications/loyalty.js
  * @db-write      notification_log
  * @db-txn        notification_non_blocking
@@ -34,7 +34,7 @@ const WID_OTP        = process.env.WID_OTP        || null;
 const WID_MAGIC_LINK = process.env.WID_MAGIC_LINK || null;
 
 function _alertNotificationFailure({ event, orderRef, orderId, error }) {
-  const signalService = require('./signal-service');
+  const signalService = require('../signal-service');
   signalService.upsertSignal({
     signal_type:    'notification_failure',
     severity:       'warning',
