@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          api-route-manifest
- * @domain        bootstrap
+ * @domain        infrastructure
  * @layer         route-manifest
  * @criticality   critical
  * @inputs        express_app

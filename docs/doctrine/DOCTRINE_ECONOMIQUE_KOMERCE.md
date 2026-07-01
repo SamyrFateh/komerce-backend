@@ -1,5 +1,7 @@
 # Doctrine économique Komerce
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 > **Statut** : document fondamental  
 > **Dernière consolidation** : 15 mai 2026  
 > **Sources vérifiées** : `services/pricing-engine.js`, `routes/pricing.js`, `routes/pricing-strategy.js`, `routes/admin-pricing-components.js`, `routes/admin-cost-components.js`, `routes/admin-risk-provisions.js`, `routes/admin-finance-config.js`.

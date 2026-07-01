@@ -1,5 +1,7 @@
 # Komerce — Déclaration douanière
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 ## Doctrine intemporelle · La déclaration est le pivot
 
 > **On ne minimise pas un droit qu'on ne contrôle pas. On maîtrise ce qu'on déclare, et on mesure ce qu'on subit.**

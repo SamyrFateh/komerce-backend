@@ -1,3 +1,8 @@
+-- @migration patch_variants.sql
+-- @domain    catalog
+-- @purpose   Patch product_variants
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- ══════════════════════════════════════════════════════════════════════
 --  patch_variants.sql
 --  Correctifs base de données — variantes produit (boutique modal v2)

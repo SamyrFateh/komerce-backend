@@ -1,3 +1,8 @@
+-- @migration 086_invoice_public_token.sql
+-- @domain    documents
+-- @purpose   Ajout token public invoices (v2)
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- 074_invoice_public_token.sql
 -- Public, unguessable token used for WhatsApp invoice links.
 -- The invoice itself remains generated only after payment_status='paid'.

@@ -1,5 +1,7 @@
 # Doctrine moteur economique — allocation, unites et surcharge
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 > Le moteur calcule la verite economique. La strategie assume le prix. Le dashboard montre les consequences.
 
 Ce document est la reference active pour le moteur economique Komerce quand une modification touche le pricing, le CDR, les allocations de couts ou les dashboards economiques.

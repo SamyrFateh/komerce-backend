@@ -1,3 +1,8 @@
+-- @migration 062_boutique_categories_seed.sql
+-- @domain    catalog
+-- @purpose   Seed données catégories boutique
+-- @added-header 2026-07-01 (audit gouvernance)
+
 INSERT INTO boutique_categories
   (key, label, short_label, section_emoji, icon_svg, db_keys, filter_type, display_order, show_in_rail, show_in_sections)
 VALUES

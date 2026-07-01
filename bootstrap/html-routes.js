@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          bootstrap-html-routes
- * @domain        bootstrap
+ * @domain        infrastructure
  * @layer         bootstrap
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

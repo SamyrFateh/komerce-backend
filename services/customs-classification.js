@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          customs-classification
- * @domain        douane
+ * @domain        customs
  * @layer         service
  * @criticality   high
  * @inputs        product_category_key (text), db_client

@@ -63,8 +63,8 @@ module.exports = {
     exposes: [
       'GET /api/inventory/:productId',
     ],
-    consumes: [
-      'catalog (produit concerne)',
+    consumes: ['catalog (produit concerne)',
+      'auth',
     ],
   },
 

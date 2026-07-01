@@ -24,7 +24,7 @@ qui *affirment* qu'une invariante tient. Une suppression casse l'affirmation.
 ## 2. Une seule doctrine, trois déclinaisons
 
 L'observation clé : **tes manifestes `*.feature.js` traversent déjà les couches.**
-`catalog`, `logistics`, `payments`, `shared-cart`, `wallet-loyalty` déclarent des
+`catalog`, `logistics`, `payments`, `shared-cart`, `wallet` déclarent des
 fichiers `boutique` ; `dashboard` déclare des fichiers `dash`. La boutique et les
 dashboards ne sont pas des mondes séparés : ce sont les **couches frontend de
 features backend**.

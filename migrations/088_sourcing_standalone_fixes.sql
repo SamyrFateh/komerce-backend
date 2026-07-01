@@ -1,3 +1,8 @@
+-- @migration 088_sourcing_standalone_fixes.sql
+-- @domain    catalog
+-- @purpose   Corrections produits et partenaires sourcing
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- 088_sourcing_standalone_fixes.sql
 -- Corrections individuelles hors lot — findings F-03, F-05, F-06
 -- Source : docs/_work/SOURCING_DB_AUDIT.md

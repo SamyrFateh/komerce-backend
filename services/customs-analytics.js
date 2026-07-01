@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          customs-analytics
- * @domain        douane
+ * @domain        customs
  * @layer         service
  * @criticality   low
  * @inputs        shipment filters (date range, status, transitaire)

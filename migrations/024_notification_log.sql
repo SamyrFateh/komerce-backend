@@ -1,3 +1,8 @@
+-- @migration 024_notification_log.sql
+-- @domain    notification
+-- @purpose   Table notification_log
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- 023: Create notification_log table
 -- Tracks all WhatsApp, email, SMS notifications sent
 

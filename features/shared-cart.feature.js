@@ -14,7 +14,7 @@ module.exports = {
   // ── Identité ─────────────────────────────────────────────────────────────
   name:     'shared-cart',
   type:     'feature',   // feature | transversal
-  domain:   'panier-partage',
+  domain:   'shared-cart',
   status:   'production',   // draft | staging | production | deprecated
   owner:    'backend-core',
   since:    '2026-03',
@@ -34,7 +34,7 @@ module.exports = {
     out: [
       'paiement carte/PayPal lui-même (feature payments)',
       'création de la commande finale (feature orders, consommée en sortie)',
-      'crédit wallet (feature wallet-loyalty, consommée en sortie)',
+      'crédit wallet (feature wallet, consommée en sortie)',
       'tests/unit/collective-payment-orchestrator.test.js',
     ],
   },
@@ -159,11 +159,14 @@ module.exports = {
       'POST   /api/shared-carts/cash/:id/contribute',
       'POST   /api/shared-carts/refund-admin/:id',
     ],
-    consumes: [
-      'orders',        // domaine propriétaire : order-status-machine
+    consumes: ['orders',        // domaine propriétaire : order-status-machine
       'wallet',        // domaine propriétaire : wallet-service
       'products',      // lecture seule
-      'notifications', // émission uniquement
+      'notification', // émission uniquement,
+      'auth',
+      'customs',
+      'documents',
+      'logistics',
     ],
   },
 

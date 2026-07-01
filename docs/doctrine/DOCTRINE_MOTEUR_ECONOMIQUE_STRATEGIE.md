@@ -1,5 +1,7 @@
 # Doctrine du moteur économique, de la stratégie prix et des dashboards
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 > Le moteur calcule. La stratégie assume. Le dashboard rend les conséquences visibles.
 
 Ce document complète la doctrine du moteur économique Komerce. Il fixe le contrat entre trois couches qui ne doivent plus être mélangées :

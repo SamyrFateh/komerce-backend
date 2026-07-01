@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role         request-validation-schemas
- * @domain       validation
+ * @domain        infrastructure
  * @layer        validators
  * @criticality  high
  * @purpose      Schémas Joi centralisés pour valider body, params et query des routes API.

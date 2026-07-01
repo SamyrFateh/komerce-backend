@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          auth-validate
- * @domain        auth
+ * @domain        infrastructure
  * @layer         middleware
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

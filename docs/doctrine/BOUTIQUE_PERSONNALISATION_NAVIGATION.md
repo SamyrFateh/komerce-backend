@@ -1,5 +1,7 @@
 # Doctrine Boutique — personnalisation de navigation et suggestions
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 > Komerce ne personnalise pas la verite du catalogue. Komerce personnalise l'ordre de decouverte.
 
 Ce document est la doctrine active pour tout ce qui touche aux suggestions boutique, a la personnalisation de l'accueil, au re-ranking des produits, aux rails de navigation, et aux suggestions affichees dans la modal produit.

@@ -1,5 +1,7 @@
 # Komerce — Panier partagé
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 ## Doctrine intemporelle · Boutique First
 
 > **Chacun gère sa négo. Komerce sait matérialiser l'achat.**

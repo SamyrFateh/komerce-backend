@@ -30,7 +30,7 @@ module.exports = {
       'generation PDF/HTML de preuve de retrait, facture douane, reçu wallet, reçu remboursement',
     ],
     out: [
-      'decision qu\'un document doit etre genere (reste a la feature source : orders, customs, wallet-loyalty, refunds)',
+      'decision qu\'un document doit etre genere (reste a la feature source : orders, customs, wallet, refunds)',
     ],
   },
 
@@ -67,8 +67,8 @@ module.exports = {
       'GET /api/admin/documents/:id (détail)',
       'GET /api/doc/:reference (rendu HTML imprimable — à câbler via routes/documents-html.js)',
     ],
-    consumes: [
-      'orders, customs, wallet-loyalty, refunds (donnees source du document)',
+    consumes: ['orders, customs, wallet, refunds (donnees source du document)',
+      'auth',
     ],
   },
 

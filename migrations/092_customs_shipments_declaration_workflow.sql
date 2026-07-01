@@ -1,3 +1,8 @@
+-- @migration 092_customs_shipments_declaration_workflow.sql
+-- @domain    customs
+-- @purpose   Workflow déclaration customs_shipments
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- 092_customs_shipments_declaration_workflow.sql
 -- Workflow de déclaration douanière en deux étapes
 --

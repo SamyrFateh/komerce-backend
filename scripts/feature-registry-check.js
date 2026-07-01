@@ -30,21 +30,12 @@ const ORPHANS_ONLY  = process.argv.includes('--orphans');
 const JSON_OUTPUT   = process.argv.includes('--json');
 
 // Dossiers source à auditer pour les orphelins
-const SOURCE_DIRS = ['services', 'routes', 'migrations', 'middleware', 'utils', 'validators', 'core'];
+const SOURCE_DIRS = ['services', 'routes', 'migrations', 'middleware', 'utils', 'validators', 'core', 'bootstrap'];
 
-// Fichiers à ignorer dans la détection d'orphelins (infra pure, pas de feature métier dédiée)
+// Fichiers à ignorer dans la détection d'orphelins (infra pure hors feature)
+// TROU 3 fermé 2026-07-01 : middleware, utils, validators, bootstrap → feature infrastructure
 const ORPHAN_IGNORE = new Set([
   'db.js', 'server.js', 'jest.config.js',
-  'middleware/auth.js', 'middleware/auth-guest.js', 'middleware/soft-auth.js',
-  'middleware/require-verified-identity.js', 'middleware/error-handler.js',
-  'middleware/rate-limit.js', 'middleware/request-id.js', 'middleware/upload.js',
-  'middleware/validate.js', 'middleware/verify-authkey-webhook.js',
-  // utils transversaux (multi-features — pas rattachables à une seule)
-  'utils/phone.js', 'utils/user-cache.js', 'utils/logger.js', 'utils/rates.js',
-  'utils/reference.js',       // génération de références (orders, shared-cart, logistics)
-  'utils/rules.js',           // moteur de règles métier centralisé (pricing, orders, catalog)
-  'validators/index.js',      // barrel de validation Joi (toutes les routes)
-  'utils/phone.js', 'utils/user-cache.js', 'utils/logger.js', 'utils/rates.js',
 ]);
 
 const REQUIRED_FIELDS = ['name', 'type', 'domain', 'status', 'owner', 'service', 'perimeter', 'authority', 'invariants'];
@@ -74,7 +65,7 @@ function loadManifests() {
 // existence est vérifiée par leur propre outillage (ex. scripts/gen-ownership.js côté
 // bout). Un manifest qui déclare repos.boutique / repos.dash documente l'intention
 // cross-repo ; ce script ne la valide pas, il ne ferait que produire de faux positifs.
-const BACKEND_FILE_GROUPS = new Set(['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'migrations', 'tests']);
+const BACKEND_FILE_GROUPS = new Set(['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'migrations', 'tests', 'bootstrap']);
 
 function declaredFiles(manifests) {
   const declared = new Map(); // file → feature name

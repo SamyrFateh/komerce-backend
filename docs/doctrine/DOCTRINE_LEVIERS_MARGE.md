@@ -1,5 +1,7 @@
 # Doctrine V3 — Leviers de marge & simulateur d'imputation
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 > *Komerce ne donne pas un seul prix. Komerce donne plusieurs scénarios
 > argumentés et laisse l'humain décider, en pleine conscience.*
 

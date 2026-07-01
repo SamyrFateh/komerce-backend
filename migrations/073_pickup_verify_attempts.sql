@@ -1,3 +1,8 @@
+-- @migration 073_pickup_verify_attempts.sql
+-- @domain    logistics
+-- @purpose   Table pickup_verify_attempts
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- 073_pickup_verify_attempts.sql
 -- Persist rate-limit attempts for public pickup-code verification.
 -- S17 — avoids in-memory reset after redeploy.

@@ -1,3 +1,8 @@
+-- @migration 061_boutique_categories.sql
+-- @domain    catalog
+-- @purpose   Tables boutique_categories et boutique_subcategories
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- LOT 10 — Catégories boutique comme source de vérité unique
 --

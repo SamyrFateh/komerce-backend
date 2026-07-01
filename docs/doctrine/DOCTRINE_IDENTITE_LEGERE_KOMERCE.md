@@ -1,5 +1,7 @@
 # Doctrine Komerce — Identité légère vérifiée
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 ## 1. Résumé
 
 Komerce ne doit pas imposer une inscription classique.

@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          operational-crons
- * @domain        bootstrap
+ * @domain        infrastructure
  * @layer         cron
  * @criticality   critical
  * @inputs        timers, database_state, rules

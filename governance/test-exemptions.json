@@ -1,11 +1,11 @@
 {
   "_comment": "Fichiers applicatifs exemptés du gate touched-tests-gate.js.",
-  "_format":  "{ \"chemin/relatif/depuis/racine.js\": \"justification explicite\" }",
-  "_règle":   "Toute exemption doit être revue à chaque modification du fichier concerné.",
-
-  "routes/health.js":          "endpoint /health — glue pur, aucune branche métier",
-  "routes/version.js":         "endpoint /version — retourne une constante, non testable unitairement",
-  "server.js":                 "bootstrap Express — couvert par tests d'intégration globaux",
-  "utils/logger.js":           "wrapper pino — pas de branche, interface stable",
-  "utils/env.js":              "lecture process.env — pas de branche testable unitairement"
+  "_format": "{ \"chemin/relatif/depuis/racine.js\": \"justification explicite\" }",
+  "_règle": "Toute exemption doit être revue à chaque modification du fichier concerné.",
+  "routes/health.js": "endpoint /health — glue pur, aucune branche métier",
+  "routes/version.js": "endpoint /version — retourne une constante, non testable unitairement",
+  "server.js": "bootstrap Express — couvert par tests d'intégration globaux",
+  "utils/logger.js": "wrapper pino — pas de branche, interface stable",
+  "utils/env.js": "lecture process.env — pas de branche testable unitairement",
+  "features/infrastructure.feature.js": "Feature transversale (middleware, utils, bootstrap) — couverte indirectement par les tests d'intégration de toutes les features qui la consomment."
 }

@@ -22,32 +22,27 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Domains
 
-- auth: 18
-- bootstrap: 9
+- auth: 13
+- bootstrap: 1
 - boutique: 36
 - catalog: 28
 - checkout: 2
 - collective-workspace: 3
-- customs: 1
+- customs: 6
 - dashboard: 30
 - documents: 11
-- douane: 5
 - economic-engine: 36
+- infrastructure: 19
 - inventory: 3
 - logistics: 34
-- notification: 13
-- notifications: 2
-- operations: 4
+- notification: 15
+- operations: 12
 - orders: 29
-- payment: 15
-- payments: 1
-- platform-ops: 8
+- payment: 16
 - recommendations: 7
 - refunds: 2
 - shared-cart: 46
 - tracking: 1
-- unknown: 5
-- validation: 1
 - wallet: 6
 
 ## Layers
@@ -84,8 +79,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Critical And High Files
 
-- bootstrap/api-routes.js — api-route-manifest (bootstrap, critical, full)
-- bootstrap/crons.js — operational-crons (bootstrap, critical, full)
+- bootstrap/api-routes.js — api-route-manifest (infrastructure, critical, full)
+- bootstrap/crons.js — operational-crons (infrastructure, critical, full)
 - public/boutique/js/b-cart.js — boutique-cart-and-side-cart (boutique, critical, full)
 - public/boutique/js/b-checkout.js — boutique-checkout-orchestrator (checkout, critical, full)
 - public/boutique/js/b-group-view.js — shared-cart-boutique-view (shared-cart, critical, full)
@@ -191,8 +186,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-boutique-categories.js — boutique-taxonomy-admin-api (catalog, high, full)
 - routes/admin-cost-components.js — economic-engine-admin-cost-components (economic-engine, high, full)
 - routes/admin-costing.js — economic-engine-admin-costing (economic-engine, high, full)
-- routes/admin-customs-categories.js — dashboard-admin-customs-categories (douane, high, full)
-- routes/admin-customs-shipments.js — dashboard-admin-customs-shipments (douane, high, full)
+- routes/admin-customs-categories.js — dashboard-admin-customs-categories (customs, high, full)
+- routes/admin-customs-shipments.js — dashboard-admin-customs-shipments (customs, high, full)
 - routes/admin-dashboard.js — dashboard-admin-dashboard (dashboard, high, full)
 - routes/admin-finance-config.js — economic-engine-admin-finance-config (economic-engine, high, full)
 - routes/admin-loyalty.js — dashboard-admin-loyalty (dashboard, high, full)
@@ -202,7 +197,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-risk-provisions.js — dashboard-admin-risk-provisions (dashboard, high, full)
 - routes/admin-rules.js — dashboard-admin-rules (dashboard, high, full)
 - routes/admin.js — dashboard-admin (dashboard, high, full)
-- routes/admin/customs.js — dashboard-customs (douane, high, full)
+- routes/admin/customs.js — dashboard-customs (customs, high, full)
 - routes/admin/dashboard.js — dashboard-dashboard (dashboard, high, full)
 - routes/admin/index.js — dashboard-index (dashboard, high, full)
 - routes/admin/partners.js — dashboard-partners (dashboard, high, full)
@@ -241,7 +236,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
-- services/customs-classification.js — customs-classification (douane, high, full)
+- services/customs-classification.js — customs-classification (customs, high, full)
 - services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
 - services/dashboard-clients-queries.js — dashboard-dashboard-clients-queries (dashboard, high, full)
 - services/dashboard-finance-metrics.js — economic-engine-dashboard-finance-metrics (economic-engine, high, full)
@@ -301,7 +296,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - utils/parcels.js — logistics-parcels (logistics, high, full)
 - utils/parcelSync.js — logistics-parcel-sync (logistics, high, full)
 - utils/pricing-cache.js — economic-engine-pricing-cache (economic-engine, high, full)
-- validators/index.js — request-validation-schemas (validation, high, full)
+- validators/index.js — request-validation-schemas (infrastructure, high, full)
 
 ## Lite Aggregated Files
 

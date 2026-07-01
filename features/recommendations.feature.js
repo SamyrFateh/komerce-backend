@@ -47,6 +47,12 @@ module.exports = {
       'routes/boutique-suggestions.js',
     
       'routes/signals.js',],
+    tests: [
+      'tests/unit/radar-queries.test.js',
+      'tests/unit/signals.test.js',
+      'tests/unit/signal-service.test.js',
+      'tests/unit/boutique-suggestions.test.js',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
@@ -54,8 +60,9 @@ module.exports = {
     exposes: [
       'GET /api/boutique/suggestions',
     ],
-    consumes: [
-      'catalog (lecture produit)',
+    consumes: ['catalog (lecture produit)',
+      'auth',
+      'logistics',
     ],
   },
 

@@ -1,3 +1,8 @@
+-- @migration 093_customs_invoice_document_type.sql
+-- @domain    customs
+-- @purpose   Type document facture customs
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- 093_customs_invoice_document_type.sql
 -- Ajoute le type de document 'customs_invoice' à la table transaction_documents.
 --

@@ -3,7 +3,7 @@
 /**
  * @komerce-arch
  * @role         whatsapp-notification-manual-test
- * @domain       notifications
+ * @domain        notification
  * @layer        manual-test
  * @criticality  medium
  * @purpose      Script manuel de test des notifications WhatsApp/AuthKey.

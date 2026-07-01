@@ -9,7 +9,7 @@
 module.exports = {
   name:     'dashboard',
   type:     'feature',
-  domain:   'admin-dashboard',
+  domain:   'dashboard',
   status:   'production',
   owner:    'backend-core',
   since:    '2025-09',
@@ -57,13 +57,16 @@ module.exports = {
       'GET /api/admin/users',
       'GET /api/admin/index',
     ],
-    consumes: [
-      'orders (lecture commandes)',
+    consumes: ['orders (lecture commandes)',
       'payments (lecture paiements)',
       'logistics (lecture colis)',
       'inventory (lecture stock)',
       'economic-engine (métriques financières)',
-      'wallet-loyalty (soldes et crédits)',
+      'wallet (soldes et crédits)',
+      'auth',
+      'customs',
+      'documents',
+      'recommendations',
     ],
   },
 
@@ -151,7 +154,7 @@ module.exports = {
       'dashboards/admin/css/shell.css',
       'dashboards/admin/css/tokens.css',
 
-      // ── Views Lot 4 — domaine "dashboard / platform-ops" ──────────
+      // ── Views Lot 4 — domaine "dashboard / operations" ──────────
       'dashboards/admin/js/views/ClientsView.js',
       'dashboards/admin/js/views/SettingsView.js',
       'dashboards/admin/js/views/ActionCenterView.js',
@@ -174,7 +177,7 @@ module.exports = {
       'dashboards/admin-legacy/js/ct-app.js',           // deprecated v5
       'dashboards/admin-legacy/js/ct-app-v6.js',        // deprecated v6
       'dashboards/admin-legacy/js/ct-app-v7.js',        // ACTIF
-      'dashboards/admin-legacy/js/ct-notifications.js', // deprecated v5
+      'dashboards/admin-legacy/js/ct-notification.js', // deprecated v5
       'dashboards/admin-legacy/js/ct-platform.js',
       'dashboards/admin-legacy/js/ct-scenarios.js',     // deprecated v5
       'dashboards/admin-legacy/js/ct-views.js',         // deprecated v5

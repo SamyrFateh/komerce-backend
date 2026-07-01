@@ -159,7 +159,7 @@ Backend pre-commit hook (9 etapes)
 
 ### 4.1 Backend (pre-existants — aucune modification)
 
-16 manifests dans `features/` : auth-identity, catalog, customs, dashboard, documents, economic-engine, inventory, logistics, notifications, orders, payments, platform-ops, recommendations, refunds, shared-cart, wallet-loyalty.
+16 manifests dans `features/` : auth, catalog, customs, dashboard, documents, economic-engine, inventory, logistics, notifications, orders, payments, operations, recommendations, refunds, shared-cart, wallet.
 
 ### 4.2 Boutique (11 manifests — 8 generes, 3 pre-existants)
 

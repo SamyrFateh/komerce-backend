@@ -1,3 +1,8 @@
+-- @migration 017_hub_safety_constraints.sql
+-- @domain    logistics
+-- @purpose   Contraintes de sécurité sur parcel_items
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- 017_hub_safety_constraints.sql
 -- Hub Safety Fixes: A + C
 --

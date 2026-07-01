@@ -1,3 +1,8 @@
+-- @migration 094_parcel_reconciliation_view.sql
+-- @domain    logistics
+-- @purpose   Vue réconciliation colis
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- ============================================================================
 --  094_parcel_reconciliation_view.sql
 --  Réconciliation colis ⇄ commandes — VUE EN LECTURE SEULE

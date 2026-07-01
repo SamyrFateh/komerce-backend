@@ -1,3 +1,8 @@
+-- @migration 082_fix_label_fr_mojibake.sql
+-- @domain    catalog
+-- @purpose   Fix encodage labels français (mojibake)
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- Corrige le mojibake sur label_fr (encodage corrompu insere avant la
 -- correction du seed dans 033_parametres_extension.sql).
 -- Le seed original utilisait ON CONFLICT DO NOTHING : les lignes deja

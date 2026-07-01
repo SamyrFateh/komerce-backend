@@ -1,3 +1,8 @@
+-- @migration 075_hub_shares_collective_schema.sql
+-- @domain    shared-cart
+-- @purpose   Table order_incidents et extensions
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 075_hub_shares_collective_schema.sql
 -- Extrait les DDL inline de :

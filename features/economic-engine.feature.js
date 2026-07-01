@@ -111,8 +111,11 @@ module.exports = {
       'GET /api/pricing/:productId',
       'POST /api/pricing/recommend',
     ],
-    consumes: [
-      'catalog (donnees produit source)',
+    consumes: ['catalog (donnees produit source)',
+      'auth',
+      'dashboard',
+      'orders',
+      'wallet',
     ],
   },
 

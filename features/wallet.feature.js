@@ -1,10 +1,10 @@
 /**
- * @feature       refunds
+ * @feature       wallet
  * @type          feature
- * @domain        refunds
+ * @domain        wallet
  * @status        production
  * @owner         backend-core
- * @since         2025-11
+ * @since         2025-10
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
  * @registry      docs/doctrine/APP_FEATURE_REGISTRY.md
  */
@@ -13,64 +13,76 @@
 module.exports = {
 
   // ── Identite ─────────────────────────────────────────────────────────────
-  name:     'refunds',
+  name:     'wallet',
   type:     'feature',   // feature | transversal
-  domain:   'refunds',
+  domain:   'wallet',
   status:   'production',   // draft | staging | production | deprecated
   owner:    'backend-core',
-  since:    '2025-11',
+  since:    '2025-10',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Rembourser un client (wallet, cash, panier partage) de facon tracable et sans double remboursement.',
+  service: 'Tenir le solde wallet d\'un client et son programme de fidelite, avec application exactement une fois.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
-      'service de remboursement transverse et son orchestration',
+      'solde wallet et historique de credit/debit',
+      'programme de fidelite et ses recompenses',
+      'store credits',
     ],
     out: [
-      'credit wallet lui-meme (feature wallet, consommee ici)',
-      'reçu de remboursement document (feature documents, consommee ici)',
+      'paiement carte/PayPal (feature payments)',
+      'remboursement initiateur (feature refunds, qui credite le wallet)',
     ],
   },
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    utils: [
-      'utils/refunds.js',
-    ],
     services: [
-      'services/refund-service.js',
+      'services/wallet-service.js',
+      'services/loyalty-service.js',
+      'utils/store-credits.js',
     ],
-    routes: [],
+    routes: [
+      'routes/wallet.js',
+      'routes/loyalty.js',
+    ],
+    boutique: [
+      'js/b-wallet.js',
+      'css/wallet.css',
+    ],
     tests: [
-      'tests/unit/refund-service.test.js',
-      'tests/unit/refunds-util.test.js',
-      'tests/unit/refund-receipt.test.js',
-      'tests/unit/refund-receipt-html.test.js',
+      'tests/unit/wallet-service.test.js',
     ],
+  },
+
+  // ── Dépôts ───────────────────────────────────────────────────────────────
+  repos: {
+    backend: 'services/ + routes/ ci-dessus',
+    boutique: 'js/b-wallet.js + css/wallet.css — dépôt "bout", voir docs/BOUTIQUE_OWNERSHIP_LIVE.md pour le détail DOM/CSS',
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   contract: {
     exposes: [
-      'fonction interne processRefund(orderOrCartId, reason)',
+      'GET /api/wallet/:userId',
+      'POST /api/wallet/:userId/credit',
+      'GET /api/loyalty/:userId',
     ],
-    consumes: [
-      'orders (commande source)',
-      'shared-cart (panier source)',
-      'wallet (credit)',
-      'documents (reçu)',
+    consumes: ['auth (identification du client)',
+      'documents',
+      'notification',
     ],
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js',
+  authority: 'backend-core — tout changement de calcul de solde doit etre valide par le proprietaire de wallet-service.js',
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    'un remboursement n\'est jamais applique deux fois pour le meme evenement source',
+    'application wallet une seule fois par evenement source',
+    'solde jamais negatif sans flag explicite admin',
   ],
 
 };

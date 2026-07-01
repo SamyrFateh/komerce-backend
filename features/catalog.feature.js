@@ -126,9 +126,9 @@ module.exports = {
       'GET /api/products',
       'POST /api/admin/products/:id/publish',
     ],
-    consumes: [
-      'economic-engine (prix calcule)',
+    consumes: ['economic-engine (prix calcule)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
+      'auth',
     ],
   },
 

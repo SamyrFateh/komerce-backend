@@ -1,5 +1,7 @@
 # Doctrine Komerce — Panier partagé v4 à engagements indicatifs
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 > Version 4.2 — 27 mai 2026  
 > Remplace la doctrine v4.1. Étend v4.1 avec les mécaniques de cycle de vie du panier boutique (N4-CLEAR, rebuild snapshot, notifications d'update), le flow d'ajustement engagement participant, et le contrat UX des formulaires groupe.  
 > Cible produit/backend : **panier ouvert en concertation, engagements indicatifs modifiables, paiements réels seulement après passage au règlement, créateur maître de la finalisation**.

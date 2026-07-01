@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          incident-service
- * @domain        platform-ops
+ * @domain        operations
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

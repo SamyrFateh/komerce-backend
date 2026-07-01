@@ -1,5 +1,7 @@
 # Doctrine Komerce — Panier partagé : engagements excédentaires et paiements plafonnés
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 > Complément normatif à `DOCTRINE_PANIER_PARTAGE.md`.
 > 
 > Objet : figer la règle produit/finance quand la somme des engagements indicatifs atteint ou dépasse le montant du panier.

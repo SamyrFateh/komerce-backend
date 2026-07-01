@@ -15,7 +15,7 @@ module.exports = {
   // ── Identite ─────────────────────────────────────────────────────────────
   name:     'customs',
   type:     'feature',   // feature | transversal
-  domain:   'douane',
+  domain:   'customs',
   status:   'production',   // draft | staging | production | deprecated
   owner:    'backend-core',
   since:    '2025-11',
@@ -65,9 +65,10 @@ module.exports = {
       'GET /api/admin/customs/shipments',
       'POST /api/admin/customs/classify',
     ],
-    consumes: [
-      'logistics (colis a classer)',
+    consumes: ['logistics (colis a classer)',
       'documents (facture douane generee)',
+      'auth',
+      'economic-engine',
     ],
   },
 

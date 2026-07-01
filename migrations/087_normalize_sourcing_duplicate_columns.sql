@@ -1,3 +1,8 @@
+-- @migration 087_normalize_sourcing_duplicate_columns.sql
+-- @domain    catalog
+-- @purpose   Normalisation colonnes doublons sourcing
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- 087_normalize_sourcing_duplicate_columns.sql
 -- Lot C5 — Normalisation des colonnes dupliquées sur `products`
 -- Source : docs/_work/SOURCING_DB_AUDIT.md (F-01, F-02)

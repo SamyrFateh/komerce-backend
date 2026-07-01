@@ -1,5 +1,7 @@
 # Doctrine d'Allocation des Coûts Komerce
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 > *Komerce price avec des moyennes, mesure le réel, ajuste les moyennes.*
 
 ---

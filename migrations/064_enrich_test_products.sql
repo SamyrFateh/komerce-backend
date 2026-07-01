@@ -1,3 +1,8 @@
+-- @migration 064_enrich_test_products.sql
+-- @domain    catalog
+-- @purpose   Enrichissement product_variants de test
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- LOT 12 — Enrichissement produits test (images multi + variantes)
 -- Enrichit 3 produits avec images Unsplash + descriptions riches + variantes.

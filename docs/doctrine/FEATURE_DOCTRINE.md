@@ -129,7 +129,7 @@ Règles du registre :
 |---|---|---|
 | `business-feature` | Feature métier autonome, possède ses tables, son cycle de vie, son service actif | `shared-cart`, `orders`, `payments` |
 | `business-transversal` | Rendu de service actif, consommée par plusieurs features, pas de domaine métier propre | `notifications`, `documents`, `refunds` |
-| `technical-transversal` | Infrastructure consommée par toutes, aucune règle métier | `auth-identity`, `platform-ops` |
+| `technical-transversal` | Infrastructure consommée par toutes, aucune règle métier | `auth`, `operations` |
 | `aggregation-readonly` | Surface admin/pilotage en lecture pure, interdit de muter le domaine d'une autre feature | `dashboard` |
 | `integration-adapter` | Adaptateur vers un système externe (Stripe, PayPal, Meta, AuthKey) | partie de `payments`, `notifications` |
 | `deprecated` | En cours de retrait — aucune nouvelle logique | (cf. workflow démontage) |
@@ -236,7 +236,7 @@ Exemples réels :
 > *Est-ce que plusieurs features existantes consommeraient ce code de façon symétrique ?*
 
 Si oui → le code est **transversal** : soit il rejoint un domaine transversal existant
-(`auth-identity`, `platform-ops`), soit il justifie une nouvelle feature transverse
+(`auth`, `operations`), soit il justifie une nouvelle feature transverse
 (`notifications`, `documents`, `refunds`).
 
 Si non — une seule feature en est le consommateur principal → **rattachement** à cette
@@ -247,7 +247,7 @@ feature.
 Exemples réels :
 - `notifications` est consommée par `orders`, `payments`, `shared-cart`, `refunds` de
   façon symétrique → **feature transverse**. ✓
-- `documents` est consommée par `orders`, `customs`, `wallet-loyalty`, `refunds` → idem. ✓
+- `documents` est consommée par `orders`, `customs`, `wallet`, `refunds` → idem. ✓
 - `services/customs-analytics.js` est consommée uniquement par `customs` →
   **rattachement à `customs`**. ✓
 

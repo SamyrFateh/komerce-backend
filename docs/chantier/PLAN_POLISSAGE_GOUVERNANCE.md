@@ -27,7 +27,7 @@ Pour chaque manifest dans `features/*.feature.js`, ajouter un champ `files.tests
 **Mapping pre-calcule** (a valider par Sonnet en cas de doute) :
 
 ```
-auth-identity.feature.js → files.tests:
+auth.feature.js → files.tests:
   tests/unit/authkey-client.test.js
   tests/unit/otp-test-mode.test.js
   tests/unit/soft-auth.test.js
@@ -92,7 +92,7 @@ payments.feature.js → files.tests:
   tests/unit/paypal-client.test.js
   tests/unit/paypal-webhook.test.js
 
-platform-ops.feature.js → files.tests:
+operations.feature.js → files.tests:
   tests/unit/validators.test.js
   tests/integration/api.test.js
   tests/integration/security-grid.test.js
@@ -104,7 +104,7 @@ platform-ops.feature.js → files.tests:
 refunds.feature.js → files.tests:
   tests/unit/cancel-shared-cart-with-refunds.test.js
 
-wallet-loyalty.feature.js → files.tests:
+wallet.feature.js → files.tests:
   tests/unit/wallet-service.test.js
 ```
 
@@ -118,7 +118,7 @@ tests/unit/pricing-*.test.js (8 fichiers)   → verifier : economic-engine ou re
   pricing-apply, pricing-chain, pricing-dashboard-truth, pricing-flow-contract,
   pricing-guards, pricing-rates, pricing-strategy-service, pricing-surcharge-benchmarks
 tests/parcelOptimization.test.js            → probablement inventory
-tests/unit/relais-idor-probe.test.js        → deja dans platform-ops ? doublon avec integration/
+tests/unit/relais-idor-probe.test.js        → deja dans operations ? doublon avec integration/
 ```
 
 ### Verification

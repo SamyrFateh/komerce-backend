@@ -1,3 +1,8 @@
+-- @migration 091_freeze_customs_classification_order_items.sql
+-- @domain    customs
+-- @purpose   Gel classification douanière order_items
+-- @added-header 2026-07-01 (audit gouvernance)
+
 -- 091_freeze_customs_classification_order_items.sql
 -- Keystone douane — Lot A : gel de la classification douane sur order_items
 --

@@ -28,7 +28,7 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 1 | `shared-cart` | feature | backend + boutique | [`shared-cart.feature.js`](../../features/shared-cart.feature.js) | production | Panier partagé multi-participants, de la création au règlement |
 | 2 | `orders` | feature | backend | [`orders.feature.js`](../../features/orders.feature.js) | production | Commande : création, statut, coût, rattachement colis/achats |
 | 3 | `payments` | feature | backend + boutique | [`payments.feature.js`](../../features/payments.feature.js) | production | Encaissement (Stripe, PayPal, cash) et confirmation de paiement |
-| 4 | `wallet-loyalty` | feature | backend + boutique | [`wallet-loyalty.feature.js`](../../features/wallet-loyalty.feature.js) | production | Solde client (wallet) et programme de fidélité |
+| 4 | `wallet` | feature | backend + boutique | [`wallet.feature.js`](../../features/wallet.feature.js) | production | Solde client (wallet) et programme de fidélité |
 | 5 | `logistics` | feature | backend + boutique | [`logistics.feature.js`](../../features/logistics.feature.js) | production | Colis : scan, transit, tracking, relais, transporteurs |
 | 6 | `economic-engine` | feature | backend | [`economic-engine.feature.js`](../../features/economic-engine.feature.js) | production | Pricing, coûts, marges, stratégies tarifaires |
 | 7 | `catalog` | feature | backend + boutique | [`catalog.feature.js`](../../features/catalog.feature.js) | production | Produits, connecteurs fournisseurs, publication boutique |
@@ -39,8 +39,8 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 12 | `inventory` | feature | backend | [`inventory.feature.js`](../../features/inventory.feature.js) | staging | Suivi de stock |
 | 13 | `refunds` | feature | backend | [`refunds.feature.js`](../../features/refunds.feature.js) | production | Remboursement transverse (wallet, cash, panier partagé) |
 | 14 | `dashboard` | feature | backend + dash | [`dashboard.feature.js`](../../features/dashboard.feature.js) | production | Tableaux de bord et back-office (admin, hub, relais, finance) |
-| 15 | `auth-identity` | transversal | backend | [`auth-identity.feature.js`](../../features/auth-identity.feature.js) | production | Authentification, OTP, identité vérifiée — consommé par toutes les features |
-| 16 | `platform-ops` | transversal | backend | [`platform-ops.feature.js`](../../features/platform-ops.feature.js) | production | Santé applicative, config, modules — infrastructure d'exploitation |
+| 15 | `auth` | transversal | backend | [`auth.feature.js`](../../features/auth.feature.js) | production | Authentification, OTP, identité vérifiée — consommé par toutes les features |
+| 16 | `operations` | transversal | backend | [`operations.feature.js`](../../features/operations.feature.js) | production | Santé applicative, config, modules — infrastructure d'exploitation |
 
 ---
 
@@ -64,7 +64,7 @@ de vérité qui divergeraient à la première PR boutique non répercutée ici.
 
 ```
             ┌───────────────┐
-            │ auth-identity │  (transversal — consommé par tout le reste)
+            │ auth │  (transversal — consommé par tout le reste)
             └───────┬───────┘
                      │
    ┌─────────────────┼──────────────────────────────────────┐
@@ -73,7 +73,7 @@ catalog ──► shared-cart ──► orders ──► payments      economic-
               │                │           │           (pricing pour
               │                │           ▼            catalog, orders,
               ▼                ▼       refunds          shared-cart)
-        wallet-loyalty     logistics       │
+        wallet     logistics       │
               │                │           ▼
               └──────► refunds ◄───── documents (génère les preuves
                           │                       pour orders, refunds,

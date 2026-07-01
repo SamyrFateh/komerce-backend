@@ -114,9 +114,15 @@ module.exports = {
       'POST /api/parcels/:id/scan',
       'GET /api/tracking/:code',
     ],
-    consumes: [
-      'orders (commande rattachee au colis)',
+    consumes: ['orders (commande rattachee au colis)',
       'customs (statut declaration)',
+      'auth',
+      'catalog',
+      'economic-engine',
+      'notification',
+      'payment',
+      'refunds',
+      'wallet',
     ],
   },
 

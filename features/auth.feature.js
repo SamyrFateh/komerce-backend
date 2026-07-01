@@ -1,10 +1,10 @@
 /**
- * @feature       refunds
- * @type          feature
- * @domain        refunds
+ * @feature       auth
+ * @type          transversal
+ * @domain        auth
  * @status        production
  * @owner         backend-core
- * @since         2025-11
+ * @since         2025-08
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
  * @registry      docs/doctrine/APP_FEATURE_REGISTRY.md
  */
@@ -13,64 +13,81 @@
 module.exports = {
 
   // ── Identite ─────────────────────────────────────────────────────────────
-  name:     'refunds',
-  type:     'feature',   // feature | transversal
-  domain:   'refunds',
+  name:     'auth',
+  type:     'transversal',   // feature | transversal
+  domain:   'auth',
   status:   'production',   // draft | staging | production | deprecated
   owner:    'backend-core',
-  since:    '2025-11',
+  since:    '2025-08',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Rembourser un client (wallet, cash, panier partage) de facon tracable et sans double remboursement.',
+  service: 'Authentifier un utilisateur (OTP, session, identite verifiee) pour toutes les autres features.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
-      'service de remboursement transverse et son orchestration',
+      'OTP, authentification client, verification d\'identite, middlewares de garde transverses',
     ],
     out: [
-      'credit wallet lui-meme (feature wallet, consommee ici)',
-      'reçu de remboursement document (feature documents, consommee ici)',
+      'logique metier propre a chaque feature consommatrice — auth ne sait rien des commandes, paniers ou paiements',
     ],
   },
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    utils: [
-      'utils/refunds.js',
+    middleware: [
+      'middleware/auth.js',
+      'middleware/auth-guest.js',
+      'middleware/soft-auth.js',
+      'middleware/require-verified-identity.js',
+      'middleware/verify-authkey-webhook.js',
+      'utils/user-cache.js',
     ],
     services: [
-      'services/refund-service.js',
+      'services/otp-test-mode.js',
+      'services/authkey-client.js',
     ],
-    routes: [],
-    tests: [
-      'tests/unit/refund-service.test.js',
-      'tests/unit/refunds-util.test.js',
-      'tests/unit/refund-receipt.test.js',
-      'tests/unit/refund-receipt-html.test.js',
+    routes: [
+      'routes/client-auth.js',
+      'routes/auth.js',
+      'routes/otp.js',
+    ],
+    boutique: [
+      // Backfill gouvernance globale : header @komerce-arch domain=auth confirmé
+      // dans docs/BOUTIQUE_360.json pour les 3 fichiers.
+      'js/b-identity.js',
+      'js/b-phone.js',
+      'css/identity.css',
+    ],
+      tests: [
+      'tests/integration/admin-authz-probe.test.js',
+      'tests/integration/otp-no-guest.test.js',
+      'tests/unit/authkey-client.test.js',
+      'tests/unit/otp-test-mode.test.js',
+      'tests/unit/soft-auth.test.js',
     ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   contract: {
     exposes: [
-      'fonction interne processRefund(orderOrCartId, reason)',
+      'middleware requireAuth / requireVerifiedIdentity / softAuth',
+      'POST /api/auth/otp',
     ],
     consumes: [
-      'orders (commande source)',
-      'shared-cart (panier source)',
-      'wallet (credit)',
-      'documents (reçu)',
+      'notification',
+      'operations',
+      'orders',
     ],
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js',
+  authority: 'backend-core — tout changement de middleware d\'authentification doit etre valide par le proprietaire de middleware/auth.js',
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    'un remboursement n\'est jamais applique deux fois pour le meme evenement source',
+    'toute route mutante passe par un middleware d\'auth declare — jamais d\'acces direct sans garde',
   ],
 
 };

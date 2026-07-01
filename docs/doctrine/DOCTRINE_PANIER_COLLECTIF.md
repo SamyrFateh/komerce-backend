@@ -1,5 +1,7 @@
 # Doctrine panier collectif Komerce
 
+> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+
 > **Statut** : document métier canonique  
 > **Dernière consolidation** : 27 mai 2026  
 > **Source de vérité** : boutique-first, sans workspace parallèle.  
