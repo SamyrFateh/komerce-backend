@@ -220,6 +220,90 @@ describe('cash — POST /collect/:orderId', () => {
     expect(res.status).toBe(500);
     expectTransactionRolledBack(client);
   });
+
+  it('hook loyalty en échec (rejet) : avalé, réponse 201 déjà envoyée', async () => {
+    const client = makeClient([]);
+    db.getClient.mockResolvedValue(client);
+    collectCash.mockResolvedValue({
+      amount_kmf: 15000,
+      collection: { id: 'coll-1', order_id: 'order-1' },
+      noop: false,
+    });
+    db.query.mockResolvedValue({ rows: [{ reference: 'CMD-001' }] });
+    const loyaltyService = require('../../services/loyalty-service');
+    loyaltyService.handleOrderConfirmed.mockRejectedValueOnce(new Error('loyalty down'));
+
+    const res = await request(app).post('/api/cash/collect/order-1').send({});
+    expect(res.status).toBe(201);
+    await new Promise(process.nextTick);
+    await new Promise(process.nextTick);
+  });
+
+  it('notifyPaymentConfirmed en échec (rejet) : avalé, triggerPurchasing appelé quand même', async () => {
+    const client = makeClient([]);
+    db.getClient.mockResolvedValue(client);
+    collectCash.mockResolvedValue({
+      amount_kmf: 15000,
+      collection: { id: 'coll-1', order_id: 'order-1' },
+      noop: false,
+    });
+    db.query.mockResolvedValue({ rows: [{ reference: 'CMD-001' }] });
+    notifSvc.notifyPaymentConfirmed.mockRejectedValueOnce(new Error('whatsapp down'));
+
+    const res = await request(app).post('/api/cash/collect/order-1').send({});
+    expect(res.status).toBe(201);
+    await new Promise(process.nextTick);
+    await new Promise(process.nextTick);
+    expect(triggerPurchasing).toHaveBeenCalledWith('order-1');
+  });
+
+  it('triggerPurchasing en échec (rejet) : avalé, réponse déjà envoyée', async () => {
+    const client = makeClient([]);
+    db.getClient.mockResolvedValue(client);
+    collectCash.mockResolvedValue({
+      amount_kmf: 15000,
+      collection: { id: 'coll-1', order_id: 'order-1' },
+      noop: false,
+    });
+    db.query.mockResolvedValue({ rows: [{ reference: 'CMD-001' }] });
+    triggerPurchasing.mockRejectedValueOnce(new Error('purchasing down'));
+
+    const res = await request(app).post('/api/cash/collect/order-1').send({});
+    expect(res.status).toBe(201);
+    await new Promise(process.nextTick);
+    await new Promise(process.nextTick);
+  });
+
+  it('lookup de la référence commande en échec (rejet) : avalé', async () => {
+    const client = makeClient([]);
+    db.getClient.mockResolvedValue(client);
+    collectCash.mockResolvedValue({
+      amount_kmf: 15000,
+      collection: { id: 'coll-1', order_id: 'order-1' },
+      noop: false,
+    });
+    db.query.mockRejectedValueOnce(new Error('lookup failed'));
+
+    const res = await request(app).post('/api/cash/collect/order-1').send({});
+    expect(res.status).toBe(201);
+    await new Promise(process.nextTick);
+    await new Promise(process.nextTick);
+    expect(notifSvc.notifyPaymentConfirmed).not.toHaveBeenCalled();
+  });
+
+  it('erreur synchrone dans le bloc hooks post-commit (db.query jette) : non-bloquant, réponse déjà 201', async () => {
+    const client = makeClient([]);
+    db.getClient.mockResolvedValue(client);
+    collectCash.mockResolvedValue({
+      amount_kmf: 15000,
+      collection: { id: 'coll-1', order_id: 'order-1' },
+      noop: false,
+    });
+    db.query.mockImplementationOnce(() => { throw new Error('sync boom'); });
+
+    const res = await request(app).post('/api/cash/collect/order-1').send({});
+    expect(res.status).toBe(201);
+  });
 });
 
 describe('cash — GET /collections', () => {
@@ -327,6 +411,19 @@ describe('cash — GET /deposits', () => {
     expect(params).toEqual(['agent-1', 'pending', 50, 0]);
   });
 
+  it('admin avec agent_id fourni : filtre sur cet agent (branche else if)', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    db.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ cnt: '0' }] });
+
+    await request(app).get('/api/cash/deposits').query({ agent_id: 'agent-x' });
+
+    const [sql, params] = db.query.mock.calls[0];
+    expect(sql).toContain('cd.agent_id = $1');
+    expect(params).toEqual(['agent-x', 50, 0]);
+  });
+
   it('erreur DB → next(err) → 500', async () => {
     db.query.mockRejectedValueOnce(new Error('db down'));
     const res = await request(app).get('/api/cash/deposits');
@@ -357,6 +454,15 @@ describe('cash — POST /deposits/:id/verify', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.deposit.status).toBe('verified');
+  });
+
+  it('erreur DB → next(err) → 500', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    db.query.mockRejectedValueOnce(new Error('db down'));
+
+    const res = await request(app).post('/api/cash/deposits/d1/verify').send({});
+
+    expect(res.status).toBe(500);
   });
 });
 
@@ -389,6 +495,15 @@ describe('cash — POST /deposits/:id/dispute', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.deposit.status).toBe('disputed');
+  });
+
+  it('erreur DB → next(err) → 500', async () => {
+    mockState.user = { id: 'admin-1', role: 'admin' };
+    db.query.mockRejectedValueOnce(new Error('db down'));
+
+    const res = await request(app).post('/api/cash/deposits/d1/dispute').send({ reason: 'écart' });
+
+    expect(res.status).toBe(500);
   });
 });
 
@@ -435,6 +550,34 @@ describe('cash — GET /reconciliation', () => {
     const res = await request(app).get('/api/cash/reconciliation');
 
     expect(res.body.agents[0].status).toBe('alert');
+  });
+
+  it("status warning (branche else) si l'agent a déclaré plus que prévu (gap_collection négatif)", async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', agent_name: 'A', agent_phone: null, expected_kmf: '10000', expected_count: '2' }] })
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', declared_kmf: '11000', declared_count: '2' }] }) // gap_collection = -1000
+      .mockResolvedValueOnce({ rows: [{ agent_id: 'a1', deposited_kmf: '11000', deposit_count: '1', verified_kmf: '11000', pending_kmf: '0', disputed_kmf: '0' }] });
+
+    const res = await request(app).get('/api/cash/reconciliation');
+
+    expect(res.body.agents[0].status).toBe('warning');
+  });
+
+  it('trie plusieurs agents par gap_collection décroissant', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [
+        { agent_id: 'a1', agent_name: 'A1', agent_phone: null, expected_kmf: '10000', expected_count: '2' },
+        { agent_id: 'a2', agent_name: 'A2', agent_phone: null, expected_kmf: '10000', expected_count: '2' },
+      ] })
+      .mockResolvedValueOnce({ rows: [
+        { agent_id: 'a1', declared_kmf: '9000', declared_count: '2' },  // gap = 1000
+        { agent_id: 'a2', declared_kmf: '2000', declared_count: '1' },  // gap = 8000
+      ] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).get('/api/cash/reconciliation');
+
+    expect(res.body.agents.map(a => a.agent_id)).toEqual(['a2', 'a1']);
   });
 
   it('filtre par agent_id si fourni', async () => {

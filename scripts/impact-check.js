@@ -416,7 +416,10 @@ function suppressSecurity(category, line, content) {
 
 // L'outillage de securite lui-meme ENUMERE les motifs d'attaque (innerHTML, document.write,
 // eval, etc.) comme donnees : le scanner ne doit pas se scanner lui-meme (meta-faux-positif).
-const SECURITY_TOOLING = /(?:^|\/)(?:impact-check\.js|impact-config\.json|impact-suppressions\.json|arch-doctrine-sanitize-check\.js)$/;
+// Meme logique pour les fichiers de test (*.test.js dans test(s)/) : ils simulent des payloads
+// XSS/SQL injection dans leurs assertions/mocks (voir tests d'input malveillant), ce n'est pas
+// du code de production vulnerable. Ne pas retirer ce second membre de la regex.
+const SECURITY_TOOLING = /(?:^|\/)(?:impact-check\.js|impact-config\.json|impact-suppressions\.json|arch-doctrine-sanitize-check\.js)$|(?:^|\/)tests?\/.*\.test\.js$/;
 
 // ── Scan de sécurité ─────────────────────────────────────────
 function scanSecurity(filePath, content, changedLines) {
