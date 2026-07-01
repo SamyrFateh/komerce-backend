@@ -21,7 +21,7 @@
 const {
   db, log,
   waOrderCreated, waPaymentConfirmed, waOrderShipped, waOrderDelivered, waOrderCancelled,
-  callAuthKey, callAuthKeyText,
+  callAuthKey, callAuthKeyText, notifyText,
   _alertNotificationFailure, logNotification,
   firstName, formatAmount, pickPhone, pickRecipients,
 } = require('./internals');

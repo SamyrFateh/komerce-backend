@@ -26,6 +26,7 @@ const { getUniqueRef, generatePickupCode } = require('./order-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
 const { getRates } = require('../utils/rates');
+const log = require('../utils/logger').child({ module: 'shared-cart-lifecycle' });
 
 async function closeCart(sharedCartId, userId) {
   return withTransaction(async (client) => {

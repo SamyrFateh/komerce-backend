@@ -20,10 +20,10 @@
 
 const {
   db, log,
-  callAuthKey, callAuthKeyText, WID,
-  _alertNotificationFailure, logNotification,
-  firstName, pickPhone, pickRecipients,
+  logNotification,
+  pickPhone,
 } = require('./internals');
+const { notifyStatusChange } = require('./order');
 
 async function _loadOrderFromParcel(parcelId) {
   try {
@@ -112,121 +112,6 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
 
   // Délègue : notifyStatusChange gère déjà payeur/bénéficiaire + log DB
   return notifyStatusChange(order, orderStatus);
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-//  7. Envoi OTP via WhatsApp (fallback SMS si échec)
-//  ─────────────────────────────────────────────────────────────────────
-//  Utilisée par routes/otp.js pour envoyer un code à 6 chiffres.
-//
-//  Signature : sendOtpMessage({ phone, code, name, expiryMin })
-//    → Promise<{ success, channel, messageId?, reason?, error? }>
-//
-//  channel = 'whatsapp' | 'sms' | 'none'
-//  Cette fonction ne lance JAMAIS d'exception — elle retourne toujours
-//  un objet avec success:false en cas de problème pour ne pas casser le flow.
-// ═══════════════════════════════════════════════════════════════════════
-async function sendOtpMessage({ phone, code, name, expiryMin }) {
-  if (!phone || !code) {
-    return { success: false, channel: 'none', reason: 'missing_params' };
-  }
-
-  const expiry = String(expiryMin || 10);
-
-  const message = [
-    `Code Komerce : ${code}`,
-    '',
-    `Valable ${expiry} min.`,
-    'Ne donnez ce code à personne.',
-  ].join('\n');
-
-  // 1. Priorité : OTP généré par Komerce, envoyé comme texte libre.
-  try {
-    const freeTextResult = await callAuthKeyText({
-      mobile: phone,
-      message,
-    });
-
-    await logNotification({
-      channel: 'whatsapp',
-      event: 'otp_sent',
-      recipient: phone,
-      status: freeTextResult.ok ? 'sent' : 'failed',
-      detail: freeTextResult.ok
-        ? { messageId: freeTextResult.messageId, via: 'komerce_free_text' }
-        : { error: freeTextResult.error, via: 'komerce_free_text' },
-    });
-
-    if (freeTextResult.ok) {
-      return {
-        success: true,
-        channel: 'whatsapp',
-        messageId: freeTextResult.messageId,
-      };
-    }
-
-    log.warn({ phone, error: freeTextResult.error }, 'AuthKey free-text OTP failed, trying template fallback if configured');
-  } catch (err) {
-    log.error({ err, phone }, 'AuthKey free-text OTP exception');
-  }
-
-  // 2. Fallback : ancien mode template WID_OTP si configuré.
-  if (WID_OTP) {
-    const customerName = firstName(name);
-
-    try {
-      const result = await callAuthKey({
-        wid: WID_OTP,
-        mobile: phone,
-        variables: {
-          name: customerName,
-          code,
-          otp: code,
-          expiry,
-        },
-      });
-
-      await logNotification({
-        channel: 'whatsapp',
-        event: 'otp_sent',
-        recipient: phone,
-        status: result.ok ? 'sent' : 'failed',
-        detail: result.ok
-          ? { messageId: result.messageId, via: 'template_otp' }
-          : { error: result.error, via: 'template_otp' },
-      });
-
-      if (result.ok) {
-        return {
-          success: true,
-          channel: 'whatsapp',
-          messageId: result.messageId,
-        };
-      }
-
-      return {
-        success: false,
-        channel: 'whatsapp',
-        error: result.error,
-        reason: 'authkey_rejected',
-      };
-    } catch (err) {
-      log.error({ err, phone }, 'WhatsApp OTP template send failed');
-      return {
-        success: false,
-        channel: 'whatsapp',
-        error: err.message,
-        reason: 'exception',
-      };
-    }
-  }
-
-  return {
-    success: false,
-    channel: 'none',
-    reason: 'otp_delivery_failed',
-    error: 'Impossible d’envoyer l’OTP : texte libre refusé et aucun WID_OTP configuré',
-  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════

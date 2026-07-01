@@ -22,6 +22,7 @@ const {
   callAuthKey,
   WID,
   logNotification,
+  firstName,
 } = require('./internals');
 
 async function notifyLoyaltyEarned({ userId, userName, phone, orderRef, basketCount }) {

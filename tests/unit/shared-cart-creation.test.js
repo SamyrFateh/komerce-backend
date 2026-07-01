@@ -6,6 +6,7 @@ jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
 
 const db = require('../../db');
 const {
+  createSharedCartFromBasket,
   createSharedCartFromCartItems,
   clearCreatorBasketInTx,
 } = require('../../services/shared-cart-creation');
@@ -79,6 +80,279 @@ describe('shared-cart-creation', () => {
       expect(client.calls[6].params).toEqual(['cart-001', 'product-001', 'Riz', 'riz.jpg', 'maison', 2, 900, 1800]);
       expect(client.calls[7].sql).toContain('INSERT INTO shared_cart_events');
       expectTransactionCommitted(client);
+    });
+
+    it('leve si la limite de paniers actifs est atteinte', async () => {
+      const client = makeClient([{ rows: [{ n: 5 }] }]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(
+        createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }])
+      ).rejects.toThrow('Limite atteinte');
+      expectTransactionRolledBack(client);
+    });
+
+    it('leve si cartItems vide', async () => {
+      const client = makeClient([{ rows: [{ n: 0 }] }]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(createSharedCartFromCartItems('user-001', [])).rejects.toThrow('Le panier est vide');
+      expectTransactionRolledBack(client);
+    });
+
+    it('leve si aucun product_id valide dans cartItems', async () => {
+      const client = makeClient([{ rows: [{ n: 0 }] }]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(
+        createSharedCartFromCartItems('user-001', [{ product_id: null, quantity: 1 }])
+      ).rejects.toThrow('Aucun produit valide dans le panier');
+      expectTransactionRolledBack(client);
+    });
+
+    it('leve si tous les produits sont inactifs/quantite nulle/prix nul (aucun item enrichi)', async () => {
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [{ id: 'p1', name: 'X', price_kmf: 1000, is_active: false }] },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(
+        createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }])
+      ).rejects.toThrow('Aucun produit valide après vérification serveur');
+      expectTransactionRolledBack(client);
+    });
+
+    it('leve si utilisateur introuvable', async () => {
+      const product = { id: 'p1', name: 'X', price_kmf: 1000, is_active: true, is_promo: false };
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [product] },
+        { rows: [] }, // user introuvable
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(
+        createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }])
+      ).rejects.toThrow('Utilisateur introuvable');
+      expectTransactionRolledBack(client);
+    });
+
+    it('promo expirée (promo_until dans le passe) → prix plein, pas de reduction', async () => {
+      const product = {
+        id: 'p1', name: 'Prod', image_url: 'x.jpg', category: 'cat',
+        price_kmf: 2000, promo_pct: 20, is_promo: true,
+        promo_until: new Date(Date.now() - 86_400_000).toISOString(), is_active: true,
+      };
+      const sharedCart = { id: 'cart-002', status: 'open', closed_at: null, payment_window_ends_at: null };
+      const item = { id: 'sci-002' };
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [product] },
+        { rows: [{ full_name: 'Creator', phone: '000' }] },
+        { rows: [] },
+        { rows: [sharedCart] },
+        { rows: [item] },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      const result = await createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }]);
+
+      expect(result.items).toEqual([item]);
+      // ligne items insérée avec prix plein 2000 (pas de reduction promo expirée)
+      expect(client.calls[6].params).toEqual(['cart-002', 'p1', 'Prod', 'x.jpg', 'cat', 1, 2000, 2000]);
+    });
+
+    it('shareMode=ready_to_pay : statut closed + fenêtre paiement + evenement cart_closed', async () => {
+      const product = { id: 'p1', name: 'X', image_url: null, category: 'cat', price_kmf: 1000, is_active: true, is_promo: false };
+      const sharedCart = {
+        id: 'cart-003', status: 'closed',
+        closed_at: '2026-07-01T00:00:00Z', payment_window_ends_at: '2026-07-03T00:00:00Z',
+      };
+      const item = { id: 'sci-003' };
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [product] },
+        { rows: [{ full_name: 'Creator', phone: '000' }] },
+        { rows: [] },
+        { rows: [sharedCart] },
+        { rows: [item] },
+        { rows: [], rowCount: 1 }, // shared_cart_created event
+        { rows: [], rowCount: 1 }, // cart_closed event
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      const result = await createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }], {
+        shareMode: 'ready_to_pay',
+      });
+
+      expect(result.sharedCart.status).toBe('closed');
+      // 2 evenements audit (creation + cart_closed)
+      const eventCalls = client.calls.filter(c => c.sql.includes('INSERT INTO shared_cart_events'));
+      expect(eventCalls).toHaveLength(2);
+    });
+
+    it('shareMode=ready_to_pay avec targetDate : fenêtre paiement bornée par le plafond 14j', async () => {
+      const farTargetDate = new Date(Date.now() + 60 * 86_400_000).toISOString(); // bien au-dela du plafond
+      const product = { id: 'p1', name: 'X', image_url: null, category: 'cat', price_kmf: 1000, is_active: true, is_promo: false };
+      const sharedCart = { id: 'cart-004', status: 'closed', closed_at: null, payment_window_ends_at: null };
+      const item = { id: 'sci-004' };
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [product] },
+        { rows: [{ full_name: 'Creator', phone: '000' }] },
+        { rows: [] },
+        { rows: [sharedCart] },
+        { rows: [item] },
+        { rows: [], rowCount: 1 },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }], {
+        shareMode: 'ready_to_pay', targetDate: farTargetDate,
+      });
+
+      // params INSERT shared_carts : payment_window_ends_at est le 13e param (index 12)
+      const insertParams = client.calls[5].params;
+      const paymentWindowEndsAt = new Date(insertParams[12]).getTime();
+      const capMs = Date.now() + 14 * 86_400_000;
+      expect(paymentWindowEndsAt).toBeLessThanOrEqual(capMs + 5000);
+    });
+
+    it('genere un token unique en retentant si collision (attempt < 4)', async () => {
+      const product = { id: 'p1', name: 'X', image_url: null, category: 'cat', price_kmf: 1000, is_active: true, is_promo: false };
+      const sharedCart = { id: 'cart-005', status: 'open', closed_at: null, payment_window_ends_at: null };
+      const item = { id: 'sci-005' };
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [product] },
+        { rows: [{ full_name: 'Creator', phone: '000' }] },
+        { rows: [{ exists: 1 }] }, // collision sur 1ère tentative
+        { rows: [] },              // pas de collision sur 2eme
+        { rows: [sharedCart] },
+        { rows: [item] },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      const result = await createSharedCartFromCartItems('user-001', [{ product_id: 'p1', quantity: 1 }]);
+
+      expect(result.token).toEqual(expect.any(String));
+    });
+  });
+
+  describe('createSharedCartFromBasket', () => {
+    it('leve si limite de paniers actifs atteinte', async () => {
+      const client = makeClient([{ rows: [{ n: 5 }] }]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(createSharedCartFromBasket('user-001', 'basket-001')).rejects.toThrow('Limite atteinte');
+      expectTransactionRolledBack(client);
+    });
+
+    it('leve si utilisateur introuvable', async () => {
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [] },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(createSharedCartFromBasket('user-001', 'basket-001')).rejects.toThrow('Utilisateur introuvable');
+      expectTransactionRolledBack(client);
+    });
+
+    it('leve si panier introuvable ou non autorise', async () => {
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [{ id: 'user-001', full_name: 'X', phone: '000' }] },
+        { rows: [] },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(createSharedCartFromBasket('user-001', 'basket-001')).rejects.toThrow('Panier introuvable ou non autorisé');
+      expectTransactionRolledBack(client);
+    });
+
+    it('leve si panier vide', async () => {
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [{ id: 'user-001', full_name: 'X', phone: '000' }] },
+        { rows: [{ id: 'basket-001', user_id: 'user-001' }] },
+        { rows: [] },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(createSharedCartFromBasket('user-001', 'basket-001')).rejects.toThrow('Le panier est vide, impossible de partager');
+      expectTransactionRolledBack(client);
+    });
+
+    it('cree un panier partage depuis un basket DB (happy path, avec targetDate)', async () => {
+      const items = [
+        { product_id: 'p1', quantity: 2, name: 'Riz', image_url: 'riz.jpg', category: 'maison', price_kmf: 1000 },
+        { product_id: 'p2', quantity: 1, name: 'Huile', image_url: 'huile.jpg', category: 'maison', price_kmf: 1500 },
+      ];
+      const sharedCart = { id: 'cart-basket-001', status: 'open' };
+      const targetDate = new Date(Date.now() + 5 * 86_400_000).toISOString();
+
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [{ id: 'user-001', full_name: 'Creator', phone: '000000' }] },
+        { rows: [{ id: 'basket-001', user_id: 'user-001' }] },
+        { rows: items },
+        { rows: [] }, // token collision check
+        { rows: [sharedCart] },
+        { rows: [{ id: 'sci-1' }] },
+        { rows: [{ id: 'sci-2' }] },
+        { rows: [], rowCount: 1 }, // audit event
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      const result = await createSharedCartFromBasket('user-001', 'basket-001', { targetDate, title: 'Groupe' });
+
+      expect(result.sharedCart).toBe(sharedCart);
+      expect(result.items).toHaveLength(2);
+      expect(result.token).toEqual(expect.any(String));
+      expect(client.calls[6].sql).toContain('INSERT INTO shared_carts');
+      // total = 2*1000 + 1*1500 = 3500
+      expect(client.calls[6].params[7]).toBe(3500);
+      expectTransactionCommitted(client);
+    });
+
+    it('leve si total panier invalide (prix tous nuls)', async () => {
+      const items = [{ product_id: 'p1', quantity: 1, name: 'Gratuit', image_url: null, category: 'x', price_kmf: 0 }];
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [{ id: 'user-001', full_name: 'X', phone: '000' }] },
+        { rows: [{ id: 'basket-001', user_id: 'user-001' }] },
+        { rows: items },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      await expect(createSharedCartFromBasket('user-001', 'basket-001')).rejects.toThrow('Total panier invalide');
+      expectTransactionRolledBack(client);
+    });
+
+    it('genere un token unique en retentant si collision (attempt < 4)', async () => {
+      const items = [{ product_id: 'p1', quantity: 1, name: 'X', image_url: null, category: 'x', price_kmf: 1000 }];
+      const sharedCart = { id: 'cart-basket-002', status: 'open' };
+      const client = makeClient([
+        { rows: [{ n: 0 }] },
+        { rows: [{ id: 'user-001', full_name: 'X', phone: '000' }] },
+        { rows: [{ id: 'basket-001', user_id: 'user-001' }] },
+        { rows: items },
+        { rows: [{ exists: 1 }] }, // collision
+        { rows: [] },              // ok
+        { rows: [sharedCart] },
+        { rows: [{ id: 'sci-1' }] },
+        { rows: [], rowCount: 1 },
+      ]);
+      db.getClient.mockResolvedValue(client);
+
+      const result = await createSharedCartFromBasket('user-001', 'basket-001');
+
+      expect(result.token).toEqual(expect.any(String));
     });
   });
 });

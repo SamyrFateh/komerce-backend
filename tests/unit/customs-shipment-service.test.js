@@ -10,13 +10,31 @@
  *   deactivateShipment / deleteShipment — guard 404 avec mock db+pool
  */
 
+jest.mock('../../services/cost-allocation', () => ({
+  allocateShipmentRealCosts: jest.fn().mockResolvedValue({}),
+}));
+jest.mock('../../services/documents/customs-invoice', () => ({
+  issue: jest.fn(),
+  issueForShipment: jest.fn().mockResolvedValue({}),
+}));
+
 const {
   allocateCustoms,
+  propagateCostDouane,
+  listShipments,
+  getEffectiveRates,
+  getShipment,
   updateShipment,
   createShipment,
   deactivateShipment,
+  activateShipment,
   deleteShipment,
+  declareCustomsPayment,
+  isCustomsDeclaredForOrder,
 } = require('../../services/customs-shipment-service');
+
+const costAllocation = require('../../services/cost-allocation');
+const customsInvoice  = require('../../services/documents/customs-invoice');
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -345,5 +363,444 @@ describe('deleteShipment — guard 404', () => {
       status: 404,
     });
     expect(client.release).toHaveBeenCalled();
+  });
+
+  it('supprime avec succès et propage le recalcul aux orders liées', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
+        if (s.startsWith('SELECT parcel_id')) return { rows: [{ parcel_id: 'p1' }, { parcel_id: 'p2' }] };
+        if (s.startsWith('DELETE FROM customs_shipments')) return { rows: [], rowCount: 1 };
+        if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [{ order_id: 'order-1' }] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    const result = await deleteShipment(mockDb, 'ship-1');
+
+    expect(result).toEqual({ deleted: true, id: 'ship-1', parcels_recalculated: 2 });
+    expect(client.release).toHaveBeenCalled();
+  });
+});
+
+// ── propagateCostDouane ────────────────────────────────────────────────────
+
+describe('propagateCostDouane', () => {
+  it('ne fait rien si parcelIds vide/non tableau', async () => {
+    const client = { query: jest.fn() };
+    await propagateCostDouane(client, []);
+    await propagateCostDouane(client, undefined);
+    expect(client.query).not.toHaveBeenCalled();
+  });
+
+  it('ne fait rien si aucune order liée trouvée', async () => {
+    const client = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+    await propagateCostDouane(client, ['p1']);
+    expect(client.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('met à jour cost_douane_kmf puis margin_real_pct pour les orders trouvées', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ order_id: 'o1' }, { order_id: 'o2' }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] }),
+    };
+    await propagateCostDouane(client, ['p1', 'p2']);
+    expect(client.query).toHaveBeenCalledTimes(3);
+    expect(client.query.mock.calls[1][0]).toMatch(/SET cost_douane_kmf/);
+    expect(client.query.mock.calls[2][0]).toMatch(/SET margin_real_pct/);
+  });
+});
+
+// ── listShipments ───────────────────────────────────────────────────────────
+
+describe('listShipments', () => {
+  it('sans filtre : conds = 1=1 seul', async () => {
+    const mockDb = { query: jest.fn().mockResolvedValue({ rows: [{ id: 's1' }] }) };
+    const result = await listShipments(mockDb);
+    expect(result.shipments).toHaveLength(1);
+    expect(mockDb.query.mock.calls[0][1]).toEqual([]);
+  });
+
+  it('avec filtres from/to/active=true', async () => {
+    const mockDb = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    await listShipments(mockDb, { from: '2026-01-01', to: '2026-06-01', active: 'true' });
+    const [sql, params] = mockDb.query.mock.calls[0];
+    expect(sql).toMatch(/shipment_date >= \$1/);
+    expect(sql).toMatch(/shipment_date <= \$2/);
+    expect(sql).toMatch(/is_active = \$3/);
+    expect(params).toEqual(['2026-01-01', '2026-06-01', true]);
+  });
+
+  it("active='1' est aussi interprété comme true", async () => {
+    const mockDb = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    await listShipments(mockDb, { active: '1' });
+    expect(mockDb.query.mock.calls[0][1]).toEqual([true]);
+  });
+
+  it("active='false' → false", async () => {
+    const mockDb = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    await listShipments(mockDb, { active: 'false' });
+    expect(mockDb.query.mock.calls[0][1]).toEqual([false]);
+  });
+});
+
+// ── getEffectiveRates ────────────────────────────────────────────────────────
+
+describe('getEffectiveRates', () => {
+  it('indexe les taux par period et retourne fallback_rate_pct=15', async () => {
+    const mockDb = {
+      query: jest.fn().mockResolvedValue({
+        rows: [{ period: '2026-Q1', rate_pct: 12 }, { period: '2026-Q2', rate_pct: 14 }],
+      }),
+    };
+    const result = await getEffectiveRates(mockDb);
+    expect(result.fallback_rate_pct).toBe(15);
+    expect(result.rates['2026-Q1'].rate_pct).toBe(12);
+    expect(result.rates['2026-Q2'].rate_pct).toBe(14);
+  });
+});
+
+// ── getShipment ───────────────────────────────────────────────────────────────
+
+describe('getShipment', () => {
+  it('lève err.status=404 si shipment introuvable', async () => {
+    const mockDb = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+    await expect(getShipment(mockDb, 'ghost')).rejects.toMatchObject({
+      status: 404, message: 'Shipment not found',
+    });
+  });
+
+  it('retourne shipment + parcels liés', async () => {
+    const mockDb = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 's1', reference: 'ENV-001' }] })
+        .mockResolvedValueOnce({ rows: [{ parcel_id: 'p1', parcel_ref: 'COL-1' }] }),
+    };
+    const result = await getShipment(mockDb, 's1');
+    expect(result.shipment.reference).toBe('ENV-001');
+    expect(result.parcels).toHaveLength(1);
+  });
+});
+
+// ── createShipment — happy paths ───────────────────────────────────────────
+
+describe('createShipment — happy paths', () => {
+  const makeClient = (overrides = {}) => ({
+    query: jest.fn(async (sql) => {
+      const s = sql.trim();
+      if (s === 'BEGIN' || s === 'COMMIT' || s === 'ROLLBACK') return { rows: [] };
+      if (s.startsWith('INSERT INTO customs_shipments')) {
+        return { rows: [overrides.shipment || { id: 'ship-1', reference: 'ENV-001' }] };
+      }
+      if (s.startsWith('SELECT p.id, p.reference')) {
+        return { rows: overrides.parcelData || [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
+      }
+      if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };
+      if (s.startsWith('UPDATE customs_shipments')) return { rows: [] };
+      if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [] };
+      return { rows: [] };
+    }),
+    release: jest.fn(),
+  });
+
+  it('ventile immédiatement si customs_paid_kmf + parcel_ids fournis', async () => {
+    const client = makeClient();
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    const result = await createShipment(mockDb, {
+      reference: 'ENV-001', shipment_date: '2026-01-01', cif_value_kmf: 100000,
+      customs_paid_kmf: 15000, parcel_ids: ['p1'],
+    }, 'user-1');
+
+    expect(result.shipment.id).toBe('ship-1');
+    expect(result.allocations).toHaveLength(1);
+    expect(client.query.mock.calls.some(c => c[0].trim().startsWith('UPDATE customs_shipments'))).toBe(true);
+  });
+
+  it('rattache les colis sans ventiler si customs_paid_kmf absent', async () => {
+    const client = makeClient();
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    const result = await createShipment(mockDb, {
+      reference: 'ENV-002', shipment_date: '2026-01-01', cif_value_kmf: 50000,
+      parcel_ids: ['p1', 'p2'],
+    }, 'user-1');
+
+    expect(result.allocations).toEqual([]);
+    const inserts = client.query.mock.calls.filter(c => c[0].trim().startsWith('INSERT INTO customs_shipment_parcels'));
+    expect(inserts).toHaveLength(2);
+  });
+
+  it('ne rattache ni ne ventile si aucun parcel_ids fourni', async () => {
+    const client = makeClient();
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    const result = await createShipment(mockDb, {
+      reference: 'ENV-003', shipment_date: '2026-01-01', cif_value_kmf: 20000,
+    }, 'user-1');
+
+    expect(result.allocations).toEqual([]);
+  });
+
+  it('rollback + relance si une query échoue', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN') return { rows: [] };
+        if (s.startsWith('INSERT INTO customs_shipments')) throw new Error('db down');
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    await expect(createShipment(mockDb, {
+      reference: 'ENV-004', shipment_date: '2026-01-01', cif_value_kmf: 1000,
+    }, 'user-1')).rejects.toThrow('db down');
+    expect(client.release).toHaveBeenCalled();
+  });
+});
+
+// ── deactivateShipment — happy path ─────────────────────────────────────────
+
+describe('deactivateShipment — happy path', () => {
+  it('désactive, retire la ventilation et propage', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
+        if (s.startsWith('UPDATE customs_shipments')) return { rows: [{ id: 'ship-1', is_active: false }] };
+        if (s.startsWith('DELETE FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }, { parcel_id: 'p2' }] };
+        if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    const result = await deactivateShipment(mockDb, 'ship-1', 'erreur saisie');
+
+    expect(result.parcels_reset).toBe(2);
+    expect(result.shipment.id).toBe('ship-1');
+  });
+});
+
+// ── activateShipment ─────────────────────────────────────────────────────────
+
+describe('activateShipment', () => {
+  it('lève err.status=404 si shipment introuvable', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'ROLLBACK') return { rows: [] };
+        return { rows: [] }; // UPDATE → not found
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    await expect(activateShipment(mockDb, 'ghost', [])).rejects.toMatchObject({ status: 404 });
+    expect(client.release).toHaveBeenCalled();
+  });
+
+  it('réactive et re-ventile les colis fournis', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
+        if (s.startsWith('UPDATE customs_shipments')) return { rows: [{ id: 'ship-1', customs_paid_kmf: 10000, allocation_method: 'by_cif_value' }] };
+        if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
+        if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };
+        if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    const result = await activateShipment(mockDb, 'ship-1', ['p1']);
+
+    expect(result.allocations).toHaveLength(1);
+    expect(result.message).toMatch(/réactivé/);
+  });
+});
+
+// ── declareCustomsPayment ────────────────────────────────────────────────────
+
+describe('declareCustomsPayment', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  it('lève err.status=400 si customs_paid_kmf manquant ou <= 0', async () => {
+    const mockDb = { pool: { connect: jest.fn() } };
+    await expect(declareCustomsPayment(mockDb, 'ship-1', {}, 'user-1'))
+      .rejects.toMatchObject({ status: 400 });
+    await expect(declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: -5 }, 'user-1'))
+      .rejects.toMatchObject({ status: 400 });
+    expect(mockDb.pool.connect).not.toHaveBeenCalled();
+  });
+
+  it('lève err.status=404 si expédition introuvable', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'ROLLBACK') return { rows: [] };
+        return { rows: [] }; // SELECT ... FOR UPDATE → not found
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    await expect(declareCustomsPayment(mockDb, 'ghost', { customs_paid_kmf: 1000 }, 'user-1'))
+      .rejects.toMatchObject({ status: 404 });
+  });
+
+  it('lève err.status=409 si expédition déjà confirmée', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'ROLLBACK') return { rows: [] };
+        if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'confirmed' }] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    await expect(declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 1000 }, 'user-1'))
+      .rejects.toMatchObject({ status: 409 });
+  });
+
+  it('déclare, ventile, propage et pose customs_cleared_at sur les colis (happy path complet)', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
+        if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending', allocation_method: 'by_cif_value' }] };
+        if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
+        if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }] };
+        if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
+        if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };
+        if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [] };
+        if (s.startsWith('UPDATE parcels')) return { rows: [] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    const result = await declareCustomsPayment(mockDb, 'ship-1', {
+      customs_paid_kmf: 12000, freight_kmf: 500, notes: 'transitaire X',
+    }, 'user-1');
+
+    expect(result).toEqual({
+      shipment_id: 'ship-1', status: 'declared', customs_paid_kmf: 12000, parcels_updated: 1,
+    });
+    expect(costAllocation.allocateShipmentRealCosts).toHaveBeenCalledWith('ship-1');
+    expect(customsInvoice.issueForShipment).toHaveBeenCalledWith(['p1'], 'ship-1', 'user-1');
+  });
+
+  it('happy path sans colis rattachés (pas de ventilation ni facture)', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
+        if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending' }] };
+        if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
+        if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    const result = await declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 5000 }, 'user-1');
+
+    expect(result.parcels_updated).toBe(0);
+    expect(customsInvoice.issueForShipment).not.toHaveBeenCalled();
+  });
+
+  it('continue même si allocateShipmentRealCosts échoue (non bloquant)', async () => {
+    costAllocation.allocateShipmentRealCosts.mockRejectedValueOnce(new Error('alloc partiel'));
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
+        if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending' }] };
+        if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
+        if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    await expect(declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 5000 }, 'user-1'))
+      .resolves.toMatchObject({ status: 'declared' });
+  });
+
+  it('continue même si customsInvoice.issueForShipment échoue (non bloquant)', async () => {
+    customsInvoice.issueForShipment.mockRejectedValueOnce(new Error('facture partielle'));
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN' || s === 'COMMIT') return { rows: [] };
+        if (s.startsWith('SELECT * FROM customs_shipments')) return { rows: [{ id: 'ship-1', status: 'pending' }] };
+        if (s.startsWith('UPDATE customs_shipments SET')) return { rows: [] };
+        if (s.startsWith('SELECT parcel_id FROM customs_shipment_parcels')) return { rows: [{ parcel_id: 'p1' }] };
+        if (s.startsWith('SELECT p.id, p.reference')) return { rows: [{ id: 'p1', cif_kmf: 1000, weight_kg: 5 }] };
+        if (s.startsWith('INSERT INTO customs_shipment_parcels')) return { rows: [] };
+        if (s.startsWith('SELECT DISTINCT order_id')) return { rows: [] };
+        if (s.startsWith('UPDATE parcels')) return { rows: [] };
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    await expect(declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 5000 }, 'user-1'))
+      .resolves.toMatchObject({ status: 'declared' });
+  });
+
+  it('rollback si une query échoue en cours de transaction', async () => {
+    const client = {
+      query: jest.fn(async (sql) => {
+        const s = sql.trim();
+        if (s === 'BEGIN') return { rows: [] };
+        if (s.startsWith('SELECT * FROM customs_shipments')) throw new Error('db down');
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    };
+    const mockDb = { pool: { connect: jest.fn().mockResolvedValue(client) } };
+
+    await expect(declareCustomsPayment(mockDb, 'ship-1', { customs_paid_kmf: 5000 }, 'user-1'))
+      .rejects.toThrow('db down');
+    expect(client.release).toHaveBeenCalled();
+  });
+});
+
+// ── isCustomsDeclaredForOrder ────────────────────────────────────────────────
+
+describe('isCustomsDeclaredForOrder', () => {
+  it('bloque si un colis dépend d\'une expédition non déclarée', async () => {
+    const mockQ = { query: jest.fn().mockResolvedValue({ rows: [{ status: 'pending', reference: 'ENV-005' }] }) };
+
+    const result = await isCustomsDeclaredForOrder(mockQ, 'order-1');
+
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toMatch(/ENV-005/);
+  });
+
+  it('autorise si aucun colis lié à une expédition non déclarée', async () => {
+    const mockQ = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+
+    const result = await isCustomsDeclaredForOrder(mockQ, 'order-1');
+
+    expect(result).toEqual({ allowed: true });
   });
 });

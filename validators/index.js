@@ -356,7 +356,7 @@ const config = {
 
 const parcels = {
   list: Joi.object({ status: Joi.string().optional(), shipment_id: Joi.string().uuid().optional(), order_id: Joi.string().uuid().optional(), search: Joi.string().max(100).optional(), page: Joi.number().integer().min(1).default(1), limit: Joi.number().integer().min(1).max(100).default(50) }),
-  create: Joi.object({ order_id: Joi.string().uuid().required(), type: Joi.string().valid('standard', 'fragile', 'volumineux', 'sur_mesure').default('standard'), notes: Joi.string().max(500).optional() }),
+  create: Joi.object({ order_id: Joi.string().uuid().required(), type: Joi.string().valid('standard', 'fragile', 'volumineux', 'sur_mesure').default('standard'), notes: Joi.string().max(500).optional(), weight_kg: posNum.optional() }),
   updateStatus: Joi.object({ status: Joi.string().valid('preparation', 'shipped', 'in_transit', 'available', 'collected').required(), notes: Joi.string().max(500).optional() }),
   addItem: Joi.object({ order_item_id: Joi.string().uuid().required(), quantity: Joi.number().integer().min(1).required() }),
 };

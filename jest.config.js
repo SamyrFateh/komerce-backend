@@ -11,6 +11,7 @@ module.exports = {
 
   // Collect coverage from source files
   collectCoverageFrom: [
+    'routes/**/*.js',
     'services/**/*.js',
     'middleware/**/*.js',
     'validators/**/*.js',

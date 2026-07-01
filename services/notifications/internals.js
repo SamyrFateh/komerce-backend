@@ -161,6 +161,54 @@ function pickRecipients(order, event) {
 }
 
 
+/**
+ * notifyText — wrapper texte libre pour les événements sans template dédié.
+ *
+ * Centralisée ici (au lieu d'être dupliquée/cassée dans loyalty.js et
+ * appelée sans import dans order.js) car plusieurs modules en ont besoin :
+ * order.js (lien facture post-paiement), et potentiellement d'autres
+ * événements sans template AuthKey (preparation, in_transit, available,
+ * anomaly_alert, partial_ship, backorder_cancelled, parcel_status,
+ * sourcing_alert, purchase_manual...).
+ *
+ * Ne lève jamais — retourne toujours { ok, ... } pour ne pas casser le flow
+ * appelant (doctrine notification_non_bloquante).
+ */
+async function notifyText(phone, message, event, orderId = null) {
+  if (!phone || !message) {
+    log.warn({ event, order_id: orderId }, '[notifyText] skipped: no phone or message');
+    return { ok: false, reason: 'no_phone_or_message' };
+  }
+
+  try {
+    const result = await callAuthKeyText({ mobile: phone, message });
+
+    // orderId est un UUID (36 chars) — order_ref est désormais text (migration 089)
+    // On le passe tel quel ; les callers qui ont la référence humaine doivent utiliser
+    // logNotification() directement pour stocker la bonne valeur.
+    await logNotification({
+      orderRef: orderId || null,
+      channel: 'whatsapp',
+      event,
+      recipient: phone,
+      status: result.ok ? 'sent' : 'failed',
+      detail: result.ok
+        ? { messageId: result.messageId }
+        : { error: result.error },
+    });
+
+    if (!result.ok) {
+      log.warn({ event, phone, order_id: orderId, error: result.error }, '[notifyText] delivery failed');
+    }
+
+    return result;
+  } catch (err) {
+    log.error({ err, event, phone, order_id: orderId }, '[notifyText] error');
+    _alertNotificationFailure({ event, orderId, error: err.message });
+    return { ok: false, error: err.message };
+  }
+}
+
 module.exports = {
   db, log,
   waOrderCreated, waPaymentConfirmed, waOrderShipped, waOrderDelivered, waOrderCancelled,
@@ -168,5 +216,6 @@ module.exports = {
   WID_OTP, WID_MAGIC_LINK,
   _alertNotificationFailure,
   logNotification,
+  notifyText,
   firstName, formatAmount, pickPhone, pickRecipients,
 };

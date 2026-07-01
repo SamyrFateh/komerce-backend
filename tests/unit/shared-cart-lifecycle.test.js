@@ -28,9 +28,44 @@ jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
+jest.mock('../../services/whatsapp-meta', () => ({
+  sendTemplateWhatsApp: jest.fn().mockResolvedValue({}),
+}));
+jest.mock('../../services/order-service', () => ({
+  getUniqueRef: jest.fn().mockResolvedValue('KMC-0001'),
+  generatePickupCode: jest.fn().mockReturnValue('PICKUP123'),
+}));
+jest.mock('../../services/routing', () => {
+  class RoutingError extends Error {}
+  return {
+    resolveRoutingFromRelais: jest.fn().mockReturnValue({
+      destination_island: 'Ngazidja', routing_mode: 'direct', transit_hub: null,
+    }),
+    RoutingError,
+  };
+});
+jest.mock('../../services/order-payment-confirmation', () => ({
+  confirmPaymentCycle: jest.fn().mockResolvedValue({ success: true }),
+}));
+jest.mock('../../utils/rates', () => ({
+  getRates: jest.fn().mockResolvedValue({ eur_kmf: 492 }),
+}));
+jest.mock('../../services/customs-classification', () => ({
+  resolveFrozenClassification: jest.fn().mockResolvedValue({
+    customs_category_key: 'general', sh_code: '0000.00', douane_pct: 10, tva_pct: 5, taxe_add_pct: 0, classification_defaulted: false,
+  }),
+}));
 
 const db = require('../../db');
 const { cancelSharedCart, expireOldCarts } = require('../../services/shared-cart-engine');
+const {
+  closeCart,
+  convertSharedCartToOrder,
+  runSharedCartStateMachineTick,
+} = require('../../services/shared-cart-lifecycle');
+const { sendTemplateWhatsApp } = require('../../services/whatsapp-meta');
+const { resolveRoutingFromRelais, RoutingError } = require('../../services/routing');
+const { confirmPaymentCycle } = require('../../services/order-payment-confirmation');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -199,5 +234,439 @@ describe('expireOldCarts — alias V4.1 vers runSharedCartStateMachineTick', () 
       expect(sql).toMatch(/cart_expired/);
       expect(['cart-exp-1', 'cart-exp-2']).toContain(params[0]);
     });
+  });
+
+  test('T1 — panier OPEN + target_date atteinte → CLOSED + event cart_auto_closed', async () => {
+    const autoClosed = [{ id: 'cart-auto-1', contributed_kmf: 0 }];
+    db.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (/SET status = 'closed'/.test(text)) return { rows: autoClosed };
+      return { rows: [] };
+    });
+
+    const count = await runSharedCartStateMachineTick();
+
+    expect(count).toBe(1);
+    const eventCalls = db.query.mock.calls.filter(([sql]) => /cart_auto_closed/.test(String(sql)));
+    expect(eventCalls).toHaveLength(1);
+    expect(eventCalls[0][1]).toEqual(['cart-auto-1', { reason: 'target_date_reached' }]);
+  });
+
+  test('T2 — panier CLOSED + fenêtre expirée + remaining>0 → AWAITING_CHOICE + notif WhatsApp', async () => {
+    const awaiting = [{
+      id: 'cart-aw-1', remaining_kmf: 3000, contributed_kmf: 7000,
+      title: 'Panier X', creator_phone: '+269123', creator_name: 'Ali',
+    }];
+    db.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (/awaiting_choice_started_at/.test(text)) return { rows: awaiting };
+      return { rows: [] };
+    });
+
+    const count = await runSharedCartStateMachineTick();
+
+    expect(count).toBe(1);
+    expect(sendTemplateWhatsApp).toHaveBeenCalledWith(
+      expect.objectContaining({ to: '+269123', templateName: 'shared_cart_awaiting_choice' })
+    );
+  });
+
+  test('T2 — pas de notif WhatsApp si creator_phone absent', async () => {
+    const awaiting = [{ id: 'cart-aw-2', remaining_kmf: 1000, contributed_kmf: 500, title: null, creator_phone: null, creator_name: null }];
+    db.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (/awaiting_choice_started_at/.test(text)) return { rows: awaiting };
+      return { rows: [] };
+    });
+
+    await runSharedCartStateMachineTick();
+
+    expect(sendTemplateWhatsApp).not.toHaveBeenCalled();
+  });
+
+  test('T2 — échec notif WhatsApp est avalé (non bloquant)', async () => {
+    sendTemplateWhatsApp.mockRejectedValueOnce(new Error('whatsapp down'));
+    const awaiting = [{ id: 'cart-aw-3', remaining_kmf: 1000, contributed_kmf: 500, title: 'X', creator_phone: '+269999', creator_name: 'Y' }];
+    db.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (/awaiting_choice_started_at/.test(text)) return { rows: awaiting };
+      return { rows: [] };
+    });
+
+    await expect(runSharedCartStateMachineTick()).resolves.toBe(1);
+  });
+
+  test('T3 — panier CLOSED + remaining=0 → event cart_ready_to_order + notif', async () => {
+    const ready = [{ id: 'cart-ready-1', contributed_kmf: 10000, title: 'Y', creator_phone: '+269555', creator_name: 'Fatima' }];
+    db.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (/sc.remaining_kmf = 0/.test(text)) return { rows: ready };
+      return { rows: [] };
+    });
+
+    const count = await runSharedCartStateMachineTick();
+
+    // T3 n'incremente pas `transitions` (evenement seul, pas de changement de statut ici)
+    expect(count).toBe(0);
+    const eventCalls = db.query.mock.calls.filter(([sql]) => /cart_ready_to_order/.test(String(sql)));
+    expect(eventCalls).toHaveLength(1);
+    expect(sendTemplateWhatsApp).toHaveBeenCalledWith(
+      expect.objectContaining({ templateName: 'shared_cart_ready_to_order' })
+    );
+  });
+
+  test('T3 — échec notif WhatsApp est avalé (non bloquant)', async () => {
+    sendTemplateWhatsApp.mockRejectedValueOnce(new Error('whatsapp down'));
+    const ready = [{ id: 'cart-ready-2', contributed_kmf: 5000, title: 'Z', creator_phone: '+269777', creator_name: 'Omar' }];
+    db.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (/sc.remaining_kmf = 0/.test(text)) return { rows: ready };
+      return { rows: [] };
+    });
+
+    await expect(runSharedCartStateMachineTick()).resolves.toBe(0);
+  });
+
+  test('T5 — paniers expired archivés après ARCHIVE_AFTER_DAYS', async () => {
+    db.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (/SET status = 'archived'/.test(text)) return { rows: [{ id: 'cart-arc-1' }, { id: 'cart-arc-2' }] };
+      return { rows: [] };
+    });
+
+    const count = await runSharedCartStateMachineTick();
+
+    expect(count).toBe(2);
+  });
+});
+
+// ── closeCart ─────────────────────────────────────────────────────────────
+
+describe('closeCart', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  test('panier introuvable/non autorisé → throw', async () => {
+    mockWithTransaction([OK, { rows: [] }]);
+
+    await expect(closeCart('cart-999', 'user-001')).rejects.toThrow('Panier introuvable ou non autorisé');
+  });
+
+  test('panier pas en statut open → throw', async () => {
+    const cart = makeCart({ status: 'closed' });
+    mockWithTransaction([OK, { rows: [cart] }]);
+
+    await expect(closeCart('cart-001', 'user-001')).rejects.toThrow(/Impossible de fermer un panier au statut closed/);
+  });
+
+  test('ferme le panier open : statut closed + fenêtre 48h + event cart_closed', async () => {
+    const cart = makeCart({ status: 'open' });
+    const updated = { id: 'cart-001', status: 'closed', closed_at: '2026-07-01T00:00:00Z', payment_window_ends_at: '2026-07-03T00:00:00Z' };
+    const client = mockWithTransaction([
+      OK,               // BEGIN
+      { rows: [cart] }, // SELECT FOR UPDATE
+      { rows: [updated] }, // UPDATE
+      OK,               // addEvent INSERT
+      OK,               // COMMIT
+    ]);
+
+    const result = await closeCart('cart-001', 'user-001');
+
+    expect(result).toBe(updated);
+    expect(client._calls[2].sql).toMatch(/UPDATE shared_carts/);
+    expect(client._calls[3].sql).toMatch(/INSERT INTO shared_cart_events/);
+    expect(client._calls[3].params[1]).toBe('cart_closed');
+  });
+});
+
+// ── convertSharedCartToOrder ─────────────────────────────────────────────
+
+describe('convertSharedCartToOrder', () => {
+  beforeEach(() => jest.clearAllMocks());
+  sendTemplateWhatsApp.mockResolvedValue({});
+
+  function makeFinalizableCart(overrides = {}) {
+    return {
+      id: 'cart-001',
+      beneficiary_user_id: 'user-001',
+      status: 'ready_to_finalize',
+      finalized_order_id: null,
+      remaining_kmf: 0,
+      contributed_kmf: 20000,
+      total_kmf_snapshot: 20000,
+      delivery_relay_id: 'relais-1',
+      beneficiary_name_snapshot: 'Snapshot Name',
+      beneficiary_phone_snapshot: '+269000',
+      ...overrides,
+    };
+  }
+
+  const item1 = {
+    product_id: 'p1', product_name_snapshot: 'Riz', product_category_snapshot: 'maison',
+    quantity: 2, unit_price_kmf_snapshot: 1000,
+  };
+
+  test('panier introuvable/non autorisé → throw', async () => {
+    mockWithTransaction([OK, { rows: [] }]);
+
+    await expect(convertSharedCartToOrder('cart-999', 'user-001')).rejects.toThrow('Panier partagé introuvable ou non autorisé');
+  });
+
+  test('statut non finalisable → throw', async () => {
+    const cart = makeFinalizableCart({ status: 'open' });
+    mockWithTransaction([OK, { rows: [cart] }]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow(/veuillez d'abord passer au paiement/);
+  });
+
+  test('déjà finalisé → throw', async () => {
+    const cart = makeFinalizableCart({ finalized_order_id: 'order-existing' });
+    mockWithTransaction([OK, { rows: [cart] }]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow('Ce panier est déjà finalisé');
+  });
+
+  test('reste à financer sans creatorCoversGap → throw', async () => {
+    const cart = makeFinalizableCart({ remaining_kmf: 5000 });
+    mockWithTransaction([OK, { rows: [cart] }]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow(/Il reste 5000 KMF à financer/);
+  });
+
+  test('total panier invalide (<=0) → throw', async () => {
+    const cart = makeFinalizableCart({ total_kmf_snapshot: 0 });
+    mockWithTransaction([OK, { rows: [cart] }]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow('Total panier invalide');
+  });
+
+  test('panier sans articles → throw', async () => {
+    const cart = makeFinalizableCart();
+    mockWithTransaction([OK, { rows: [cart] }, { rows: [] }]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow('panier sans articles');
+  });
+
+  test('stock insuffisant sans acceptStockIssues → throw JSON stock_issues', async () => {
+    const cart = makeFinalizableCart();
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },                                             // items
+      { rows: [{ id: 'p1', name: 'Riz', stock: 1, is_active: true }] }, // products — stock 1 < quantite 2
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow(/stock_issues/);
+  });
+
+  test('produit inactif/manquant sans acceptStockIssues → throw', async () => {
+    const cart = makeFinalizableCart();
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [] }, // aucun produit trouvé → inactif/manquant
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow(/stock_issues/);
+  });
+
+  test('pas de delivery_relay_id (ni cart ni options) → throw', async () => {
+    const cart = makeFinalizableCart({ delivery_relay_id: null });
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow('delivery_relay_id requis');
+  });
+
+  test('relais introuvable/inactif → throw', async () => {
+    const cart = makeFinalizableCart();
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+      { rows: [] }, // relais not found
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow('Relais introuvable ou inactif');
+  });
+
+  test('RoutingError → relance avec le message', async () => {
+    resolveRoutingFromRelais.mockImplementationOnce(() => { throw new RoutingError('île inconnue'); });
+    const cart = makeFinalizableCart();
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+      { rows: [{ id: 'relais-1', is_active: true }] },
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow('île inconnue');
+  });
+
+  test('erreur non-RoutingError issue du routing → relancée telle quelle', async () => {
+    resolveRoutingFromRelais.mockImplementationOnce(() => { throw new Error('boom inattendu'); });
+    const cart = makeFinalizableCart();
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+      { rows: [{ id: 'relais-1', is_active: true }] },
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow('boom inattendu');
+  });
+
+  test('utilisateur introuvable → throw', async () => {
+    const cart = makeFinalizableCart();
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+      { rows: [{ id: 'relais-1', is_active: true }] },
+      { rows: [] }, // user introuvable
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow('Utilisateur introuvable');
+  });
+
+  test('happy path complet (100% financé) : order créé, panier ordered, event émis', async () => {
+    const cart = makeFinalizableCart();
+    const order = { id: 'order-1', reference: 'KMC-0001' };
+    const client = mockWithTransaction([
+      OK, { rows: [cart] },                                              // BEGIN, SELECT cart
+      { rows: [item1] },                                                 // SELECT items
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] }, // SELECT products
+      { rows: [{ id: 'relais-1', is_active: true }] },                   // SELECT relais
+      { rows: [{ id: 'user-001', full_name: 'Ali', phone: '+269000' }] }, // SELECT user
+      { rows: [] },                                                      // SELECT existingRecipient → aucun
+      { rows: [{ id: 'recipient-1' }] },                                 // INSERT recipients
+      { rows: [order] },                                                 // INSERT orders
+      OK,                                                                // INSERT order_status_history
+      OK,                                                                // INSERT order_items (item1)
+      OK,                                                                // UPDATE shared_carts (ordered)
+      OK,                                                                // addEvent cart_converted_to_order
+      { rows: [order] },                                                 // SELECT finalOrder
+      OK,                                                                // COMMIT
+    ]);
+
+    const result = await convertSharedCartToOrder('cart-001', 'user-001');
+
+    expect(result.order).toBe(order);
+    expect(result.sharedCart.status).toBe('ordered');
+    expect(result.sharedCart.finalized_order_id).toBe('order-1');
+    expect(confirmPaymentCycle).toHaveBeenCalledWith(expect.objectContaining({ orderId: 'order-1' }));
+    expect(client._calls[8].sql).toMatch(/INSERT INTO orders/);
+  });
+
+  test('recipient existant réutilisé (pas d\'INSERT recipients)', async () => {
+    const cart = makeFinalizableCart();
+    const order = { id: 'order-2', reference: 'KMC-0002' };
+    const client = mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+      { rows: [{ id: 'relais-1', is_active: true }] },
+      { rows: [{ id: 'user-001', full_name: 'Ali', phone: '+269000' }] },
+      { rows: [{ id: 'recipient-existing' }] }, // existingRecipient trouvé
+      { rows: [order] },                        // INSERT orders (pas d'INSERT recipients entre les deux)
+      OK, OK, OK, OK, { rows: [order] }, OK,
+    ]);
+
+    await convertSharedCartToOrder('cart-001', 'user-001');
+
+    const insertRecipientCalls = client._calls.filter(c => c.sql.includes('INSERT INTO recipients'));
+    expect(insertRecipientCalls).toHaveLength(0);
+  });
+
+  test('creatorCoversGap avec reste>0 : pas de confirmPaymentCycle, remaining_cash_kmf > 0', async () => {
+    const cart = makeFinalizableCart({ remaining_kmf: 4000, total_kmf_snapshot: 20000, contributed_kmf: 16000 });
+    const order = { id: 'order-3', reference: 'KMC-0003' };
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+      { rows: [{ id: 'relais-1', is_active: true }] },
+      { rows: [{ id: 'user-001', full_name: 'Ali', phone: '+269000' }] },
+      { rows: [{ id: 'recipient-existing' }] },
+      { rows: [order] },
+      OK, OK, OK, OK, { rows: [order] }, OK,
+    ]);
+
+    const result = await convertSharedCartToOrder('cart-001', 'user-001', { creatorCoversGap: true });
+
+    expect(result.remainingCashKmf).toBe(4000);
+    expect(confirmPaymentCycle).not.toHaveBeenCalled();
+  });
+
+  test('confirmPaymentCycle échoue (success=false, noop=false) → throw', async () => {
+    confirmPaymentCycle.mockResolvedValueOnce({ success: false, error: 'paiement refusé' });
+    const cart = makeFinalizableCart();
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+      { rows: [{ id: 'relais-1', is_active: true }] },
+      { rows: [{ id: 'user-001', full_name: 'Ali', phone: '+269000' }] },
+      { rows: [{ id: 'recipient-existing' }] },
+      { rows: [{ id: 'order-4' }] },
+      OK, OK, OK,
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow('paiement refusé');
+  });
+
+  test('confirmPaymentCycle stockBlocked → throw JSON stock_issues', async () => {
+    confirmPaymentCycle.mockResolvedValueOnce({ success: true, stockBlocked: true, insufficientItems: [{ product_id: 'p1' }] });
+    const cart = makeFinalizableCart();
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+      { rows: [{ id: 'relais-1', is_active: true }] },
+      { rows: [{ id: 'user-001', full_name: 'Ali', phone: '+269000' }] },
+      { rows: [{ id: 'recipient-existing' }] },
+      { rows: [{ id: 'order-5' }] },
+      OK, OK, OK,
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001')).rejects.toThrow(/stock_issues/);
+  });
+
+  test('pas de recipientPhone (user + snapshot sans téléphone) : aucune query recipients', async () => {
+    const cart = makeFinalizableCart({ beneficiary_phone_snapshot: null });
+    const order = { id: 'order-6' };
+    const client = mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 10, is_active: true }] },
+      { rows: [{ id: 'relais-1', is_active: true }] },
+      { rows: [{ id: 'user-001', full_name: 'Ali', phone: null }] }, // pas de tel
+      { rows: [order] }, // INSERT orders directement (pas de query recipients)
+      OK, OK, OK, OK, { rows: [order] }, OK,
+    ]);
+
+    await convertSharedCartToOrder('cart-001', 'user-001');
+
+    const recipientQueries = client._calls.filter(c => c.sql.includes('recipients'));
+    expect(recipientQueries).toHaveLength(0);
+  });
+
+  test('stock issues acceptées via acceptStockIssues=true → finalise quand même', async () => {
+    const cart = makeFinalizableCart();
+    const order = { id: 'order-7' };
+    mockWithTransaction([
+      OK, { rows: [cart] },
+      { rows: [item1] },
+      { rows: [{ id: 'p1', name: 'Riz', stock: 0, is_active: true }] }, // stock insuffisant
+      { rows: [{ id: 'relais-1', is_active: true }] },
+      { rows: [{ id: 'user-001', full_name: 'Ali', phone: '+269000' }] },
+      { rows: [{ id: 'recipient-existing' }] },
+      { rows: [order] },
+      OK, OK, OK, OK, { rows: [order] }, OK,
+    ]);
+
+    await expect(convertSharedCartToOrder('cart-001', 'user-001', { acceptStockIssues: true }))
+      .resolves.toMatchObject({ order });
   });
 });

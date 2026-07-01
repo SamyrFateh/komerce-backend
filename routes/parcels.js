@@ -81,7 +81,7 @@ const STATUS_TO_STEP = {
 };
 
 // GET /api/parcels
-router.get('/', ...adminAgentRelais, validate(parcels.list, 'query'), async (req, res, next) => {
+router.get('/', ...adminAgentRelais, validate({ query: parcels.list }), async (req, res, next) => {
   try {
     const { status, shipment_id, order_id, search, page = 1, limit = 50 } = req.query;
     const safeLimit = Math.min(parseInt(limit) || 50, 100);
@@ -181,7 +181,7 @@ router.get('/:ref/events', ...adminAgentRelais, async (req, res, next) => {
 });
 
 // POST /api/parcels — [S1] external_code + seal_code + event logged
-router.post('/', ...adminAgent, validate(parcels.create), async (req, res, next) => {
+router.post('/', ...adminAgent, validate({ body: parcels.create }), async (req, res, next) => {
   try {
     const { order_id, type = 'standard', notes, weight_kg } = req.body;
 
@@ -244,7 +244,7 @@ router.post('/', ...adminAgent, validate(parcels.create), async (req, res, next)
 });
 
 // PATCH /api/parcels/:id/status — [S3] log event on every status change
-router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async (req, res, next) => {
+router.patch('/:id/status', ...adminAgent, validate({ body: parcels.updateStatus }), async (req, res, next) => {
   try {
     const { status, notes } = req.body;
     const parcelCheck = await db.query('SELECT id, order_id, status, external_code FROM parcels WHERE id = $1', [req.params.id]);
@@ -390,7 +390,7 @@ router.post('/:id/verify-seal', ...adminAgentRelais, async (req, res, next) => {
 });
 
 // POST /api/parcels/:id/items
-router.post('/:id/items', ...adminAgent, validate(parcels.addItem), async (req, res, next) => {
+router.post('/:id/items', ...adminAgent, validate({ body: parcels.addItem }), async (req, res, next) => {
   try {
     const { order_item_id, quantity } = req.body;
     const parcelCheck = await db.query('SELECT id, order_id FROM parcels WHERE id = $1', [req.params.id]);

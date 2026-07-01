@@ -35,6 +35,13 @@ describe('notifications/internals', () => {
     expect(internals.pickPhone({}, ['+5'])).toBe('+5');
   });
 
+  it('pickPhone descend jusqu\'à user_phone, puis fallback non-tableau, puis null', () => {
+    expect(internals.pickPhone({ user_phone: '+4' }, '+5')).toBe('+4');
+    expect(internals.pickPhone({}, '+5')).toBe('+5');
+    expect(internals.pickPhone({}, null)).toBeNull();
+    expect(internals.pickPhone({}, [])).toBeNull(); // fallback[0] undefined sur tableau vide
+  });
+
   it('pickRecipients dedoublonne payeur et beneficiaire selon levenement', () => {
     const order = { tracking_phone: '+payer', recipient_phone: '+benef', user_phone: '+user' };
 
@@ -53,6 +60,15 @@ describe('notifications/internals', () => {
     expect(internals.pickRecipients({ phone_payer: '+payer' }, 'unknown_event')).toEqual([{ phone: '+payer', role: 'payer' }]);
   });
 
+  it("pickRecipients (event 'default') replie sur le bénéficiaire si aucun payeur n'existe", () => {
+    expect(internals.pickRecipients({ recipient_phone: '+benef' }, 'unknown_event')).toEqual([{ phone: '+benef', role: 'beneficiary' }]);
+  });
+
+  it('pickRecipients (order_collected) suit le même chemin que order_delivered', () => {
+    expect(internals.pickRecipients({ recipient_phone: '+benef' }, 'order_collected')).toEqual([{ phone: '+benef', role: 'beneficiary' }]);
+    expect(internals.pickRecipients({ tracking_phone: '+payer' }, 'order_collected')).toEqual([{ phone: '+payer', role: 'payer' }]);
+  });
+
   it('logNotification insere un log avec detail stringifie', async () => {
     db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
@@ -60,6 +76,26 @@ describe('notifications/internals', () => {
 
     expect(db.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO notification_log'), [
       'CMD-001', 'P-001', 'whatsapp', 'paid', '+269', 'sent', JSON.stringify({ ok: true }),
+    ]);
+  });
+
+  it('logNotification garde detail tel quel si déjà une chaîne (pas de double JSON.stringify)', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await internals.logNotification({ channel: 'whatsapp', event: 'x', status: 'sent', detail: 'déjà une chaîne' });
+
+    expect(db.query).toHaveBeenCalledWith(expect.any(String), [
+      null, null, 'whatsapp', 'x', 'system', 'sent', 'déjà une chaîne',
+    ]);
+  });
+
+  it('logNotification met detail à null si non fourni, et recipient à "system" par défaut', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await internals.logNotification({ channel: 'whatsapp', event: 'x', status: 'skipped' });
+
+    expect(db.query).toHaveBeenCalledWith(expect.any(String), [
+      null, null, 'whatsapp', 'x', 'system', 'skipped', null,
     ]);
   });
 
@@ -78,5 +114,81 @@ describe('notifications/internals', () => {
       signal_type: 'notification_failure', severity: 'warning', entity_id: 'order-001', target_filters: { order_id: 'order-001' },
       meta: expect.objectContaining({ event: 'paid', orderRef: 'CMD-001', orderId: 'order-001' }),
     }));
+  });
+
+  it("_alertNotificationFailure : summary replie sur '?' si ni orderRef ni orderId", () => {
+    internals._alertNotificationFailure({ event: 'paid', error: 'boom' });
+
+    expect(signalService.upsertSignal).toHaveBeenCalledWith(expect.objectContaining({
+      summary: expect.stringContaining('Commande ? ·'),
+      target_filters: {},
+      entity_id: null,
+    }));
+  });
+
+  it("_alertNotificationFailure n'interrompt pas le flux même si upsertSignal rejette (catch interne)", async () => {
+    signalService.upsertSignal.mockReturnValueOnce(Promise.reject(new Error('signal service down')));
+
+    expect(() => internals._alertNotificationFailure({ event: 'paid', orderId: 'order-001', error: 'boom' })).not.toThrow();
+
+    // Laisse la microtask du .catch() interne se résoudre avant la fin du test.
+    await new Promise((resolve) => setImmediate(resolve));
+  });
+
+  describe('notifyText', () => {
+    const authkey = require('../../services/authkey-client');
+
+    it('skip et renvoie ok:false si phone ou message manque', async () => {
+      expect(await internals.notifyText(null, 'msg', 'evt')).toEqual({ ok: false, reason: 'no_phone_or_message' });
+      expect(await internals.notifyText('+269', '', 'evt')).toEqual({ ok: false, reason: 'no_phone_or_message' });
+      expect(authkey.callAuthKeyText).not.toHaveBeenCalled();
+    });
+
+    it('envoie via callAuthKeyText et logNotification "sent" en cas de succès', async () => {
+      authkey.callAuthKeyText.mockResolvedValueOnce({ ok: true, messageId: 'msg-1' });
+      db.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await internals.notifyText('+269321', 'Bonjour', 'invoice_ready', 'order-1');
+
+      expect(result).toEqual({ ok: true, messageId: 'msg-1' });
+      expect(authkey.callAuthKeyText).toHaveBeenCalledWith({ mobile: '+269321', message: 'Bonjour' });
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO notification_log'), [
+        'order-1', null, 'whatsapp', 'invoice_ready', '+269321', 'sent', JSON.stringify({ messageId: 'msg-1' }),
+      ]);
+    });
+
+    it('utilise null pour orderRef si orderId non fourni', async () => {
+      authkey.callAuthKeyText.mockResolvedValueOnce({ ok: true, messageId: 'msg-2' });
+      db.query.mockResolvedValueOnce({ rows: [] });
+
+      await internals.notifyText('+269321', 'Bonjour', 'evt');
+
+      expect(db.query).toHaveBeenCalledWith(expect.any(String), [
+        null, null, 'whatsapp', 'evt', '+269321', 'sent', JSON.stringify({ messageId: 'msg-2' }),
+      ]);
+    });
+
+    it('logNotification "failed" + log.warn si result.ok=false, sans exception', async () => {
+      authkey.callAuthKeyText.mockResolvedValueOnce({ ok: false, error: 'rejected_by_provider' });
+      db.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await internals.notifyText('+269321', 'Bonjour', 'evt', 'order-2');
+
+      expect(result).toEqual({ ok: false, error: 'rejected_by_provider' });
+      expect(db.query).toHaveBeenCalledWith(expect.any(String), [
+        'order-2', null, 'whatsapp', 'evt', '+269321', 'failed', JSON.stringify({ error: 'rejected_by_provider' }),
+      ]);
+    });
+
+    it("catch l'exception, alerte via _alertNotificationFailure, et renvoie ok:false sans relancer", async () => {
+      authkey.callAuthKeyText.mockRejectedValueOnce(new Error('provider crash'));
+
+      const result = await internals.notifyText('+269321', 'Bonjour', 'evt', 'order-3');
+
+      expect(result).toEqual({ ok: false, error: 'provider crash' });
+      expect(signalService.upsertSignal).toHaveBeenCalledWith(expect.objectContaining({
+        meta: expect.objectContaining({ event: 'evt', orderId: 'order-3', error: 'provider crash' }),
+      }));
+    });
   });
 });
