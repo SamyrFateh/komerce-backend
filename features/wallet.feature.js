@@ -53,6 +53,11 @@ module.exports = {
       'css/wallet.css',
     ],
     tests: [
+      'tests/unit/loyalty-notification.test.js',
+      'tests/unit/loyalty-route.test.js',
+      'tests/unit/loyalty-service.test.js',
+      'tests/unit/store-credits.test.js',
+      'tests/unit/wallet-route.test.js',
       'tests/unit/wallet-service.test.js',
     ],
   },

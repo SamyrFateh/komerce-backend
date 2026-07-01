@@ -48,6 +48,7 @@ module.exports = {
     
       'routes/signals.js',],
     tests: [
+      'tests/unit/boutique-ranking-engine.test.js',
       'tests/unit/radar-queries.test.js',
       'tests/unit/signals.test.js',
       'tests/unit/signal-service.test.js',

@@ -83,7 +83,10 @@
     "map:check:bail": "node scripts/map-check.js --bail",
     "gate:pr-governance": "node scripts/pr-governance-check.js",
     "gate:touched-tests": "node scripts/touched-tests-gate.js",
-    "gate:touched-tests:report": "node scripts/touched-tests-gate.js --report"
+    "gate:touched-tests:report": "node scripts/touched-tests-gate.js --report",
+    "predeploy": "node scripts/predeploy-gate.js",
+    "predeploy:report": "node scripts/predeploy-gate.js --report",
+    "predeploy:skip-tests": "node scripts/predeploy-gate.js --skip-tests"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

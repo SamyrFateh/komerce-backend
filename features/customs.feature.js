@@ -55,6 +55,11 @@ module.exports = {
       'dashboards/admin/js/views/TransitaireView.js',
     ],
         tests: [
+      'tests/unit/admin-customs-categories.test.js',
+      'tests/unit/admin-customs-route.test.js',
+      'tests/unit/admin-customs-shipments.test.js',
+      'tests/unit/customs-analytics.test.js',
+      'tests/unit/customs-classification.test.js',
       'tests/unit/customs-shipment-service.test.js',
     ],
   },

@@ -177,7 +177,7 @@ module.exports = {
       'dashboards/admin-legacy/js/ct-app.js',           // deprecated v5
       'dashboards/admin-legacy/js/ct-app-v6.js',        // deprecated v6
       'dashboards/admin-legacy/js/ct-app-v7.js',        // ACTIF
-      'dashboards/admin-legacy/js/ct-notification.js', // deprecated v5
+      // ct-notifications.js supprimé (deprecated v5) — ref retirée 2026-07-01
       'dashboards/admin-legacy/js/ct-platform.js',
       'dashboards/admin-legacy/js/ct-scenarios.js',     // deprecated v5
       'dashboards/admin-legacy/js/ct-views.js',         // deprecated v5
@@ -219,6 +219,35 @@ module.exports = {
       'css/ct-inventory.css',
     ],
     tests: [
+      'tests/test-dashboard.js',
+      'tests/unit/admin-costing-full.test.js',
+      'tests/unit/admin-dashboard-route.test.js',
+      'tests/unit/admin-dashboard.test.js',
+      'tests/unit/admin-facades-route.test.js',
+      'tests/unit/admin-loyalty.test.js',
+      'tests/unit/admin-orders-route.test.js',
+      'tests/unit/admin-radar.test.js',
+      'tests/unit/admin-risk-provisions.test.js',
+      'tests/unit/admin-rules.test.js',
+      'tests/unit/admin-system.test.js',
+      'tests/unit/dashboard-cache.test.js',
+      'tests/unit/dashboard-clients-route.test.js',
+      'tests/unit/dashboard-control-tower.test.js',
+      'tests/unit/dashboard-costing.test.js',
+      'tests/unit/dashboard-finance-route.test.js',
+      'tests/unit/dashboard-helpers.test.js',
+      'tests/unit/dashboard-hub-route.test.js',
+      'tests/unit/dashboard-metrics-helpers.test.js',
+      'tests/unit/dashboard-ops-route.test.js',
+      'tests/unit/dashboard-route.test.js',
+      'tests/unit/dashboard-shared.test.js',
+      'tests/unit/dashboard-workspaces.test.js',
+      'tests/unit/hub-dashboard-queries.test.js',
+      'tests/unit/hub-dashboard-route.test.js',
+      'tests/unit/partners.test.js',
+      'tests/unit/relay-dashboard-route.test.js',
+      'tests/unit/system.test.js',
+      'tests/unit/users.test.js',
       'tests/unit/dashboard-clients-queries.test.js',
       'tests/unit/dashboard-finance-metrics.test.js',
       'tests/unit/dashboard-metrics.test.js',

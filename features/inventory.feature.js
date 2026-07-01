@@ -48,6 +48,9 @@ module.exports = {
       'dashboards/admin/js/views/InventoryView.js',
     ],
         tests: [
+      'tests/unit/inventory-api-route.test.js',
+      'tests/unit/inventory-service.test.js',
+      'tests/unit/unsold.test.js',
       'tests/integration/parcel-auto-create-cash-payment.test.js',
       'tests/parcelOptimization.test.js',
       'tests/unit/hub-operations.test.js',

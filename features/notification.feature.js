@@ -40,6 +40,22 @@ module.exports = {
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     tests: [
+      'tests/notifications/notification-api-meta-whatsapp-alerts-branches.test.js',
+      'tests/unit/email.test.js',
+      'tests/unit/notification-internals.test.js',
+      'tests/unit/notification-misc.test.js',
+      'tests/unit/notification-otp-auth.test.js',
+      'tests/unit/notification-service-barrel.test.js',
+      'tests/unit/notification-service.test.js',
+      'tests/unit/notification-whatsapp-meta.test.js',
+      'tests/unit/order-notification.test.js',
+      'tests/unit/orders-aggregator-route.test.js',
+      'tests/unit/orders-cancel-route.test.js',
+      'tests/unit/orders-create-route.test.js',
+      'tests/unit/orders-detail.test.js',
+      'tests/unit/orders-list.test.js',
+      'tests/unit/orders-status-route.test.js',
+      'tests/unit/parcel-notification.test.js',
       'core/test-whatsapp-notifications.js',
       'tests/notifications/notification-service-internals.test.js',
       'tests/notifications/notification-service-order-parcel-otp-auth-loyalty-misc.test.js',
