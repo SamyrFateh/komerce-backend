@@ -43,6 +43,7 @@ module.exports = {
 
   docs: [
     'CORRECTIONS_APPLIQUEES_MODAL_2026-06-27.md',
+    'docs/AUDIT_BOUTIQUE_ARCHI_2026-05-30.md',
     'docs/BOUTIQUE_MODAL_ARCHITECTURE.md',
     'docs/MODAL_DESKTOP_ARCHITECTURE.docx',
     'docs/MODAL_DESKTOP_ARCHITECTURE.md',

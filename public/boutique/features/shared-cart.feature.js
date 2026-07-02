@@ -48,7 +48,9 @@ module.exports = {
     ],
   },
 
-  docs: [],
+  docs: [
+    'REFACTOR_SUMMARY.md',
+  ],
 
   contract: {
     exposes: [
