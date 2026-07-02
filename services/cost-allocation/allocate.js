@@ -86,6 +86,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
          p.order_id,
          csp.parcel_cif_kmf,
          csp.parcel_weight_kg,
+         csp.parcel_volume_cm3,
          csp.customs_share_kmf,
          csp.allocation_basis
        FROM customs_shipment_parcels csp
@@ -139,11 +140,36 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
       }));
     }
 
-    // Pour freight : ventilation par poids
+    // Pour freight : le poids ne fait PAS partie de l'équation en maritime
+    // (doctrine — le fret LCL est acheté au m³, jamais au kg). Donc :
+    //   - sea + volume snapshoté        → ventilation par volume (réel)
+    //   - sea + volume absent (legacy)  → répartition égale entre colis,
+    //                                      PAS par poids (le poids n'a aucun
+    //                                      sens économique ici ; mieux vaut
+    //                                      un signal neutre "pas de donnée"
+    //                                      qu'un signal faux). Marqué
+    //                                      estimated_fallback / confidence low.
+    //   - air / land / non renseigné    → ventilation par poids (inchangé)
+    const isMaritime = ship.transport_mode === 'sea';
+    const totalParcelVolume = parcels.reduce((s, p) => s + (Number(p.parcel_volume_cm3) || 0), 0);
+    const useVolumeForFreight = isMaritime && totalParcelVolume > 0;
+    const useEqualSplitForFreight = isMaritime && !useVolumeForFreight;
+
+    const freightAllocationMethod = useVolumeForFreight
+      ? 'by_volume'
+      : useEqualSplitForFreight
+        ? 'estimated_fallback'
+        : 'by_weight';
+    const freightConfidence = useEqualSplitForFreight ? 'low' : 'high';
+
     const freightWeights = parcels.map(p => ({
       id: p.parcel_id,
       order_id: p.order_id,
-      weight: Number(p.parcel_weight_kg) || 0,
+      weight: useVolumeForFreight
+        ? Number(p.parcel_volume_cm3) || 0
+        : useEqualSplitForFreight
+          ? 1                                   // répartition égale, pas de poids
+          : Number(p.parcel_weight_kg) || 0,
     }));
     const freightSharesArr = shareByWeight(totalFreight, freightWeights);
     const freightShares = freightSharesArr.map((s, i) => ({
@@ -168,6 +194,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
            oi.quantity AS order_item_qty,
            oi.product_id,
            p.weight_kg,
+           p.volume_cm3,
            p.cost_kmf
          FROM parcel_items pi
          JOIN order_items oi ON oi.id = pi.order_item_id
@@ -186,10 +213,20 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
       }));
       const customsSplit = shareByWeight(customsShare, customsWeights);
 
-      // Eclater freight par poids
+      // Eclater freight par volume si dispo (maritime), sinon répartition égale
+      // par quantité pour le maritime (jamais par poids), poids sinon (non-maritime).
+      const itemsVolumeTotal = items.reduce(
+        (s, it) => s + (Number(it.volume_cm3) || 0) * (Number(it.parcel_qty) || 1), 0
+      );
+      const useVolumeForItems = useVolumeForFreight && itemsVolumeTotal > 0;
+      const useEqualSplitForItems = isMaritime && !useVolumeForItems;
       const freightWeightsItems = items.map(it => ({
         id: it.order_item_id,
-        weight: (Number(it.weight_kg) || 0) * (Number(it.parcel_qty) || 1),
+        weight: useVolumeForItems
+          ? (Number(it.volume_cm3) || 0) * (Number(it.parcel_qty) || 1)
+          : useEqualSplitForItems
+            ? (Number(it.parcel_qty) || 1)      // pas de poids, quantité comme neutre
+            : (Number(it.weight_kg) || 0) * (Number(it.parcel_qty) || 1),
       }));
       const freightSplit = shareByWeight(freightShare, freightWeightsItems);
 
@@ -217,8 +254,8 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
                (order_id, order_item_id, parcel_id, shipment_id,
                 cost_type, amount_kmf, allocation_method,
                 source, is_actual, confidence)
-             VALUES ($1,$2,$3,$4,'freight',$5,'by_weight','customs_shipments',TRUE,'high')`,
-            [parcel.order_id, it.order_item_id, parcel.parcel_id, shipmentId, fShare]
+             VALUES ($1,$2,$3,$4,'freight',$5,$6,'customs_shipments',TRUE,$7)`,
+            [parcel.order_id, it.order_item_id, parcel.parcel_id, shipmentId, fShare, freightAllocationMethod, freightConfidence]
           );
           totalAllocations++;
         }
@@ -232,6 +269,7 @@ async function allocateShipmentRealCosts(shipmentId, dbClient = null) {
       allocations_count: totalAllocations,
       total_customs_kmf: totalCustoms,
       total_freight_kmf: totalFreight,
+      freight_allocation_method: freightAllocationMethod,
       parcels_processed: parcels.length,
     };
   } catch (err) {

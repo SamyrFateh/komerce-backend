@@ -75,6 +75,19 @@ router.post('/seal', ...hubAuth, validate({ body: hub.seal }), async (req, res, 
   } catch (err) { next(err); }
 });
 
+// ── POST /volume ─────────────────────────────────────────────────────────────
+// V-4 DOCTRINE_DENSITE_VALEUR : saisie de mesure volume par l'agent hub.
+// Consigne prescrite au scan (next_action measure_volume / repack) — l'agent
+// exécute la mesure, il ne décide rien (R2). Alimente la ventilation fret
+// (095) et la densité de valeur (V-2).
+router.post('/volume', ...hubAuth, validate({ body: hub.volume }), async (req, res, next) => {
+  try {
+    const { product_id, volume_cm3, repack_volume_cm3 } = req.body;
+    const result = await hubOps.recordVolume(product_id, req.user.id, { volume_cm3, repack_volume_cm3 });
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
 // ── POST /batch-scan ─────────────────────────────────────────────────────────
 router.post('/batch-scan', ...hubAuth, async (req, res, next) => {
   try {

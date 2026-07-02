@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 707,
-    "edges": 3437,
+    "graphNodes": 709,
+    "edges": 3443,
     "dbTables": 108,
-    "doctrines": 125,
+    "doctrines": 127,
     "impactAreas": 118,
     "unresolvedCodeEdges": 327
   },
@@ -10498,16 +10498,22 @@
       "depends": [],
       "usedBy": [],
       "dbRead": [
-        "parcels"
+        "business_rules",
+        "parcel_items",
+        "parcels",
+        "products"
       ],
       "dbWrite": [
-        "parcels"
+        "parcels",
+        "products"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "DOCTRINE_DENSITE_VALEUR (V-4",
+        "2026-07-02)"
       ],
       "impactAreas": [
         "unknown"
@@ -16507,6 +16513,16 @@
       "id": "doctrine:sov_drift",
       "type": "doctrine",
       "doctrine": "sov_drift"
+    },
+    {
+      "id": "doctrine:DOCTRINE_DENSITE_VALEUR (V-4",
+      "type": "doctrine",
+      "doctrine": "DOCTRINE_DENSITE_VALEUR (V-4"
+    },
+    {
+      "id": "doctrine:2026-07-02)",
+      "type": "doctrine",
+      "doctrine": "2026-07-02)"
     },
     {
       "id": "doctrine:lien_facture_public_non_devinable",
@@ -31513,9 +31529,27 @@
     },
     {
       "from": "services/hub-operations.js",
+      "to": "db:business_rules",
+      "type": "db-read",
+      "label": "business_rules"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/hub-operations.js",
       "to": "db:parcels",
       "type": "db-read",
       "label": "parcels"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
     },
     {
       "from": "services/hub-operations.js",
@@ -31525,9 +31559,27 @@
     },
     {
       "from": "services/hub-operations.js",
+      "to": "db:products",
+      "type": "db-write",
+      "label": "products"
+    },
+    {
+      "from": "services/hub-operations.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "doctrine:DOCTRINE_DENSITE_VALEUR (V-4",
+      "type": "doctrine",
+      "label": "DOCTRINE_DENSITE_VALEUR (V-4"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "doctrine:2026-07-02)",
+      "type": "doctrine",
+      "label": "2026-07-02)"
     },
     {
       "from": "services/hub-operations.js",
@@ -47750,19 +47802,30 @@
       "directUsedBy": [],
       "ownedFiles": [],
       "dbRead": [
-        "parcels"
+        "business_rules",
+        "parcel_items",
+        "parcels",
+        "products"
       ],
       "dbWrite": [
-        "parcels"
+        "parcels",
+        "products"
       ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "DOCTRINE_DENSITE_VALEUR (V-4",
+        "2026-07-02)"
       ],
       "impactAreas": [
         "unknown"
       ],
       "mustCheck": [
+        "db:business_rules",
+        "db:parcel_items",
         "db:parcels",
+        "db:products",
+        "doctrine:2026-07-02)",
+        "doctrine:DOCTRINE_DENSITE_VALEUR (V-4",
         "doctrine:resolve_before_behavior_change",
         "impact:unknown"
       ]

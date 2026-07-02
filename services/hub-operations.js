@@ -8,10 +8,10 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       parcels
- * @db-write      parcels
+ * @db-read       business_rules, parcel_items, parcels, products
+ * @db-write      parcels, products
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change, DOCTRINE_DENSITE_VALEUR (V-4, 2026-07-02)
  * @impact-areas  unknown
  * @version       2026-06
  */
@@ -42,6 +42,139 @@
 
 const db = require('../db');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
+
+// ══════════════════════════════════════════════════════════════════════════
+// V-4 DOCTRINE_DENSITE_VALEUR — repack prescrit, jamais improvisé (R2)
+// Le système décide (flags + seuil business_rules), l'agent hub exécute.
+// SANS CONTRAINTE : toute erreur ici est avalée — le scan n'échoue JAMAIS
+// à cause du volume. Champs additifs dans le body, contrat existant intact.
+// ══════════════════════════════════════════════════════════════════════════
+
+const REPACK_MIN_GAIN_FALLBACK_CM3 = 2000; // fallback ultime si business_rules inaccessible
+
+/**
+ * Calcule les tâches volume d'un colis à la réception :
+ *   - 'measure' : produit sans volume_cm3 → mesurer L×l×h à la 1ʳᵉ réception
+ *                 (le volume alimente la ventilation fret 095 et la densité V-2)
+ *   - 'repack'  : gain prouvé (volume_cm3 − repack_volume_cm3) ≥ REPACK_MIN_GAIN_CM3
+ *                 et non repack_exempt → consigne d'emballage optimisé
+ * Les exemptions (fragile, boîte = valeur perçue, douane) sont posées par
+ * l'admin via products.repack_exempt — jamais décidées ici ni par l'agent.
+ *
+ * @param {string} parcelId
+ * @returns {Promise<{ next_action: string|null, tasks: Array }>}
+ */
+async function computeVolumeTasks(parcelId) {
+  const empty = { next_action: null, tasks: [] };
+  try {
+    const { rows: items } = await db.query(
+      `SELECT pi.product_id,
+              COALESCE(pi.product_name, pr.name) AS name,
+              pi.quantity,
+              pr.volume_cm3, pr.repack_volume_cm3, pr.repack_exempt
+       FROM parcel_items pi
+       JOIN products pr ON pr.id = pi.product_id
+       WHERE pi.parcel_id = $1`,
+      [parcelId]
+    );
+    if (!items.length) return empty;
+
+    let minGain = REPACK_MIN_GAIN_FALLBACK_CM3;
+    try {
+      const { rows } = await db.query(
+        `SELECT value FROM business_rules WHERE key = 'REPACK_MIN_GAIN_CM3' AND is_active = TRUE LIMIT 1`
+      );
+      if (rows[0]) {
+        const v = rows[0].value && rows[0].value.value != null ? Number(rows[0].value.value) : Number(rows[0].value);
+        if (!isNaN(v)) minGain = v;
+      }
+    } catch (_) { /* business_rules inaccessible → fallback */ }
+
+    const tasks = [];
+    for (const it of items) {
+      if (it.repack_exempt) continue;
+      const vol    = it.volume_cm3        != null ? Number(it.volume_cm3)        : null;
+      const repack = it.repack_volume_cm3 != null ? Number(it.repack_volume_cm3) : null;
+
+      if (vol == null) {
+        tasks.push({
+          task: 'measure',
+          product_id: it.product_id,
+          name: it.name,
+          quantity: it.quantity,
+          instruction: 'Mesurer L×l×h (cm) du produit emballé et saisir le volume',
+        });
+      } else if (repack != null && (vol - repack) >= minGain) {
+        tasks.push({
+          task: 'repack',
+          product_id: it.product_id,
+          name: it.name,
+          quantity: it.quantity,
+          gain_cm3: Math.round(vol - repack),
+          instruction: `Repacker en emballage optimisé (gain ${Math.round((vol - repack) / 1000)} dm³/unité)`,
+        });
+      }
+    }
+
+    const next_action = tasks.some(t => t.task === 'repack') ? 'repack'
+      : tasks.some(t => t.task === 'measure') ? 'measure_volume'
+      : null;
+
+    return { next_action, tasks };
+  } catch (_) {
+    return empty; // sans contrainte : jamais d'échec de scan pour cause de volume
+  }
+}
+
+/**
+ * Enregistre une mesure de volume produit (POST /api/hub/volume).
+ * L'agent exécute une consigne de mesure — il ne décide rien (R2) :
+ * pas de flag d'exemption ici, pas de seuil, juste la saisie.
+ * Dernière mesure gagne (pas de verrou : la donnée fraîche prime).
+ *
+ * @param {string} productId
+ * @param {string} userId
+ * @param {{ volume_cm3?: number, repack_volume_cm3?: number }} payload
+ * @returns {Promise<{ status: number, body: object }>}
+ */
+async function recordVolume(productId, userId, payload) {
+  const { volume_cm3, repack_volume_cm3 } = payload || {};
+  if (volume_cm3 == null && repack_volume_cm3 == null) {
+    return { status: 400, body: { error: 'Fournir volume_cm3 et/ou repack_volume_cm3' } };
+  }
+
+  const sets = [];
+  const params = [];
+  let i = 1;
+  if (volume_cm3 != null)        { sets.push(`volume_cm3 = $${i++}`);        params.push(volume_cm3); }
+  if (repack_volume_cm3 != null) { sets.push(`repack_volume_cm3 = $${i++}`); params.push(repack_volume_cm3); }
+  params.push(productId);
+
+  const { rows } = await db.query(
+    `UPDATE products SET ${sets.join(', ')}
+     WHERE id = $${i}
+     RETURNING id, name, volume_cm3, repack_volume_cm3, repack_exempt`,
+    params
+  );
+  if (!rows.length) {
+    return { status: 404, body: { error: 'Produit introuvable' } };
+  }
+
+  const p = rows[0];
+  const gain = (p.volume_cm3 != null && p.repack_volume_cm3 != null)
+    ? Math.round(Number(p.volume_cm3) - Number(p.repack_volume_cm3))
+    : null;
+
+  return {
+    status: 200,
+    body: {
+      message: `Volume enregistré pour ${p.name}`,
+      product: p,
+      repack_gain_cm3: gain,
+      recorded_by: userId,
+    },
+  };
+}
 
 // ── receiveParcel (POST /scan) ──────────────────────────────────────────────
 
@@ -86,12 +219,17 @@ async function receiveParcel(parcelRef, userId, notes) {
 
     const updated = await db.query('SELECT * FROM parcels WHERE id = $1', [parcel.id]);
 
+    // V-4 : tâches volume/repack — hors transaction, jamais bloquant.
+    const volumeTasks = await computeVolumeTasks(parcel.id);
+
     return {
       status: 200,
       body: {
         message: `Colis ${parcel.reference} scanné au hub`,
         parcel:  updated.rows[0],
         sync:    syncResult,
+        next_action:  volumeTasks.next_action,   // 'repack' | 'measure_volume' | null
+        volume_tasks: volumeTasks.tasks,          // consignes par produit (R2 : exécution)
       },
     };
   } catch (err) {
@@ -325,4 +463,4 @@ async function batchScan(parcelRefs, userId, notes) {
   };
 }
 
-module.exports = { receiveParcel, packParcel, sealParcel, batchScan };
+module.exports = { receiveParcel, packParcel, sealParcel, batchScan, recordVolume, computeVolumeTasks };

@@ -91,6 +91,88 @@ describe('allocateShipmentRealCosts', () => {
     expect(result.parcels_processed).toBe(1);
     expectTransactionCommitted(client);
   });
+
+  it('maritime + volume snapshoté → freight ventilé par volume (pas par poids)', async () => {
+    // Doctrine : fret maritime acheté au m³, pas au kg. Colis A est lourd/compact
+    // (peu de volume, beaucoup de poids) ; colis B est léger/volumineux.
+    // Ventilation par poids donnerait A > B ; par volume, B > A.
+    const shipment = {
+      id: 'ship-001', customs_paid_kmf: '0', freight_kmf: '1000',
+      allocation_method: 'by_cif_value', transport_mode: 'sea',
+    };
+    const parcelA = { parcel_id: 'parcel-A', order_id: 'order-A', parcel_cif_kmf: '1000', parcel_weight_kg: '18', parcel_volume_cm3: '10000', customs_share_kmf: null, allocation_basis: null };
+    const parcelB = { parcel_id: 'parcel-B', order_id: 'order-B', parcel_cif_kmf: '1000', parcel_weight_kg: '2',  parcel_volume_cm3: '90000', customs_share_kmf: null, allocation_basis: null };
+    const itemA = { order_item_id: 'oi-A', parcel_qty: '1', price_kmf: '1000', order_item_qty: '1', product_id: 'prod-A', weight_kg: '18', volume_cm3: '10000', cost_kmf: '1000' };
+    const itemB = { order_item_id: 'oi-B', parcel_qty: '1', price_kmf: '1000', order_item_qty: '1', product_id: 'prod-B', weight_kg: '2',  volume_cm3: '90000', cost_kmf: '1000' };
+
+    const client = makeClient([
+      { rows: [shipment] },
+      { rows: [parcelA, parcelB] },
+      { rows: [], rowCount: 0 },
+      { rows: [itemA] },
+      { rows: [], rowCount: 1 },   // freight A (customsShare=0 → pas d'insert customs)
+      { rows: [itemB] },
+      { rows: [], rowCount: 1 },   // freight B
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+
+    const result = await allocateShipmentRealCosts('ship-001');
+
+    expect(result.freight_allocation_method).toBe('by_volume');
+
+    // Vérifie que l'INSERT freight de parcel-A (10% du volume total) porte bien
+    // amount_kmf ≈ 100 et allocation_method='by_volume', pas 900 (poids: 18/20=90%).
+    const freightInsertA = client.query.mock.calls.find(
+      c => c[0].includes("'freight'") && c[1][2] === 'parcel-A'
+    );
+    expect(freightInsertA[1][4]).toBeCloseTo(100, 0);
+    expect(freightInsertA[1][5]).toBe('by_volume');
+    expectTransactionCommitted(client);
+  });
+
+  it('maritime sans volume snapshoté (legacy) → répartition égale, PAS par poids', async () => {
+    // Doctrine : le poids sort de l'équation en maritime, même en fallback.
+    // Colis A (18kg) et colis B (2kg) : si on utilisait le poids, A prendrait
+    // 90% du fret. Ici, sans volume connu, la répartition doit être égale
+    // (50/50), pas influencée par le poids.
+    const shipment = {
+      id: 'ship-001', customs_paid_kmf: '0', freight_kmf: '1000',
+      allocation_method: 'by_cif_value', transport_mode: 'sea',
+    };
+    // parcel_volume_cm3 absent sur les deux (shipment lié avant migration 095)
+    const parcelA = { parcel_id: 'parcel-A', order_id: 'order-A', parcel_cif_kmf: '1000', parcel_weight_kg: '18', customs_share_kmf: null, allocation_basis: null };
+    const parcelB = { parcel_id: 'parcel-B', order_id: 'order-B', parcel_cif_kmf: '1000', parcel_weight_kg: '2',  customs_share_kmf: null, allocation_basis: null };
+    const itemA = { order_item_id: 'oi-A', parcel_qty: '1', price_kmf: '1000', order_item_qty: '1', product_id: 'prod-A', weight_kg: '18', cost_kmf: '1000' };
+    const itemB = { order_item_id: 'oi-B', parcel_qty: '1', price_kmf: '1000', order_item_qty: '1', product_id: 'prod-B', weight_kg: '2',  cost_kmf: '1000' };
+
+    const client = makeClient([
+      { rows: [shipment] },
+      { rows: [parcelA, parcelB] },
+      { rows: [], rowCount: 0 },
+      { rows: [itemA] },
+      { rows: [], rowCount: 1 },
+      { rows: [itemB] },
+      { rows: [], rowCount: 1 },
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+
+    const result = await allocateShipmentRealCosts('ship-001');
+
+    expect(result.freight_allocation_method).toBe('estimated_fallback');
+
+    const freightInsertA = client.query.mock.calls.find(
+      c => c[0].includes("'freight'") && c[1][2] === 'parcel-A'
+    );
+    const freightInsertB = client.query.mock.calls.find(
+      c => c[0].includes("'freight'") && c[1][2] === 'parcel-B'
+    );
+    // 50/50, pas 90/10 comme le donnerait le poids
+    expect(freightInsertA[1][4]).toBeCloseTo(500, 0);
+    expect(freightInsertB[1][4]).toBeCloseTo(500, 0);
+    expect(freightInsertA[1][5]).toBe('estimated_fallback');
+    expect(freightInsertA[1][6]).toBe('low');
+    expectTransactionCommitted(client);
+  });
 });
 
 // ════════════════════════════════════════════════════════════════

@@ -243,33 +243,47 @@ async function _insertAllocations(client, shipmentId, shipmentMeta, parcelIds) {
               (SELECT SUM(COALESCE(pr.weight_kg,0) * oi.quantity)
                  FROM order_items oi
                  JOIN products pr ON pr.id = oi.product_id
-                WHERE oi.order_id = p.order_id)) AS weight_kg
+                WHERE oi.order_id = p.order_id)) AS weight_kg,
+            COALESCE(p.volume_cm3,
+              (SELECT SUM(COALESCE(pr.volume_cm3,0) * oi.quantity)
+                 FROM order_items oi
+                 JOIN products pr ON pr.id = oi.product_id
+                WHERE oi.order_id = p.order_id)) AS volume_cm3
        FROM parcels p
        LEFT JOIN orders o ON o.id = p.order_id
       WHERE p.id = ANY($1::uuid[])`,
     [parcelIds]
   );
 
+  // volume_m3 : requis par allocateCustoms (méthode 'by_volume', doctrine fret
+  // maritime au m³ — cf. migration 095). cm3 → m3.
   const allocations = allocateCustoms(
     shipmentMeta,
     parcelData.map(p => ({
-      parcel_id: p.id,
-      cif_kmf:   Number(p.cif_kmf)   || 0,
-      weight_kg: Number(p.weight_kg) || 0,
+      parcel_id:  p.id,
+      cif_kmf:    Number(p.cif_kmf)    || 0,
+      weight_kg:  Number(p.weight_kg)  || 0,
+      volume_m3:  (Number(p.volume_cm3) || 0) / 1e6,
     }))
   );
+  const volumeByParcelId = new Map(parcelData.map(p => [p.id, Number(p.volume_cm3) || 0]));
 
   for (const a of allocations) {
     await client.query(
       `INSERT INTO customs_shipment_parcels
-         (shipment_id, parcel_id, parcel_cif_kmf, parcel_weight_kg,
+         (shipment_id, parcel_id, parcel_cif_kmf, parcel_weight_kg, parcel_volume_cm3,
           customs_share_kmf, allocation_basis)
-       VALUES ($1,$2,$3,$4,$5,$6)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
        ON CONFLICT (shipment_id, parcel_id) DO UPDATE
          SET customs_share_kmf = EXCLUDED.customs_share_kmf,
              allocation_basis  = EXCLUDED.allocation_basis,
+             parcel_volume_cm3 = EXCLUDED.parcel_volume_cm3,
              updated_at        = NOW()`,
-      [shipmentId, a.parcel_id, a.cif_kmf, a.weight_kg, a.customs_share_kmf, a.allocation_basis]
+      [
+        shipmentId, a.parcel_id, a.cif_kmf, a.weight_kg,
+        volumeByParcelId.get(a.parcel_id) || null,
+        a.customs_share_kmf, a.allocation_basis,
+      ]
     );
   }
 

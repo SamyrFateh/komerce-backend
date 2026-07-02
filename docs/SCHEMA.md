@@ -48,7 +48,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | Objet | Compte | Note |
 |---|---|---|
 | Tables | 94 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
-| Vues | 16 | Préfixe `v_` ou `customs_*` |
+| Vues | 16 | Préfixe `v_` ou `customs_*` (+1 visée par migration 095 non déployée : v_shipment_density, voir note §5) |
 | ENUMs | 14 | Types métier critiques |
 | Index | 264 | Performance + contraintes uniques |
 | Foreign keys | 147 | Cohérence relationnelle |
@@ -156,7 +156,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 | Table | Rôle |
 |---|---|
-| `products` | Catalogue produit. |
+| `products` | Catalogue produit. **Migration 095 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. |
 | `product_variants` | Variantes (taille, couleur). |
 | `product_suppliers` | Lien produit ↔ fournisseurs. |
 | `baskets` | Paniers (différents `basket_type`). |
@@ -218,8 +218,8 @@ Source de vérité : `services/collective-workspace-engine.js` + `services/colle
 | Table | Rôle |
 |---|---|
 | `customs_categories` | Catégories douane. |
-| `customs_shipments` | Expéditions douane. **Migration 092 (2026-06-25)** : workflow déclaration en deux étapes. Enum `customs_shipment_status` (`pending` → `declared` → `confirmed`). Colonne `status` (NOT NULL DEFAULT pending). `customs_paid_kmf` devient nullable (saisi lors de la déclaration, pas à la création). Colonnes `declared_at`, `declared_by` pour traçabilité. Gate : impossible de passer une commande en `available` si l'expédition liée est `pending`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. |
-| `customs_shipment_parcels` | Lien shipment ↔ colis. |
+| `customs_shipments` | Expéditions douane. **Migration 092 (2026-06-25)** : workflow déclaration en deux étapes. Enum `customs_shipment_status` (`pending` → `declared` → `confirmed`). Colonne `status` (NOT NULL DEFAULT pending). `customs_paid_kmf` devient nullable (saisi lors de la déclaration, pas à la création). Colonnes `declared_at`, `declared_by` pour traçabilité. Gate : impossible de passer une commande en `available` si l'expédition liée est `pending`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. **Migration 095 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `total_volume_m3` (NUMERIC(8,4), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
+| `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — snapshot volume au rattachement, miroir de `parcel_weight_kg`). Ventilation fret maritime au m³ dans `services/cost-allocation/allocate.js` : `by_volume` si snapshoté, répartition égale `confidence low` sinon — jamais le poids en maritime. |
 | `customs_history` | Historique taux effectifs. |
 
 Trigger `trg_customs_anomaly` détecte les anomalies de taux.
@@ -294,6 +294,8 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `customs_taux_mensuel` | Évolution mensuelle. | Admin |
 | `suppliers_stats` | Stats fournisseurs. | Admin |
 | `product_variants_ordered` | Variantes commandées. | Admin |
+
+> **Vue visée, non déployée (migration 095, 2026-07-02)** : v_shipment_density — densité par shipment (poids, volume, tonnage taxable W/M, fill_rate_pct, margin_kmf_per_m3, le KPI doctrinal). Lecture seule, tolère les volumes NULL. Consommée par l'admin logistique et la calibration V-5 (`docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md`). **À déplacer dans le tableau ci-dessus après le déploiement de la 095 et la régénération du dump live** — le gate de drift bloque toute ligne de tableau nommant un objet absent du dump (fantôme).
 
 ---
 

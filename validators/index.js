@@ -365,6 +365,12 @@ const hub = {
   scan: Joi.object({ parcel_ref: Joi.string().required(), notes: Joi.string().max(500).optional() }),
   pack: Joi.object({ parcel_id: Joi.string().uuid().required(), box_label: Joi.string().max(50).optional(), notes: Joi.string().max(500).optional() }),
   seal: Joi.object({ parcel_id: Joi.string().uuid().required(), notes: Joi.string().max(500).optional() }),
+  // V-4 densité de valeur : saisie mesure volume (au moins une des deux)
+  volume: Joi.object({
+    product_id: Joi.string().uuid().required(),
+    volume_cm3: Joi.number().positive().max(1000000),
+    repack_volume_cm3: Joi.number().positive().max(1000000),
+  }).or('volume_cm3', 'repack_volume_cm3'),
 };
 
 const loyalty = {

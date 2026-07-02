@@ -9,6 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       business_rules, order_items, orders, product_variants, products
+ * @doctrine      DOCTRINE_DENSITE_VALEUR (V-2 : margin_kmf_per_dm3 + review_volume, 2026-07-02)
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -75,6 +76,14 @@ function getProductWeightKg(p) {
   if (p.weight_g != null && Number(p.weight_g) > 0) return Number(p.weight_g) / 1000;
   return null;
 }
+// Volume embarqué (cm³) — DOCTRINE_DENSITE_VALEUR §3.
+// Préférence au volume repacké : c'est lui qui voyage réellement dans le
+// conteneur (migration 095). Fallback : volume_cm3 mesuré. NULL sinon.
+function getProductVolumeCm3(p) {
+  if (p.repack_volume_cm3 != null && Number(p.repack_volume_cm3) > 0) return Number(p.repack_volume_cm3);
+  if (p.volume_cm3 != null && Number(p.volume_cm3) > 0) return Number(p.volume_cm3);
+  return null;
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // Helper : lire une valeur de paramétrage depuis business_rules
@@ -117,6 +126,7 @@ async function loadSourcingConfig() {
     catalogCapMvp,
     deadThresholdDays,
     starThresholdSales30d,
+    valueDensityTargetKmfPerDm3,
   ] = await Promise.all([
     getCfg('cost_fixed_per_order_kmf',  4200),
     getCfg('break_even_order_kmf',      14000),
@@ -135,6 +145,9 @@ async function loadSourcingConfig() {
     getCfg('catalog_cap_mvp',           120),
     getCfg('dead_threshold_days',       30),
     getCfg('star_threshold_sales_30d',  3),
+    // Densité de valeur (DOCTRINE_DENSITE_VALEUR §3) — cible en confiance
+    // basse tant que non calibrée sur un shipment réel (v_shipment_density).
+    getCfg('value_density_target_kmf_per_dm3', 500),
   ]);
 
   return {
@@ -152,6 +165,7 @@ async function loadSourcingConfig() {
     catalogCapMvp,
     deadThresholdDays,
     starThresholdSales30d,
+    valueDensityTargetKmfPerDm3,
   };
 }
 
@@ -180,6 +194,7 @@ function analyzeProduct(product, cfg, salesMap) {
       rail_source: p.sourcing_rail ? 'declared' : null,
       cost_price_kmf: getProductCostKmf(p),
       weight_g: getProductWeightG(p),
+      volume_cm3: getProductVolumeCm3(p),      // repack prioritaire (095)
       volume_class: p.volume_class,
       fragility: p.fragility,
       sale_mode: p.sale_mode,
@@ -197,6 +212,7 @@ function analyzeProduct(product, cfg, salesMap) {
     computed: {
       margin_pct: null,
       margin_kmf: null,
+      margin_kmf_per_dm3: null,   // densité de valeur (DOCTRINE_DENSITE_VALEUR §3)
       standalone_viable: null,
       inferred_rail: null,
       sales_30d: salesMap[p.id] || 0,
@@ -219,6 +235,14 @@ function analyzeProduct(product, cfg, salesMap) {
   if (costKmfNorm && p.price_kmf) {
     analysis.computed.margin_kmf = p.price_kmf - costKmfNorm;
     analysis.computed.margin_pct = Math.round((analysis.computed.margin_kmf / p.price_kmf) * 100);
+  }
+  // Densité de valeur : marge absolue par dm³ embarqué (le vrai classement
+  // du portefeuille — la ressource rare est le m³ conteneur, pas le kg).
+  // NULL si marge ou volume inconnus : données partielles acceptées.
+  const volCm3 = getProductVolumeCm3(p);
+  if (analysis.computed.margin_kmf !== null && volCm3) {
+    analysis.computed.margin_kmf_per_dm3 =
+      Math.round(analysis.computed.margin_kmf / (volCm3 / 1000));
   }
 
   // ── Étape 2 : Standalone viable ? ──────────────────────────────────────
@@ -258,6 +282,7 @@ function analyzeProduct(product, cfg, salesMap) {
   if (!p.sale_mode) analysis.gaps.push('Mode vente non défini');
   if (!p.fragility) analysis.gaps.push('Fragilité non évaluée');
   if (!p.volume_class) analysis.gaps.push('Gabarit non renseigné');
+  if (!getProductVolumeCm3(p)) analysis.gaps.push('Volume réel non mesuré (cm³)');
   if (analysis.computed.sales_30d === 0 && p.lifecycle_status === 'active') {
     analysis.gaps.push('Rotation 0 vente sur 30j');
   }
@@ -435,6 +460,26 @@ function analyzeProduct(product, cfg, salesMap) {
     analysis.alerts.push({
       level: 'warning',
       message: 'Produit actif en vente sans validation qualité',
+    });
+  }
+  // ── review_volume (DOCTRINE_DENSITE_VALEUR §3) — INFORMATIF UNIQUEMENT ──
+  // N'affecte NI le score NI la sourcing_decision tant que la cible n'est
+  // pas calibrée sur un shipment réel (v_shipment_density). Level 'info' :
+  // le volume informe, il ne bloque jamais (principe sans contrainte).
+  if (p.is_active && !getProductVolumeCm3(p)) {
+    analysis.alerts.push({
+      level: 'info',
+      code: 'review_volume',
+      message: 'Volume réel non mesuré — densité de valeur incalculable, fret maritime ventilé en confiance basse',
+    });
+  }
+  if (analysis.computed.margin_kmf_per_dm3 !== null
+      && cfg.valueDensityTargetKmfPerDm3
+      && analysis.computed.margin_kmf_per_dm3 < cfg.valueDensityTargetKmfPerDm3) {
+    analysis.alerts.push({
+      level: 'info',
+      code: 'review_volume',
+      message: `Densité de valeur ${analysis.computed.margin_kmf_per_dm3} KMF/dm³ < cible ${cfg.valueDensityTargetKmfPerDm3} (cible non calibrée — indicatif)`,
     });
   }
 
