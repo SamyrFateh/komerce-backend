@@ -157,7 +157,33 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/SOURCING_ENGINE.md',
+    'docs/SUPPLIERS_CONNECTORS.md',
+    'docs/adr/ADR-005-suppliers-unifies.md',
+    'docs/audit/FRONTEND_AUDIT.md',
+    'docs/backend/COMPATIBILITE_SOURCING_VAGUE_3.md',
+    'docs/backend/COUTURE_SIMPLIFICATION.md',
+    'docs/boutique/BOUTIQUE_ARCHITECTURE.md',
+    'docs/boutique/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md',
+    'docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md',
+    'docs/boutique/BOUTIQUE_CSS_PIPELINE.md',
+    'docs/boutique/BOUTIQUE_DESKTOP_REDESIGN_BRIEF.md',
+    'docs/boutique/BOUTIQUE_DOCS_INDEX.md',
+    'docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md',
+    'docs/boutique/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md',
+    'docs/boutique/BOUTIQUE_WOW_LAYER_ARCHITECTURE.md',
+    'docs/boutique/HOTFIX_V3_README.md',
+    'docs/boutique/HOTFIX_V4_README.md',
+    'docs/boutique/MOBILE_BOUTIQUE_AUDIT.md',
+    'docs/boutique/MOBILE_BOUTIQUE_FIXES.md',
+    'docs/boutique/README.md',
+    'docs/boutique/ROADMAP_MODAL_TEMU.md',
+    'docs/boutique/komerce-categories-design.md',
+    'docs/chantier/FLOW_AUDIT_SOURCING_G5.md',
+    'docs/specs/SPEC_BACKEND_VAGUE_3_VARIANTES_V2.md',
+    'docs/specs/SPEC_SUR_MESURE_PAGE.md',
+  ],
 
   contract: {
     exposes: [

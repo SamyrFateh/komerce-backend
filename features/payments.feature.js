@@ -87,7 +87,14 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/PAYPAL_IMPLEMENTATION_GUIDE.md',
+    'docs/chantier/FLOW_AUDIT_CASH_G1.md',
+    'docs/chantier/FLOW_AUDIT_STRIPE_G2.md',
+    'docs/chantier/I_SWEEP_1_PICKUP_CASH_PATCH.md',
+    'docs/chantier/STRIPE_WEBHOOK_AUDIT_D2.md',
+    'docs/ops/PAYPAL_POSITIONNEMENT.md',
+  ],
 
   contract: {
     exposes: [

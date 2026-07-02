@@ -152,7 +152,10 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/adr/ADR-012-migration-scans-scan-events.md',
+    'docs/ops/PLAN_LOGISTIQUE_V2.md',
+  ],
 
   contract: {
     exposes: [

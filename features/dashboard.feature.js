@@ -36,7 +36,25 @@ module.exports = {
   },
 
   // ── Contrat d'interface ────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/DASHBOARDS_360.json',
+    'docs/DASHBOARDS_360.md',
+    'docs/adr/ADR-002-sales-analytics-v2.md',
+    'docs/adr/ADR-003-accounting-v2.md',
+    'docs/adr/ADR-006-clients-view.md',
+    'docs/adr/ADR-007-finance-bo-hygiene.md',
+    'docs/adr/ADR-008-pilotage-split-and-sante.md',
+    'docs/audit/LOT7_FINAL_PARITY.md',
+    'docs/audit/batch_2.md',
+    'docs/audit/batch_3.md',
+    'docs/audit/batch_5.md',
+    'docs/audit/batch_6.md',
+    'docs/chantier/lot7_final_status.ndjson',
+    'docs/design/DASHBOARD_REDESIGN.md',
+    'docs/design/TOUR-DE-CONTROLE-DASHBOARDS.md',
+    'docs/design/analyse-dashboard-pilotage.md',
+    'docs/prompts/PROMPT_DASHBOARD_ECONOMIQUE_BOITES_FLECHES.md',
+  ],
 
   contract: {
     exposes: [

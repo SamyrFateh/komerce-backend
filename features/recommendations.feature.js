@@ -57,7 +57,9 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md',
+  ],
 
   contract: {
     exposes: [

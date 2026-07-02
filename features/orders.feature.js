@@ -110,7 +110,11 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/chantier/FLOW_AUDIT_CANCEL_G4.md',
+    'docs/chantier/QR_PICKUP_SECRET_AUDIT_D4.md',
+    'docs/specs/SPEC-ORDER-PARCEL-LIFECYCLE.md',
+  ],
 
   contract: {
     exposes: [

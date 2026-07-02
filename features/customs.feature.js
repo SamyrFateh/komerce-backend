@@ -73,7 +73,12 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/adr/ADR-001-customs-shipments.md',
+    'docs/adr/ADR-004-customs-rate-coherence.md',
+    'docs/doctrine/DOUANE_DECLARATION_PIVOT.md',
+    'docs/specs/SPEC_KEYSTONE_DOUANE.md',
+  ],
 
   contract: {
     exposes: [

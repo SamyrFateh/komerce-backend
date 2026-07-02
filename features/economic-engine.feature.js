@@ -150,7 +150,18 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/adr/ADR-009-source-verite-unifiee.md',
+    'docs/adr/ADR-010-pricing-reads-db.md',
+    'docs/adr/ADR-011-pricing-extensible-3-niveaux.md',
+    'docs/doctrine/DOCTRINE_ALLOCATION_COUTS.md',
+    'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
+    'docs/doctrine/DOCTRINE_ECONOMIQUE_KOMERCE.md',
+    'docs/doctrine/DOCTRINE_LEVIERS_MARGE.md',
+    'docs/doctrine/DOCTRINE_MOTEUR_ECONOMIQUE_STRATEGIE.md',
+    'docs/doctrine/MOTEUR_ECONOMIQUE_ALLOCATION.md',
+    'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5 (1).md',
+  ],
 
   contract: {
     exposes: [

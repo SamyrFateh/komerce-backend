@@ -69,7 +69,11 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/D1_CARTOGRAPHIE_PROVIDER_NOTIFICATIONS.md',
+    'docs/audit/PROMPT_SONNET_NOTIFICATIONS_PROVIDER_KOMERCE.md',
+    'docs/chantier/F1B_NOTIFICATION_LOGGER_CODEMOD.md',
+  ],
 
   contract: {
     exposes: [

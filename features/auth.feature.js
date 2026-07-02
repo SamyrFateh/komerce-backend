@@ -82,7 +82,11 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/chantier/ADMIN_AUTH_AUDIT_D1.md',
+    'docs/chantier/AUTH_GUEST_AUDIT_D3.md',
+    'docs/doctrine/DOCTRINE_IDENTITE_LEGERE_KOMERCE.md',
+  ],
 
   contract: {
     exposes: [

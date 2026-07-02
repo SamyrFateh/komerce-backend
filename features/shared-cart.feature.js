@@ -185,7 +185,18 @@ module.exports = {
   },
 
   // ── Contrat d'interface ───────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/backend/PANIER_COLLECTIF_BACKEND_DELTA.md',
+    'docs/chantier/FLOW_AUDIT_COLLECTIVE_G3.md',
+    'docs/chantier/STATUS_SONNET_PANIER_V42.md',
+    'docs/doctrine/DOCTRINE_PANIER_COLLECTIF.md',
+    'docs/doctrine/DOCTRINE_PANIER_PARTAGE.md',
+    'docs/doctrine/DOCTRINE_PANIER_PARTAGE_SURCOUVERTURE.md',
+    'docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md',
+    'docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md',
+    'docs/specs/collective-workspaces-v1.md',
+    'docs/specs/event-flow-v2.md',
+  ],
 
   contract: {
     exposes: [

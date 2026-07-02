@@ -75,7 +75,9 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  docs: [
+    'docs/doctrine/DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md',
+  ],
 
   contract: {
     exposes: [
