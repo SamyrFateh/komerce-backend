@@ -37,8 +37,13 @@ module.exports = {
   },
 
   contract: {
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'b-wallet.js / porte-monnaie utilisateur',
+    ],
+    consumes: [
+      'auth — b-wallet.js importe b-identity.js',
+      'boutique — b-wallet.js importe b-utils.js',
+    ],
   },
 
   authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici.',

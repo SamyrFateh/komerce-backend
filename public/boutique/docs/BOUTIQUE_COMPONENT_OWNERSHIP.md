@@ -47,6 +47,8 @@ Pas de JS qui recrée ce qu'un renderer sait déjà faire.
 | Desktop premium | `boutique/css/boutique-desktop.css` | layout desktop, side-cart, hero desktop, mega-nav catégories, footer desktop | comportement mobile, cage `#k-page-scroll`, fix mobile hero/pager, redéclarer `.k-grid` |
 | Overrides desktop `.k-card` | `boutique/css/desktop-commerce-skeleton.css` | `border-radius`, `border`, `box-shadow` desktop de `.k-card` ; side-cart sticky ; largeurs max ≥1200px | layout `.k-chip`, `.k-cats-shell`, `.k-cats` — propriété de `boutique-desktop.css` |
 | Mini-cart / accès panier | `boutique/js/b-desktop-global-cart-access.js` et CSS dédié | accès global panier desktop, fallback drawer | bottom nav mobile, rendu complet panier |
+| Greeting chip | `boutique/js/b-greeting.js` + `boutique/css/interactions.css` (section greeting) | appel `/api/auth/me`, construction label, chip éphémère, guard sessionStorage | layout header, navigation, panier, toast général |
+| Header structure mobile | `boutique/css/layout.css` (`.k-header`, `.k-header-inner`) + `index.html` (`#k-header-spacer`) | position fixed, safe-area-inset-top, hauteur `--header-h`, padding, z-index | contenu header (actions, logo), comportement desktop premium |
 | Couche wow temporaire | `boutique/css/boutique-wow.css` | expérimentation visuelle réversible | vérité définitive, structure, pager, métier |
 
 ## Contrats par composant
@@ -218,6 +220,22 @@ Voir aussi :
 
 ```txt
 docs/BOUTIQUE_WOW_LAYER_ARCHITECTURE.md
+```
+
+### `b-greeting.js`
+
+Responsabilité : afficher un chip de bienvenue éphémère ("Karibu {prénom} 😊") si l'utilisateur est identifié. Appel best-effort à `/api/auth/me`, guard `sessionStorage`, disparition automatique après 4 s.
+
+Styles propriétaires : section `#k-greeting-chip` dans `interactions.css` (bundle `components`).
+
+Interdictions :
+
+```txt
+Do not inject CSS from JS — styles live in interactions.css.
+Do not block boot or page rendering.
+Do not use the general toast system.
+Do not position the chip inside the header zone (must sit below --header-h + safe-area).
+Do not show more than once per session.
 ```
 
 ## Règle spécifique au rail catégories

@@ -45,8 +45,17 @@ module.exports = {
   },
 
   contract: {
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'b-share-cart.js / partage de panier',
+      'b-group-view.js / vue panier groupe',
+      'b-group-banner.js / bannière groupe',
+      'group-api.js / group-state.js / group-helpers.js / group-render-creator.js',
+    ],
+    consumes: [
+      'auth — b-group-view.js, b-share-cart.js importent b-identity.js ; b-share-cart.js importe b-phone.js',
+      'boutique — b-group-view.js, b-share-cart.js, b-group-banner.js importent b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js',
+      'checkout — b-share-cart.js importe b-checkout.js',
+    ],
   },
 
   authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici.',

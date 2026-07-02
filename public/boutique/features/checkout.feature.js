@@ -38,8 +38,15 @@ module.exports = {
   },
 
   contract: {
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'b-checkout.js (orchestration checkout, validation commande)',
+    ],
+    consumes: [
+      'auth — b-checkout.js importe b-identity.js, b-phone.js',
+      'boutique — b-checkout.js importe b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-scroll-owner.js',
+      'payment — b-checkout.js importe b-paypal.js',
+      'wallet — b-checkout.js appelle /api/wallet',
+    ],
   },
 
   authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici.',

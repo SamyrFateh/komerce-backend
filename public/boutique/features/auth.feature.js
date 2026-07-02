@@ -38,8 +38,13 @@ module.exports = {
   },
 
   contract: {
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'identity / requireIdentity / getCurrentIdentity / restoreIdentity / bindChangeIdentity (b-identity.js)',
+      'phone (b-phone.js)',
+    ],
+    consumes: [
+      'boutique — b-identity.js importe b-store.js, b-utils.js, b-cart-core.js',
+    ],
   },
 
   authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici.',

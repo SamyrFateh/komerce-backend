@@ -42,9 +42,14 @@ module.exports = {
   },
 
   contract: {
-    // Pas d'API : feature de rendu pur. (interface checker → SKIP propre.)
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'b-modal-suggestions.js / suggestions produit dans la modal',
+      'b-pdp-curation-suggestions.js / suggestions curatées PDP',
+    ],
+    consumes: [
+      'boutique — b-modal-suggestions.js importe b-bus.js, b-cart.js, b-scroll-owner.js, b-store.js, b-utils.js',
+      'boutique — b-pdp-curation-suggestions.js importe b-bus.js, b-scroll-owner.js, b-store.js',
+    ],
   },
 
   // ── Autorité / invariants (niveau 0) ────────────────────────────────────

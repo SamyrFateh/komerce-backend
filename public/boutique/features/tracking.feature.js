@@ -37,8 +37,13 @@ module.exports = {
   },
 
   contract: {
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'b-tracking.js / suivi de commande',
+    ],
+    consumes: [
+      'auth — b-tracking.js importe b-phone.js',
+      'boutique — b-tracking.js importe b-cart-core.js, b-utils.js',
+    ],
   },
 
   authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici.',

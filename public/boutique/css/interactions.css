@@ -402,9 +402,10 @@ body.cart-open  #k-section-index { display:none; }
 
 /* ── Greeting chip (#k-greeting-chip) ─────────────────────────────── */
 /* FIX BUG-L3 : migré depuis l'injection JS ensureStyles() dans b-greeting.js */
+/* FIX : repositionné sous le header (était top:10px → chevauchait la search bar) */
 #k-greeting-chip {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  top: calc(env(safe-area-inset-top, 0px) + var(--header-h, 44px) + 8px);
   right: 14px;
   z-index: 1800;
   display: flex;
@@ -420,14 +421,15 @@ body.cart-open  #k-section-index { display:none; }
   color: var(--text);
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity .22s ease, transform .22s ease;
+  transform: translateX(40px);
+  transition: opacity .32s ease, transform .32s cubic-bezier(.22,1,.36,1);
 }
 #k-greeting-chip.k-greeting-chip--visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
 }
 #k-greeting-chip.k-greeting-chip--out {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateX(40px);
+  transition: opacity .25s ease, transform .25s ease;
 }

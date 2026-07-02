@@ -72,8 +72,24 @@ module.exports = {
   },
 
   contract: {
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'bus (b-bus.js)',
+      'store / dom / state (b-store.js)',
+      'utils / fmt / sanitize / apiGet / apiPost (b-utils.js)',
+      'scroll-owner / isDesktop (b-scroll-owner.js)',
+      'cart-core / showToast / cartTotal / cartQty (b-cart-core.js)',
+      'cart / openCart / closeCart / renderCart / clearCart (b-cart.js)',
+      'modal / openModal (b-modal.js)',
+    ],
+    consumes: [
+      'auth — b-greeting.js appelle /api/auth/me',
+      'catalog — b-cart.js, b-desktop-sidebar.js, b-nav.js, boutique.js importent b-catalog.js, shop-schema.js, b-pager.js, b-subcat.js, home-controller.js',
+      'checkout — b-nav.js, boutique.js importent b-checkout.js',
+      'modal-product — b-modal-core.js, b-modal.js importent b-modal-suggestions.js',
+      'shared-cart — b-modal-approche-c-hybrid.js, b-nav.js, boutique.js importent b-share-cart.js, b-group-view.js',
+      'tracking — b-nav.js, boutique.js importent b-tracking.js',
+      'wallet — b-nav.js importe b-wallet.js',
+    ],
   },
 
   authority: 'boutique — tout changement de périmètre de ce domaine doit être reflété ici.',

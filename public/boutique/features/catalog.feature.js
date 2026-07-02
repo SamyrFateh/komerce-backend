@@ -50,8 +50,18 @@ module.exports = {
   },
 
   contract: {
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'b-catalog.js / setActiveCat / scrollToCategorySection',
+      'shop-schema.js / getCategoryIcon / normalizeCategoryKey',
+      'b-pager.js',
+      'b-subcat.js',
+      'home-controller.js / syncRailActiveState / renderSubcatRail',
+      'render-product-card.js / renderProductCard',
+      '/api/categories (shop-schema.js)',
+    ],
+    consumes: [
+      'boutique — b-catalog.js, b-pager.js, b-subcat.js, b-product-open-contract.js importent b-bus.js, b-store.js, b-utils.js, b-scroll-owner.js, b-cart-core.js, b-cart.js, b-modal.js',
+    ],
   },
 
   authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici.',

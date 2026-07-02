@@ -37,8 +37,13 @@ module.exports = {
   },
 
   contract: {
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'b-paypal.js / renderPayPalButton / isPayPalEnabled',
+    ],
+    consumes: [
+      'boutique — b-paypal.js importe b-cart-core.js, b-utils.js',
+      'API — b-paypal.js appelle /api/public/config',
+    ],
   },
 
   authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici.',

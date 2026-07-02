@@ -39,8 +39,16 @@ module.exports = {
   },
 
   contract: {
-    exposes:  [],
-    consumes: [],
+    exposes: [
+      'event-manage.js / gestion workspace collectif',
+      'event-pay.js / paiement collectif',
+      'event-public.js / vue publique workspace',
+    ],
+    consumes: [
+      'API — event-manage.js appelle /api/collective-workspaces/me/*',
+      'API — event-pay.js appelle /api/collective-payments/*',
+      'API — event-public.js appelle /api/collective-workspaces/public/*',
+    ],
   },
 
   authority: 'boutique — tout changement de périmètre de ce domaine doit être reflété ici.',
