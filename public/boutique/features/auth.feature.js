@@ -37,6 +37,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'identity / requireIdentity / getCurrentIdentity / restoreIdentity / bindChangeIdentity (b-identity.js)',

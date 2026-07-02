@@ -95,6 +95,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'bus (b-bus.js)',

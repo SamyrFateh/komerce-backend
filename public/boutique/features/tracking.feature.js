@@ -36,6 +36,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'b-tracking.js / suivi de commande',

@@ -36,6 +36,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'b-wallet.js / porte-monnaie utilisateur',

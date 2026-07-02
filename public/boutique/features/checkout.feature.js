@@ -37,6 +37,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'b-checkout.js (orchestration checkout, validation commande)',

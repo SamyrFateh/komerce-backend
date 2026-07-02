@@ -48,6 +48,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'b-share-cart.js / partage de panier',

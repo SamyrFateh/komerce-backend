@@ -36,6 +36,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'b-paypal.js / renderPayPalButton / isPayPalEnabled',

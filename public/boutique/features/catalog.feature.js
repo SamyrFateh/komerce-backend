@@ -58,6 +58,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'b-catalog.js / setActiveCat / scrollToCategorySection',

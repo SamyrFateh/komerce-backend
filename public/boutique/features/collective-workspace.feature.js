@@ -45,6 +45,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'event-manage.js / gestion workspace collectif',

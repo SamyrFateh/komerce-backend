@@ -37,6 +37,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'b-modal-suggestions.js (partagé avec modal-product)',

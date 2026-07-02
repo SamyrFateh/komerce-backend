@@ -41,6 +41,8 @@ module.exports = {
     ],
   },
 
+  docs: [],
+
   contract: {
     exposes: [
       'b-modal-suggestions.js / suggestions produit dans la modal',
