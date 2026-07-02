@@ -34,8 +34,6 @@ module.exports = {
     ],
   },
 
-  docs: [],
-
   contract: {
     exposes:  [],
     consumes: [],

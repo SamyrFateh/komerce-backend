@@ -58,7 +58,11 @@ module.exports = {
     ],
   },
 
-  docs: [],
+  docs: [
+    'docs/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md',
+    'docs/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md',
+    'docs/komerce-categories-design.md',
+  ],
 
   contract: {
     exposes: [

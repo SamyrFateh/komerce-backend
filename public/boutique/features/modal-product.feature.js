@@ -41,7 +41,16 @@ module.exports = {
     ],
   },
 
-  docs: [],
+  docs: [
+    'CORRECTIONS_APPLIQUEES_MODAL_2026-06-27.md',
+    'docs/BOUTIQUE_MODAL_ARCHITECTURE.md',
+    'docs/MODAL_DESKTOP_ARCHITECTURE.docx',
+    'docs/MODAL_DESKTOP_ARCHITECTURE.md',
+    'docs/MODAL_MOBILE_ARCHITECTURE.docx',
+    'docs/MODAL_MOBILE_ARCHITECTURE.md',
+    'docs/PDP_DESKTOP_APPROCHE_C_HYBRIDE.md',
+    'docs/ROADMAP_MODAL_TEMU.md',
+  ],
 
   contract: {
     exposes: [
