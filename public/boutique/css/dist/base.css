@@ -1977,7 +1977,7 @@ body:has(#k-page-scroll.k-pager-active) {
     height: auto;
     aspect-ratio: 1080 / 260;
     object-fit: cover;
-    object-position: 50% 55%;
+    object-position: 50% 75%;
   }
 }
 
