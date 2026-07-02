@@ -36,6 +36,13 @@ module.exports = {
       '../js/event-pay.js',
       '../js/event-public.js',
     ],
+    css: [
+      '../css/event.css',
+      '../css/dist/event.css',
+    ],
+    tests: [
+      '../tests/unit/event-pay.test.js',
+    ],
   },
 
   contract: {
@@ -55,6 +62,7 @@ module.exports = {
 
   invariants: [
     'tout fichier js/* portant @domain collective-workspace doit être listé dans files.js de ce manifeste',
+    'tout CSS/test des pages événement (event.css, dist/event.css) doit être listé dans files.css / files.tests',
   ],
 
 };

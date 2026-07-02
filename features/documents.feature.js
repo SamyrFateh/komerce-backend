@@ -46,6 +46,13 @@ module.exports = {
     routes: [
       'routes/admin/documents.js',
     ],
+    migrations: [
+      'migrations/014_transaction_documents.sql',
+      'migrations/023_invoices.sql',
+      'migrations/074_invoice_public_token.sql',
+      'migrations/083_transaction_documents.sql',
+      'migrations/086_invoice_public_token.sql',
+    ],
     utils: [
       'utils/documents/refund-receipt-html.js',
       'utils/documents/wallet-receipt-html.js',

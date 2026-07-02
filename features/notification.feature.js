@@ -82,6 +82,13 @@ module.exports = {
       'routes/meta-whatsapp.js',
       'routes/alerts.js',
     ],
+    migrations: [
+      'migrations/022b_sms_queue.sql',
+      'migrations/023b_whatsapp_phone.sql',
+      'migrations/024_notification_log.sql',
+      'migrations/058_notification_log_recipient_nullable.sql',
+      'migrations/089_notification_log_ref_widening.sql',
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

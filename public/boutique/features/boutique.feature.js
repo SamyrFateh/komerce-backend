@@ -69,6 +69,30 @@ module.exports = {
       '../js/render/render-categories.js',
       '../js/view-models/modal-view-model.js',
     ],
+    css: [
+      '../css/tokens.css',
+      '../css/reset.css',
+      '../css/layout.css',
+      '../css/boutique-desktop.css',
+      '../css/cart.css',
+      '../css/interactions.css',
+      '../css/dist/base.css',
+      '../css/dist/desktop.css',
+    ],
+    scripts: [
+      '../apply-komerce-cleanup.js',
+    ],
+    tests: [
+      '../tests/boutique.spec.js',
+      '../tests/contracts.spec.js',
+      '../tests/unit/b-friendly-group-redirect.test.js',
+      '../tests/unit/b-mobile-modal-v1.test.js',
+      '../tests/unit/b-modal-cart.test.js',
+      '../tests/unit/b-share-phone-guard.test.js',
+      '../tests/unit/boutique-core.unit.test.js',
+      '../tests/unit/render-categories.test.js',
+      '../tests/unit/setup.js',
+    ],
   },
 
   contract: {
@@ -96,6 +120,8 @@ module.exports = {
 
   invariants: [
     'tout fichier js/* portant @domain boutique doit être listé dans files.js de ce manifeste',
+    'tout CSS transversal (tokens/reset/layout) ou générique boutique (cart/desktop/interactions) doit être listé dans files.css',
+    'tout test unitaire/spec couvrant un fichier files.js de ce manifeste doit être listé dans files.tests',
   ],
 
 };

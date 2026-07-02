@@ -42,6 +42,10 @@ module.exports = {
       '../js/group/group-render-creator.js',
       '../js/group/group-state.js',
     ],
+    tests: [
+      '../tests/unit/collective-ready-to-order-orchestrator.test.js',
+      '../tests/unit/group-render-creator.test.js',
+    ],
   },
 
   contract: {
@@ -62,6 +66,7 @@ module.exports = {
 
   invariants: [
     'tout fichier js/* portant @domain shared-cart doit etre liste dans files.js de ce manifeste',
+    'tout test unitaire couvrant un fichier files.js de ce manifeste doit etre liste dans files.tests',
   ],
 
 };

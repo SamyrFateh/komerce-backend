@@ -48,6 +48,10 @@ module.exports = {
       'routes/wallet.js',
       'routes/loyalty.js',
     ],
+    migrations: [
+      'migrations/066_wallet_consumptions_append_only.sql',
+      'migrations/068_wallets_check_balance.sql',
+    ],
     boutique: [
       'js/b-wallet.js',
       'css/wallet.css',

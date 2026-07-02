@@ -49,6 +49,14 @@ module.exports = {
       'routes/admin-customs-shipments.js',
       'routes/admin-customs-categories.js',
     ],
+    migrations: [
+      'migrations/015b_customs_enrichment.sql',
+      'migrations/034_customs_shipments.sql',
+      'migrations/036b_seed_customs_categories.sql',
+      'migrations/091_freeze_customs_classification_order_items.sql',
+      'migrations/092_customs_shipments_declaration_workflow.sql',
+      'migrations/093_customs_invoice_document_type.sql',
+    ],
       dash: [
       // dashboards/admin views — Lot 4
       'dashboards/admin/js/views/CustomsView.js',

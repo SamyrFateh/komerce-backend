@@ -123,6 +123,9 @@ module.exports = {
       'routes/hub-dashboard.js',
       'routes/relay-dashboard.js',
     ],
+    migrations: [
+      'migrations/071_relay_dashboard_tables.sql',
+    ],
     dash: [
       // ── Entrées déclarées avant backfill ──────────────────────────
       'dashboards/admin/index.html',

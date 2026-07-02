@@ -82,6 +82,21 @@ module.exports = {
     
       'routes/auto-distribute-api.js',
       'routes/hub.js',],
+    migrations: [
+      'migrations/014_parcels_final_cleanup.sql',
+      'migrations/015_add_backorder_reminder_sent.sql',
+      'migrations/016b_carriers.sql',
+      'migrations/017_hub_safety_constraints.sql',
+      'migrations/020_parcel_optimization_schema.sql',
+      'migrations/022_parcel_first_refactor.sql',
+      'migrations/035_partners_enrichment.sql',
+      'migrations/035b_partners_fix_partner_type.sql',
+      'migrations/065_carriers.sql',
+      'migrations/070_pickup_ephemeral_tokens.sql',
+      'migrations/073_pickup_verify_attempts.sql',
+      'migrations/078_parcels_security_columns.sql',
+      'migrations/094_parcel_reconciliation_view.sql',
+    ],
     boutique: [
       'js/b-tracking.js',
     ],

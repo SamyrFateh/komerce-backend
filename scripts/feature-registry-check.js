@@ -29,13 +29,30 @@ const STRICT        = process.argv.includes('--strict');
 const ORPHANS_ONLY  = process.argv.includes('--orphans');
 const JSON_OUTPUT   = process.argv.includes('--json');
 
-// Dossiers source à auditer pour les orphelins
-const SOURCE_DIRS = ['services', 'routes', 'migrations', 'middleware', 'utils', 'validators', 'core', 'bootstrap'];
+// Dossiers source à auditer pour les orphelins.
+// NB : 'public/' n'est PAS ajouté en bloc ici. public/boutique/ et
+// public/dashboards/ sont des sous-dépôts avec leur propre outillage de
+// gouvernance déjà opérationnel (scripts/boutique-ownership-full-check.js
+// côté backend, public/dashboards/scripts/feature-registry-check.js côté
+// dashboards) — les scanner ici en plus produirait uniquement des faux
+// positifs (mêmes fichiers, groupes de déclaration différents : js/css/dash
+// au lieu de services/routes/...). Voir CORRECTIONS_RATTACHEMENT_FICHIERS_
+// ORPHELINS.md pour le détail de cette décision.
+const SOURCE_DIRS = ['services', 'routes', 'migrations', 'middleware', 'utils', 'validators', 'core', 'bootstrap', '.github', 'db'];
 
-// Fichiers à ignorer dans la détection d'orphelins (infra pure hors feature)
-// TROU 3 fermé 2026-07-01 : middleware, utils, validators, bootstrap → feature infrastructure
+// Extensions auditées par dossier — .js partout (code backend), et en plus
+// les extensions pertinentes pour les dossiers non-JS ajoutés (.github, db).
+const SOURCE_EXTENSIONS = {
+  '.github': ['.yml', '.yaml', '.md'],
+  'db':      ['.sql', '.json'],
+};
+const DEFAULT_EXTENSIONS = ['.js'];
+
+// Fichiers à ignorer dans la détection d'orphelins (strict minimum — voir
+// CORRECTIONS_RATTACHEMENT_FICHIERS_ORPHELINS.md pour le détail du backfill
+// qui a permis de réduire cette liste au minimum requis par l'outillage git).
 const ORPHAN_IGNORE = new Set([
-  'db.js', 'server.js', 'jest.config.js',
+  'package-lock.json',
 ]);
 
 const REQUIRED_FIELDS = ['name', 'type', 'domain', 'status', 'owner', 'service', 'perimeter', 'authority', 'invariants'];
@@ -65,7 +82,7 @@ function loadManifests() {
 // existence est vérifiée par leur propre outillage (ex. scripts/gen-ownership.js côté
 // bout). Un manifest qui déclare repos.boutique / repos.dash documente l'intention
 // cross-repo ; ce script ne la valide pas, il ne ferait que produire de faux positifs.
-const BACKEND_FILE_GROUPS = new Set(['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'migrations', 'tests', 'bootstrap']);
+const BACKEND_FILE_GROUPS = new Set(['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'migrations', 'tests', 'bootstrap', 'ci', 'db']);
 
 function declaredFiles(manifests) {
   const declared = new Map(); // file → feature name
@@ -90,19 +107,20 @@ function collectSourceFiles() {
   for (const dir of SOURCE_DIRS) {
     const abs = path.join(ROOT, dir);
     if (!fs.existsSync(abs)) continue;
-    scanDir(abs, dir, result);
+    const extensions = SOURCE_EXTENSIONS[dir] || DEFAULT_EXTENSIONS;
+    scanDir(abs, dir, result, extensions);
   }
   return result;
 }
 
-function scanDir(abs, rel, result) {
+function scanDir(abs, rel, result, extensions) {
   for (const entry of fs.readdirSync(abs)) {
     const absEntry = path.join(abs, entry);
     const relEntry = path.join(rel, entry);
     const stat = fs.statSync(absEntry);
     if (stat.isDirectory()) {
-      scanDir(absEntry, relEntry, result);
-    } else if (entry.endsWith('.js') && !entry.startsWith('.')) {
+      scanDir(absEntry, relEntry, result, extensions);
+    } else if (extensions.some(ext => entry.endsWith(ext)) && !entry.startsWith('.')) {
       result.push(relEntry);
     }
   }

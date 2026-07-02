@@ -78,6 +78,10 @@ module.exports = {
       'routes/order-api-v2.js',
     
       'routes/purchasing.js',],
+      migrations: [
+      'migrations/049_pickup_secret_attempts.sql',
+      'migrations/060_add_pending_at_confirmed_at.sql',
+    ],
       tests: [
       'tests/unit/admin-order-refund.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',

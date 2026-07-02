@@ -47,6 +47,15 @@ module.exports = {
       '../js/view-models/product-card-model.js',
       '../js/view-models/product-card-view-model.js',
     ],
+    css: [
+      // Backfill gouvernance globale (governance/boutique-global-ownership) :
+      // hero.css pilote la section hero de la home, périmètre "catalogue vivant"
+      // déjà déclaré ci-dessus en perimeter.in.
+      '../css/hero.css',
+    ],
+    tests: [
+      '../tests/unit/render-home-sections.test.js',
+    ],
   },
 
   contract: {
@@ -68,6 +77,7 @@ module.exports = {
 
   invariants: [
     'tout fichier js/* portant @domain catalog doit etre liste dans files.js de ce manifeste',
+    'tout CSS/test propre a la home catalogue (hero.css, render-home-sections) doit etre liste dans files.css / files.tests',
   ],
 
 };

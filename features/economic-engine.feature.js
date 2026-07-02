@@ -81,6 +81,28 @@ module.exports = {
       'routes/admin-pricing-components.js',
     
       'routes/sourcing.js',],
+    migrations: [
+      'migrations/019_finance_columns.sql',
+      'migrations/033_parametres_extension.sql',
+      'migrations/035c_fix_suppliers_stats_enum.sql',
+      'migrations/036_finance_config_unification.sql',
+      'migrations/037_pricing_components_risk_provisions.sql',
+      'migrations/037b_pricing_components_risk_provisions_ascii.sql',
+      'migrations/038_price_history.sql',
+      'migrations/039_pricing_benchmarks.sql',
+      'migrations/040_pricing_strategies.sql',
+      'migrations/041_sourcing_candidates.sql',
+      'migrations/043_cost_components.sql',
+      'migrations/045_allocation_averages.sql',
+      'migrations/046_price_history_scenarios.sql',
+      'migrations/047_calibrage_transitaire_charges.sql',
+      'migrations/050_order_item_cost_imputations.sql',
+      'migrations/051_order_item_real_cost_allocations.sql',
+      'migrations/067_finance_config_provision_risque.sql',
+      'migrations/076_sourcing_candidates_unique.sql',
+      'migrations/090_cost_benchmarks.sql',
+      'migrations/2026_cost_benchmarks.sql',
+    ],
       dash: [
       // dashboards/admin views — Lot 4
       'dashboards/admin/js/views/PricingView.js',

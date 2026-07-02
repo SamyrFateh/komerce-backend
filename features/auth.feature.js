@@ -53,6 +53,10 @@ module.exports = {
       'routes/auth.js',
       'routes/otp.js',
     ],
+    migrations: [
+      'migrations/072_jwt_revocation.sql',
+      'migrations/084_jwt_revocation.sql',
+    ],
     boutique: [
       // Backfill gouvernance globale : header @komerce-arch domain=auth confirmé
       // dans docs/BOUTIQUE_360.json pour les 3 fichiers.

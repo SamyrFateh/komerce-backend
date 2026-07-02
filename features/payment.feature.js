@@ -59,6 +59,9 @@ module.exports = {
       'routes/pickup-pay-cash.js',
       'routes/payments-paypal.js',
     ],
+    migrations: [
+      'migrations/079_paypal_payment_mode.sql',
+    ],
     boutique: [
       'js/b-checkout.js',
       'js/b-checkout-render.js',

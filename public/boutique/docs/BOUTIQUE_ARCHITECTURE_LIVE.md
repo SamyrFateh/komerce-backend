@@ -20,9 +20,9 @@
 | `event.css` | 549 | 🔴 **ORPHELIN** |
 | `group-cart-flow.css` | 1937 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
-| `hero.css` | 972 | 🔴 **ORPHELIN** |
+| `hero.css` | 971 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
-| `interactions.css` | 434 | 🔴 **ORPHELIN** |
+| `interactions.css` | 436 | 🔴 **ORPHELIN** |
 | `layout.css` | 1168 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 301 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 357 | 🔴 **ORPHELIN** |
@@ -41,8 +41,8 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=116
- 2. /boutique/css/dist/components.css?v=131
+ 1. /boutique/css/dist/base.css?v=117
+ 2. /boutique/css/dist/components.css?v=132
  3. /boutique/css/dist/desktop.css?v=51
  4. /boutique/css/dist/event.css?v=31
 ```
