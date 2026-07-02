@@ -198,12 +198,12 @@
 /* GUARD mobile uniquement — desktop @900px override ci-dessous prend le relais. */
 @media (max-width: 899px) {
   .k-hero-img {
-    /* Asset 1080×310 v2 — recomposée, logo K + lune bien centrés.
-       Cadrage centré, plus besoin de décaler. */
+    /* Asset 1080×310 v2 — object-position 30% : préserve la tête
+       du jeune homme + lune, coupe le surplus en bas. */
     height: auto;
     aspect-ratio: 1080 / 260;
     object-fit: cover;
-    object-position: 50% 50%;
+    object-position: 50% 30%;
   }
 }
 
