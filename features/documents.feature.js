@@ -75,6 +75,8 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
+  docs: [],
+
   contract: {
     exposes: [
       'fonctions internes generatePickupProof / generateCustomsInvoice / generateWalletReceipt / generateRefundReceipt',

@@ -87,6 +87,8 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
+  docs: [],
+
   contract: {
     exposes: [
       'POST /api/payments/stripe/intent',

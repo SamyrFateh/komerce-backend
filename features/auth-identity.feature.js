@@ -62,6 +62,8 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
+  docs: [],
+
   contract: {
     exposes: [
       'middleware requireAuth / requireVerifiedIdentity / softAuth',

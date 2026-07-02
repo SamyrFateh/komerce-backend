@@ -110,6 +110,8 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
+  docs: [],
+
   contract: {
     exposes: [
       'GET/POST /api/orders',

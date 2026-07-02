@@ -92,6 +92,8 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
+  docs: [],
+
   contract: {
     exposes: [
       'GET /health',

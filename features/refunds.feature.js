@@ -53,6 +53,8 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
+  docs: [],
+
   contract: {
     exposes: [
       'fonction interne processRefund(orderOrCartId, reason)',
