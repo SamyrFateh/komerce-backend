@@ -1971,13 +1971,12 @@ body:has(#k-page-scroll.k-pager-active) {
 /* GUARD mobile uniquement — desktop @900px override ci-dessous prend le relais. */
 @media (max-width: 899px) {
   .k-hero-img {
-    /* Asset 1080×310. Hauteur d'origine conservée (ratio 1080/260).
-       object-position 50% 75% → coupe le haut (ciel/lune) pour
-       remonter le bas et exposer le logo K sur le téléphone. */
+    /* Asset 1080×310 v2 — recomposée, logo K + lune bien centrés.
+       Cadrage centré, plus besoin de décaler. */
     height: auto;
     aspect-ratio: 1080 / 260;
     object-fit: cover;
-    object-position: 50% 75%;
+    object-position: 50% 50%;
   }
 }
 
