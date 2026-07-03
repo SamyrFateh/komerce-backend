@@ -27,13 +27,13 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 |---:|---|---|---|---|---|---|
 | 1 | `shared-cart` | feature | backend + boutique | [`shared-cart.feature.js`](../../features/shared-cart.feature.js) | production | Panier partagé multi-participants, de la création au règlement |
 | 2 | `orders` | feature | backend | [`orders.feature.js`](../../features/orders.feature.js) | production | Commande : création, statut, coût, rattachement colis/achats |
-| 3 | `payments` | feature | backend + boutique | [`payments.feature.js`](../../features/payments.feature.js) | production | Encaissement (Stripe, PayPal, cash) et confirmation de paiement |
+| 3 | `payment` | feature | backend + boutique | [`payment.feature.js`](../../features/payment.feature.js) | production | Encaissement (Stripe, PayPal, cash) et confirmation de paiement |
 | 4 | `wallet` | feature | backend + boutique | [`wallet.feature.js`](../../features/wallet.feature.js) | production | Solde client (wallet) et programme de fidélité |
 | 5 | `logistics` | feature | backend + boutique | [`logistics.feature.js`](../../features/logistics.feature.js) | production | Colis : scan, transit, tracking, relais, transporteurs |
 | 6 | `economic-engine` | feature | backend | [`economic-engine.feature.js`](../../features/economic-engine.feature.js) | production | Pricing, coûts, marges, stratégies tarifaires |
 | 7 | `catalog` | feature | backend + boutique | [`catalog.feature.js`](../../features/catalog.feature.js) | production | Produits, connecteurs fournisseurs, publication boutique |
 | 8 | `customs` | feature | backend | [`customs.feature.js`](../../features/customs.feature.js) | production | Classification douanière, déclaration, analytics douane |
-| 9 | `notifications` | feature | backend | [`notifications.feature.js`](../../features/notifications.feature.js) | production | Alertes et messages sortants (WhatsApp, notifications internes) |
+| 9 | `notification` | feature | backend | [`notification.feature.js`](../../features/notification.feature.js) | production | Alertes et messages sortants (WhatsApp, notifications internes) |
 | 10 | `documents` | feature | backend | [`documents.feature.js`](../../features/documents.feature.js) | production | Génération de documents (preuve retrait, facture douane, reçu) |
 | 11 | `recommendations` | feature | backend | [`recommendations.feature.js`](../../features/recommendations.feature.js) | staging | Classement et suggestions boutique |
 | 12 | `inventory` | feature | backend | [`inventory.feature.js`](../../features/inventory.feature.js) | staging | Suivi de stock |
@@ -69,7 +69,7 @@ de vérité qui divergeraient à la première PR boutique non répercutée ici.
                      │
    ┌─────────────────┼──────────────────────────────────────┐
    ▼                 ▼                                      ▼
-catalog ──► shared-cart ──► orders ──► payments      economic-engine
+catalog ──► shared-cart ──► orders ──► payment       economic-engine
               │                │           │           (pricing pour
               │                │           ▼            catalog, orders,
               ▼                ▼       refunds          shared-cart)
@@ -78,7 +78,7 @@ catalog ──► shared-cart ──► orders ──► payments      economic-
               └──────► refunds ◄───── documents (génère les preuves
                           │                       pour orders, refunds,
                           ▼                       customs)
-                    notifications (émission, consommée par toutes)
+                    notification (émission, consommée par toutes)
                           │
                     customs (déclaration, consommée par logistics,
                               dashboard)

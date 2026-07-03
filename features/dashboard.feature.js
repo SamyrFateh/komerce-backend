@@ -275,7 +275,6 @@ module.exports = {
       'tests/unit/dashboard-finance-metrics.test.js',
       'tests/unit/dashboard-metrics.test.js',
       'tests/unit/dashboard-ops-queries.test.js',
-      'tests/unit/radar-queries.test.js',
       'tests/unit/relay-dashboard-queries.test.js',
     ],
   },
