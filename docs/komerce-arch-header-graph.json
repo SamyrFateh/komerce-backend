@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 358,
-    "filesWithFullHeaders": 329,
+    "scannedCodeFiles": 359,
+    "filesWithFullHeaders": 330,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 358,
+    "filesWithAnyHeaders": 359,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 715,
-    "edges": 3458,
-    "dbTables": 108,
+    "graphNodes": 717,
+    "edges": 3464,
+    "dbTables": 109,
     "doctrines": 129,
     "impactAreas": 120,
-    "unresolvedCodeEdges": 330
+    "unresolvedCodeEdges": 331
   },
   "byDomain": {
     "infrastructure": 19,
@@ -33,7 +33,7 @@
     "auth": 13,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 29,
+    "catalog": 30,
     "checkout": 2,
     "shared-cart": 46,
     "recommendations": 7,
@@ -75,7 +75,7 @@
     "view-model": 3,
     "route": 98,
     "entrypoint": 1,
-    "service": 141,
+    "service": 142,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -85,7 +85,7 @@
   "byCriticality": {
     "critical": 78,
     "medium": 102,
-    "high": 142,
+    "high": 143,
     "low": 36
   },
   "nodes": [
@@ -8562,6 +8562,44 @@
       "version": "2026-06"
     },
     {
+      "id": "services/catalog-eligibility.js",
+      "file": "services/catalog-eligibility.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-eligibility",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "normalized_candidate",
+        "active_exclusions"
+      ],
+      "outputs": [
+        "eligibility_verdict"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/suppliers/catalog-import-orchestrator.js"
+      ],
+      "dbRead": [
+        "catalog_exclusions"
+      ],
+      "dbWrite": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/catalog-public-view.js",
       "file": "services/catalog-public-view.js",
       "type": "file",
@@ -16028,6 +16066,11 @@
       "id": "db:alerts",
       "type": "db-table",
       "table": "alerts"
+    },
+    {
+      "id": "db:catalog_exclusions",
+      "type": "db-table",
+      "table": "catalog_exclusions"
     },
     {
       "id": "db:collective_stock_reservations",
@@ -28788,6 +28831,42 @@
       "to": "impact:payment",
       "type": "impact",
       "label": "payment"
+    },
+    {
+      "from": "services/catalog-eligibility.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "services/catalog-eligibility.js",
+      "type": "uses",
+      "label": "services/suppliers/catalog-import-orchestrator.js"
+    },
+    {
+      "from": "services/catalog-eligibility.js",
+      "to": "db:catalog_exclusions",
+      "type": "db-read",
+      "label": "catalog_exclusions"
+    },
+    {
+      "from": "services/catalog-eligibility.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md"
+    },
+    {
+      "from": "services/catalog-eligibility.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-eligibility.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
     },
     {
       "from": "services/catalog-public-view.js",
@@ -46174,6 +46253,39 @@
         "impact:payment"
       ]
     },
+    "services/catalog-eligibility.js": {
+      "role": "catalog-eligibility",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/suppliers/catalog-import-orchestrator.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "catalog_exclusions"
+      ],
+      "dbWrite": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "mustCheck": [
+        "db:catalog_exclusions",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "impact:catalog",
+        "impact:sourcing",
+        "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
     "services/catalog-public-view.js": {
       "role": "catalog-public-view",
       "domain": "catalog",
@@ -51596,6 +51708,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:catalog",
         "routes/sourcing-scanner.js",
+        "services/catalog-eligibility.js",
         "services/pricing-engine.js",
         "services/supplier-catalog-scanner.js"
       ]
@@ -53865,6 +53978,12 @@
     },
     {
       "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-eligibility.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"

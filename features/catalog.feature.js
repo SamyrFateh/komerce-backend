@@ -60,6 +60,7 @@ module.exports = {
       'services/suppliers/connectors/noon-connector.js',
       'services/supplier-catalog-scanner.js',
       'services/suppliers/catalog-import-orchestrator.js',
+      'services/catalog-eligibility.js',
       'services/catalog-public-view.js',
     ],
     migrations: [
@@ -129,6 +130,7 @@ module.exports = {
       'tests/unit/products.test.js',
       'tests/unit/supplier-catalog-scanner.test.js',
       'tests/unit/catalog-import-orchestrator.test.js',
+      'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
       'tests/unit/scan-engine-extras.test.js',
       'tests/unit/scan-engine.test.js',

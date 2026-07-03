@@ -6,26 +6,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 358
-- Files with full headers: 329
+- Scanned code files: 359
+- Files with full headers: 330
 - Files with lite headers: 29
-- Files with any headers: 358
+- Files with any headers: 359
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 715
-- Edges: 3458
-- DB tables: 108
+- Graph nodes: 717
+- Edges: 3464
+- DB tables: 109
 - Doctrines: 129
 - Impact areas: 120
-- Unresolved code edges: 330
+- Unresolved code edges: 331
 
 ## Domains
 
 - auth: 13
 - bootstrap: 1
 - boutique: 36
-- catalog: 29
+- catalog: 30
 - checkout: 2
 - collective-workspace: 3
 - customs: 6
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 98
 - route-manifest: 1
 - schema: 1
-- service: 141
+- service: 142
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -235,6 +235,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/apply-pricing-updates.js — economic-engine-apply-pricing-updates (economic-engine, high, full)
 - services/authkey-client.js — auth-authkey-client (auth, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
+- services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)
 - services/catalog-public-view.js — catalog-public-view (catalog, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)

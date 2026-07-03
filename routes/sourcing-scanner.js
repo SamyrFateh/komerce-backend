@@ -190,9 +190,18 @@ router.get('/candidates', authenticate, requireAdminOrFounder, async (req, res, 
     const params = [];
     let pi = 1;
 
-    if (req.query.state) {
+    if (req.query.state === 'all') {
+      // Pas de filtre state — vue brute complète, y compris rejected/archived.
+    } else if (req.query.state) {
       conditions.push(`state = $${pi++}`);
       params.push(req.query.state);
+    } else {
+      // Défaut : la file admin ne mélange pas les candidats déjà tranchés
+      // (rejected/archived) avec ceux qui attendent une décision — la doctrine
+      // catalogue §2 exige que leur raison reste consultable (visible via
+      // ?state=rejected ou ?state=all), mais pas qu'ils polluent la vue par
+      // défaut comme s'ils restaient « à décider ».
+      conditions.push(`state NOT IN ('rejected', 'archived')`);
     }
     if (req.query.supplier) {
       conditions.push(`supplier_name ILIKE $${pi++}`);

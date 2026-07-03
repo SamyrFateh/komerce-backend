@@ -108,6 +108,14 @@ jobs:
       - name: Check schema freshness
         run: node scripts/check-schema-freshness.js
 
+      # Symétrique du check précédent : bloque si une migration a DROPPÉ un
+      # objet (table/type) qui est pourtant encore présent dans le dump —
+      # signe d'une résurrection hors runner (psql manuel, script de
+      # réconciliation rejoué...). Cf. incident RECONCILIATION_PROD.sql,
+      # juillet 2026 (migration 099).
+      - name: Check schema resurrection (anti drift hors-migrations)
+        run: node scripts/check-schema-resurrection.js
+
       # Charge le dump Railway (schéma complet) dans le Postgres CI,
       # puis baseline dynamiquement les migrations déjà présentes dans le dump
       # (via git log/ls-tree — plus de liste hardcodée).

@@ -18,10 +18,12 @@
 jest.mock('../../db');
 jest.mock('../../services/supplier-catalog-scanner');
 jest.mock('../../services/pricing-engine');
+jest.mock('../../services/catalog-eligibility');
 
 const db = require('../../db');
 const scanner = require('../../services/supplier-catalog-scanner');
 const pricingEngine = require('../../services/pricing-engine');
+const eligibility = require('../../services/catalog-eligibility');
 
 const { importCatalog } = require('../../services/suppliers/catalog-import-orchestrator');
 

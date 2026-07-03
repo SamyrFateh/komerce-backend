@@ -2,6 +2,7 @@
 -- PostgreSQL database dump
 --
 
+\restrict oA5TsFmff9gXcnktM2T4ez1PTtXFfVkoX1K3QN44uFm4bU0MbfgLE3oYCJk335H
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -9,6 +10,7 @@
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -769,77 +771,6 @@ CREATE TABLE public.carriers (
 
 
 --
--- Name: catalog_exclusions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.catalog_exclusions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    layer character varying(12) NOT NULL,
-    label text NOT NULL,
-    keywords text[] DEFAULT '{}'::text[] NOT NULL,
-    categories text[] DEFAULT '{}'::text[] NOT NULL,
-    constraint_note text,
-    legal_note text,
-    is_active boolean DEFAULT true NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY ((ARRAY['absolute'::character varying, 'restricted'::character varying])::text[])))
-);
-
-
---
--- Name: TABLE catalog_exclusions; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.catalog_exclusions IS 'Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). absolute = jamais, définitif. restricted = embarquement contraint (constraint_note). Étage ③ de la raffinerie, avant traduction.';
-
-
---
--- Name: catalog_field_overrides; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.catalog_field_overrides (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    product_id uuid NOT NULL,
-    field_name character varying(50) NOT NULL,
-    field_value text NOT NULL,
-    reason text,
-    set_by uuid,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: TABLE catalog_field_overrides; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.catalog_field_overrides IS 'Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5). Dernier override par champ gagne (UNIQUE). L''édition directe de la fiche générée est interdite par doctrine.';
-
-
---
--- Name: catalog_glossary; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.catalog_glossary (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    term_source text NOT NULL,
-    term_fr text NOT NULL,
-    note text,
-    is_active boolean DEFAULT true NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: TABLE catalog_glossary; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.catalog_glossary IS 'Glossaire EN→FR injecté dans l''enrichissement IA (doctrine catalogue §4). term_fr = ''='' signifie : conserver tel quel (marques, noms propres).';
-
-
---
 -- Name: cart_contributions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -939,6 +870,77 @@ CREATE TABLE public.cash_reconciliation (
     notes text,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+
+--
+-- Name: catalog_exclusions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_exclusions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    layer character varying(12) NOT NULL,
+    label text NOT NULL,
+    keywords text[] DEFAULT '{}'::text[] NOT NULL,
+    categories text[] DEFAULT '{}'::text[] NOT NULL,
+    constraint_note text,
+    legal_note text,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY ((ARRAY['absolute'::character varying, 'restricted'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE catalog_exclusions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_exclusions IS 'Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). absolute = jamais, définitif. restricted = embarquement contraint (constraint_note). Étage ③ de la raffinerie, avant traduction.';
+
+
+--
+-- Name: catalog_field_overrides; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_field_overrides (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    field_name character varying(50) NOT NULL,
+    field_value text NOT NULL,
+    reason text,
+    set_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE catalog_field_overrides; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_field_overrides IS 'Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5). Dernier override par champ gagne (UNIQUE). L''édition directe de la fiche générée est interdite par doctrine.';
+
+
+--
+-- Name: catalog_glossary; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_glossary (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    term_source text NOT NULL,
+    term_fr text NOT NULL,
+    note text,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE catalog_glossary; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_glossary IS 'Glossaire EN→FR injecté dans l''enrichissement IA (doctrine catalogue §4). term_fr = ''='' signifie : conserver tel quel (marques, noms propres).';
 
 
 --
@@ -1289,9 +1291,17 @@ END) STORED,
     status public.customs_shipment_status DEFAULT 'pending'::public.customs_shipment_status NOT NULL,
     declared_at timestamp with time zone,
     declared_by uuid,
+    total_volume_m3 numeric(8,4),
     CONSTRAINT customs_shipments_allocation_method_check CHECK ((allocation_method = ANY (ARRAY['by_cif_value'::text, 'by_weight'::text, 'by_volume'::text, 'mixed'::text, 'manual'::text]))),
     CONSTRAINT customs_shipments_transport_mode_check CHECK ((transport_mode = ANY (ARRAY['sea'::text, 'air'::text, 'land'::text])))
 );
+
+
+--
+-- Name: COLUMN customs_shipments.total_volume_m3; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.customs_shipments.total_volume_m3 IS 'Volume total facturé par le transitaire (m³), saisi depuis la facture. Sert au taux de remplissage et au tonnage taxable W/M (v_shipment_density).';
 
 
 --
@@ -1435,8 +1445,16 @@ CREATE TABLE public.customs_shipment_parcels (
     allocation_basis text,
     manual_override boolean DEFAULT false NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    parcel_volume_cm3 numeric(12,2)
 );
+
+
+--
+-- Name: COLUMN customs_shipment_parcels.parcel_volume_cm3; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.customs_shipment_parcels.parcel_volume_cm3 IS 'Snapshot du volume du colis (cm3) au moment du rattachement au shipment. Utilise pour ventiler le fret maritime au m3 (doctrine LCL) au lieu du poids. NULL pour les rattachements anterieurs a la migration 095 -> repartition egale, confidence low (jamais le poids en maritime).';
 
 
 --
@@ -3181,6 +3199,13 @@ CREATE TABLE public.products (
     last_review_at timestamp with time zone,
     has_variants boolean DEFAULT false NOT NULL,
     product_ref text DEFAULT ('KPR-'::text || lpad((nextval('public.product_ref_seq'::regclass))::text, 6, '0'::text)),
+    repack_volume_cm3 numeric(10,2),
+    repack_exempt boolean DEFAULT false NOT NULL,
+    name_source text,
+    description_source text,
+    source_locale character varying(8),
+    content_source character varying(20),
+    enrichment_version integer,
     CONSTRAINT chk_products_price CHECK ((price_kmf > 0)),
     CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
     CONSTRAINT chk_products_stock CHECK ((stock >= 0)),
@@ -3204,10 +3229,73 @@ COMMENT ON COLUMN public.products.customs_risk_updated IS 'Date de derniÃ¨re m
 
 
 --
+-- Name: COLUMN products.is_fragile; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.is_fragile IS 'DÉPRÉCIÉE (096, 2026-07-02) — remplacée par fragility (texte). Backfillée puis figée ; ne plus écrire. Drop planifié : migrations/scheduled/097_drop_products_is_fragile.sql (exécutable 2026-07-16).';
+
+
+--
+-- Name: COLUMN products.fragility; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.fragility IS 'SOURCE UNIQUE du tag manipulation (doctrine non-conformité §3). Texte libre ; valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite. Tag => contrôle qualité prescrit au hub Dubaï + exclusion repack si fragile. NULL = aucune précaution requise.';
+
+
+--
 -- Name: COLUMN products.product_ref; Type: COMMENT; Schema: public; Owner: -
 --
 
 COMMENT ON COLUMN public.products.product_ref IS 'Référence interne Komerce stable (KPR-XXXXXX). Indépendante de category/sku. Générée automatiquement à la création via séquence product_ref_seq.';
+
+
+--
+-- Name: COLUMN products.repack_volume_cm3; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.repack_volume_cm3 IS 'Volume constaté après repack hub (cm³), mesuré à la première réception. NULL = jamais mesuré. Gain repack = volume_cm3 - repack_volume_cm3.';
+
+
+--
+-- Name: COLUMN products.repack_exempt; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.repack_exempt IS 'Exclusion doctrinale du repack : fragile, boîte = valeur perçue, douane. Posé par admin uniquement (R2 : l''agent hub exécute, ne décide pas).';
+
+
+--
+-- Name: COLUMN products.name_source; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.name_source IS 'Titre ORIGINAL fournisseur (généralement EN, Dubaï). Conservé à vie : retraduction en masse + litiges fournisseur (la commande se passe en anglais). La boutique ne lit JAMAIS ce champ — elle lit name (FR).';
+
+
+--
+-- Name: COLUMN products.description_source; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.description_source IS 'Description originale fournisseur. Même règle que name_source.';
+
+
+--
+-- Name: COLUMN products.source_locale; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.source_locale IS 'Langue de la donnée source (en, fr, ar...). NULL = inconnue (legacy).';
+
+
+--
+-- Name: COLUMN products.content_source; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.content_source IS 'Qui a écrit les champs publiés : connector_raw | ai_enriched | manual. Backfill legacy = manual (fiches saisies à la main avant la raffinerie).';
+
+
+--
+-- Name: COLUMN products.enrichment_version; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.enrichment_version IS 'Version du prompt d''enrichissement ayant produit la fiche (doctrine §8 : le prompt est du code, versionné). NULL = jamais enrichie par IA.';
 
 
 --
@@ -3406,9 +3494,17 @@ CREATE TABLE public.scan_events (
     error_message text,
     corrects_event_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    photo_urls text[] DEFAULT '{}'::text[],
     CONSTRAINT scan_events_actor_role_check CHECK ((actor_role = ANY (ARRAY['hub_agent'::text, 'relay_agent'::text, 'driver'::text, 'system'::text, 'admin'::text]))),
     CONSTRAINT scan_events_status_check CHECK ((status = ANY (ARRAY['applied'::text, 'rejected'::text, 'needs_review'::text, 'reversed'::text])))
 );
+
+
+--
+-- Name: COLUMN scan_events.photo_urls; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.scan_events.photo_urls IS 'Photos attachées à l''événement de scan (URLs sous /uploads/hub/). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Miroir structurel de disputes.photo_urls.';
 
 
 --
@@ -4276,6 +4372,64 @@ CREATE VIEW public.v_order_margins AS
 
 
 --
+-- Name: v_parcel_reconciliation; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.v_parcel_reconciliation AS
+ WITH last_event AS (
+         SELECT DISTINCT ON (parcel_events.parcel_id) parcel_events.parcel_id,
+            parcel_events.event_type,
+            parcel_events.created_at
+           FROM public.parcel_events
+          ORDER BY parcel_events.parcel_id, parcel_events.created_at DESC
+        ), coverage AS (
+         SELECT oi.order_id,
+            count(oi.id) AS items_total,
+            count(pi.order_item_id) FILTER (WHERE (pa.status <> 'cancelled'::public.parcel_status)) AS items_packed
+           FROM ((public.order_items oi
+             LEFT JOIN public.parcel_items pi ON ((pi.order_item_id = oi.id)))
+             LEFT JOIN public.parcels pa ON ((pa.id = pi.parcel_id)))
+          GROUP BY oi.order_id
+        )
+ SELECT p.id AS parcel_id,
+    p.reference AS parcel_ref,
+    o.reference AS order_ref,
+    p.status AS parcel_status,
+    o.status AS order_status,
+    le.event_type AS last_event,
+    le.created_at AS last_event_at,
+    cov.items_packed,
+    cov.items_total,
+    (p.seal_code IS NOT NULL) AS has_seal,
+    array_remove(ARRAY[
+        CASE
+            WHEN ((le.event_type IS NOT NULL) AND (le.event_type <> (p.status)::text)) THEN 'projection_vs_event_drift'::text
+            ELSE NULL::text
+        END,
+        CASE
+            WHEN ((p.status = ANY (ARRAY['shipped'::public.parcel_status, 'in_transit'::public.parcel_status, 'arrived'::public.parcel_status, 'available'::public.parcel_status, 'collected'::public.parcel_status])) AND (cov.items_packed < cov.items_total)) THEN 'shipped_incomplete'::text
+            ELSE NULL::text
+        END,
+        CASE
+            WHEN ((p.status = 'draft'::public.parcel_status) AND (o.status = ANY (ARRAY['shipped'::public.order_status, 'in_transit'::public.order_status, 'available'::public.order_status, 'collected'::public.order_status]))) THEN 'order_ahead_of_parcel'::text
+            ELSE NULL::text
+        END,
+        CASE
+            WHEN (p.seal_code IS NULL) THEN 'no_seal'::text
+            ELSE NULL::text
+        END,
+        CASE
+            WHEN ((p.status <> 'draft'::public.parcel_status) AND (le.event_type IS NULL)) THEN 'no_event_trace'::text
+            ELSE NULL::text
+        END], NULL::text) AS issues
+   FROM (((public.parcels p
+     JOIN public.orders o ON ((o.id = p.order_id)))
+     LEFT JOIN last_event le ON ((le.parcel_id = p.id)))
+     LEFT JOIN coverage cov ON ((cov.order_id = p.order_id)))
+  WHERE (p.status <> 'cancelled'::public.parcel_status);
+
+
+--
 -- Name: v_parcel_trace; Type: VIEW; Schema: public; Owner: -
 --
 
@@ -4319,6 +4473,53 @@ CREATE VIEW public.v_parcel_trace AS
           WHERE ((scan_events.parcel_id = p.id) AND (scan_events.status = 'applied'::text))
           ORDER BY scan_events.created_at DESC
          LIMIT 1) last_scan ON (true));
+
+
+--
+-- Name: v_shipment_density; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.v_shipment_density AS
+ WITH parcel_vol AS (
+         SELECT csp.shipment_id,
+            csp.parcel_id,
+            csp.parcel_weight_kg,
+            COALESCE(csp.parcel_volume_cm3, p.volume_cm3) AS volume_cm3
+           FROM (public.customs_shipment_parcels csp
+             LEFT JOIN public.parcels p ON ((p.id = csp.parcel_id)))
+        ), margin_embarked AS (
+         SELECT pv_1.shipment_id,
+            sum(((COALESCE(oi.price_kmf, 0) * COALESCE(pi.quantity, 1)) - (COALESCE(pr.cost_kmf, oi.price_kmf, 0) * COALESCE(pi.quantity, 1)))) AS margin_kmf
+           FROM (((parcel_vol pv_1
+             JOIN public.parcel_items pi ON ((pi.parcel_id = pv_1.parcel_id)))
+             JOIN public.order_items oi ON ((oi.id = pi.order_item_id)))
+             LEFT JOIN public.products pr ON ((pr.id = pi.product_id)))
+          GROUP BY pv_1.shipment_id
+        )
+ SELECT cs.id AS shipment_id,
+    cs.reference,
+    cs.transport_mode,
+    cs.total_weight_kg,
+    cs.total_volume_m3,
+    sum(pv.parcel_weight_kg) AS parcels_weight_kg,
+    (sum(pv.volume_cm3) / 1000000.0) AS parcels_volume_m3,
+    GREATEST((COALESCE(cs.total_weight_kg, sum(pv.parcel_weight_kg)) / 1000.0), COALESCE(cs.total_volume_m3, (sum(pv.volume_cm3) / 1000000.0))) AS chargeable_wm,
+        CASE
+            WHEN ((cs.total_volume_m3 > (0)::numeric) AND (sum(pv.volume_cm3) > (0)::numeric)) THEN round((((sum(pv.volume_cm3) / 1000000.0) / cs.total_volume_m3) * (100)::numeric), 1)
+            ELSE NULL::numeric
+        END AS fill_rate_pct,
+    me.margin_kmf AS margin_embarked_kmf,
+        CASE
+            WHEN (cs.total_volume_m3 > (0)::numeric) THEN round(((me.margin_kmf)::numeric / cs.total_volume_m3), 0)
+            ELSE NULL::numeric
+        END AS margin_kmf_per_m3,
+    cs.freight_kmf,
+    cs.status
+   FROM ((public.customs_shipments cs
+     LEFT JOIN parcel_vol pv ON ((pv.shipment_id = cs.id)))
+     LEFT JOIN margin_embarked me ON ((me.shipment_id = cs.id)))
+  WHERE (cs.is_active = true)
+  GROUP BY cs.id, cs.reference, cs.transport_mode, cs.total_weight_kg, cs.total_volume_m3, cs.freight_kmf, cs.status, me.margin_kmf;
 
 
 --
@@ -4603,54 +4804,6 @@ ALTER TABLE ONLY public.carriers
 
 
 --
--- Name: catalog_exclusions catalog_exclusions_label_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.catalog_exclusions
-    ADD CONSTRAINT catalog_exclusions_label_key UNIQUE (label);
-
-
---
--- Name: catalog_exclusions catalog_exclusions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.catalog_exclusions
-    ADD CONSTRAINT catalog_exclusions_pkey PRIMARY KEY (id);
-
-
---
--- Name: catalog_field_overrides catalog_field_overrides_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.catalog_field_overrides
-    ADD CONSTRAINT catalog_field_overrides_pkey PRIMARY KEY (id);
-
-
---
--- Name: catalog_field_overrides catalog_field_overrides_product_id_field_name_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.catalog_field_overrides
-    ADD CONSTRAINT catalog_field_overrides_product_id_field_name_key UNIQUE (product_id, field_name);
-
-
---
--- Name: catalog_glossary catalog_glossary_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.catalog_glossary
-    ADD CONSTRAINT catalog_glossary_pkey PRIMARY KEY (id);
-
-
---
--- Name: catalog_glossary catalog_glossary_term_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.catalog_glossary
-    ADD CONSTRAINT catalog_glossary_term_key UNIQUE (term_source);
-
-
---
 -- Name: cart_contributions cart_contributions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4688,6 +4841,54 @@ ALTER TABLE ONLY public.cash_deposits
 
 ALTER TABLE ONLY public.cash_reconciliation
     ADD CONSTRAINT cash_reconciliation_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: catalog_exclusions catalog_exclusions_label_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_exclusions
+    ADD CONSTRAINT catalog_exclusions_label_key UNIQUE (label);
+
+
+--
+-- Name: catalog_exclusions catalog_exclusions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_exclusions
+    ADD CONSTRAINT catalog_exclusions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: catalog_field_overrides catalog_field_overrides_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_field_overrides
+    ADD CONSTRAINT catalog_field_overrides_key UNIQUE (product_id, field_name);
+
+
+--
+-- Name: catalog_field_overrides catalog_field_overrides_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_field_overrides
+    ADD CONSTRAINT catalog_field_overrides_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: catalog_glossary catalog_glossary_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_glossary
+    ADD CONSTRAINT catalog_glossary_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: catalog_glossary catalog_glossary_term_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_glossary
+    ADD CONSTRAINT catalog_glossary_term_key UNIQUE (term_source);
 
 
 --
@@ -5717,13 +5918,6 @@ CREATE INDEX idx_benchmarks_importance ON public.pricing_benchmarks USING btree 
 
 
 --
--- Name: idx_catalog_overrides_product; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_catalog_overrides_product ON public.catalog_field_overrides USING btree (product_id);
-
-
---
 -- Name: idx_carriers_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5812,6 +6006,13 @@ CREATE INDEX idx_cash_recon_period ON public.cash_reconciliation USING btree (pe
 --
 
 CREATE INDEX idx_cash_recon_status ON public.cash_reconciliation USING btree (status);
+
+
+--
+-- Name: idx_catalog_overrides_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_overrides_product ON public.catalog_field_overrides USING btree (product_id);
 
 
 --
@@ -9316,3 +9517,6 @@ ALTER TABLE ONLY public.wallets
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict oA5TsFmff9gXcnktM2T4ez1PTtXFfVkoX1K3QN44uFm4bU0MbfgLE3oYCJk335H
+

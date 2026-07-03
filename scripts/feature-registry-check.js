@@ -240,7 +240,12 @@ function run() {
   if (errors.length > 0) {
     console.log(`\n  ❌ ${errors.length} erreur(s) bloquante(s)\n`);
     for (const e of errors) {
-      console.log(`  [${e.type}] ${e.feature || e.file}`);
+      // FILE-MISSING et DOMAIN-MISMATCH portent feature ET file : le fichier
+      // est l'info actionnable (c'est lui qu'on édite), pas le nom de feature
+      // qui n'aide pas à localiser le problème. Les autres types (MISSING-FIELD,
+      // INVALID-PERIMETER, MISSING-CONTRACT) n'ont que feature — on garde le fallback.
+      console.log(`  [${e.type}] ${e.file || e.feature}`);
+      if (e.file && e.feature) console.log(`    feature: ${e.feature}`);
       console.log(`    → ${e.msg}\n`);
     }
   }

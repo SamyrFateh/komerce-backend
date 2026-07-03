@@ -106,7 +106,15 @@ function saveTestsBaseline(stillMissing, oldBaseline, isBootstrap) {
 const STRUCTURAL = ['name', 'type', 'status', 'service'];
 const FORBIDDEN  = ['methods', 'selectors', 'exports', 'domEvents', 'metrics', 'routesReal', 'dependencies'];
 function hasTestsProof(m) {
-  return !!(m.tests || m.verification || (m.contracts && Object.keys(m.contracts).length));
+  // La preuve de tests est rangée sous files.tests dans les cartes (schéma
+  // `files: { ..., tests: [...] }`), jamais en top-level m.tests — ce champ
+  // top-level n'existe dans aucune carte du dépôt (backend ou boutique).
+  // m.verification et m.contracts restent des preuves alternatives légitimes
+  // pour les cartes sans fichiers de test dédiés (ex. dashboard : lecture
+  // seule, prouvée par des commandes de gouvernance ; modal-product : preuve
+  // par contrat déclaré).
+  const filesTests = m.files && Array.isArray(m.files.tests) && m.files.tests.length;
+  return !!(filesTests || m.tests || m.verification || (m.contracts && Object.keys(m.contracts).length));
 }
 function governanceChecks(m) {
   const miss = [];

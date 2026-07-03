@@ -152,7 +152,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
 | `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
 
-### 4.5 Paniers et catalogue (7 tables)
+### 4.5 Paniers et catalogue (10 tables)
 
 | Table | Rôle |
 |---|---|
@@ -163,30 +163,9 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `basket_items` | Items panier. |
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
-
-<!-- schema-pending
-object: catalog_glossary
-kind: table
-migration: 098
-section: ### 4.5 Paniers et catalogue (7 tables)
-role: Glossaire EN→FR injecté dans l'enrichissement IA (doctrine catalogue §4). term_fr='=' signifie ne pas traduire (marques, termes culturels). Mémoire des corrections : chaque retouche récurrente devient une entrée. Seeds : 5 termes.
--->
-
-<!-- schema-pending
-object: catalog_exclusions
-kind: table
-migration: 098
-section: ### 4.5 Paniers et catalogue (7 tables)
-role: Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). Deux couches : absolute (douane/loi, définitif) et restricted (contrainte transport, ex. batteries lithium = maritime uniquement). Matching mots-clés sur la donnée source EN, étage ③ de la raffinerie. Seeds : 8 règles.
--->
-
-<!-- schema-pending
-object: catalog_field_overrides
-kind: table
-migration: 098
-section: ### 4.5 Paniers et catalogue (7 tables)
-role: Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK products ON DELETE CASCADE.
--->
+| `catalog_glossary` | Glossaire EN→FR injecté dans l'enrichissement IA (doctrine catalogue §4). `term_fr='='` signifie ne pas traduire (marques, termes culturels). Mémoire des corrections : chaque retouche récurrente devient une entrée. Migration 098, confirmée live. |
+| `catalog_exclusions` | Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). Deux couches : `absolute` (douane/loi, définitif) et `restricted` (contrainte transport, ex. batteries lithium = maritime uniquement). Matching mots-clés sur la donnée source EN, étage ③ de la raffinerie. Migration 098, confirmée live. |
+| `catalog_field_overrides` | Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK `products` ON DELETE CASCADE. Migration 098, confirmée live. |
 
 ### 4.6 Paniers partagés (8 tables)
 

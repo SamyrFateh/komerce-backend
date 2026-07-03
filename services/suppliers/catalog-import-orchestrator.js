@@ -45,6 +45,7 @@
 const db = require('../../db');
 const scanner = require('../supplier-catalog-scanner');
 const pricingEngine = require('../pricing-engine');
+const eligibility = require('../catalog-eligibility');
 
 /**
  * Importe un catalogue fournisseur : dispatch connecteur → normalisation →
@@ -85,8 +86,9 @@ async function importCatalog(body, userId, dispatchToConnector) {
     };
   }
 
-  // 2. Charger config Komerce une seule fois
+  // 2. Charger config Komerce + exclusions éligibilité une seule fois (une requête, pas par produit)
   const config = await pricingEngine.loadGlobalConfig();
+  const activeExclusions = await eligibility.loadActiveExclusions();
 
   // 3. Créer l'import
   const importRes = await db.query(
@@ -103,11 +105,41 @@ async function importCatalog(body, userId, dispatchToConnector) {
   for (const product of products) {
     try {
       const normalized = await scanner.normalizeCandidate(product, { config });
-      const scan = await scanner.scanCandidate(normalized, { config });
+
+      // ③ Éligibilité (DOCTRINE_CATALOGUE §3) — avant tout pricing : on ne
+      // raffine pas ce qu'on n'embarquera pas. Matching sur la donnée SOURCE.
+      const verdict = eligibility.checkEligibility(normalized, activeExclusions);
+      const isAbsoluteExclusion = verdict?.layer === 'absolute';
+
+      // absolute → on n'appelle pas pricing-engine, le candidat est écarté d'office.
+      // restricted / éligible → scan normal, la contrainte (si restricted) est
+      // portée dans le scan_result pour l'étage ④ (rails).
+      const scan = isAbsoluteExclusion
+        ? {
+            scan_result: null,
+            sourcing_decision: 'EXCLUDED',
+            reason: verdict.legal_note ? `${verdict.label} — ${verdict.legal_note}` : verdict.label,
+            recommended_action: 'Ne pas importer — exclusion douane/légale.',
+            confidence: normalized.confidence || 'low',
+          }
+        : await scanner.scanCandidate(normalized, { config });
+
+      // État pipeline : une exclusion absolue est un rejet automatique — le
+      // candidat ne doit jamais atteindre l'admin comme "à décider" (§7).
+      const autoState = isAbsoluteExclusion ? 'rejected' : 'scanned';
+      const autoRejectedReason = isAbsoluteExclusion ? `[auto-exclusion] ${verdict.label}` : null;
 
       // DSC-E1 — UPSERT idempotent sur (supplier_name, supplier_product_id)
       // Les états terminaux (imported_to_catalog, rejected) ne sont jamais régressés.
-      const scanJson = JSON.stringify({ ...scan.scan_result, sourcing_decision: scan.sourcing_decision, reason: scan.reason, recommended_action: scan.recommended_action });
+      const scanJson = JSON.stringify({
+        ...scan.scan_result,
+        sourcing_decision: scan.sourcing_decision,
+        reason: scan.reason,
+        recommended_action: scan.recommended_action,
+        // Portée pour l'étage ④ (rails) : contrainte transport si restricted,
+        // null si le candidat est pleinement éligible.
+        eligibility: verdict,
+      });
       const incomingDataSources = JSON.stringify(normalized.data_sources);
 
       const upsertRes = await db.query(
@@ -120,7 +152,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
            komerce_category, estimated_weight_kg, estimated_volume_m3,
            purchase_price_kmf, target_margin_pct,
            data_sources, scan_result, scan_at, confidence,
-           state, updated_by
+           state, rejected_reason, updated_by
          ) VALUES (
            $1, $2, $3,
            $4, $5, $6, $7,
@@ -130,7 +162,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
            $18, $19, $20,
            $21, $22,
            $23::jsonb, $24, NOW(), $25,
-           'scanned', $26
+           $26, $27, $28
          )
          ON CONFLICT (supplier_name, supplier_product_id)
            WHERE supplier_product_id IS NOT NULL
@@ -175,10 +207,14 @@ async function importCatalog(body, userId, dispatchToConnector) {
            scan_result         = EXCLUDED.scan_result,
            scan_at             = NOW(),
            confidence          = EXCLUDED.confidence,
-           -- Ne pas régresser un état terminal
+           -- Ne pas régresser un état terminal (un rejet auto-exclusion est
+           -- lui-même terminal dès la première détection, cf. EXCLUDED.state).
            state               = CASE WHEN sourcing_candidates.state IN ('imported_to_catalog', 'rejected')
                                       THEN sourcing_candidates.state
-                                      ELSE 'scanned' END,
+                                      ELSE EXCLUDED.state END,
+           rejected_reason     = CASE WHEN sourcing_candidates.state IN ('imported_to_catalog', 'rejected')
+                                      THEN sourcing_candidates.rejected_reason
+                                      ELSE EXCLUDED.rejected_reason END,
            updated_by          = EXCLUDED.updated_by
          RETURNING *, (xmax <> 0) AS was_updated`,
         [
@@ -190,7 +226,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
           normalized.komerce_category, normalized.estimated_weight_kg, normalized.estimated_volume_m3,
           normalized.purchase_price_kmf, normalized.target_margin_pct,
           incomingDataSources, scanJson, scan.confidence,
-          userId || null,
+          autoState, autoRejectedReason, userId || null,
         ]
       );
 
