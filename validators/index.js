@@ -371,6 +371,11 @@ const hub = {
     volume_cm3: Joi.number().positive().max(1000000),
     repack_volume_cm3: Joi.number().positive().max(1000000),
   }).or('volume_cm3', 'repack_volume_cm3'),
+  // Q-1 non-conformité : photo de scellé (le fichier est validé par upload-hub)
+  photo: Joi.object({
+    parcel_id: Joi.string().uuid().required(),
+    notes: Joi.string().max(500).allow('', null),
+  }),
 };
 
 const loyalty = {

@@ -156,13 +156,37 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 | Table | Rôle |
 |---|---|
-| `products` | Catalogue produit. **Migration 095 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. |
+| `products` | Catalogue produit. **Migration 095 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `intended_migration_schema` — non vérifié live)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `intended_migration_schema` — non vérifié live)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw \| ai_enriched \| manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. |
 | `product_variants` | Variantes (taille, couleur). |
 | `product_suppliers` | Lien produit ↔ fournisseurs. |
 | `baskets` | Paniers (différents `basket_type`). |
 | `basket_items` | Items panier. |
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
+
+<!-- schema-pending
+object: catalog_glossary
+kind: table
+migration: 098
+section: ### 4.5 Paniers et catalogue (7 tables)
+role: Glossaire EN→FR injecté dans l'enrichissement IA (doctrine catalogue §4). term_fr='=' signifie ne pas traduire (marques, termes culturels). Mémoire des corrections : chaque retouche récurrente devient une entrée. Seeds : 5 termes.
+-->
+
+<!-- schema-pending
+object: catalog_exclusions
+kind: table
+migration: 098
+section: ### 4.5 Paniers et catalogue (7 tables)
+role: Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). Deux couches : absolute (douane/loi, définitif) et restricted (contrainte transport, ex. batteries lithium = maritime uniquement). Matching mots-clés sur la donnée source EN, étage ③ de la raffinerie. Seeds : 8 règles.
+-->
+
+<!-- schema-pending
+object: catalog_field_overrides
+kind: table
+migration: 098
+section: ### 4.5 Paniers et catalogue (7 tables)
+role: Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK products ON DELETE CASCADE.
+-->
 
 ### 4.6 Paniers partagés (8 tables)
 
@@ -242,7 +266,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | Table | Rôle |
 |---|---|
 | `scans` | Scans terrain (legacy/compat). |
-| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). |
+| `scan_events` | Événements scan (modèle moderne, protégé par `prevent_scan_event_delete`). **Migration 096 (2026-07-02, `intended_migration_schema` — non vérifié live)** : + `photo_urls` (text[], DEFAULT '{}', miroir de disputes.photo_urls). Usage doctrinal : event_type=seal_photo au scellé Dubaï = borne 1 des fenêtres de responsabilité (avant : fournisseur ; après : transport). Alimenté par POST /api/hub/photo. Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §2. |
 | `relais` | Points relais. |
 | `inventory_items` | Inventaire hub. |
 | `carriers` | Transporteurs. |
@@ -294,6 +318,14 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `customs_taux_mensuel` | Évolution mensuelle. | Admin |
 | `suppliers_stats` | Stats fournisseurs. | Admin |
 | `product_variants_ordered` | Variantes commandées. | Admin |
+<!-- schema-pending
+object: v_parcel_reconciliation
+kind: view
+migration: 094
+section: ## 5. Vues critiques
+role: Réconciliation colis (dernier event, poids, écarts). Détectée non documentée et non déployée par gate:migration-doc le 2026-07-03.
+consumers: Admin logistique
+-->
 
 <!-- schema-pending
 object: v_shipment_density

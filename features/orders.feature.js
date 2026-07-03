@@ -42,6 +42,10 @@ module.exports = {
   },
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
+  docs: [
+    'docs/doctrine/DOCTRINE_ANNULATION.md',
+  ],
+
   files: {
     utils: [
       'utils/orderParcelLinkRules.js',
@@ -78,10 +82,6 @@ module.exports = {
       'routes/order-api-v2.js',
     
       'routes/purchasing.js',],
-      migrations: [
-      'migrations/049_pickup_secret_attempts.sql',
-      'migrations/060_add_pending_at_confirmed_at.sql',
-    ],
       tests: [
       'tests/unit/admin-order-refund.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',
@@ -110,12 +110,6 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [
-    'docs/chantier/FLOW_AUDIT_CANCEL_G4.md',
-    'docs/chantier/QR_PICKUP_SECRET_AUDIT_D4.md',
-    'docs/specs/SPEC-ORDER-PARCEL-LIFECYCLE.md',
-  ],
-
   contract: {
     exposes: [
       'GET/POST /api/orders',
@@ -142,6 +136,9 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    'annulation libre et 100% avant ordered (plancher 24h) ; commande ferme des ordered — demande wallet-only ensuite (DOCTRINE_ANNULATION)',
+    'le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait',
+    'tout remboursement retourne au payeur, jamais au destinataire',
     'reference de commande lisible et unique',
     'snapshot de cout figure a la creation, jamais recalcule retroactivement',
     'transition de statut uniquement via order-status-machine.js',

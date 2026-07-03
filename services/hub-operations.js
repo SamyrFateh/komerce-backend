@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       business_rules, parcel_items, parcels, products
- * @db-write      parcels, products
+ * @db-read       business_rules, parcel_items, parcels, products, scan_events
+ * @db-write      parcels, products, scan_events
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change, DOCTRINE_DENSITE_VALEUR (V-4, 2026-07-02)
  * @impact-areas  unknown
@@ -463,4 +463,54 @@ async function batchScan(parcelRefs, userId, notes) {
   };
 }
 
-module.exports = { receiveParcel, packParcel, sealParcel, batchScan, recordVolume, computeVolumeTasks };
+/**
+ * Enregistre la photo de scellé d'un colis (POST /api/hub/photo) — Q-1.
+ * BORNE 1 des fenêtres de responsabilité (doctrine non-conformité §2) :
+ * défaut visible avant cette photo → fournisseur ; après → transport.
+ * Insère un scan_event dédié event_type='seal_photo' : la preuve est datée,
+ * signée (scanned_by) et rattachée au colis — jamais une simple URL orpheline.
+ * Sans contrainte : l'absence de photo ne bloque jamais un scellé.
+ *
+ * @param {string} parcelId
+ * @param {string} userId
+ * @param {string} photoUrl  URL publique (/uploads/hub/...)
+ * @param {string|null} notes
+ * @returns {Promise<{ status: number, body: object }>}
+ */
+async function recordSealPhoto(parcelId, userId, photoUrl, notes = null) {
+  const { rows: parcels } = await db.query(
+    'SELECT id, reference FROM parcels WHERE id = $1',
+    [parcelId]
+  );
+  if (!parcels.length) {
+    return { status: 404, body: { error: 'Colis introuvable' } };
+  }
+
+  const { rows } = await db.query(
+    `INSERT INTO scan_events
+       (parcel_id, event_type, scanned_by, actor_role, photo_urls, notes)
+     VALUES ($1, 'seal_photo', $2, 'hub_agent', ARRAY[$3]::text[], $4)
+     RETURNING id, created_at`,
+    [parcelId, userId, photoUrl, notes]
+  );
+
+  const { rows: countRows } = await db.query(
+    `SELECT COALESCE(SUM(cardinality(photo_urls)), 0) AS photo_count
+     FROM scan_events
+     WHERE parcel_id = $1 AND event_type = 'seal_photo'`,
+    [parcelId]
+  );
+
+  return {
+    status: 201,
+    body: {
+      message: `Photo de scellé enregistrée pour ${parcels[0].reference}`,
+      event_id: rows[0].id,
+      photo_url: photoUrl,
+      photo_count: Number(countRows[0].photo_count),
+      recorded_at: rows[0].created_at,
+    },
+  };
+}
+
+module.exports = { receiveParcel, packParcel, sealParcel, batchScan, recordVolume, computeVolumeTasks, recordSealPhoto };

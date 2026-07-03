@@ -13,24 +13,25 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 356,
-    "filesWithFullHeaders": 327,
+    "scannedCodeFiles": 357,
+    "filesWithFullHeaders": 328,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 356,
+    "filesWithAnyHeaders": 357,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 709,
-    "edges": 3443,
+    "graphNodes": 713,
+    "edges": 3450,
     "dbTables": 108,
-    "doctrines": 127,
-    "impactAreas": 118,
-    "unresolvedCodeEdges": 327
+    "doctrines": 128,
+    "impactAreas": 120,
+    "unresolvedCodeEdges": 329
   },
   "byDomain": {
     "infrastructure": 19,
     "notification": 15,
     "auth": 13,
+    "logistics": 35,
     "boutique": 36,
     "catalog": 28,
     "checkout": 2,
@@ -45,7 +46,6 @@
     "dashboard": 30,
     "orders": 29,
     "documents": 11,
-    "logistics": 34,
     "operations": 12,
     "inventory": 3,
     "bootstrap": 1,
@@ -56,7 +56,7 @@
     "bootstrap": 6,
     "cron": 1,
     "manual-test": 1,
-    "middleware": 10,
+    "middleware": 11,
     "ui-component": 39,
     "ui-enhancer": 3,
     "ui-renderer": 6,
@@ -85,7 +85,7 @@
   "byCriticality": {
     "critical": 78,
     "medium": 102,
-    "high": 140,
+    "high": 141,
     "low": 36
   },
   "nodes": [
@@ -672,6 +672,42 @@
         "auth"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "middleware/upload-hub.js",
+      "file": "middleware/upload-hub.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "middleware-upload-hub",
+      "domain": "logistics",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": "Upload des photos de scan hub Dubaï (borne 1 des fenêtres de",
+      "inputs": [
+        "multipart/form-data (champ photo)"
+      ],
+      "outputs": [
+        "req.file (multer)",
+        "fichier sous public/uploads/hub/"
+      ],
+      "depends": [
+        "middleware/upload.js (validateMagicBytes)"
+      ],
+      "usedBy": [
+        "routes/hub.js (POST /photo)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbTxn": [],
+      "doctrine": [
+        "DOCTRINE_NON_CONFORMITE (Q-1)"
+      ],
+      "impactAreas": [
+        "hub",
+        "quality"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "middleware/upload.js",
@@ -10501,11 +10537,13 @@
         "business_rules",
         "parcel_items",
         "parcels",
-        "products"
+        "products",
+        "scan_events"
       ],
       "dbWrite": [
         "parcels",
-        "products"
+        "products",
+        "scan_events"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -16080,6 +16118,11 @@
       "doctrine": "retention_snapshots"
     },
     {
+      "id": "doctrine:DOCTRINE_NON_CONFORMITE (Q-1)",
+      "type": "doctrine",
+      "doctrine": "DOCTRINE_NON_CONFORMITE (Q-1)"
+    },
+    {
       "id": "doctrine:panier_visible_sans_friction",
       "type": "doctrine",
       "doctrine": "panier_visible_sans_friction"
@@ -16753,6 +16796,16 @@
       "id": "impact:auth",
       "type": "impact-area",
       "area": "auth"
+    },
+    {
+      "id": "impact:hub",
+      "type": "impact-area",
+      "area": "hub"
+    },
+    {
+      "id": "impact:quality",
+      "type": "impact-area",
+      "area": "quality"
     },
     {
       "id": "impact:cart",
@@ -17798,6 +17851,36 @@
       "to": "impact:auth",
       "type": "impact",
       "label": "auth"
+    },
+    {
+      "from": "middleware/upload-hub.js",
+      "to": "middleware/upload.js (validateMagicBytes)",
+      "type": "depends",
+      "label": "middleware/upload.js (validateMagicBytes)"
+    },
+    {
+      "from": "routes/hub.js (POST /photo)",
+      "to": "middleware/upload-hub.js",
+      "type": "uses",
+      "label": "routes/hub.js (POST /photo)"
+    },
+    {
+      "from": "middleware/upload-hub.js",
+      "to": "doctrine:DOCTRINE_NON_CONFORMITE (Q-1)",
+      "type": "doctrine",
+      "label": "DOCTRINE_NON_CONFORMITE (Q-1)"
+    },
+    {
+      "from": "middleware/upload-hub.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
+    },
+    {
+      "from": "middleware/upload-hub.js",
+      "to": "impact:quality",
+      "type": "impact",
+      "label": "quality"
     },
     {
       "from": "middleware/upload.js",
@@ -31553,6 +31636,12 @@
     },
     {
       "from": "services/hub-operations.js",
+      "to": "db:scan_events",
+      "type": "db-read",
+      "label": "scan_events"
+    },
+    {
+      "from": "services/hub-operations.js",
       "to": "db:parcels",
       "type": "db-write",
       "label": "parcels"
@@ -31562,6 +31651,12 @@
       "to": "db:products",
       "type": "db-write",
       "label": "products"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "db:scan_events",
+      "type": "db-write",
+      "label": "scan_events"
     },
     {
       "from": "services/hub-operations.js",
@@ -38601,6 +38696,35 @@
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:auth"
+      ]
+    },
+    "middleware/upload-hub.js": {
+      "role": "middleware-upload-hub",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": "Upload des photos de scan hub Dubaï (borne 1 des fenêtres de",
+      "directDependsOn": [
+        "middleware/upload.js (validateMagicBytes)"
+      ],
+      "directUsedBy": [
+        "routes/hub.js (POST /photo)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "doctrines": [
+        "DOCTRINE_NON_CONFORMITE (Q-1)"
+      ],
+      "impactAreas": [
+        "hub",
+        "quality"
+      ],
+      "mustCheck": [
+        "doctrine:DOCTRINE_NON_CONFORMITE (Q-1)",
+        "impact:hub",
+        "impact:quality"
       ]
     },
     "middleware/upload.js": {
@@ -47805,11 +47929,13 @@
         "business_rules",
         "parcel_items",
         "parcels",
-        "products"
+        "products",
+        "scan_events"
       ],
       "dbWrite": [
         "parcels",
-        "products"
+        "products",
+        "scan_events"
       ],
       "doctrines": [
         "resolve_before_behavior_change",
@@ -47824,6 +47950,7 @@
         "db:parcel_items",
         "db:parcels",
         "db:products",
+        "db:scan_events",
         "doctrine:2026-07-02)",
         "doctrine:DOCTRINE_DENSITE_VALEUR (V-4",
         "doctrine:resolve_before_behavior_change",
@@ -52270,6 +52397,18 @@
       "to": "core/test-whatsapp-notifications.js",
       "type": "uses",
       "label": "manual-ops"
+    },
+    {
+      "from": "middleware/upload-hub.js",
+      "to": "middleware/upload.js (validateMagicBytes)",
+      "type": "depends",
+      "label": "middleware/upload.js (validateMagicBytes)"
+    },
+    {
+      "from": "routes/hub.js (POST /photo)",
+      "to": "middleware/upload-hub.js",
+      "type": "uses",
+      "label": "routes/hub.js (POST /photo)"
     },
     {
       "from": "public_shared_cart_links",

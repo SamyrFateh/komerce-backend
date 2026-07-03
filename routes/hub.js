@@ -45,6 +45,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const { hub } = require('../validators');
 const hubOps  = require('../services/hub-operations');
+const uploadHub = require('../middleware/upload-hub');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 
@@ -84,6 +85,28 @@ router.post('/volume', ...hubAuth, validate({ body: hub.volume }), async (req, r
   try {
     const { product_id, volume_cm3, repack_volume_cm3 } = req.body;
     const result = await hubOps.recordVolume(product_id, req.user.id, { volume_cm3, repack_volume_cm3 });
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
+// ── POST /photo ──────────────────────────────────────────────────────────────
+// Q-1 DOCTRINE_NON_CONFORMITE : photo au scellé Dubaï — borne 1 des fenêtres
+// de responsabilité. Une photo par colis (systématique), par carton maître
+// sur gros volume. Multipart : champ 'photo' + parcel_id. Les deux lignes de
+// défense (extension + magic bytes) sont portées par middleware/upload-hub.
+router.post('/photo', ...hubAuth, uploadHub.single('photo'), uploadHub.validateMagicBytes, async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "Photo manquante (champ multipart 'photo')" });
+    }
+    const { error, value } = hub.photo.validate({ parcel_id: req.body.parcel_id, notes: req.body.notes });
+    if (error) {
+      // Fichier déjà écrit par multer : le nettoyer avant de rejeter
+      try { require('fs').unlinkSync(req.file.path); } catch (_) {}
+      return res.status(400).json({ error: error.details[0].message });
+    }
+    const photoUrl = uploadHub.PUBLIC_PREFIX + req.file.filename;
+    const result = await hubOps.recordSealPhoto(value.parcel_id, req.user.id, photoUrl, value.notes || null);
     res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });

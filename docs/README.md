@@ -12,6 +12,7 @@ Porte d'entree agent :
 
 - npm run feature:registry
 - npm run gate:schema
+- npm run gate:migration-doc
 - npm run gate:touched-files
 - npm run gate:docs-lint
 - npm run gate:feature-audit
@@ -28,6 +29,9 @@ Porte d'entree agent :
 - docs/doctrine/FEATURE_SLICE_DOCTRINE.md
 - docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md
 - docs/doctrine/DOCTRINE_DENSITE_VALEUR.md
+- docs/doctrine/DOCTRINE_NON_CONFORMITE.md
+- docs/doctrine/DOCTRINE_ANNULATION.md
+- docs/doctrine/DOCTRINE_CATALOGUE.md
 - docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md
 - docs/KOMERCE_DB_SCHEMA_DOCTRINE.md
 

@@ -32,6 +32,9 @@ module.exports = {
       'secrets de retrait',
       'tracking client et transitaire',
       'relais et transporteurs',
+      // ── 2026-07 : densite de valeur + qualite hub Dubai ──
+      'consignes hub prescrites au scan : repack, mesure volume, photo de scelle (bornes de responsabilite)',
+      'saisie volumes produits (POST /hub/volume) et photos de scelle (POST /hub/photo)',
     ],
     out: [
       'cout du transport (feature economic-engine)',
@@ -42,6 +45,18 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    middleware: [
+      'middleware/upload-hub.js',
+    ],
+    migrations: [
+      'migrations/095_value_density_foundation.sql',
+      'migrations/096_quality_foundation.sql',
+    ],
+    docs: [
+      'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
+      'docs/doctrine/DOCTRINE_NON_CONFORMITE.md',
+      'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md',
+    ],
     utils: [
       'utils/parcelSync.js',
     
@@ -82,21 +97,6 @@ module.exports = {
     
       'routes/auto-distribute-api.js',
       'routes/hub.js',],
-    migrations: [
-      'migrations/014_parcels_final_cleanup.sql',
-      'migrations/015_add_backorder_reminder_sent.sql',
-      'migrations/016b_carriers.sql',
-      'migrations/017_hub_safety_constraints.sql',
-      'migrations/020_parcel_optimization_schema.sql',
-      'migrations/022_parcel_first_refactor.sql',
-      'migrations/035_partners_enrichment.sql',
-      'migrations/035b_partners_fix_partner_type.sql',
-      'migrations/065_carriers.sql',
-      'migrations/070_pickup_ephemeral_tokens.sql',
-      'migrations/073_pickup_verify_attempts.sql',
-      'migrations/078_parcels_security_columns.sql',
-      'migrations/094_parcel_reconciliation_view.sql',
-    ],
     boutique: [
       'js/b-tracking.js',
     ],
@@ -152,11 +152,6 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [
-    'docs/adr/ADR-012-migration-scans-scan-events.md',
-    'docs/ops/PLAN_LOGISTIQUE_V2.md',
-  ],
-
   contract: {
     exposes: [
       'GET/POST /api/parcels',
@@ -180,6 +175,10 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    'le fret maritime ne se ventile jamais au poids : volume si snapshot, repartition egale confidence low sinon',
+    'un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume',
+    'la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport',
+    'le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)',
     'un colis ne change de statut que via une sequence de scan validee',
     'secret de retrait a usage unique',
   ],

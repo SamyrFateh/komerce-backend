@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 356
-- Files with full headers: 327
+- Scanned code files: 357
+- Files with full headers: 328
 - Files with lite headers: 29
-- Files with any headers: 356
+- Files with any headers: 357
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 709
-- Edges: 3443
+- Graph nodes: 713
+- Edges: 3450
 - DB tables: 108
-- Doctrines: 127
-- Impact areas: 118
-- Unresolved code edges: 327
+- Doctrines: 128
+- Impact areas: 120
+- Unresolved code edges: 329
 
 ## Domains
 
@@ -34,7 +34,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - economic-engine: 36
 - infrastructure: 19
 - inventory: 3
-- logistics: 34
+- logistics: 35
 - notification: 15
 - operations: 12
 - orders: 29
@@ -56,7 +56,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - external-adapter: 1
 - machine: 2
 - manual-test: 1
-- middleware: 10
+- middleware: 11
 - policy: 1
 - route: 98
 - route-manifest: 1
@@ -160,6 +160,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - middleware/auth-guest.js — auth-auth-guest (auth, high, full)
 - middleware/auth.js — auth-auth (auth, high, full)
 - middleware/soft-auth.js — auth-soft-auth (auth, high, full)
+- middleware/upload-hub.js — middleware-upload-hub (logistics, high, full)
 - middleware/verify-authkey-webhook.js — auth-verify-authkey-webhook (auth, high, full)
 - public/boutique/js/b-catalog-desktop-enhancers.js — desktop-catalog-enhancer (catalog, high, full)
 - public/boutique/js/b-catalog.js — boutique-catalog-renderer (catalog, high, full)
@@ -474,6 +475,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
+- depends: middleware/upload-hub.js -> middleware/upload.js (validateMagicBytes) (middleware/upload.js (validateMagicBytes))
 - uses: modal-modules -> public/boutique/js/b-scroll-owner.js (modal-modules)
 - uses: modal-suggestions -> routes/boutique-suggestions.js (modal-suggestions)
 - uses: modal-surfaces -> public/boutique/js/b-modal-approche-c-hybrid.js (modal-surfaces)
@@ -574,7 +576,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/dashboard-clients.js -> services/* (services/*)
 - depends: routes/dashboard-finance.js -> db.js (db.js)
 - depends: routes/dashboard-finance.js -> services/* (services/*)
-- depends: routes/dashboard-hub.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 
