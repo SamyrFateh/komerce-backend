@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 357,
-    "filesWithFullHeaders": 328,
+    "scannedCodeFiles": 359,
+    "filesWithFullHeaders": 330,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 357,
+    "filesWithAnyHeaders": 359,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 714,
-    "edges": 3453,
-    "dbTables": 108,
+    "graphNodes": 719,
+    "edges": 3472,
+    "dbTables": 111,
     "doctrines": 129,
     "impactAreas": 120,
-    "unresolvedCodeEdges": 331
+    "unresolvedCodeEdges": 333
   },
   "byDomain": {
     "infrastructure": 19,
@@ -33,7 +33,7 @@
     "auth": 13,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 30,
+    "catalog": 32,
     "checkout": 2,
     "shared-cart": 44,
     "recommendations": 7,
@@ -75,7 +75,7 @@
     "view-model": 3,
     "route": 98,
     "entrypoint": 1,
-    "service": 140,
+    "service": 142,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -85,7 +85,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 102,
-    "high": 143,
+    "high": 145,
     "low": 36
   },
   "nodes": [
@@ -8600,6 +8600,54 @@
       "version": "2026-07"
     },
     {
+      "id": "services/catalog-enrichment.js",
+      "file": "services/catalog-enrichment.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-enrichment",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_source_data",
+        "glossary",
+        "business_rules"
+      ],
+      "outputs": [
+        "enriched_product_fields",
+        "enrichment_run_trace"
+      ],
+      "depends": [
+        "db.js",
+        "utils/rules.js",
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "routes/sourcing-scanner.js"
+      ],
+      "dbRead": [
+        "boutique_categories",
+        "catalog_field_overrides",
+        "catalog_glossary",
+        "products"
+      ],
+      "dbWrite": [
+        "catalog_enrichment_runs",
+        "products"
+      ],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/catalog-public-view.js",
       "file": "services/catalog-public-view.js",
       "type": "file",
@@ -12644,6 +12692,47 @@
       "version": "2026-06"
     },
     {
+      "id": "services/prompts/catalog-enrichment.prompt.js",
+      "file": "services/prompts/catalog-enrichment.prompt.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-enrichment-prompt",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "glossary_entries",
+        "allowed_categories",
+        "product_source_data"
+      ],
+      "outputs": [
+        "prompt_strings",
+        "output_validation_verdict"
+      ],
+      "depends": [
+        "(none)"
+      ],
+      "usedBy": [
+        "services/catalog-enrichment.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/purchasing-admin-service.js",
       "file": "services/purchasing-admin-service.js",
       "type": "file",
@@ -15992,6 +16081,21 @@
       "id": "db:catalog_exclusions",
       "type": "db-table",
       "table": "catalog_exclusions"
+    },
+    {
+      "id": "db:catalog_field_overrides",
+      "type": "db-table",
+      "table": "catalog_field_overrides"
+    },
+    {
+      "id": "db:catalog_glossary",
+      "type": "db-table",
+      "table": "catalog_glossary"
+    },
+    {
+      "id": "db:catalog_enrichment_runs",
+      "type": "db-table",
+      "table": "catalog_enrichment_runs"
     },
     {
       "id": "db:collective_stock_reservations",
@@ -28785,6 +28889,84 @@
       "label": "sourcing"
     },
     {
+      "from": "services/catalog-enrichment.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "utils/rules.js",
+      "type": "depends",
+      "label": "utils/rules.js"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "utils/logger.js",
+      "type": "depends",
+      "label": "utils/logger.js"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "services/catalog-enrichment.js",
+      "type": "uses",
+      "label": "routes/sourcing-scanner.js"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "db:boutique_categories",
+      "type": "db-read",
+      "label": "boutique_categories"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-read",
+      "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "db:catalog_glossary",
+      "type": "db-read",
+      "label": "catalog_glossary"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "db:catalog_enrichment_runs",
+      "type": "db-write",
+      "label": "catalog_enrichment_runs"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "db:products",
+      "type": "db-write",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
       "from": "services/catalog-public-view.js",
       "to": "(none)",
       "type": "depends",
@@ -34507,6 +34689,42 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "services/prompts/catalog-enrichment.prompt.js",
+      "to": "(none)",
+      "type": "depends",
+      "label": "(none)"
+    },
+    {
+      "from": "services/catalog-enrichment.js",
+      "to": "services/prompts/catalog-enrichment.prompt.js",
+      "type": "uses",
+      "label": "services/catalog-enrichment.js"
+    },
+    {
+      "from": "services/prompts/catalog-enrichment.prompt.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "services/prompts/catalog-enrichment.prompt.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/prompts/catalog-enrichment.prompt.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md"
+    },
+    {
+      "from": "services/prompts/catalog-enrichment.prompt.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
     },
     {
       "from": "services/purchasing-admin-service.js",
@@ -45407,6 +45625,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
         "middleware/auth.js",
+        "services/catalog-enrichment.js",
         "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
@@ -46134,6 +46353,54 @@
         "impact:catalog",
         "impact:sourcing",
         "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    "services/catalog-enrichment.js": {
+      "role": "catalog-enrichment",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "utils/rules.js",
+        "utils/logger.js"
+      ],
+      "directUsedBy": [
+        "routes/sourcing-scanner.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "boutique_categories",
+        "catalog_field_overrides",
+        "catalog_glossary",
+        "products"
+      ],
+      "dbWrite": [
+        "catalog_enrichment_runs",
+        "products"
+      ],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "mustCheck": [
+        "db:boutique_categories",
+        "db:catalog_enrichment_runs",
+        "db:catalog_field_overrides",
+        "db:catalog_glossary",
+        "db:products",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "impact:catalog",
+        "impact:sourcing",
+        "routes/sourcing-scanner.js",
+        "services/prompts/catalog-enrichment.prompt.js",
+        "utils/logger.js",
+        "utils/rules.js"
       ]
     },
     "services/catalog-public-view.js": {
@@ -49868,6 +50135,39 @@
         "impact:product-discovery"
       ]
     },
+    "services/prompts/catalog-enrichment.prompt.js": {
+      "role": "catalog-enrichment-prompt",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "(none)"
+      ],
+      "directUsedBy": [
+        "services/catalog-enrichment.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "impact:catalog",
+        "services/catalog-enrichment.js"
+      ]
+    },
     "services/purchasing-admin-service.js": {
       "role": "dashboard-purchasing-admin-service",
       "domain": "dashboard",
@@ -52050,6 +52350,7 @@
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
+        "services/catalog-enrichment.js",
         "services/notifications/internals.js"
       ]
     },
@@ -52326,6 +52627,7 @@
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
+        "services/catalog-enrichment.js",
         "services/shared-cart-v41-transitions.js"
       ]
     },
@@ -53777,6 +54079,12 @@
       "label": "db.js"
     },
     {
+      "from": "services/catalog-enrichment.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/catalog-public-view.js",
       "to": "(none)",
       "type": "depends",
@@ -54219,6 +54527,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/prompts/catalog-enrichment.prompt.js",
+      "to": "(none)",
+      "type": "depends",
+      "label": "(none)"
     },
     {
       "from": "services/refund-service.js",

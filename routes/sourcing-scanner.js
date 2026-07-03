@@ -60,6 +60,7 @@ const db = require('../db');
 const scanner = require('../services/supplier-catalog-scanner');
 const pricingEngine = require('../services/pricing-engine');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
+const catalogEnrichment = require('../services/catalog-enrichment');
 const { authenticate } = require('../middleware/auth');
 
 // ── Connecteurs ──
@@ -439,14 +440,19 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
 
     const weightKg = c.estimated_weight_kg || null;
 
+    // DOCTRINE_CATALOGUE §7 — la donnée source ne se perd JAMAIS : elle est
+    // écrite ici, à l'entrée du catalogue (retraduction + litiges fournisseur).
+    // La locale des connecteurs actuels est l'anglais (Dubaï) ; les futurs
+    // connecteurs porteront leur locale dans NormalizedSupplierProduct.
     const prodRes = await db.query(
       `INSERT INTO products (
          name, category,
          cost_kmf,
          price_kmf,
          weight_kg,
-         is_active, lifecycle_status
-       ) VALUES ($1, $2, $3, $4, $5, FALSE, 'candidate')
+         is_active, lifecycle_status,
+         name_source, description_source, source_locale, content_source
+       ) VALUES ($1, $2, $3, $4, $5, FALSE, 'candidate', $6, $7, $8, 'connector_raw')
        RETURNING id`,
       [
         c.product_name,
@@ -454,9 +460,17 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
         c.purchase_price_kmf || 0,
         initialPrice,
         weightKg,
+        c.product_name,
+        c.description || null,
+        'en',
       ]
     );
     const productId = prodRes.rows[0].id;
+
+    // Étage ⑤ — enrichissement FR (K-3), best-effort : un hoquet du modèle
+    // ne fait pas échouer l'import. En échec, la fiche reste en donnée
+    // connecteur, marquée needs_review, run tracé (catalog_enrichment_runs).
+    const enrichment = await catalogEnrichment.enrichAndApply(productId);
 
     await db.query(
       `UPDATE sourcing_candidates
@@ -475,7 +489,10 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
     res.json({
       product_id: productId,
       candidate_id: req.params.id,
-      message: 'Produit créé en mode inactif (is_active=false). Activez-le manuellement quand prêt.',
+      enrichment, // { status: ok|low_confidence|invalid_output|failed, confidence?, error? }
+      message: enrichment.status === 'ok'
+        ? 'Produit créé en mode inactif, fiche FR générée. Approuvez-la quand prête.'
+        : 'Produit créé en mode inactif — fiche à relire (needs_review). Activez-le manuellement quand prêt.',
     });
   } catch (err) { next(err); }
 });

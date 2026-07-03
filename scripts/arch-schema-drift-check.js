@@ -51,7 +51,7 @@ function main() {
   }
 
   const { live, headerTokens, allowlist, ratchetMax } = a;
-  const { fiction, fictionUnlisted, allowlistResolved, ghosts, undocumented } = a;
+  const { fiction, fictionUnlisted, fictionMigrationHints, allowlistResolved, ghosts, ghostMigrationHints, undocumented } = a;
   const ratchetOver = undocumented.length > ratchetMax;
 
   console.log('============================================================');
@@ -81,6 +81,16 @@ function main() {
       console.log(`  [${flag}] ${f.token}`);
       console.log(`            <- ${f.files.slice(0, 6).join(', ')}${f.files.length > 6 ? ', ...' : ''}`);
       if (f.allowed && allowlist[f.token]) console.log(`            note: ${allowlist[f.token]}`);
+      const mig = !f.allowed && fictionMigrationHints.get(f.token);
+      if (mig) {
+        const migNumMatch = mig.split(/[/\\]/).pop().match(/^(\d+)/);
+        const migNum = migNumMatch ? migNumMatch[1] : '?';
+        console.log(`            trouve dans : ${mig} (migration locale, pas encore en live)`);
+        console.log(`            -> deploy pas encore fait : ajouter temporairement "${f.token}"`);
+        console.log(`               a knownDriftAllowlist (scripts/arch-debt-budget.json) avec une`);
+        console.log(`               note "migration ${migNum}, pas encore deployee". Auto-elague`);
+        console.log(`               par arch-reconcile des que live.`);
+      }
     }
     console.log('');
   }
@@ -96,7 +106,18 @@ function main() {
   }
   if (ghosts.length) {
     console.log('--- FANTOMES (SCHEMA.md -> objet inexistant en base) ---');
-    for (const g of ghosts) console.log(`  ${g}`);
+    for (const g of ghosts) {
+      const mig = ghostMigrationHints.get(g);
+      console.log(`  ${g}`);
+      if (mig) {
+        console.log(`            trouve dans : ${mig} (migration locale, pas encore en live)`);
+        console.log(`            -> probablement une declaration prematuree : cet objet doit`);
+        console.log(`               etre un bloc <!-- schema-pending --> dans SCHEMA.md, pas`);
+        console.log(`               une ligne de tableau directe. Voir scripts/schema-promote.js`);
+        console.log(`               (format du bloc en tete de fichier). Une fois deploye,`);
+        console.log(`               "npm run schema:promote:write" convertit le bloc en ligne.`);
+      }
+    }
     console.log('');
     blockers.push(`Fantomes dans SCHEMA.md: ${ghosts.length} (${ghosts.join(', ')})`);
   }

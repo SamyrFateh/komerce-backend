@@ -62,9 +62,12 @@ module.exports = {
       'services/suppliers/catalog-import-orchestrator.js',
       'services/catalog-eligibility.js',
       'services/catalog-public-view.js',
+      'services/catalog-enrichment.js',
+      'services/prompts/catalog-enrichment.prompt.js',
     ],
     migrations: [
       'migrations/098_catalog_refinery_foundation.sql',
+      'migrations/100_catalog_enrichment_runs.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_CATALOGUE.md',
@@ -136,6 +139,7 @@ module.exports = {
       'tests/unit/scan-engine.test.js',
       'tests/unit/scan-operations.test.js',
       'tests/unit/catalog-public-view.test.js',
+      'tests/unit/catalog-enrichment.test.js',
     ],
 
 },
@@ -168,6 +172,7 @@ module.exports = {
     'la donnee source (name_source, EN) ne se perd jamais : retraduction + litiges fournisseur',
     'toute retouche manuelle est un override trace (catalog_field_overrides), jamais une edition de la fiche generee',
     'la boutique ne lit que les champs publies : les champs de cuisine (source, content_source...) lui sont invisibles',
+    'le prompt d\'enrichissement est du code : versionne dans le depot (PROMPT_VERSION), chaque run trace dans catalog_enrichment_runs, un echec IA ne bloque jamais un import',
     'la modal produit affiche le catalogue vivant et ne doit pas servir de fiche snapshot panier partage',
     'le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css',
   ],

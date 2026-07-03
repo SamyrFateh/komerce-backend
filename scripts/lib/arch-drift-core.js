@@ -54,6 +54,32 @@ const PG_SYSTEM_RE = /^(pg_|information_schema$|columns$|age$)/;
 const DOCTRINE_INVARIANTS = new Set(['resolve_before_behavior_change']);
 const INFRA_TABLES = new Set(['schema_migrations']);
 
+// Cherche un CREATE TABLE|VIEW <token> dans migrations/*.sql et
+// migrations/scheduled/*.sql. Retourne le nom de fichier si trouve, sinon
+// null. Volontairement simple (regex, pas de parseur SQL) : ce n'est qu'un
+// indice de diagnostic pour le gate, jamais une source de verite.
+function findLocalMigrationFor(token, root) {
+  const dirs = [
+    path.join(root, 'migrations'),
+    path.join(root, 'migrations', 'scheduled')
+  ];
+  const re = new RegExp(
+    `create\\s+(table|view)\\s+(if\\s+not\\s+exists\\s+)?"?${token}"?\\b`,
+    'i'
+  );
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('.sql')) continue;
+      const full = path.join(dir, f);
+      let content;
+      try { content = fs.readFileSync(full, 'utf8'); } catch { continue; }
+      if (re.test(content)) return path.relative(root, full);
+    }
+  }
+  return null;
+}
+
 function readOrThrow(p, label) {
   if (!fs.existsSync(p)) {
     const err = new Error(`${label} absent (${p}).`);
@@ -248,11 +274,28 @@ function analyze(root = REPO_ROOT) {
   }
   const fictionTokens = new Set(fiction.map(f => f.token));
   const fictionUnlisted = fiction.filter(f => !f.allowed);
+  // Meme diagnostic que les fantomes, cote header cette fois : une fiction
+  // hors liste correspond-elle a une migration locale pas encore en live ?
+  const fictionMigrationHints = new Map();
+  for (const f of fictionUnlisted) {
+    const hit = findLocalMigrationFor(f.token, root);
+    if (hit) fictionMigrationHints.set(f.token, hit);
+  }
   // Entrees d'allowlist qui ne correspondent plus a aucune fiction = RESOLUES.
   const allowlistResolved = Object.keys(allowlist).filter(tok => !fictionTokens.has(tok));
 
   // FANTOME : SCHEMA.md catalogue un nom absent de tout objet live.
   const ghosts = [...documented].filter(tok => !live.all.has(tok)).sort();
+
+  // Aide au diagnostic : un fantome correspond-il a un CREATE TABLE/VIEW
+  // trouvable dans une migration locale pas encore en live ? Si oui, c'est
+  // tres probablement une declaration prematuree (ligne de tableau directe
+  // au lieu d'un bloc <!-- schema-pending -->), pas une vraie derive.
+  const ghostMigrationHints = new Map();
+  for (const tok of ghosts) {
+    const hit = findLocalMigrationFor(tok, root);
+    if (hit) ghostMigrationHints.set(tok, hit);
+  }
 
   // NON-DOCUMENTE : table BASE live hors catalogue SCHEMA.md (hors infra).
   const undocumented = [...live.tables]
@@ -263,8 +306,8 @@ function analyze(root = REPO_ROOT) {
     paths: P,
     live, documented, headerTokens,
     budgetRaw, allowlist, ratchetMax,
-    fiction, fictionTokens, fictionUnlisted, allowlistResolved,
-    ghosts, undocumented
+    fiction, fictionTokens, fictionUnlisted, fictionMigrationHints, allowlistResolved,
+    ghosts, ghostMigrationHints, undocumented
   };
 }
 

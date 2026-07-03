@@ -42,6 +42,13 @@ jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({
   importCatalog: (...args) => mockImportCatalog(...args),
 }));
 
+// K-3 — l'étage ⑤ est testé dans catalog-enrichment.test.js ; ici on vérifie
+// seulement le câblage (appelé avec le bon productId, résultat exposé).
+const mockEnrichAndApply = jest.fn();
+jest.mock('../../services/catalog-enrichment', () => ({
+  enrichAndApply: (...args) => mockEnrichAndApply(...args),
+}));
+
 jest.mock('../../services/suppliers/connectors/csv-connector', () => ({ fetchProducts: jest.fn() }));
 jest.mock('../../services/suppliers/connectors/manual-connector', () => ({ fetchProducts: jest.fn() }));
 jest.mock('../../services/suppliers/connectors/noon-connector', () => ({ IS_ACTIVE: false, INACTIVE_REASON: 'Non implémenté' }));
@@ -198,10 +205,11 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
 
   it('crée le produit toujours en is_active=FALSE même avec un prix fourni explicitement', async () => {
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ state: 'scanned', scan_result: {}, product_name: 'X', komerce_category: 'mode', purchase_price_kmf: 1000 }] })
+      .mockResolvedValueOnce({ rows: [{ state: 'scanned', scan_result: {}, product_name: 'X', description: 'desc EN', komerce_category: 'mode', purchase_price_kmf: 1000 }] })
       .mockResolvedValueOnce({ rows: [{ id: 'prod-1' }] }) // INSERT products
       .mockResolvedValueOnce({ rows: [] })                  // UPDATE candidate
       .mockResolvedValueOnce({ rows: [] });                 // INSERT event
+    mockEnrichAndApply.mockResolvedValue({ status: 'ok', confidence: 0.9 });
 
     const res = await request(app)
       .post('/api/admin/sourcing/candidates/c1/import-product')
@@ -211,6 +219,28 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     expect(res.body.product_id).toBe('prod-1');
     const insertSql = mockQuery.mock.calls[1][0];
     expect(insertSql).toMatch(/FALSE, 'candidate'/);
+  });
+
+  it('persiste la donnée source à l\'import (DOCTRINE_CATALOGUE §7) et câble l\'étage ⑤', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ state: 'scanned', scan_result: {}, product_name: 'Power Bank EN', description: 'desc EN', komerce_category: 'tech', purchase_price_kmf: 1000 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'prod-2' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    mockEnrichAndApply.mockResolvedValue({ status: 'low_confidence', confidence: 0.6, needsReview: true });
+
+    const res = await request(app)
+      .post('/api/admin/sourcing/candidates/c1/import-product')
+      .send({ price_kmf: 5000 });
+
+    expect(res.status).toBe(200);
+    const [insertSql, insertParams] = mockQuery.mock.calls[1];
+    expect(insertSql).toContain('name_source');
+    expect(insertSql).toContain("'connector_raw'");
+    expect(insertParams).toEqual(expect.arrayContaining(['Power Bank EN', 'desc EN', 'en']));
+    // câblage étage ⑤ : appelé avec le produit créé, résultat exposé au client
+    expect(mockEnrichAndApply).toHaveBeenCalledWith('prod-2');
+    expect(res.body.enrichment).toEqual(expect.objectContaining({ status: 'low_confidence' }));
   });
 });
 

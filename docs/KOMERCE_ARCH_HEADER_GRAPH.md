@@ -6,26 +6,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 357
-- Files with full headers: 328
+- Scanned code files: 359
+- Files with full headers: 330
 - Files with lite headers: 29
-- Files with any headers: 357
+- Files with any headers: 359
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 714
-- Edges: 3453
-- DB tables: 108
+- Graph nodes: 719
+- Edges: 3472
+- DB tables: 111
 - Doctrines: 129
 - Impact areas: 120
-- Unresolved code edges: 331
+- Unresolved code edges: 333
 
 ## Domains
 
 - auth: 13
 - bootstrap: 1
 - boutique: 36
-- catalog: 30
+- catalog: 32
 - checkout: 2
 - collective-workspace: 3
 - customs: 6
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 98
 - route-manifest: 1
 - schema: 1
-- service: 140
+- service: 142
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -234,6 +234,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/authkey-client.js — auth-authkey-client (auth, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
 - services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)
+- services/catalog-enrichment.js — catalog-enrichment (catalog, high, full)
 - services/catalog-public-view.js — catalog-public-view (catalog, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
@@ -284,6 +285,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/product-admin-service.js — catalog-product-admin-service (catalog, high, full)
 - services/product-price-audit.js — catalog-product-price-audit (catalog, high, full)
 - services/product-publication-guard.js — catalog-product-publication-guard (catalog, high, full)
+- services/prompts/catalog-enrichment.prompt.js — catalog-enrichment-prompt (catalog, high, full)
 - services/purchasing-admin-service.js — dashboard-purchasing-admin-service (dashboard, high, full)
 - services/relay-dashboard-queries.js — dashboard-relay-dashboard-queries (dashboard, high, full)
 - services/shared-cart-estimation-service.js — shared-cart-estimation-service (shared-cart, high, full)
@@ -347,6 +349,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/dashboard-metrics/logistics.js -> (none)
 - WRITE services/dashboard-metrics/workspaces.js -> (none)
 - WRITE services/invoice-public-token.js -> (none)
+- WRITE services/prompts/catalog-enrichment.prompt.js -> (none)
 - WRITE utils/documents/customs-invoice-html.js -> (none)
 - WRITE utils/documents/logo-base64.js -> (none)
 - WRITE utils/documents/pickup-proof-html.js -> (none)
@@ -390,6 +393,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/cash-operations.js -> cash_collections
 - WRITE services/confirm-pickup-cash-payment.js -> cash_collections
 - WRITE routes/cash.js -> cash_deposits
+- WRITE services/catalog-enrichment.js -> catalog_enrichment_runs
 - WRITE bootstrap/startup-migrations.js -> charges
 - WRITE services/economic-engine-queries.js -> charges
 - WRITE services/collective-workspace-engine.js -> collective_payment_sessions
@@ -451,8 +455,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/notification-service.js -> notification_log
 - WRITE services/notifications/internals.js -> notification_log
 - WRITE services/notifications/loyalty.js -> notification_log
-- WRITE services/notifications/misc.js -> notification_log
-- WRITE services/notifications/notification-service.js -> notification_log
 
 ## Unresolved Code Edges
 

@@ -23,6 +23,10 @@ const CUISINE_FIELDS = [
   'source_locale',
   'content_source',
   'enrichment_version',
+  // Migration 100 (K-3) — la frontière whitelist les masque par défaut,
+  // ce test verrouille que ça reste vrai.
+  'needs_review',
+  'enrichment_confidence',
 ];
 
 describe('toPublicProduct', () => {
@@ -36,6 +40,8 @@ describe('toPublicProduct', () => {
       source_locale: 'en',
       content_source: 'ai_enriched',
       enrichment_version: 3,
+      needs_review: true,
+      enrichment_confidence: 0.62,
     };
 
     const out = toPublicProduct(row);

@@ -19,6 +19,7 @@ Une migration, une modification de table/colonne/enum/index/trigger/fonction/con
 
 - `docs/SCHEMA.md` décrit le schéma live vérifié ou le schéma visé par migration ;
 - le mode est explicite : `verified_live_schema` ou `intended_migration_schema` ;
+- **`intended_migration_schema` ne s'utilise QUE pour une colonne/enum ajoutée à une table déjà documentée** (ligne de tableau existante, ex. migrations 095/096/098 ci-dessous) — le gate de drift ne tokenise pas les colonnes, ce marqueur ne le déclenche donc jamais. **Pour un nouvel objet (table ou vue) pas encore en live, jamais de ligne de tableau directe** : utiliser un bloc `<!-- schema-pending -->` (format documenté en tête de `scripts/schema-promote.js`). Le gate tokenise la 1ère cellule de chaque ligne — une ligne directe pour un objet absent du dump live est un FANTÔME bloquant. `npm run schema:promote:write` convertit le bloc en ligne dès que l'objet est confirmé dans le dump live ;
 - les headers `@db-read`, `@db-write`, `@db-txn` des fichiers lecteurs/écrivains sont à jour ;
 - `docs/KOMERCE_ARCH_HEADER_GRAPH.md` et `docs/komerce-arch-header-graph.json` sont régénérés si les headers changent ;
 - l'ordre migration/deploy/rollback est documenté si la production est impactée.
