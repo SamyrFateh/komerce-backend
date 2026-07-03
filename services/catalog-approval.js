@@ -58,8 +58,8 @@ const PENDING_SOURCES = ['connector_raw', 'ai_enriched'];
  */
 async function getApprovalQueue(q = db, { limit = 50, offset = 0 } = {}) {
   const { rows: items } = await q.query(
-    `SELECT id, name, category, price_kmf, stock, lifecycle_status, content_source,
-            needs_review, enrichment_confidence, created_at
+    `SELECT id, name, description, category, fragility, emoji, price_kmf, stock,
+            lifecycle_status, content_source, needs_review, enrichment_confidence, created_at
        FROM products
       WHERE lifecycle_status = 'candidate'
         AND is_active = FALSE

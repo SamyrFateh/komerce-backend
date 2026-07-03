@@ -122,6 +122,8 @@ module.exports = {
       'dashboards/admin/js/views/SuppliersView.js',
       'dashboards/admin/js/views/SourcingView.js',
       'dashboards/admin/js/views/SourcingScannerView.js',
+      // K-4 — file d'approbation (etage 6)
+      'dashboards/admin/js/views/CatalogApprovalView.js',
     ],
     tests: [
       'tests/unit/admin-boutique-categories.test.js',

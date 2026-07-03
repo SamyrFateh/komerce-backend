@@ -18,6 +18,7 @@ module.exports = {
     '../admin/js/views/AccountingView.js',
     '../admin/js/views/ActionCenterView.js',
     '../admin/js/views/CategoriesView.js',
+    '../admin/js/views/CatalogApprovalView.js',
     '../admin/js/views/ClientsView.js',
     '../admin/js/views/ControlTowerView.js',
     '../admin/js/views/CostingView.js',

@@ -40,6 +40,7 @@ module.exports = {
       '../dashboards/admin/js/views/AccountingView.js',
       '../dashboards/admin/js/views/ActionCenterView.js',
       '../dashboards/admin/js/views/CategoriesView.js',
+      '../dashboards/admin/js/views/CatalogApprovalView.js',
       '../dashboards/admin/js/views/ClientsView.js',
       '../dashboards/admin/js/views/ControlTowerView.js',
       '../dashboards/admin/js/views/CostingView.js',

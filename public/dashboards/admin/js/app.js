@@ -92,6 +92,7 @@
     { path: '/admin/economic-flow',     view: 'EconomicFlowView',      label: 'Carte économique',      icon: '🔭', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
     { path: '/admin/categories',        view: 'CategoriesView',        label: 'Catégories boutique',   icon: '🏷️', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
     { path: '/admin/products',          view: 'ProductsView',          label: 'Produits boutique',     icon: '🛍️', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
+    { path: '/admin/catalog-approval',  view: 'CatalogApprovalView',   label: 'File d\'approbation',   icon: '✅', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
 
     // ══ BO — Opérations ══
     { path: '/admin/problems',         view: 'ProblemsView',         label: 'Problèmes',              icon: '⚠️', shell: 'bo', section: 'OPÉRATIONS' },
