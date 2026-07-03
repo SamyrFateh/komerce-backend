@@ -7,10 +7,20 @@ jest.mock('../../services/product-publication-guard', () => ({
   auditProductStockChange: jest.fn(),
   validatePublicationUpdate: jest.fn(() => ({ ok: true })),
 }));
+// Le vrai catalog-overrides.js require('./catalog-enrichment') -> require('../db')
+// -> connexion pg reelle instanciee a l'import. Mocke ici comme les autres
+// dependances de service (meme pattern que product-publication-guard
+// ci-dessus) pour garder ces tests unitaires hors DB.
+jest.mock('../../services/catalog-overrides', () => ({
+  OVERRIDABLE_FIELDS: ['name', 'description', 'category', 'fragility', 'emoji'],
+  isPipelineSourced: jest.fn(() => false),
+  upsertOverrides: jest.fn(),
+}));
 jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));
 
 const { recordProductPriceChange } = require('../../services/product-price-audit');
 const { auditProductStockChange, validatePublicationUpdate } = require('../../services/product-publication-guard');
+const { isPipelineSourced, upsertOverrides } = require('../../services/catalog-overrides');
 const svc = require('../../services/product-admin-service');
 
 describe('product-admin-service', () => {
@@ -71,6 +81,47 @@ describe('product-admin-service', () => {
       .resolves.toEqual({ status: 200, body: updated });
     expect(recordProductPriceChange).toHaveBeenCalledWith(db, expect.objectContaining({ oldPriceKmf: 1000, newPriceKmf: 1500 }));
     expect(auditProductStockChange).toHaveBeenCalledWith(db, expect.objectContaining({ oldStock: 1, newStock: 3 }));
+  });
+
+  it('updateProduct route les champs overridables vers catalog-overrides pour un produit issu du pipeline (§5)', async () => {
+    const before = {
+      id: 'prod-001', name: 'Old', category: 'food', subcategory: null,
+      price_kmf: 1000, stock: 1, is_active: true, is_available: true,
+      content_source: 'ai_enriched', lifecycle_status: 'active',
+    };
+    isPipelineSourced.mockReturnValueOnce(true);
+    upsertOverrides.mockResolvedValueOnce({ overridden: ['name'], product: { ...before, name: 'Nom corrigé' } });
+    const db = { query: jest.fn().mockResolvedValueOnce({ rows: [before] }) };
+
+    const result = await svc.updateProduct(db, 'prod-001', { name: 'Nom corrigé' }, { id: 'admin' });
+
+    expect(upsertOverrides).toHaveBeenCalledWith(
+      db, 'prod-001', { name: 'Nom corrigé' }, { reason: null, setBy: 'admin' }
+    );
+    expect(result).toEqual({ status: 200, body: { ...before, name: 'Nom corrigé' } });
+    // Un seul SELECT ("avant") — aucun UPDATE direct sur products puisque
+    // tous les champs de la requête sont passés par l'override.
+    expect(db.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('updateProduct refuse la publication directe d\'un candidat pipeline non approuvé (§6, code pending_approval)', async () => {
+    const before = {
+      id: 'prod-002', name: 'Nouveau', category: 'tech', subcategory: null,
+      price_kmf: 5000, stock: 2, is_active: false, is_available: true,
+      content_source: 'connector_raw', lifecycle_status: 'candidate',
+    };
+    isPipelineSourced.mockReturnValueOnce(true);
+    const db = { query: jest.fn().mockResolvedValueOnce({ rows: [before] }) };
+
+    await expect(svc.updateProduct(db, 'prod-002', { is_active: true }, { id: 'admin' }))
+      .resolves.toEqual({
+        status: 409,
+        body: {
+          error: 'Fiche candidate en attente d\'approbation — utilisez la file d\'approbation (approve/override), pas une édition directe.',
+          code: 'pending_approval',
+        },
+      });
+    expect(upsertOverrides).not.toHaveBeenCalled();
   });
 
   it('setMainImage et appendImages gerent 404 et ajout premiere image', async () => {

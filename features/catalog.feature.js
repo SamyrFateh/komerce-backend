@@ -35,6 +35,8 @@ module.exports = {
       // ── Tranche raffinerie (DOCTRINE_CATALOGUE, 2026-07) ──
       'raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique',
       'glossaire metier EN->FR (catalog_glossary)',
+      // ── K-4 (DOCTRINE_CATALOGUE §6, 2026-07) ──
+      'file d\'approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=\'active\'',
     ],
     out: [
       'calcul du prix final (feature economic-engine)',
@@ -64,6 +66,8 @@ module.exports = {
       'services/catalog-public-view.js',
       'services/catalog-enrichment.js',
       'services/prompts/catalog-enrichment.prompt.js',
+      'services/catalog-overrides.js',
+      'services/catalog-approval.js',
     ],
     migrations: [
       'migrations/098_catalog_refinery_foundation.sql',
@@ -76,6 +80,7 @@ module.exports = {
       'routes/products.js',
       'routes/admin-boutique-categories.js',
       'routes/categories.js',
+      'routes/admin/catalog-approval.js',
     ],
     boutique: [
       'js/b-catalog.js',
@@ -140,6 +145,8 @@ module.exports = {
       'tests/unit/scan-operations.test.js',
       'tests/unit/catalog-public-view.test.js',
       'tests/unit/catalog-enrichment.test.js',
+      'tests/unit/catalog-overrides.test.js',
+      'tests/unit/catalog-approval.test.js',
     ],
 
 },
@@ -155,6 +162,10 @@ module.exports = {
     exposes: [
       'GET /api/products',
       'POST /api/admin/products/:id/publish',
+      'GET /api/admin/catalog/approval-queue',
+      'POST /api/admin/catalog/approval-queue/:id/approve',
+      'POST /api/admin/catalog/approval-queue/:id/reject',
+      'POST /api/admin/catalog/approval-queue/:id/override',
     ],
     consumes: ['economic-engine (prix calcule)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
@@ -175,6 +186,7 @@ module.exports = {
     'le prompt d\'enrichissement est du code : versionne dans le depot (PROMPT_VERSION), chaque run trace dans catalog_enrichment_runs, un echec IA ne bloque jamais un import',
     'la modal produit affiche le catalogue vivant et ne doit pas servir de fiche snapshot panier partage',
     'le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css',
+    'aucune fiche candidate issue du pipeline (connector_raw/ai_enriched) ne passe lifecycle_status=\'active\' sans etre passee par la file d\'approbation (etage 6, services/catalog-approval.js) — meme si needs_review est faux',
   ],
 
 };

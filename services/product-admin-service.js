@@ -6,14 +6,15 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       services/catalog-overrides.js, services/product-price-audit.js,
+ *                services/product-publication-guard.js
  * @used-by       @unknown
- * @db-read       boutique_categories, boutique_subcategories, order_items, orders, product_variants, products
- * @db-write      product_variants, products
+ * @db-read       boutique_categories, boutique_subcategories, catalog_field_overrides, order_items, orders, product_variants, products
+ * @db-write      catalog_field_overrides, product_variants, products
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md §5, §7
  * @impact-areas  catalog, product-discovery, admin-dashboard
- * @version       2026-06
+ * @version       2026-07
  */
 
 'use strict';
@@ -42,6 +43,7 @@
 const { recordProductPriceChange }          = require('./product-price-audit');
 const { auditProductStockChange,
         validatePublicationUpdate }         = require('./product-publication-guard');
+const { OVERRIDABLE_FIELDS, isPipelineSourced, upsertOverrides } = require('./catalog-overrides');
 const log = require('../utils/logger').child({ module: 'product-admin-service' });
 
 // ── Taxonomy ──────────────────────────────────────────────────────────────────
@@ -236,12 +238,31 @@ async function updateProduct(db, productId, payload, adminUser) {
   const numCheck = _validateNumericFields(payload);
   if (!numCheck.ok) return { status: numCheck.status, body: numCheck.body };
 
-  // Lire avant
+  // Lire avant — content_source pilote le régime d'écriture (§5), lifecycle_status
+  // pilote le garde d'approbation (§6).
   const { rows: [before] } = await db.query(
-    'SELECT id, name, category, subcategory, price_kmf, stock, is_active, is_available FROM products WHERE id = $1',
+    'SELECT id, name, category, subcategory, price_kmf, stock, is_active, is_available, content_source, lifecycle_status FROM products WHERE id = $1',
     [productId]
   );
   if (!before) return { status: 404, body: { error: 'Produit introuvable' } };
+
+  // DOCTRINE_CATALOGUE §6 — "Rien ne passe lifecycle_status='active' sans être
+  // passé par ⑥ [approbation] au moins une fois." Une fiche candidate issue du
+  // pipeline ne peut pas être publiée par une édition directe : elle doit
+  // transiter par la file d'approbation (services/catalog-approval.js), seule
+  // habilitée à sortir une fiche de l'état candidate. Portée volontairement
+  // étroite : ne s'applique qu'aux candidats pipeline jamais encore publiés —
+  // aucune contrainte nouvelle sur les produits déjà actifs (pattern 095/098/100).
+  if (payload.is_active === true && !before.is_active
+      && before.lifecycle_status === 'candidate' && isPipelineSourced(before)) {
+    return {
+      status: 409,
+      body: {
+        error: 'Fiche candidate en attente d\'approbation — utilisez la file d\'approbation (approve/override), pas une édition directe.',
+        code: 'pending_approval',
+      },
+    };
+  }
 
   // Taxonomy si category change
   if (payload.category !== undefined || payload.subcategory !== undefined) {
@@ -258,11 +279,42 @@ async function updateProduct(db, productId, payload, adminUser) {
     if (!pubCheck.ok) return { status: 422, body: { error: pubCheck.error, code: pubCheck.code } };
   }
 
-  const setClauses = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
-  const values     = fields.map(f => payload[f]);
+  // DOCTRINE_CATALOGUE §5 corollaire — "le CRUD admin existant devient
+  // l'éditeur d'overrides, même formulaire, sémantique nouvelle" : pour une
+  // fiche issue du pipeline (connecteur/IA), toute retouche sur un champ
+  // régénérable se pose en override tracé, jamais en édition directe — sinon
+  // le prochain re-raffinage l'écraserait silencieusement (§7). Le contenu
+  // manuel legacy garde l'édition directe : rien à rejouer, rien à tracer.
+  const routeAsOverride = isPipelineSourced(before);
+  const overrideFields = routeAsOverride ? fields.filter(f => OVERRIDABLE_FIELDS.includes(f)) : [];
+  const directFields = fields.filter(f => !overrideFields.includes(f));
+
+  let updated = before;
+
+  if (overrideFields.length) {
+    const overridePayload = {};
+    for (const f of overrideFields) overridePayload[f] = payload[f];
+    const { product } = await upsertOverrides(db, productId, overridePayload, {
+      reason: payload.override_reason || null,
+      setBy: adminUser?.id || null,
+    });
+    updated = product;
+    log.info(`Overrides posés (${overrideFields.join(', ')}) — produit ${productId}`);
+  }
+
+  if (!directFields.length) {
+    if (!overrideFields.length) {
+      // Ne devrait pas arriver (fields non vide implique l'un ou l'autre),
+      // gardé en défense.
+      return { status: 400, body: { error: 'Aucun champ valide à mettre à jour' } };
+    }
+    return { status: 200, body: updated };
+  }
+
+  const setClauses = directFields.map((f, i) => `${f} = $${i + 1}`).join(', ');
+  const values     = directFields.map(f => payload[f]);
   values.push(productId);
 
-  let updated;
   try {
     const { rows: [row] } = await db.query(
       `UPDATE products SET ${setClauses}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`,

@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 359,
-    "filesWithFullHeaders": 330,
+    "scannedCodeFiles": 362,
+    "filesWithFullHeaders": 333,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 359,
+    "filesWithAnyHeaders": 362,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 719,
-    "edges": 3472,
+    "graphNodes": 726,
+    "edges": 3508,
     "dbTables": 111,
-    "doctrines": 129,
+    "doctrines": 133,
     "impactAreas": 120,
-    "unresolvedCodeEdges": 333
+    "unresolvedCodeEdges": 336
   },
   "byDomain": {
     "infrastructure": 19,
@@ -33,7 +33,7 @@
     "auth": 13,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 32,
+    "catalog": 35,
     "checkout": 2,
     "shared-cart": 44,
     "recommendations": 7,
@@ -73,9 +73,9 @@
     "state-store": 1,
     "schema": 1,
     "view-model": 3,
-    "route": 98,
+    "route": 99,
     "entrypoint": 1,
-    "service": 142,
+    "service": 144,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -85,7 +85,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 102,
-    "high": 145,
+    "high": 148,
     "low": 36
   },
   "nodes": [
@@ -4183,6 +4183,44 @@
         "admin-dashboard"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "routes/admin/catalog-approval.js",
+      "file": "routes/admin/catalog-approval.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-approval-routes",
+      "domain": "catalog",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "http_request"
+      ],
+      "outputs": [
+        "http_response"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "services/catalog-approval.js"
+      ],
+      "usedBy": [
+        "routes/admin/index.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §6"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "routes/admin/customs.js",
@@ -8562,6 +8600,55 @@
       "version": "2026-06"
     },
     {
+      "id": "services/catalog-approval.js",
+      "file": "services/catalog-approval.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-approval-queue",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_id",
+        "admin_user",
+        "reject_reason",
+        "override_fields"
+      ],
+      "outputs": [
+        "queue_page",
+        "approved_product",
+        "rejected_product",
+        "overridden_product"
+      ],
+      "depends": [
+        "db.js",
+        "services/catalog-overrides.js",
+        "services/product-publication-guard.js"
+      ],
+      "usedBy": [
+        "routes/admin/catalog-approval.js"
+      ],
+      "dbRead": [
+        "products"
+      ],
+      "dbWrite": [
+        "alerts",
+        "products"
+      ],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+        "§6"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/catalog-eligibility.js",
       "file": "services/catalog-eligibility.js",
       "type": "file",
@@ -8644,6 +8731,54 @@
       "impactAreas": [
         "catalog",
         "sourcing"
+      ],
+      "version": "2026-07"
+    },
+    {
+      "id": "services/catalog-overrides.js",
+      "file": "services/catalog-overrides.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-field-overrides",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_id",
+        "field_name",
+        "field_value",
+        "reason",
+        "admin_user"
+      ],
+      "outputs": [
+        "override_row",
+        "applied_product_row"
+      ],
+      "depends": [
+        "db.js",
+        "services/catalog-enrichment.js"
+      ],
+      "usedBy": [
+        "services/product-admin-service.js",
+        "services/catalog-approval.js"
+      ],
+      "dbRead": [
+        "catalog_field_overrides",
+        "products"
+      ],
+      "dbWrite": [
+        "catalog_field_overrides",
+        "products"
+      ],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
       ],
       "version": "2026-07"
     },
@@ -12590,17 +12725,22 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
+      "depends": [
+        "services/catalog-overrides.js",
+        "services/product-price-audit.js"
+      ],
       "usedBy": [],
       "dbRead": [
         "boutique_categories",
         "boutique_subcategories",
+        "catalog_field_overrides",
         "order_items",
         "orders",
         "product_variants",
         "products"
       ],
       "dbWrite": [
+        "catalog_field_overrides",
         "product_variants",
         "products"
       ],
@@ -12608,14 +12748,15 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+        "§7"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery",
         "admin-dashboard"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "services/product-price-audit.js",
@@ -12666,15 +12807,20 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "before_product_row",
+        "patch_payload"
       ],
       "outputs": [
-        "response_or_domain_result",
+        "validation_result",
         "side_effects"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/product-admin-service.js",
+        "services/catalog-approval.js"
+      ],
       "dbRead": [],
       "dbWrite": [
         "alerts"
@@ -12683,13 +12829,13 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "services/prompts/catalog-enrichment.prompt.js",
@@ -16523,6 +16669,11 @@
       "doctrine": "taxonomy_source_db"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §6",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md §6"
+    },
+    {
       "id": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
       "type": "doctrine",
       "doctrine": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
@@ -16638,6 +16789,16 @@
       "doctrine": "static_boutique_served"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
+    },
+    {
+      "id": "doctrine:§6",
+      "type": "doctrine",
+      "doctrine": "§6"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md"
@@ -16751,6 +16912,11 @@
       "id": "doctrine:wallet_non_modifie_ici",
       "type": "doctrine",
       "doctrine": "wallet_non_modifie_ici"
+    },
+    {
+      "id": "doctrine:§7",
+      "type": "doctrine",
+      "doctrine": "§7"
     },
     {
       "id": "doctrine:refund_confirmed_only",
@@ -22566,6 +22732,42 @@
     },
     {
       "from": "routes/admin.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin/catalog-approval.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin/catalog-approval.js",
+      "to": "services/catalog-approval.js",
+      "type": "depends",
+      "label": "services/catalog-approval.js"
+    },
+    {
+      "from": "routes/admin/index.js",
+      "to": "routes/admin/catalog-approval.js",
+      "type": "uses",
+      "label": "routes/admin/index.js"
+    },
+    {
+      "from": "routes/admin/catalog-approval.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §6",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md §6"
+    },
+    {
+      "from": "routes/admin/catalog-approval.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "routes/admin/catalog-approval.js",
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
@@ -28853,6 +29055,72 @@
       "label": "payment"
     },
     {
+      "from": "services/catalog-approval.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "services/catalog-overrides.js",
+      "type": "depends",
+      "label": "services/catalog-overrides.js"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "services/product-publication-guard.js",
+      "type": "depends",
+      "label": "services/product-publication-guard.js"
+    },
+    {
+      "from": "routes/admin/catalog-approval.js",
+      "to": "services/catalog-approval.js",
+      "type": "uses",
+      "label": "routes/admin/catalog-approval.js"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "db:products",
+      "type": "db-write",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "doctrine:§6",
+      "type": "doctrine",
+      "label": "§6"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/catalog-eligibility.js",
       "to": "db.js",
       "type": "depends",
@@ -28965,6 +29233,72 @@
       "to": "impact:sourcing",
       "type": "impact",
       "label": "sourcing"
+    },
+    {
+      "from": "services/catalog-overrides.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-overrides.js",
+      "to": "services/catalog-enrichment.js",
+      "type": "depends",
+      "label": "services/catalog-enrichment.js"
+    },
+    {
+      "from": "services/product-admin-service.js",
+      "to": "services/catalog-overrides.js",
+      "type": "uses",
+      "label": "services/product-admin-service.js"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "services/catalog-overrides.js",
+      "type": "uses",
+      "label": "services/catalog-approval.js"
+    },
+    {
+      "from": "services/catalog-overrides.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-read",
+      "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/catalog-overrides.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-overrides.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-write",
+      "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/catalog-overrides.js",
+      "to": "db:products",
+      "type": "db-write",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-overrides.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md"
+    },
+    {
+      "from": "services/catalog-overrides.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-overrides.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/catalog-public-view.js",
@@ -34572,6 +34906,18 @@
     },
     {
       "from": "services/product-admin-service.js",
+      "to": "services/catalog-overrides.js",
+      "type": "depends",
+      "label": "services/catalog-overrides.js"
+    },
+    {
+      "from": "services/product-admin-service.js",
+      "to": "services/product-price-audit.js",
+      "type": "depends",
+      "label": "services/product-price-audit.js"
+    },
+    {
+      "from": "services/product-admin-service.js",
       "to": "db:boutique_categories",
       "type": "db-read",
       "label": "boutique_categories"
@@ -34581,6 +34927,12 @@
       "to": "db:boutique_subcategories",
       "type": "db-read",
       "label": "boutique_subcategories"
+    },
+    {
+      "from": "services/product-admin-service.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-read",
+      "label": "catalog_field_overrides"
     },
     {
       "from": "services/product-admin-service.js",
@@ -34608,6 +34960,12 @@
     },
     {
       "from": "services/product-admin-service.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-write",
+      "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/product-admin-service.js",
       "to": "db:product_variants",
       "type": "db-write",
       "label": "product_variants"
@@ -34620,9 +34978,15 @@
     },
     {
       "from": "services/product-admin-service.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
+    },
+    {
+      "from": "services/product-admin-service.js",
+      "to": "doctrine:§7",
+      "type": "doctrine",
+      "label": "§7"
     },
     {
       "from": "services/product-admin-service.js",
@@ -34668,15 +35032,33 @@
     },
     {
       "from": "services/product-publication-guard.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/product-admin-service.js",
+      "to": "services/product-publication-guard.js",
+      "type": "uses",
+      "label": "services/product-admin-service.js"
+    },
+    {
+      "from": "services/catalog-approval.js",
+      "to": "services/product-publication-guard.js",
+      "type": "uses",
+      "label": "services/catalog-approval.js"
+    },
+    {
+      "from": "services/product-publication-guard.js",
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
     },
     {
       "from": "services/product-publication-guard.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md"
     },
     {
       "from": "services/product-publication-guard.js",
@@ -38735,6 +39117,7 @@
         "routes/admin-risk-provisions.js",
         "routes/admin-rules.js",
         "routes/admin.js",
+        "routes/admin/catalog-approval.js",
         "routes/admin/customs.js",
         "routes/admin/dashboard.js",
         "routes/admin/delete-order-cascade.js",
@@ -42343,6 +42726,39 @@
         "services/admin-order-refund.js"
       ]
     },
+    "routes/admin/catalog-approval.js": {
+      "role": "catalog-approval-routes",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "services/catalog-approval.js"
+      ],
+      "directUsedBy": [
+        "routes/admin/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §6"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §6",
+        "impact:admin-dashboard",
+        "impact:catalog",
+        "middleware/auth.js",
+        "routes/admin/index.js",
+        "services/catalog-approval.js"
+      ]
+    },
     "routes/admin/customs.js": {
       "role": "dashboard-customs",
       "domain": "customs",
@@ -42528,6 +42944,7 @@
         "impact:admin-dashboard",
         "impact:dashboard",
         "middleware/auth.js",
+        "routes/admin/catalog-approval.js",
         "routes/admin/documents.js"
       ]
     },
@@ -46322,6 +46739,49 @@
         "impact:payment"
       ]
     },
+    "services/catalog-approval.js": {
+      "role": "catalog-approval-queue",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/catalog-overrides.js",
+        "services/product-publication-guard.js"
+      ],
+      "directUsedBy": [
+        "routes/admin/catalog-approval.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "products"
+      ],
+      "dbWrite": [
+        "alerts",
+        "products"
+      ],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+        "§6"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:alerts",
+        "db:products",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+        "doctrine:§6",
+        "impact:admin-dashboard",
+        "impact:catalog",
+        "routes/admin/catalog-approval.js",
+        "services/catalog-overrides.js",
+        "services/product-publication-guard.js"
+      ]
+    },
     "services/catalog-eligibility.js": {
       "role": "catalog-eligibility",
       "domain": "catalog",
@@ -46398,9 +46858,52 @@
         "impact:catalog",
         "impact:sourcing",
         "routes/sourcing-scanner.js",
+        "services/catalog-overrides.js",
         "services/prompts/catalog-enrichment.prompt.js",
         "utils/logger.js",
         "utils/rules.js"
+      ]
+    },
+    "services/catalog-overrides.js": {
+      "role": "catalog-field-overrides",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/catalog-enrichment.js"
+      ],
+      "directUsedBy": [
+        "services/product-admin-service.js",
+        "services/catalog-approval.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "catalog_field_overrides",
+        "products"
+      ],
+      "dbWrite": [
+        "catalog_field_overrides",
+        "products"
+      ],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:catalog_field_overrides",
+        "db:products",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "impact:admin-dashboard",
+        "impact:catalog",
+        "services/catalog-approval.js",
+        "services/catalog-enrichment.js",
+        "services/product-admin-service.js"
       ]
     },
     "services/catalog-public-view.js": {
@@ -50043,23 +50546,29 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
+      "directDependsOn": [
+        "services/catalog-overrides.js",
+        "services/product-price-audit.js"
+      ],
       "directUsedBy": [],
       "ownedFiles": [],
       "dbRead": [
         "boutique_categories",
         "boutique_subcategories",
+        "catalog_field_overrides",
         "order_items",
         "orders",
         "product_variants",
         "products"
       ],
       "dbWrite": [
+        "catalog_field_overrides",
         "product_variants",
         "products"
       ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+        "§7"
       ],
       "impactAreas": [
         "catalog",
@@ -50069,14 +50578,19 @@
       "mustCheck": [
         "db:boutique_categories",
         "db:boutique_subcategories",
+        "db:catalog_field_overrides",
         "db:order_items",
         "db:orders",
         "db:product_variants",
         "db:products",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+        "doctrine:§7",
         "impact:admin-dashboard",
         "impact:catalog",
-        "impact:product-discovery"
+        "impact:product-discovery",
+        "services/catalog-overrides.js",
+        "services/product-price-audit.js",
+        "services/product-publication-guard.js"
       ]
     },
     "services/product-price-audit.js": {
@@ -50104,7 +50618,8 @@
         "db:price_history",
         "doctrine:resolve_before_behavior_change",
         "impact:catalog",
-        "impact:product-discovery"
+        "impact:product-discovery",
+        "services/product-admin-service.js"
       ]
     },
     "services/product-publication-guard.js": {
@@ -50114,15 +50629,20 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/product-admin-service.js",
+        "services/catalog-approval.js"
+      ],
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [
         "alerts"
       ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
       ],
       "impactAreas": [
         "catalog",
@@ -50130,9 +50650,11 @@
       ],
       "mustCheck": [
         "db:alerts",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
         "impact:catalog",
-        "impact:product-discovery"
+        "impact:product-discovery",
+        "services/catalog-approval.js",
+        "services/product-admin-service.js"
       ]
     },
     "services/prompts/catalog-enrichment.prompt.js": {
@@ -54073,6 +54595,12 @@
       "label": "db.js"
     },
     {
+      "from": "services/catalog-approval.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/catalog-eligibility.js",
       "to": "db.js",
       "type": "depends",
@@ -54080,6 +54608,12 @@
     },
     {
       "from": "services/catalog-enrichment.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-overrides.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -54524,6 +55058,12 @@
     },
     {
       "from": "services/pickup-secret-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/product-publication-guard.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"

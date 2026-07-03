@@ -4,16 +4,16 @@
  * @domain        catalog
  * @layer         service
  * @criticality   high
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @inputs        before_product_row, patch_payload
+ * @outputs       validation_result, side_effects
+ * @depends       db.js
+ * @used-by       services/product-admin-service.js, services/catalog-approval.js
  * @db-read       @unknown
  * @db-write      alerts
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md
  * @impact-areas  catalog, product-discovery
- * @version       2026-06
+ * @version       2026-07
  */
 
 'use strict';

@@ -6,26 +6,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 359
-- Files with full headers: 330
+- Scanned code files: 362
+- Files with full headers: 333
 - Files with lite headers: 29
-- Files with any headers: 359
+- Files with any headers: 362
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 719
-- Edges: 3472
+- Graph nodes: 726
+- Edges: 3508
 - DB tables: 111
-- Doctrines: 129
+- Doctrines: 133
 - Impact areas: 120
-- Unresolved code edges: 333
+- Unresolved code edges: 336
 
 ## Domains
 
 - auth: 13
 - bootstrap: 1
 - boutique: 36
-- catalog: 32
+- catalog: 35
 - checkout: 2
 - collective-workspace: 3
 - customs: 6
@@ -58,10 +58,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 11
 - policy: 1
-- route: 98
+- route: 99
 - route-manifest: 1
 - schema: 1
-- service: 142
+- service: 144
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -196,6 +196,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-risk-provisions.js — dashboard-admin-risk-provisions (dashboard, high, full)
 - routes/admin-rules.js — dashboard-admin-rules (dashboard, high, full)
 - routes/admin.js — dashboard-admin (dashboard, high, full)
+- routes/admin/catalog-approval.js — catalog-approval-routes (catalog, high, full)
 - routes/admin/customs.js — dashboard-customs (customs, high, full)
 - routes/admin/dashboard.js — dashboard-dashboard (dashboard, high, full)
 - routes/admin/index.js — dashboard-index (dashboard, high, full)
@@ -233,8 +234,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/apply-pricing-updates.js — economic-engine-apply-pricing-updates (economic-engine, high, full)
 - services/authkey-client.js — auth-authkey-client (auth, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
+- services/catalog-approval.js — catalog-approval-queue (catalog, high, full)
 - services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)
 - services/catalog-enrichment.js — catalog-enrichment (catalog, high, full)
+- services/catalog-overrides.js — catalog-field-overrides (catalog, high, full)
 - services/catalog-public-view.js — catalog-public-view (catalog, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
@@ -358,6 +361,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/admin-order-refund.js -> alerts
 - WRITE services/cancel-order-purchase-orders.js -> alerts
 - WRITE services/cash-operations.js -> alerts
+- WRITE services/catalog-approval.js -> alerts
 - WRITE services/confirm-pickup-cash-payment.js -> alerts
 - WRITE services/notification-service.js -> alerts
 - WRITE services/notifications/notification-service.js -> alerts
@@ -394,6 +398,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/confirm-pickup-cash-payment.js -> cash_collections
 - WRITE routes/cash.js -> cash_deposits
 - WRITE services/catalog-enrichment.js -> catalog_enrichment_runs
+- WRITE services/catalog-overrides.js -> catalog_field_overrides
+- WRITE services/product-admin-service.js -> catalog_field_overrides
 - WRITE bootstrap/startup-migrations.js -> charges
 - WRITE services/economic-engine-queries.js -> charges
 - WRITE services/collective-workspace-engine.js -> collective_payment_sessions
@@ -452,9 +458,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
-- WRITE services/notification-service.js -> notification_log
-- WRITE services/notifications/internals.js -> notification_log
-- WRITE services/notifications/loyalty.js -> notification_log
 
 ## Unresolved Code Edges
 

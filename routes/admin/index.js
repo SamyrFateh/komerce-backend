@@ -33,6 +33,9 @@ const router  = express.Router();
 // Groupe Documents — visibilité transaction_documents (diagnostic + admin)
 router.use('/', require('./documents'));
 
+// Groupe K-4 — file d'approbation catalogue (étage ⑥, DOCTRINE_CATALOGUE.md §6)
+router.use('/', require('./catalog-approval'));
+
 // Groupe B — douane (stub)
 router.use('/', require('./customs'));
 
