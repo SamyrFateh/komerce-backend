@@ -6,16 +6,16 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 359
-- Files with full headers: 330
+- Scanned code files: 357
+- Files with full headers: 328
 - Files with lite headers: 29
-- Files with any headers: 359
+- Files with any headers: 357
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 717
-- Edges: 3464
-- DB tables: 109
+- Graph nodes: 714
+- Edges: 3453
+- DB tables: 108
 - Doctrines: 129
 - Impact areas: 120
 - Unresolved code edges: 331
@@ -41,7 +41,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - payment: 16
 - recommendations: 7
 - refunds: 2
-- shared-cart: 46
+- shared-cart: 44
 - tracking: 1
 - wallet: 6
 
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 98
 - route-manifest: 1
 - schema: 1
-- service: 142
+- service: 140
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -145,7 +145,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/repair-ordered-purchasing.js — orders-repair-ordered-purchasing (orders, critical, full)
 - services/repair-ordered-without-purchase-orders.js — orders-repair-ordered-without-purchase-orders (orders, critical, full)
 - services/shared-cart-cash-service.js — shared-cart-shared-cart-cash-service (shared-cart, critical, full)
-- services/shared-cart-commitment-service.js — shared-cart-shared-cart-commitment-service (shared-cart, critical, full)
 - services/shared-cart-contributions.js — shared-cart-contributions (shared-cart, critical, full)
 - services/shared-cart-creation.js — shared-cart-creation (shared-cart, critical, full)
 - services/shared-cart-engine.js — shared-cart-state-machine (shared-cart, critical, full)
@@ -154,7 +153,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/shared-cart-lifecycle.js — shared-cart-lifecycle (shared-cart, critical, full)
 - services/shared-cart-reads.js — shared-cart-reads (shared-cart, critical, full)
 - services/shared-cart-refund-queue.js — shared-cart-shared-cart-refund-queue (shared-cart, critical, full)
-- services/shared-cart-v4-settlement.js — shared-cart-shared-cart-v4-settlement (shared-cart, critical, full)
 - services/shared-cart-v41-transitions.js — shared-cart-v41-transition-projector (shared-cart, critical, full)
 - utils/orderParcelLinkRules.js — orders-order-parcel-link-rules (orders, critical, full)
 - middleware/auth-guest.js — auth-auth-guest (auth, high, full)

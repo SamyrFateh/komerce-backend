@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-03T15:45:26.576Z",
+  "generatedAt": "2026-07-03T16:29:04.937Z",
   "sources": {
     "backend": {
-      "nodes": 717
+      "nodes": 714
     },
     "boutique": {
       "modules": 70,

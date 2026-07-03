@@ -13,16 +13,16 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 359,
-    "filesWithFullHeaders": 330,
+    "scannedCodeFiles": 357,
+    "filesWithFullHeaders": 328,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 359,
+    "filesWithAnyHeaders": 357,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 717,
-    "edges": 3464,
-    "dbTables": 109,
+    "graphNodes": 714,
+    "edges": 3453,
+    "dbTables": 108,
     "doctrines": 129,
     "impactAreas": 120,
     "unresolvedCodeEdges": 331
@@ -35,7 +35,7 @@
     "boutique": 36,
     "catalog": 30,
     "checkout": 2,
-    "shared-cart": 46,
+    "shared-cart": 44,
     "recommendations": 7,
     "payment": 16,
     "tracking": 1,
@@ -75,7 +75,7 @@
     "view-model": 3,
     "route": 98,
     "entrypoint": 1,
-    "service": 142,
+    "service": 140,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -83,7 +83,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 78,
+    "critical": 76,
     "medium": 102,
     "high": 143,
     "low": 36
@@ -13331,46 +13331,6 @@
       "version": "2026-06"
     },
     {
-      "id": "services/shared-cart-commitment-service.js",
-      "file": "services/shared-cart-commitment-service.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "shared-cart-shared-cart-commitment-service",
-      "domain": "shared-cart",
-      "layer": "service",
-      "criticality": "critical",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [
-        "shared_cart_commitments",
-        "shared_carts"
-      ],
-      "dbWrite": [
-        "shared_cart_commitments",
-        "shared_cart_events"
-      ],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "shared-cart"
-      ],
-      "version": "2026-06"
-    },
-    {
       "id": "services/shared-cart-contributions.js",
       "file": "services/shared-cart-contributions.js",
       "type": "file",
@@ -14006,45 +13966,6 @@
         "refunds",
         "shared_cart_contributions",
         "shared_cart_events"
-      ],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "shared-cart"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "services/shared-cart-v4-settlement.js",
-      "file": "services/shared-cart-v4-settlement.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "shared-cart-shared-cart-v4-settlement",
-      "domain": "shared-cart",
-      "layer": "service",
-      "criticality": "critical",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [
-        "shared_carts"
-      ],
-      "dbWrite": [
-        "shared_cart_events",
-        "shared_carts"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -16156,11 +16077,6 @@
       "id": "db:pricing_strategy_history",
       "type": "db-table",
       "table": "pricing_strategy_history"
-    },
-    {
-      "id": "db:shared_cart_commitments",
-      "type": "db-table",
-      "table": "shared_cart_commitments"
     },
     {
       "id": "db:shared_cart_estimations",
@@ -35427,42 +35343,6 @@
       "label": "shared-cart"
     },
     {
-      "from": "services/shared-cart-commitment-service.js",
-      "to": "db:shared_cart_commitments",
-      "type": "db-read",
-      "label": "shared_cart_commitments"
-    },
-    {
-      "from": "services/shared-cart-commitment-service.js",
-      "to": "db:shared_carts",
-      "type": "db-read",
-      "label": "shared_carts"
-    },
-    {
-      "from": "services/shared-cart-commitment-service.js",
-      "to": "db:shared_cart_commitments",
-      "type": "db-write",
-      "label": "shared_cart_commitments"
-    },
-    {
-      "from": "services/shared-cart-commitment-service.js",
-      "to": "db:shared_cart_events",
-      "type": "db-write",
-      "label": "shared_cart_events"
-    },
-    {
-      "from": "services/shared-cart-commitment-service.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "services/shared-cart-commitment-service.js",
-      "to": "impact:shared-cart",
-      "type": "impact",
-      "label": "shared-cart"
-    },
-    {
       "from": "services/shared-cart-contributions.js",
       "to": "db.js",
       "type": "depends",
@@ -36778,36 +36658,6 @@
     },
     {
       "from": "services/shared-cart-refund-queue.js",
-      "to": "impact:shared-cart",
-      "type": "impact",
-      "label": "shared-cart"
-    },
-    {
-      "from": "services/shared-cart-v4-settlement.js",
-      "to": "db:shared_carts",
-      "type": "db-read",
-      "label": "shared_carts"
-    },
-    {
-      "from": "services/shared-cart-v4-settlement.js",
-      "to": "db:shared_cart_events",
-      "type": "db-write",
-      "label": "shared_cart_events"
-    },
-    {
-      "from": "services/shared-cart-v4-settlement.js",
-      "to": "db:shared_carts",
-      "type": "db-write",
-      "label": "shared_carts"
-    },
-    {
-      "from": "services/shared-cart-v4-settlement.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "services/shared-cart-v4-settlement.js",
       "to": "impact:shared-cart",
       "type": "impact",
       "label": "shared-cart"
@@ -50616,38 +50466,6 @@
         "impact:shared-cart"
       ]
     },
-    "services/shared-cart-commitment-service.js": {
-      "role": "shared-cart-shared-cart-commitment-service",
-      "domain": "shared-cart",
-      "criticality": "critical",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [
-        "shared_cart_commitments",
-        "shared_carts"
-      ],
-      "dbWrite": [
-        "shared_cart_commitments",
-        "shared_cart_events"
-      ],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "shared-cart"
-      ],
-      "mustCheck": [
-        "db:shared_cart_commitments",
-        "db:shared_cart_events",
-        "db:shared_carts",
-        "doctrine:resolve_before_behavior_change",
-        "impact:shared-cart"
-      ]
-    },
     "services/shared-cart-contributions.js": {
       "role": "shared-cart-contributions",
       "domain": "shared-cart",
@@ -51308,36 +51126,6 @@
         "services/cancel-shared-cart-with-refunds.js",
         "services/documents/refund-receipt.js",
         "services/refund-service.js"
-      ]
-    },
-    "services/shared-cart-v4-settlement.js": {
-      "role": "shared-cart-shared-cart-v4-settlement",
-      "domain": "shared-cart",
-      "criticality": "critical",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [
-        "shared_carts"
-      ],
-      "dbWrite": [
-        "shared_cart_events",
-        "shared_carts"
-      ],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "shared-cart"
-      ],
-      "mustCheck": [
-        "db:shared_cart_events",
-        "db:shared_carts",
-        "doctrine:resolve_before_behavior_change",
-        "impact:shared-cart"
       ]
     },
     "services/shared-cart-v41-transitions.js": {

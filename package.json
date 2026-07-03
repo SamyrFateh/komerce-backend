@@ -24,7 +24,7 @@
     "arch:drift": "node scripts/arch-schema-drift-check.js",
     "arch:reconcile": "node scripts/arch-reconcile.js",
     "arch:reconcile:check": "node scripts/arch-reconcile.js --check",
-    "arch:gate": "npm run arch:gen && node scripts/arch-db-check.js && node scripts/arch-schema-drift-check.js && node scripts/arch-header-sql-check.js",
+    "arch:gate": "npm run arch:gen && node scripts/arch-db-check.js && node scripts/arch-schema-drift-check.js && node scripts/arch-header-sql-check.js && node scripts/check-schema-resurrection.js",
     "arch:reconcile:write": "node scripts/arch-reconcile.js --write",
     "schema:promote": "node scripts/schema-promote.js",
     "schema:promote:check": "node scripts/schema-promote.js --check",

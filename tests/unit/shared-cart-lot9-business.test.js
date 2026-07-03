@@ -9,8 +9,8 @@
  *   ✅ [LOT9-T1] Finalisation directe interdite depuis phase ouverte
  *               (status=active, settlement_open absent, accept_partial=true)
  *               → erreur, aucune commande créée, panier non converti
- *   ✅ [LOT9-T2] openSettlement → status = 'closed_for_settlement'
- *               + metadata.settlement_open = true
+ *   ([LOT9-T2] openSettlement — supprimé le 2026-07 avec shared-cart-v4-settlement.js,
+ *    code mort jamais branché sur aucune route ; cf. migration 099)
  *   ✅ [LOT9-T3] Webhook Stripe, paiement partiel sur panier en règlement
  *               → contribution paid, cart.status = settlement_in_progress,
  *                 remaining_kmf correct
@@ -56,17 +56,8 @@ jest.mock('../../services/order-payment-confirmation', () => ({
 jest.mock('../../utils/rates', () => ({
   getRates: jest.fn().mockResolvedValue({ eur_kmf: 492 }),
 }));
-jest.mock('../../services/shared-cart-commitment-service', () => {
-  const actual = jest.requireActual('../../services/shared-cart-commitment-service');
-  return {
-    ...actual,
-    lockCommitmentsForSettlement: jest.fn().mockResolvedValue([]),
-  };
-});
-
 const db = require('../../db');
 const engine = require('../../services/shared-cart-engine');
-const settlement = require('../../services/shared-cart-v4-settlement');
 const { confirmContributionFromStripeSafely } = require('../../services/shared-cart-financial-guard');
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -150,39 +141,10 @@ describe('[LOT9-T1] convertSharedCartToOrder — finalisation directe interdite'
   });
 });
 
-// ═════════════════════════════════════════════════════════════════════════════
-// [LOT9-T2] openSettlement → status = closed_for_settlement
-// ═════════════════════════════════════════════════════════════════════════════
-
-describe('[LOT9-T2] openSettlement — changement de statut', () => {
-  test('status passe à closed_for_settlement + metadata.settlement_open=true', async () => {
-    const cart = makeCart({ status: 'active' });
-    const updatedCart = {
-      ...cart,
-      status: 'closed_for_settlement',
-      metadata: { settlement_open: true },
-    };
-
-    const client = makeClient([
-      { rows: [cart] },        // SELECT FOR UPDATE
-      { rows: [updatedCart] }, // UPDATE shared_carts
-      { rows: [] },            // INSERT event settlement_opened
-    ]);
-    db.getClient.mockResolvedValueOnce(client);
-
-    const result = await settlement.openSettlement('cart-001', 'user-001', {});
-
-    expect(result.status).toBe('closed_for_settlement');
-    expect(result.metadata.settlement_open).toBe(true);
-
-    // L'UPDATE doit fixer explicitement le statut, pas seulement la metadata
-    const updateCall = client.calls.find(c => String(c.sql).includes('UPDATE shared_carts'));
-    expect(updateCall).toBeDefined();
-    expect(String(updateCall.sql)).toMatch(/status\s*=\s*'closed_for_settlement'/);
-
-    expectTransactionCommitted(client);
-  });
-});
+// [LOT9-T2] openSettlement était testé ici — supprimé le 2026-07 avec
+// services/shared-cart-v4-settlement.js (code mort, orphelin, jamais
+// branché sur aucune route ; cf. migration 099 et
+// docs/chantier/BACKEND_FIXES_REGISTER.md).
 
 // ═════════════════════════════════════════════════════════════════════════════
 // [LOT9-T3] Webhook Stripe — paiement partiel en règlement

@@ -19,7 +19,7 @@
  * @inputs       migrations/*.sql, docs/db/railway-live-schema.sql
  * @outputs      stdout report, exit code
  * @depends      none
- * @used-by      .github/workflows/ci.yml (gate:schema)
+ * @used-by      npm run arch:gate (local + CI), .github/workflows/ci.yml (standalone step)
  * @db-read      none
  * @db-write     none
  * @db-txn       none
