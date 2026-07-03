@@ -9,7 +9,7 @@
     "test:unit:watch": "jest tests/unit --watch",
     "check:tests": "npm run test:unit",
     "bundle:css": "node scripts/deploy-css.js",
-    "bundle:css:watch": "node scripts/deploy-css.js && echo \"deploy-css OK — relancez après chaque modif CSS\"",
+    "bundle:css:watch": "node scripts/deploy-css.js && echo \"deploy-css OK \u2014 relancez apr\u00e8s chaque modif CSS\"",
     "lint:css": "stylelint \"css/*.css\" --ignore-path .stylelintignore",
     "lint:css:fix": "stylelint \"css/*.css\" --fix",
     "lint:css:report": "stylelint \"css/*.css\" --formatter json > stylelint-report.json || true",
@@ -36,9 +36,9 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "check:all": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run audit:gate && npm run feature:guard:strict && npm run test:e2e",
+    "check:all": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run audit:gate && npm run feature:guard:strict && npm run test:unit && npm run test:e2e",
     "check:all:verbose": "npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:ownership && npm run audit:registry",
-    "check:fast": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run audit:gate && npm run feature:guard:strict",
+    "check:fast": "npm run quality:gate && npm run check:group-wording && npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:no-injection && npm run check:important && npm run check:css-guard && npm run check:css-dist-only && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run audit:registry && npm run audit:gate && npm run feature:guard:strict && npm run test:unit",
     "precommit": "npm run check:all",
     "audit:ownership": "node scripts/gen-ownership.js",
     "audit:registry": "node scripts/feature-registry-check.js --strict",
@@ -59,16 +59,13 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
     "@playwright/test": "^1.44.0",
-    "stylelint": "^17.11.1",
-    "stylelint-config-standard": "^40.0.0",
-    "serve": "^14.2.0",
     "jest": "^30.4.2",
-    "jest-environment-jsdom": "^30.4.1"
-  },
-  "jest": {
-    "testEnvironment": "jest-environment-jsdom",
-    "testMatch": ["**/tests/**/*.test.js"],
-    "testTimeout": 15000
+    "jest-environment-jsdom": "^30.4.1",
+    "serve": "^14.2.0",
+    "stylelint": "^17.11.1",
+    "stylelint-config-standard": "^40.0.0"
   }
 }
