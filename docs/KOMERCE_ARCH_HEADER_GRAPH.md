@@ -6,26 +6,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 357
-- Files with full headers: 328
+- Scanned code files: 358
+- Files with full headers: 329
 - Files with lite headers: 29
-- Files with any headers: 357
+- Files with any headers: 358
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 713
-- Edges: 3450
+- Graph nodes: 715
+- Edges: 3458
 - DB tables: 108
-- Doctrines: 128
+- Doctrines: 129
 - Impact areas: 120
-- Unresolved code edges: 329
+- Unresolved code edges: 330
 
 ## Domains
 
 - auth: 13
 - bootstrap: 1
 - boutique: 36
-- catalog: 28
+- catalog: 29
 - checkout: 2
 - collective-workspace: 3
 - customs: 6
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 98
 - route-manifest: 1
 - schema: 1
-- service: 140
+- service: 141
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -235,6 +235,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/apply-pricing-updates.js — economic-engine-apply-pricing-updates (economic-engine, high, full)
 - services/authkey-client.js — auth-authkey-client (auth, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
+- services/catalog-public-view.js — catalog-public-view (catalog, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
 - services/customs-classification.js — customs-classification (customs, high, full)
@@ -335,6 +336,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 - WRITE routes/admin/documents.js -> (none)
 - WRITE routes/payments-paypal.js -> (none)
+- WRITE services/catalog-public-view.js -> (none)
 - WRITE services/collective-workspace-reads.js -> (none)
 - WRITE services/cost-allocation/_helpers.js -> (none)
 - WRITE services/cost-allocation/variance.js -> (none)
@@ -452,7 +454,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/notifications/loyalty.js -> notification_log
 - WRITE services/notifications/misc.js -> notification_log
 - WRITE services/notifications/notification-service.js -> notification_log
-- WRITE services/notifications/order.js -> notification_log
 
 ## Unresolved Code Edges
 

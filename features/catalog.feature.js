@@ -60,6 +60,7 @@ module.exports = {
       'services/suppliers/connectors/noon-connector.js',
       'services/supplier-catalog-scanner.js',
       'services/suppliers/catalog-import-orchestrator.js',
+      'services/catalog-public-view.js',
     ],
     migrations: [
       'migrations/098_catalog_refinery_foundation.sql',
@@ -132,6 +133,7 @@ module.exports = {
       'tests/unit/scan-engine-extras.test.js',
       'tests/unit/scan-engine.test.js',
       'tests/unit/scan-operations.test.js',
+      'tests/unit/catalog-public-view.test.js',
     ],
 
 },

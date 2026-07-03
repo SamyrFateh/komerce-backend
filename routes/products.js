@@ -40,6 +40,7 @@ const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
 const { products } = require('../validators');
 const productAdminService = require('../services/product-admin-service');
+const { publicProductColumns, toPublicProduct } = require('../services/catalog-public-view');
 const log = require('../utils/logger').child({ module: 'products' });
 
 // ─── UUID validation helper ───────────────────────────────────────────────────
@@ -103,33 +104,7 @@ router.get('/', async (req, res, next) => {
 
     const { rows } = await db.query(
       `SELECT
-         p.id,
-         p.product_ref,
-         p.sku,
-         p.name,
-         p.description,
-         p.category,
-         p.subcategory,
-         p.price_aed,
-         p.price_kmf,
-         p.price_eur,
-         p.weight_kg,
-         p.dimensions_cm,
-         p.stock,
-         p.image_url,
-         p.images,
-         p.badge,
-         p.emoji,
-         p.promo_pct,
-         p.is_available,
-         p.customs_risk_coeff,
-         p.has_couture,
-         p.sourcing_source,
-         p.requires_secure_transport,
-         p.unsold_price_kmf,
-         p.unsold_channel,
-         p.has_variants,
-         p.created_at
+         ${publicProductColumns('p')}
        FROM products p
        WHERE ${where}
        ORDER BY p.sort_order ASC, p.created_at DESC
@@ -237,7 +212,10 @@ router.get('/:id', requireUUID, async (req, res, next) => {
       product.variants = variants;
     }
 
-    res.json(product);
+    // Doctrine catalogue : la boutique ne lit que les champs publiés — les
+    // champs de cuisine (name_source, content_source, enrichment_version...)
+    // ne quittent jamais ce endpoint, même si la ligne DB les porte.
+    res.json(toPublicProduct(product));
   } catch (err) {
     next(err);
   }

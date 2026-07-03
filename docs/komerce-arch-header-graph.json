@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 357,
-    "filesWithFullHeaders": 328,
+    "scannedCodeFiles": 358,
+    "filesWithFullHeaders": 329,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 357,
+    "filesWithAnyHeaders": 358,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 713,
-    "edges": 3450,
+    "graphNodes": 715,
+    "edges": 3458,
     "dbTables": 108,
-    "doctrines": 128,
+    "doctrines": 129,
     "impactAreas": 120,
-    "unresolvedCodeEdges": 329
+    "unresolvedCodeEdges": 330
   },
   "byDomain": {
     "infrastructure": 19,
@@ -33,7 +33,7 @@
     "auth": 13,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 28,
+    "catalog": 29,
     "checkout": 2,
     "shared-cart": 46,
     "recommendations": 7,
@@ -75,7 +75,7 @@
     "view-model": 3,
     "route": 98,
     "entrypoint": 1,
-    "service": 140,
+    "service": 141,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -85,7 +85,7 @@
   "byCriticality": {
     "critical": 78,
     "medium": 102,
-    "high": 141,
+    "high": 142,
     "low": 36
   },
   "nodes": [
@@ -8562,6 +8562,48 @@
       "version": "2026-06"
     },
     {
+      "id": "services/catalog-public-view.js",
+      "file": "services/catalog-public-view.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-public-view",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_db_row"
+      ],
+      "outputs": [
+        "public_product_view"
+      ],
+      "depends": [
+        "(none)"
+      ],
+      "usedBy": [
+        "routes/products.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "(none)"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-discovery",
+        "modal"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/collective-close-order-service.js",
       "file": "services/collective-close-order-service.js",
       "type": "file",
@@ -16531,6 +16573,11 @@
       "id": "doctrine:static_boutique_served",
       "type": "doctrine",
       "doctrine": "static_boutique_served"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md"
     },
     {
       "id": "doctrine:douane_declaration_pivot",
@@ -28741,6 +28788,54 @@
       "to": "impact:payment",
       "type": "impact",
       "label": "payment"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "(none)",
+      "type": "depends",
+      "label": "(none)"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "services/catalog-public-view.js",
+      "type": "uses",
+      "label": "routes/products.js"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "impact:product-discovery",
+      "type": "impact",
+      "label": "product-discovery"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "impact:modal",
+      "type": "impact",
+      "label": "modal"
     },
     {
       "from": "services/collective-close-order-service.js",
@@ -44865,7 +44960,8 @@
         "middleware/auth.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-modal-core.js",
-        "public/boutique/js/komerce-api.js"
+        "public/boutique/js/komerce-api.js",
+        "services/catalog-public-view.js"
       ]
     },
     "routes/purchasing.js": {
@@ -46076,6 +46172,43 @@
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:payment"
+      ]
+    },
+    "services/catalog-public-view.js": {
+      "role": "catalog-public-view",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "(none)"
+      ],
+      "directUsedBy": [
+        "routes/products.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-discovery",
+        "modal"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "impact:catalog",
+        "impact:modal",
+        "impact:product-discovery",
+        "routes/products.js"
       ]
     },
     "services/collective-close-order-service.js": {
@@ -53735,6 +53868,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "(none)",
+      "type": "depends",
+      "label": "(none)"
     },
     {
       "from": "services/collective-workspace-internals.js",

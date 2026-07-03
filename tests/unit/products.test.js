@@ -247,6 +247,34 @@ describe('GET /api/products/:id — détail', () => {
     const res = await request(buildApp()).get(`/api/products/${VALID_UUID}`);
     expect(res.status).toBe(500);
   });
+
+  // Doctrine catalogue (DOCTRINE_CATALOGUE.md) : « la boutique ne lit que
+  // les champs publiés » — les champs de cuisine de la raffinerie ne
+  // doivent jamais atteindre le client, même si la ligne DB (SELECT *)
+  // les porte encore.
+  it('ne fuit jamais les champs de cuisine raffinerie dans la réponse publique', async () => {
+    mockDbQuery.mockResolvedValueOnce({
+      rows: [{
+        id: VALID_UUID,
+        name: 'Robe fleurie',
+        price_kmf: 15000,
+        has_variants: false,
+        name_source: 'Floral Dress',
+        description_source: 'Original EN description',
+        source_locale: 'en',
+        content_source: 'ai_enriched',
+        enrichment_version: 2,
+      }],
+    });
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}`);
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('Robe fleurie');
+    expect(res.body).not.toHaveProperty('name_source');
+    expect(res.body).not.toHaveProperty('description_source');
+    expect(res.body).not.toHaveProperty('source_locale');
+    expect(res.body).not.toHaveProperty('content_source');
+    expect(res.body).not.toHaveProperty('enrichment_version');
+  });
 });
 
 describe('POST /api/products — création (admin)', () => {
