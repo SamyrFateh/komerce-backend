@@ -8,6 +8,7 @@ module.exports = {
   },
   transformIgnorePatterns: ['/node_modules/'],
   setupFiles: ['./tests/unit/setup.js'],
+  collectCoverageFrom: ['js/**/*.js'],
   clearMocks: true,
   restoreMocks: true,
 };
