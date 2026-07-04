@@ -27,7 +27,6 @@ module.exports = {
 
   files: {
     js: [
-      '../dashboards/admin/js/ClientsView.js',
       '../dashboards/admin/js/api-client-unsold.js',
       '../dashboards/admin/js/api-client.js',
       '../dashboards/admin/js/app.js',

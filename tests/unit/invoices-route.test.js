@@ -157,6 +157,13 @@ describe('GET /api/invoices (liste)', () => {
     await request(buildApp()).get('/api/invoices?limit=9999');
     expect(mockListInvoices).toHaveBeenCalledWith({ limit: 200, offset: 0 });
   });
+
+  it('500 si erreur inattendue (catch → next(err))', async () => {
+    mockState.user = { id: 'adm1', role: 'admin' };
+    mockListInvoices.mockRejectedValue(new Error('db down'));
+    const res = await request(buildApp()).get('/api/invoices');
+    expect(res.status).toBe(500);
+  });
 });
 
 describe('POST /api/invoices/:orderId/deliver', () => {
@@ -176,5 +183,120 @@ describe('POST /api/invoices/:orderId/deliver', () => {
     const res = await request(buildApp()).post(`/api/invoices/${VALID_ORDER_ID}/deliver`).send({ via: 'whatsapp' });
     expect(res.status).toBe(200);
     expect(mockMarkDelivered).toHaveBeenCalledWith('inv1', 'whatsapp');
+  });
+
+  it('500 si erreur inattendue (catch → next(err))', async () => {
+    mockState.user = { id: 'adm1', role: 'admin' };
+    mockGetOrCreateInvoice.mockRejectedValue(new Error('boom'));
+    const res = await request(buildApp()).post(`/api/invoices/${VALID_ORDER_ID}/deliver`).send({ via: 'email' });
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('GET /api/invoices/public/:token — erreurs generiques', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('500 si erreur inattendue (message ne matche ni introuvable ni non payee)', async () => {
+    mockVerifyToken.mockReturnValue(VALID_ORDER_ID);
+    mockGetOrCreateInvoice.mockRejectedValue(new Error('erreur reseau'));
+    const res = await request(buildApp()).get('/api/invoices/public/good-token');
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('requireInvoiceOrderAccess — erreur DB', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('500 si la requete DB de garde echoue (catch → next(err))', async () => {
+    mockState.user = { id: 'u1', role: 'client' };
+    mockDbQuery.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}`);
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('GET /api/invoices/:orderId — erreurs', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('404 si facture introuvable', async () => {
+    mockState.user = { id: 'staff1', role: 'admin' };
+    mockGetOrCreateInvoice.mockRejectedValue(new Error('Commande introuvable'));
+    const res = await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}`);
+    expect(res.status).toBe(404);
+  });
+
+  it('400 si commande non payee', async () => {
+    mockState.user = { id: 'staff1', role: 'admin' };
+    mockGetOrCreateInvoice.mockRejectedValue(new Error('Commande non payée'));
+    const res = await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('500 si erreur inattendue', async () => {
+    mockState.user = { id: 'staff1', role: 'admin' };
+    mockGetOrCreateInvoice.mockRejectedValue(new Error('erreur inattendue'));
+    const res = await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}`);
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('GET /api/invoices/:orderId/json', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('200 avec la facture en JSON', async () => {
+    mockState.user = { id: 'staff1', role: 'admin' };
+    mockGetOrCreateInvoice.mockResolvedValue({ id: 'inv1', invoice_number: 'F-003' });
+    const res = await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}/json`);
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.invoice.id).toBe('inv1');
+  });
+
+  it('404 si facture introuvable', async () => {
+    mockState.user = { id: 'staff1', role: 'admin' };
+    mockGetOrCreateInvoice.mockRejectedValue(new Error('Facture introuvable'));
+    const res = await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}/json`);
+    expect(res.status).toBe(404);
+  });
+
+  it('500 si erreur autre', async () => {
+    mockState.user = { id: 'staff1', role: 'admin' };
+    mockGetOrCreateInvoice.mockRejectedValue(new Error('panne db'));
+    const res = await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}/json`);
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('GET /api/invoices/:orderId/download', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('200 avec Content-Disposition attachment et le bon filename', async () => {
+    mockState.user = { id: 'staff1', role: 'admin' };
+    mockGetOrCreateInvoice.mockResolvedValue({ id: 'inv1', invoice_number: 'F-004' });
+    mockGenerateHTML.mockReturnValue('<html>download</html>');
+
+    const res = await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}/download`);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-disposition']).toContain('attachment; filename="F-004.html"');
+    expect(res.text).toBe('<html>download</html>');
+  });
+
+  it('utilise le mode passe en query', async () => {
+    mockState.user = { id: 'staff1', role: 'admin' };
+    mockGetOrCreateInvoice.mockResolvedValue({ id: 'inv1', invoice_number: 'F-005' });
+    mockGenerateHTML.mockReturnValue('<html>a4</html>');
+
+    await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}/download?mode=a4`);
+    expect(mockGenerateHTML).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'inv1' }),
+      expect.objectContaining({ mode: 'a4' })
+    );
+  });
+
+  it('500 si erreur (catch → next(err))', async () => {
+    mockState.user = { id: 'staff1', role: 'admin' };
+    mockGetOrCreateInvoice.mockRejectedValue(new Error('boom'));
+    const res = await request(buildApp()).get(`/api/invoices/${VALID_ORDER_ID}/download`);
+    expect(res.status).toBe(500);
   });
 });

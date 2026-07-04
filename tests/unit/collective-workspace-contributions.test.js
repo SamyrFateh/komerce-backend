@@ -77,3 +77,156 @@ describe('collective-workspace-contributions', () => {
     expectTransactionCommitted(client);
   });
 });
+
+describe('collective-workspace-contributions — Lot A, branches manquantes', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  describe('addContribution — validations en entrée', () => {
+    it('refuse sans contributor_name', async () => {
+      await expect(addContribution('WS-token', { message: 'ok' })).rejects.toThrow('contributor_name_required');
+      expect(mockInternals.db.pool.connect).not.toHaveBeenCalled();
+    });
+
+    it('refuse un montant non numérique', async () => {
+      await expect(addContribution('WS-token', {
+        contributor_name: 'Ali', intended_amount_kmf: 'abc',
+      })).rejects.toThrow('amount_invalid');
+      expect(mockInternals.db.pool.connect).not.toHaveBeenCalled();
+    });
+
+    it('refuse un montant <= 0', async () => {
+      await expect(addContribution('WS-token', {
+        contributor_name: 'Ali', intended_amount_kmf: '0',
+      })).rejects.toThrow('amount_invalid');
+      expect(mockInternals.db.pool.connect).not.toHaveBeenCalled();
+    });
+
+    it('intended_amount_kmf vide ("") → amount reste null, content_required si rien d\'autre', async () => {
+      await expect(addContribution('WS-token', {
+        contributor_name: 'Ali', intended_amount_kmf: '',
+      })).rejects.toThrow('content_required');
+      expect(mockInternals.db.pool.connect).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('addContribution — dérivation du kind', () => {
+    it('kind explicite valide → utilisé tel quel, non redérivé', async () => {
+      const contribution = { id: 'contrib-002' };
+      const client = makeClient([
+        { rows: [{ id: 'ws-001', status: 'conception' }] },
+        { rows: [contribution] },
+        { rows: [], rowCount: 1 },
+      ]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(addContribution('WS-token', {
+        contributor_name: 'Ali', message: 'salut', kind: 'MESSAGE',
+      })).resolves.toBe(contribution);
+      expect(client.calls[2].params).toEqual(['ws-001', 'Ali', null, null, null, null, 'salut', 'message']);
+      expectTransactionCommitted(client);
+    });
+
+    it('sans montant, avec suggestion seule → kind derive suggestion', async () => {
+      const contribution = { id: 'contrib-003' };
+      const client = makeClient([
+        { rows: [{ id: 'ws-001', status: 'conception' }] },
+        { rows: [contribution] },
+        { rows: [], rowCount: 1 },
+      ]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(addContribution('WS-token', {
+        contributor_name: 'Ali', suggestion: 'Prenez du riz',
+      })).resolves.toBe(contribution);
+      expect(client.calls[2].params).toEqual(['ws-001', 'Ali', null, null, null, 'Prenez du riz', null, 'suggestion']);
+      expectTransactionCommitted(client);
+    });
+
+    it('sans montant ni suggestion, avec message seul → kind derive message', async () => {
+      const contribution = { id: 'contrib-004' };
+      const client = makeClient([
+        { rows: [{ id: 'ws-001', status: 'conception' }] },
+        { rows: [contribution] },
+        { rows: [], rowCount: 1 },
+      ]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(addContribution('WS-token', {
+        contributor_name: 'Ali', message: 'Bon courage !',
+      })).resolves.toBe(contribution);
+      expect(client.calls[2].params).toEqual(['ws-001', 'Ali', null, null, null, null, 'Bon courage !', 'message']);
+      expectTransactionCommitted(client);
+    });
+  });
+
+  describe('addContribution — workspace introuvable', () => {
+    it('workspace introuvable → ROLLBACK + workspace_not_found', async () => {
+      const client = makeClient([{ rows: [] }]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(addContribution('WS-token', { contributor_name: 'Ali', message: 'ok' }))
+        .rejects.toThrow('workspace_not_found');
+      expectTransactionRolledBack(client);
+    });
+  });
+
+  describe('cancelContribution', () => {
+    it('workspace introuvable → ROLLBACK + workspace_not_found', async () => {
+      const client = makeClient([{ rows: [] }]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(cancelContribution('WS-token', 'contrib-001')).rejects.toThrow('workspace_not_found');
+      expectTransactionRolledBack(client);
+    });
+
+    it('workspace non ouvert → ROLLBACK + workspace_not_open', async () => {
+      const client = makeClient([{ rows: [{ id: 'ws-001', status: 'payment_pending' }] }]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(cancelContribution('WS-token', 'contrib-001')).rejects.toThrow('workspace_not_open');
+      expectTransactionRolledBack(client);
+    });
+
+    it('contribution introuvable ou déjà traitée → ROLLBACK + contribution_not_found_or_already_handled', async () => {
+      const client = makeClient([
+        { rows: [{ id: 'ws-001', status: 'conception' }] },
+        { rows: [], rowCount: 0 },
+      ]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(cancelContribution('WS-token', 'contrib-999'))
+        .rejects.toThrow('contribution_not_found_or_already_handled');
+      expectTransactionRolledBack(client);
+    });
+  });
+
+  describe('cancelContributionByCreator', () => {
+    it('workspace introuvable → ROLLBACK + workspace_not_found', async () => {
+      const client = makeClient([{ rows: [] }]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(cancelContributionByCreator('WC-token', 'contrib-001')).rejects.toThrow('workspace_not_found');
+      expectTransactionRolledBack(client);
+    });
+
+    it('workspace non ouvert → ROLLBACK + workspace_not_open', async () => {
+      const client = makeClient([{ rows: [{ id: 'ws-001', status: 'session_ended' }] }]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(cancelContributionByCreator('WC-token', 'contrib-001')).rejects.toThrow('workspace_not_open');
+      expectTransactionRolledBack(client);
+    });
+
+    it('contribution introuvable ou déjà traitée → ROLLBACK + contribution_not_found_or_already_handled', async () => {
+      const client = makeClient([
+        { rows: [{ id: 'ws-001', status: 'conception' }] },
+        { rows: [], rowCount: 0 },
+      ]);
+      mockInternals.db.pool.connect.mockResolvedValue(client);
+
+      await expect(cancelContributionByCreator('WC-token', 'contrib-999'))
+        .rejects.toThrow('contribution_not_found_or_already_handled');
+      expectTransactionRolledBack(client);
+    });
+  });
+});

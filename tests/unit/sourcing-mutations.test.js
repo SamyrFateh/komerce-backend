@@ -84,7 +84,16 @@ describe('updateProduct', () => {
     expect(params).toContain(1.5);
   });
 
+  test('weight_g invalide (<=0 ou non numérique) → mappé à null', async () => {
+    db.query.mockResolvedValue({ rows: [{ id: 'p1' }] });
+    await sourcingMutations.updateProduct('p1', { weight_g: 0 });
+
+    const params = db.query.mock.calls[0][1];
+    expect(params).toContain(null);
+  });
+
 });
+
 
 // ─── bulkAssignRail ───────────────────────────────────────────────────────────
 
@@ -215,6 +224,147 @@ describe('replaceVariants', () => {
     const result = await sourcingMutations.replaceVariants('p1', [{ value: 'rouge' }]);
     expect(result.status).toBe(400);
     expect(result.body.error).toMatch('type requis');
+  });
+
+  test('variante non-objet (ex: string dans le tableau) → 400', async () => {
+    const client = makeClient([{}, { rows: [{ id: 'p1' }] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await sourcingMutations.replaceVariants('p1', ['pas-un-objet']);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch('doit être un objet');
+  });
+
+  test('variante sans value → 400', async () => {
+    const client = makeClient([{}, { rows: [{ id: 'p1' }] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await sourcingMutations.replaceVariants('p1', [variant('couleur', '')]);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch('value requis');
+  });
+
+  test('variante avec type trop long (>50) → 400', async () => {
+    const client = makeClient([{}, { rows: [{ id: 'p1' }] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await sourcingMutations.replaceVariants('p1', [variant('x'.repeat(51), 'rouge')]);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch('type trop long');
+  });
+
+  test('variante avec value trop longue (>50) → 400', async () => {
+    const client = makeClient([{}, { rows: [{ id: 'p1' }] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await sourcingMutations.replaceVariants('p1', [variant('couleur', 'x'.repeat(51))]);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch('value trop long');
+  });
+
+  test('variante avec stock invalide (non entier) → 400', async () => {
+    const client = makeClient([{}, { rows: [{ id: 'p1' }] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await sourcingMutations.replaceVariants('p1', [{ ...variant('couleur', 'rouge'), stock: 1.5 }]);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch('stock invalide');
+  });
+
+  test('variante avec stock négatif → 400', async () => {
+    const client = makeClient([{}, { rows: [{ id: 'p1' }] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await sourcingMutations.replaceVariants('p1', [{ ...variant('couleur', 'rouge'), stock: -1 }]);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch('stock invalide');
+  });
+
+  test('variante avec price_kmf invalide (non entier) → 400', async () => {
+    const client = makeClient([{}, { rows: [{ id: 'p1' }] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await sourcingMutations.replaceVariants('p1', [{ ...variant('couleur', 'rouge'), price_kmf: 12.5 }]);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch('price_kmf invalide');
+  });
+
+  test('variante avec price_kmf négatif → 400', async () => {
+    const client = makeClient([{}, { rows: [{ id: 'p1' }] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await sourcingMutations.replaceVariants('p1', [{ ...variant('couleur', 'rouge'), price_kmf: -5 }]);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch('price_kmf invalide');
+  });
+
+  test('stock/price_kmf null ou undefined sont acceptés (pas de validation déclenchée)', async () => {
+    const client = makeClient([
+      {}, { rows: [{ id: 'p1' }] }, { rows: [] }, {}, {}, {}, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query.mockResolvedValue({ rows: [] });
+
+    const result = await sourcingMutations.replaceVariants('p1', [{ ...variant('couleur', 'rouge'), stock: null, price_kmf: undefined }]);
+    expect(result.status).toBe(200);
+  });
+
+  test('variante avec stock et price_kmf valides (entiers >=0) + sku/image_url/display_order fournis → insérée telle quelle', async () => {
+    const full = { type: 'couleur', value: 'rouge', sku: ' SKU1 ', stock: 10, price_kmf: 5000, image_url: ' http://x/1.png ', display_order: 2 };
+    const client = makeClient([
+      {},                        // BEGIN
+      { rows: [{ id: 'p1' }] }, // SELECT FOR UPDATE
+      { rows: [] },              // SELECT old variants
+      {},                        // DELETE
+      {},                        // INSERT
+      {},                        // UPDATE has_variants
+      {},                        // COMMIT
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query.mockResolvedValue({ rows: [] });
+
+    const result = await sourcingMutations.replaceVariants('p1', [full]);
+
+    expect(result.status).toBe(200);
+    const insertCall = client.query.mock.calls.find(c => String(c[0]).includes('INSERT INTO product_variants'));
+    expect(insertCall[1]).toEqual(['p1', 'couleur', 'rouge', 'SKU1', 10, 5000, 'http://x/1.png', 2]);
+  });
+
+  test('garde-fou : commandes pending existent mais ne référencent aucune variante supprimée → pas de 409', async () => {
+    const oldRows      = [{ variant_type: 'couleur', variant_value: 'rouge' }];
+    const pendingItems = [{ variant_combo: { couleur: 'vert' }, status: 'pending' }];
+
+    const client = makeClient([
+      {},                             // BEGIN
+      { rows: [{ id: 'p1' }] },      // SELECT FOR UPDATE
+      { rows: oldRows },              // SELECT old variants
+      { rows: pendingItems },         // SELECT pending order_items (aucune correspondance)
+      {},                             // DELETE
+      {},                             // INSERT
+      {},                             // UPDATE has_variants
+      {},                             // COMMIT
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query.mockResolvedValue({ rows: [] });
+
+    const result = await sourcingMutations.replaceVariants('p1', [variant('couleur', 'bleu')]);
+    expect(result.status).toBe(200);
+  });
+
+  test('erreur inattendue pendant la transaction → ROLLBACK, propage, release appelé', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [{ id: 'p1' }] }) // SELECT FOR UPDATE
+        .mockRejectedValueOnce(new Error('db down')) // SELECT old variants échoue
+        .mockResolvedValueOnce({}), // ROLLBACK
+      release: jest.fn(),
+    };
+    db.getClient.mockResolvedValue(client);
+
+    await expect(sourcingMutations.replaceVariants('p1', [variant('couleur', 'rouge')])).rejects.toThrow('db down');
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    expect(client.release).toHaveBeenCalled();
   });
 
   test('variants non-tableau → 400', async () => {

@@ -187,6 +187,309 @@ describe('admin-cost-components — POST /:id/toggle', () => {
   });
 });
 
+describe('admin-cost-components — GET /', () => {
+  it('liste tous les composants sans filtre et les groupe par family/category', async () => {
+    const rows = [
+      { id: 'c1', family: 'landed_relay', category: 'freight' },
+      { id: 'c2', family: 'landed_relay', category: 'freight' },
+      { id: 'c3', family: 'business', category: 'payment' },
+    ];
+    mockQuery.mockResolvedValueOnce({ rows });
+
+    const res = await request(app).get('/api/admin/cost-components');
+
+    expect(res.status).toBe(200);
+    expect(res.body.count).toBe(3);
+    expect(res.body.components).toEqual(rows);
+    expect(res.body.grouped.landed_relay.freight).toHaveLength(2);
+    expect(res.body.grouped.business.payment).toHaveLength(1);
+    // Aucun filtre fourni → pas de clause WHERE
+    expect(mockQuery.mock.calls[0][0]).not.toMatch(/WHERE/);
+    expect(mockQuery.mock.calls[0][1]).toEqual([]);
+  });
+
+  it('applique tous les filtres de query fournis (family/category/channel/island/scope)', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    await request(app).get(
+      '/api/admin/cost-components?family=landed_relay&category=freight&channel=diaspora&island=mayotte&scope=global'
+    );
+
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toMatch(/family = \$1/);
+    expect(sql).toMatch(/category = \$2/);
+    expect(sql).toMatch(/channel = \$3/);
+    expect(sql).toMatch(/island = \$4/);
+    expect(sql).toMatch(/scope = \$5/);
+    expect(params).toEqual(['landed_relay', 'freight', 'diaspora', 'mayotte', 'global']);
+  });
+
+  it.each([
+    ['true', 'is_active = TRUE'],
+    ['1', 'is_active = TRUE'],
+    ['false', 'is_active = FALSE'],
+    ['0', 'is_active = FALSE'],
+  ])('is_active=%s → clause %s', async (value, expectedClause) => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await request(app).get(`/api/admin/cost-components?is_active=${value}`);
+    expect(mockQuery.mock.calls[0][0]).toContain(expectedClause);
+  });
+
+  it.each([
+    ['true', 'is_exceptional = TRUE'],
+    ['1', 'is_exceptional = TRUE'],
+    ['false', 'is_exceptional = FALSE'],
+    ['0', 'is_exceptional = FALSE'],
+  ])('is_exceptional=%s → clause %s', async (value, expectedClause) => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await request(app).get(`/api/admin/cost-components?is_exceptional=${value}`);
+    expect(mockQuery.mock.calls[0][0]).toContain(expectedClause);
+  });
+
+  it('regroupe même une famille absente des clés initiales de `grouped` (garde défensive)', async () => {
+    // 'exceptional' est déjà pré-initialisé dans grouped, on vérifie ici le cas
+    // où une catégorie n'existe pas encore sous cette famille.
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ id: 'c1', family: 'exceptional', category: 'incident' }],
+    });
+    const res = await request(app).get('/api/admin/cost-components');
+    expect(res.body.grouped.exceptional.incident).toHaveLength(1);
+  });
+
+  it('erreur DB → next(err) → 500', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).get('/api/admin/cost-components');
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('admin-cost-components — GET /:id', () => {
+  it('404 si le composant est introuvable', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).get('/api/admin/cost-components/cc-404');
+    expect(res.status).toBe(404);
+    expect(res.body.error).toMatch(/introuvable/);
+  });
+
+  it("200 : renvoie le composant et son historique d'audit (events)", async () => {
+    const component = { id: 'cc-1', key: 'freight_air' };
+    const events = [
+      { id: 'ev-1', event_type: 'created', old_value: null, new_value: '{}', notes: null, created_at: '2026-06-01' },
+    ];
+    mockQuery
+      .mockResolvedValueOnce({ rows: [component] })
+      .mockResolvedValueOnce({ rows: events });
+
+    const res = await request(app).get('/api/admin/cost-components/cc-1');
+
+    expect(res.status).toBe(200);
+    expect(res.body.component).toEqual(component);
+    expect(res.body.events).toEqual(events);
+    expect(mockQuery.mock.calls[1][0]).toMatch(/FROM cost_component_events/);
+    expect(mockQuery.mock.calls[1][1]).toEqual(['cc-1']);
+  });
+
+  it('erreur DB → next(err) → 500', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).get('/api/admin/cost-components/cc-1');
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('admin-cost-components — POST / erreurs inattendues', () => {
+  it("erreur DB non-23505 → next(err) → 500 (pas de 409)", async () => {
+    mockQuery.mockRejectedValueOnce(new Error('connection reset'));
+    const res = await request(app).post('/api/admin/cost-components').send(validBody());
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('admin-cost-components — PUT /:id (branches audit restantes)', () => {
+  it('audit "deactivated" quand is_active passe true→false', async () => {
+    const oldComp = { id: 'cc-1', key: 'freight_air', family: 'landed_relay', category: 'freight', is_active: true, default_value: 100, scope: 'global' };
+    const newComp = { ...oldComp, is_active: false };
+    mockQuery
+      .mockResolvedValueOnce({ rows: [oldComp] })
+      .mockResolvedValueOnce({ rows: [newComp] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).put('/api/admin/cost-components/cc-1').send({ is_active: false });
+    expect(res.status).toBe(200);
+    expect(mockQuery.mock.calls[2][1]).toEqual(expect.arrayContaining(['deactivated']));
+  });
+
+  it('audit "scope_changed" quand scope change (sans changement de valeur/is_active)', async () => {
+    const oldComp = { id: 'cc-1', key: 'freight_air', family: 'landed_relay', category: 'freight', is_active: true, default_value: 100, scope: 'global' };
+    const newComp = { ...oldComp, scope: 'category' };
+    mockQuery
+      .mockResolvedValueOnce({ rows: [oldComp] })
+      .mockResolvedValueOnce({ rows: [newComp] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).put('/api/admin/cost-components/cc-1').send({ scope: 'category' });
+    expect(res.status).toBe(200);
+    expect(mockQuery.mock.calls[2][1]).toEqual(expect.arrayContaining(['scope_changed']));
+  });
+
+  it('audit "updated" (fallback) quand aucune des conditions spécifiques ne matche', async () => {
+    const oldComp = { id: 'cc-1', key: 'freight_air', family: 'landed_relay', category: 'freight', is_active: true, default_value: 100, scope: 'global' };
+    const newComp = { ...oldComp, label: 'Nouveau libellé' };
+    mockQuery
+      .mockResolvedValueOnce({ rows: [oldComp] })
+      .mockResolvedValueOnce({ rows: [newComp] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).put('/api/admin/cost-components/cc-1').send({ label: 'Nouveau libellé' });
+    expect(res.status).toBe(200);
+    expect(mockQuery.mock.calls[2][1]).toEqual(expect.arrayContaining(['updated']));
+  });
+
+  it('erreur DB → next(err) → 500', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).put('/api/admin/cost-components/cc-1').send({ label: 'x' });
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('admin-cost-components — POST /:id/toggle (erreurs)', () => {
+  it('erreur DB → next(err) → 500', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).post('/api/admin/cost-components/cc-1/toggle');
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('admin-cost-components — DELETE /:id (erreurs)', () => {
+  it('erreur DB → next(err) → 500', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).delete('/api/admin/cost-components/cc-1');
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('admin-cost-components — branches restantes (Lot B)', () => {
+  it('GET / : regroupe une famille absente des clés initiales de `grouped` (famille inconnue)', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ id: 'c1', family: 'unknown_fam', category: 'misc' }],
+    });
+    const res = await request(app).get('/api/admin/cost-components');
+    expect(res.status).toBe(200);
+    expect(res.body.grouped.unknown_fam.misc).toHaveLength(1);
+  });
+
+  it('POST / : famille inconnue (hors META) → 400 avec allowedCats vide', async () => {
+    const res = await request(app)
+      .post('/api/admin/cost-components')
+      .send({ ...validBody(), family: 'unknown_fam', category: 'freight' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/invalide pour la famille/);
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('POST / : req.user sans id → created_by/triggered_by = null', async () => {
+    currentUser = { role: 'admin' }; // pas d'id
+    const created = { id: 'cc-1', key: 'freight_air' };
+    mockQuery
+      .mockResolvedValueOnce({ rows: [created] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).post('/api/admin/cost-components').send(validBody());
+    expect(res.status).toBe(200);
+    expect(mockQuery.mock.calls[0][1]).toEqual(expect.arrayContaining([null]));
+    expect(mockQuery.mock.calls[1][1]).toEqual(expect.arrayContaining([null]));
+  });
+
+  it('PUT /:id : famille ET catégorie fournies, famille inconnue (hors META) → 400', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ id: 'cc-1', family: 'landed_relay', category: 'freight', is_active: true, default_value: 100, scope: 'global' }],
+    });
+    const res = await request(app)
+      .put('/api/admin/cost-components/cc-1')
+      .send({ family: 'unknown_fam', category: 'freight' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/invalide pour la famille/);
+  });
+
+  it('PUT /:id : famille ET catégorie fournies et cohérentes → pas de 400, update effectué', async () => {
+    const oldComp = { id: 'cc-1', key: 'freight_air', family: 'landed_relay', category: 'freight', is_active: true, default_value: 100, scope: 'global' };
+    const newComp = { ...oldComp, family: 'landed_relay', category: 'customs' };
+    mockQuery
+      .mockResolvedValueOnce({ rows: [oldComp] })  // SELECT old
+      .mockResolvedValueOnce({ rows: [newComp] })  // UPDATE
+      .mockResolvedValueOnce({ rows: [] });        // INSERT audit
+
+    const res = await request(app)
+      .put('/api/admin/cost-components/cc-1')
+      .send({ family: 'landed_relay', category: 'customs' });
+    expect(res.status).toBe(200);
+    expect(res.body.component).toEqual(newComp);
+  });
+
+  it('PUT /:id : req.user sans id → updated_by/triggered_by = null', async () => {
+    currentUser = { role: 'admin' }; // pas d'id
+    const oldComp = { id: 'cc-1', key: 'freight_air', family: 'landed_relay', category: 'freight', is_active: true, default_value: 100, scope: 'global' };
+    const newComp = { ...oldComp, label: 'x' };
+    mockQuery
+      .mockResolvedValueOnce({ rows: [oldComp] })
+      .mockResolvedValueOnce({ rows: [newComp] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).put('/api/admin/cost-components/cc-1').send({ label: 'x' });
+    expect(res.status).toBe(200);
+    expect(mockQuery.mock.calls[1][1]).toEqual(expect.arrayContaining([null]));
+    expect(mockQuery.mock.calls[2][1]).toEqual(expect.arrayContaining([null]));
+  });
+
+  it('POST /:id/toggle : false→true donne "activated", et req.user sans id → null', async () => {
+    currentUser = { role: 'admin' }; // pas d'id
+    const oldComp = { id: 'cc-1', key: 'freight_air', is_active: false };
+    mockQuery
+      .mockResolvedValueOnce({ rows: [oldComp] })
+      .mockResolvedValueOnce({ rows: [{ ...oldComp, is_active: true }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).post('/api/admin/cost-components/cc-1/toggle');
+    expect(res.status).toBe(200);
+    expect(res.body.component.is_active).toBe(true);
+    expect(mockQuery.mock.calls[1][1]).toEqual(expect.arrayContaining([null]));
+    expect(mockQuery.mock.calls[2][1]).toEqual(expect.arrayContaining(['activated', null]));
+  });
+
+  it('DELETE /:id : composant introuvable → 404', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).delete('/api/admin/cost-components/cc-404');
+    expect(res.status).toBe(404);
+    expect(res.body.error).toMatch(/introuvable/);
+  });
+
+  it('DELETE /:id (soft) : req.user sans id → updated_by/triggered_by = null', async () => {
+    currentUser = { role: 'admin' }; // pas d'id
+    const oldComp = { id: 'cc-1', key: 'freight_air', is_deletable: false };
+    mockQuery
+      .mockResolvedValueOnce({ rows: [oldComp] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    const res = await request(app).delete('/api/admin/cost-components/cc-1');
+    expect(res.status).toBe(200);
+    expect(mockQuery.mock.calls[1][1]).toEqual(expect.arrayContaining([null]));
+    expect(mockQuery.mock.calls[2][1]).toEqual(expect.arrayContaining([null]));
+  });
+
+  it('DELETE /:id?hard=true : req.user sans id → triggered_by = null', async () => {
+    currentUser = { role: 'admin' }; // pas d'id
+    const oldComp = { id: 'cc-1', key: 'freight_air', is_deletable: true };
+    mockQuery
+      .mockResolvedValueOnce({ rows: [oldComp] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    const res = await request(app).delete('/api/admin/cost-components/cc-1?hard=true');
+    expect(res.status).toBe(200);
+    expect(mockQuery.mock.calls[2][1]).toEqual(expect.arrayContaining([null]));
+  });
+});
+
 describe('admin-cost-components — DELETE /:id', () => {
   it('soft delete : is_active=FALSE + audit "deactivated"', async () => {
     const oldComp = { id: 'cc-1', key: 'freight_air', is_deletable: false };

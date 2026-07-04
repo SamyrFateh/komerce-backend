@@ -179,3 +179,266 @@ describe("generateSignals", () => {
     expect(result.generators.parcel_blocked).toMatchObject({ generated: 0 });
   });
 });
+
+// ─── GENERATORS.parcel_blocked ─────────────────────────────────────────────────
+describe("GENERATORS.parcel_blocked", () => {
+  test("aucune ligne → generated:0, autoResolve appelé en mode 'resolve tout' (entityIds vide)", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })   // SELECT
+      .mockResolvedValueOnce({ rowCount: 0 }); // autoResolve — branche "resolve ALL"
+    const { GENERATORS } = loadService();
+
+    const result = await GENERATORS.parcel_blocked();
+
+    expect(result).toEqual({ generated: 0, resolved: 0 });
+    const [sql, params] = mockQuery.mock.calls[1];
+    expect(sql).not.toMatch(/entity_id != ALL/);
+    expect(params).toEqual(['parcel_blocked']);
+  });
+
+  test("severity critical si days_stuck > 7, recommandation escalade, résumé avec référence", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'p1', tracking_number: 'TRK1', status: 'in_transit', days_stuck: 9, reference: 'CMD-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] }) // upsertSignal
+      .mockResolvedValueOnce({ rowCount: 0 });           // autoResolve
+
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.parcel_blocked();
+
+    expect(result.generated).toBe(1);
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('critical');           // severity
+    expect(params[2]).toMatch(/Colis bloqué — TRK1/); // title (tracking_number)
+    expect(params[3]).toMatch(/CMD-1/);            // summary avec référence
+    expect(params[11]).toMatch(/escalader/);       // recommendation
+  });
+
+  test("severity warning si 5 < days_stuck <= 7", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'p1', tracking_number: null, status: 'available', days_stuck: 6 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    await GENERATORS.parcel_blocked();
+
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('warning');
+    expect(params[2]).toMatch(/Colis bloqué — p1/); // title fallback sur id (pas de tracking_number)
+    expect(params[3]).not.toMatch(/cmd/); // pas de référence
+  });
+
+  test("severity info si days_stuck <= 5, recommandation 'Vérifier le suivi'", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'p1', tracking_number: 'TRK2', status: 'available', days_stuck: 4 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    await GENERATORS.parcel_blocked();
+
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('info');
+    expect(params[11]).toMatch(/Vérifier le suivi/);
+  });
+
+  test("erreur DB → catch non-fatal, { generated: 0, error }", async () => {
+    mockQuery = jest.fn().mockRejectedValueOnce(new Error('db down'));
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.parcel_blocked();
+    expect(result).toEqual({ generated: 0, error: 'db down' });
+  });
+});
+
+// ─── GENERATORS.cash_expiring ───────────────────────────────────────────────────
+describe("GENERATORS.cash_expiring", () => {
+  test("aucune ligne → generated:0", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.cash_expiring();
+    expect(result).toEqual({ generated: 0 });
+  });
+
+  test("severity critical si days_pending > 10, titre avec montant formaté, résumé avec référence", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'cc1', order_id: 'o1', amount: 150000, relay_id: 'r1', days_pending: 12, reference: 'CMD-2' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.cash_expiring();
+
+    expect(result.generated).toBe(1);
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('critical');
+    expect(params[2]).toMatch(/150,000 KMF/);
+    expect(params[3]).toMatch(/CMD-2/);
+  });
+
+  test("severity warning si days_pending <= 10, résumé sans référence si absente", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'cc1', order_id: 'o1', amount: null, relay_id: 'r1', days_pending: 6 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    await GENERATORS.cash_expiring();
+
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('warning');
+    expect(params[2]).toMatch(/0 KMF/); // amount fallback à 0
+    expect(params[3]).not.toMatch(/cmd/);
+  });
+
+  test("erreur DB → catch non-fatal", async () => {
+    mockQuery = jest.fn().mockRejectedValueOnce(new Error('db down'));
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.cash_expiring();
+    expect(result).toEqual({ generated: 0, error: 'db down' });
+  });
+});
+
+// ─── GENERATORS.stock_rupture ───────────────────────────────────────────────────
+describe("GENERATORS.stock_rupture", () => {
+  test("aucune ligne → generated:0", async () => {
+    mockQuery = jest.fn().mockResolvedValueOnce({ rows: [] });
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.stock_rupture();
+    expect(result).toEqual({ generated: 0 });
+  });
+
+  test("génère un signal 'info' par produit sans vente, pas d'autoResolve (revue manuelle)", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'prod1', name: 'Power Bank', category: 'tech', price_kmf: 25000 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] }); // upsertSignal — pas de 3e appel (pas d'autoResolve)
+
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.stock_rupture();
+
+    expect(result).toEqual({ generated: 1 });
+    expect(mockQuery).toHaveBeenCalledTimes(2); // SELECT + upsert, jamais autoResolve
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('info');
+    expect(params[2]).toMatch(/Power Bank/);
+    expect(params[3]).toMatch(/tech/);
+  });
+
+  test("nom de produit absent → titre replié sur chaîne vide tronquée", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'prod2', name: null, category: 'mode', price_kmf: 5000 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig2' }] });
+
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.stock_rupture();
+
+    expect(result).toEqual({ generated: 1 });
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[2]).toBe('Produit sans vente — ');
+  });
+
+  test("erreur DB → catch non-fatal", async () => {
+    mockQuery = jest.fn().mockRejectedValueOnce(new Error('db down'));
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.stock_rupture();
+    expect(result).toEqual({ generated: 0, error: 'db down' });
+  });
+});
+
+// ─── GENERATORS.margin_drift ────────────────────────────────────────────────────
+describe("GENERATORS.margin_drift", () => {
+  test("aucune ligne → generated:0", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.margin_drift();
+    expect(result).toEqual({ generated: 0 });
+  });
+
+  test("calcule avgPerItem correctement et génère le signal 'warning'", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-3', total_kmf: 12000, items: 3 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.margin_drift();
+
+    expect(result.generated).toBe(1);
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('warning');
+    expect(params[3]).toMatch(/4,000 KMF \(3 articles\)/); // 12000/3 = 4000
+  });
+
+  test("erreur DB → catch non-fatal", async () => {
+    mockQuery = jest.fn().mockRejectedValueOnce(new Error('db down'));
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.margin_drift();
+    expect(result).toEqual({ generated: 0, error: 'db down' });
+  });
+});
+
+// ─── GENERATORS.dispute_sensitive ───────────────────────────────────────────────
+describe("GENERATORS.dispute_sensitive", () => {
+  test("aucune ligne → generated:0", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.dispute_sensitive();
+    expect(result).toEqual({ generated: 0 });
+  });
+
+  test("severity critical + recommandation escalade si days_in_status > 5, résumé avec nom client", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-4', status: 'disputed', total_kmf: 50000, days_in_status: 8, client_name: 'Ahmed', phone: '+269000' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.dispute_sensitive();
+
+    expect(result.generated).toBe(1);
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('critical');
+    expect(params[3]).toMatch(/Ahmed/);
+    expect(params[11]).toMatch(/Escalader/);
+  });
+
+  test("severity warning + recommandation traiter rapidement si days_in_status <= 5, résumé sans nom client", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-5', status: 'problem', total_kmf: 20000, days_in_status: 2, client_name: null }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.dispute_sensitive();
+
+    expect(result.generated).toBe(1);
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('warning');
+    expect(params[11]).toMatch(/rapidement/);
+  });
+
+  test("reference absente → titre replié sur l'id", async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'order-uuid-123456', reference: null, status: 'problem', total_kmf: 10000, days_in_status: 1, client_name: null }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig1' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    await GENERATORS.dispute_sensitive();
+
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[2]).toBe('Litige — cmd ' + 'order-uuid-123456'.substring(0, 12));
+  });
+
+  test("erreur DB → catch non-fatal", async () => {
+    mockQuery = jest.fn().mockRejectedValueOnce(new Error('db down'));
+    const { GENERATORS } = loadService();
+    const result = await GENERATORS.dispute_sensitive();
+    expect(result).toEqual({ generated: 0, error: 'db down' });
+  });
+});

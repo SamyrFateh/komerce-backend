@@ -28,6 +28,11 @@ jest.mock('../../services/notification-service', () => ({
   notifyPaymentConfirmed: (...args) => mockNotifyPaymentConfirmed(...args),
 }));
 
+const mockHandleOrderConfirmed = jest.fn().mockResolvedValue({ skipped: true });
+jest.mock('../../services/loyalty-service', () => ({
+  handleOrderConfirmed: (...args) => mockHandleOrderConfirmed(...args),
+}));
+
 const { confirmCashByReference } = require('../../services/payment-cash-confirm');
 
 const triggerPurchasing = jest.fn().mockResolvedValue({ ok: true });
@@ -49,6 +54,8 @@ function makeDb(client, extraQueryImpl) {
 beforeEach(() => {
   mockConfirmPaymentCycle.mockReset();
   mockNotifyPaymentConfirmed.mockClear();
+  mockHandleOrderConfirmed.mockClear();
+  mockHandleOrderConfirmed.mockResolvedValue({ skipped: true });
   triggerPurchasing.mockClear();
 });
 
@@ -195,3 +202,142 @@ describe('confirmCashByReference', () => {
     expect(result.status).toBe(200);
   });
 });
+
+describe('confirmCashByReference — Lot A, branches manquantes', () => {
+  test('403 si la requête users.relais_id échoue (checkPossible=false)', async () => {
+    const client = makeClient([
+      { rows: [ORDER] },
+      { error: new Error('colonne relais_id inconnue') },
+    ]);
+    const db = makeDb(client);
+
+    const result = await confirmCashByReference({
+      cashRefCode: 'CASH-001', actor: { id: 42, role: 'agent_relais' }, triggerPurchasing, db,
+    });
+
+    expect(result.status).toBe(403);
+    expect(result.body.error).toMatch(/Configuration agent incomplète/);
+    const { expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
+    expectTransactionRolledBack(client);
+  });
+
+  test('cycle en noop (déjà traité ailleurs) → poursuit malgré success=false', async () => {
+    const client = makeClient([
+      { rows: [ORDER] },
+      { rows: [], rowCount: 1 }, // UPDATE cash_paid_at
+    ]);
+    const db = makeDb(client);
+
+    mockConfirmPaymentCycle.mockResolvedValue({ success: false, noop: true });
+
+    const result = await confirmCashByReference({
+      cashRefCode: 'CASH-001', actor: { id: 1, role: 'admin' }, triggerPurchasing, db,
+    });
+
+    expect(result.status).toBe(200);
+  });
+
+  test('erreur inattendue dans la transaction → ROLLBACK puis re-throw', async () => {
+    const client = makeClient([{ rows: [ORDER] }]);
+    const db = makeDb(client);
+
+    mockConfirmPaymentCycle.mockRejectedValue(new Error('panne moteur paiement'));
+
+    await expect(confirmCashByReference({
+      cashRefCode: 'CASH-001', actor: { id: 1, role: 'admin' }, triggerPurchasing, db,
+    })).rejects.toThrow('panne moteur paiement');
+
+    const { expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
+    expectTransactionRolledBack(client);
+  });
+
+  describe('post-commit fire-and-forget — non bloquant', () => {
+    test('loyaltyService.handleOrderConfirmed résout avec skipped=false → branche log info exécutée', async () => {
+      const client = makeClient([
+        { rows: [ORDER] },
+        { rows: [], rowCount: 1 },
+      ]);
+      const db = makeDb(client);
+      mockConfirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: false });
+      mockHandleOrderConfirmed.mockResolvedValueOnce({ skipped: false, bonus_kmf: 500 });
+
+      const result = await confirmCashByReference({
+        cashRefCode: 'CASH-001', actor: { id: 1, role: 'admin' }, triggerPurchasing, db,
+      });
+
+      expect(result.status).toBe(200);
+      await new Promise((r) => setImmediate(r));
+      expect(mockHandleOrderConfirmed).toHaveBeenCalledWith({ orderId: 'order-1' });
+    });
+
+    test('loyaltyService.handleOrderConfirmed rejette → catch silencieux, réponse 200 conservée', async () => {
+      const client = makeClient([
+        { rows: [ORDER] },
+        { rows: [], rowCount: 1 },
+      ]);
+      const db = makeDb(client);
+      mockConfirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: false });
+      mockHandleOrderConfirmed.mockRejectedValueOnce(new Error('loyalty down'));
+
+      const result = await confirmCashByReference({
+        cashRefCode: 'CASH-001', actor: { id: 1, role: 'admin' }, triggerPurchasing, db,
+      });
+
+      expect(result.status).toBe(200);
+      await new Promise((r) => setImmediate(r));
+    });
+
+    test('notifyPaymentConfirmed et triggerPurchasing rejettent → catch silencieux, réponse 200 conservée', async () => {
+      const client = makeClient([
+        { rows: [ORDER] },
+        { rows: [], rowCount: 1 },
+      ]);
+      const db = makeDb(client);
+      mockConfirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: false });
+      mockNotifyPaymentConfirmed.mockRejectedValueOnce(new Error('whatsapp down'));
+      triggerPurchasing.mockRejectedValueOnce(new Error('sourcing down'));
+
+      const result = await confirmCashByReference({
+        cashRefCode: 'CASH-001', actor: { id: 1, role: 'admin' }, triggerPurchasing, db,
+      });
+
+      expect(result.status).toBe(200);
+      await new Promise((r) => setImmediate(r));
+    });
+
+    test('triggerPurchasing résout → branche log info OK exécutée', async () => {
+      const client = makeClient([
+        { rows: [ORDER] },
+        { rows: [], rowCount: 1 },
+      ]);
+      const db = makeDb(client);
+      mockConfirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: false });
+
+      const result = await confirmCashByReference({
+        cashRefCode: 'CASH-001', actor: { id: 1, role: 'admin' }, triggerPurchasing, db,
+      });
+
+      expect(result.status).toBe(200);
+      await new Promise((r) => setImmediate(r));
+      expect(triggerPurchasing).toHaveBeenCalledWith('order-1');
+    });
+
+    test('triggerPurchasing throw de façon synchrone → catch [CASH-POSTCOMMIT] non-fatal', async () => {
+      const client = makeClient([
+        { rows: [ORDER] },
+        { rows: [], rowCount: 1 },
+      ]);
+      const db = makeDb(client);
+      mockConfirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: false });
+      const throwingTrigger = jest.fn(() => { throw new Error('sync failure'); });
+
+      const result = await confirmCashByReference({
+        cashRefCode: 'CASH-001', actor: { id: 1, role: 'admin' }, triggerPurchasing: throwingTrigger, db,
+      });
+
+      expect(result.status).toBe(200);
+      await new Promise((r) => setImmediate(r));
+    });
+  });
+});
+

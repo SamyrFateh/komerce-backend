@@ -5,7 +5,6 @@ module.exports = {
   service: "Tableau de bord admin SPA multi-vues.",
   perimeter: { in: ['admin/**'], out: ['API backend'] },
   files: { js: [
-    '../admin/js/ClientsView.js',
     '../admin/js/api-client-unsold.js',
     '../admin/js/api-client.js',
     '../admin/js/app.js',

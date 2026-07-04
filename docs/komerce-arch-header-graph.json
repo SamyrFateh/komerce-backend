@@ -13,22 +13,22 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 362,
-    "filesWithFullHeaders": 333,
+    "scannedCodeFiles": 361,
+    "filesWithFullHeaders": 332,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 362,
+    "filesWithAnyHeaders": 361,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 726,
-    "edges": 3508,
+    "graphNodes": 725,
+    "edges": 3506,
     "dbTables": 111,
     "doctrines": 133,
     "impactAreas": 120,
     "unresolvedCodeEdges": 336
   },
   "byDomain": {
-    "infrastructure": 19,
+    "infrastructure": 18,
     "notification": 15,
     "auth": 13,
     "logistics": 35,
@@ -53,8 +53,8 @@
   },
   "byLayer": {
     "route-manifest": 1,
-    "bootstrap": 6,
     "cron": 1,
+    "bootstrap": 5,
     "manual-test": 1,
     "middleware": 11,
     "ui-component": 39,
@@ -84,7 +84,7 @@
   },
   "byCriticality": {
     "critical": 76,
-    "medium": 102,
+    "medium": 101,
     "high": 148,
     "low": 36
   },
@@ -134,38 +134,6 @@
         "dashboard",
         "economic-engine",
         "boutique"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "bootstrap/app.js",
-      "file": "bootstrap/app.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "bootstrap-app",
-      "domain": "infrastructure",
-      "layer": "bootstrap",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbTxn": [],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "bootstrap"
       ],
       "version": "2026-06"
     },
@@ -16349,11 +16317,6 @@
       "doctrine": "alias_historiques_limites"
     },
     {
-      "id": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "doctrine": "resolve_before_behavior_change"
-    },
-    {
       "id": "doctrine:shared_cart_state_machine_v41",
       "type": "doctrine",
       "doctrine": "shared_cart_state_machine_v41"
@@ -16367,6 +16330,11 @@
       "id": "doctrine:retention_snapshots",
       "type": "doctrine",
       "doctrine": "retention_snapshots"
+    },
+    {
+      "id": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "doctrine": "resolve_before_behavior_change"
     },
     {
       "id": "doctrine:DOCTRINE_NON_CONFORMITE (Q-1)",
@@ -17034,11 +17002,6 @@
       "area": "boutique"
     },
     {
-      "id": "impact:bootstrap",
-      "type": "impact-area",
-      "area": "bootstrap"
-    },
-    {
       "id": "impact:cash-reminders",
       "type": "impact-area",
       "area": "cash-reminders"
@@ -17052,6 +17015,11 @@
       "id": "impact:auth-security",
       "type": "impact-area",
       "area": "auth-security"
+    },
+    {
+      "id": "impact:bootstrap",
+      "type": "impact-area",
+      "area": "bootstrap"
     },
     {
       "id": "impact:whatsapp",
@@ -17707,18 +17675,6 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
-    },
-    {
-      "from": "bootstrap/app.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "bootstrap/app.js",
-      "to": "impact:bootstrap",
-      "type": "impact",
-      "label": "bootstrap"
     },
     {
       "from": "bootstrap/crons.js",
@@ -38794,29 +38750,6 @@
         "routes/unsold.js",
         "routes/wallet.js",
         "server.js"
-      ]
-    },
-    "bootstrap/app.js": {
-      "role": "bootstrap-app",
-      "domain": "infrastructure",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "bootstrap"
-      ],
-      "mustCheck": [
-        "doctrine:resolve_before_behavior_change",
-        "impact:bootstrap"
       ]
     },
     "bootstrap/crons.js": {

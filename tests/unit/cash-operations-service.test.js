@@ -123,3 +123,105 @@ describe('cash-operations', () => {
     });
   });
 });
+
+describe('cash-operations — Lot A, branches manquantes', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    confirmPaymentCycle.mockReset();
+  });
+
+  describe('collectCash — préconditions', () => {
+    it('order_not_found si la commande n\'existe pas', async () => {
+      const client = makeClient([{ rows: [] }]);
+      const result = await collectCash({ orderId: 'ghost', agentUser: makeAgent(), dbClient: client });
+      expect(result).toEqual({ order_not_found: true });
+      expect(confirmPaymentCycle).not.toHaveBeenCalled();
+    });
+
+    it('invalid_status si le statut commande est dans la liste bloquante (ex: cancelled)', async () => {
+      const client = makeClient([{ rows: [makeOrder({ status: 'cancelled' })] }]);
+      const result = await collectCash({ orderId: 'order-001', agentUser: makeAgent(), dbClient: client });
+      expect(result).toEqual({ invalid_status: true, status: 'cancelled' });
+      expect(confirmPaymentCycle).not.toHaveBeenCalled();
+    });
+
+    it('invalid_status si le statut commande est "collected"', async () => {
+      const client = makeClient([{ rows: [makeOrder({ status: 'collected' })] }]);
+      const result = await collectCash({ orderId: 'order-001', agentUser: makeAgent(), dbClient: client });
+      expect(result).toEqual({ invalid_status: true, status: 'collected' });
+    });
+  });
+
+  describe('collectCash — cross-relais, cas d\'erreur', () => {
+    it('agent_config_error si la requête users.relais_id échoue (checkPossible=false)', async () => {
+      const client = makeClient([
+        { rows: [makeOrder()] },
+        { error: new Error('colonne relais_id inconnue') },
+        { rows: [], rowCount: 1 }, // INSERT alerts (fire-and-forget)
+      ]);
+      const result = await collectCash({ orderId: 'order-001', agentUser: makeAgent(), dbClient: client });
+      expect(result).toEqual({ agent_config_error: true });
+      expect(client.calls.some(c => String(c.sql).includes('INSERT INTO alerts'))).toBe(true);
+      expect(confirmPaymentCycle).not.toHaveBeenCalled();
+    });
+
+    it('agent_config_error si l\'agent n\'a aucun relais_id assigné', async () => {
+      const client = makeClient([
+        { rows: [makeOrder()] },
+        { rows: [{ relais_id: null }] },
+        { rows: [], rowCount: 1 },
+      ]);
+      const result = await collectCash({ orderId: 'order-001', agentUser: makeAgent(), dbClient: client });
+      expect(result).toEqual({ agent_config_error: true });
+    });
+
+    it('insertion alerte hors-transaction échoue silencieusement (non-bloquant)', async () => {
+      const client = makeClient([
+        { rows: [makeOrder({ relais_id: 'relais-order' })] },
+        { rows: [{ relais_id: 'relais-agent' }] },
+        { error: new Error('alerts table down') },
+      ]);
+      const result = await collectCash({ orderId: 'order-001', agentUser: makeAgent(), dbClient: client });
+      expect(result).toEqual({ cross_relais_blocked: true });
+    });
+  });
+
+  describe('collectCash — rôle non agent_relais', () => {
+    it('un admin peut collecter sans vérification cross-relais', async () => {
+      const client = makeClient([
+        { rows: [makeOrder({ relais_id: 'relais-999' })] },
+        { rows: [] }, // SELECT cash_collections (doublon check)
+        { rows: [{ id: 'collection-002', order_id: 'order-001', amount_kmf: 12000 }] },
+      ]);
+      confirmPaymentCycle.mockResolvedValue({ success: true, noop: false });
+
+      const result = await collectCash({
+        orderId: 'order-001',
+        agentUser: makeAgent({ id: 'admin-001', role: 'admin' }),
+        dbClient: client,
+      });
+
+      expect(result.success).toBe(true);
+      expect(confirmPaymentCycle).toHaveBeenCalledWith(expect.objectContaining({
+        actor: { id: 'admin-001', role: 'admin' },
+      }));
+    });
+  });
+
+  describe('collectCash — cycle noop', () => {
+    it('noop:true est propagé dans la réponse de succès', async () => {
+      const client = makeClient([
+        { rows: [makeOrder()] },
+        { rows: [{ relais_id: 'relais-001' }] },
+        { rows: [] },
+        { rows: [{ id: 'collection-003', order_id: 'order-001', amount_kmf: 12000 }] },
+      ]);
+      confirmPaymentCycle.mockResolvedValue({ success: false, noop: true, stockBlocked: false });
+
+      const result = await collectCash({ orderId: 'order-001', agentUser: makeAgent(), dbClient: client });
+
+      expect(result.success).toBe(true);
+      expect(result.noop).toBe(true);
+    });
+  });
+});

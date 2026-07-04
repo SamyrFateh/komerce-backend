@@ -188,3 +188,168 @@ describe('POST /api/v2/orders/:ref/create-parcel', () => {
     expect(res.body).toEqual({ error: 'Regle violee', rule: 'no_duplicate_parcel' });
   });
 });
+
+describe('order-api-v2 — Lot A, branches manquantes', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockState.user = { id: 'adm1', role: 'admin', full_name: 'Admin Test' };
+  });
+
+  describe('GET / — filtres supplémentaires et erreur', () => {
+    it('applique le filtre payment_status et le filtre search (ILIKE)', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      await request(buildApp()).get('/api/v2/orders?payment_status=paid&search=K123');
+
+      const [listSql, listParams] = mockDbQuery.mock.calls[1];
+      expect(listSql).toContain('o.payment_status = $1');
+      expect(listSql).toContain('ILIKE');
+      expect(listParams).toEqual(expect.arrayContaining(['paid', '%K123%']));
+    });
+
+    it('erreur db → next(err) → 500', async () => {
+      mockDbQuery.mockRejectedValueOnce(new Error('db down'));
+      const res = await request(buildApp()).get('/api/v2/orders');
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('db down');
+    });
+  });
+
+  describe('GET /pending-cash — erreur', () => {
+    it('erreur db → next(err) → 500', async () => {
+      mockDbQuery.mockRejectedValueOnce(new Error('pending-cash down'));
+      const res = await request(buildApp()).get('/api/v2/orders/pending-cash');
+      expect(res.status).toBe(500);
+    });
+  });
+
+  describe('GET /ready-for-parcel', () => {
+    it('200 avec la liste des commandes confirmées sans colis', async () => {
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'K1' }] });
+      const res = await request(buildApp()).get('/api/v2/orders/ready-for-parcel');
+      expect(res.status).toBe(200);
+      expect(res.body.count).toBe(1);
+      expect(res.body.orders).toEqual([{ id: 'o1', reference: 'K1' }]);
+    });
+
+    it('erreur db → next(err) → 500', async () => {
+      mockDbQuery.mockRejectedValueOnce(new Error('ready-for-parcel down'));
+      const res = await request(buildApp()).get('/api/v2/orders/ready-for-parcel');
+      expect(res.status).toBe(500);
+    });
+  });
+
+  describe('GET /:ref — erreur', () => {
+    it('erreur db sur la requête order → next(err) → 500', async () => {
+      mockDbQuery.mockRejectedValueOnce(new Error('detail down'));
+      const res = await request(buildApp()).get('/api/v2/orders/K12345');
+      expect(res.status).toBe(500);
+    });
+
+    it('erreur db sur la requête items → next(err) → 500', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'K12345' }] })
+        .mockRejectedValueOnce(new Error('items down'));
+      const res = await request(buildApp()).get('/api/v2/orders/K12345');
+      expect(res.status).toBe(500);
+    });
+  });
+
+  describe('POST /:ref/confirm-cash — cas additionnels', () => {
+    it('erreur sans err.status → next(err) → 500', async () => {
+      mockConfirmCashAndCreateParcel.mockRejectedValue(new Error('panne interne'));
+      const res = await request(buildApp()).post('/api/v2/orders/K12345/confirm-cash');
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('panne interne');
+    });
+
+    it('req.user sans full_name/email → valeurs par défaut appliquées à actor', async () => {
+      mockState.user = { id: 'adm1', role: 'admin' }; // pas de full_name ni email
+      mockConfirmCashAndCreateParcel.mockResolvedValue({
+        order: { id: 'o1', reference: 'K1', status: 'confirmed', total_kmf: 1000, customer_name: 'X', customer_phone: 'Y' },
+        parcelResult: { success: false },
+      });
+
+      const res = await request(buildApp()).post('/api/v2/orders/K1/confirm-cash');
+      expect(res.status).toBe(200);
+      expect(mockConfirmCashAndCreateParcel).toHaveBeenCalledWith('K1', expect.objectContaining({
+        id: 'adm1', role: 'admin', full_name: 'Admin CT', email: undefined,
+      }));
+    });
+
+    it("notifyPaymentConfirmed avec facture → log info sans faire echouer la reponse", async () => {
+      mockConfirmCashAndCreateParcel.mockResolvedValue({
+        order: { id: 'o1', reference: 'K1', status: 'confirmed', total_kmf: 1000, customer_name: 'X', customer_phone: 'Y' },
+        parcelResult: { success: false },
+      });
+      mockNotifyPaymentConfirmed.mockResolvedValueOnce({ invoice: 'INV-1' });
+
+      const res = await request(buildApp()).post('/api/v2/orders/K1/confirm-cash');
+      expect(res.status).toBe(200);
+      await new Promise((r) => setImmediate(r));
+      expect(mockNotifyPaymentConfirmed).toHaveBeenCalledWith('o1', 'K1');
+    });
+
+    it('notifyPaymentConfirmed rejette → catch silencieux, reponse deja envoyee reste 200', async () => {
+      mockConfirmCashAndCreateParcel.mockResolvedValue({
+        order: { id: 'o1', reference: 'K1', status: 'confirmed', total_kmf: 1000, customer_name: 'X', customer_phone: 'Y' },
+        parcelResult: { success: false },
+      });
+      mockNotifyPaymentConfirmed.mockRejectedValueOnce(new Error('whatsapp down'));
+
+      const res = await request(buildApp()).post('/api/v2/orders/K1/confirm-cash');
+      expect(res.status).toBe(200);
+      await new Promise((r) => setImmediate(r));
+    });
+
+    it('notifyParcelCreated rejette quand auto-parcel reussit → catch silencieux', async () => {
+      mockConfirmCashAndCreateParcel.mockResolvedValue({
+        order: { id: 'o1', reference: 'K1', status: 'confirmed', total_kmf: 1000, customer_name: 'X', customer_phone: 'Y' },
+        parcelResult: { success: true, parcel: { reference: 'PCL9' } },
+      });
+      mockNotifyParcelCreated.mockRejectedValueOnce(new Error('parcel notif down'));
+
+      const res = await request(buildApp()).post('/api/v2/orders/K1/confirm-cash');
+      expect(res.status).toBe(200);
+      expect(res.body.parcel).toEqual({ reference: 'PCL9' });
+      await new Promise((r) => setImmediate(r));
+    });
+  });
+
+  describe('POST /:ref/create-parcel — cas additionnels', () => {
+    it('erreur sans err.status → next(err) → 500', async () => {
+      mockCreateParcelManually.mockRejectedValue(new Error('panne creation'));
+      const res = await request(buildApp()).post('/api/v2/orders/K12345/create-parcel');
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('panne creation');
+    });
+
+    it('req.user sans full_name → valeur par défaut "Admin CT"', async () => {
+      mockState.user = { id: 'adm1', role: 'admin' };
+      mockCreateParcelManually.mockResolvedValue({
+        order: { id: 'o1', reference: 'K1' },
+        parcel: { reference: 'PCL3' },
+      });
+
+      const res = await request(buildApp()).post('/api/v2/orders/K1/create-parcel');
+      expect(res.status).toBe(200);
+      expect(mockCreateParcelManually).toHaveBeenCalledWith('K1', expect.objectContaining({
+        id: 'adm1', role: 'admin', name: 'Admin CT',
+      }));
+    });
+
+    it('notifyParcelCreated rejette → catch silencieux, reponse 200 conservee', async () => {
+      mockCreateParcelManually.mockResolvedValue({
+        order: { id: 'o1', reference: 'K1' },
+        parcel: { reference: 'PCL4' },
+      });
+      mockNotifyParcelCreated.mockRejectedValueOnce(new Error('down'));
+
+      const res = await request(buildApp()).post('/api/v2/orders/K1/create-parcel');
+      expect(res.status).toBe(200);
+      await new Promise((r) => setImmediate(r));
+    });
+  });
+});

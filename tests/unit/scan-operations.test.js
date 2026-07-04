@@ -15,6 +15,7 @@ jest.mock('../../db');
 jest.mock('../../utils/parcelSync');
 jest.mock('../../services/notification-service');
 jest.mock('../../services/order-status-machine');
+jest.mock('../../routes/loyalty', () => ({ recalculateLoyalty: jest.fn().mockResolvedValue() }), { virtual: true });
 
 const db                       = require('../../db');
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../../utils/parcelSync');
@@ -40,6 +41,8 @@ beforeEach(() => {
   notifyText.mockResolvedValue(true);
   transitionOrderStatus.mockResolvedValue({ success: true });
 });
+
+const flushPromises = () => new Promise(setImmediate);
 
 // ─── recordScan ───────────────────────────────────────────────────────────────
 
@@ -102,6 +105,192 @@ describe('recordScan', () => {
     const result = await scanOps.recordScan({}, user, null);
     expect(result.status).toBe(400);
     expect(db.getClient).not.toHaveBeenCalled();
+  });
+
+  test('KOM-ITEM introuvable → 404 + ROLLBACK', async () => {
+    const client = makeClient([{}, { rows: [] }, {}]); // BEGIN, SELECT order_items vide, ROLLBACK
+    db.getClient.mockResolvedValue(client);
+
+    const result = await scanOps.recordScan({ scan_code: 'KOM-ITEM-XYZ', step: 'preparation' }, user, null);
+    expect(result.status).toBe(404);
+    expect(result.body.error).toMatch(/Article introuvable/);
+  });
+
+  test('appelle transitionOrderStatus si le sync colis a échoué (synced=false)', async () => {
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query.mockResolvedValue({ rows: [{ status: 'shipped', reference: 'KOM-001' }] });
+    safeSyncScanToParcels.mockResolvedValueOnce({ synced: false });
+
+    await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'shipped' }, user, null);
+
+    expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({ newStatus: 'shipped', source: 'scan' }));
+  });
+
+  test('is_anomaly=true → déclenche la notification anomalie aux admins', async () => {
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ status: 'preparation', reference: 'KOM-001' }] }) // post-commit select
+      .mockResolvedValueOnce({ rows: [{ phone: '+269900000' }] }); // _notifyAnomaly admins
+
+    const result = await scanOps.recordScan(
+      { scan_code: 'KOM-2026-001', step: 'preparation', is_anomaly: true, notes: 'colis abîmé' },
+      user, null
+    );
+    await flushPromises();
+
+    expect(result.body.is_anomaly).toBe(true);
+    expect(result.body.sms_triggered).toBe(false);
+    expect(notifyText).toHaveBeenCalledWith('+269900000', expect.stringContaining('Anomalie'), 'anomaly_alert', 'o1');
+  });
+
+  test('notification "shipped" avec téléphone présent → sms_triggered=true', async () => {
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ status: 'shipped', reference: 'KOM-001' }] })
+      .mockResolvedValueOnce({ rows: [{ user_phone: '+269111111' }] });
+
+    const result = await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'shipped' }, user, null);
+
+    expect(result.body.sms_triggered).toBe(true);
+    expect(notifyText).toHaveBeenCalledWith('+269111111', expect.stringContaining('remise au transitaire'), 'shipped', 'o1');
+  });
+
+  test('notification "in_transit" avec téléphone présent → sms_triggered=true', async () => {
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ status: 'in_transit', reference: 'KOM-001' }] })
+      .mockResolvedValueOnce({ rows: [{ user_phone: '+269222222' }] });
+
+    const result = await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'in_transit' }, user, null);
+
+    expect(result.body.sms_triggered).toBe(true);
+    expect(notifyText).toHaveBeenCalledWith('+269222222', expect.stringContaining('embarquée'), 'in_transit', 'o1');
+  });
+
+  test('notification "relais_received" avec téléphone destinataire présent → sms_triggered=true', async () => {
+    const agentRelais = { id: 'u4', role: 'agent_relais' };
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ status: 'available', reference: 'KOM-001' }] })
+      .mockResolvedValueOnce({ rows: [{ pickup_code: '123456', recipient_phone: '+269333333', full_name: 'Jean', relais_name: 'Relais A', relais_address: 'Moroni' }] });
+
+    const result = await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'relais_received' }, agentRelais, null);
+
+    expect(result.body.sms_triggered).toBe(true);
+    expect(notifyText).toHaveBeenCalledWith('+269333333', expect.stringContaining('disponible'), 'available', 'o1');
+  });
+
+  test('rollback et propage l\'erreur si une requete echoue', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [{ id: 'o1' }] }) // SELECT orders
+        .mockRejectedValueOnce(new Error('insert failed')) // INSERT scans
+        .mockResolvedValueOnce({}), // ROLLBACK
+      release: jest.fn(),
+    };
+    db.getClient.mockResolvedValue(client);
+
+    await expect(scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'shipped' }, user, null)).rejects.toThrow('insert failed');
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    expect(client.release).toHaveBeenCalled();
+  });
+
+  test('notification "shipped" échoue → catch géré silencieusement', async () => {
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ status: 'shipped', reference: 'KOM-001' }] })
+      .mockResolvedValueOnce({ rows: [{ user_phone: '+269111111' }] });
+    notifyText.mockRejectedValueOnce(new Error('sms down'));
+
+    const result = await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'shipped' }, user, null);
+    await flushPromises();
+
+    expect(result.body.sms_triggered).toBe(true);
+  });
+
+  test('notification "in_transit" échoue → catch géré silencieusement', async () => {
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ status: 'in_transit', reference: 'KOM-001' }] })
+      .mockResolvedValueOnce({ rows: [{ user_phone: '+269222222' }] });
+    notifyText.mockRejectedValueOnce(new Error('sms down'));
+
+    const result = await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'in_transit' }, user, null);
+    await flushPromises();
+
+    expect(result.body.sms_triggered).toBe(true);
+  });
+
+  test('notification "relais_received" échoue → catch géré silencieusement', async () => {
+    const agentRelais = { id: 'u4', role: 'agent_relais' };
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ status: 'available', reference: 'KOM-001' }] })
+      .mockResolvedValueOnce({ rows: [{ pickup_code: '123456', recipient_phone: '+269333333', full_name: 'Jean', relais_name: 'Relais A', relais_address: 'Moroni' }] });
+    notifyText.mockRejectedValueOnce(new Error('sms down'));
+
+    const result = await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'relais_received' }, agentRelais, null);
+    await flushPromises();
+
+    expect(result.body.sms_triggered).toBe(true);
+  });
+
+  test('_notifyPostScan : erreur DB interne → catch global, sms_triggered=false', async () => {
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ status: 'shipped', reference: 'KOM-001' }] })
+      .mockRejectedValueOnce(new Error('db down dans notifyPostScan'));
+
+    const result = await scanOps.recordScan({ scan_code: 'KOM-2026-001', step: 'shipped' }, user, null);
+
+    expect(result.body.sms_triggered).toBe(false);
+  });
+
+  test('is_anomaly=true avec échec d\'envoi à un admin → catch géré silencieusement', async () => {
+    const client = makeClient([
+      {}, { rows: [{ id: 'o1' }] }, { rows: [{ id: 's1', order_id: 'o1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ status: 'preparation', reference: 'KOM-001' }] })
+      .mockResolvedValueOnce({ rows: [{ phone: '+269900000' }] });
+    notifyText.mockRejectedValueOnce(new Error('sms down'));
+
+    const result = await scanOps.recordScan(
+      { scan_code: 'KOM-2026-001', step: 'preparation', is_anomaly: true, notes: 'colis abîmé' },
+      user, null
+    );
+    await flushPromises();
+
+    expect(result.body.is_anomaly).toBe(true);
   });
 });
 
@@ -186,6 +375,88 @@ describe('collectParcel', () => {
     const result = await scanOps.collectParcel({}, agentRelais, '1.2.3.4', 'UA');
     expect(result.status).toBe(400);
     expect(db.getClient).not.toHaveBeenCalled();
+  });
+
+  test('appelle transitionOrderStatus si le sync colis a échoué (synced=false)', async () => {
+    const client = makeClient([
+      {}, { rows: [order] }, { rows: [{ id: 's1' }] }, {}, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query.mockResolvedValue({ rows: [{ user_phone: '+269123456' }] });
+    safeSyncScanToParcels.mockResolvedValueOnce({ synced: false });
+
+    await scanOps.collectParcel({ pickup_code: '123456' }, admin, '127.0.0.1', 'UA');
+
+    expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({ newStatus: 'collected', source: 'scan' }));
+  });
+
+  test('agent_relais du bon relais → succès (cross-relais check OK, retourne null)', async () => {
+    const client = makeClient([
+      {}, { rows: [order] }, { rows: [{ relais_id: 'r1' }] }, { rows: [{ id: 's1' }] }, {}, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query.mockResolvedValue({ rows: [{ user_phone: '+269123456' }] });
+
+    const result = await scanOps.collectParcel({ pickup_code: '123456' }, agentRelais, '1.2.3.4', 'UA');
+    expect(result.status).toBe(200);
+  });
+
+  test('la requête users.relais_id échoue → 403 configuration incomplète', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [order] }) // SELECT orders FOR UPDATE
+        .mockRejectedValueOnce(new Error('db timeout')) // SELECT users.relais_id échoue
+        .mockResolvedValueOnce({}), // ROLLBACK
+      release: jest.fn(),
+    };
+    db.getClient.mockResolvedValue(client);
+    db.query.mockResolvedValue({ rows: [] });
+
+    const result = await scanOps.collectParcel({ pickup_code: '123456' }, agentRelais, '1.2.3.4', 'UA');
+    expect(result.status).toBe(403);
+    expect(result.body.error).toMatch(/incomplète/);
+  });
+
+  test('échec de mise à jour des tentatives (cross-relais refus) → géré silencieusement', async () => {
+    const client = makeClient([
+      {}, { rows: [order] }, { rows: [{ relais_id: 'r2' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query.mockRejectedValueOnce(new Error('update failed')); // UPDATE attempts échoue
+
+    const result = await scanOps.collectParcel({ pickup_code: '123456' }, agentRelais, '1.2.3.4', 'UA');
+    expect(result.status).toBe(403);
+    expect(result.body.attempts).toBe(1);
+  });
+
+  test('rollback et propage l\'erreur si une requete echoue', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [order] }) // SELECT orders FOR UPDATE
+        .mockRejectedValueOnce(new Error('insert failed')) // INSERT scans
+        .mockResolvedValueOnce({}), // ROLLBACK
+      release: jest.fn(),
+    };
+    db.getClient.mockResolvedValue(client);
+
+    await expect(scanOps.collectParcel({ pickup_code: '123456' }, admin, '127.0.0.1', 'UA')).rejects.toThrow('insert failed');
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+  });
+
+  test('notification commanditaire échoue → catch géré silencieusement', async () => {
+    const client = makeClient([
+      {}, { rows: [order] }, { rows: [{ id: 's1' }] }, {}, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    db.query.mockResolvedValue({ rows: [{ user_phone: '+269123456' }] });
+    notifyText.mockRejectedValueOnce(new Error('sms provider down'));
+
+    const result = await scanOps.collectParcel({ pickup_code: '123456' }, admin, '127.0.0.1', 'UA');
+    await flushPromises();
+
+    expect(result.status).toBe(200);
   });
 });
 
@@ -278,6 +549,79 @@ describe('verifyQr', () => {
     expect(queryArg).toContain('o1');
     expect(queryArg).toContain(token);
   });
+
+  test('aucun qr_token généré pour la commande → 400', async () => {
+    const noTokenOrder = { ...order, qr_token: null };
+    const client = makeClient([{}, { rows: [noTokenOrder] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await scanOps.verifyQr({ token }, user);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch(/Aucun QR code/);
+  });
+
+  test('token ne correspond pas au qr_token de la commande → 400', async () => {
+    const client = makeClient([{}, { rows: [order] }, {}]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await scanOps.verifyQr({ token: 'un-autre-token' }, user);
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch(/QR code invalide/);
+  });
+
+  test('recalcule la fidélité si order.user_id est présent (non bloquant)', async () => {
+    const { recalculateLoyalty } = require('../../routes/loyalty');
+    const client = makeClient([
+      {}, { rows: [order] }, {}, { rows: [{ id: 'sc1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    await scanOps.verifyQr({ token }, user);
+    await flushPromises();
+
+    expect(recalculateLoyalty).toHaveBeenCalledWith(db, 'uid1');
+  });
+
+  test('rollback et propage l\'erreur si une requete echoue', async () => {
+    const client = {
+      query: jest.fn()
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [order] }) // SELECT order par token
+        .mockRejectedValueOnce(new Error('update failed')), // UPDATE qr_token
+      release: jest.fn(),
+    };
+    db.getClient.mockResolvedValue(client);
+
+    await expect(scanOps.verifyQr({ token }, user)).rejects.toThrow('update failed');
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+  });
+
+  test('notification commanditaire echoue → catch géré silencieusement', async () => {
+    const client = makeClient([
+      {}, { rows: [order] }, {}, { rows: [{ id: 'sc1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+    notifyText.mockRejectedValueOnce(new Error('sms provider down'));
+
+    const result = await scanOps.verifyQr({ token }, user);
+    await flushPromises();
+
+    expect(result.status).toBe(200);
+  });
+
+  test('échec du recalcul de fidélité → catch géré silencieusement', async () => {
+    const { recalculateLoyalty } = require('../../routes/loyalty');
+    recalculateLoyalty.mockRejectedValueOnce(new Error('loyalty engine down'));
+    const client = makeClient([
+      {}, { rows: [order] }, {}, { rows: [{ id: 'sc1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await scanOps.verifyQr({ token }, user);
+    await flushPromises();
+
+    expect(result.status).toBe(200);
+  });
 });
 
 // ─── triggerScan3 ─────────────────────────────────────────────────────────────
@@ -311,5 +655,36 @@ describe('triggerScan3', () => {
   test('commande introuvable → throw', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
     await expect(scanOps.triggerScan3('inconnu')).rejects.toThrow('introuvable');
+  });
+
+  test('échec du log INSERT scans → géré silencieusement, pas de sync', async () => {
+    const order = {
+      id: 'o1', reference: 'KOM-001', status: 'preparation',
+      client_phone: '+269111', first_name: 'Ali',
+    };
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockRejectedValueOnce(new Error('insert failed'));
+
+    const result = await scanOps.triggerScan3('o1', 'agent1');
+
+    expect(result.success).toBe(true);
+    expect(safeSyncScanToParcels).not.toHaveBeenCalled();
+  });
+
+  test('échec de la notification préparation → catch géré silencieusement', async () => {
+    const order = {
+      id: 'o1', reference: 'KOM-001', status: 'preparation',
+      client_phone: '+269111', first_name: 'Ali',
+    };
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1' }] });
+    notifyText.mockRejectedValueOnce(new Error('sms provider down'));
+
+    const result = await scanOps.triggerScan3('o1', 'agent1');
+    await flushPromises();
+
+    expect(result.success).toBe(true);
   });
 });

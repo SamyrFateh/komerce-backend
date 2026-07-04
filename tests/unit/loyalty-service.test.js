@@ -105,4 +105,139 @@ describe('loyalty-service', () => {
     expect(result.pending_reward).toEqual({ id: 'reward-001', at_count: 3, created_at: '2026-06-29T00:00:00Z' });
     expect(result.status).toBe('reward_pending');
   });
+
+  it('getFinanceConfig retourne null si la table finance_config n\'existe pas encore (42P01)', async () => {
+    const err = new Error('relation "finance_config" does not exist');
+    err.code = '42P01';
+    db.query.mockRejectedValueOnce(err);
+
+    const result = await getFinanceConfig();
+
+    expect(result).toBeNull();
+    expect(db.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('getFinanceConfig propage les erreurs autres que 42P01', async () => {
+    const err = new Error('connection timeout');
+    db.query.mockRejectedValueOnce(err);
+
+    await expect(getFinanceConfig()).rejects.toThrow('connection timeout');
+  });
+
+  it('handleOrderConfirmed : loyalty désactivée → skipped loyalty_disabled', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ loyalty_active: false, loyalty_threshold_kmf: 10000, loyalty_trigger_count: 3 }] });
+
+    const result = await handleOrderConfirmed({ orderId: 'order-004' });
+
+    expect(result).toEqual({ skipped: true, reason: 'loyalty_disabled' });
+    expect(db.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleOrderConfirmed : pas de config finance (table absente) → skipped loyalty_disabled', async () => {
+    const err = new Error('relation does not exist');
+    err.code = '42P01';
+    db.query.mockRejectedValueOnce(err);
+
+    const result = await handleOrderConfirmed({ orderId: 'order-004b' });
+
+    expect(result).toEqual({ skipped: true, reason: 'loyalty_disabled' });
+  });
+
+  it('handleOrderConfirmed : commande introuvable → skipped order_not_found', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ loyalty_active: true, loyalty_threshold_kmf: 10000, loyalty_trigger_count: 3 }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await handleOrderConfirmed({ orderId: 'order-005' });
+
+    expect(result).toEqual({ skipped: true, reason: 'order_not_found' });
+  });
+
+  it('handleOrderConfirmed : commande guest (pas de user_id) → skipped guest_order', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ loyalty_active: true, loyalty_threshold_kmf: 10000, loyalty_trigger_count: 3 }] })
+      .mockResolvedValueOnce({ rows: [{
+        id: 'order-006', reference: 'CMD-006', user_id: null, total_kmf: '22000',
+      }] });
+
+    const result = await handleOrderConfirmed({ orderId: 'order-006' });
+
+    expect(result).toEqual({ skipped: true, reason: 'guest_order' });
+  });
+
+  it('handleOrderConfirmed : la notification WhatsApp échoue → catch géré silencieusement', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ loyalty_active: true, loyalty_threshold_kmf: 10000, loyalty_trigger_count: 3 }] })
+      .mockResolvedValueOnce({ rows: [{
+        id: 'order-007', reference: 'CMD-007', user_id: 'user-001', total_kmf: '22000',
+        full_name: 'Client Test', phone: '000000', big_basket_count: 2, big_basket_last_notified_count: 0,
+      }] })
+      .mockResolvedValueOnce({ rows: [{ big_basket_count: 3, big_basket_last_notified_count: 0, full_name: 'Client Test', phone: '000000' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    notificationService.notifyLoyaltyEarned.mockRejectedValueOnce(new Error('whatsapp down'));
+
+    const result = await handleOrderConfirmed({ orderId: 'order-007' });
+    await new Promise(setImmediate);
+
+    expect(result.notified).toBe(true);
+  });
+
+  it('handleOrderConfirmed : erreur DB inattendue → skipped error', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ loyalty_active: true, loyalty_threshold_kmf: 10000, loyalty_trigger_count: 3 }] })
+      .mockRejectedValueOnce(new Error('db down'));
+
+    const result = await handleOrderConfirmed({ orderId: 'order-008' });
+
+    expect(result).toEqual({ skipped: true, reason: 'error', error: 'db down' });
+  });
+
+  it('getUserLoyaltyStatus : userId absent → null', async () => {
+    const result = await getUserLoyaltyStatus(null);
+    expect(result).toBeNull();
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('getUserLoyaltyStatus : loyalty désactivée → { active: false }', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ loyalty_active: false }] });
+
+    const result = await getUserLoyaltyStatus('user-002');
+
+    expect(result).toEqual({ active: false });
+  });
+
+  it('getUserLoyaltyStatus : utilisateur introuvable → null', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ loyalty_active: true, loyalty_threshold_kmf: 10000, loyalty_trigger_count: 3 }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await getUserLoyaltyStatus('user-003');
+
+    expect(result).toBeNull();
+  });
+
+  it('getUserLoyaltyStatus : aucun panier, pas de reward → status inactive', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ loyalty_active: true, loyalty_threshold_kmf: 10000, loyalty_trigger_count: 3 }] })
+      .mockResolvedValueOnce({ rows: [{ big_basket_count: 0, big_basket_last_notified_count: 0 }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await getUserLoyaltyStatus('user-004');
+
+    expect(result.pending_reward).toBeNull();
+    expect(result.status).toBe('inactive');
+  });
+
+  it('getUserLoyaltyStatus : paniers en cours, loin du palier → status active', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ loyalty_active: true, loyalty_threshold_kmf: 10000, loyalty_trigger_count: 3 }] })
+      .mockResolvedValueOnce({ rows: [{ big_basket_count: 1, big_basket_last_notified_count: 0 }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await getUserLoyaltyStatus('user-005');
+
+    expect(result.remaining_to_next_tier).toBe(2);
+    expect(result.status).toBe('active');
+  });
 });

@@ -53,7 +53,6 @@ module.exports = {
     ],
     bootstrap: [
       'bootstrap/api-routes.js',
-      'bootstrap/app.js',
       'bootstrap/crons.js',
       'bootstrap/env.js',
       'bootstrap/html-routes.js',

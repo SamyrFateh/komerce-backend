@@ -12,11 +12,13 @@
  * de fidélité n'a dû partir depuis le dernier refactor. Corrigé en ajoutant
  * `firstName` à la destructuration de require('./internals').
  *
- * Gap connu (non testé) : `notifyText()` (bloc "ZG-1 FIX") référence
- * `callAuthKeyText` et `_alertNotificationFailure`, ni importés ni exportés
- * par ce module, et n'est elle-même pas exportée dans module.exports — code
- * mort et cassé, mais inatteignable depuis l'extérieur du fichier. Signalé
- * séparément, hors périmètre de ce patch minimal (import de firstName only).
+ * Code mort supprimé (2026-07-04, doctrine "complétion au contact") :
+ * le bloc `notifyText()` ("ZG-1 FIX") référençait `callAuthKeyText` et
+ * `_alertNotificationFailure`, ni importés ni exportés par ce module, et
+ * n'était lui-même pas exporté dans module.exports — code inatteignable et
+ * cassé s'il l'avait été. Le vrai `notifyText` utilisé partout ailleurs vit
+ * dans services/notifications/misc.js (testé séparément). Supprimé plutôt
+ * que testé : tester du code mort et cassé n'aurait eu aucune valeur.
  *
  * Couverture :
  *   ✓ pas de téléphone → skip, pas d'appel provider

@@ -231,3 +231,132 @@ describe("getStats", () => {
     expect(stats.open_parcels).toBe(5);
   });
 });
+
+// ─── Lot A, branches manquantes ───────────────────────────────────────────────
+
+describe("inventory-service — Lot A, branches manquantes", () => {
+  describe("receiveItem — order_id explicite", () => {
+    test("order_id fourni explicitement a priorité sur oi.order_id", async () => {
+      const oi = { id: 'oi-9', order_id: 'ord-oi', product_id: 'p-9', quantity: 1, product_name: 'Sucre' };
+      const inv = { id: 'inv-9', order_item_id: 'oi-9', order_id: 'ord-explicit', status: 'received', destination_island: 'Anjouan' };
+
+      mockQuery = jest.fn()
+        .mockResolvedValueOnce({ rows: [oi] })
+        .mockResolvedValueOnce({ rows: [inv] })
+        .mockResolvedValueOnce({ rows: [] }) // proposeAssignment → item non trouvé (status déjà avancé) → null
+        .mockResolvedValueOnce({ rows: [{ total: 1, received: 1, assigned: 0 }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const svc = loadService();
+      await svc.receiveItem({ order_item_id: 'oi-9', order_id: 'ord-explicit' });
+
+      // 2e appel = INSERT inventory_items — vérifier que order_id explicite est utilisé
+      expect(mockQuery.mock.calls[1][1]).toEqual(['oi-9', 'ord-explicit']);
+      // 4e appel = updateOrderCompletion SELECT counts, doit utiliser ord-explicit
+      expect(mockQuery.mock.calls[3][1]).toEqual(['ord-explicit']);
+    });
+  });
+
+  describe("proposeAssignment — alternatives", () => {
+    test("plusieurs colis compatibles → alternatives contient les suivants", async () => {
+      const item = { id: 'inv-alt', order_id: 'ord-1', destination_island: 'Grande Comore', status: 'received' };
+      mockQuery = jest.fn()
+        .mockResolvedValueOnce({ rows: [item] })
+        .mockResolvedValueOnce({ rows: [
+          { id: 'pcl-a', reference: 'PA', order_id: 'ord-1', priority: 0, item_count: 0 },
+          { id: 'pcl-b', reference: 'PB', order_id: 'ord-1', priority: 0, item_count: 1 },
+          { id: 'pcl-c', reference: 'PC', order_id: 'ord-1', priority: 1, item_count: 0 },
+        ] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const svc = loadService();
+      const result = await svc.proposeAssignment('inv-alt');
+      expect(result.parcel_id).toBe('pcl-a');
+      expect(result.alternatives).toHaveLength(2);
+      expect(result.alternatives[0].id).toBe('pcl-b');
+    });
+  });
+
+  describe("proposeAll", () => {
+    test("compte proposed/buffered/errors sur plusieurs items", async () => {
+      mockQuery = jest.fn()
+        // SELECT items éligibles
+        .mockResolvedValueOnce({ rows: [{ id: 'inv-p1' }, { id: 'inv-p2' }, { id: 'inv-p3' }] })
+        // item 1 → proposeAssignment: SELECT item, SELECT parcels (compatible) → UPDATE
+        .mockResolvedValueOnce({ rows: [{ id: 'inv-p1', order_id: 'ord-1', destination_island: 'GC', status: 'received' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'pcl-x', reference: 'PX', order_id: 'ord-1', priority: 0, item_count: 0 }] })
+        .mockResolvedValueOnce({ rows: [] })
+        // item 2 → proposeAssignment: SELECT item, SELECT parcels (aucun) → UPDATE buffered
+        .mockResolvedValueOnce({ rows: [{ id: 'inv-p2', order_id: 'ord-2', destination_island: 'Mohéli', status: 'buffered' }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        // item 3 → proposeAssignment throws (db error) → catch → errors++
+        .mockRejectedValueOnce(new Error('db timeout'));
+
+      const svc = loadService();
+      const result = await svc.proposeAll();
+      expect(result).toEqual({ proposed: 1, buffered: 1, errors: 1 });
+    });
+
+    test("aucun item éligible → tous les compteurs à zéro", async () => {
+      mockQuery = jest.fn().mockResolvedValueOnce({ rows: [] });
+      const svc = loadService();
+      const result = await svc.proposeAll();
+      expect(result).toEqual({ proposed: 0, buffered: 0, errors: 0 });
+    });
+  });
+
+  describe("shouldDispatch — branches supplémentaires", () => {
+    test("completion_ratio absent/null → ratio par défaut 0", async () => {
+      mockQuery = jest.fn().mockResolvedValue({
+        rows: [{ id: 'ord-9', completion_ratio: null, deadline_dispatch: null }]
+      });
+      const svc = loadService();
+      const r = await svc.shouldDispatch('ord-9');
+      expect(r.decision).toBe('wait');
+      expect(r.ratio).toBe(0);
+    });
+
+    test("deadline_dispatch absent → deadlinePassed toujours false", async () => {
+      mockQuery = jest.fn().mockResolvedValue({
+        rows: [{ id: 'ord-10', completion_ratio: 0.3, deadline_dispatch: null }]
+      });
+      const svc = loadService();
+      const r = await svc.shouldDispatch('ord-10');
+      expect(r.decision).toBe('wait');
+    });
+  });
+
+  describe("listProposals", () => {
+    test("retourne les rows tels que renvoyés par la requête", async () => {
+      const rows = [{ id: 'inv-1', product_name: 'Riz', order_ref: 'K-1' }];
+      mockQuery = jest.fn().mockResolvedValueOnce({ rows });
+      const svc = loadService();
+      const result = await svc.listProposals();
+      expect(result).toBe(rows);
+      expect(mockQuery.mock.calls[0][0]).toContain('FROM inventory_items ii');
+    });
+  });
+
+  describe("updateOrderCompletion — total à zéro", () => {
+    test("counts.total = 0 → ratio forcé à 0 (pas de division par zéro)", async () => {
+      mockQuery = jest.fn()
+        .mockResolvedValueOnce({ rows: [{ total: 0, received: 0, assigned: 0 }] })
+        .mockResolvedValueOnce({ rows: [] });
+      const svc = loadService();
+      const r = await svc.updateOrderCompletion('ord-empty');
+      expect(r.ratio).toBe(0);
+    });
+  });
+
+  describe("listOpenParcels", () => {
+    test("retourne les colis ouverts (draft/preparation)", async () => {
+      const rows = [{ id: 'pcl-1', reference: 'P001', status: 'draft' }];
+      mockQuery = jest.fn().mockResolvedValueOnce({ rows });
+      const svc = loadService();
+      const result = await svc.listOpenParcels();
+      expect(result).toBe(rows);
+      expect(mockQuery.mock.calls[0][0]).toContain("'draft', 'preparation'");
+    });
+  });
+});

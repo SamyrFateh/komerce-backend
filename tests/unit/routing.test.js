@@ -31,6 +31,20 @@ describe('routing', () => {
       expect(normalizeIsland('')).toBeNull();
       expect(normalizeIsland(null)).toBeNull();
     });
+
+    it('normalise via prefix-match les variantes non listées explicitement (encodage/typos)', () => {
+      // Robustesse UTF-8 : "Mohéli" mal encodé, ex. "MohÃƒ©li" — commence par "moh"
+      expect(normalizeIsland('MohÃƒ©li')).toBe('MOHELI');
+      expect(normalizeIsland('mwalitown')).toBe('MOHELI');
+      expect(normalizeIsland('Anjouanaise')).toBe('ANJOUAN');
+      expect(normalizeIsland('ndzuwanix')).toBe('ANJOUAN');
+      expect(normalizeIsland('Grandcomore')).toBe('MORONI');
+      expect(normalizeIsland('moroniville')).toBe('MORONI');
+      expect(normalizeIsland('ngazidjatown')).toBe('MORONI');
+      expect(normalizeIsland('mayottais')).toBe('MAYOTTE');
+      expect(normalizeIsland('maorevariant')).toBe('MAYOTTE');
+      expect(normalizeIsland('mamoudzoutown')).toBe('MAYOTTE');
+    });
   });
 
   describe('resolveRoutingFromRelais', () => {
@@ -108,6 +122,85 @@ describe('routing', () => {
         query: jest.fn()
           .mockRejectedValueOnce(new Error('column already exists'))
           .mockResolvedValue({ rows: [], rowCount: 0 }),
+      };
+
+      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
+      expect(db.query).toHaveBeenCalledTimes(9);
+    });
+
+    it('logue un warning pour une erreur de migration autre que already exists', async () => {
+      const db = {
+        query: jest.fn()
+          .mockRejectedValueOnce(new Error('connection refused'))
+          .mockResolvedValue({ rows: [], rowCount: 0 }),
+      };
+
+      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
+      // Pas d'assertion sur le logger mocké directement (child() renvoie un nouveau mock à
+      // chaque appel), on vérifie juste que l'exécution continue malgré l'erreur non "already exists".
+      expect(db.query).toHaveBeenCalledTimes(9);
+    });
+
+    it('logue le nombre de relais backfillés quand rowCount > 0', async () => {
+      const db = {
+        query: jest.fn()
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER relais
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER orders x3
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 2 }) // backfill relais "Anjouan" → 2 lignes
+          .mockResolvedValue({ rows: [], rowCount: 0 }),
+      };
+
+      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
+      expect(db.query).toHaveBeenCalledTimes(9);
+    });
+
+    it('logue le nombre de commandes enrichies quand le backfill orders a rowCount > 0', async () => {
+      const db = {
+        query: jest.fn()
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER relais
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER orders x3
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // backfill relais x4
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 5 }), // backfill orders → 5 lignes
+      };
+
+      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
+      expect(db.query).toHaveBeenCalledTimes(9);
+    });
+
+    it('logue un warning et continue si le backfill relais echoue', async () => {
+      const db = {
+        query: jest.fn()
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER relais
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER orders x3
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockRejectedValueOnce(new Error('backfill relais down')) // 1er backfill relais échoue
+          .mockResolvedValue({ rows: [], rowCount: 0 }),
+      };
+
+      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
+      expect(db.query).toHaveBeenCalledTimes(9);
+    });
+
+    it('logue un warning et continue si le backfill orders echoue', async () => {
+      const db = {
+        query: jest.fn()
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER relais
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER orders x3
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // backfill relais x4
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+          .mockRejectedValueOnce(new Error('backfill orders down')), // backfill orders échoue
       };
 
       await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();

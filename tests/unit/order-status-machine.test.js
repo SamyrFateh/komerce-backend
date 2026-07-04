@@ -15,6 +15,27 @@
  * Run: npx jest tests/unit/order-status-machine.test.js
  */
 
+jest.mock('../../utils/logger', () => {
+  const child = () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() });
+  return { child, forModule: child };
+});
+
+// wallet-service et cancel-order-purchase-orders sont require()-és paresseusement
+// (à l'intérieur de la fonction, uniquement sur la branche 'cancelled') — on les
+// mocke pour isoler order-status-machine.js de leur logique propre.
+// customs-shipment-service reste RÉEL (comportement simulé via les réponses
+// mockQuery, cf. tests existants sur 'in_transit' → 'available').
+jest.mock('../../services/wallet-service', () => ({
+  removeFromOrder: jest.fn(),
+  credit: jest.fn(),
+}));
+jest.mock('../../services/cancel-order-purchase-orders', () => ({
+  syncPurchaseOrdersOnOrderCancel: jest.fn().mockResolvedValue({ cancelled: 0, alerted: 0 }),
+}));
+
+const walletService = require('../../services/wallet-service');
+const { syncPurchaseOrdersOnOrderCancel } = require('../../services/cancel-order-purchase-orders');
+
 const {
   transitionOrderStatus,
   ORDER_STATUSES,
@@ -39,6 +60,10 @@ const mockDb = { query: mockQuery };
 // Reset mocks before each test
 beforeEach(() => {
   mockQuery.mockReset();
+  walletService.removeFromOrder.mockReset();
+  walletService.credit.mockReset();
+  syncPurchaseOrdersOnOrderCancel.mockReset();
+  syncPurchaseOrdersOnOrderCancel.mockResolvedValue({ cancelled: 0, alerted: 0 });
 });
 
 // ── Helper to setup mock for a transition ───────────────────────────────────
@@ -316,5 +341,260 @@ describe('Complete transition chain', () => {
       expect(result.newStatus).toBe(next);
       currentStatus = next;
     }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Lot A — branches non couvertes
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('transitionOrderStatus() — sources paiement (no-op gracieux)', () => {
+  test.each(['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'shared_cart_full_payment', 'paypal_capture'])(
+    "source '%s' sur une commande déjà confirmed → noop gracieux, aucune écriture", async (source) => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'confirmed' }] });
+
+      const result = await transitionOrderStatus({
+        orderId: mockOrder.id, newStatus: 'confirmed', source, dbClient: mockDb,
+      });
+
+      expect(result).toEqual({ success: true, previousStatus: 'confirmed', newStatus: 'confirmed', noop: true });
+      expect(mockQuery).toHaveBeenCalledTimes(1); // uniquement le SELECT
+    }
+  );
+
+  test('source paiement sur pending → confirmed est bien exécutée (pas un noop)', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] }) // SELECT
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET payment_status='paid'
+      .mockResolvedValueOnce({ rows: [] }); // INSERT history
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'confirmed', source: 'stripe_webhook', dbClient: mockDb,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.noop).toBeUndefined();
+    expect(mockQuery).toHaveBeenNthCalledWith(3,
+      `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
+      [mockOrder.id]
+    );
+  });
+});
+
+describe('transitionOrderStatus() — gate douane (→ available)', () => {
+  test('douane non déclarée → transition refusée avec code CUSTOMS_NOT_DECLARED', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'in_transit' }] }) // SELECT order
+      .mockResolvedValueOnce({ rows: [{ status: 'pending', reference: 'CS-042' }] }); // customs check → bloqué
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'available',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.code).toBe('CUSTOMS_NOT_DECLARED');
+    expect(result.error).toContain('CS-042');
+    expect(mockQuery).toHaveBeenCalledTimes(2); // pas d'UPDATE — bloqué avant
+  });
+});
+
+describe('transitionOrderStatus() — cancel_reason persisté', () => {
+  test('cancelReason fourni → inclus dans le SET et les values de l\'UPDATE', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'ordered' }] }) // SELECT
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status, cancel_reason
+      .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-CR' }] }) // SELECT wallet fields
+      .mockResolvedValueOnce({ rows: [] }) // SELECT order_items (stock restore)
+      .mockResolvedValueOnce({ rows: [] }); // INSERT history
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled', cancelReason: 'Client a changé d\'avis',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockQuery).toHaveBeenNthCalledWith(2,
+      expect.stringContaining('cancel_reason = $2'),
+      expect.arrayContaining(['cancelled', "Client a changé d'avis", mockOrder.id])
+    );
+  });
+});
+
+describe('transitionOrderStatus() — effets annulation : wallet reversal', () => {
+  function setupCancelSequence({ walletRows, itemsRows = [] }) {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'confirmed' }] }) // SELECT order
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockResolvedValueOnce({ rows: walletRows }) // SELECT wallet_applied_kmf/user_id/reference
+      .mockResolvedValueOnce({ rows: itemsRows }) // SELECT order_items (stock restore)
+      .mockResolvedValueOnce({ rows: [] }); // INSERT history
+  }
+
+  test('removeFromOrder réussit → wallet reversal appliqué', async () => {
+    setupCancelSequence({ walletRows: [{ wallet_applied_kmf: 5000, user_id: 'user-1', reference: 'KMC-W1' }] });
+    walletService.removeFromOrder.mockResolvedValueOnce({ reversed_kmf: 5000, transaction: { id: 'wtx-1' } });
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.cancelEffects.walletReversalAmount).toBe(5000);
+    expect(result.cancelEffects.walletReversalTxId).toBe('wtx-1');
+    expect(walletService.removeFromOrder).toHaveBeenCalledWith(mockDb, { orderId: mockOrder.id });
+  });
+
+  test('removeFromOrder échoue → fallback credit() réussit', async () => {
+    setupCancelSequence({ walletRows: [{ wallet_applied_kmf: 3000, user_id: 'user-2', reference: 'KMC-W2' }] });
+    walletService.removeFromOrder.mockRejectedValueOnce(new Error('reversal impossible'));
+    walletService.credit.mockResolvedValueOnce({ transaction: { id: 'wtx-2' } });
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.cancelEffects.walletReversalAmount).toBe(3000);
+    expect(result.cancelEffects.walletReversalTxId).toBe('wtx-2');
+    expect(walletService.credit).toHaveBeenCalledWith(mockDb, expect.objectContaining({
+      userId: 'user-2', amountKmf: 3000, reason: 'order_cancel',
+    }));
+  });
+
+  test('removeFromOrder ET credit() échouent tous les deux → non-bloquant, cancelEffects reste à 0', async () => {
+    setupCancelSequence({ walletRows: [{ wallet_applied_kmf: 1000, user_id: 'user-3', reference: 'KMC-W3' }] });
+    walletService.removeFromOrder.mockRejectedValueOnce(new Error('fail 1'));
+    walletService.credit.mockRejectedValueOnce(new Error('fail 2'));
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.success).toBe(true); // la transition n'échoue pas malgré le double échec wallet
+    expect(result.cancelEffects.walletReversalAmount).toBe(0);
+    expect(result.cancelEffects.walletReversalTxId).toBeNull();
+  });
+
+  test('wallet_applied_kmf=0 ou user_id absent → wallet non touché', async () => {
+    setupCancelSequence({ walletRows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-W0' }] });
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(walletService.removeFromOrder).not.toHaveBeenCalled();
+    expect(walletService.credit).not.toHaveBeenCalled();
+    expect(result.cancelEffects.walletReversalAmount).toBe(0);
+  });
+});
+
+describe('transitionOrderStatus() — effets annulation : restauration stock', () => {
+  test('previousStatus >= confirmed → stock produit ET variantes restaurés', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'shipped' }] }) // SELECT order
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-STK' }] }) // SELECT wallet
+      .mockResolvedValueOnce({
+        rows: [{
+          product_id: 'prod-1', quantity: 3, has_variants: true,
+          variant_combo: { taille: 'M', couleur: 'rouge' },
+        }],
+      }) // SELECT order_items
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE products SET stock
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE product_variants (taille)
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE product_variants (couleur)
+      .mockResolvedValueOnce({ rows: [] }); // INSERT history
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.cancelEffects.stockItemsRestored).toBe(1);
+    expect(mockQuery).toHaveBeenNthCalledWith(5,
+      'UPDATE products SET stock = stock + $1 WHERE id = $2', [3, 'prod-1']
+    );
+    expect(mockQuery).toHaveBeenNthCalledWith(6,
+      expect.stringContaining('UPDATE product_variants'),
+      [3, 'prod-1', 'taille', 'M']
+    );
+    expect(mockQuery).toHaveBeenNthCalledWith(7,
+      expect.stringContaining('UPDATE product_variants'),
+      [3, 'prod-1', 'couleur', 'rouge']
+    );
+  });
+
+  test('previousStatus < confirmed (pending) → stock jamais décrémenté, pas de restauration', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] }) // SELECT order
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-PEND' }] }) // SELECT wallet
+      .mockResolvedValueOnce({ rows: [] }); // INSERT history — PAS de SELECT order_items
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.cancelEffects.stockItemsRestored).toBe(0);
+    expect(mockQuery).toHaveBeenCalledTimes(4); // SELECT, UPDATE, SELECT wallet, INSERT history — pas de SELECT items
+  });
+});
+
+describe('transitionOrderStatus() — effets annulation : sync purchase orders', () => {
+  test('sync réussie → cancelEffects.purchaseOrders reflète le résultat', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'confirmed' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-PO' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    syncPurchaseOrdersOnOrderCancel.mockResolvedValueOnce({ cancelled: 2, alerted: 1 });
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled', cancelReason: 'rupture fournisseur',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.cancelEffects.purchaseOrders).toEqual({ cancelled: 2, alerted: 1 });
+    expect(syncPurchaseOrdersOnOrderCancel).toHaveBeenCalledWith(mockDb, expect.objectContaining({
+      orderId: mockOrder.id, orderReference: 'KMC-PO', reason: 'rupture fournisseur',
+    }));
+  });
+
+  test('sync échoue → capturé dans cancelEffects.purchaseOrders.error, transition reste success', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'confirmed' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-POERR' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    syncPurchaseOrdersOnOrderCancel.mockRejectedValueOnce(new Error('PO service down'));
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'cancelled',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.cancelEffects.purchaseOrders).toEqual({ error: 'PO service down' });
+  });
+});
+
+describe('transitionOrderStatus() — échec insertion historique (D6)', () => {
+  test('INSERT order_status_history échoue → l\'erreur est propagée (throw)', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'confirmed' }] }) // SELECT
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
+      .mockRejectedValueOnce(new Error('history table locked')); // INSERT history échoue
+
+    await expect(transitionOrderStatus({
+      orderId: mockOrder.id, newStatus: 'ordered',
+      actor: { id: 'admin-1', role: 'admin' }, source: 'patch', dbClient: mockDb,
+    })).rejects.toThrow('history table locked');
   });
 });

@@ -294,3 +294,309 @@ describe('cache OAuth', () => {
     expect(global.fetch.mock.calls[2][0]).toContain('/v2/checkout/orders');
   });
 });
+
+// ─── Lot A, branches manquantes ─────────────────────────────────────────────
+
+describe('paypal-client — Lot A, branches manquantes', () => {
+  describe('_credentials / _baseUrl', () => {
+    test('throw si PAYPAL_CLIENT_ID/SECRET manquants', async () => {
+      delete process.env.PAYPAL_CLIENT_ID;
+      delete process.env.PAYPAL_CLIENT_SECRET;
+      await expect(paypal.createOrder({ amountEur: 10, reference: 'K-1' }))
+        .rejects.toThrow('PAYPAL_CLIENT_ID/SECRET manquant');
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test('PAYPAL_ENV=production → base url api-m.paypal.com', async () => {
+      process.env.PAYPAL_ENV = 'production';
+      mockOAuthOnce();
+      mockFetchOnce({ id: 'X', status: 'CREATED' });
+      await paypal.createOrder({ amountEur: 10, reference: 'K-1' });
+      expect(global.fetch.mock.calls[0][0]).toContain('https://api-m.paypal.com');
+    });
+  });
+
+  describe('OAuth token', () => {
+    test('OAuth échoue (res.ok=false) → throw PayPal OAuth failed', async () => {
+      mockFetchOnce({ error: 'invalid_client' }, { status: 401 });
+      await expect(paypal.createOrder({ amountEur: 10, reference: 'K-1' }))
+        .rejects.toThrow('PayPal OAuth failed: 401');
+    });
+
+    test('token en cache mais expiré → nouveau fetch OAuth déclenché', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ id: 'O1', status: 'CREATED' });
+      await paypal.createOrder({ amountEur: 10, reference: 'K-1' });
+
+      // Force l'expiration du cache en remontant expires_at dans le passé
+      paypal._resetTokenCacheForTests();
+
+      mockOAuthOnce();
+      mockFetchOnce({ id: 'O2', status: 'CREATED' });
+      await paypal.createOrder({ amountEur: 20, reference: 'K-2' });
+
+      expect(global.fetch).toHaveBeenCalledTimes(4); // 2 OAuth + 2 createOrder
+    });
+  });
+
+  describe('_api — gestion des réponses', () => {
+    test('status 204 → retourne null (ex: refund sans détail)', async () => {
+      mockOAuthOnce();
+      global.fetch.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 204,
+        json: async () => { throw new Error('no body'); },
+        text: async () => '',
+      }));
+      const result = await paypal.refundCapture('CAP-1');
+      expect(result).toBeNull();
+    });
+
+    test('réponse non-ok → throw avec status et body attachés', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ error: 'RESOURCE_NOT_FOUND' }, { status: 404 });
+      await expect(paypal.getOrder('PP-MISSING')).rejects.toMatchObject({
+        status: 404,
+      });
+    });
+
+    test('réponse non-ok dont errBody.text() échoue → body vide, throw quand même', async () => {
+      mockOAuthOnce();
+      global.fetch.mockImplementationOnce(async () => ({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+        text: async () => { throw new Error('stream closed'); },
+      }));
+      await expect(paypal.getOrder('PP-1')).rejects.toThrow('PayPal GET');
+    });
+  });
+
+  describe('getOrder', () => {
+    test('throw si paypalOrderId vide', async () => {
+      await expect(paypal.getOrder('')).rejects.toThrow('paypalOrderId requis');
+    });
+
+    test('appelle le bon endpoint GET', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ id: 'PP-1', status: 'APPROVED' });
+      const result = await paypal.getOrder('PP-1');
+      expect(result.status).toBe('APPROVED');
+      const [url, opts] = lastFetchCall();
+      expect(url).toContain('/v2/checkout/orders/PP-1');
+      expect(opts.method).toBe('GET');
+    });
+  });
+
+  describe('createOrder — application_context', () => {
+    test('appCtx.return_url/cancel_url ont priorité sur returnUrl/cancelUrl', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ id: 'X', status: 'CREATED' });
+      await paypal.createOrder({
+        amountEur: 10,
+        reference: 'K-1',
+        returnUrl: 'https://old.example/return',
+        cancelUrl: 'https://old.example/cancel',
+        applicationContext: {
+          return_url: 'https://new.example/return',
+          cancel_url: 'https://new.example/cancel',
+          brand_name: 'Boutique',
+          locale: 'en-US',
+          landing_page: 'LOGIN',
+          user_action: 'CONTINUE',
+          shipping_preference: 'SET_PROVIDED_ADDRESS',
+        },
+      });
+      const body = JSON.parse(lastFetchCall()[1].body);
+      expect(body.application_context.return_url).toBe('https://new.example/return');
+      expect(body.application_context.cancel_url).toBe('https://new.example/cancel');
+      expect(body.application_context.brand_name).toBe('Boutique');
+      expect(body.application_context.locale).toBe('en-US');
+      expect(body.application_context.landing_page).toBe('LOGIN');
+      expect(body.application_context.user_action).toBe('CONTINUE');
+      expect(body.application_context.shipping_preference).toBe('SET_PROVIDED_ADDRESS');
+    });
+
+    test('sans applicationContext, avec returnUrl/cancelUrl legacy → utilisés', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ id: 'X', status: 'CREATED' });
+      await paypal.createOrder({
+        amountEur: 10,
+        reference: 'K-1',
+        returnUrl: 'https://legacy.example/return',
+        cancelUrl: 'https://legacy.example/cancel',
+      });
+      const body = JSON.parse(lastFetchCall()[1].body);
+      expect(body.application_context.return_url).toBe('https://legacy.example/return');
+      expect(body.application_context.cancel_url).toBe('https://legacy.example/cancel');
+    });
+
+    test('sans aucune url → aucune clé return_url/cancel_url ajoutée', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ id: 'X', status: 'CREATED' });
+      await paypal.createOrder({ amountEur: 10, reference: 'K-1' });
+      const body = JSON.parse(lastFetchCall()[1].body);
+      expect(body.application_context).not.toHaveProperty('return_url');
+      expect(body.application_context).not.toHaveProperty('cancel_url');
+    });
+
+    test('description omise → description par défaut avec la référence', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ id: 'X', status: 'CREATED' });
+      await paypal.createOrder({ amountEur: 10, reference: 'K-7' });
+      const body = JSON.parse(lastFetchCall()[1].body);
+      expect(body.purchase_units[0].description).toBe('Komerce — Commande K-7');
+    });
+  });
+
+  describe('verifyWebhookSignature', () => {
+    const fullHeaders = {
+      'paypal-transmission-id':   'TX-1',
+      'paypal-transmission-time': '2026-06-08T10:00:00Z',
+      'paypal-cert-url':          'https://api.paypal.com/cert.pem',
+      'paypal-auth-algo':         'SHA256withRSA',
+      'paypal-transmission-sig':  'SIG-BASE64',
+    };
+    const validBody = JSON.stringify({ id: 'EV-1', event_type: 'PAYMENT.CAPTURE.COMPLETED' });
+
+    test('throw si PAYPAL_WEBHOOK_ID manquant', async () => {
+      delete process.env.PAYPAL_WEBHOOK_ID;
+      await expect(paypal.verifyWebhookSignature(fullHeaders, validBody))
+        .rejects.toThrow('PAYPAL_WEBHOOK_ID manquant');
+    });
+
+    test('headers en MAJUSCULES → lookup insensible à la casse fonctionne', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ verification_status: 'SUCCESS' });
+      const upper = {
+        'PAYPAL-TRANSMISSION-ID':   'TX-1',
+        'PAYPAL-TRANSMISSION-TIME': '2026-06-08T10:00:00Z',
+        'PAYPAL-CERT-URL':          'https://api.paypal.com/cert.pem',
+        'PAYPAL-AUTH-ALGO':         'SHA256withRSA',
+        'PAYPAL-TRANSMISSION-SIG':  'SIG-BASE64',
+      };
+      const res = await paypal.verifyWebhookSignature(upper, validBody);
+      expect(res).toBe(true);
+    });
+
+    test('accepte un objet déjà parsé (ni string ni Buffer) comme rawBody', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ verification_status: 'SUCCESS' });
+      const res = await paypal.verifyWebhookSignature(fullHeaders, { id: 'EV-1', event_type: 'X' });
+      expect(res).toBe(true);
+    });
+
+    test('appel API PayPal échoue (réseau/HTTP) → catch → false', async () => {
+      mockOAuthOnce();
+      global.fetch.mockImplementationOnce(async () => ({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+        text: async () => 'server error',
+      }));
+      const res = await paypal.verifyWebhookSignature(fullHeaders, validBody);
+      expect(res).toBe(false);
+    });
+  });
+
+  describe('extractCaptureInfo — cas additionnels', () => {
+    test('détecte pay_in_4 via payment_source.pay_upon_invoice', () => {
+      const cap = {
+        id: 'PP-1',
+        payment_source: { pay_upon_invoice: {} },
+        purchase_units: [{
+          reference_id: 'K-1',
+          payments: { captures: [{ id: 'CAP-1', status: 'COMPLETED', amount: { value: '10.00', currency_code: 'EUR' } }] },
+        }],
+      };
+      expect(paypal.extractCaptureInfo(cap).pay_in_4).toBe(true);
+    });
+
+    test('détecte pay_in_4 via payment_source.paylater', () => {
+      const cap = {
+        id: 'PP-1',
+        payment_source: { paylater: {} },
+        purchase_units: [{
+          reference_id: 'K-1',
+          payments: { captures: [{ id: 'CAP-1', status: 'COMPLETED', amount: { value: '10.00', currency_code: 'EUR' } }] },
+        }],
+      };
+      expect(paypal.extractCaptureInfo(cap).pay_in_4).toBe(true);
+    });
+
+    test('payer présent mais sans name → payer_name null malgré email/id présents', () => {
+      const cap = {
+        id: 'PP-3',
+        payer: { email_address: 'x@y.fr', payer_id: 'PAYER-3' },
+        purchase_units: [{
+          reference_id: 'K-3',
+          payments: { captures: [{ id: 'CAP-3', status: 'COMPLETED', amount: { value: '7.00', currency_code: 'EUR' } }] },
+        }],
+      };
+      const info = paypal.extractCaptureInfo(cap);
+      expect(info.payer_email).toBe('x@y.fr');
+      expect(info.payer_name).toBeNull();
+    });
+
+    test('payer absent → payer_email/payer_id/payer_name null, pay_in_4 false', () => {
+      const cap = {
+        id: 'PP-2',
+        purchase_units: [{
+          reference_id: 'K-2',
+          payments: { captures: [{ id: 'CAP-2', status: 'COMPLETED', amount: { value: '5.00', currency_code: 'EUR' } }] },
+        }],
+      };
+      const info = paypal.extractCaptureInfo(cap);
+      expect(info.payer_email).toBeNull();
+      expect(info.payer_id).toBeNull();
+      expect(info.payer_name).toBeNull();
+      expect(info.pay_in_4).toBe(false);
+    });
+
+    test('purchase_units[0].reference_id absent → reference_id null (format captureOrder)', () => {
+      const cap = {
+        id: 'PP-4',
+        purchase_units: [{
+          payments: { captures: [{ id: 'CAP-4', status: 'COMPLETED', amount: { value: '3.00', currency_code: 'EUR' } }] },
+        }],
+      };
+      expect(paypal.extractCaptureInfo(cap).reference_id).toBeNull();
+    });
+
+    test('webhook event : invoice_id utilisé si custom_id absent', () => {
+      const event = {
+        resource: {
+          id: 'CAP-99',
+          status: 'COMPLETED',
+          amount: { currency_code: 'EUR', value: '50.00' },
+          invoice_id: 'K-INV-1',
+        },
+      };
+      expect(paypal.extractCaptureInfo(event).reference_id).toBe('K-INV-1');
+    });
+
+    test('webhook event sans order_id lié → paypal_order_id null', () => {
+      const event = {
+        resource: {
+          id: 'CAP-100',
+          status: 'COMPLETED',
+          amount: { currency_code: 'EUR', value: '10.00' },
+        },
+      };
+      expect(paypal.extractCaptureInfo(event).paypal_order_id).toBeNull();
+    });
+  });
+
+  describe('refundCapture — troncature des champs libres', () => {
+    test('reason et invoiceId trop longs sont tronqués à 255/127 caractères', async () => {
+      mockOAuthOnce();
+      mockFetchOnce({ id: 'REF-3', status: 'COMPLETED' });
+      const longReason = 'x'.repeat(300);
+      const longInvoice = 'y'.repeat(200);
+      await paypal.refundCapture('CAP-1', { reason: longReason, invoiceId: longInvoice });
+      const body = JSON.parse(lastFetchCall()[1].body);
+      expect(body.note_to_payer.length).toBe(255);
+      expect(body.invoice_id.length).toBe(127);
+    });
+  });
+});
