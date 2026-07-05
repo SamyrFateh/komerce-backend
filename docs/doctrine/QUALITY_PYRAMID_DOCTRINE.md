@@ -128,6 +128,54 @@ Ce que ça vérifie dans **tous les fichiers** `services/`, `routes/`, `middlewa
 Déjà en place. Ce niveau s'appuie sur le niveau 2 : des tests sur du code `var`-infesté
 sans `'use strict'` donnent des faux positifs difficiles à déboguer.
 
+### 3.1 Règle de complétion au contact
+
+**Script** : `scripts/touched-tests-gate.js --strict`
+**Commande** : `npm run gate:touched-tests` (mode strict en CI)
+**Config** : `governance/coverage-thresholds.json`
+
+Constat qui motive cette règle : un audit de couverture (`AUDIT_TEST_COVERAGE_GLOBAL_2026-07-03.md`)
+a montré qu'une quinzaine de fichiers `services/`/`routes/` tournent en couverture
+partielle stable (58 % à 85 % stmts) depuis plusieurs cycles — ni à 0 % (donc jamais
+signalés comme trou critique), ni complets. Ces fichiers ont un test qui existe et
+qui a été retouché au fil des évolutions, sans jamais être amené à complétion : la
+présence d'un test masque l'incomplétude.
+
+Le gate `touched-tests-gate.js` vérifiait jusqu'ici uniquement la **présence** d'un
+signal test (Preuve A/B/C — voir en-tête du script). Il ne vérifiait pas que ce
+signal était *suffisant*. La règle de complétion au contact ferme ce trou :
+
+> Quand un fichier applicatif **et** son fichier de test correspondant sont tous
+> les deux touchés dans la même diff (Preuve A), la couverture stmts + branch du
+> fichier source doit atteindre le seuil cible — **100 % / 100 % par défaut** —
+> une fois les tests touchés exécutés en combinaison avec la suite existante qui
+> cible ce fichier. En dessous du seuil, le gate échoue en `--strict`.
+
+Ce que ça change concrètement : on ne peut plus ajouter une assertion à un test
+existant, corriger un bug dans le fichier source associé, et merger en laissant le
+reste du fichier aussi peu couvert qu'avant. Toucher un fichier partiellement
+couvert oblige à le finaliser — pas à l'échelle du dépôt entier d'un coup, mais
+fichier par fichier, au moment où on le touche de toute façon.
+
+Ce que la règle ne fait PAS :
+- Elle ne force pas une remédiation rétroactive de tous les fichiers en couverture
+  partielle non touchés par la PR en cours (voir la liste dans l'audit —
+  ces fichiers restent une dette connue tant qu'on n'y touche pas).
+- Elle ne s'applique pas si le fichier source est touché **sans** que son test le
+  soit (dans ce cas, c'est la Preuve B/C — exemption ou justification PR — qui
+  s'applique, comme avant).
+- Elle n'exige pas 100 % dans l'absolu si ce n'est pas réaliste : un override par
+  fichier est possible via `governance/coverage-thresholds.json`, mais il doit être
+  justifié en commentaire dans la PR qui l'introduit (branche de défense
+  inatteignable, dépendance externe non mockable proprement) et revu à chaque
+  modification ultérieure du fichier — même discipline que
+  `governance/test-exemptions.json`.
+
+Coût accepté : ce check spawn un process Jest isolé par fichier concerné pour
+mesurer sa couverture réelle (indépendamment du reste de la suite). C'est pour
+cette raison qu'il n'est actif qu'en `--strict` (CI, pas en local par défaut) et
+reste désactivable ponctuellement avec `--no-completion-check` pour debug.
+
 ---
 
 ## Niveau 4 — Architecture Gates

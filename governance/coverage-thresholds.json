@@ -1,0 +1,6 @@
+{
+  "_comment": "Seuils de couverture appliqués par scripts/touched-tests-gate.js (--strict) quand un fichier ET son test sont touchés dans la même diff — Règle de complétion au contact, voir docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md, Niveau 3.",
+  "_format": "{ \"chemin/relatif/depuis/racine.js\": { \"stmts\": N, \"branch\": N } }",
+  "_défaut_si_absent": { "stmts": 100, "branch": 100 },
+  "_règle": "Un override doit être justifié par un commentaire dans la PR qui l'introduit (ex: branche de défense inatteignable en pratique, dépendance externe non mockable proprement). Toute entrée ici doit être revue à chaque modification du fichier concerné — même logique que governance/test-exemptions.json."
+}

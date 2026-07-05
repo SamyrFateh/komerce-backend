@@ -37,9 +37,15 @@ jobs:
       # ── Gate 2 : fichiers applicatifs touchés ont un signal test ───────────
       # PR_BODY injecté pour que touched-tests-gate puisse détecter ## Tests
       # sans appel API supplémentaire.
+      # --strict active la règle de complétion au contact (QUALITY_PYRAMID_DOCTRINE.md
+      # Niveau 3.1) : si un fichier ET son test sont touchés, la couverture doit
+      # atteindre le seuil cible (governance/coverage-thresholds.json), pas juste
+      # "un test existe". Canonique ici — carte-first.yml garde l'appel non-strict
+      # (présence seule) pour éviter de dupliquer le coût du check de complétion
+      # deux fois par PR.
       - name: Code touché ↔ signal test (touched-tests)
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
-          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }}
+          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict

@@ -1,6 +1,6 @@
 # Doctrine des Invariants Métier Komerce
 
-> **Version** : 1.2 — 2026-07-05 (v1.1 : top 17, dédup cartes · v1.2 : intégration des kits socle de test — tamponnés sur exécution, backend 14/14 contre le code réel)
+> **Version** : 1.3 — 2026-07-05 (v1.2 : kits socle · v1.3 : règle de complétion au contact adoptée — 3e cliquet, QUALITY_PYRAMID §3.1)
 > **Statut** : document chapeau — consolide l'approche « ingestion catalogue » (DOCTRINE_INGESTION_CATALOGUE.md) et l'approche « invariants métier exécutables » (analyse blindage 2026-07). Ne remplace aucune doctrine spécialisée : il les gouverne.
 > **Code porteur** : `features/*.feature.js` (source de vérité des invariants), `scripts/gates/*`, `tests/contract/*`
 > **État vérifié au 2026-07-05** : 27 invariants déclarés dans les 6 cartes critiques (economic-engine : 1, catalog : 9, orders : 7, payments : 3, refunds : 1, shared-cart : 6) — **tous en prose, aucun lié à un test, aucun exécuté par une gate**. Trois paires de cartes strictement dupliquées détectées (`payment`/`payments`, `notification`/`notifications`, `wallet`/`wallet-loyalty`) — deux sources de vérité pour un même domaine, à résorber en INV-0. Les gates actuelles (`gate:schema`, `feature-registry-check`) vérifient que le champ `invariants` *existe*, jamais qu'il est *vrai*.
@@ -160,6 +160,16 @@ ré-export du harnais transactionnel `mock-db.js`), `boutiqueTestKit.js`
    (paiement → commande → remboursement → wallet) se prouvent aussi en
    intégration via `tests/integration/test-harness/seed-helpers.js` —
    3-4 parcours ciblés, pas un framework E2E.
+5. **Complétion au contact (3e cliquet, QUALITY_PYRAMID_DOCTRINE §3.1).**
+   Quand un fichier ET son test sont touchés dans la même PR, la couverture
+   du fichier doit atteindre le seuil cible (100/100 par défaut, overrides
+   justifiés dans `governance/coverage-thresholds.json`) — fini la
+   couverture partielle stable qui se maquille en « testé ». Hiérarchie
+   assumée : les invariants décident **quoi** tester (les vérités), la
+   complétion décide **jusqu'où** quand on touche, le kit décide **avec
+   quoi**. La complétion ne remplace jamais un test d'attaque : 100 % de
+   lignes sur des assertions molles reste un mensonge — le tampon et la
+   revue jugent la qualité d'attaque, pas la gate.
 
 ## 8. Priorités — ce qui bloque, ce qui attend
 

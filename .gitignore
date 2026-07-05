@@ -29,3 +29,6 @@ public/boutique.zip
 # Artefacts de livraison (ne jamais committer)
 *.zip
 *.patch
+
+# Coverage temporaire généré par scripts/touched-tests-gate.js (--strict)
+.gate-coverage-tmp/

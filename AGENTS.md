@@ -130,6 +130,10 @@ npm run map:check
 - Wallet : créditer, débiter, contre-passer, jamais supprimer.
 - Pricing : composantes DB, jamais de coefficient dur.
 - Toute transition laisse une trace.
+- Complétion au contact : si tu touches un fichier **et** son test dans la même
+  PR, tu dois amener la couverture de ce fichier au seuil cible (100 % par
+  défaut) — pas de retouche partielle qui laisse le fichier aussi peu couvert
+  qu'avant. Voir `docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md`, Niveau 3.1.
 
 ## 8. Divergence
 
