@@ -71,6 +71,8 @@ function makeProductA(overrides = {}) {
     weight_g: null,
     sourcing_rail: 'A',
     volume_class: 'petit',
+    volume_cm3: 800,
+    repack_volume_cm3: null,
     fragility: 'robuste',
     sale_mode: 'bundle',
     exposure_mode: 'catalogue',
