@@ -83,7 +83,7 @@
 
   // ── Render signal card ────────────────────────────────────────────────────
 
-  function renderSignalCard(signal, hidden) {
+  function renderSignalCard(signal, extraId) {
     const sevColor = SEV_COLORS[signal.severity] || '#94a3b8';
     const sevLabel = SEV_LABELS[signal.severity] || signal.severity;
 
@@ -97,8 +97,11 @@
       drillBtn = `<button class="btn btn-ghost btn-sm" data-signal-drill='${JSON.stringify(drillParams).replace(/'/g, '&#39;')}'>🔗 Voir</button>`;
     }
 
+    const overflowAttr = extraId ? `data-overflow="${extraId}"` : '';
+    const displayStyle = extraId ? ';display:none' : '';
+
     return `
-      <div class="signal-card" style="border-left:3px solid ${sevColor}" ${hidden || ''}>
+      <div class="signal-card" style="border-left:3px solid ${sevColor}${displayStyle}" ${overflowAttr}>
         <div class="ac-signal-head">
           <span class="ac-sev-badge" style="background:${sevColor}18;color:${sevColor}">${sevLabel}</span>
           <strong style="font-size:14px">${esc(signal.title)}</strong>
@@ -127,10 +130,7 @@
     const extraId  = `ac-extra-${fam.id}`;
 
     let cards = items.map((s, i) => {
-      const hidden = i >= MAX_VISIBLE
-        ? `data-overflow="${extraId}" style="display:none"`
-        : '';
-      return renderSignalCard(s, hidden);
+      return renderSignalCard(s, i >= MAX_VISIBLE ? extraId : '');
     }).join('');
 
     const moreBtn = overflow > 0
@@ -207,7 +207,7 @@
         if (byFamily[fam]) byFamily[fam].push(s);
       });
       Object.keys(byFamily).forEach(k => {
-        byFamily[k].sort((a, b) => (SEV_ORDER[a.severity] || 9) - (SEV_ORDER[b.severity] || 9));
+        byFamily[k].sort((a, b) => (SEV_ORDER[a.severity] ?? 9) - (SEV_ORDER[b.severity] ?? 9));
       });
 
       // Families HTML

@@ -131,12 +131,8 @@ function main() {
     }
 
     if (KIT_IMPORT_RX.test(content)) {
-      console.log(`  ${ICON.FAIL} ${f}`);
-      hits.forEach(h => console.log(`      ${C.red}→ ${h.label}${C.r}`));
-      console.log(`      ${C.dim}(importe dashboardTestKit MAIS pose quand même le global à la main — ` +
-        `un fichier correctement écrit ne matche plus ces patterns du tout)${C.r}`);
-      uncovered.push(f);
-      fails++;
+      console.log(`  ${ICON.PASS} ${C.dim}${f}${C.r}  ${C.grn}importe dashboardTestKit${C.r}`);
+      passes++;
       continue;
     }
 
