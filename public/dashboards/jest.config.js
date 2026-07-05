@@ -4,6 +4,6 @@ module.exports = {
   transform: { '\\.js$': ['babel-jest', { presets: [['@babel/preset-env', { targets: { node: 'current' } }]] }] },
   transformIgnorePatterns: ['/node_modules/'],
   setupFiles: ['./tests/unit/setup.js'],
-  collectCoverageFrom: ['admin/js/**/*.js', '!admin/js/views/**'],
+  collectCoverageFrom: ['admin/js/**/*.js'],
   clearMocks: true, restoreMocks: true,
 };

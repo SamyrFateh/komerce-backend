@@ -172,6 +172,27 @@ function getLatestOverlay(selector = '.modal-overlay, .overlay, [class*="overlay
   return nodes.length ? nodes[nodes.length - 1] : null;
 }
 
+/**
+ * Monte un container #main minimal dans document.body, comme le fait
+ * app.js#invokeView en prod. Retourne le container pour le passer
+ * directement à render(container).
+ * @param {string} [extraHtml] - contenu additionnel injecté dans #main
+ */
+function mountContainer(extraHtml = '') {
+  document.body.innerHTML = `<div id="main">${extraHtml}</div>`;
+  return document.getElementById('main');
+}
+
+/**
+ * Pose global.esc/escAttr en passthrough simple, pour les tests qui ne
+ * veulent pas charger le vrai utils.js mais dont la vue appelle
+ * esc(...)/escAttr(...) bare dans son rendu.
+ */
+function mockEscHelpers() {
+  global.esc = (s) => (s == null ? '' : String(s));
+  global.escAttr = (s) => (s == null ? '' : String(s));
+}
+
 module.exports = {
   loadView,
   makeKmcApi,
@@ -184,4 +205,6 @@ module.exports = {
   mockPrompt,
   mockAlert,
   getLatestOverlay,
+  mountContainer,
+  mockEscHelpers,
 };

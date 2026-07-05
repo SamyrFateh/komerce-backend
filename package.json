@@ -60,6 +60,8 @@
     "schema:check:resurrection": "node scripts/check-schema-resurrection.js",
     "audit:gate": "node scripts/npm-audit-gate.js",
     "audit:gate:observe": "node scripts/npm-audit-gate.js --observe",
+    "testkit:check": "node scripts/test-kit-usage-check.js --strict",
+    "testkit:check:report": "node scripts/test-kit-usage-check.js --report",
     "db:check": "node scripts/check-schema-freshness.js",
     "quality:gate": "node scripts/code-quality-gate.js --strict",
     "quality:gate:report": "node scripts/code-quality-gate.js",

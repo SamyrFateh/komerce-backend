@@ -4,12 +4,14 @@
   "private": true,
   "scripts": {
     "audit:registry": "node scripts/feature-registry-check.js --strict",
-    "check:all": "npm run quality:gate && npm run arch:check && npm run feature:guard && npm run audit:registry && npm run test:unit",
+    "check:all": "npm run quality:gate && npm run arch:check && npm run feature:guard && npm run audit:registry && npm run testkit:check && npm run test:unit",
     "precommit": "npm run check:all",
     "audit:gate": "npm audit --production --audit-level=high || echo \"Audit: vulnérabilités détectées\"",
     "quality:gate": "node scripts/code-quality-gate.js --strict",
     "arch:check": "node scripts/arch-check.js --strict",
     "feature:guard": "node scripts/feature-guard.js --strict",
+    "testkit:check": "node scripts/test-kit-usage-check.js --strict",
+    "testkit:check:report": "node scripts/test-kit-usage-check.js --report",
     "test:unit": "npx jest --no-coverage --forceExit"
   },
   "description": "",
