@@ -1,0 +1,163 @@
+'use strict';
+
+/**
+ * tests/unit/b-favs.test.js
+ *
+ * js/b-favs.js (192L) — vue Favoris (renderFavView, updateFavPromoBadge,
+ * shareWishlistWhatsApp). Premier test écrit avec boutiqueTestKit.js,
+ * servant de preuve que le socle boutique fonctionne réellement (état,
+ * fixture DOM, mock window.K, flush) avant de l'étendre aux autres modules
+ * non couverts (b-store, b-utils, b-bus, b-wallet, etc.).
+ *
+ * Mocké : b-cart-core (showToast), b-cart (toggleFav/quickAdd/quickRemove),
+ * b-modal (openModal) — effets DOM/réseau/state hors périmètre de ce module.
+ * Réel : b-store.js (state), b-utils.js (fmt/fmtPrice/sanitize/carousel).
+ */
+
+jest.mock('../../js/b-cart-core.js', () => ({ showToast: jest.fn() }));
+jest.mock('../../js/b-cart.js', () => ({
+  toggleFav: jest.fn(),
+  quickAdd: jest.fn(),
+  quickRemove: jest.fn(),
+}));
+jest.mock('../../js/b-modal.js', () => ({ openModal: jest.fn() }));
+
+const {
+  resetState, mountFixture, mockWindowK, flush,
+} = require('./helpers/boutiqueTestKit');
+
+const { state } = require('../../js/b-store.js');
+const { showToast } = require('../../js/b-cart-core.js');
+const { toggleFav, quickAdd, quickRemove } = require('../../js/b-cart.js');
+const { openModal } = require('../../js/b-modal.js');
+const { renderFavView, updateFavPromoBadge, shareWishlistWhatsApp } = require('../../js/b-favs.js');
+
+const PRODUCTS = [
+  { id: 1, name: 'Sac tressé', price_kmf: 15000, promo_pct: 20 },
+  { id: 2, name: 'Bracelet', price_kmf: 3000, promo_pct: 0 },
+];
+
+describe('b-favs', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockWindowK();
+    resetState(state);
+    mountFixture('<div id="k-catalog-section"></div><div class="k-bnav-item" data-tab="fav"></div>');
+  });
+
+  describe('renderFavView', () => {
+    it('aucun favori → message vide, pas de bannière promo', () => {
+      state.products = PRODUCTS;
+      state.favs = [];
+
+      renderFavView();
+
+      const el = document.getElementById('k-fav-view');
+      expect(el).not.toBeNull();
+      expect(el.innerHTML).toContain('Aucun favori');
+      expect(el.classList.contains('k-fav-promo-active')).toBe(false);
+    });
+
+    it('favoris présents dont un en promo → grille rendue + bannière promo + badge nav', () => {
+      state.products = PRODUCTS;
+      state.favs = [1, 2];
+
+      renderFavView();
+
+      const el = document.getElementById('k-fav-view');
+      expect(el.innerHTML).toContain('2 produits');
+      expect(el.innerHTML).toContain('k-fav-promo-banner');
+      expect(el.classList.contains('k-fav-promo-active')).toBe(true);
+
+      const badge = document.querySelector('.k-bnav-item[data-tab="fav"] .k-bnav-promo-badge');
+      expect(badge).not.toBeNull();
+      expect(badge.textContent).toBe('🎉');
+    });
+
+    it('clic sur une carte → ouvre la modal produit', () => {
+      state.products = PRODUCTS;
+      state.favs = [1];
+      renderFavView();
+
+      document.querySelector('.k-card').dispatchEvent(new Event('click', { bubbles: true }));
+
+      expect(openModal).toHaveBeenCalledWith('1');
+    });
+
+    it('clic sur le bouton favori → toggleFav puis re-render différé', () => {
+      jest.useFakeTimers();
+      state.products = PRODUCTS;
+      state.favs = [1];
+      renderFavView();
+
+      document.querySelector('.k-card-fav').dispatchEvent(new Event('click', { bubbles: true }));
+
+      expect(toggleFav).toHaveBeenCalledWith('1', expect.any(HTMLElement));
+      jest.runOnlyPendingTimers();
+      jest.useRealTimers();
+    });
+
+    it('clic sur le bouton ajouter (hors zone moins) → quickAdd', () => {
+      state.products = PRODUCTS;
+      state.favs = [2];
+      renderFavView();
+
+      document.querySelector('.k-card-add').dispatchEvent(new Event('click', { bubbles: true }));
+
+      expect(quickAdd).toHaveBeenCalledWith('2', expect.any(HTMLElement));
+      expect(quickRemove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateFavPromoBadge', () => {
+    it('pas de nav item → ne throw pas', () => {
+      document.querySelector('.k-bnav-item').remove();
+      expect(() => updateFavPromoBadge(2)).not.toThrow();
+    });
+
+    it('promoCount à 0 avec badge existant → le retire', () => {
+      updateFavPromoBadge(3);
+      expect(document.querySelector('.k-bnav-promo-badge')).not.toBeNull();
+
+      updateFavPromoBadge(0);
+      expect(document.querySelector('.k-bnav-promo-badge')).toBeNull();
+    });
+  });
+
+  describe('shareWishlistWhatsApp', () => {
+    it('aucun favori → toast erreur, pas de fetch', async () => {
+      state.products = PRODUCTS;
+      state.favs = [];
+
+      await shareWishlistWhatsApp();
+
+      expect(showToast).toHaveBeenCalledWith('Aucun favori à partager.', 'error');
+      expect(window.K.request).not.toHaveBeenCalled();
+    });
+
+    it('favoris présents → apiPost réussi, ouvre WhatsApp avec share_url', async () => {
+      state.products = PRODUCTS;
+      state.favs = [1, 2];
+      mockWindowK({ request: jest.fn().mockResolvedValue({ share_url: 'https://k.mr/s/abc' }) });
+      window.open = jest.fn();
+
+      await shareWishlistWhatsApp();
+      await flush();
+
+      expect(window.K.request).toHaveBeenCalledWith('/api/shares', 'POST', { items: [{ product_id: 1, qty: 1 }, { product_id: 2, qty: 1 }] }, 2, {});
+      expect(window.open).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('https://k.mr/s/abc')), '_blank');
+    });
+
+    it('apiPost échoue → fallback sur l\'URL boutique locale', async () => {
+      state.products = PRODUCTS;
+      state.favs = [1];
+      mockWindowK({ request: jest.fn().mockRejectedValue(new Error('network')) });
+      window.open = jest.fn();
+
+      await shareWishlistWhatsApp();
+      await flush();
+
+      expect(window.open).toHaveBeenCalledWith(expect.stringContaining(encodeURIComponent('/Komerce_Boutique.html')), '_blank');
+    });
+  });
+});
