@@ -34,12 +34,12 @@ const JSON_OUTPUT   = process.argv.includes('--json');
 // dédié (gen-ownership.js, css-guard.js, check-css-dist-only.js) qui suit
 // une logique différente (multipropriété de sélecteur, pas rattachement
 // fichier↔feature) — pas la peine de dupliquer ici.
-const SOURCE_DIRS = ['dashboards/admin', 'dashboards/admin-legacy/js', 'js', '.'];
+const SOURCE_DIRS = ['admin', 'admin-legacy/js'];
 
 // Fichiers/dossiers à ignorer dans la détection d'orphelins
-const ORPHAN_IGNORE_DIRS = ['node_modules', 'features', 'scripts', 'images', 'icons', 'uploads', 'css', 'hub', 'relais']; // build artifact (vite/esbuild), pas du code source
+const ORPHAN_IGNORE_DIRS = ['node_modules','features','scripts','images','icons','uploads','css','hub','relais']; // build artifact (vite/esbuild), pas du code source
 const ORPHAN_IGNORE = new Set([
-  'chart.umd.min.js',  // vendor library
+  'chart.umd.min.js',
   // (rien pour l'instant côté boutique — tout fichier js/* doit être rattaché)
 ]);
 
@@ -65,7 +65,7 @@ function loadManifests() {
 // ─── Collecte des fichiers déclarés ───────────────────────────────────────
 
 // Komerce est multi-dépôt (backend / boutique / dash). Ce script tourne dans
-// le contexte du dépôt dashboards : il ne vérifie que le groupe 'js' (le CSS a
+// le contexte du dépôt boutique : il ne vérifie que le groupe 'js' (le CSS a
 // son propre outillage, voir plus haut) et ignore en silence tout autre
 // groupe (ex. 'dist', utilisé par modal-product.feature.js pour ses
 // contrats render-static — pas un manifest fichier↔feature).

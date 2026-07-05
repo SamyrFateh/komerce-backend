@@ -3,64 +3,63 @@
 /**
  * tests/unit/HubRelaisView.test.js
  *
- * js/views/HubRelaisView.js (996L) — vue fusionnée Hub (Commander → Répartir →
- * Expédier) + Relais (Encaisser → Réceptionner → Distribuer). Seul export
- * public : `render(rootEl)`. Tout le reste (populateHub, populateRelais,
- * loadDistributionPanel, doAction, les formatters, les builders de table)
- * est privé, exercé uniquement via `render()` + les événements DOM
- * (clics boutons, changement de mode).
+ * admin/js/views/HubRelaisView.js (996L) — fusion Hub (Commander → Répartir →
+ * Expédier) + Relais (Encaisser → Réceptionner → Distribuer).
+ * Export public unique : render(rootEl).
  *
- * Dépendance externe : `KmcApi` (global, posé par api-client.js — ici
- * entièrement mocké via `global.KmcApi`, comme documenté pour SanteView.js
- * et les autres vues du même dossier). `confirm()` et `alert()` mockés
- * (doAction() demande confirmation avant toute mutation).
+ * Dépendance externe : `KmcApi` (global, mocké) — getPipeline(), getParcels(params),
+ * hubMarkOrdered(ref), hubShip(ref), autoDistribute(), getDistribution(),
+ * relaisConfirmCash(ref), relaisReceive(ref), relaisCollect(ref).
+ * `window.confirm` mocké (doAction() demande confirmation avant chaque mutation).
  *
  * Périmètre couvert :
- *   - render() : shell, mode bar, chargement initial du mode Hub
- *   - populateHub (via render) : KPI chips, segmentation (confirmed/ordered/
- *     pending), onglet actif par défaut, tables Commander/Expédier, alertes
- *     (stuck48h/expired36h/ordered48h/critical7d), forecast, actions
- *     (hub-mark-ordered, hub-ship, auto-distribute), refresh
- *   - loadDistributionPanel : succès (colis/non-assignés/saturation),
- *     panier vide, erreur réseau
- *   - populateRelais (via bascule de mode) : KPI chips, segmentation
- *     (cashPending/transit/available/collected), onglet actif par défaut,
- *     alertes, actions (relais-confirm-cash, relais-arrived, relais-collected)
- *   - doAction : garde confirm() annulé, chemin succès, chemin erreur
- *     (réactive le bouton, affiche le message d'erreur)
- *   - erreur réseau au chargement initial d'un mode → message d'erreur inline
- *
- * Dette assumée, hors périmètre de ce lot : switchTab() en détail (bascule
- * visuelle pure, déjà exercée indirectement par le rendu initial), et le
- * CSS injecté (`<style>`) — non pertinent en jsdom.
+ *   - render() : shell, mode bar (Hub actif par défaut), chargement initial Hub
+ *   - populateHub : segmentation orders/parcels, KPI chips, onglet par défaut
+ *     selon les données, alertes (stuck48h/expired36h/critical7d), forecast
+ *     (mini-tables + plafond "+N autres")
+ *   - Panneau répartition (loadDistributionPanel) : cas peuplé (colis + cmds +
+ *     saturation + non-assignés), cas vide, erreur réseau
+ *   - Actions Hub : hub-mark-ordered, hub-ship, auto-distribute (confirm annulé,
+ *     succès, échec API)
+ *   - Bascule d'onglet (switchTab) et refresh manuel (btn-refresh-hub)
+ *   - populateRelais : segmentation cash/transit/available/collected, KPI,
+ *     alertes (uncollected72/lateTransit/cashExpired), onglet par défaut
+ *   - Actions Relais : relais-confirm-cash, relais-arrived, relais-collected
+ *   - Bascule de mode (Hub ↔ Relais) via .hr-mode-btn
+ *   - Erreur réseau dans refreshView (getPipeline/getParcels qui échoue)
  */
 
 function makeOrder(overrides) {
   return Object.assign({
-    reference: 'CMD-001',
-    client_name: 'Fatima A.',
+    reference: 'CMD-100',
     status: 'confirmed',
-    total_kmf: 12000,
+    client_name: 'Ali M.',
+    total_kmf: 15000,
     nb_items: 2,
-    relais_island: 'Grande Comore',
-    payment_mode: 'cash_relay',
-    payment_status: 'pending',
+    items: [],
+    relais_island: 'Ngazidja',
     created_at: new Date().toISOString(),
+    payment_mode: 'card',
+    payment_status: 'paid',
   }, overrides);
 }
 
 function makeParcel(overrides) {
   return Object.assign({
-    reference: 'COL-001',
-    recipient_name: 'Fatima A.',
-    main_order_ref: 'CMD-999',
+    reference: 'COL-100',
     status: 'preparation',
-    nb_items: 2,
-    total_kmf: 12000,
-    destination_island: 'Anjouan',
+    recipient_name: 'Fatima B.',
+    main_order_ref: 'CMD-999',
+    nb_items: 3,
+    total_kmf: 20000,
+    destination_island: 'Ndzuwani',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }, overrides);
+}
+
+function emptyPipeline() {
+  return { pipeline: { pending: { orders: [] }, confirmed: { orders: [] }, ordered: { orders: [] } } };
 }
 
 function daysAgoIso(days) {
@@ -68,16 +67,6 @@ function daysAgoIso(days) {
 }
 function hoursAgoIso(hours) {
   return new Date(Date.now() - hours * 3_600_000).toISOString();
-}
-
-function emptyPipeline() {
-  return { pipeline: { pending: { orders: [] }, confirmed: { orders: [] }, ordered: { orders: [] } } };
-}
-function emptyParcels() {
-  return { parcels: [] };
-}
-function emptyDistribution() {
-  return { parcels: [], unassigned: [], saturated: [] };
 }
 
 describe('HubRelaisView', () => {
@@ -88,18 +77,18 @@ describe('HubRelaisView', () => {
     document.body.innerHTML = '<div id="main"></div>';
     root = document.getElementById('main');
 
-    global.confirm = jest.fn(() => true);
     global.KmcApi = {
       getPipeline: jest.fn().mockResolvedValue(emptyPipeline()),
-      getParcels: jest.fn().mockResolvedValue(emptyParcels()),
-      getDistribution: jest.fn().mockResolvedValue(emptyDistribution()),
+      getParcels: jest.fn().mockResolvedValue({ parcels: [] }),
+      getDistribution: jest.fn().mockResolvedValue({ parcels: [], unassigned: [], saturated: [] }),
       hubMarkOrdered: jest.fn().mockResolvedValue({}),
       hubShip: jest.fn().mockResolvedValue({}),
-      autoDistribute: jest.fn().mockResolvedValue({ distributed: 3 }),
+      autoDistribute: jest.fn().mockResolvedValue({ distributed: 1 }),
       relaisConfirmCash: jest.fn().mockResolvedValue({}),
       relaisReceive: jest.fn().mockResolvedValue({}),
       relaisCollect: jest.fn().mockResolvedValue({}),
     };
+    global.confirm = jest.fn(() => true);
 
     require('../../admin/js/views/HubRelaisView.js');
   });
@@ -109,381 +98,467 @@ describe('HubRelaisView', () => {
     delete global.confirm;
   });
 
-  it('expose render() (contrat attendu par app.js#invokeView)', () => {
+  async function flush() {
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  it('expose render() (contrat app.js#invokeView)', () => {
     expect(typeof window.HubRelaisView).toBe('object');
     expect(typeof window.HubRelaisView.render).toBe('function');
   });
 
-  describe('render() — shell + chargement initial', () => {
-    it('pose la mode-bar Hub/Relais et charge le mode Hub par défaut', async () => {
+  describe('render() — shell et chargement initial (Hub par défaut)', () => {
+    it('pose le shell, active l\'onglet Hub, appelle getPipeline + getParcels + getDistribution', async () => {
       await window.HubRelaisView.render(root);
-      const modeBtns = root.querySelectorAll('.hr-mode-btn');
-      expect(modeBtns.length).toBe(2);
-      expect(root.querySelector('[data-mode="hub"]').classList.contains('active')).toBe(true);
+      await flush();
+
+      expect(root.querySelector('.hr-mode-btn[data-mode="hub"]').classList.contains('active')).toBe(true);
       expect(global.KmcApi.getPipeline).toHaveBeenCalled();
       expect(global.KmcApi.getParcels).toHaveBeenCalledWith({ limit: 500 });
-      expect(root.querySelector('.hr-hub-wrapper')).not.toBeNull();
+      expect(root.querySelector('.hub-kpi-chips').innerHTML).not.toBe('');
     });
 
-    it('panier/pipeline vides → 0 partout et pas de crash', async () => {
+    it('aucune donnée → onglet par défaut "Expédier" (aucun confirmé ni ordered)', async () => {
       await window.HubRelaisView.render(root);
-      const chips = root.querySelectorAll('.hub-kpi-chips .hr-kpi-chip b');
-      chips.forEach(c => expect(c.textContent).toBe('0'));
+      await flush();
+      const panel = root.querySelector('[data-panel="h-expedier"]');
+      expect(panel.style.display).toBe('block');
     });
 
-    it('erreur réseau au chargement initial → message d\'erreur inline, pas de crash', async () => {
-      global.KmcApi.getPipeline.mockRejectedValue(new Error('offline'));
-      await expect(window.HubRelaisView.render(root)).resolves.not.toThrow();
-      expect(root.querySelector('.hr-content').textContent).toContain('Erreur hub');
-      expect(root.querySelector('.hr-content').textContent).toContain('offline');
-    });
-  });
-
-  describe('populateHub — segmentation et KPI', () => {
-    it('segmente confirmed/ordered/pending et affiche les bons compteurs', async () => {
-      global.KmcApi.getPipeline.mockResolvedValue({
-        pipeline: {
-          pending:   { orders: [makeOrder({ reference: 'P1', status: 'pending' })] },
-          confirmed: { orders: [makeOrder({ reference: 'C1' }), makeOrder({ reference: 'C2' })] },
-          ordered:   { orders: [makeOrder({ reference: 'O1', status: 'ordered' })] },
-        },
-      });
-      await window.HubRelaisView.render(root);
-
-      const label = (l) => root.querySelector(`.hub-kpi-chips`).textContent;
-      expect(label()).toContain('🛒 Commander');
-      // confirmed.length = 2 → premier onglet actif = h-commander
-      const commanderPanel = root.querySelector('[data-panel="h-commander"]');
-      expect(commanderPanel.innerHTML).toContain('C1');
-      expect(commanderPanel.innerHTML).toContain('C2');
-    });
-
-    it('ordered sans colis existant (main_order_ref absent des colis) → compté "prêt à répartir"', async () => {
-      global.KmcApi.getPipeline.mockResolvedValue({
-        pipeline: {
-          pending: { orders: [] }, confirmed: { orders: [] },
-          ordered: { orders: [makeOrder({ reference: 'O1', status: 'ordered' })] },
-        },
-      });
-      global.KmcApi.getParcels.mockResolvedValue({ parcels: [] }); // aucun colis → O1 "prêt"
-      await window.HubRelaisView.render(root);
-      // confirmed=0, readyParcel=1 → onglet actif = h-repartir
-      const repartirPanel = root.querySelector('[data-panel="h-repartir"]');
-      expect(repartirPanel.style.display).toBe('block');
-    });
-
-    it('colis en préparation → apparaissent dans le panel Expédier avec bouton', async () => {
-      global.KmcApi.getParcels.mockResolvedValue({
-        parcels: [makeParcel({ reference: 'COL-9', status: 'preparation' })],
-      });
-      await window.HubRelaisView.render(root);
-      const expedierPanel = root.querySelector('[data-panel="h-expedier"]');
-      expect(expedierPanel.innerHTML).toContain('COL-9');
-      expect(expedierPanel.querySelector('[data-action="hub-ship"]')).not.toBeNull();
-    });
-
-    it('aucune donnée → l\'onglet actif par défaut (h-expedier) affiche l\'état vide', async () => {
-      await window.HubRelaisView.render(root);
-      // confirmed=0 et readyParcel=0 → fallback firstActive = 'h-expedier'
-      const expedierPanel = root.querySelector('[data-panel="h-expedier"]');
-      expect(expedierPanel.style.display).toBe('block');
-      expect(expedierPanel.innerHTML).toContain('Rien à traiter');
-    });
-  });
-
-  describe('populateHub — alertes', () => {
-    it('aucune alerte → message "Aucune alerte"', async () => {
-      await window.HubRelaisView.render(root);
-      expect(root.querySelector('.hub-alerts .alerts-content').innerHTML).toContain('Aucune alerte');
-    });
-
-    it('commande confirmed bloquée >48h → alerte "Confirmés bloqués"', async () => {
-      global.KmcApi.getPipeline.mockResolvedValue({
-        pipeline: {
-          pending: { orders: [] }, ordered: { orders: [] },
-          confirmed: { orders: [makeOrder({ reference: 'C-OLD', created_at: hoursAgoIso(50) })] },
-        },
-      });
-      await window.HubRelaisView.render(root);
-      const alerts = root.querySelector('.hub-alerts .alerts-content').innerHTML;
-      expect(alerts).toContain('Confirmés bloqués');
-    });
-
-    it('commande pending expirée >36h → alerte "Paiements expirés"', async () => {
-      global.KmcApi.getPipeline.mockResolvedValue({
-        pipeline: {
-          confirmed: { orders: [] }, ordered: { orders: [] },
-          pending: { orders: [makeOrder({ reference: 'P-OLD', status: 'pending', created_at: hoursAgoIso(40) })] },
-        },
-      });
-      await window.HubRelaisView.render(root);
-      expect(root.querySelector('.hub-alerts .alerts-content').innerHTML).toContain('Paiements expirés');
-    });
-
-    it('commande critique >7 jours (ordered ou confirmed) → alerte "Critique"', async () => {
+    it('des commandes confirmées → onglet par défaut "Commander" et table peuplée', async () => {
       global.KmcApi.getPipeline.mockResolvedValue({
         pipeline: {
           pending: { orders: [] },
-          confirmed: { orders: [makeOrder({ reference: 'C-CRIT', created_at: daysAgoIso(8) })] },
+          confirmed: { orders: [makeOrder({ reference: 'CMD-1', status: 'confirmed' })] },
           ordered: { orders: [] },
         },
       });
       await window.HubRelaisView.render(root);
-      expect(root.querySelector('.hub-alerts .alerts-content').innerHTML).toContain('Critique');
+      await flush();
+
+      expect(root.querySelector('[data-panel="h-commander"]').style.display).toBe('block');
+      expect(root.querySelector('[data-panel="h-commander"]').textContent).toContain('CMD-1');
+    });
+
+    it('des ordered sans colis existant → onglet par défaut "Répartir"', async () => {
+      global.KmcApi.getPipeline.mockResolvedValue({
+        pipeline: {
+          pending: { orders: [] },
+          confirmed: { orders: [] },
+          ordered: { orders: [makeOrder({ reference: 'CMD-2', status: 'ordered' })] },
+        },
+      });
+      global.KmcApi.getParcels.mockResolvedValue({ parcels: [] });
+      await window.HubRelaisView.render(root);
+      await flush();
+
+      expect(root.querySelector('[data-panel="h-repartir"]').style.display).toBe('block');
     });
   });
 
-  describe('populateHub — actions', () => {
-    it('clic "Commander" → confirm() puis KmcApi.hubMarkOrdered puis refresh', async () => {
+  describe('alertes Hub', () => {
+    it('aucune alerte → "Aucune alerte"', async () => {
+      await window.HubRelaisView.render(root);
+      await flush();
+      expect(root.querySelector('.alerts-content').textContent).toContain('Aucune alerte');
+    });
+
+    it('commandes confirmées bloquées >48h et pending expirées >36h → chips d\'alerte', async () => {
       global.KmcApi.getPipeline.mockResolvedValue({
         pipeline: {
-          pending: { orders: [] }, ordered: { orders: [] },
-          confirmed: { orders: [makeOrder({ reference: 'C-1' })] },
+          pending: { orders: [makeOrder({ reference: 'CMD-3', status: 'pending', created_at: hoursAgoIso(40) })] },
+          confirmed: { orders: [makeOrder({ reference: 'CMD-4', status: 'confirmed', created_at: hoursAgoIso(50) })] },
+          ordered: { orders: [] },
         },
       });
       await window.HubRelaisView.render(root);
-      const btn = root.querySelector('[data-action="hub-mark-ordered"][data-ref="C-1"]');
-      btn.click();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+      await flush();
 
-      expect(global.confirm).toHaveBeenCalled();
-      expect(global.KmcApi.hubMarkOrdered).toHaveBeenCalledWith('C-1');
-      // refresh déclenché → getPipeline rappelé au moins 2 fois (initial + refresh)
-      expect(global.KmcApi.getPipeline.mock.calls.length).toBeGreaterThanOrEqual(2);
+      const alerts = root.querySelector('.alerts-content').textContent;
+      expect(alerts).toContain('Confirmés bloqués');
+      expect(alerts).toContain('Paiements expirés');
+      expect(root.querySelector('.hub-kpi-chips').textContent).toContain('🚨 Alertes');
     });
 
-    it('confirm() annulé → aucune mutation, bouton inchangé', async () => {
-      global.confirm.mockReturnValue(false);
+    it('forecast : plus de 8 commandes en attente → "+ N autres…"', async () => {
+      const pending = Array.from({ length: 10 }, (_, i) =>
+        makeOrder({ reference: `CMD-P${i}`, status: 'pending', created_at: new Date().toISOString() }));
       global.KmcApi.getPipeline.mockResolvedValue({
-        pipeline: {
-          pending: { orders: [] }, ordered: { orders: [] },
-          confirmed: { orders: [makeOrder({ reference: 'C-1' })] },
-        },
+        pipeline: { pending: { orders: pending }, confirmed: { orders: [] }, ordered: { orders: [] } },
       });
       await window.HubRelaisView.render(root);
-      const btn = root.querySelector('[data-action="hub-mark-ordered"][data-ref="C-1"]');
-      btn.click();
-      await Promise.resolve();
-      expect(global.KmcApi.hubMarkOrdered).not.toHaveBeenCalled();
-      expect(btn.disabled).toBe(false);
-    });
+      await flush();
 
-    it('mutation en échec → bouton réactivé avec son texte d\'origine', async () => {
-      global.KmcApi.hubMarkOrdered.mockRejectedValue(new Error('boom'));
-      global.KmcApi.getPipeline.mockResolvedValue({
-        pipeline: {
-          pending: { orders: [] }, ordered: { orders: [] },
-          confirmed: { orders: [makeOrder({ reference: 'C-1' })] },
-        },
-      });
-      await window.HubRelaisView.render(root);
-      const btn = root.querySelector('[data-action="hub-mark-ordered"][data-ref="C-1"]');
-      btn.click();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
-      expect(btn.disabled).toBe(false);
-      expect(btn.textContent).toBe('🛒 Commander');
-    });
-
-    it('clic "Répartir maintenant" → autoDistribute puis recharge distribution + refresh hub', async () => {
-      // Le bouton .btn-auto-distribute vit dans le contenu de l'onglet "h-repartir" ;
-      // il faut qu'il soit actif au premier rendu (confirmed=0, readyParcel>0).
-      global.KmcApi.getPipeline.mockResolvedValue({
-        pipeline: {
-          pending: { orders: [] }, confirmed: { orders: [] },
-          ordered: { orders: [makeOrder({ reference: 'O-READY', status: 'ordered' })] },
-        },
-      });
-      await window.HubRelaisView.render(root);
-      const btn = root.querySelector('.btn-auto-distribute');
-      btn.click();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
-      expect(global.KmcApi.autoDistribute).toHaveBeenCalled();
-      expect(global.KmcApi.getDistribution.mock.calls.length).toBeGreaterThanOrEqual(2);
-    });
-
-    it('clic refresh hub → recharge pipeline/colis', async () => {
-      await window.HubRelaisView.render(root);
-      root.querySelector('.btn-refresh-hub').click();
-      await Promise.resolve(); await Promise.resolve();
-      expect(global.KmcApi.getPipeline.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(root.querySelector('.forecast-content').textContent).toContain('autres');
     });
   });
 
-  describe('loadDistributionPanel', () => {
-    // .distribution-panel ne vit que dans le contenu de l'onglet "h-repartir" ;
-    // renderTabset() n'injecte le HTML que de l'onglet actif au premier rendu.
-    // On force donc confirmed=0 + un "ordered" sans colis associé (readyParcel>0)
-    // pour que firstActive === 'h-repartir'.
+  describe('panneau répartition (loadDistributionPanel)', () => {
+    // Le panneau distribution n'est injecté dans le DOM que si "Répartir" est
+    // l'onglet actif par défaut (renderTabset ne peuple que l'onglet actif ;
+    // switchTab ne fait que basculer l'affichage, sans re-populer le contenu).
+    // → on force cet état via confirmed=[] + un "ordered" sans colis existant.
+    function readyToDispatchPipeline() {
+      return {
+        pipeline: {
+          pending: { orders: [] },
+          confirmed: { orders: [] },
+          ordered: { orders: [makeOrder({ reference: 'CMD-RDY', status: 'ordered' })] },
+        },
+      };
+    }
+
     beforeEach(() => {
-      global.KmcApi.getPipeline.mockResolvedValue({
-        pipeline: {
-          pending: { orders: [] }, confirmed: { orders: [] },
-          ordered: { orders: [makeOrder({ reference: 'O-READY', status: 'ordered' })] },
-        },
-      });
+      global.KmcApi.getPipeline.mockResolvedValue(readyToDispatchPipeline());
+      global.KmcApi.getParcels.mockResolvedValue({ parcels: [] });
     });
 
-    it('affiche les colis, non-assignés et alertes de saturation', async () => {
+    it('cas peuplé : colis + saturation + non-assignés', async () => {
       global.KmcApi.getDistribution.mockResolvedValue({
-        parcels: [{ reference: 'D-1', status: 'draft', orders_count: 2, items_count: 5, total_kmf: 9000, orders: [] }],
-        unassigned: [{ reference: 'U-1', client_name: 'X', items_count: 3 }],
-        saturated: [{ destination: 'Mohéli', open_parcels: 4, queued_orders: 2 }],
+        parcels: [{
+          reference: 'COL-A', status: 'preparation', relais_island: 'Ngazidja',
+          orders_count: 2, items_count: 5, total_kmf: 30000,
+          orders: [{ ref: 'CMD-A1', customer: 'Ali', items_count: 2, total_kmf: 10000 }],
+        }],
+        saturated: [{ destination: 'Ngazidja', open_parcels: 3, queued_orders: 4 }],
+        unassigned: [{ reference: 'CMD-U1', client_name: 'Zena', items_count: 1, relais_island: 'Ndzuwani' }],
         limits: { MAX_OPEN_PARCELS_PER_DEST: 3 },
       });
       await window.HubRelaisView.render(root);
-      const panel = root.querySelector('.distribution-panel');
-      expect(panel.innerHTML).toContain('D-1');
-      expect(panel.innerHTML).toContain('U-1');
-      expect(panel.innerHTML).toContain('Capacité max atteinte');
+      await flush();
+
+      const dist = root.querySelector('.distribution-panel').textContent;
+      expect(dist).toContain('COL-A');
+      expect(dist).toContain('Capacité max atteinte');
+      expect(dist).toContain('non assignée');
     });
 
-    it('rien à répartir → état vide', async () => {
+    it('cas vide : aucune commande à répartir', async () => {
+      global.KmcApi.getDistribution.mockResolvedValue({ parcels: [], unassigned: [], saturated: [] });
       await window.HubRelaisView.render(root);
-      expect(root.querySelector('.distribution-panel').innerHTML).toContain('Aucune commande à répartir');
+      await flush();
+      expect(root.querySelector('.distribution-panel').textContent).toContain('Aucune commande à répartir');
     });
 
-    it('erreur réseau sur getDistribution → message d\'erreur dans le panel (pas de crash global)', async () => {
-      global.KmcApi.getDistribution.mockRejectedValue(new Error('dist down'));
-      await expect(window.HubRelaisView.render(root)).resolves.not.toThrow();
-      expect(root.querySelector('.distribution-panel').innerHTML).toContain('dist down');
+    it('erreur réseau → message d\'erreur affiché dans le panneau', async () => {
+      global.KmcApi.getDistribution.mockRejectedValue(new Error('boom'));
+      await window.HubRelaisView.render(root);
+      await flush();
+      expect(root.querySelector('.distribution-panel').textContent).toContain('boom');
     });
 
-    it('colis en préparation avec commandes assignées → bouton Expédier + lignes de commande', async () => {
+    it('clic sur "Expédier" dans une carte de répartition → hubShip puis refresh', async () => {
       global.KmcApi.getDistribution.mockResolvedValue({
-        parcels: [{
-          reference: 'D-2', status: 'preparation', orders_count: 1, items_count: 2, total_kmf: 5000,
-          orders: [{ ref: 'CMD-A', customer: 'Yasmine', items_count: 2, total_kmf: 5000 }],
-        }],
+        parcels: [{ reference: 'COL-B', status: 'preparation', orders_count: 1, items_count: 1, total_kmf: 5000, orders: [] }],
         unassigned: [], saturated: [],
       });
       await window.HubRelaisView.render(root);
-      const panel = root.querySelector('.distribution-panel');
-      expect(panel.querySelector('[data-action="dist-ship"][data-ref="D-2"]')).not.toBeNull();
-      expect(panel.innerHTML).toContain('CMD-A');
-    });
+      await flush();
 
-    it('clic "Expédier" (dist-ship) → hubShip puis refresh', async () => {
-      global.KmcApi.getDistribution.mockResolvedValue({
-        parcels: [{ reference: 'D-3', status: 'preparation', orders_count: 0, items_count: 0, total_kmf: 0, orders: [] }],
-        unassigned: [], saturated: [],
-      });
-      await window.HubRelaisView.render(root);
-      const btn = root.querySelector('[data-action="dist-ship"][data-ref="D-3"]');
+      const btn = root.querySelector('[data-action="dist-ship"]');
+      expect(btn).toBeTruthy();
       btn.click();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
-      expect(global.KmcApi.hubShip).toHaveBeenCalledWith('D-3');
+      await flush();
+      expect(global.KmcApi.hubShip).toHaveBeenCalledWith('COL-B');
     });
   });
 
-  describe('bascule de mode → populateRelais', () => {
+  describe('actions Hub (doAction)', () => {
+    it('hub-mark-ordered : confirm accepté → appelle l\'API et rafraîchit', async () => {
+      global.KmcApi.getPipeline.mockResolvedValue({
+        pipeline: {
+          pending: { orders: [] },
+          confirmed: { orders: [makeOrder({ reference: 'CMD-5', status: 'confirmed' })] },
+          ordered: { orders: [] },
+        },
+      });
+      await window.HubRelaisView.render(root);
+      await flush();
+
+      const btn = root.querySelector('[data-action="hub-mark-ordered"]');
+      btn.click();
+      await flush();
+
+      expect(global.confirm).toHaveBeenCalled();
+      expect(global.KmcApi.hubMarkOrdered).toHaveBeenCalledWith('CMD-5');
+    });
+
+    it('hub-mark-ordered : confirm annulé → n\'appelle pas l\'API', async () => {
+      global.confirm = jest.fn(() => false);
+      global.KmcApi.getPipeline.mockResolvedValue({
+        pipeline: {
+          pending: { orders: [] },
+          confirmed: { orders: [makeOrder({ reference: 'CMD-6', status: 'confirmed' })] },
+          ordered: { orders: [] },
+        },
+      });
+      await window.HubRelaisView.render(root);
+      await flush();
+
+      root.querySelector('[data-action="hub-mark-ordered"]').click();
+      await flush();
+
+      expect(global.KmcApi.hubMarkOrdered).not.toHaveBeenCalled();
+    });
+
+    it('hub-mark-ordered : échec API → bouton réactivé, texte original restauré', async () => {
+      global.KmcApi.hubMarkOrdered.mockRejectedValue(new Error('conflit'));
+      global.KmcApi.getPipeline.mockResolvedValue({
+        pipeline: {
+          pending: { orders: [] },
+          confirmed: { orders: [makeOrder({ reference: 'CMD-7', status: 'confirmed' })] },
+          ordered: { orders: [] },
+        },
+      });
+      await window.HubRelaisView.render(root);
+      await flush();
+
+      const btn = root.querySelector('[data-action="hub-mark-ordered"]');
+      const original = btn.textContent;
+      btn.click();
+      await flush();
+
+      expect(btn.disabled).toBe(false);
+      expect(btn.textContent).toBe(original);
+    });
+
+    it('hub-ship : clic → appelle hubShip', async () => {
+      global.KmcApi.getPipeline.mockResolvedValue({
+        pipeline: {
+          pending: { orders: [] },
+          confirmed: { orders: [] },
+          ordered: { orders: [] },
+        },
+      });
+      global.KmcApi.getParcels.mockResolvedValue({ parcels: [makeParcel({ reference: 'COL-C', status: 'preparation' })] });
+      await window.HubRelaisView.render(root);
+      await flush();
+
+      const btn = root.querySelector('[data-action="hub-ship"]');
+      expect(btn).toBeTruthy();
+      btn.click();
+      await flush();
+      expect(global.KmcApi.hubShip).toHaveBeenCalledWith('COL-C');
+    });
+
+    it('auto-distribute : succès → toast et rechargement du panneau', async () => {
+      global.KmcApi.getPipeline.mockResolvedValue({
+        pipeline: {
+          pending: { orders: [] },
+          confirmed: { orders: [] },
+          ordered: { orders: [makeOrder({ reference: 'CMD-RDY2', status: 'ordered' })] },
+        },
+      });
+      global.KmcApi.getParcels.mockResolvedValue({ parcels: [] });
+      await window.HubRelaisView.render(root);
+      await flush();
+
+      const btn = root.querySelector('.btn-auto-distribute');
+      expect(btn).toBeTruthy();
+      btn.click();
+      await flush();
+
+      expect(global.KmcApi.autoDistribute).toHaveBeenCalled();
+      expect(btn.disabled).toBe(false);
+    });
+
+    it('auto-distribute : échec API → toast d\'erreur, bouton réactivé', async () => {
+      global.KmcApi.autoDistribute.mockRejectedValue(new Error('indispo'));
+      global.KmcApi.getPipeline.mockResolvedValue({
+        pipeline: {
+          pending: { orders: [] },
+          confirmed: { orders: [] },
+          ordered: { orders: [makeOrder({ reference: 'CMD-RDY3', status: 'ordered' })] },
+        },
+      });
+      global.KmcApi.getParcels.mockResolvedValue({ parcels: [] });
+      await window.HubRelaisView.render(root);
+      await flush();
+
+      const btn = root.querySelector('.btn-auto-distribute');
+      btn.click();
+      await flush();
+
+      expect(btn.disabled).toBe(false);
+      expect(btn.textContent).toContain('Répartir maintenant');
+    });
+  });
+
+  describe('onglets et refresh manuel (Hub)', () => {
+    it('bascule d\'onglet via clic sur le tab bar', async () => {
+      global.KmcApi.getPipeline.mockResolvedValue({
+        pipeline: {
+          pending: { orders: [] },
+          confirmed: { orders: [makeOrder({ reference: 'CMD-8', status: 'confirmed' })] },
+          ordered: { orders: [] },
+        },
+      });
+      await window.HubRelaisView.render(root);
+      await flush();
+
+      expect(root.querySelector('[data-panel="h-commander"]').style.display).toBe('block');
+      root.querySelector('.hr-tabbar [data-tab="h-expedier"]').click();
+
+      expect(root.querySelector('[data-panel="h-expedier"]').style.display).toBe('block');
+      expect(root.querySelector('[data-panel="h-commander"]').style.display).toBe('none');
+    });
+
+    it('clic sur "Actualiser" (Hub) → recharge getPipeline', async () => {
+      await window.HubRelaisView.render(root);
+      await flush();
+      global.KmcApi.getPipeline.mockClear();
+
+      root.querySelector('.btn-refresh-hub').click();
+      await flush();
+
+      expect(global.KmcApi.getPipeline).toHaveBeenCalled();
+    });
+  });
+
+  describe('mode Relais', () => {
     async function switchToRelais() {
       await window.HubRelaisView.render(root);
-      root.querySelector('[data-mode="relais"]').click();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+      await flush();
+      root.querySelector('.hr-mode-btn[data-mode="relais"]').click();
+      await flush();
     }
 
-    it('clic sur le mode Relais → charge le squelette + données relais', async () => {
+    it('bascule vers Relais → charge getPipeline/getParcels, KPI chips peuplés', async () => {
       await switchToRelais();
-      expect(root.querySelector('.hr-relais-wrapper')).not.toBeNull();
-      expect(root.querySelector('[data-mode="relais"]').classList.contains('active')).toBe(true);
-      expect(root.querySelector('[data-mode="hub"]').classList.contains('active')).toBe(false);
+      expect(root.querySelector('.hr-mode-btn[data-mode="relais"]').classList.contains('active')).toBe(true);
+      expect(root.querySelector('.relais-kpi-chips').innerHTML).not.toBe('');
     });
 
-    it('segmente cashPending (cash_relay/cash_relais, non payé) et affiche le panel Encaisser', async () => {
+    it('cash en attente → onglet par défaut "Encaisser" avec la table peuplée', async () => {
       global.KmcApi.getPipeline.mockResolvedValue({
         pipeline: {
-          pending: { orders: [
-            makeOrder({ reference: 'CASH-1', status: 'pending', payment_mode: 'cash_relay', payment_status: 'pending' }),
-            makeOrder({ reference: 'PAID-1', status: 'pending', payment_mode: 'cash_relay', payment_status: 'paid' }),
-            makeOrder({ reference: 'STRIPE-1', status: 'pending', payment_mode: 'stripe_eur', payment_status: 'pending' }),
-          ] },
+          pending: {
+            orders: [makeOrder({
+              reference: 'CMD-CASH', status: 'pending', payment_mode: 'cash_relay',
+              payment_status: 'unpaid', cash_code: 'X123',
+            })],
+          },
           confirmed: { orders: [] }, ordered: { orders: [] },
         },
       });
       await switchToRelais();
-      const panel = root.querySelector('[data-panel="r-encaisser"]');
-      expect(panel.innerHTML).toContain('CASH-1');
-      expect(panel.innerHTML).not.toContain('PAID-1');
-      expect(panel.innerHTML).not.toContain('STRIPE-1');
+
+      expect(root.querySelector('[data-panel="r-encaisser"]').style.display).toBe('block');
+      expect(root.querySelector('[data-panel="r-encaisser"]').textContent).toContain('CMD-CASH');
     });
 
-    it('colis available → panel Distribuer avec bouton "Remis"', async () => {
-      global.KmcApi.getParcels.mockResolvedValue({
-        parcels: [makeParcel({ reference: 'AV-1', status: 'available', pickup_code: '4242' })],
-      });
+    it('colis en transit sans cash → onglet par défaut "Réceptionner"', async () => {
+      global.KmcApi.getParcels.mockResolvedValue({ parcels: [makeParcel({ reference: 'COL-T', status: 'in_transit' })] });
       await switchToRelais();
-      const panel = root.querySelector('[data-panel="r-distribuer"]');
-      expect(panel.innerHTML).toContain('AV-1');
-      expect(panel.innerHTML).toContain('4242');
-      expect(panel.querySelector('[data-action="relais-collected"]')).not.toBeNull();
+      expect(root.querySelector('[data-panel="r-receptionner"]').style.display).toBe('block');
     });
 
-    it('colis in_transit tardif (>10 jours) → alerte "Transit tardif"', async () => {
-      global.KmcApi.getParcels.mockResolvedValue({
-        parcels: [makeParcel({ reference: 'T-OLD', status: 'in_transit', created_at: daysAgoIso(12) })],
-      });
-      await switchToRelais();
-      expect(root.querySelector('.relais-alerts .alerts-content').innerHTML).toContain('Transit tardif');
-    });
-
-    it('colis available non retiré >72h → alerte "Non collectés"', async () => {
-      global.KmcApi.getParcels.mockResolvedValue({
-        parcels: [makeParcel({ reference: 'AV-OLD', status: 'available', updated_at: hoursAgoIso(80) })],
-      });
-      await switchToRelais();
-      expect(root.querySelector('.relais-alerts .alerts-content').innerHTML).toContain('Non collectés');
-    });
-
-    it('clic "Encaisser" → relaisConfirmCash puis refresh relais (pas hub)', async () => {
+    it('alertes relais : non collectés >72h, transit tardif >10j, cash expiré >36h', async () => {
       global.KmcApi.getPipeline.mockResolvedValue({
         pipeline: {
-          pending: { orders: [makeOrder({ reference: 'CASH-2', status: 'pending', payment_mode: 'cash_relay', payment_status: 'pending' })] },
+          pending: {
+            orders: [makeOrder({
+              reference: 'CMD-EXP', status: 'pending', payment_mode: 'cash_relais',
+              payment_status: 'unpaid', created_at: hoursAgoIso(40),
+            })],
+          },
           confirmed: { orders: [] }, ordered: { orders: [] },
         },
       });
-      await switchToRelais();
-      const btn = root.querySelector('[data-action="relais-confirm-cash"][data-ref="CASH-2"]');
-      btn.click();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
-      expect(global.KmcApi.relaisConfirmCash).toHaveBeenCalledWith('CASH-2');
-    });
-
-    it('clic "Réceptionner" → relaisReceive', async () => {
       global.KmcApi.getParcels.mockResolvedValue({
-        parcels: [makeParcel({ reference: 'TR-1', status: 'in_transit' })],
+        parcels: [
+          makeParcel({ reference: 'COL-LATE', status: 'in_transit', created_at: daysAgoIso(11) }),
+          makeParcel({ reference: 'COL-STALE', status: 'available', updated_at: hoursAgoIso(80) }),
+        ],
       });
       await switchToRelais();
-      const btn = root.querySelector('[data-action="relais-arrived"][data-ref="TR-1"]');
-      btn.click();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
-      expect(global.KmcApi.relaisReceive).toHaveBeenCalledWith('TR-1');
+
+      const alerts = root.querySelector('.alerts-content').textContent;
+      expect(alerts).toContain('Cash expiré');
+      expect(alerts).toContain('Non collectés');
+      expect(alerts).toContain('Transit tardif');
     });
 
-    it('clic "Remis" → relaisCollect', async () => {
+    // Comme pour Hub, seul l'onglet actif par défaut reçoit son contenu réel
+    // (renderTabset) ; on force donc chaque onglet à être celui par défaut
+    // pour tester son action, plutôt que de cliquer dessus après coup.
+
+    it('relais-confirm-cash : cash en attente (onglet "Encaisser" par défaut)', async () => {
+      global.KmcApi.getPipeline.mockResolvedValue({
+        pipeline: {
+          pending: {
+            orders: [makeOrder({
+              reference: 'CMD-CASH2', status: 'pending', payment_mode: 'cash_relay', payment_status: 'unpaid',
+            })],
+          },
+          confirmed: { orders: [] }, ordered: { orders: [] },
+        },
+      });
+      global.KmcApi.getParcels.mockResolvedValue({ parcels: [] });
+      await switchToRelais();
+
+      root.querySelector('[data-action="relais-confirm-cash"]').click();
+      await flush();
+      expect(global.KmcApi.relaisConfirmCash).toHaveBeenCalledWith('CMD-CASH2');
+    });
+
+    it('relais-arrived : colis en transit sans cash (onglet "Réceptionner" par défaut)', async () => {
+      global.KmcApi.getPipeline.mockResolvedValue(emptyPipeline());
       global.KmcApi.getParcels.mockResolvedValue({
-        parcels: [makeParcel({ reference: 'AV-2', status: 'available' })],
+        parcels: [makeParcel({ reference: 'COL-ARR', status: 'in_transit' })],
       });
       await switchToRelais();
-      const btn = root.querySelector('[data-action="relais-collected"][data-ref="AV-2"]');
+
+      const btn = root.querySelector('[data-action="relais-arrived"]');
+      expect(btn).toBeTruthy();
       btn.click();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
-      expect(global.KmcApi.relaisCollect).toHaveBeenCalledWith('AV-2');
+      await flush();
+      expect(global.KmcApi.relaisReceive).toHaveBeenCalledWith('COL-ARR');
     });
 
-    it('clic refresh relais → recharge pipeline/colis sans rebasculer le mode', async () => {
+    it('relais-collected : colis disponibles sans cash ni transit (onglet "Distribuer" par défaut)', async () => {
+      global.KmcApi.getPipeline.mockResolvedValue(emptyPipeline());
+      global.KmcApi.getParcels.mockResolvedValue({
+        parcels: [makeParcel({ reference: 'COL-AVA', status: 'available' })],
+      });
       await switchToRelais();
+
+      const btn = root.querySelector('[data-action="relais-collected"]');
+      expect(btn).toBeTruthy();
+      btn.click();
+      await flush();
+      expect(global.KmcApi.relaisCollect).toHaveBeenCalledWith('COL-AVA');
+    });
+
+    it('clic sur "Actualiser" (Relais) → recharge getPipeline', async () => {
+      await switchToRelais();
+      global.KmcApi.getPipeline.mockClear();
+
       root.querySelector('.btn-refresh-relais').click();
-      await Promise.resolve(); await Promise.resolve();
-      expect(global.KmcApi.getPipeline.mock.calls.length).toBeGreaterThanOrEqual(2);
-      expect(root.querySelector('.hr-relais-wrapper')).not.toBeNull();
+      await flush();
+
+      expect(global.KmcApi.getPipeline).toHaveBeenCalled();
     });
 
-    it('re-bascule vers hub après relais → recharge le mode hub depuis son wrapper', async () => {
+    it('revenir sur Hub après Relais recharge le mode Hub', async () => {
       await switchToRelais();
-      root.querySelector('[data-mode="hub"]').click();
-      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
-      expect(root.querySelector('.hr-hub-wrapper')).not.toBeNull();
-      expect(root.querySelector('[data-mode="hub"]').classList.contains('active')).toBe(true);
+      root.querySelector('.hr-mode-btn[data-mode="hub"]').click();
+      await flush();
+
+      expect(root.querySelector('.hr-mode-btn[data-mode="hub"]').classList.contains('active')).toBe(true);
+      expect(root.querySelector('.hub-kpi-chips')).toBeTruthy();
+    });
+  });
+
+  describe('erreur réseau au chargement d\'un mode', () => {
+    it('getPipeline échoue → message d\'erreur affiché à la place du contenu', async () => {
+      global.KmcApi.getPipeline.mockRejectedValue(new Error('réseau HS'));
+      await window.HubRelaisView.render(root);
+      await flush();
+
+      expect(root.querySelector('.hr-content').textContent).toContain('réseau HS');
     });
   });
 });

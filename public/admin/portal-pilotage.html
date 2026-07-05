@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portail de Pilotage · Komerce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0F1A2E; --navy-2:#16223C; --navy-3:#22304F;
+  --amber:#F4B860; --coral:#C85C2D;
+  --green:#16A34A; --green-soft:#DCFCE7;
+  --orange:#F59E0B; --orange-soft:#FEF3C7;
+  --red:#DC2626; --red-soft:#FEE2E2;
+  --blue:#2563EB; --blue-soft:#DBEAFE;
+  --violet:#7C3AED; --teal:#0D9488;
+  --ink:#0F172A; --ink-2:#475569; --ink-3:#94A3B8;
+  --line:#E2E8F0; --line-2:#CBD5E1;
+  --paper:#F4F6FA; --card:#FFFFFF;
+  --display:'Space Grotesk',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --r:14px; --r-sm:9px;
+  --shadow:0 1px 2px rgba(15,26,46,.06), 0 8px 24px -12px rgba(15,26,46,.22);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+.num{font-family:var(--mono);font-feature-settings:"tnum"}
+.boot-hide{visibility:hidden}
+
+/* ── Topbar ── */
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:18px;
+  padding:12px 24px;background:rgba(244,246,250,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:11px}
+.brand svg{display:block}
+.brand-txt b{font-family:var(--display);font-weight:700;letter-spacing:-.01em;font-size:15px;display:block;line-height:1.1}
+.brand-txt span{font-size:11px;color:var(--ink-3);letter-spacing:.14em;text-transform:uppercase}
+.topbar-spacer{flex:1}
+.period{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);
+  background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 13px;font-weight:500}
+.period select{font:inherit;border:none;background:none;color:var(--ink);font-weight:600;outline:none;cursor:pointer}
+.mode{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.04em;
+  padding:5px 10px;border-radius:99px;text-transform:uppercase}
+.mode.demo{background:var(--orange-soft);color:#92400E}
+.mode.live{background:var(--green-soft);color:#14532D}
+.mode .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,0,0,.18)}70%{box-shadow:0 0 0 6px rgba(0,0,0,0)}100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}}
+.who{display:flex;align-items:center;gap:9px;font-size:13px}
+.who .av{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--display);font-weight:600;display:grid;place-items:center;font-size:13px}
+.who small{display:block;color:var(--ink-3);font-size:11px;text-transform:capitalize}
+
+/* ── Cockpit ── */
+.cockpit{background:radial-gradient(120% 140% at 88% -10%, #2a3a5e 0%, var(--navy) 52%);
+  color:#E8EEF8;padding:26px 24px 30px;position:relative;overflow:hidden}
+.cockpit::after{content:"";position:absolute;inset:0;
+  background:radial-gradient(60% 80% at 12% 120%, rgba(244,184,96,.10), transparent 60%);pointer-events:none}
+.cockpit-wrap{max-width:1280px;margin:0 auto;position:relative}
+.cockpit-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:20px}
+.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:7px}
+.cockpit h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;color:#fff}
+.cockpit h1 + p{color:#9FB0C9;font-size:14px;margin-top:5px;max-width:48ch}
+.cockpit-cta{display:flex;gap:9px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:9px 15px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.16);color:#E8EEF8;transition:.16s;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3)}
+.btn.amber{background:var(--amber);color:var(--navy);border-color:var(--amber)}
+.btn.amber:hover{background:#ffca7a}
+.kpis{display:grid;gap:1px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.09);border-radius:var(--r);overflow:hidden}
+.kpi{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0));padding:15px 16px 16px;position:relative}
+.kpi-label{font-size:11px;color:#90A2BE;letter-spacing:.04em;display:flex;align-items:center;gap:6px;margin-bottom:9px}
+.kpi-val{font-family:var(--mono);font-weight:600;font-size:23px;color:#fff;letter-spacing:-.01em;line-height:1}
+.kpi-val small{font-size:13px;color:#9FB0C9;font-weight:500}
+.kpi-sub{font-size:11.5px;margin-top:7px;color:#9FB0C9;display:flex;align-items:center;gap:5px}
+.trend{font-weight:600}.trend.up{color:#5fd58a}.trend.down{color:#ff8a8a}
+.kpi-bar{position:absolute;left:0;top:0;bottom:0;width:3px}
+
+/* ── Chaîne ── */
+.stage{max-width:1280px;margin:0 auto;padding:30px 24px 16px}
+.stage[hidden]{display:none}
+.section-head{display:flex;align-items:baseline;gap:12px;margin-bottom:4px;flex-wrap:wrap}
+.section-head h2{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-.01em}
+.section-head .hint{font-size:13px;color:var(--ink-3)}
+.section-sub{font-size:13.5px;color:var(--ink-2);max-width:72ch;margin:6px 0 22px}
+.chain{display:flex;align-items:stretch;overflow-x:auto;padding:4px 2px 14px;scrollbar-width:thin}
+.station{flex:1 0 200px;min-width:200px;display:flex;flex-direction:column}
+.seam{flex:0 0 64px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 4px;align-self:center}
+.seam .arrow{color:var(--line-2);font-size:18px;line-height:1}
+.seam .seam-lbl{font-size:10px;color:var(--ink-3);text-align:center;margin-top:7px;line-height:1.25;max-width:60px;font-weight:500}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
+  text-align:left;width:100%;height:100%;display:flex;flex-direction:column;transition:.18s;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 14px 30px -14px rgba(15,26,46,.4)}
+.card:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.card.open{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.card-rail{height:4px;background:var(--accent)}
+.card-body{padding:15px 16px 16px;display:flex;flex-direction:column;flex:1}
+.card-top{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.card-ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;
+  background:color-mix(in srgb,var(--accent) 13%,#fff);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+.card-name{font-family:var(--display);font-weight:600;font-size:14.5px;letter-spacing:-.01em}
+.card-mission{font-size:12px;color:var(--ink-2);line-height:1.4;min-height:34px}
+.card-metric{margin-top:13px;font-family:var(--mono);font-weight:600;font-size:18px;letter-spacing:-.01em}
+.card-metric small{font-size:11.5px;color:var(--ink-3);font-weight:500;font-family:var(--mono)}
+.card-foot{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:99px}
+.pill .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--green-soft);color:#14532D}
+.pill.warn{background:var(--orange-soft);color:#92400E}
+.pill.bad{background:var(--red-soft);color:#7F1D1D}
+.card-count{font-size:11.5px;color:var(--ink-3);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.card-count b{color:var(--ink-2)}
+
+/* ── Drawer ── */
+.drawer{max-width:1280px;margin:0 auto;padding:0 24px}
+.drawer-inner{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--accent);
+  border-radius:var(--r);box-shadow:var(--shadow);padding:22px 24px 24px;margin-bottom:8px;animation:slide .22s ease}
+@keyframes slide{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.drawer-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.drawer-head .card-ico{width:38px;height:38px;font-size:19px}
+.drawer-head h3{font-family:var(--display);font-weight:700;font-size:17px}
+.drawer-close{margin-left:auto;color:var(--ink-3);font-size:13px;display:flex;align-items:center;gap:5px}
+.drawer-close:hover{color:var(--ink)}
+.drawer-mission{font-size:13px;color:var(--ink-2);margin:2px 0 18px;max-width:75ch}
+.layers{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.layer-lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--ink-3);display:flex;align-items:center;gap:8px;margin-bottom:11px}
+.layer-lbl .tag{font-size:10px;padding:2px 7px;border-radius:5px;letter-spacing:.02em;text-transform:none}
+.tag.ct{background:var(--blue-soft);color:#1E3A8A}
+.tag.bo{background:#CCFBF1;color:#115E59}
+.dash-grid{display:flex;flex-direction:column;gap:8px}
+.dash{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r-sm);transition:.14s;background:#fff}
+.dash:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,#fff)}
+.dash-ico{font-size:17px;width:24px;text-align:center;flex-shrink:0}
+.dash-txt b{display:block;font-size:13.5px;font-weight:600}
+.dash-txt span{font-size:11.5px;color:var(--ink-2);line-height:1.35}
+.dash-go{margin-left:auto;color:var(--ink-3);font-size:15px;flex-shrink:0}
+.dash:hover .dash-go{color:var(--accent)}
+
+/* ── Support ── */
+.support{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.support .card-body{padding:14px 15px}
+.field-strip{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.field{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 15px;flex:1 1 220px;transition:.14s;box-shadow:var(--shadow)}
+.field:hover{border-color:var(--navy-3);transform:translateY(-2px)}
+.field .ico{font-size:19px}
+.field b{font-size:13.5px;display:block}
+.field span{font-size:11.5px;color:var(--ink-3)}
+.field .ext{margin-left:auto;color:var(--ink-3);font-size:12px}
+
+footer{max-width:1280px;margin:18px auto 0;padding:24px;color:var(--ink-3);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid var(--line)}
+footer code{font-family:var(--mono);background:#fff;border:1px solid var(--line);padding:1px 6px;border-radius:5px}
+
+@media(max-width:1080px){.layers{grid-template-columns:1fr}}
+@media(max-width:720px){
+  .kpis{grid-template-columns:repeat(2,1fr)!important}
+  .chain{flex-direction:column}.station{min-width:0}
+  .seam{flex-direction:row;width:100%;height:44px;gap:10px}
+  .seam .arrow{transform:rotate(90deg)}.seam .seam-lbl{max-width:none}
+  .topbar{padding:10px 16px;gap:12px}.who small{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body class="boot-hide">
+
+<header class="topbar">
+  <div class="brand">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" aria-label="Komerce" role="img" style="width:130px;height:auto;display:block">
+  <g stroke="#2a7a3e" stroke-width="15" stroke-linecap="round" fill="none">
+    <path d="M72 65.5V96M72 124v30.5"/>
+    <path d="M82.6 100.8 131.8 58.1M82.6 119.2l49.2 42.8M85.7 113 189.6 136.1"/>
+  </g>
+  <g fill="none" stroke="#2a7a3e" stroke-width="13">
+    <circle cx="72" cy="44" r="15"/><circle cx="72" cy="176" r="15"/>
+    <circle cx="148" cy="44" r="15"/><circle cx="148" cy="176" r="15"/>
+  </g>
+  <circle cx="72" cy="110" r="10" fill="#C85C2D"/>
+  <circle cx="234" cy="146" r="38" fill="none" stroke="#2a7a3e" stroke-width="15"/>
+  <circle cx="234" cy="146" r="14" fill="#C85C2D"/>
+  <path fill="#64AF5A" d="M296.05 184.0V123.94H311.45V138.57L309.8 136.15Q311.12 129.22 316.18 125.92Q321.24 122.62 328.28 122.62Q335.76 122.62 341.425 126.415Q347.09 130.21 348.52 136.59L343.79 137.03Q346.76 129.66 352.26 126.14Q357.76 122.62 365.13 122.62Q371.62 122.62 376.625 125.48Q381.63 128.34 384.49 133.455Q387.35 138.57 387.35 145.39V184.0H370.85V148.91Q370.85 145.39 369.585 142.86Q368.32 140.33 366.01 138.9Q363.7 137.47 360.4 137.47Q357.21 137.47 354.845 138.9Q352.48 140.33 351.215 142.86Q349.95 145.39 349.95 148.91V184.0H333.45V148.91Q333.45 145.39 332.185 142.86Q330.92 140.33 328.61 138.9Q326.3 137.47 323.0 137.47Q319.81 137.47 317.445 138.9Q315.08 140.33 313.815 142.86Q312.55 145.39 312.55 148.91V184.0Z M423.17 185.32Q413.6 185.32 406.56 181.085Q399.52 176.85 395.67 169.7Q391.82 162.55 391.82 153.86Q391.82 144.84 395.835 137.8Q399.85 130.76 406.67 126.69Q413.49 122.62 422.07 122.62Q429.22 122.62 434.72 124.875Q440.22 127.13 444.015 131.2Q447.81 135.27 449.79 140.605Q451.77 145.94 451.77 152.21Q451.77 153.97 451.605 155.675Q451.44 157.38 451.0 158.59H406.01V146.49H441.65L433.84 152.21Q434.94 147.48 433.73 143.795Q432.52 140.11 429.495 137.965Q426.47 135.82 422.07 135.82Q417.78 135.82 414.7 137.91Q411.62 140.0 410.08 144.07Q408.54 148.14 408.87 153.97Q408.43 159.03 410.08 162.88Q411.73 166.73 415.14 168.875Q418.55 171.02 423.39 171.02Q427.79 171.02 430.925 169.26Q434.06 167.5 435.82 164.42L449.02 170.69Q447.26 175.09 443.465 178.39Q439.67 181.69 434.5 183.505Q429.33 185.32 423.17 185.32Z M457.45 184.0V123.94H472.85V138.35L471.75 136.26Q473.73 128.67 478.295 125.975Q482.86 123.28 489.13 123.28H492.65V137.58H487.48Q481.43 137.58 477.69 141.265Q473.95 144.95 473.95 151.66V184.0Z M525.39 185.32Q516.37 185.32 509.165 181.195Q501.96 177.07 497.725 169.92Q493.49 162.77 493.49 153.86Q493.49 144.95 497.67 137.855Q501.85 130.76 509.11 126.69Q516.37 122.62 525.39 122.62Q532.1 122.62 537.82 124.93Q543.54 127.24 547.61 131.365Q551.68 135.49 553.44 141.1L539.14 147.26Q537.6 142.75 533.915 140.11Q530.23 137.47 525.39 137.47Q521.1 137.47 517.745 139.56Q514.39 141.65 512.465 145.39Q510.54 149.13 510.54 153.97Q510.54 158.81 512.465 162.55Q514.39 166.29 517.745 168.38Q521.1 170.47 525.39 170.47Q530.34 170.47 533.97 167.83Q537.6 165.19 539.14 160.68L553.44 166.95Q551.79 172.23 547.72 176.41Q543.65 180.59 537.93 182.955Q532.21 185.32 525.39 185.32Z M588.05 185.32Q578.48 185.32 571.44 181.085Q564.4 176.85 560.55 169.7Q556.7 162.55 556.7 153.86Q556.7 144.84 560.715 137.8Q564.73 130.76 571.55 126.69Q578.37 122.62 586.95 122.62Q594.1 122.62 599.6 124.875Q605.1 127.13 608.895 131.2Q612.69 135.27 614.67 140.605Q616.65 145.94 616.65 152.21Q616.65 153.97 616.485 155.675Q616.32 157.38 615.88 158.59H570.89V146.49H606.53L598.72 152.21Q599.82 147.48 598.61 143.795Q597.4 140.11 594.375 137.965Q591.35 135.82 586.95 135.82Q582.66 135.82 579.58 137.91Q576.5 140.0 574.96 144.07Q573.42 148.14 573.75 153.97Q573.31 159.03 574.96 162.88Q576.61 166.73 580.02 168.875Q583.43 171.02 588.27 171.02Q592.67 171.02 595.805 169.26Q598.94 167.5 600.7 164.42L613.9 170.69Q612.14 175.09 608.345 178.39Q604.55 181.69 599.38 183.505Q594.21 185.32 588.05 185.32Z"/>
+</svg>
+    <div class="brand-txt"><span>Pilotage</span></div>
+  </div>
+  <div class="topbar-spacer"></div>
+  <div class="period">📅 <select id="period">
+    <option value="7">7 derniers jours</option><option value="30">30 derniers jours</option><option value="90">90 derniers jours</option>
+  </select></div>
+  <span class="mode demo" id="mode"><span class="dot"></span> Démo</span>
+  <div class="who"><div class="av" id="av">A</div><div><b id="who-name">—</b><small id="who-role"></small></div></div>
+</header>
+
+<section class="cockpit">
+  <div class="cockpit-wrap">
+    <div class="cockpit-head">
+      <div>
+        <div class="eyebrow" id="cp-eyebrow">Direction · vue d'ensemble</div>
+        <h1 id="cp-title">L'activité, d'un seul coup d'œil</h1>
+        <p id="cp-lede">Les indicateurs qui se parlent, du plus haut vers le détail. Choisissez un maillon de la chaîne pour ouvrir son domaine.</p>
+      </div>
+      <div class="cockpit-cta" id="cp-cta"></div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+  </div>
+</section>
+
+<section class="stage" id="chain-stage">
+  <div class="section-head"><h2>La chaîne de l'activité</h2><span class="hint">supply → demande → exécution → argent</span></div>
+  <p class="section-sub">Chaque domaine isole un métier mais reste relié au suivant&nbsp;: ce qui se passe à gauche conditionne ce qui arrive à droite. Les libellés entre les blocs sont les <b>coutures</b> — ce qui circule réellement d'un domaine à l'autre.</p>
+  <div class="chain" id="chain"></div>
+</section>
+
+<div class="drawer" id="drawer"></div>
+
+<section class="stage" id="support-stage">
+  <div class="section-head"><h2>Socle &amp; terrain</h2><span class="hint">ce qui alimente et fait tourner la chaîne</span></div>
+  <p class="section-sub">Le catalogue nourrit le haut de la chaîne&nbsp;; le système la paramètre&nbsp;; les applis terrain l'exécutent sur le pont.</p>
+  <div class="support" id="support"></div>
+  <div class="field-strip" id="field"></div>
+</section>
+
+<footer>
+  <span>Portail de pilotage — porte d'entrée au-dessus de la SPA admin.</span>
+  <span>Routes profondes&nbsp;: <code>/admin/&lt;domaine&gt;</code> · données via <code>KmcApi</code></span>
+</footer>
+
+<script src="/dashboards/admin/portal-pilotage.js"></script>
+</body>
+</html>

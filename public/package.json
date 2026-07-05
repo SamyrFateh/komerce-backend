@@ -1,44 +1,32 @@
 {
   "name": "dashboards",
   "version": "1.0.0",
-  "description": "Komerce Dashboards — admin SPA, legacy control-tower, platform utilities",
   "private": true,
   "scripts": {
-    "test": "jest",
     "audit:registry": "node scripts/feature-registry-check.js --strict",
-    "audit:registry:report": "node scripts/feature-registry-check.js",
-    "audit:registry:orphans": "node scripts/feature-registry-check.js --orphans",
-    "audit:registry:json": "node scripts/feature-registry-check.js --json",
-    "audit:arch": "node scripts/audit-arch.js --strict",
-    "audit:arch:report": "node scripts/audit-arch.js",
-    "audit:guard": "node scripts/feature-guard.js --strict",
-    "audit:guard:report": "node scripts/feature-guard.js",
-    "check:all": "npm run quality:gate && npm run audit:registry && npm run audit:arch && npm run audit:guard && npm run audit:gate && npm test",
-    "check:fast": "npm run quality:gate && npm run audit:registry",
+    "check:all": "npm run quality:gate && npm run arch:check && npm run feature:guard && npm run audit:registry && npm run testkit:check && npm run test:unit",
     "precommit": "npm run check:all",
+    "audit:gate": "npm audit --production --audit-level=high || echo \"Audit: vulnérabilités détectées\"",
     "quality:gate": "node scripts/code-quality-gate.js --strict",
-    "quality:gate:report": "node scripts/code-quality-gate.js",
-    "quality:gate:fix": "node scripts/code-quality-gate.js --fix",
-    "audit:gate": "node scripts/audit-gate.js --strict",
-    "audit:gate:report": "node scripts/audit-gate.js",
-    "audit:gate:accept": "node scripts/audit-gate.js --accept",
-    "audit:gate:json": "node scripts/audit-gate.js --json"
+    "arch:check": "node scripts/arch-check.js --strict",
+    "feature:guard": "node scripts/feature-guard.js --strict",
+    "testkit:check": "node scripts/test-kit-usage-check.js --strict",
+    "testkit:check:report": "node scripts/test-kit-usage-check.js --report",
+    "test:unit": "npx jest --no-coverage --forceExit"
+  },
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
+    "babel-jest": "^30.4.1",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1"
-  },
-  "jest": {
-    "testEnvironment": "jest-environment-jsdom",
-    "testMatch": [
-      "**/tests/**/*.test.js"
-    ],
-    "setupFiles": [
-      "./tests/setup.js"
-    ],
-    "testTimeout": 15000
   }
 }

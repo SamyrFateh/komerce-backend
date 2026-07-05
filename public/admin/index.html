@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Komerce — Pilotage</title>
+  <link rel="stylesheet" href="/dashboards/admin/css/tokens.css" />
+  <link rel="stylesheet" href="/dashboards/admin/css/layout.css" />
+  <link rel="stylesheet" href="/dashboards/admin/css/components.css" />
+  <link rel="stylesheet" href="/dashboards/admin/css/responsive.css" />
+  <link rel="stylesheet" href="/dashboards/admin/css/shell.css" />
+  <link rel="stylesheet" href="/dashboards/admin/css/ac-styles.css" />
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="loading-state" style="padding: 40px;">
+    <span class="loader"></span> Chargement...
+  </div>
+
+  <!-- Core -->
+  <script src="/dashboards/admin/js/utils.js"></script>
+  <script src="/dashboards/admin/js/api-client.js"></script>
+  <script src="/dashboards/admin/js/api-client-unsold.js"></script>
+  <script src="/dashboards/admin/js/filters-store.js"></script>
+  <!-- Components -->
+  <script src="/dashboards/admin/js/components/KpiCard.js"></script>
+  <script src="/dashboards/admin/js/components/UI.js"></script>
+  <script src="/dashboards/admin/js/components/Charts.js"></script>
+  <!-- Views -->
+  <script src="/dashboards/admin/js/views/PilotageView.js"></script>
+  <script src="/dashboards/admin/js/views/ControlTowerView.js"></script>
+  <script src="/dashboards/admin/js/views/CostingView.js"></script>
+  <script src="/dashboards/admin/js/views/OrdersLogisticsView.js"></script>
+  <script src="/dashboards/admin/js/views/EventWorkspacesView.js"></script>
+  <script src="/dashboards/admin/js/views/SalesView.js"></script>
+  <script src="/dashboards/admin/js/views/ActionCenterView.js"></script>
+  <script src="/dashboards/admin/js/views/ProblemsView.js"></script>
+  <script src="/dashboards/admin/js/views/ClientsView.js"></script>
+  <script src="/dashboards/admin/js/views/HubRelaisView.js"></script>
+  <script src="/dashboards/admin/js/views/TransitaireView.js"></script>
+  <script src="/dashboards/admin/js/views/InventoryView.js"></script>
+  <script src="/dashboards/admin/js/views/EconomicView.js"></script>
+  <script src="/dashboards/admin/js/views/PilotageFinView.js"></script>
+  <script src="/dashboards/admin/js/views/InvoicesView.js"></script>
+  <script src="/dashboards/admin/js/views/CategoriesView.js"></script>
+  <script src="/dashboards/admin/js/product-card-model.admin.js"></script>
+  <script src="/dashboards/admin/js/views/ProductsView.js"></script>
+  <script src="/dashboards/admin/js/views/CatalogApprovalView.js"></script>
+
+  <!-- Lot 4 : Sourcing, Pricing, Customs, Suppliers -->
+  <script src="/dashboards/admin/js/views/SourcingView.js"></script>
+  <script src="/dashboards/admin/js/views/PricingView.js"></script>
+  <script src="/dashboards/admin/js/views/PricingWorkshopView.js"></script>
+  <script src="/dashboards/admin/js/views/PricingStrategyView.js"></script>
+  <script src="/dashboards/admin/js/views/EconomicFlowView.js"></script>
+  <script src="/dashboards/admin/js/views/SourcingScannerView.js"></script>
+  <script src="/dashboards/admin/js/views/CustomsView.js"></script>
+  <script src="/dashboards/admin/js/views/SuppliersView.js"></script>
+  <script src="/dashboards/admin/js/views/SanteView.js"></script>
+
+  <!-- Lot 6 : Settings, Simulator, SharedCarts -->
+  <script src="/dashboards/admin/js/views/AccountingView.js"></script>
+  <script src="/dashboards/admin/js/views/SettingsView.js"></script>
+  <script src="/dashboards/admin/js/views/SimulatorView.js"></script>
+  <script src="/dashboards/admin/js/views/SharedCartsView.js"></script>
+
+  <!-- App (charge en dernier) -->
+  <script src="/dashboards/admin/js/app.js"></script>
+</body>
+</html>
