@@ -88,13 +88,13 @@
         div.innerHTML = `
           <div class="view-block-header">
             <div>
-              <div class="view-block-title">${block.title}</div>
-              <div class="view-block-subtitle">"${block.subtitle}"</div>
+              <div class="view-block-title">${esc(block.title)}</div>
+              <div class="view-block-subtitle">"${esc(block.subtitle)}"</div>
             </div>
             <div class="view-block-arrow">→</div>
           </div>
           <div class="view-block-kpis"></div>
-        `;
+        `; // AUD-06
 
         const kpisEl = div.querySelector('.view-block-kpis');
         (block.kpis_summary || []).slice(0, 4).forEach(kpi => {
@@ -122,8 +122,8 @@
         });
         stageEl.innerHTML = `
           <div class="economic-flow-stage-icon">${idx + 1}</div>
-          <div class="economic-flow-stage-label">${stage.label}</div>
-        `;
+          <div class="economic-flow-stage-label">${esc(stage.label)}</div>
+        `; // AUD-06
         flowEl.appendChild(stageEl);
       });
 
