@@ -1,31 +1,72 @@
-# Livraison — gates test-kit + lots dashboards manquants
+# CI dashboards — 3 fichiers à copier-coller (écraser tel quel)
 
-Arborescence de ce zip = arborescence exacte du monorepo (racine = backend,
-`public/boutique/`, `public/dashboards/`). Copie-colle en écrasant tel quel,
-**sauf** les 4 fichiers ci-dessous qui étaient déjà présents chez toi et que
-j'ai modifiés à partir de la version que tu m'avais envoyée (`archive.zip`)
-— si tu as retouché ces fichiers depuis, diffe avant d'écraser :
+Chemins exacts du monorepo, racine = backend :
 
-| Fichier | Modification |
-|---|---|
-| `package.json` (racine) | + scripts `testkit:check` / `testkit:check:report` |
-| `.github/workflows/ci.yml` | + step "Test-kit usage gate" dans le job `unit`, + `fetch-depth: 0` sur le checkout (nécessaire pour que `git diff origin/main...HEAD` fonctionne) |
-| `public/boutique/package.json` | + scripts `testkit:check` / `testkit:check:report` |
-| `public/dashboards/package.json` | + scripts `testkit:check` / `testkit:check:report`, wirés dans `check:all`/`precommit` |
-| `public/dashboards/jest.config.js` | retiré `'!admin/js/views/**'` de `collectCoverageFrom` (régression vs état documenté — masquait la couverture des vues) |
-| `public/dashboards/tests/unit/helpers/dashboardTestKit.js` | ajout de `mountContainer` + `mockEscHelpers` (nécessaires à SettingsView/ClientsView, absents de la version en place) |
+```
+.github/workflows/ci.yml                        (MODIFIÉ)
+public/dashboards/features/admin-dashboard.feature.js   (MODIFIÉ)
+public/dashboards/package-lock.json              (NOUVEAU)
+```
 
-Tout le reste est **nouveau**, sans risque d'écrasement :
-- `scripts/test-kit-usage-check.js` (racine, backend)
-- `public/boutique/scripts/test-kit-usage-check.js`
-- `public/dashboards/scripts/test-kit-usage-check.js`
-- `public/dashboards/tests/unit/{SettingsView,ClientsView,ProductsView,SalesView,HubRelaisView,ProblemsView}.test.js`
+## 1. `.github/workflows/ci.yml`
 
-## Vérifié réellement avant livraison
-- Backend : 311/313 suites, 5535/5552 tests (3 échecs préexistants sourcing-analysis, sans rapport)
-- Boutique : 22/22 suites, 586/586 tests
-- Dashboards : **21/21 suites, 177/177 tests** (avec les 6 lots + ProblemsView intégrés)
+Ajout du job `dashboards-quality`, symétrique du job `boutique-quality`
+déjà en place. Reprend l'ordre exact de `check:all` du package.json
+dashboards :
 
-## Toujours en suspens
-- **Boutique et Dashboards n'ont aucun `.github/workflows`** — le gate `testkit:check` de boutique ne tourne nulle part automatiquement ; celui de dashboards ne tourne qu'au `precommit` local. Dis-moi si je crée un `ci.yml` minimal pour les deux.
-- Dette pré-existante remontée par le gate (hors scope, non touchée) : 10/313 fichiers backend, 2/20 dashboards (`SalesView.test.js`, `HubRelaisView.test.js`) réinventent encore leur mock sans passer par le kit.
+```
+npm ci
+npm run audit:gate      (npm audit — informatif, non bloquant par design)
+npm run check:all       (quality:gate → arch:check → feature:guard →
+                          audit:registry → testkit:check → test:unit)
+```
+
+Aujourd'hui, aucun gate dashboards ne tournait en automatique (comme
+c'était le cas pour boutique avant ce chantier). Ce job comble le trou.
+
+## 2. `public/dashboards/features/admin-dashboard.feature.js`
+
+**Bug préexistant trouvé en testant `audit:registry` sur un checkout
+propre, avant de le mettre en CI** (même démarche que pour boutique :
+je ne voulais rien committer qui casse dès le premier run).
+
+`admin/js/ClientsView.js` (copie legacy à la racine `js/`, remplacée
+par `admin/js/views/ClientsView.js` — c'est écrit noir sur blanc dans
+son propre header) porte `@domain admin-dashboard` mais n'était
+déclaré dans aucun manifest. Le gate `audit:registry` le détecte et
+bloque (`DOMAIN-MISMATCH`), donc `check:all` échouait avant même
+d'arriver aux tests.
+
+Fix appliqué : ajout de `'../admin/js/ClientsView.js'` à la liste
+`files.js` du manifest. Changement de données uniquement (aucun code
+applicatif touché), il fait juste passer le registre de 78 → 79
+fichiers déclarés. Registre propre confirmé après coup.
+
+Si ce fichier legacy est en réalité mort et sans usage, le nettoyer
+carrément (suppression) serait plus propre à terme — mais ça sort du
+périmètre "CI" et j'ai préféré ne pas toucher au code applicatif sans
+te le signaler d'abord.
+
+## 3. `public/dashboards/package-lock.json`
+
+N'existait pas dans le repo (contrairement à boutique). Nécessaire
+pour que `npm ci` fonctionne dans le job CI — `npm ci` exige une
+lockfile committée, `npm install` seul ne suffit pas. Généré avec
+`npm install --package-lock-only` à partir du `package.json` actuel,
+zéro changement de dépendances.
+
+---
+
+## Vérifié avant envoi (checkout propre, hors git donc testkit:check
+en mode "aucun fichier touché" — comportement normal, il se base sur
+le diff git en CI réelle) :
+
+- `npm run audit:registry` → ✅ registre propre, 79 fichiers déclarés
+- `npm run arch:check` → ✅ 79 fichiers, 0 header manquant
+- `npm run feature:guard` → ✅ 2 slices cohérents
+- `npm run test:unit` → ✅ 21/21 suites, 177/177 tests
+- `npm run check:all` (bout en bout) → ✅
+- YAML du `ci.yml` final → syntaxe validée
+
+Les deux jobs `unit` / `integration` déjà en place et `boutique-quality`
+ne sont pas touchés.

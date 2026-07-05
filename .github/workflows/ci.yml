@@ -169,3 +169,40 @@ jobs:
 
       - name: "Garde-fous boutique (= check:fast : N2 quality + invariants + carte 360, statique)"
         run: npm run check:fast
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 4 — Gates dashboards (frontend admin SPA) : périmètre et
+  # dépendances propres à public/dashboards, absentes du package.json
+  # racine -> npm ci dédié, working-directory dédié. Symétrique du
+  # job boutique-quality ci-dessus. Reprend exactement l'ordre de
+  # check:all (scripts/setup-hooks.sh local) : quality:gate ->
+  # arch:check -> feature:guard -> audit:registry -> testkit:check
+  # -> test:unit. audit:gate (npm audit) ajouté en tête, sur le
+  # même principe que N1 côté boutique : jusqu'ici les deps
+  # dashboards n'étaient jamais auditées en CI. Il est écrit pour
+  # ne jamais faire échouer le job (voir scripts, `|| echo ...`) —
+  # visibilité seulement, pas un gate bloquant.
+  # ─────────────────────────────────────────────────────────────
+  dashboards-quality:
+    name: "🛡️ Dashboards Quality Gates"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: public/dashboards
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: public/dashboards/package-lock.json
+
+      - name: Install dependencies (dashboards)
+        run: npm ci
+
+      - name: "N1 — npm audit dashboards (informatif, non bloquant)"
+        run: npm run audit:gate
+
+      - name: "Garde-fous dashboards (= check:all : quality + arch + feature guard + registre + testkit + tests unitaires)"
+        run: npm run check:all
