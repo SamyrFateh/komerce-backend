@@ -34,10 +34,6 @@ const BUNDLES = [
     out: 'desktop.css',
     files: ['boutique-desktop'],
   },
-  {
-    out: 'event.css',
-    files: ['tokens', 'event'],
-  },
 ];
 
 module.exports = { BUNDLES };

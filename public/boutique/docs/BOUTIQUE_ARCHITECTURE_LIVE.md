@@ -10,14 +10,13 @@
 
 ## 1. Inventaire CSS
 
-21 fichier(s) sur disque, 21 orphelin(s).
+20 fichier(s) sur disque, 20 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
 | `boutique-desktop.css` | 1268 | 🔴 **ORPHELIN** |
 | `cart.css` | 2120 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
-| `event.css` | 549 | 🔴 **ORPHELIN** |
 | `group-cart-flow.css` | 1937 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 971 | 🔴 **ORPHELIN** |
@@ -44,7 +43,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
  1. /boutique/css/dist/base.css?v=117
  2. /boutique/css/dist/components.css?v=132
  3. /boutique/css/dist/desktop.css?v=51
- 4. /boutique/css/dist/event.css?v=31
+ 4. /boutique/css/dist/event.css?v=32
 ```
 
 ## 3. Cartographie des sélecteurs critiques
@@ -76,13 +75,12 @@ Aucun. ✅
 
 ## 5. Hex hardcodés hors tokens.css
 
-26 occurrence(s) au total, répartition :
+25 occurrence(s) au total, répartition :
 
 | Fichier | Nombre |
 |---|---:|
 | `paypal.css` | 14 |
 | `group-cart-flow.css` | 10 |
-| `event.css` | 1 |
 | `layout.css` | 1 |
 
 ## 6. `!important` par fichier
@@ -109,9 +107,9 @@ Aucun. ✅
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 21 (cible : 0)
+- **CSS orphelins** : 20 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
-- **Hex hardcodés** : 26 (cible : 0 ou allowlist)
+- **Hex hardcodés** : 25 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)
 - **Sélecteurs multi-owner** : 11 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
 

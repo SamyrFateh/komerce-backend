@@ -47,15 +47,12 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
 | `b-identity.js` | 11 | 5 | 0/0 | — |
 | `b-group-view.js` | 10 | 5 | 0/1 | Header, Panier groupe, Bottom-nav mobile, Section catalogue |
-| `event-public.js` | 2 | 13 | 0/0 | — |
 | `b-tracking.js` | 14 | 0 | 0/0 | Section catalogue |
 | `b-catalog.js` | 11 | 2 | 3/1 | Carte produit, Grille produits, Chips catégories, Section catalogue |
 | `b-modal-image-ux.js` | 8 | 5 | 4/0 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
 | `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
-| `event-pay.js` | 2 | 8 | 0/0 | — |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
-| `event-manage.js` | 2 | 7 | 0/0 | — |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
 | `b-modal-suggestions.js` | 6 | 0 | 2/4 | Modal produit |
 | `b-nav.js` | 5 | 1 | 0/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
@@ -97,7 +94,6 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
-| event.css | 900px | ✅ |
 | hero-cart-proxy.css | 900px | ✅ |
 | identity.css | 900px | ✅ |
 | modal-product-lot4-hybrid.css | 900px | ✅ |
@@ -137,7 +133,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Indicateur | Valeur | Cible |
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
-| Modules JS écrivant le DOM | 41 | ≤ 5 |
+| Modules JS écrivant le DOM | 38 | ≤ 5 |
 | Breakpoints distincts | 7 | ≤ 2 |
 | Violations breakpoint | 12 | 0 |
 | `!important` | 23 | < 5 |
