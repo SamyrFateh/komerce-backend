@@ -59,6 +59,7 @@ const REINVENTION_PATTERNS = [
   { rx: /document\.getElementById\(['"]boutique-test-root['"]\)/,
     label: "réimplémentation du fixture id='boutique-test-root' (→ mountFixture)" },
   { rx: /\bfunction\s+resetState\s*\(/,                label: 'function resetState(...) locale' },
+  { rx: /\basync\s+function\s+flush\s*\(/,             label: 'async function flush(...) locale (→ flush de boutiqueTestKit)' },
 ];
 
 // ── Git diff (identique à touched-tests-gate.js) ────────────────────────────

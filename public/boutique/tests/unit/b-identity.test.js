@@ -49,16 +49,13 @@ jest.mock('../../js/b-cart-core.js', () => ({
 
 const { state } = require('../../js/b-store.js');
 const { showToast } = require('../../js/b-cart-core.js');
+const { mockWindowK, flush } = require('./helpers/boutiqueTestKit');
 const {
   getCurrentIdentity,
   restoreIdentity,
   requireIdentity,
   bindChangeIdentity,
 } = require('../../js/b-identity.js');
-
-async function flush(n = 3) {
-  for (let i = 0; i < n; i++) await Promise.resolve();
-}
 
 async function tick(ms) {
   jest.advanceTimersByTime(ms);
@@ -100,14 +97,14 @@ describe('getCurrentIdentity', () => {
   });
 
   it('priorise window.K.auth.getUser()', () => {
-    window.K = { auth: { getUser: () => ({ id: 1, name: 'Fatima', phone: '+33612345678' }) } };
+    mockWindowK({ auth: { getUser: () => ({ id: 1, name: 'Fatima', phone: '+33612345678' }) } });
     const id = getCurrentIdentity();
     expect(id.name).toBe('Fatima');
     expect(id.phone).toBe('+33612345678');
   });
 
   it('retombe sur window.K.getUser() si auth.getUser absent', () => {
-    window.K = { getUser: () => ({ id: 2, full_name: 'Ali Said' }) };
+    mockWindowK({ auth: undefined, getUser: () => ({ id: 2, full_name: 'Ali Said' }) });
     expect(getCurrentIdentity().name).toBe('Ali Said');
   });
 
@@ -139,7 +136,7 @@ describe('getCurrentIdentity', () => {
   });
 
   it('accepte un objet enveloppé sous { user: {...} } (forme K.auth.getUser())', () => {
-    window.K = { auth: { getUser: () => ({ user: { id: 7, name: 'Wrapped' } }) } };
+    mockWindowK({ auth: { getUser: () => ({ user: { id: 7, name: 'Wrapped' } }) } });
     expect(getCurrentIdentity().name).toBe('Wrapped');
   });
 });
@@ -148,26 +145,26 @@ describe('restoreIdentity', () => {
   it('retourne l\'identité existante sans appeler K.auth.restore()', async () => {
     state.user = { id: 1, name: 'Déjà là' };
     const restore = jest.fn();
-    window.K = { auth: { restore } };
+    mockWindowK({ auth: { restore } });
     const result = await restoreIdentity();
     expect(result.name).toBe('Déjà là');
     expect(restore).not.toHaveBeenCalled();
   });
 
   it('appelle K.auth.restore(), normalise et met à jour state.user en cas de succès', async () => {
-    window.K = { auth: { restore: jest.fn().mockResolvedValue({ id: 9, name: 'Restauré', phone: '+33600000000' }) } };
+    mockWindowK({ auth: { restore: jest.fn().mockResolvedValue({ id: 9, name: 'Restauré', phone: '+33600000000' }) } });
     const result = await restoreIdentity();
     expect(result.name).toBe('Restauré');
     expect(state.user.name).toBe('Restauré');
   });
 
   it('retourne null et ne plante pas si K.auth.restore() rejette', async () => {
-    window.K = { auth: { restore: jest.fn().mockRejectedValue(new Error('offline')) } };
+    mockWindowK({ auth: { restore: jest.fn().mockRejectedValue(new Error('offline')) } });
     await expect(restoreIdentity()).resolves.toBeNull();
   });
 
   it('retourne null si K.auth.restore() résout une valeur non exploitable', async () => {
-    window.K = { auth: { restore: jest.fn().mockResolvedValue(null) } };
+    mockWindowK({ auth: { restore: jest.fn().mockResolvedValue(null) } });
     await expect(restoreIdentity()).resolves.toBeNull();
   });
 
@@ -376,7 +373,7 @@ describe('requireIdentity — step OTP', () => {
     // avant ferait que restoreIdentity() (appelé en amont par requireIdentity)
     // court-circuite l'ouverture de la modale elle-même.
     const restore = jest.fn().mockResolvedValue({ id: 42 });
-    window.K = { auth: { restore } };
+    mockWindowK({ auth: { restore } });
 
     global.fetch = jest.fn(() =>
       Promise.resolve({
@@ -390,7 +387,6 @@ describe('requireIdentity — step OTP', () => {
     await promise;
 
     expect(restore).toHaveBeenCalled();
-    delete window.K;
   });
 
   it('Backspace sur une case vide ramène le focus sur la précédente et la vide', async () => {

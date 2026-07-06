@@ -38,12 +38,7 @@ jest.mock('../../js/b-identity.js', () => ({
 const { apiGet } = require('../../js/b-utils.js');
 const { requireIdentity, getCurrentIdentity } = require('../../js/b-identity.js');
 const { renderWalletView } = require('../../js/b-wallet.js');
-
-async function flush() {
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
-}
+const { flush } = require('./helpers/boutiqueTestKit');
 
 beforeEach(() => {
   document.body.innerHTML = '';

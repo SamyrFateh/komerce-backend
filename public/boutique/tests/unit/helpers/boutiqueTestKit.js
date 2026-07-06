@@ -110,10 +110,16 @@ function mockWindowK(methods = {}) {
  * Vide la microtask queue (chaînes async apiPost → toast → re-render) et
  * avance les fake timers s'ils sont actifs (setTimeout différés utilisés
  * pour les re-renders, ex. renderFavView() après toggleFav()).
+ *
+ * @param {number} [n=3] - nombre de ticks microtask à écouler. Le défaut
+ *   (3) correspond à la convention convergée indépendamment par
+ *   b-wallet.test.js, b-tracking.test.js et b-identity.test.js — suffisant
+ *   pour une chaîne apiGet/apiPost → .json() → re-render. Certains flows
+ *   plus profonds (ex. verifyCode() de b-identity.js : fetch → res.json()
+ *   → branche catch) ont besoin de plus (`flush(8)`).
  */
-async function flush() {
-  await Promise.resolve();
-  await Promise.resolve();
+async function flush(n = 3) {
+  for (let i = 0; i < n; i++) await Promise.resolve();
   // jest.getTimerCount() logue un warning ET throw si les fake timers ne
   // sont pas actifs sur ce test — on détecte l'état réel via setTimeout
   // (remplacé par un mock jest quand useFakeTimers() est actif) plutôt que
@@ -123,7 +129,7 @@ async function flush() {
     && jest.isMockFunction(setTimeout);
   if (fakeTimersActive && jest.getTimerCount() > 0) {
     jest.runOnlyPendingTimers();
-    await Promise.resolve();
+    for (let i = 0; i < n; i++) await Promise.resolve();
   }
 }
 

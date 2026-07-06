@@ -54,6 +54,7 @@ jest.mock('../../js/b-phone.js', () => ({
 
 const { apiGet, apiPost } = require('../../js/b-utils.js');
 const { showToast } = require('../../js/b-cart-core.js');
+const { flush } = require('./helpers/boutiqueTestKit');
 const {
   buildTimeline,
   getStatusDisplay,
@@ -64,12 +65,6 @@ const {
   renderTrackView,
   renderTrackViewSearchMode,
 } = require('../../js/b-tracking.js');
-
-async function flush() {
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
-}
 
 beforeEach(() => {
   document.body.innerHTML = '';
