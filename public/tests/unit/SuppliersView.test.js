@@ -73,7 +73,7 @@ describe('SuppliersView', () => {
     global.alert = jest.fn();
     global.confirm = jest.fn(() => true);
 
-    require('../../admin/js/views/SuppliersView.js');
+    require('../../dashboards/admin/js/views/SuppliersView.js');
     view = new global.SuppliersView();
   });
 

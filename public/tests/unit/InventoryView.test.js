@@ -56,7 +56,7 @@ describe('InventoryView', () => {
   }
 
   function loadIt() {
-    return loadView('../../admin/js/views/InventoryView.js', 'InventoryView', { skipBaseDeps: true });
+    return loadView('../../dashboards/admin/js/views/InventoryView.js', 'InventoryView', { skipBaseDeps: true });
   }
 
   it('expose render() (contrat app.js#invokeView)', () => {

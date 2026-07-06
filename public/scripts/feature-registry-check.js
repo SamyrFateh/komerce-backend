@@ -34,7 +34,14 @@ const JSON_OUTPUT   = process.argv.includes('--json');
 // dédié (gen-ownership.js, css-guard.js, check-css-dist-only.js) qui suit
 // une logique différente (multipropriété de sélecteur, pas rattachement
 // fichier↔feature) — pas la peine de dupliquer ici.
-const SOURCE_DIRS = ['admin', 'admin-legacy/js'];
+// 2026-07-06 (audit gouvernance) : ce script scannait 'admin' + 'admin-legacy/js'
+// relatifs à public/, qui pointait sur public/admin (arbre mort, supprimé §4).
+// public/features/ ne déclare plus que 'platform' (admin-dashboard et
+// legacy-control-tower manifests supprimés — doublons de dashboards/features/) :
+// le périmètre réel de ce registre est désormais public/js uniquement.
+// L'audit de dashboards/admin est déjà couvert par
+// public/dashboards/scripts/feature-registry-check.js (FEATURES_DIR propre).
+const SOURCE_DIRS = ['js'];
 
 // Fichiers/dossiers à ignorer dans la détection d'orphelins
 const ORPHAN_IGNORE_DIRS = ['node_modules','features','scripts','images','icons','uploads','css','hub','relais']; // build artifact (vite/esbuild), pas du code source

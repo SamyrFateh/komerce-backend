@@ -64,7 +64,7 @@ describe('OrdersLogisticsView', () => {
     global.DataTable = { render: jest.fn() };
     global.BadgeStatus = { status: jest.fn((s) => { const span = document.createElement('span'); span.className = `badge is-${s}`; span.textContent = s; return span; }) };
 
-    View = loadView('../../admin/js/views/OrdersLogisticsView.js', 'OrdersLogisticsView');
+    View = loadView('../../dashboards/admin/js/views/OrdersLogisticsView.js', 'OrdersLogisticsView');
   });
 
   afterEach(() => {

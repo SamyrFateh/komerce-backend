@@ -146,7 +146,7 @@ describe('PricingWorkshopView', () => {
     window.alert = jest.fn();
     window.location.hash = '';
 
-    require('../../admin/js/views/PricingWorkshopView.js');
+    require('../../dashboards/admin/js/views/PricingWorkshopView.js');
   });
 
   afterEach(() => {

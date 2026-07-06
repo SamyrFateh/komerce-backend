@@ -90,7 +90,7 @@ describe('HubRelaisView', () => {
     };
     global.confirm = jest.fn(() => true);
 
-    require('../../admin/js/views/HubRelaisView.js');
+    require('../../dashboards/admin/js/views/HubRelaisView.js');
   });
 
   afterEach(() => {

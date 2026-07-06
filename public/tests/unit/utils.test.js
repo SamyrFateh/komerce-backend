@@ -1,5 +1,5 @@
 'use strict';
-require('../../admin/js/utils.js');
+require('../../dashboards/admin/js/utils.js');
 
 describe('utils dashboard', () => {
   it('FMT (Intl.NumberFormat) est disponible', () => {

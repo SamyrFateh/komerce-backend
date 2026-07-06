@@ -9,7 +9,7 @@ const errors = [];
 const warnings = [];
 let total = 0;
 
-const SCAN_DIRS = ['admin/js', 'admin-legacy/js'];
+const SCAN_DIRS = ['dashboards/admin/js', 'dashboards/admin-legacy/js'];
 
 function scan(dir) {
   const abs = path.join(ROOT, dir);
@@ -29,11 +29,11 @@ function scan(dir) {
 
 SCAN_DIRS.forEach(scan);
 // portal-pilotage.js est hors js/
-const pp = path.join(ROOT, 'admin/portal-pilotage.js');
+const pp = path.join(ROOT, 'dashboards/admin/portal-pilotage.js');
 if (fs.existsSync(pp)) {
   total++;
   const head = fs.readFileSync(pp, 'utf8').slice(0, 2000);
-  if (!head.match(/@domain/)) errors.push('admin/portal-pilotage.js');
+  if (!head.match(/@domain/)) errors.push('dashboards/admin/portal-pilotage.js');
 }
 
 console.log('\n  Architecture Check — Dashboards (N4)\n');

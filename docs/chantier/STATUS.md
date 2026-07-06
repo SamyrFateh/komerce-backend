@@ -640,6 +640,8 @@ Audit exhaustif des 39 vues admin. `esc()` locale ajoutée et appliquée sur tou
 - Vues déjà propres (esc/\_esc existante) : ClientsView, ActionCenterView, ControlTowerView, EconomicFlowView, HubRelaisView (partiellement), PricingView, PricingWorkshopView, SanteView, SettingsView, SharedCartsView, SimulatorView, SourcingScannerView, SourcingView, TransitaireView.
 DoD satisfait.
 
+**Mise à jour 2026-07-06 (audit gouvernance angles morts)** : le correctif ci-dessus avait été appliqué uniquement à `public/admin/` — un arbre non servi par `server.js`. L'arbre réellement servi, `public/dashboards/admin/`, n'avait reçu ni les `esc()` (`CustomsView`, `OrdersLogisticsView`, `PilotageFinView` : 11/5/4 appels manquants) ni le correctif fonctionnel `ActionCenterView` (`data-overflow`, `?? 9` vs `|| 9`). Vérifié et porté le 2026-07-06 : `diff -rq public/admin/js public/dashboards/admin/js` → aucune sortie (arbres byte-identiques). `public/admin/` supprimé le même jour une fois cette vérification faite (voir §4 du plan angles morts). Le trou de sécurité en prod est clos à cette date, pas au 2026-06-23 comme le ledger le disait jusqu'ici.
+
 ### AUD-07 — 6 interpolations SQL hors paramètre
 
 Statut : **clôturé — 2026-06-23**.

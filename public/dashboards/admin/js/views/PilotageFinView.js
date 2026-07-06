@@ -158,7 +158,7 @@
     DataTable.render(el, {
       emptyText: 'Aucun historique disponible',
       columns: [
-        { key: 'period',   label: 'Période',    render: (r) => r.label || r.month || r.period || '—' },
+        { key: 'period',   label: 'Période',    render: (r) => esc(r.label || r.month || r.period || '—') }, // AUD-06
         { key: 'ca',       label: 'CA',         align: 'right',
           render: (r) => Number(r.ca_kmf || r.revenue_kmf || r.ca || 0).toLocaleString('fr-FR') + ' KMF' },
         { key: 'orders',   label: 'Commandes',  align: 'right',
@@ -182,13 +182,13 @@
     DataTable.render(el, {
       emptyText: 'Aucune variable configurée',
       columns: [
-        { key: 'code',     label: 'Code',      render: (r) => `<code>${r.code || r.key || '—'}</code>` },
-        { key: 'label',    label: 'Libellé',   render: (r) => r.label || r.name || '—' },
+        { key: 'code',     label: 'Code',      render: (r) => `<code>${esc(r.code || r.key || '—')}</code>` }, // AUD-06
+        { key: 'label',    label: 'Libellé',   render: (r) => esc(r.label || r.name || '—') }, // AUD-06
         { key: 'value',    label: 'Valeur',    align: 'right',
           render: (r) => {
             const v = r.value_kmf ?? r.value ?? r.amount;
             const u = r.unit || (r.value_kmf != null ? 'KMF' : '');
-            return v != null ? `${Number(v).toLocaleString('fr-FR')} ${u}` : '—';
+            return v != null ? `${Number(v).toLocaleString('fr-FR')} ${esc(u)}` : '—'; // AUD-06
           }
         },
         { key: 'updated',  label: 'Mis à jour', render: (r) => r.updated_at

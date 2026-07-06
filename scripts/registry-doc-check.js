@@ -26,13 +26,27 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT          = path.join(__dirname, '..');
-const FEATURES_DIR   = path.join(ROOT, 'features');
 const REGISTRY_FILE  = path.join(ROOT, 'docs', 'doctrine', 'APP_FEATURE_REGISTRY.md');
 const STRICT         = process.argv.includes('--strict');
 const JSON_OUTPUT    = process.argv.includes('--json');
 
-// Capture les liens Markdown du type [`x.feature.js`](../../features/x.feature.js)
-const LINK_RE = /\[`([^`]+\.feature\.js)`\]\(\.\.\/\.\.\/features\/([^)]+\.feature\.js)\)/g;
+// Sources de manifests couvertes par le registre canonique. Chaque entrée
+// documente un préfixe de lien Markdown réel vu dans APP_FEATURE_REGISTRY.md
+// (ex: [`x.feature.js`](../../features/x.feature.js) ou
+// [`x.feature.js`](../../public/dashboards/features/x.feature.js)).
+// Étendu le 2026-07-06 (audit gouvernance, Finding A) : à l'origine limité à
+// features/ (backend), ce qui rendait les manifests dash invisibles au gate
+// alors même qu'ils étaient déclarés dans le registre.
+const SOURCES = [
+  { linkPrefix: '../../features/', dir: path.join(ROOT, 'features') },
+  { linkPrefix: '../../public/dashboards/features/', dir: path.join(ROOT, 'public', 'dashboards', 'features') },
+  { linkPrefix: '../../public/features/', dir: path.join(ROOT, 'public', 'features') },
+];
+
+// Capture les liens Markdown du type [`x.feature.js`](<prefix>x.feature.js)
+// pour n'importe lequel des préfixes déclarés ci-dessus.
+const PREFIX_ALT = SOURCES.map(s => s.linkPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+const LINK_RE = new RegExp('\\[`([^`]+\\.feature\\.js)`\\]\\((' + PREFIX_ALT + ')([^)]+\\.feature\\.js)\\)', 'g');
 
 function run() {
   const errors = [];
@@ -41,27 +55,39 @@ function run() {
     errors.push({ type: 'REGISTRY-MISSING', msg: `${path.relative(ROOT, REGISTRY_FILE)} introuvable` });
     return report(errors, [], []);
   }
-  if (!fs.existsSync(FEATURES_DIR)) {
-    errors.push({ type: 'FEATURES-DIR-MISSING', msg: `${path.relative(ROOT, FEATURES_DIR)} introuvable` });
-    return report(errors, [], []);
+  for (const src of SOURCES) {
+    if (!fs.existsSync(src.dir)) {
+      errors.push({ type: 'FEATURES-DIR-MISSING', msg: `${path.relative(ROOT, src.dir)} introuvable` });
+      return report(errors, [], []);
+    }
   }
 
   const registryContent = fs.readFileSync(REGISTRY_FILE, 'utf8');
-  const registryLinks = []; // { linkText, linkTarget }
+  const registryLinks = []; // { linkText, linkPrefix, linkTarget }
   let m;
   while ((m = LINK_RE.exec(registryContent)) !== null) {
-    registryLinks.push({ linkText: m[1], linkTarget: m[2] });
+    registryLinks.push({ linkText: m[1], linkPrefix: m[2], linkTarget: m[3] });
   }
 
-  const diskManifests = fs.readdirSync(FEATURES_DIR)
-    .filter(f => f.endsWith('.feature.js') && !f.startsWith('_'));
+  // Manifests sur disque, à travers toutes les sources, identifiés par
+  // "préfixe + nom de fichier" pour ne pas confondre deux manifests
+  // homonymes situés dans des dépôts différents (ex: features/ vs
+  // public/features/).
+  const diskManifests = [];
+  for (const src of SOURCES) {
+    const files = fs.readdirSync(src.dir).filter(f => f.endsWith('.feature.js') && !f.startsWith('_'));
+    for (const f of files) diskManifests.push({ linkPrefix: src.linkPrefix, file: f });
+  }
+  const diskKey = (p, f) => `${p}${f}`;
+  const diskKeys = diskManifests.map(d => diskKey(d.linkPrefix, d.file));
 
   // 1. Chaque lien du registre doit pointer vers un fichier qui existe réellement
   for (const link of registryLinks) {
-    if (!diskManifests.includes(link.linkTarget)) {
+    const key = diskKey(link.linkPrefix, link.linkTarget);
+    if (!diskKeys.includes(key)) {
       errors.push({
         type: 'BROKEN-LINK',
-        msg: `le registre référence "${link.linkTarget}" mais ce fichier n'existe pas dans features/ — lien mort`,
+        msg: `le registre référence "${link.linkPrefix}${link.linkTarget}" mais ce fichier n'existe pas — lien mort`,
       });
     }
     if (link.linkText !== link.linkTarget) {
@@ -73,18 +99,19 @@ function run() {
   }
 
   // 2. Chaque manifest disque doit apparaître dans exactement une ligne du registre
-  const registeredTargets = registryLinks.map(l => l.linkTarget);
-  for (const file of diskManifests) {
-    const count = registeredTargets.filter(t => t === file).length;
+  const registeredKeys = registryLinks.map(l => diskKey(l.linkPrefix, l.linkTarget));
+  for (const d of diskManifests) {
+    const key = diskKey(d.linkPrefix, d.file);
+    const count = registeredKeys.filter(k => k === key).length;
     if (count === 0) {
       errors.push({
         type: 'UNREGISTERED-MANIFEST',
-        msg: `${file} existe dans features/ mais n'apparaît dans aucune ligne du registre — ajouter une ligne dans APP_FEATURE_REGISTRY.md`,
+        msg: `${d.linkPrefix}${d.file} existe mais n'apparaît dans aucune ligne du registre — ajouter une ligne dans APP_FEATURE_REGISTRY.md`,
       });
     } else if (count > 1) {
       errors.push({
         type: 'DUPLICATE-REGISTRATION',
-        msg: `${file} apparaît ${count} fois dans le registre — une seule ligne attendue par manifest`,
+        msg: `${d.linkPrefix}${d.file} apparaît ${count} fois dans le registre — une seule ligne attendue par manifest`,
       });
     }
   }

@@ -2,7 +2,7 @@
 
 const { loadView, mockConfirm, flush, submitForm } = require('./helpers/dashboardTestKit');
 
-const REL = '../../admin/js/views/CategoriesView.js';
+const REL = '../../dashboards/admin/js/views/CategoriesView.js';
 
 function mockFetchSeq(handler) {
   global.fetch = jest.fn(handler);

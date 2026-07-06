@@ -180,12 +180,12 @@
             key: 'reference',
             label: 'Réf',
             cls: 'ref',
-            render: (row) => row.reference || row.id || '—',
+            render: (row) => esc(row.reference || row.id || '—'),
           },
           {
             key: 'destinataire',
             label: 'Destinataire',
-            render: (row) => row.recipient_name || row.destinataire || row.client_name || '—',
+            render: (row) => esc(row.recipient_name || row.destinataire || row.client_name || '—'),
           },
           {
             key: 'destination_island',
@@ -193,13 +193,13 @@
             render: (row) => {
               const i = row.destination_island || '—';
               const cls = i === 'GC' || i === 'Moroni' ? 'is-blue' : (i === 'AN' || i === 'Anjouan' ? 'is-amber' : 'is-gray');
-              return `<span class="badge ${cls}">${i}</span>`;
+              return `<span class="badge ${cls}">${esc(i)}</span>`; // AUD-06
             },
           },
           {
             key: 'relais_name',
             label: 'Relais',
-            render: (row) => row.relais_name || row.relais_id || '—',
+            render: (row) => esc(row.relais_name || row.relais_id || '—'),
           },
           {
             key: 'payment_status',

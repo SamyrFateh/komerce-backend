@@ -56,7 +56,7 @@ describe('PilotageFinView', () => {
     global.Charts = { renderLine: jest.fn(), renderBar: jest.fn() };
     global.DataTable = { render: jest.fn() };
 
-    View = loadView('../../admin/js/views/PilotageFinView.js', 'PilotageFinView');
+    View = loadView('../../dashboards/admin/js/views/PilotageFinView.js', 'PilotageFinView');
   });
 
   afterEach(() => {

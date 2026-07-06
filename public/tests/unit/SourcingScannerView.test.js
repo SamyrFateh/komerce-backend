@@ -20,7 +20,7 @@
  */
 
 const path = require('path');
-const REL = '../../admin/js/views/SourcingScannerView.js';
+const REL = '../../dashboards/admin/js/views/SourcingScannerView.js';
 
 function loadIt() {
   jest.resetModules();

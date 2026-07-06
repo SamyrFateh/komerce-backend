@@ -90,14 +90,14 @@ describe('EconomicView', () => {
 
   it('expose render() (contrat app.js#invokeView)', () => {
     setupApi();
-    EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+    EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
     expect(typeof EconomicView.render).toBe('function');
   });
 
   describe('render() — shell et chargement', () => {
     it('pose le shell complet et appelle les 4 endpoints', async () => {
       const api = setupApi();
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
 
       ['eco-frontiers', 'eco-cat-kpis', 'eco-action', 'eco-sot', 'eco-verdict',
@@ -112,7 +112,7 @@ describe('EconomicView', () => {
 
     it("n'écrit rien si rootEl est détaché du DOM après Promise.all (guard navigation)", async () => {
       setupApi();
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       const detached = document.createElement('div');
       detached.innerHTML = '<div id="eco-frontiers"></div>';
       await EconomicView.render(detached);
@@ -128,7 +128,7 @@ describe('EconomicView', () => {
         getEconomicCharges: jest.fn().mockRejectedValue(new Error('boom')),
         getEconomicCoherence: jest.fn().mockRejectedValue(new Error('boom')),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await expect(EconomicView.render(main)).resolves.toBeUndefined();
       expect(main.querySelector('#eco-frontiers').innerHTML).toContain('Catalogue moteur indisponible');
       expect(main.querySelector('#eco-verdict').innerHTML).toContain('Données mensuelles indisponibles');
@@ -138,7 +138,7 @@ describe('EconomicView', () => {
 
     it('affiche un timestamp dans eco-meta', async () => {
       setupApi();
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-meta').textContent).toContain('Catalogue : vérité moteur');
     });
@@ -147,7 +147,7 @@ describe('EconomicView', () => {
   describe('_renderFrontiers (vue catalogue)', () => {
     it('affiche un état vide quand dash.frontiers est absent', async () => {
       setupApi({ getPricingDashboard: jest.fn().mockResolvedValue({}) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-frontiers').innerHTML).toContain('Catalogue moteur indisponible');
     });
@@ -158,7 +158,7 @@ describe('EconomicView', () => {
           baseDash({ frontiers: { destructive: 5, undercovered: 15, covered: 75, unpriced: 5 } })
         ),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const html = main.querySelector('#eco-frontiers').innerHTML;
       expect(html).toContain('100 produits');
@@ -177,7 +177,7 @@ describe('EconomicView', () => {
           baseDash({ frontiers: { destructive: 0, undercovered: 0, covered: 0, unpriced: 0 } })
         ),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-frontiers').innerHTML).toContain('0 produits');
     });
@@ -186,7 +186,7 @@ describe('EconomicView', () => {
   describe('_renderCatKpis (vue catalogue)', () => {
     it('ne rend rien quand dash.kpis est absent', async () => {
       setupApi({ getPricingDashboard: jest.fn().mockResolvedValue({ frontiers: baseDash().frontiers }) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-cat-kpis').innerHTML).toBe('');
       expect(global.KpiCard.renderBar.mock.calls.some(c => c[0] === main.querySelector('#eco-cat-kpis'))).toBe(false);
@@ -194,7 +194,7 @@ describe('EconomicView', () => {
 
     it('appelle KpiCard.renderBar avec les 6 KPI catégoriels formatés', async () => {
       setupApi();
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const [, kpis] = global.KpiCard.renderBar.mock.calls.find(
         c => c[0] === main.querySelector('#eco-cat-kpis')
@@ -211,7 +211,7 @@ describe('EconomicView', () => {
       setupApi({
         getPricingDashboard: jest.fn().mockResolvedValue(baseDash({ kpis: Object.assign({}, baseDash().kpis, { ecart_cible_pct: -4.2 }) })),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const [, kpis] = global.KpiCard.renderBar.mock.calls.find(
         c => c[0] === main.querySelector('#eco-cat-kpis')
@@ -223,7 +223,7 @@ describe('EconomicView', () => {
   describe('_renderAction (bandeau priorité catalogue)', () => {
     it('priorité 1 : produits à perte (destructive > 0) → rouge', async () => {
       setupApi({ getPricingDashboard: jest.fn().mockResolvedValue(baseDash({ frontiers: { destructive: 3, undercovered: 2, covered: 10, unpriced: 1 } })) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const html = main.querySelector('#eco-action').innerHTML;
       expect(html).toContain('is-red');
@@ -232,7 +232,7 @@ describe('EconomicView', () => {
 
     it('priorité 2 : sous-couvert (pas de destructive) → ambre', async () => {
       setupApi({ getPricingDashboard: jest.fn().mockResolvedValue(baseDash({ frontiers: { destructive: 0, undercovered: 4, covered: 10, unpriced: 1 } })) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const html = main.querySelector('#eco-action').innerHTML;
       expect(html).toContain('is-amber');
@@ -241,14 +241,14 @@ describe('EconomicView', () => {
 
     it('priorité 3 : sans prix (ni destructive ni undercovered) → neutre', async () => {
       setupApi({ getPricingDashboard: jest.fn().mockResolvedValue(baseDash({ frontiers: { destructive: 0, undercovered: 0, covered: 10, unpriced: 2 } })) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-action').innerHTML).toContain('2 produit(s) sans prix');
     });
 
     it('tout couvert → vert', async () => {
       setupApi({ getPricingDashboard: jest.fn().mockResolvedValue(baseDash({ frontiers: { destructive: 0, undercovered: 0, covered: 20, unpriced: 0 } })) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const html = main.querySelector('#eco-action').innerHTML;
       expect(html).toContain('is-green');
@@ -257,7 +257,7 @@ describe('EconomicView', () => {
 
     it('ne rend rien si frontiers absent', async () => {
       setupApi({ getPricingDashboard: jest.fn().mockResolvedValue({ kpis: baseDash().kpis }) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-action').innerHTML).toBe('');
     });
@@ -266,7 +266,7 @@ describe('EconomicView', () => {
   describe('_renderSot', () => {
     it('affiche le badge vérité unique quand source_of_truth === pricing-engine', async () => {
       setupApi();
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-sot').textContent).toContain('vérité unique');
     });
@@ -275,7 +275,7 @@ describe('EconomicView', () => {
       setupApi({
         getPricingDashboard: jest.fn().mockResolvedValue(baseDash({ kpis: Object.assign({}, baseDash().kpis, { source_of_truth: 'legacy' }) })),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-sot').textContent).toBe('');
     });
@@ -284,21 +284,21 @@ describe('EconomicView', () => {
   describe('_renderVerdict (vue mois)', () => {
     it('exec absent → message indisponible', async () => {
       setupApi({ getEconomicExecutive: jest.fn().mockResolvedValue(null) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-verdict').innerHTML).toContain('Données mensuelles indisponibles');
     });
 
     it('seuil ou commandes manquants → rentabilité indéterminée', async () => {
       setupApi({ getEconomicExecutive: jest.fn().mockResolvedValue({ kpis: { orders_this_month: 0, breakeven_orders: 0 } }) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-verdict').innerHTML).toContain('indéterminée');
     });
 
     it('commandes >= seuil*1.1 → mois rentable (vert)', async () => {
       setupApi({ getEconomicExecutive: jest.fn().mockResolvedValue(baseExec({ kpis: Object.assign({}, baseExec().kpis, { orders_this_month: 111, breakeven_orders: 100 }) })) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const el = main.querySelector('#eco-verdict');
       expect(el.className).toContain('is-green');
@@ -307,7 +307,7 @@ describe('EconomicView', () => {
 
     it('commandes entre 90% et 110% du seuil → proche du seuil (ambre)', async () => {
       setupApi({ getEconomicExecutive: jest.fn().mockResolvedValue(baseExec({ kpis: Object.assign({}, baseExec().kpis, { orders_this_month: 95, breakeven_orders: 100 }) })) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const el = main.querySelector('#eco-verdict');
       expect(el.className).toContain('is-amber');
@@ -316,7 +316,7 @@ describe('EconomicView', () => {
 
     it('commandes < 90% du seuil → mois non rentable (rouge), manque calculé', async () => {
       setupApi({ getEconomicExecutive: jest.fn().mockResolvedValue(baseExec({ kpis: Object.assign({}, baseExec().kpis, { orders_this_month: 60, breakeven_orders: 100 }) })) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const el = main.querySelector('#eco-verdict');
       expect(el.className).toContain('is-red');
@@ -326,14 +326,14 @@ describe('EconomicView', () => {
 
     it('supporte les alias de champs (commandes_collectees / seuil_rentabilite)', async () => {
       setupApi({ getEconomicExecutive: jest.fn().mockResolvedValue({ kpis: { commandes_collectees: 120, seuil_rentabilite: 100 } }) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-verdict').innerHTML).toContain('Mois rentable');
     });
 
     it("accepte exec sans clé kpis (objet plat directement)", async () => {
       setupApi({ getEconomicExecutive: jest.fn().mockResolvedValue({ orders_this_month: 120, breakeven_orders: 100 }) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-verdict').innerHTML).toContain('Mois rentable');
     });
@@ -342,14 +342,14 @@ describe('EconomicView', () => {
   describe('_renderMonthKpis (vue mois)', () => {
     it('ne rend rien quand exec est absent', async () => {
       setupApi({ getEconomicExecutive: jest.fn().mockResolvedValue(null) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-month-kpis').innerHTML).toBe('');
     });
 
     it('appelle KpiCard.renderBar avec les 6 KPI mensuels', async () => {
       setupApi();
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const [, kpis] = global.KpiCard.renderBar.mock.calls.find(
         c => c[0] === main.querySelector('#eco-month-kpis')
@@ -370,7 +370,7 @@ describe('EconomicView', () => {
           },
         }),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const [, kpis] = global.KpiCard.renderBar.mock.calls.find(
         c => c[0] === main.querySelector('#eco-month-kpis')
@@ -387,7 +387,7 @@ describe('EconomicView', () => {
         getPricingDashboard: jest.fn().mockResolvedValue(baseDash({ alerts: [{ title: '<b>Alerte prix</b>' }] })),
         getEconomicCoherence: jest.fn().mockResolvedValue({ alerts: [{ message: 'Écart détecté' }] }),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const html = main.querySelector('#eco-alerts').innerHTML;
       expect(html).not.toContain('<b>Alerte prix</b>');
@@ -397,7 +397,7 @@ describe('EconomicView', () => {
 
     it('affiche un état vide sans alerte', async () => {
       setupApi();
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-alerts').innerHTML).toContain('Aucune anomalie');
     });
@@ -407,7 +407,7 @@ describe('EconomicView', () => {
       setupApi({
         getPricingDashboard: jest.fn().mockResolvedValue(baseDash({ alerts: [{ title: 'x' }] })),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(global.AlertList.renderList).toHaveBeenCalledWith(
         main.querySelector('#eco-alerts'),
@@ -420,7 +420,7 @@ describe('EconomicView', () => {
   describe('_renderCharges', () => {
     it('affiche un état vide quand charges est absent', async () => {
       setupApi({ getEconomicCharges: jest.fn().mockResolvedValue(null) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-charges').innerHTML).toContain('Données charges indisponibles');
     });
@@ -430,7 +430,7 @@ describe('EconomicView', () => {
       setupApi({
         getEconomicCharges: jest.fn().mockResolvedValue({ items: [{ label: 'Loyer', amount_kmf: 200000 }] }),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(global.DataTable.render).toHaveBeenCalledWith(
         main.querySelector('#eco-charges'),
@@ -443,7 +443,7 @@ describe('EconomicView', () => {
       setupApi({
         getEconomicCharges: jest.fn().mockResolvedValue({ items: [{ category: 'Loyer', name: 'Bureau', amount: 10000, month: '2026-07' }] }),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const config = global.DataTable.render.mock.calls[0][1];
       const row = config.rows[0];
@@ -458,7 +458,7 @@ describe('EconomicView', () => {
       setupApi({
         getEconomicCharges: jest.fn().mockResolvedValue({ charges: [{ label: '<i>Salaires</i>', amount_kmf: 500000 }] }),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       const html = main.querySelector('#eco-charges').innerHTML;
       expect(html).not.toContain('<i>Salaires</i>');
@@ -469,14 +469,14 @@ describe('EconomicView', () => {
       setupApi({
         getEconomicCharges: jest.fn().mockResolvedValue([{ name: 'Internet', amount: 30000 }]),
       });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-charges').innerHTML).toContain('Internet');
     });
 
     it('liste vide → état vide', async () => {
       setupApi({ getEconomicCharges: jest.fn().mockResolvedValue({ items: [] }) });
-      EconomicView = loadView('../../admin/js/views/EconomicView.js', 'EconomicView');
+      EconomicView = loadView('../../dashboards/admin/js/views/EconomicView.js', 'EconomicView');
       await EconomicView.render(main);
       expect(main.querySelector('#eco-charges').innerHTML).toContain('Aucune charge');
     });

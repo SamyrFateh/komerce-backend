@@ -60,7 +60,7 @@ describe('EventWorkspacesView', () => {
   }
 
   function loadIt() {
-    return loadView('../../admin/js/views/EventWorkspacesView.js', 'EventWorkspacesView');
+    return loadView('../../dashboards/admin/js/views/EventWorkspacesView.js', 'EventWorkspacesView');
   }
 
   function dataTableOpts() {

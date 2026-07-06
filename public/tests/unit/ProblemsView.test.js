@@ -63,7 +63,7 @@ describe('ProblemsView', () => {
     };
     global.window.open = jest.fn();
 
-    require('../../admin/js/views/ProblemsView.js');
+    require('../../dashboards/admin/js/views/ProblemsView.js');
   });
 
   afterEach(() => {

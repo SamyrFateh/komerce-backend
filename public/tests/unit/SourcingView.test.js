@@ -70,7 +70,7 @@ describe('SourcingView', () => {
       updateSourcingProduct: jest.fn().mockResolvedValue({}),
     };
 
-    require('../../admin/js/views/SourcingView.js');
+    require('../../dashboards/admin/js/views/SourcingView.js');
   });
 
   afterEach(() => {

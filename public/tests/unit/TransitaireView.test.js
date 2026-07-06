@@ -73,7 +73,7 @@ describe('TransitaireView', () => {
       shipTransitaireParcel: jest.fn().mockResolvedValue({ success: true }),
     };
 
-    require('../../admin/js/views/TransitaireView.js');
+    require('../../dashboards/admin/js/views/TransitaireView.js');
   });
 
   afterEach(() => {

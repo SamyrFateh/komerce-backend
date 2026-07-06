@@ -12,12 +12,12 @@ const {
   loadView, mountContainer, makeKmcApi, flush, mockEscHelpers,
 } = require('./helpers/dashboardTestKit');
 
-const VIEW_PATH = '../../admin/js/views/ClientsView.js';
+const VIEW_PATH = '../../dashboards/admin/js/views/ClientsView.js';
 const VIEW_NAME = 'ClientsView';
 
 function loadRealFilters() {
   jest.resetModules();
-  require('../../admin/js/filters-store.js');
+  require('../../dashboards/admin/js/filters-store.js');
   window.KmcFilters.init();
 }
 

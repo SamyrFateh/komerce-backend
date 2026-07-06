@@ -52,7 +52,7 @@ describe('SimulatorView', () => {
   }
 
   function loadIt() {
-    return loadView('../../admin/js/views/SimulatorView.js', 'SimulatorView', { skipBaseDeps: true });
+    return loadView('../../dashboards/admin/js/views/SimulatorView.js', 'SimulatorView', { skipBaseDeps: true });
   }
 
   it('expose une fonction render (contrat app.js#invokeView, normalisée par loadView)', () => {

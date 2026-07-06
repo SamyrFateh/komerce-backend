@@ -149,7 +149,7 @@ describe('PricingView', () => {
     window.confirm = jest.fn(() => true);
     window.alert = jest.fn();
 
-    require('../../admin/js/views/PricingView.js');
+    require('../../dashboards/admin/js/views/PricingView.js');
   });
 
   afterEach(() => {

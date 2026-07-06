@@ -94,7 +94,7 @@ describe('SanteView', () => {
   }
 
   function loadIt() {
-    return loadView('../../admin/js/views/SanteView.js', 'SanteView');
+    return loadView('../../dashboards/admin/js/views/SanteView.js', 'SanteView');
   }
 
   it('expose render() (contrat app.js#invokeView)', () => {

@@ -43,6 +43,9 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 16 | `auth-identity` | transversal | backend | [`auth-identity.feature.js`](../../features/auth-identity.feature.js) | production | Routes actives d'identité : OTP, login, magic-link, inscription — partage `domain: 'auth'` avec la ligne #15, voir note ⚠ ci-dessous |
 | 17 | `platform-ops` | transversal | backend | [`platform-ops.feature.js`](../../features/platform-ops.feature.js) | production | Santé applicative, config, modules — infrastructure d'exploitation |
 | 18 | `infrastructure` | transversal | backend | [`infrastructure.feature.js`](../../features/infrastructure.feature.js) | production | Middleware non-auth (error-handler, rate-limit, upload, validate), utilitaires partagés, bootstrap applicatif |
+| 19 | `admin-dashboard` | feature | dash | [`admin-dashboard.feature.js`](../../public/dashboards/features/admin-dashboard.feature.js) | production | Tableau de bord admin SPA multi-vues (`dashboards/admin/**`) |
+| 20 | `legacy-control-tower` | feature | dash | [`legacy-control-tower.feature.js`](../../public/dashboards/features/legacy-control-tower.feature.js) | deprecated | Ancien control tower, remplacé par `admin-dashboard` (`dashboards/admin-legacy/**`) |
+| 21 | `platform` | transversal | dash | [`platform.feature.js`](../../public/features/platform.feature.js) | production | Infrastructure transversale dashboards (auth-guard, service worker, composants colis partagés, QR viewer) — hors `admin/` |
 
 > ℹ️ **Note sur les lignes #15/#16** : `auth` et `auth-identity` étaient initialement deux
 > manifests distincts déclarant le même `domain: 'auth'`, ce qui produisait 5 faux
@@ -126,6 +129,13 @@ corriger au fil de l'eau plutôt qu'en bloquant ce registre) :
   multipropriété CSS. Tant que cette doctrine n'existe pas, toute modification dans `dash`
   doit être traitée avec la même prudence qu'une zone non cartographiée — vérifier
   manuellement les usages avant de toucher un fichier partagé comme `js/auth-guard.js`.
+  **Mise à jour 2026-07-06** : les 3 manifests dash existants (`admin-dashboard`,
+  `legacy-control-tower`, `platform`, lignes #19-21) sont désormais présents dans ce
+  registre — ils décrivaient déjà du code réel mais n'y étaient pas indexés. Cela ne
+  résout pas la dette de doctrine d'ownership ci-dessus, seulement son absence
+  d'indexation. Audit connexe : `public/admin/` (arbre non servi, doublon de
+  `public/dashboards/admin/`) supprimé le même jour après vérification `esc()`/AUD-06
+  et re-câblage des tests — voir `docs/chantier/STATUS.md` §AUD-06.
 
 Cette section n'est pas un satisfecit : c'est la liste de ce que le registre ne couvre
 **pas encore**, à traiter explicitement plutôt qu'à laisser invisible.

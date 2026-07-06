@@ -47,7 +47,7 @@ describe('AccountingView', () => {
       getCashReconciliation: jest.fn().mockResolvedValue(null),
       getCashUncollected: jest.fn().mockResolvedValue(null),
     });
-    AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+    AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
     expect(typeof AccountingView.render).toBe('function');
   });
 
@@ -58,7 +58,7 @@ describe('AccountingView', () => {
       const getCashReconciliation = jest.fn().mockResolvedValue(null);
       const getCashUncollected = jest.fn().mockResolvedValue(null);
       makeKmcApi({ getFinance, getEconomicCharges, getCashReconciliation, getCashUncollected });
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
 
       await AccountingView.render(main);
 
@@ -81,7 +81,7 @@ describe('AccountingView', () => {
       // on force load() à throw en gardant getFinance rejeté SANS catch pour ce test
       // -> on remplace getEconomicCharges pour throw hors du .catch(() => null)
       global.KmcApi.getEconomicCharges = jest.fn(() => { throw new Error('<boom>'); });
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView', { skipBaseDeps: false });
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView', { skipBaseDeps: false });
 
       await AccountingView.render(main);
 
@@ -99,7 +99,7 @@ describe('AccountingView', () => {
         getCashReconciliation: jest.fn().mockResolvedValue(null),
         getCashUncollected: jest.fn().mockResolvedValue(null),
       });
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
       await AccountingView.render(main);
 
       expect(main.innerHTML).toContain('Moteur économique non disponible');
@@ -120,7 +120,7 @@ describe('AccountingView', () => {
         getCashReconciliation: jest.fn().mockResolvedValue(null),
         getCashUncollected: jest.fn().mockResolvedValue(null),
       });
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
       await AccountingView.render(main);
 
       const head = main.querySelector('.acct-ledger-family-head[data-toggle="logistique"]');
@@ -143,7 +143,7 @@ describe('AccountingView', () => {
         getCashReconciliation: jest.fn().mockResolvedValue(null),
         getCashUncollected: jest.fn().mockResolvedValue(null),
       });
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
       await AccountingView.render(main);
 
       expect(main.innerHTML).toContain('Aucune donnée de réconciliation');
@@ -159,7 +159,7 @@ describe('AccountingView', () => {
         }),
         getCashUncollected: jest.fn().mockResolvedValue(null),
       });
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
       await AccountingView.render(main);
 
       const card = main.querySelector('.acct-reco-card');
@@ -180,7 +180,7 @@ describe('AccountingView', () => {
         getCashReconciliation: jest.fn().mockResolvedValue(null),
         getCashUncollected,
       });
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
       await AccountingView.render(main);
 
       const select = main.querySelector('#acct-unc-hours');
@@ -202,7 +202,7 @@ describe('AccountingView', () => {
         getCashUncollected: jest.fn().mockResolvedValue(null),
       });
       const alertSpy = mockAlert();
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
       await AccountingView.render(main);
       getFinance.mockClear();
 
@@ -225,7 +225,7 @@ describe('AccountingView', () => {
       });
       const alertSpy = mockAlert();
       URL.createObjectURL = jest.fn();
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
       await AccountingView.render(main);
 
       main.querySelector('.acct-export-btn[data-export="ledger"]').dispatchEvent(new Event('click', { bubbles: true }));
@@ -245,7 +245,7 @@ describe('AccountingView', () => {
       });
       URL.createObjectURL = jest.fn(() => 'blob:mock');
       URL.revokeObjectURL = jest.fn();
-      AccountingView = loadView('../../admin/js/views/AccountingView.js', 'AccountingView');
+      AccountingView = loadView('../../dashboards/admin/js/views/AccountingView.js', 'AccountingView');
       await AccountingView.render(main);
 
       main.querySelector('.acct-export-btn[data-export="topprods"]').dispatchEvent(new Event('click', { bubbles: true }));

@@ -6,7 +6,7 @@ describe('KpiCard component', () => {
 
   it('charge sans crash', () => {
     expect(() => {
-      try { require('../../admin/js/components/KpiCard.js'); } catch(e) {
+      try { require('../../dashboards/admin/js/components/KpiCard.js'); } catch(e) {
         if (!e.message.includes('is not defined')) throw e;
       }
     }).not.toThrow();

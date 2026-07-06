@@ -184,7 +184,7 @@
     if (state.transitaires.length) {
       html += '<select id="cv-transit-sel"><option value="">— Aucun —</option>';
       state.transitaires.forEach(t => {
-        html += `<option value="${t.id}" data-name="${(t.name || '').replace(/"/g, '&quot;')}">${t.name || '?'}${t.country_label ? ' (' + t.country_label + ')' : ''}</option>`;
+        html += `<option value="${esc(t.id)}" data-name="${esc(t.name || '')}">${esc(t.name || '?')}${t.country_label ? ' (' + esc(t.country_label) + ')' : ''}</option>`;
       });
       html += '<option value="__custom__">+ Autre (saisie libre)…</option></select>';
       html += '<input id="cv-transit" type="text" placeholder="ex: Ahmed Dubai" style="display:none;margin-top:6px">';
@@ -250,22 +250,23 @@
 
     state.shipments.forEach(s => {
       const cls = (!s.is_active ? 'inactive' : '') + (state.selected && state.selected.id === s.id ? ' selected' : '');
-      const method = (METHOD_HELP[s.allocation_method] || {}).label || s.allocation_method || '—';
+      const method = esc((METHOD_HELP[s.allocation_method] || {}).label || s.allocation_method || '—');
       const date   = s.shipment_date ? String(s.shipment_date).slice(0, 10) : '—';
-      html += `<tr class="${cls}" data-sid="${s.id}">
+      const sid    = esc(s.id);
+      html += `<tr class="${cls}" data-sid="${sid}">
         <td>${date}</td>
-        <td><strong>${s.reference || '—'}</strong></td>
-        <td>${s.transitaire_name || '—'}</td>
+        <td><strong>${esc(s.reference || '—')}</strong></td>
+        <td>${esc(s.transitaire_name || '—')}</td>
         <td>${fmt(s.cif_value_kmf)}</td>
         <td>${fmt(s.customs_paid_kmf)}</td>
         <td><span class="cv-rate ${rateClass(s.effective_rate_pct)}">${fmtPct(s.effective_rate_pct)}</span></td>
         <td style="font-size:var(--fs-xs);color:var(--text-secondary)">${method}</td>
         <td>${s.nb_parcels_linked || 0}/${s.nb_parcels || '?'}</td>
         <td>${s.is_active
-          ? `<button class="cv-toggle cv-toggle-on" data-action="deactivate" data-sid="${s.id}">● Actif</button>`
-          : `<button class="cv-toggle cv-toggle-off" data-action="activate" data-sid="${s.id}">○ Inactif</button>`
+          ? `<button class="cv-toggle cv-toggle-on" data-action="deactivate" data-sid="${sid}">● Actif</button>`
+          : `<button class="cv-toggle cv-toggle-off" data-action="activate" data-sid="${sid}">○ Inactif</button>`
         }</td>
-        <td><button class="kmc-btn kmc-btn-secondary" data-action="view" data-sid="${s.id}" style="font-size:var(--fs-xs);padding:var(--sp-1) var(--sp-3)">👁 Détails</button></td>
+        <td><button class="kmc-btn kmc-btn-secondary" data-action="view" data-sid="${sid}" style="font-size:var(--fs-xs);padding:var(--sp-1) var(--sp-3)">👁 Détails</button></td>
       </tr>`;
     });
 
@@ -279,9 +280,9 @@
     const parcels = state.selectedParcels;
 
     let html = `<div class="cv-alloc">
-      <h4>🧮 Ventilation de l'envoi ${s.reference || ''}</h4>
+      <h4>🧮 Ventilation de l'envoi ${esc(s.reference || '')}</h4>
       <div style="margin-bottom:10px;font-size:13px;color:#0c4a6e">
-        Méthode : <strong>${(METHOD_HELP[s.allocation_method] || {}).label || s.allocation_method}</strong> ·
+        Méthode : <strong>${esc((METHOD_HELP[s.allocation_method] || {}).label || s.allocation_method)}</strong> ·
         Total : <strong>${fmt(s.customs_paid_kmf)} KMF</strong>
         ${!s.is_active ? ' · <span style="color:#dc2626;font-weight:700">⚠️ Envoi désactivé</span>' : ''}
       </div>`;
@@ -292,12 +293,12 @@
       html += '<table><thead><tr><th>Colis</th><th>Commande</th><th>CIF colis</th><th>Poids</th><th>Part douane (KMF)</th><th>Méthode</th></tr></thead><tbody>';
       parcels.forEach(p => {
         html += `<tr>
-          <td><strong>${p.parcel_ref || String(p.parcel_id).slice(0, 8)}</strong></td>
-          <td>${p.order_ref || '—'}${p.client_name ? ' · ' + p.client_name : ''}</td>
+          <td><strong>${esc(p.parcel_ref || String(p.parcel_id).slice(0, 8))}</strong></td>
+          <td>${esc(p.order_ref || '—')}${p.client_name ? ' · ' + esc(p.client_name) : ''}</td>
           <td>${fmt(p.parcel_cif_kmf)}</td>
           <td>${p.parcel_weight_kg ? Number(p.parcel_weight_kg).toFixed(2) + ' kg' : '—'}</td>
           <td><strong>${fmt(p.customs_share_kmf)}</strong></td>
-          <td style="font-size:var(--fs-xs);color:var(--text-secondary)">${p.allocation_basis || '—'}</td>
+          <td style="font-size:var(--fs-xs);color:var(--text-secondary)">${esc(p.allocation_basis || '—')}</td>
         </tr>`;
       });
       html += '</tbody></table>';
