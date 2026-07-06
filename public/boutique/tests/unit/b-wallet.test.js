@@ -330,6 +330,24 @@ describe('groupTransactions (via buildTransactionList)', () => {
     expect(el.querySelectorAll('.k-wlt-tx-row').length).toBe(1);
   });
 
+  it('affiche l\'icône ⏳ et le libellé "Crédit expiré" pour une transaction de type expiration', async () => {
+    const el = await renderWithTx([
+      { type: 'expiration', reason: 'expiration', amount_kmf: 300, created_at: '2026-06-01T00:00:00Z' },
+    ]);
+    const row = el.querySelector('.k-wlt-tx-row');
+    expect(row).not.toBeNull();
+    expect(row.querySelector('.k-wlt-tx-icon').textContent).toBe('⏳');
+    expect(row.textContent).toContain('Crédit expiré');
+  });
+
+  it('retombe sur l\'icône par défaut "•" pour un type non reconnu (reason connu)', async () => {
+    const el = await renderWithTx([
+      { type: 'mystere', reason: 'admin_gift', amount_kmf: 300, created_at: '2026-06-01T00:00:00Z' },
+    ]);
+    const row = el.querySelector('.k-wlt-tx-row');
+    expect(row.querySelector('.k-wlt-tx-icon').textContent).toBe('•');
+  });
+
   it('trie les transactions par date décroissante et regroupe par mois', async () => {
     const el = await renderWithTx([
       { type: 'credit', reason: 'admin_gift', amount_kmf: 100, created_at: '2026-05-01T00:00:00Z' },

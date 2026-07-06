@@ -369,6 +369,90 @@ describe('requireIdentity — step OTP', () => {
       expect.objectContaining({ method: 'POST' })
     );
   });
+
+  it('déclenche window.K.auth.restore() en arrière-plan après une vérification réussie', async () => {
+    const { promise } = await reachOtpStep();
+    // window.K n'est défini qu'après avoir atteint le step OTP : le définir
+    // avant ferait que restoreIdentity() (appelé en amont par requireIdentity)
+    // court-circuite l'ouverture de la modale elle-même.
+    const restore = jest.fn().mockResolvedValue({ id: 42 });
+    window.K = { auth: { restore } };
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true, user: { id: 42, name: 'Ali Said', phone: '+33612345678' } }),
+      })
+    );
+
+    fillOtpBoxes(document, '123456');
+    await flush();
+    await promise;
+
+    expect(restore).toHaveBeenCalled();
+    delete window.K;
+  });
+
+  it('Backspace sur une case vide ramène le focus sur la précédente et la vide', async () => {
+    await reachOtpStep();
+    const boxes = document.querySelectorAll('.k-id-otp-box');
+    boxes[0].value = '1'; boxes[0].dispatchEvent(new Event('input'));
+    boxes[1].value = '2'; boxes[1].dispatchEvent(new Event('input'));
+    // Case 2 (index 2) vide -> Backspace doit vider/refocaliser la case 1.
+    boxes[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace' }));
+    expect(boxes[1].value).toBe('');
+    expect(boxes[1].classList.contains('filled')).toBe(false);
+    expect(document.activeElement).toBe(boxes[1]);
+  });
+
+  it('les flèches gauche/droite déplacent le focus entre les cases', async () => {
+    await reachOtpStep();
+    const boxes = document.querySelectorAll('.k-id-otp-box');
+    boxes[2].focus();
+    boxes[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(boxes[1]);
+    boxes[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(boxes[2]);
+  });
+
+  it('coller un code à 6 chiffres remplit les cases et déclenche la vérification', async () => {
+    const { promise } = await reachOtpStep();
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true, user: { id: 1, name: 'Ali Said', phone: '+33612345678' } }),
+      })
+    );
+
+    const boxes = document.querySelectorAll('.k-id-otp-box');
+    const pasteEvent = new Event('paste', { bubbles: true, cancelable: true });
+    pasteEvent.clipboardData = { getData: () => '123456' };
+    boxes[0].dispatchEvent(pasteEvent);
+
+    expect(boxes[5].value).toBe('6');
+    // La vérification est déclenchée via setTimeout(50ms) après un paste.
+    await new Promise(r => setTimeout(r, 80));
+    await flush();
+
+    const result = await promise;
+    expect(result.name).toBe('Ali Said');
+  });
+
+  it('le minuteur de renvoi décompte puis affiche le bouton "renvoyer maintenant" à 0', async () => {
+    jest.useFakeTimers();
+    await reachOtpStep();
+    const timerCount = document.getElementById('k-id-timer-count');
+    const timerText  = document.getElementById('k-id-timer-text');
+    const resendBtn  = document.getElementById('k-id-resend');
+
+    jest.advanceTimersByTime(1000);
+    expect(timerCount.textContent).toBe('29');
+
+    jest.advanceTimersByTime(29000);
+    expect(timerText.style.display).toBe('none');
+    expect(resendBtn.style.display).toBe('');
+    jest.useRealTimers();
+  });
 });
 
 describe('requireIdentity — fermeture / annulation', () => {
@@ -445,6 +529,37 @@ describe('requireIdentity — step recap (téléphone déjà connu fourni en par
 
     document.getElementById('k-id-phone-cancel').click();
     await flush();
+  });
+
+  it('"Numéro changé ?" relance aussi une modale vierge (step phone)', async () => {
+    requireIdentity({ phone: '+33612345678' });
+    await flush();
+    document.getElementById('k-id-num-changed').click();
+    await flush();
+    await new Promise(r => setTimeout(r, 200));
+    await flush();
+
+    expect(document.getElementById('k-id-step-phone')?.hidden).toBe(false);
+
+    document.getElementById('k-id-phone-cancel').click();
+    await flush();
+  });
+
+  it('envoi auto en échec : message inline sur le step recap, bouton réactivé', async () => {
+    mockFetchSequence([() => { throw new Error('Réseau indisponible'); }]);
+    global.fetch = jest.fn(() => Promise.reject(new Error('Réseau indisponible')));
+
+    requireIdentity({ phone: '+33612345678' });
+    await flush();
+    expect(document.getElementById('k-id-step-recap').hidden).toBe(false);
+
+    // Envoi auto déclenché par setTimeout(80ms) — timers réels.
+    await new Promise(r => setTimeout(r, 120));
+    await flush();
+
+    expect(document.getElementById('k-id-err-recap').textContent).toBe('Réseau indisponible');
+    expect(document.getElementById('k-id-recap-cta').disabled).toBe(false);
+    expect(document.getElementById('k-id-recap-cta').textContent).toBe('Renvoyer le code');
   });
 });
 

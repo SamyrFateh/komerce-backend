@@ -503,6 +503,47 @@ describe('renderTrackViewSearchMode', () => {
       jest.useRealTimers();
     });
 
+    it('renvoi de code : échec réseau -> toast d\'erreur et bouton réactivé', async () => {
+      const el = mountSearchMode();
+      await reachStep2(el);
+      apiPost.mockRejectedValue(new Error('network down'));
+
+      const resendBtn = el.querySelector('#k-otp-resend-btn');
+      resendBtn.click();
+      await flush();
+
+      expect(showToast).toHaveBeenCalledWith('Erreur lors du renvoi.', 'error');
+      expect(resendBtn.disabled).toBe(false);
+      expect(resendBtn.textContent).toBe('Renvoyer le code');
+    });
+
+    it('renvoi de code : le compte à rebours de 30s décrémente puis réactive le bouton à 0', async () => {
+      jest.useFakeTimers();
+      const el = mountSearchMode();
+      await reachStep2(el);
+      apiPost.mockResolvedValue({ success: true });
+
+      const resendBtn = el.querySelector('#k-otp-resend-btn');
+      resendBtn.click();
+      await flush();
+
+      jest.advanceTimersByTime(1000);
+      expect(resendBtn.textContent).toBe('Renvoyer (29s)');
+
+      // Fait s'écouler le reste du compte à rebours jusqu'à 0.
+      jest.advanceTimersByTime(29000);
+      expect(resendBtn.disabled).toBe(false);
+      expect(resendBtn.textContent).toBe('Renvoyer le code');
+
+      // Un second clic doit redevenir possible (resendTimer a bien été remis à null).
+      apiPost.mockClear();
+      apiPost.mockResolvedValue({ success: true });
+      resendBtn.click();
+      await flush();
+      expect(apiPost).toHaveBeenCalledWith('/api/auth/otp/request', { phone: '+33612345678' });
+      jest.useRealTimers();
+    });
+
     it('bouton retour du step3 relance renderTrackView (rebascule vers l\'historique)', async () => {
       // renderTrackView() (appelée par #k-otp-back-btn) a besoin d'un point
       // d'ancrage réel dans le document pour se monter.
