@@ -4,7 +4,7 @@ global.fetch = jest.fn(() => Promise.resolve({
   json: () => Promise.resolve({ data: [{ id: 1 }] }), text: () => Promise.resolve(''),
 }));
 
-require('../../dashboards/admin/js/api-client.js');
+require('../../admin/js/api-client.js');
 
 describe('KmcApi (api-client)', () => {
   beforeEach(() => {

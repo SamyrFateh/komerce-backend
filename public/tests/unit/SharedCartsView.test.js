@@ -63,7 +63,7 @@ describe('SharedCartsView', () => {
   }
 
   function loadIt() {
-    return loadView('../../dashboards/admin/js/views/SharedCartsView.js', 'SharedCartsView', { skipBaseDeps: true });
+    return loadView('../../admin/js/views/SharedCartsView.js', 'SharedCartsView', { skipBaseDeps: true });
   }
 
   it('expose render en fonction bare (contrat app.js#invokeView)', () => {

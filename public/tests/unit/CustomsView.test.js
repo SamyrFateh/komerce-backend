@@ -88,7 +88,7 @@ describe('CustomsView', () => {
     };
     global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ message: 'OK' }) });
 
-    require('../../dashboards/admin/js/views/CustomsView.js');
+    require('../../admin/js/views/CustomsView.js');
   });
 
   afterEach(() => {

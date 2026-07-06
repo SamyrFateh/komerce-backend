@@ -15,15 +15,15 @@ const { loadView, stubFetchOk } = require('../../helpers/loadView');
 const VIEWS = [
   ['AccountingView.js',      [],                                                                                'AccountingView'],
   ['ControlTowerView.js',    [
-    'dashboards/admin/js/api-client-unsold.js',
-    'dashboards/admin/js/components/KpiCard.js',
-    'dashboards/admin/js/components/UI.js',
+    'admin/js/api-client-unsold.js',
+    'admin/js/components/KpiCard.js',
+    'admin/js/components/UI.js',
   ],                                                                                                             'ControlTowerView'],
   ['CustomsView.js',         [],                                                                                'CustomsView'],
   ['HubRelaisView.js',       [],                                                                                'HubRelaisView'],
-  ['InvoicesView.js',        ['dashboards/admin/js/components/UI.js'],                                          'InvoicesView'],
-  ['OrdersLogisticsView.js', ['dashboards/admin/js/components/KpiCard.js', 'dashboards/admin/js/components/UI.js'], 'OrdersLogisticsView'],
-  ['ProblemsView.js',        ['dashboards/admin/js/components/UI.js'],                                          'ProblemsView'],
+  ['InvoicesView.js',        ['admin/js/components/UI.js'],                                          'InvoicesView'],
+  ['OrdersLogisticsView.js', ['admin/js/components/KpiCard.js', 'admin/js/components/UI.js'], 'OrdersLogisticsView'],
+  ['ProblemsView.js',        ['admin/js/components/UI.js'],                                          'ProblemsView'],
   ['SharedCartsView.js',     [],                                                                                'SharedCartsView'],
 ];
 

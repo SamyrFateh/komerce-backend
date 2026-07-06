@@ -6,12 +6,12 @@ const fs   = require('fs');
 const ROOT = path.resolve(__dirname, '..');
 
 const BASE_DEPS = [
-  'dashboards/admin/js/utils.js',
-  'dashboards/admin/js/filters-store.js',
-  'dashboards/admin/js/api-client.js',
+  'admin/js/utils.js',
+  'admin/js/filters-store.js',
+  'admin/js/api-client.js',
 ];
 
-const VIEWS_DIR = 'dashboards/admin/js/views';
+const VIEWS_DIR = 'admin/js/views';
 
 function requireFresh(relPath) {
   const abs = path.join(ROOT, relPath);

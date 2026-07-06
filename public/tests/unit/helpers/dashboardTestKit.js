@@ -3,7 +3,7 @@
 /**
  * tests/unit/helpers/dashboardTestKit.js
  *
- * Socle de test partagé pour les vues dashboard (dashboards/admin/js/views/*.js).
+ * Socle de test partagé pour les vues dashboard (admin/js/views/*.js).
  * Codifie les pièges redécouverts à chaque vue (Problems, HubRelais, Sales,
  * Products, Accounting…) :
  *
@@ -26,14 +26,14 @@
  *
  * Convention de chemin : relPath est relatif à tests/unit/ — écrit comme un
  * require() à la main depuis un fichier tests/unit/*.test.js (donc en
- * partant de 2 niveaux, ex: '../../dashboards/admin/js/views/AccountingView.js'), même
+ * partant de 2 niveaux, ex: '../../admin/js/views/AccountingView.js'), même
  * si ce helper vit lui-même un niveau plus bas (tests/unit/helpers/).
  */
 
 const path = require('path');
 
 const TESTS_UNIT_DIR = path.resolve(__dirname, '..');
-const DEFAULT_BASE_DEPS = ['../../dashboards/admin/js/utils.js'];
+const DEFAULT_BASE_DEPS = ['../../admin/js/utils.js'];
 
 function requireFresh(relPathFromTestsUnit) {
   const abs = path.resolve(TESTS_UNIT_DIR, relPathFromTestsUnit);
@@ -44,7 +44,7 @@ function requireFresh(relPathFromTestsUnit) {
 /**
  * Charge une vue fraîche et retourne son objet normalisé { render }.
  * @param {string} relPath - chemin de la vue relatif à tests/unit/
- *   (ex: '../dashboards/admin/js/views/AccountingView.js')
+ *   (ex: '../../admin/js/views/AccountingView.js')
  * @param {string} globalName - nom sous lequel la vue s'attache à `global`
  *   (ex: 'AccountingView')
  * @param {object} [opts]

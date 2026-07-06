@@ -67,7 +67,7 @@ describe('SalesView', () => {
     };
     delete global.KmcFilters;
 
-    require('../../dashboards/admin/js/views/SalesView.js');
+    require('../../admin/js/views/SalesView.js');
   });
 
   afterEach(() => {

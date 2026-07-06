@@ -51,7 +51,7 @@ describe('InvoicesView', () => {
     global.DataTable = { render: jest.fn() };
     global.BadgeStatus = { status: jest.fn((s) => `<span class="badge">${s}</span>`) };
 
-    View = loadView('../../dashboards/admin/js/views/InvoicesView.js', 'InvoicesView');
+    View = loadView('../../admin/js/views/InvoicesView.js', 'InvoicesView');
   });
 
   afterEach(() => {

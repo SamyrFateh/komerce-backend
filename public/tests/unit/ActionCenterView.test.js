@@ -66,7 +66,7 @@ describe('ActionCenterView', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="main"></div>';
     root = document.getElementById('main');
-    View = loadView('../../dashboards/admin/js/views/ActionCenterView.js', 'ActionCenterView');
+    View = loadView('../../admin/js/views/ActionCenterView.js', 'ActionCenterView');
   });
 
   afterEach(() => {

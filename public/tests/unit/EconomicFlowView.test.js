@@ -78,7 +78,7 @@ describe('EconomicFlowView', () => {
       getPricingFlow: jest.fn().mockResolvedValue(makeFlow()),
     };
 
-    require('../../dashboards/admin/js/views/EconomicFlowView.js');
+    require('../../admin/js/views/EconomicFlowView.js');
   });
 
   afterEach(() => {

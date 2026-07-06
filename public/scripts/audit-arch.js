@@ -35,7 +35,7 @@ const ROOT = path.resolve(__dirname, '..');
 // ── Configuration ─────────────────────────────────────────────────────────────
 
 const SCAN_DIRS = [
-  'dashboards/admin/js',
+  'admin/js',
   'js',
 ];
 const ROOT_FILES = ['sw.js'];

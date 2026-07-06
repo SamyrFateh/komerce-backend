@@ -15,7 +15,7 @@ const {
   loadView, makeKmcApi, flush, mockEscHelpers,
 } = require('./helpers/dashboardTestKit');
 
-const VIEW_PATH = '../../dashboards/admin/js/views/SettingsView.js';
+const VIEW_PATH = '../../admin/js/views/SettingsView.js';
 const VIEW_NAME = 'SettingsView';
 
 function mountMainContent() {

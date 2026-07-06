@@ -1,7 +1,11 @@
 'use strict';
 
 /**
- * Tests unitaires — purchasing-trigger-service + purchasing-receive-service (A-BE-05)
+ * Tests unitaires — purchasing-trigger-service (A-BE-05)
+ *
+ * processReceive (purchasing-receive-service) a été extrait dans son propre
+ * fichier tests/unit/purchasing-receive-service.test.js (audit 2026-07-07)
+ * pour s'aligner avec la convention testBaseKey() de feature-guard.js.
  *
  * Chemins couverts :
  *   triggerPurchasing :
@@ -11,12 +15,6 @@
  *     □ mode whatsapp → status whatsapp_sent
  *     □ mode auto_order (stub Phase 2 → échec) → api_failed_notified
  *     □ erreur DB item → savepoint rollback, résultat error, alerte insérée
- *   processReceive :
- *     □ PO introuvable → httpError 404
- *     □ déjà reçue en totalité → httpError 400
- *     □ réception partielle → po_status partially_received, order reste ordered
- *     □ réception totale → transitionOrderStatus appelé, ready_to_prepare = true
- *     □ transitionOrderStatus échoue → httpError 409
  */
 
 // ─── Mocks globaux ────────────────────────────────────────────────────────────
@@ -35,17 +33,8 @@ jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
-const mockTransitionOrderStatus = jest.fn();
-jest.mock('../../services/order-status-machine', () => ({
-  transitionOrderStatus: (...args) => mockTransitionOrderStatus(...args),
-}));
-
-const mockTriggerScan3 = jest.fn().mockResolvedValue({});
-jest.mock('../../routes/scans', () => ({ triggerScan3: (...args) => mockTriggerScan3(...args) }), { virtual: true });
-
-// ─── Require services après les mocks ────────────────────────────────────────
+// ─── Require service après les mocks ─────────────────────────────────────────
 const { triggerPurchasing } = require('../../services/purchasing-trigger-service');
-const { processReceive }    = require('../../services/purchasing-receive-service');
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 const ORDER = { id: 'order-uuid', reference: 'KOM-001', relais_id: null, relais_name: null };
@@ -91,7 +80,6 @@ function makeClient(script = []) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockTriggerScan3.mockResolvedValue({});
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -211,97 +199,5 @@ describe('triggerPurchasing', () => {
 
     const alert = client.calls.find(c => c.sql.startsWith('INSERT INTO alerts'));
     expect(alert).toBeDefined();
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//   processReceive
-// ═══════════════════════════════════════════════════════════════════════════════
-
-describe('processReceive', () => {
-  test('PO introuvable → httpError 404', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [] });
-    const result = await processReceive({ id: 'unknown', qty_recue: null, actor: null });
-    expect(result.httpError).toEqual({ error: 'PO introuvable', status: 404 });
-  });
-
-  test('déjà reçue en totalité → httpError 400', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [{ id: 'po-1', order_id: 'ord-1', qty: 2, received_qty: 2, status: 'received', hub_received_at: new Date() }],
-    });
-    const result = await processReceive({ id: 'po-1', qty_recue: null, actor: null });
-    expect(result.httpError).toEqual({ error: 'Quantité déjà reçue en totalité', status: 400 });
-  });
-
-  test('réception partielle → partially_received, order reste ordered, transitionOrderStatus non appelé', async () => {
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', order_id: 'ord-1', qty: 3, received_qty: 0, status: 'pending', hub_received_at: null }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'partially_received' }] })
-      .mockResolvedValueOnce({ rows: [{ total: '2', recus: '0', qty_totale: '6', qty_recue: '1' }] });
-
-    const result = await processReceive({ id: 'po-1', qty_recue: 1, actor: { id: 'u1', role: 'admin' } });
-
-    expect(result.httpError).toBeUndefined();
-    expect(result.ready_to_prepare).toBe(false);
-    expect(result.order_status).toBe('ordered');
-    expect(mockTransitionOrderStatus).not.toHaveBeenCalled();
-  });
-
-  test('réception totale → received, transitionOrderStatus appelé, ready_to_prepare = true', async () => {
-    mockTransitionOrderStatus.mockResolvedValue({ success: true });
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', order_id: 'ord-1', qty: 2, received_qty: 0, status: 'pending', hub_received_at: null }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'received' }] })
-      .mockResolvedValueOnce({ rows: [{ total: '1', recus: '1', qty_totale: '2', qty_recue: '2' }] });
-
-    const result = await processReceive({ id: 'po-1', qty_recue: null, actor: { id: 'u1', role: 'admin' } });
-
-    expect(result.ready_to_prepare).toBe(true);
-    expect(result.order_status).toBe('preparation');
-    expect(mockTransitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({
-      orderId: 'ord-1',
-      newStatus: 'preparation',
-    }));
-    expect(mockTriggerScan3).toHaveBeenCalledWith('ord-1', 'u1');
-  });
-
-  test('transitionOrderStatus échoue (non-noop) → httpError 409', async () => {
-    mockTransitionOrderStatus.mockResolvedValue({ success: false, noop: false, error: 'Transition invalide' });
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', order_id: 'ord-1', qty: 2, received_qty: 0, status: 'pending', hub_received_at: null }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'received' }] })
-      .mockResolvedValueOnce({ rows: [{ total: '1', recus: '1', qty_totale: '2', qty_recue: '2' }] });
-
-    const result = await processReceive({ id: 'po-1', qty_recue: null, actor: null });
-    expect(result.httpError).toEqual({ error: 'Transition invalide', status: 409 });
-  });
-
-  test('transitionOrderStatus noop (déjà au bon statut) → pas de httpError, réception validée quand même', async () => {
-    mockTransitionOrderStatus.mockResolvedValue({ success: false, noop: true });
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', order_id: 'ord-1', qty: 2, received_qty: 0, status: 'pending', hub_received_at: null }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'received' }] })
-      .mockResolvedValueOnce({ rows: [{ total: '1', recus: '1', qty_totale: '2', qty_recue: '2' }] });
-
-    const result = await processReceive({ id: 'po-1', qty_recue: null, actor: { id: 'u1', role: 'admin' } });
-
-    expect(result.httpError).toBeUndefined();
-    expect(result.ready_to_prepare).toBe(true);
-    expect(mockTriggerScan3).toHaveBeenCalledWith('ord-1', 'u1');
-  });
-
-  test('triggerScan3 échoue (SMS) → réception validée quand même, erreur SMS avalée', async () => {
-    mockTransitionOrderStatus.mockResolvedValue({ success: true });
-    mockTriggerScan3.mockRejectedValueOnce(new Error('SMS gateway down'));
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', order_id: 'ord-1', qty: 2, received_qty: 0, status: 'pending', hub_received_at: null }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'received' }] })
-      .mockResolvedValueOnce({ rows: [{ total: '1', recus: '1', qty_totale: '2', qty_recue: '2' }] });
-
-    const result = await processReceive({ id: 'po-1', qty_recue: null, actor: { id: 'u1', role: 'admin' } });
-
-    expect(result.httpError).toBeUndefined();
-    expect(result.success).toBe(true);
-    expect(result.ready_to_prepare).toBe(true);
   });
 });

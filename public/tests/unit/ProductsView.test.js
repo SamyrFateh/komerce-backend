@@ -69,7 +69,7 @@ describe('ProductsView', () => {
     global.confirm = jest.fn(() => true);
     delete window.KProductCardModel;
 
-    require('../../dashboards/admin/js/views/ProductsView.js');
+    require('../../admin/js/views/ProductsView.js');
   });
 
   afterEach(() => {

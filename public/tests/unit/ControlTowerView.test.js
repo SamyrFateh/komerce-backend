@@ -97,7 +97,7 @@ describe('ControlTowerView', () => {
   }
 
   function loadIt() {
-    return loadView('../../dashboards/admin/js/views/ControlTowerView.js', 'ControlTowerView');
+    return loadView('../../admin/js/views/ControlTowerView.js', 'ControlTowerView');
   }
 
   function dataTableCallFor(el) {

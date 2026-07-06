@@ -12,8 +12,8 @@
 (function () {
   'use strict';
 
-  var AUTH_ME_URL = '/api/auth/me';
-  var LOGIN_URL = '/login.html';
+  const AUTH_ME_URL = '/api/auth/me';
+  const LOGIN_URL = '/login.html';
 
   function isLoginPage() {
     return /(^|\/)(login|admin-login|connexion)(\.html)?$/i.test(window.location.pathname || '');
@@ -22,7 +22,7 @@
   function redirectToLogin() {
     if (isLoginPage()) return;
 
-    var next = (window.location.pathname || '/') +
+    const next = (window.location.pathname || '/') +
       (window.location.search || '') +
       (window.location.hash || '');
 
@@ -31,7 +31,7 @@
 
   async function checkSession() {
     try {
-      var res = await fetch(AUTH_ME_URL, {
+      const res = await fetch(AUTH_ME_URL, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Accept': 'application/json' },
@@ -42,7 +42,7 @@
         return null;
       }
 
-      var user = await res.json();
+      const user = await res.json();
       window.KOMERCE_AUTH_USER = user;
       return user;
     } catch (_) {
@@ -51,7 +51,7 @@
     }
   }
 
-  var _fetch = window.fetch;
+  const _fetch = window.fetch;
   window.fetch = function () {
     return _fetch.apply(this, arguments).then(function (res) {
       if (

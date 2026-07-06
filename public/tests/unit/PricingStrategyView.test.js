@@ -25,7 +25,7 @@
  */
 
 const path = require('path');
-const REL = '../../dashboards/admin/js/views/PricingStrategyView.js';
+const REL = '../../admin/js/views/PricingStrategyView.js';
 
 function loadIt() {
   jest.resetModules();

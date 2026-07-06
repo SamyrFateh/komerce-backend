@@ -71,7 +71,7 @@ describe('CatalogApprovalView', () => {
   });
 
   function loadIt() {
-    return loadView('../../dashboards/admin/js/views/CatalogApprovalView.js', 'CatalogApprovalView');
+    return loadView('../../admin/js/views/CatalogApprovalView.js', 'CatalogApprovalView');
   }
 
   function queueFetch(items, total = items.length) {

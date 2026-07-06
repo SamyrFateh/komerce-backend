@@ -52,13 +52,13 @@ CT.pc.NEXT_STATUS = {
 CT.pc.fmt = function(n) { return (n || 0).toLocaleString('fr-FR') + ' KMF'; };
 CT.pc.fmtDate = function(d) {
   if (!d) return '—';
-  var dt = new Date(d);
+  const dt = new Date(d);
   return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) + ' ' +
          dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 };
 CT.pc.ago = function(d) {
   if (!d) return '';
-  var h = Math.round((Date.now() - new Date(d).getTime()) / 3600000);
+  const h = Math.round((Date.now() - new Date(d).getTime()) / 3600000);
   if (h < 1) return 'À l\'instant';
   if (h < 24) return h + 'h';
   return Math.round(h / 24) + 'j';
@@ -66,13 +66,13 @@ CT.pc.ago = function(d) {
 
 // ── Badge Status ──────────────────────────────────────────────
 CT.pc.badge = function(status) {
-  var s = CT.pc.STATUS[status] || CT.pc.STATUS.draft;
+  const s = CT.pc.STATUS[status] || CT.pc.STATUS.draft;
   return '<span class="ct-badge" style="background:' + s.bg + ';color:' + s.color + ';border:1px solid ' + s.color + '33">' +
     s.icon + ' ' + s.label + '</span>';
 };
 
 CT.pc.severityBadge = function(severity) {
-  var s = CT.pc.SEVERITY[severity] || CT.pc.SEVERITY.info;
+  const s = CT.pc.SEVERITY[severity] || CT.pc.SEVERITY.info;
   return '<span class="ct-badge" style="background:' + s.bg + ';color:' + s.color + ';border:1px solid ' + s.color + '33">' +
     s.label + '</span>';
 };
@@ -87,12 +87,12 @@ CT.pc.kpiCard = function(icon, label, value, color) {
 
 // ── Parcel Card (for lists) ───────────────────────────────────
 CT.pc.parcelCard = function(p, onClick) {
-  var alertCount = (p.alerts || []).length;
-  var alertHtml = alertCount > 0
+  const alertCount = (p.alerts || []).length;
+  const alertHtml = alertCount > 0
     ? '<span class="ct-badge" style="background:#fef2f2;color:#ef4444">🚨 ' + alertCount + '</span>'
     : '';
 
-  var html = '<div class="ct-parcel-card" data-ref="' + p.reference + '">' +
+  const html = '<div class="ct-parcel-card" data-ref="' + p.reference + '">' +
     '<div class="ct-parcel-header">' +
       '<strong>' + p.reference + '</strong>' +
       CT.pc.badge(p.status) + alertHtml +
@@ -137,7 +137,7 @@ CT.pc.orderCard = function(o, actionLabel, actionFn) {
 
 // ── Action Bar (for parcel detail) ────────────────────────────
 CT.pc.actionBar = function(parcel) {
-  var nextInfo = CT.pc.NEXT_STATUS[parcel.status];
+  const nextInfo = CT.pc.NEXT_STATUS[parcel.status];
   if (!nextInfo) return '<div class="ct-action-bar ct-action-done">✅ Cycle terminé</div>';
 
   return '<div class="ct-action-bar">' +
@@ -151,10 +151,10 @@ CT.pc.actionBar = function(parcel) {
 // ── Timeline ──────────────────────────────────────────────────
 CT.pc.timeline = function(scans) {
   if (!scans || !scans.length) return '<div class="ct-empty">Aucun scan</div>';
-  var html = '<div class="ct-timeline">';
-  for (var i = 0; i < scans.length; i++) {
-    var s = scans[i];
-    var st = CT.pc.STATUS[s.event_type] || { icon: '📡', label: s.event_type };
+  let html = '<div class="ct-timeline">';
+  for (let i = 0; i < scans.length; i++) {
+    const s = scans[i];
+    const st = CT.pc.STATUS[s.event_type] || { icon: '📡', label: s.event_type };
     html += '<div class="ct-timeline-item">' +
       '<div class="ct-timeline-dot" style="background:' + (st.color || '#6b7280') + '"></div>' +
       '<div class="ct-timeline-content">' +
@@ -174,23 +174,23 @@ CT.pc.timeline = function(scans) {
 // ── Client/Order/Items Hierarchy ──────────────────────────────
 CT.pc.hierarchy = function(clients) {
   if (!clients || !clients.length) return '<div class="ct-empty">Aucun client rattaché</div>';
-  var html = '';
-  for (var i = 0; i < clients.length; i++) {
-    var cl = clients[i];
+  let html = '';
+  for (let i = 0; i < clients.length; i++) {
+    const cl = clients[i];
     html += '<div class="ct-client-block">' +
       '<div class="ct-client-header">👤 <strong>' + (cl.name || 'Client') + '</strong>' +
         (cl.phone ? ' · 📞 ' + cl.phone : '') + '</div>';
     
-    for (var j = 0; j < (cl.orders || []).length; j++) {
-      var ord = cl.orders[j];
+    for (let j = 0; j < (cl.orders || []).length; j++) {
+      const ord = cl.orders[j];
       html += '<div class="ct-order-block">' +
         '<div class="ct-order-line">📋 ' + ord.reference + ' · ' + CT.pc.badge(ord.status) +
           ' · ' + CT.pc.fmt(ord.total_kmf) +
           ' · 💳 ' + (ord.payment_mode || '—') + ' ' + CT.pc.badge(ord.payment_status || 'pending') +
         '</div>';
       
-      for (var k = 0; k < (ord.items || []).length; k++) {
-        var it = ord.items[k];
+      for (let k = 0; k < (ord.items || []).length; k++) {
+        const it = ord.items[k];
         html += '<div class="ct-item-line">' +
           (it.emoji || '🛒') + ' ' + (it.product_name || 'Produit') +
           ' × ' + it.quantity + ' · ' + CT.pc.fmt(it.price_kmf) +
@@ -205,11 +205,11 @@ CT.pc.hierarchy = function(clients) {
 
 // ── Reconciliation Card ───────────────────────────────────────
 CT.pc.recoCard = function(p) {
-  var reco = p.reconciliation || {};
-  var statusColor = { blocked: '#ef4444', warning: '#f59e0b', ok: '#22c55e' }[reco.status] || '#6b7280';
-  var statusLabel = { blocked: '🔴 Bloqué', warning: '🟡 Attention', ok: '🟢 OK' }[reco.status] || 'Inconnu';
+  const reco = p.reconciliation || {};
+  const statusColor = { blocked: '#ef4444', warning: '#f59e0b', ok: '#22c55e' }[reco.status] || '#6b7280';
+  const statusLabel = { blocked: '🔴 Bloqué', warning: '🟡 Attention', ok: '🟢 OK' }[reco.status] || 'Inconnu';
   
-  var html = '<div class="ct-reco-card" style="border-left:4px solid ' + statusColor + '">' +
+  let html = '<div class="ct-reco-card" style="border-left:4px solid ' + statusColor + '">' +
     '<div class="ct-reco-header">' +
       '<strong>' + p.reference + '</strong> ' + statusLabel +
     '</div>' +
@@ -220,7 +220,7 @@ CT.pc.recoCard = function(p) {
   
   if (reco.issues && reco.issues.length > 0) {
     html += '<div class="ct-reco-issues">';
-    for (var i = 0; i < reco.issues.length; i++) {
+    for (let i = 0; i < reco.issues.length; i++) {
       html += '<div class="ct-reco-issue">⚠️ ' + reco.issues[i] + '</div>';
     }
     html += '</div>';

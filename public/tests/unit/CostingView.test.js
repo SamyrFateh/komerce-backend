@@ -59,7 +59,7 @@ describe('CostingView', () => {
   }
 
   function loadIt() {
-    return loadView('../../dashboards/admin/js/views/CostingView.js', 'CostingView');
+    return loadView('../../admin/js/views/CostingView.js', 'CostingView');
   }
 
   function dataTableCallFor(el) {

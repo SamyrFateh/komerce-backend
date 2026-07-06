@@ -116,6 +116,7 @@ module.exports = {
       'tests/unit/orders-list.test.js',
       'tests/unit/orders-status-route.test.js',
       "tests/unit/purchasing-trigger-service.test.js",
+      "tests/unit/purchasing-receive-service.test.js",
       "tests/unit/invoice-service.test.js",
       'tests/unit/purchasing.test.js',
     ],

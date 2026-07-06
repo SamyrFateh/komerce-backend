@@ -1,5 +1,5 @@
 'use strict';
-require('../../dashboards/admin/js/filters-store.js');
+require('../../admin/js/filters-store.js');
 
 describe('KmcFilters (filters-store)', () => {
   beforeEach(() => {

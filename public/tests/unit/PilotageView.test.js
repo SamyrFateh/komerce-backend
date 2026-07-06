@@ -50,7 +50,7 @@ describe('PilotageView', () => {
     makeKpiCard({ renderMini: jest.fn(() => document.createElement('div')) });
     global.AlertList = { renderList: jest.fn() };
 
-    View = loadView('../../dashboards/admin/js/views/PilotageView.js', 'PilotageView');
+    View = loadView('../../admin/js/views/PilotageView.js', 'PilotageView');
   });
 
   afterEach(() => {

@@ -1,5 +1,5 @@
 'use strict';
-require('../../dashboards/admin/js/product-card-model.admin.js');
+require('../../admin/js/product-card-model.admin.js');
 
 describe('KProductCardModel (admin)', () => {
   it('KProductCardModel est attaché à window', () => {
