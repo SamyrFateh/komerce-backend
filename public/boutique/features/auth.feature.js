@@ -35,6 +35,13 @@ module.exports = {
       '../js/b-identity.js',
       '../js/b-phone.js',
     ],
+    tests: [
+      '../tests/unit/b-identity.test.js',
+      '../tests/unit/b-phone.test.js',
+      // testent b-identity.js et b-phone.js directement (require réel) ;
+      // mockent b-store.js/b-utils.js/b-cart-core.js en tant que
+      // collaborateurs (normal), ne testent donc pas ces fichiers en direct.
+    ],
   },
 
   docs: [],

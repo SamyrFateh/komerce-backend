@@ -35,6 +35,14 @@ module.exports = {
       '../js/b-checkout-render.js',
       '../js/b-checkout.js',
     ],
+    tests: [
+      '../tests/unit/b-checkout.test.js',
+      // teste b-checkout.js directement (require réel) ; mocke b-checkout-render.js
+      // en tant que collaborateur (normal), ne teste donc pas ce fichier en direct.
+      '../../../tests/unit/b-checkout-pure.test.js',
+      // fonctions pures de b-checkout.js portées en CJS (Jest backend ne supporte
+      // pas l'ESM natif ici) — logique testée, pas le fichier importé directement.
+    ],
   },
 
   docs: [],

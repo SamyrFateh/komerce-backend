@@ -34,6 +34,10 @@ module.exports = {
     js: [
       '../js/b-tracking.js',
     ],
+    tests: [
+      '../tests/unit/b-tracking.test.js',
+      // teste b-tracking.js directement (require réel).
+    ],
   },
 
   docs: [],

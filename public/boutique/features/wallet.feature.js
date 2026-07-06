@@ -34,6 +34,11 @@ module.exports = {
     js: [
       '../js/b-wallet.js',
     ],
+    tests: [
+      '../tests/unit/b-wallet.test.js',
+      // teste b-wallet.js directement (require réel) ; mocke b-utils.js et
+      // b-identity.js en tant que collaborateurs (normal).
+    ],
   },
 
   docs: [],

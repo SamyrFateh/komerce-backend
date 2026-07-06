@@ -34,6 +34,10 @@ module.exports = {
     js: [
       '../js/b-paypal.js',
     ],
+    tests: [
+      '../tests/unit/b-paypal.test.js',
+      // teste b-paypal.js directement (require réel).
+    ],
   },
 
   docs: [],
