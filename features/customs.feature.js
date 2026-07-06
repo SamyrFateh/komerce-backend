@@ -82,7 +82,7 @@ module.exports = {
 
   contract: {
     exposes: [
-      'GET /api/admin/customs/shipments',
+      'GET /api/admin/customs-shipments',
       'POST /api/admin/customs/classify',
     ],
     consumes: ['logistics (colis a classer)',

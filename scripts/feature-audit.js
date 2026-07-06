@@ -47,14 +47,26 @@ const C = { red:'\x1b[31m', grn:'\x1b[32m', ylw:'\x1b[33m', dim:'\x1b[2m', bld:'
 const ICON = { PASS:`${C.grn}✔${C.r}`, FAIL:`${C.red}✖${C.r}`, SKIP:`${C.dim}–${C.r}`, WARN:`${C.ylw}▲${C.r}` };
 
 // ── Découverte des manifestes (toutes couches) ──────────────────────────────
+// `base` fixe la racine de résolution des chemins déclarés dans `files` :
+//   - backend (`features/`)              : chemins écrits relatifs à ROOT
+//     (ex: 'services/x.js') → base = ROOT
+//   - boutique (`public/boutique/features/`) : chemins écrits relatifs au
+//     dossier du manifeste lui-même (ex: '../css/x.css') → base = dossier du manifeste
+// Bug historique corrigé (2026-07) : les deux familles utilisaient la même
+// résolution (dossier du manifeste), ce qui rendait `files-exist` — et donc
+// tous les contrats qui en dépendent — silencieusement SKIP pour les 17
+// features backend (chemins jamais trouvés sous features/services/, etc.),
+// alors même que feature-registry-check.js (résolution correcte depuis ROOT)
+// confirmait ces fichiers présents. Le gate bloquant en CI ne protégeait donc
+// en réalité que la boutique.
 const MANIFEST_GLOBS = [
-  'features',                       // backend (services/routes/dash)
-  'public/boutique/features',       // boutique (composants UI)
+  { dir: 'features',                 base: 'root', kind: 'backend'  },
+  { dir: 'public/boutique/features', base: 'self', kind: 'boutique' },
 ];
 
 function loadManifests() {
   const out = [];
-  for (const dir of MANIFEST_GLOBS) {
+  for (const { dir, base, kind } of MANIFEST_GLOBS) {
     const abs = path.join(ROOT, dir);
     if (!fs.existsSync(abs)) continue;
     for (const f of fs.readdirSync(abs)) {
@@ -63,7 +75,10 @@ function loadManifests() {
       try {
         const m = require(full);
         m.__file = path.relative(ROOT, full);
-        m.__base = path.dirname(full);      // racine de résolution des `files`
+        m.__base = base === 'root' ? ROOT : path.dirname(full);   // racine de résolution des `files`
+        m.__kind = kind;   // 'backend' | 'boutique' — nécessaire pour ne PAS appliquer
+                            // LAYER_ROOT_OVERRIDE aux manifestes boutique natifs, qui ont
+                            // eux aussi une couche nommée "boutique" mais résolue en self.
         out.push(m);
       } catch (e) {
         out.push({ name: f.replace('.feature.js',''), __broken: e.message, __file: path.relative(ROOT, full) });
@@ -74,10 +89,24 @@ function loadManifests() {
 }
 
 // ── Résolution des fichiers possédés (à plat, toutes couches) ───────────────
+// Les manifestes backend (`features/*.feature.js`) mélangent deux dépôts :
+// la plupart des couches (services, routes, migrations, utils, docs...) sont
+// écrites relatives à ROOT, mais les couches `boutique` et `dash` documentent
+// des fichiers d'un AUTRE dépôt (public/boutique/ et public/ respectivement -
+// cf. feature-registry-check.js, qui les ignore explicitement pour cette
+// raison). Sans ce correctif, `path.join(m.__base, rel)` résolvait ces couches
+// n'importe où et cassait `files-exist` pour la quasi-totalité des features.
+const LAYER_ROOT_OVERRIDE = {
+  boutique: ['public', 'boutique'],
+  dash:     ['public'],
+};
+
 function ownedFiles(m) {
   const flat = [];
   for (const layer of Object.keys(m.files || {})) {
-    for (const rel of m.files[layer]) flat.push({ layer, rel, abs: path.join(m.__base, rel) });
+    const override = m.__kind === 'backend' && LAYER_ROOT_OVERRIDE[layer];
+    const base = override ? path.join(ROOT, ...override) : m.__base;
+    for (const rel of m.files[layer]) flat.push({ layer, rel, abs: path.join(base, rel) });
   }
   return flat;
 }
@@ -146,7 +175,13 @@ const checkers = {
     if (!routes.length) return { status:'SKIP', detail:'routes absentes de ce checkout' };
     const blob = routes.map(f => fs.readFileSync(f.abs,'utf8')).join('\n');
     const missing = exposes.filter(ep => {
-      const tail = ep.replace(/^[A-Z]+\s+/, '').replace(/\/\*$/, '').replace(/:\w+/g,'');
+      // NB (2026-07) : on NE retire PLUS les `:param` du tail. Le code Express
+      // réel écrit ses routes avec la même convention littérale ('/:id/approve'),
+      // donc les garder tels quels dans le probe permet un match exact — les
+      // retirer cassait tout endpoint de forme /:id/action (le probe perdait
+      // le segment ':id' et cherchait 'ressource/action', absent du code réel
+      // qui contient bien '/:id/action' mais jamais 'ressource/action' contigu).
+      const tail = ep.replace(/^[A-Z]+\s+/, '').replace(/\/\*$/, '');
       const probe = tail.split('/').filter(Boolean).slice(-2).join('/');
       return probe && !blob.includes(probe);
     });

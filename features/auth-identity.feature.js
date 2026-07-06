@@ -66,7 +66,6 @@ module.exports = {
 
   contract: {
     exposes: [
-      'middleware requireAuth / requireVerifiedIdentity / softAuth',
       'POST /api/auth/otp',
     ],
     consumes: [],
@@ -78,6 +77,7 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'toute route mutante passe par un middleware d\'auth declare — jamais d\'acces direct sans garde',
+    'les routes de ce manifeste s\'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc',
   ],
 
 };

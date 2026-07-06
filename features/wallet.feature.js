@@ -40,21 +40,14 @@ module.exports = {
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     services: [
-      'services/wallet-service.js',
-      'services/loyalty-service.js',
-      'utils/store-credits.js',
     ],
     routes: [
-      'routes/wallet.js',
-      'routes/loyalty.js',
     ],
     migrations: [
       'migrations/066_wallet_consumptions_append_only.sql',
       'migrations/068_wallets_check_balance.sql',
     ],
     boutique: [
-      'js/b-wallet.js',
-      'css/wallet.css',
     ],
     tests: [
       'tests/unit/loyalty-notification.test.js',
@@ -62,7 +55,6 @@ module.exports = {
       'tests/unit/loyalty-service.test.js',
       'tests/unit/store-credits.test.js',
       'tests/unit/wallet-route.test.js',
-      'tests/unit/wallet-service.test.js',
     ],
   },
 

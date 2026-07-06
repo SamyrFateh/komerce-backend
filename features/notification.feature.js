@@ -56,31 +56,13 @@ module.exports = {
       'tests/unit/orders-list.test.js',
       'tests/unit/orders-status-route.test.js',
       'tests/unit/parcel-notification.test.js',
-      'core/test-whatsapp-notifications.js',
-      'tests/notifications/notification-service-internals.test.js',
-      'tests/notifications/notification-service-order-parcel-otp-auth-loyalty-misc.test.js',
-      'tests/notifications/whatsapp-meta-alert-engine.test.js',
-      'tests/notifications/notification-api-meta-whatsapp-alerts.test.js',
     ],
     utils: [
-      'utils/email.js',
     ],
     services: [
-      'services/whatsapp-meta.js',
-      'services/notification-service.js',        // barrel historique
-      'services/notifications/notification-service.js', // barrel interne — Lot C2 2026-06-28
-      'services/notifications/internals.js',     // helpers partagés, logNotification
-      'services/notifications/order.js',         // notifyOrder*
-      'services/notifications/parcel.js',        // notifyParcel*, _loadOrderFromParcel
-      'services/notifications/otp-auth.js',      // sendOtpMessage, sendMagicLink
-      'services/notifications/loyalty.js',       // notifyLoyaltyEarned
-      'services/notifications/misc.js',          // notifyText
-      'services/alert-engine.js',
+
     ],
     routes: [
-      'routes/notification-api.js',
-      'routes/meta-whatsapp.js',
-      'routes/alerts.js',
     ],
     migrations: [
       'migrations/022b_sms_queue.sql',

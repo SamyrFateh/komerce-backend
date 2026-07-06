@@ -156,7 +156,7 @@ module.exports = {
     exposes: [
       'GET/POST /api/parcels',
       'POST /api/parcels/:id/scan',
-      'GET /api/tracking/:code',
+      'GET /api/tracking/:token',
     ],
     consumes: ['orders (commande rattachee au colis)',
       'customs (statut declaration)',

@@ -81,16 +81,28 @@ module.exports = {
 
   contract: {
     exposes: [
-      'fonctions internes generatePickupProof / generateCustomsInvoice / generateWalletReceipt / generateRefundReceipt',
-      'GET /api/admin/documents (liste + filtres)',
-      'GET /api/admin/documents/summary (diagnostic état émission)',
-      'GET /api/admin/documents/:id (détail)',
-      'GET /api/doc/:reference (rendu HTML imprimable — à câbler via routes/documents-html.js)',
+      'GET /api/admin/documents',
+      'GET /api/admin/documents/summary',
+      'GET /api/admin/documents/:id',
+      // GET /api/doc/:reference — rendu HTML imprimable, pas encore câblé
+      // (routes/documents-html.js n'existe pas sur ce checkout). Volontairement
+      // absent de `exposes` tant que non implémenté, pour ne pas fausser le gate.
     ],
     consumes: ['orders, customs, wallet, refunds (donnees source du document)',
       'auth',
     ],
   },
+
+  // Fonctions internes de génération (services/documents/*.js) — pas des
+  // endpoints HTTP, donc hors de `contract.exposes` (que le gate interprete
+  // comme des routes câblables). Noms réels post-refacto : `issue` partout,
+  // `issueForShipment` en plus pour customs-invoice.js.
+  internalApi: [
+    'services/documents/pickup-proof.js: issue',
+    'services/documents/customs-invoice.js: issue, issueForShipment',
+    'services/documents/wallet-receipt.js: issue',
+    'services/documents/refund-receipt.js: issue',
+  ],
 
   // ── Autorite ─────────────────────────────────────────────────────────────
   authority: 'backend-core — tout changement de gabarit de document doit etre valide par le proprietaire de document-service.js',

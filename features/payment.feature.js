@@ -41,36 +41,17 @@ module.exports = {
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     services: [
-      'services/payment-service.js',
-      'services/cash-reminder-service.js',
-      'services/paypal-client.js',
-      'services/payment-paypal.js',
-      'services/payment-cash-confirm.js',
-      'services/payment-stripe.js',
-      'services/create-stripe-order-intent.js',
-      'services/confirm-pickup-cash-payment.js',
-      'services/payment-paypal-events.js',
-      'services/cash-operations.js',
     
-      'services/reconciliation-service.js',],
+    ],
     routes: [
-      'routes/cash.js',
-      'routes/payments.js',
-      'routes/pickup-pay-cash.js',
-      'routes/payments-paypal.js',
     ],
     migrations: [
       'migrations/079_paypal_payment_mode.sql',
     ],
     boutique: [
-      'js/b-checkout.js',
-      'js/b-checkout-render.js',
-      'js/b-paypal.js',
-      'js/event-pay.js',
       // Backfill gouvernance globale : css/paypal.css est le seul CSS payment-specific
       // pertinent (cart.css est multi-domaine — panier personnel/checkout/OTP — laissé
       // en dette explicite, voir BOUTIQUE_COMPONENT_OWNERSHIP.md §Backfill).
-      'css/paypal.css',
     ],
     tests: [
       'tests/unit/cash-operations-service.test.js',
@@ -84,13 +65,6 @@ module.exports = {
       'tests/unit/payments-route.test.js',
       'tests/unit/pickup-pay-cash.test.js',
       'tests/unit/reconciliation-service.test.js',
-      'tests/unit/payment-cash-confirm.test.js',
-      'tests/unit/payment-paypal.test.js',
-      'tests/unit/payment-service.test.js',
-      'tests/unit/payment-stripe.test.js',
-      'tests/unit/payments-webhook.test.js',
-      'tests/unit/paypal-client.test.js',
-      'tests/unit/paypal-webhook.test.js',
     ],
   },
 

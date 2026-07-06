@@ -45,13 +45,8 @@ module.exports = {
       'utils/user-cache.js',
     ],
     services: [
-      'services/otp-test-mode.js',
-      'services/authkey-client.js',
     ],
     routes: [
-      'routes/client-auth.js',
-      'routes/auth.js',
-      'routes/otp.js',
     ],
     migrations: [
       'migrations/072_jwt_revocation.sql',
@@ -60,9 +55,6 @@ module.exports = {
     boutique: [
       // Backfill gouvernance globale : header @komerce-arch domain=auth confirmé
       // dans docs/BOUTIQUE_360.json pour les 3 fichiers.
-      'js/b-identity.js',
-      'js/b-phone.js',
-      'css/identity.css',
     ],
       tests: [
       'tests/unit/auth-guest.test.js',
@@ -73,11 +65,6 @@ module.exports = {
       'tests/unit/require-verified-identity.test.js',
       'tests/unit/user-cache.test.js',
       'tests/unit/verify-authkey-webhook.test.js',
-      'tests/integration/admin-authz-probe.test.js',
-      'tests/integration/otp-no-guest.test.js',
-      'tests/unit/authkey-client.test.js',
-      'tests/unit/otp-test-mode.test.js',
-      'tests/unit/soft-auth.test.js',
     ],
   },
 

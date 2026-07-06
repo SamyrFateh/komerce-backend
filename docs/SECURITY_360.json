@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-06-28T21:11:02.329Z",
+  "generatedAt": "2026-07-06T06:33:13.181Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 475,
-    "protected": 420,
+    "total": 484,
+    "protected": 429,
     "public": 5,
     "unprotected": 48,
     "admin_no_guard": 0,
@@ -383,6 +383,34 @@
       ]
     },
     {
+      "key": "POST /api/admin/catalog/approval-queue/{id}/approve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/catalog/approval-queue/{id}/override",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/catalog/approval-queue/{id}/reject",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/catalog/approval-queue",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /api/admin/cost-components/_meta",
       "level": "PROTECTED",
       "roles": [
@@ -692,6 +720,27 @@
     },
     {
       "key": "GET /api/admin/dashboard",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/documents/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/documents/summary",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/documents",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -2012,6 +2061,14 @@
       ]
     },
     {
+      "key": "POST /api/hub/photo",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/hub/scan",
       "level": "PROTECTED",
       "roles": [
@@ -2045,6 +2102,14 @@
     },
     {
       "key": "GET /api/hub/today",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/volume",
       "level": "PROTECTED",
       "roles": [
         "admin",

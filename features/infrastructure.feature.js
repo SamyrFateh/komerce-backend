@@ -61,6 +61,7 @@ module.exports = {
       'bootstrap/startup-migrations.js',
     ],
     migrations: [
+      'migrations/_superseded/RECONCILIATION_PROD.sql',
       'migrations/016_add_missing_indexes.sql',
       'migrations/018_schema_reconciliation.sql',
       'migrations/069_analytical_indexes.sql',
@@ -157,7 +158,7 @@ module.exports = {
       'AGENTS.md',
       'AUDIT_FEATURE_DOCTRINE.md',
       'CONTRIBUTING.md',
-      'CORRECTIONS_GOUVERNANCE_2026-07-01.md',
+      'docs/_archive/CORRECTIONS_GOUVERNANCE_2026-07-01.md',
       'PROCEDURE.md',
       'PROMPT_AUDIT_PREGOLIVE.md',
       'README.md',
@@ -419,7 +420,6 @@ module.exports = {
       'package.json',
       'railway.json',
       'railway.toml',
-      'RECONCILIATION_PROD.sql',
     ],
     tests: [
       'tests/integration/groupe-paiement.manual.js',
