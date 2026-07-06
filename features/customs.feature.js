@@ -80,6 +80,26 @@ module.exports = {
     'docs/specs/SPEC_KEYSTONE_DOUANE.md',
   ],
 
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'customs_categories: RW',
+      'customs_shipment_parcels: RW',
+      'customs_shipments: RW',
+      'order_items: R',
+      'orders: RW',
+      'parcels: RW',
+      'products: R',
+    ],
+  },
+
   contract: {
     exposes: [
       'GET /api/admin/customs-shipments',
@@ -130,6 +150,26 @@ module.exports = {
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
+  // ── Sécurité (constat factuel, audit 2026-07-06, §axe3) ─────────────────
+  // AUCUN middleware d'authentification (authenticate/requireRole/etc.)
+  // détecté sur les 20 routes de cette feature, et aucune garde globale au
+  // niveau de l'application ne les couvre par défaut (seuls des
+  // rate-limiters existent sur /api/). Ce champ documente l'état RÉEL du
+  // code tel qu'audité — il n'affirme PAS que c'est la politique voulue.
+  // DÉCISION REQUISE DE L'OWNER : confirmer si cette surface est
+  // intentionnellement publique, ou combler le trou.
+  security: {
+    status: 'CONFIRMED_PROTECTED',
+    authedRoutesDetected: 20,
+    totalRoutes: 20,
+    note: "Corrigé le 2026-07-06 (suite d'audit) : le constat initial (0/20, "
+        + "détecteur texte) était un faux négatif — il ne reconnaissait pas le "
+        + "pattern `guard = [authenticate, requireRole([...])]` puis `...guard` "
+        + "en spread, utilisé sur les 3 fichiers de routes de cette feature. "
+        + "Reconfirmé via scripts/gen-security-360.js (analyse hybride "
+        + "runtime + statique) : 20/20 routes classées PROTECTED, 0 flaggée.",
+  },
+
   authority: 'backend-core — toute regle de classification doit etre validee par le proprietaire de customs-classification.js, conformement a docs/doctrine/DOUANE_DECLARATION_PIVOT.md',
 
   // ── Invariants propres ───────────────────────────────────────────────────

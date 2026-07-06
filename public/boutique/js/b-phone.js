@@ -19,7 +19,7 @@
  * @brief Utilitaires téléphone partagés — indicatifs, format, validation, rendu.
  * Source de vérité unique pour tous les champs téléphone du site.
  *
- * Utilisé par : b-checkout.js, b-tracking.js, event-create.js, event-public.js
+ * Utilisé par : b-checkout.js, b-tracking.js
  */
 
 

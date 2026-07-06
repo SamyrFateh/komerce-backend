@@ -158,6 +158,33 @@ module.exports = {
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'alerts: W',
+      'boutique_categories: RW',
+      'boutique_subcategories: RW',
+      'catalog_exclusions: R',
+      'catalog_field_overrides: RW',
+      'catalog_glossary: R',
+      'order_items: R',
+      'orders: R',
+      'price_history: W',
+      'product_variants: RW',
+      'products: RW',
+      'sourcing_candidate_events: W',
+      'sourcing_candidates: W',
+      'supplier_catalog_imports: W',
+    ],
+  },
+
   contract: {
     exposes: [
       'GET /api/products',

@@ -4,9 +4,9 @@
  * tests/unit/b-cart-pill.test.js
  *
  * Lot 5 du plan de couverture boutique — js/b-cart-pill.js (318L).
- * Premier des 3 fichiers "sans export" du lot (pattern validé ici, puis
- * réutilisé pour event-manage.js / event-public.js) : le module s'auto-
- * initialise selon `document.readyState`, sans jamais rien exporter.
+ * Premier des 3 fichiers "sans export" du lot (pattern validé ici) : le
+ * module s'auto-initialise selon `document.readyState`, sans jamais rien
+ * exporter.
  *
  * Gate d'activation réelle (lue en source) :
  *   - `_shouldInit()` = page catalogue (#k-grid OU #k-catalog-section)

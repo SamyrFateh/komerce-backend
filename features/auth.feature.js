@@ -74,6 +74,21 @@ module.exports = {
     'docs/doctrine/DOCTRINE_IDENTITE_LEGERE_KOMERCE.md',
   ],
 
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'revoked_tokens: R',
+      'users: RW',
+    ],
+  },
+
   contract: {
     // (audit 2026-07-06, §2c — corrigé) : ce manifeste ne possède aucun
     // fichier routes/ (files.routes = []) — c'est un transversal middleware

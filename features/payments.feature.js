@@ -66,7 +66,6 @@ module.exports = {
       'js/b-checkout.js',
       'js/b-checkout-render.js',
       'js/b-paypal.js',
-      'js/event-pay.js',
       // Backfill gouvernance globale : css/paypal.css est le seul CSS payment-specific
       // pertinent (cart.css est multi-domaine — panier personnel/checkout/OTP — laissé
       // en dette explicite, voir BOUTIQUE_COMPONENT_OWNERSHIP.md §Backfill).
@@ -99,7 +98,7 @@ module.exports = {
   // ── Dépôts ───────────────────────────────────────────────────────────────
   repos: {
     backend: 'services/ + routes/ ci-dessus',
-    boutique: 'js/b-checkout*.js + js/b-paypal.js + js/event-pay.js — dépôt "bout", voir docs/BOUTIQUE_OWNERSHIP_LIVE.md',
+    boutique: 'js/b-checkout*.js + js/b-paypal.js — dépôt "bout", voir docs/BOUTIQUE_OWNERSHIP_LIVE.md',
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
@@ -111,6 +110,33 @@ module.exports = {
     'docs/chantier/STRIPE_WEBHOOK_AUDIT_D2.md',
     'docs/ops/PAYPAL_POSITIONNEMENT.md',
   ],
+
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'alerts: W',
+      'cash_collections: RW',
+      'cash_deposits: RW',
+      'incidents: RW',
+      'order_items: R',
+      'order_status_history: W',
+      'orders: RW',
+      'parcel_items: R',
+      'parcels: RW',
+      'paypal_events_processed: RW',
+      'refunds: W',
+      'scan_events: R',
+      'stripe_events_processed: RW',
+      'users: R',
+    ],
+  },
 
   contract: {
     exposes: [

@@ -1,8 +1,16 @@
 {
-  "generatedAt": "2026-07-06T09:17:33.565Z",
+  "generatedAt": "2026-07-06T21:18:51.781Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 468,
+  "count": 470,
   "routes": [
+    {
+      "method": "GET",
+      "fullPath": "/*.html",
+      "mountPrefix": "",
+      "localPath": "/*.html",
+      "routeFile": "server.js",
+      "mountedFrom": []
+    },
     {
       "method": "GET",
       "fullPath": "/api/admin/alerts",
@@ -2151,6 +2159,14 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/health",
+      "mountPrefix": "",
+      "localPath": "/api/health",
+      "routeFile": "server.js",
+      "mountedFrom": []
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/hub-dash/dashboard",
       "mountPrefix": "/api/hub-dash",
       "localPath": "/dashboard",
@@ -2906,17 +2922,6 @@
       "fullPath": "/api/orders/:ref",
       "mountPrefix": "/api/orders",
       "localPath": "/:ref",
-      "routeFile": "routes/orders/qr.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js",
-        "routes/orders.js"
-      ]
-    },
-    {
-      "method": "GET",
-      "fullPath": "/api/orders/:ref",
-      "mountPrefix": "/api/orders",
-      "localPath": "/:ref",
       "routeFile": "routes/orders/detail.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
@@ -2958,32 +2963,10 @@
     },
     {
       "method": "GET",
-      "fullPath": "/api/orders/problems",
-      "mountPrefix": "/api/orders",
-      "localPath": "/problems",
-      "routeFile": "routes/orders/qr.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js",
-        "routes/orders.js"
-      ]
-    },
-    {
-      "method": "GET",
       "fullPath": "/api/orders/relais",
       "mountPrefix": "/api/orders",
       "localPath": "/relais",
       "routeFile": "routes/orders/list.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js",
-        "routes/orders.js"
-      ]
-    },
-    {
-      "method": "GET",
-      "fullPath": "/api/orders/relais",
-      "mountPrefix": "/api/orders",
-      "localPath": "/relais",
-      "routeFile": "routes/orders/qr.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
         "routes/orders.js"
@@ -3603,6 +3586,14 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/public/config",
+      "mountPrefix": "",
+      "localPath": "/api/public/config",
+      "routeFile": "server.js",
+      "mountedFrom": []
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/purchasing",
       "mountPrefix": "/api/purchasing",
       "localPath": "/",
@@ -4080,6 +4071,14 @@
       "mountedFrom": [
         "server.js"
       ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/shared-carts/stripe/webhook",
+      "mountPrefix": "",
+      "localPath": "/api/shared-carts/stripe/webhook",
+      "routeFile": "server.js",
+      "mountedFrom": []
     },
     {
       "method": "POST",
@@ -4776,6 +4775,14 @@
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/webhook/authkey-whatsapp",
+      "mountPrefix": "",
+      "localPath": "/webhook/authkey-whatsapp",
+      "routeFile": "server.js",
+      "mountedFrom": []
     },
     {
       "method": "GET",

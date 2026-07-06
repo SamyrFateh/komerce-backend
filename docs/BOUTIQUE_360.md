@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-06T18:33:02.497Z.
+> Régénéré le 2026-07-06T21:40:45.242Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **70** (70 headés) · Événements bus : **17** · Bundles CSS : **4**
-- Endpoints appelés : **55** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 28 dynamiques
+- Modules JS : **65** (65 headés) · Événements bus : **17** · Bundles CSS : **3**
+- Endpoints appelés : **51** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
 - Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -24,10 +24,6 @@
 | `/api/carriers/{id}` | komerce-api | 🔵 dynamique |
 | `/api/categories` | shop-schema | ⚪ non prouvé |
 | `/api/client/tracking` | b-tracking | ⚪ non prouvé |
-| `/api/collective-payments` | event-pay | 🔵 dynamique |
-| `/api/collective-workspaces` | event-manage | 🔵 dynamique |
-| `/api/collective-workspaces/me` | event-manage | 🔵 dynamique |
-| `/api/collective-workspaces/public` | event-public | 🔵 dynamique |
 | `/api/health` | komerce-api | ⚪ non prouvé |
 | `/api/hub/pack` | komerce-api | ⚪ non prouvé |
 | `/api/hub/scan` | komerce-api | ⚪ non prouvé |
@@ -140,7 +136,6 @@ graph LR
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
 | `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `cart`, `interactions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal`, `wallet` |
 | `css/dist/desktop.css` | `boutique-desktop` |
-| `css/dist/event.css` | `tokens`, `event` |
 
 ---
 *Carte vérifiée en pre-commit par `boutique:360:check` (cliquet bus + endpoints hors contrat).*

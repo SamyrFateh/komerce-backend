@@ -73,9 +73,19 @@ function resolveRequire(fromFileAbs, reqPath) {
 //    variable, montages imbriqués (router.use), et table d'export. ─────────
 function parseRouteFile(abs) {
   if (fileCache.has(abs)) return fileCache.get(abs);
-  const src = readSafe(abs);
+  const rawSrc = readSafe(abs);
   const parsed = { routerVars: new Set(), routes: [], nested: [], exportsMap: {} };
-  if (src == null) { fileCache.set(abs, parsed); return parsed; }
+  if (rawSrc == null) { fileCache.set(abs, parsed); return parsed; }
+
+  // Anti faux-positifs (audit 2026-07-06, §axe1-bug1) : un commentaire qui
+  // MENTIONNE du code (ex: "// insérer avant router.get('/x', ...)") était
+  // lu par les regex ci-dessous comme une vraie route câblée. On neutralise
+  // les commentaires ligne (// ...) et bloc (/* ... */) avant tout regex de
+  // détection, en préservant la longueur du fichier (remplacement par des
+  // espaces, jamais par suppression) pour ne pas décaler les offsets.
+  const src = rawSrc
+    .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/[^\n]*/g, (m, pre) => pre + ' '.repeat(m.length - pre.length));
 
   // Variables de router : const X = express.Router();
   const routerDeclRe = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*express\.Router\s*\(\s*\)/g;
@@ -84,10 +94,14 @@ function parseRouteFile(abs) {
   if (parsed.routerVars.size === 0) parsed.routerVars.add('router'); // convention par défaut
 
   // Verbes câblés : X.get/post/put/patch/delete('/path', ...)
+  // NB (audit 2026-07-06, §axe1-bug2) : les verbes câblés directement sur
+  // `app` (app.get/app.post/...) sont désormais CAPTURÉS (pas ignorés) —
+  // voir collectTopLevelMounts() et build() pour leur intégration au
+  // registre final. Le `continue` précédent les rendait invisibles alors
+  // que ce sont de vraies routes montées (ex: GET /api/public/config).
   const verbRe = /\b([A-Za-z_$][\w$]*)\.(get|post|put|patch|delete)\s*\(\s*(['"`])((?:(?!\3).)*)\3/g;
   while ((m = verbRe.exec(src))) {
     const [, varName, method, , localPath] = m;
-    if (varName === 'app') continue; // pas un router local
     parsed.routes.push({ routerVar: varName, method: method.toUpperCase(), localPath });
   }
 
@@ -238,6 +252,25 @@ function build() {
   for (const ep of ENTRY_POINTS) {
     const entryAbs = path.join(ROOT, ep.file);
     if (!fs.existsSync(entryAbs)) continue;
+
+    // Routes câblées directement sur `app` dans ce fichier d'entrée lui-même
+    // (audit 2026-07-06, §axe1-bug2). Ex: server.js: app.get('/api/health', ...).
+    // Ces routes ne sont montées via aucun require() donc resolveMount() ne
+    // les verrait jamais — on les ajoute ici en direct, prefix vide (chemin
+    // déjà complet tel qu'écrit dans le code).
+    const entryParsed = parseRouteFile(entryAbs);
+    for (const r of entryParsed.routes) {
+      if (r.routerVar !== 'app') continue;
+      registry.push({
+        method:      r.method.toUpperCase(),
+        fullPath:    joinPath('', r.localPath),
+        mountPrefix: '',
+        localPath:   r.localPath,
+        routeFile:   path.relative(ROOT, entryAbs).split(path.sep).join('/'),
+        mountedFrom: [],
+      });
+    }
+
     const mounts = collectTopLevelMounts(entryAbs);
     for (const mnt of mounts) {
       const dedupeKey = `${entryAbs}::${mnt.prefix}::${mnt.abs}::${mnt.prop}`;

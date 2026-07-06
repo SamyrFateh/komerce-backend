@@ -174,6 +174,56 @@ module.exports = {
     'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5 (1).md',
   ],
 
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'business_rules: R',
+      'charges: RW',
+      'competitor_prices: RW',
+      'cost_benchmarks: RW',
+      'cost_component_events: RW',
+      'cost_components: RW',
+      'customs_categories: R',
+      'customs_shipment_parcels: R',
+      'customs_shipments: R',
+      'economic_snapshots: RW',
+      'economic_variables: RW',
+      'exchange_rates: RW',
+      'fabrics: R',
+      'finance_config: RW',
+      'garment_models: R',
+      'order_item_cost_imputations: R',
+      'order_item_real_cost_allocations: RW',
+      'order_items: R',
+      'orders: R',
+      'parcel_items: R',
+      'parcels: R',
+      'price_history: W',
+      'pricing_benchmarks: R',
+      'pricing_category_dims: RW',
+      'pricing_category_taxes: RW',
+      'pricing_components: RW',
+      'pricing_matrices_audit: W',
+      'pricing_strategies: RW',
+      'pricing_strategy_history: W',
+      'product_variants: RW',
+      'products: RW',
+      'recipients: R',
+      'refunds: R',
+      'relais: R',
+      'risk_provisions: R',
+      'store_credits: R',
+      'users: R',
+    ],
+  },
+
   contract: {
     exposes: [
       'POST /api/pricing/recommend',

@@ -441,8 +441,52 @@ module.exports = {
     ],
   },
 
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'business_rules: RW',
+      'business_rules_history: RW',
+      'charges: RW',
+      'customs_categories: R',
+      'economic_snapshots: RW',
+      'exchange_rates: R',
+      'finance_config: RW',
+      'loyalty_tiers: R',
+      'orders: RW',
+      'partners: R',
+      'pickup_print_tokens: RW',
+      'pickup_reveal_codes: RW',
+      'products: R',
+      'revoked_tokens: RW',
+      'schema_migrations: RW',
+      'sourcing_candidates: R',
+      'users: RW',
+    ],
+  },
+
   contract: {
-    exposes: [],
+    // Ajouté (audit 2026-07-06, §axe1-bug2) : ces 5 routes sont câblées
+    // directement sur `app` dans server.js (pas via un `router` local), ce
+    // qui les rendait invisibles de scripts/gen-route-registry.js jusqu'à
+    // correction du générateur. Elles existent et tournent en production
+    // depuis avant cet audit — seule leur déclaration ici était manquante.
+    // GET /api/public/config en particulier est consommée activement par
+    // le paiement boutique (b-paypal.js, b-checkout.js) : voir komerce-boutique
+    // features/payment.feature.js.
+    exposes: [
+      'GET /api/health',
+      'GET /api/public/config',
+      'GET /webhook/authkey-whatsapp',
+      'POST /api/shared-carts/stripe/webhook',
+      'GET /*.html',
+    ],
     // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : aucune de ces
     // entrées n'est une route HTTP — ce sont des exports JS internes consommés
     // par les features métier via require(), jamais via un client HTTP.

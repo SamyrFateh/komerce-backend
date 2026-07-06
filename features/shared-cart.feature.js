@@ -157,8 +157,6 @@ module.exports = {
       'js/group/group-helpers.js',
       'js/group/group-render-creator.js',
       'js/group/group-state.js',
-      'js/collective-close-order-service.js',
-      'js/collective-ready-to-order-orchestrator.js',
       'css/group-cart-flow.css',
       'css/share-cart.css',
       'css/hero-cart-proxy.css',
@@ -194,6 +192,46 @@ module.exports = {
     'docs/specs/collective-workspaces-v1.md',
     'docs/specs/event-flow-v2.md',
   ],
+
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'alerts: W',
+      'basket_items: RW',
+      'baskets: RW',
+      'cart_contributions: RW',
+      'cart_shares: RW',
+      'collective_payment_sessions: RW',
+      'collective_payment_tokens: RW',
+      'collective_stock_reservations: RW',
+      'collective_workspace_contributions: RW',
+      'collective_workspace_events: W',
+      'collective_workspace_items: RW',
+      'collective_workspaces: RW',
+      'finance_config: R',
+      'order_items: RW',
+      'order_status_history: W',
+      'orders: RW',
+      'products: R',
+      'recipients: RW',
+      'refunds: RW',
+      'relais: R',
+      'shared_cart_contributions: RW',
+      'shared_cart_estimations: RW',
+      'shared_cart_events: RW',
+      'shared_cart_items: RW',
+      'shared_carts: RW',
+      'stripe_events_processed: RW',
+      'users: R',
+    ],
+  },
 
   contract: {
     exposes: [

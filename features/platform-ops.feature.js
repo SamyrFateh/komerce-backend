@@ -97,6 +97,34 @@ module.exports = {
   // ── Contrat d'interface ──────────────────────────────────────────────────
   docs: [],
 
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'fabrics: RW',
+      'garment_models: RW',
+      'incidents: RW',
+      'invoices: R',
+      'notification_log: W',
+      'order_items: R',
+      'orders: RW',
+      'parcel_items: RW',
+      'parcels: RW',
+      'products: R',
+      'relais: RW',
+      'scan_events: R',
+      'scans: RW',
+      'store_credits: W',
+      'users: R',
+    ],
+  },
+
   contract: {
     exposes: [
       'GET /health',

@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-07-06T18:33:02.497Z",
+  "generatedAt": "2026-07-06T21:40:45.242Z",
   "summary": {
-    "modules": 70,
-    "withHeader": 70,
+    "modules": 65,
+    "withHeader": 65,
     "events": 17,
     "declaredActive": 11,
     "declaredDead": 5,
-    "cssBundles": 4,
-    "endpoints": 55,
+    "cssBundles": 3,
+    "endpoints": 51,
     "orphanEmit": 2,
     "orphanListen": 1,
     "undeclared": 7,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 30,
-    "dynamicEndpoints": 28
+    "dynamicEndpoints": 24
   },
   "modules": [
     {
@@ -1531,38 +1531,6 @@
       "bodyClasses": []
     },
     {
-      "file": "public/boutique/js/collective-close-order-service.js",
-      "id": "collective-close-order-service",
-      "hasHeader": true,
-      "role": "shared-cart-collective-close-order-service",
-      "domain": "shared-cart",
-      "layer": "ui-component",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [],
-      "imports": [],
-      "bodyClasses": []
-    },
-    {
-      "file": "public/boutique/js/collective-ready-to-order-orchestrator.js",
-      "id": "collective-ready-to-order-orchestrator",
-      "hasHeader": true,
-      "role": "shared-cart-collective-ready-to-order-orchestrator",
-      "domain": "shared-cart",
-      "layer": "ui-component",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [],
-      "imports": [],
-      "bodyClasses": []
-    },
-    {
       "file": "public/boutique/js/controllers/home-controller.js",
       "id": "home-controller",
       "hasHeader": true,
@@ -1592,77 +1560,6 @@
         "b-catalog",
         "b-scroll-owner"
       ],
-      "bodyClasses": []
-    },
-    {
-      "file": "public/boutique/js/event-manage.js",
-      "id": "event-manage",
-      "hasHeader": true,
-      "role": "collective-workspace-manager",
-      "domain": "collective-workspace",
-      "layer": "ui-page",
-      "criticality": "medium",
-      "doctrine": [
-        "workspace_partage_lisible",
-        "lien_public_controle",
-        "action_createur_tracee"
-      ],
-      "depends": [
-        "routes/collective-workspaces.js"
-      ],
-      "usedBy": [
-        "event-management-pages"
-      ],
-      "emits": [],
-      "listens": [],
-      "imports": [],
-      "bodyClasses": []
-    },
-    {
-      "file": "public/boutique/js/event-pay.js",
-      "id": "event-pay",
-      "hasHeader": true,
-      "role": "collective-workspace-payment",
-      "domain": "collective-workspace",
-      "layer": "ui-page",
-      "criticality": "medium",
-      "doctrine": [
-        "paiement_seul_acte_engageant",
-        "lien_public_controle"
-      ],
-      "depends": [
-        "routes/collective-workspaces.js",
-        "payment-api"
-      ],
-      "usedBy": [
-        "public_event_payment_links"
-      ],
-      "emits": [],
-      "listens": [],
-      "imports": [],
-      "bodyClasses": []
-    },
-    {
-      "file": "public/boutique/js/event-public.js",
-      "id": "event-public",
-      "hasHeader": true,
-      "role": "collective-workspace-public-view",
-      "domain": "collective-workspace",
-      "layer": "ui-page",
-      "criticality": "medium",
-      "doctrine": [
-        "consultation_publique_sans_friction",
-        "lien_public_controle"
-      ],
-      "depends": [
-        "routes/collective-workspaces.js"
-      ],
-      "usedBy": [
-        "public_event_links"
-      ],
-      "emits": [],
-      "listens": [],
-      "imports": [],
       "bodyClasses": []
     },
     {
@@ -2200,13 +2097,6 @@
       "files": [
         "boutique-desktop"
       ]
-    },
-    {
-      "out": "event.css",
-      "files": [
-        "tokens",
-        "event"
-      ]
     }
   ],
   "callEdges": [
@@ -2447,55 +2337,6 @@
       "raw": "/api/wallet/transactions?limit=50",
       "dynamic": false,
       "contractStatus": "UNKNOWN"
-    },
-    {
-      "module": "event-manage",
-      "route": "/api/collective-workspaces",
-      "raw": "/api/collective-workspaces/",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "event-manage",
-      "route": "/api/collective-workspaces",
-      "raw": "/api/collective-workspaces/",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "event-manage",
-      "route": "/api/collective-workspaces/me",
-      "raw": "/api/collective-workspaces/me/",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "event-pay",
-      "route": "/api/collective-payments",
-      "raw": "/api/collective-payments/",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "event-pay",
-      "route": "/api/collective-payments",
-      "raw": "/api/collective-payments/",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "event-public",
-      "route": "/api/collective-workspaces/public",
-      "raw": "/api/collective-workspaces/public/",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
-    },
-    {
-      "module": "event-public",
-      "route": "/api/collective-workspaces/public",
-      "raw": "/api/collective-workspaces/public/",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
     },
     {
       "module": "group-api",
@@ -2890,10 +2731,6 @@
     ],
     "dynamicEndpoints": [
       "/api/carriers/{id}",
-      "/api/collective-payments",
-      "/api/collective-workspaces",
-      "/api/collective-workspaces/me",
-      "/api/collective-workspaces/public",
       "/api/logistics/shipments/{id}",
       "/api/orders",
       "/api/orders/{id}",
@@ -2976,10 +2813,6 @@
     "/api/carriers/{id}",
     "/api/categories",
     "/api/client/tracking",
-    "/api/collective-payments",
-    "/api/collective-workspaces",
-    "/api/collective-workspaces/me",
-    "/api/collective-workspaces/public",
     "/api/health",
     "/api/hub/pack",
     "/api/hub/scan",

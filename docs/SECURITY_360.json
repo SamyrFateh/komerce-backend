@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-07-06T06:33:13.181Z",
+  "generatedAt": "2026-07-06T20:58:39.369Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 484,
-    "protected": 429,
+    "total": 481,
+    "protected": 426,
     "public": 5,
     "unprotected": 48,
     "admin_no_guard": 0,
@@ -2600,11 +2600,6 @@
       "roles": []
     },
     {
-      "key": "GET /api/pricing/benchmarks",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
       "key": "PUT /api/pricing/benchmarks",
       "level": "PROTECTED",
       "roles": [
@@ -3369,15 +3364,6 @@
       ]
     },
     {
-      "key": "GET /api/v2/parcels/{id}",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub",
-        "agent_relais"
-      ]
-    },
-    {
       "key": "GET /api/v2/parcels/{ref}/detail",
       "level": "PROTECTED",
       "roles": [
@@ -3451,15 +3437,6 @@
     },
     {
       "key": "GET /api/v2/parcels/reconciliation",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub",
-        "agent_relais"
-      ]
-    },
-    {
-      "key": "GET /api/v2/parcels",
       "level": "PROTECTED",
       "roles": [
         "admin",

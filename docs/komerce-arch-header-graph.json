@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 361,
-    "filesWithFullHeaders": 332,
-    "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 361,
+    "scannedCodeFiles": 356,
+    "filesWithFullHeaders": 329,
+    "filesWithLiteHeaders": 27,
+    "filesWithAnyHeaders": 356,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 725,
-    "edges": 3506,
+    "graphNodes": 712,
+    "edges": 3477,
     "dbTables": 111,
-    "doctrines": 133,
-    "impactAreas": 120,
-    "unresolvedCodeEdges": 336
+    "doctrines": 129,
+    "impactAreas": 116,
+    "unresolvedCodeEdges": 332
   },
   "byDomain": {
     "infrastructure": 18,
@@ -35,12 +35,11 @@
     "boutique": 36,
     "catalog": 35,
     "checkout": 2,
-    "shared-cart": 44,
+    "shared-cart": 42,
     "recommendations": 7,
     "payment": 16,
     "tracking": 1,
     "wallet": 6,
-    "collective-workspace": 3,
     "economic-engine": 36,
     "customs": 6,
     "dashboard": 30,
@@ -58,10 +57,10 @@
     "bootstrap": 5,
     "manual-test": 1,
     "middleware": 11,
-    "ui-component": 39,
+    "ui-component": 37,
     "ui-enhancer": 3,
     "ui-renderer": 6,
-    "ui-page": 7,
+    "ui-page": 4,
     "ui-service": 1,
     "ui-experiment": 1,
     "ui-state": 1,
@@ -85,9 +84,9 @@
   },
   "byCriticality": {
     "critical": 76,
-    "medium": 101,
+    "medium": 98,
     "high": 148,
-    "low": 36
+    "low": 34
   },
   "nodes": [
     {
@@ -2700,56 +2699,6 @@
       "version": "2026-06"
     },
     {
-      "id": "public/boutique/js/collective-close-order-service.js",
-      "file": "public/boutique/js/collective-close-order-service.js",
-      "type": "file-lite",
-      "headerType": "lite",
-      "role": "shared-cart-collective-close-order-service",
-      "domain": "shared-cart",
-      "layer": "ui-component",
-      "criticality": "low",
-      "owner": "public/boutique/js/b-group-view.js",
-      "purpose": "supports public/boutique/js/b-group-view.js",
-      "inputs": [],
-      "outputs": [],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbTxn": [],
-      "doctrine": [],
-      "impactAreas": [
-        "shared-cart",
-        "checkout"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "public/boutique/js/collective-ready-to-order-orchestrator.js",
-      "file": "public/boutique/js/collective-ready-to-order-orchestrator.js",
-      "type": "file-lite",
-      "headerType": "lite",
-      "role": "shared-cart-collective-ready-to-order-orchestrator",
-      "domain": "shared-cart",
-      "layer": "ui-component",
-      "criticality": "low",
-      "owner": "public/boutique/js/b-group-view.js",
-      "purpose": "supports public/boutique/js/b-group-view.js",
-      "inputs": [],
-      "outputs": [],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbTxn": [],
-      "doctrine": [],
-      "impactAreas": [
-        "shared-cart",
-        "checkout"
-      ],
-      "version": "2026-06"
-    },
-    {
       "id": "public/boutique/js/controllers/home-controller.js",
       "file": "public/boutique/js/controllers/home-controller.js",
       "type": "file",
@@ -2793,129 +2742,6 @@
         "category-rail",
         "product-discovery",
         "desktop-catalog"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "public/boutique/js/event-manage.js",
-      "file": "public/boutique/js/event-manage.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "collective-workspace-manager",
-      "domain": "collective-workspace",
-      "layer": "ui-page",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "workspace_id",
-        "auth_context",
-        "workspace_mutations"
-      ],
-      "outputs": [
-        "workspace_admin_view",
-        "participant_links",
-        "management_actions"
-      ],
-      "depends": [
-        "routes/collective-workspaces.js"
-      ],
-      "usedBy": [
-        "event-management-pages"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbTxn": [],
-      "doctrine": [
-        "workspace_partage_lisible",
-        "lien_public_controle",
-        "action_createur_tracee"
-      ],
-      "impactAreas": [
-        "collective-workspaces",
-        "event-flow",
-        "creator-management"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "public/boutique/js/event-pay.js",
-      "file": "public/boutique/js/event-pay.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "collective-workspace-payment",
-      "domain": "collective-workspace",
-      "layer": "ui-page",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "payment_token",
-        "participant_identity",
-        "amount"
-      ],
-      "outputs": [
-        "payment_attempt",
-        "confirmation_state",
-        "error_state"
-      ],
-      "depends": [
-        "routes/collective-workspaces.js",
-        "payment-api"
-      ],
-      "usedBy": [
-        "public_event_payment_links"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbTxn": [],
-      "doctrine": [
-        "paiement_seul_acte_engageant",
-        "lien_public_controle"
-      ],
-      "impactAreas": [
-        "collective-workspaces",
-        "payments",
-        "participant-flow"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "public/boutique/js/event-public.js",
-      "file": "public/boutique/js/event-public.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "collective-workspace-public-view",
-      "domain": "collective-workspace",
-      "layer": "ui-page",
-      "criticality": "medium",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "public_workspace_token",
-        "visitor_context"
-      ],
-      "outputs": [
-        "public_workspace_view",
-        "participant_actions"
-      ],
-      "depends": [
-        "routes/collective-workspaces.js"
-      ],
-      "usedBy": [
-        "public_event_links"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbTxn": [],
-      "doctrine": [
-        "consultation_publique_sans_friction",
-        "lien_public_controle"
-      ],
-      "impactAreas": [
-        "event-flow",
-        "participant-flow",
-        "public-sharing"
       ],
       "version": "2026-06"
     },
@@ -16548,26 +16374,6 @@
       "doctrine": "desktop_mobile_coherence"
     },
     {
-      "id": "doctrine:workspace_partage_lisible",
-      "type": "doctrine",
-      "doctrine": "workspace_partage_lisible"
-    },
-    {
-      "id": "doctrine:lien_public_controle",
-      "type": "doctrine",
-      "doctrine": "lien_public_controle"
-    },
-    {
-      "id": "doctrine:action_createur_tracee",
-      "type": "doctrine",
-      "doctrine": "action_createur_tracee"
-    },
-    {
-      "id": "doctrine:consultation_publique_sans_friction",
-      "type": "doctrine",
-      "doctrine": "consultation_publique_sans_friction"
-    },
-    {
       "id": "doctrine:backend_source_verite",
       "type": "doctrine",
       "doctrine": "backend_source_verite"
@@ -17326,26 +17132,6 @@
       "id": "impact:category-rail",
       "type": "impact-area",
       "area": "category-rail"
-    },
-    {
-      "id": "impact:collective-workspaces",
-      "type": "impact-area",
-      "area": "collective-workspaces"
-    },
-    {
-      "id": "impact:event-flow",
-      "type": "impact-area",
-      "area": "event-flow"
-    },
-    {
-      "id": "impact:creator-management",
-      "type": "impact-area",
-      "area": "creator-management"
-    },
-    {
-      "id": "impact:public-sharing",
-      "type": "impact-area",
-      "area": "public-sharing"
     },
     {
       "id": "impact:personalized-links",
@@ -20828,42 +20614,6 @@
       "label": "boutique"
     },
     {
-      "from": "public/boutique/js/collective-close-order-service.js",
-      "to": "public/boutique/js/b-group-view.js",
-      "type": "owned-by",
-      "label": "public/boutique/js/b-group-view.js"
-    },
-    {
-      "from": "public/boutique/js/collective-close-order-service.js",
-      "to": "impact:shared-cart",
-      "type": "impact",
-      "label": "shared-cart"
-    },
-    {
-      "from": "public/boutique/js/collective-close-order-service.js",
-      "to": "impact:checkout",
-      "type": "impact",
-      "label": "checkout"
-    },
-    {
-      "from": "public/boutique/js/collective-ready-to-order-orchestrator.js",
-      "to": "public/boutique/js/b-group-view.js",
-      "type": "owned-by",
-      "label": "public/boutique/js/b-group-view.js"
-    },
-    {
-      "from": "public/boutique/js/collective-ready-to-order-orchestrator.js",
-      "to": "impact:shared-cart",
-      "type": "impact",
-      "label": "shared-cart"
-    },
-    {
-      "from": "public/boutique/js/collective-ready-to-order-orchestrator.js",
-      "to": "impact:checkout",
-      "type": "impact",
-      "label": "checkout"
-    },
-    {
       "from": "public/boutique/js/controllers/home-controller.js",
       "to": "public/boutique/js/b-store.js",
       "type": "depends",
@@ -20928,144 +20678,6 @@
       "to": "impact:desktop-catalog",
       "type": "impact",
       "label": "desktop-catalog"
-    },
-    {
-      "from": "public/boutique/js/event-manage.js",
-      "to": "routes/collective-workspaces.js",
-      "type": "depends",
-      "label": "routes/collective-workspaces.js"
-    },
-    {
-      "from": "event-management-pages",
-      "to": "public/boutique/js/event-manage.js",
-      "type": "uses",
-      "label": "event-management-pages"
-    },
-    {
-      "from": "public/boutique/js/event-manage.js",
-      "to": "doctrine:workspace_partage_lisible",
-      "type": "doctrine",
-      "label": "workspace_partage_lisible"
-    },
-    {
-      "from": "public/boutique/js/event-manage.js",
-      "to": "doctrine:lien_public_controle",
-      "type": "doctrine",
-      "label": "lien_public_controle"
-    },
-    {
-      "from": "public/boutique/js/event-manage.js",
-      "to": "doctrine:action_createur_tracee",
-      "type": "doctrine",
-      "label": "action_createur_tracee"
-    },
-    {
-      "from": "public/boutique/js/event-manage.js",
-      "to": "impact:collective-workspaces",
-      "type": "impact",
-      "label": "collective-workspaces"
-    },
-    {
-      "from": "public/boutique/js/event-manage.js",
-      "to": "impact:event-flow",
-      "type": "impact",
-      "label": "event-flow"
-    },
-    {
-      "from": "public/boutique/js/event-manage.js",
-      "to": "impact:creator-management",
-      "type": "impact",
-      "label": "creator-management"
-    },
-    {
-      "from": "public/boutique/js/event-pay.js",
-      "to": "routes/collective-workspaces.js",
-      "type": "depends",
-      "label": "routes/collective-workspaces.js"
-    },
-    {
-      "from": "public/boutique/js/event-pay.js",
-      "to": "payment-api",
-      "type": "depends",
-      "label": "payment-api"
-    },
-    {
-      "from": "public_event_payment_links",
-      "to": "public/boutique/js/event-pay.js",
-      "type": "uses",
-      "label": "public_event_payment_links"
-    },
-    {
-      "from": "public/boutique/js/event-pay.js",
-      "to": "doctrine:paiement_seul_acte_engageant",
-      "type": "doctrine",
-      "label": "paiement_seul_acte_engageant"
-    },
-    {
-      "from": "public/boutique/js/event-pay.js",
-      "to": "doctrine:lien_public_controle",
-      "type": "doctrine",
-      "label": "lien_public_controle"
-    },
-    {
-      "from": "public/boutique/js/event-pay.js",
-      "to": "impact:collective-workspaces",
-      "type": "impact",
-      "label": "collective-workspaces"
-    },
-    {
-      "from": "public/boutique/js/event-pay.js",
-      "to": "impact:payments",
-      "type": "impact",
-      "label": "payments"
-    },
-    {
-      "from": "public/boutique/js/event-pay.js",
-      "to": "impact:participant-flow",
-      "type": "impact",
-      "label": "participant-flow"
-    },
-    {
-      "from": "public/boutique/js/event-public.js",
-      "to": "routes/collective-workspaces.js",
-      "type": "depends",
-      "label": "routes/collective-workspaces.js"
-    },
-    {
-      "from": "public_event_links",
-      "to": "public/boutique/js/event-public.js",
-      "type": "uses",
-      "label": "public_event_links"
-    },
-    {
-      "from": "public/boutique/js/event-public.js",
-      "to": "doctrine:consultation_publique_sans_friction",
-      "type": "doctrine",
-      "label": "consultation_publique_sans_friction"
-    },
-    {
-      "from": "public/boutique/js/event-public.js",
-      "to": "doctrine:lien_public_controle",
-      "type": "doctrine",
-      "label": "lien_public_controle"
-    },
-    {
-      "from": "public/boutique/js/event-public.js",
-      "to": "impact:event-flow",
-      "type": "impact",
-      "label": "event-flow"
-    },
-    {
-      "from": "public/boutique/js/event-public.js",
-      "to": "impact:participant-flow",
-      "type": "impact",
-      "label": "participant-flow"
-    },
-    {
-      "from": "public/boutique/js/event-public.js",
-      "to": "impact:public-sharing",
-      "type": "impact",
-      "label": "public-sharing"
     },
     {
       "from": "public/boutique/js/group/group-api.js",
@@ -40055,8 +39667,6 @@
       "ownedFiles": [
         "public/boutique/js/b-friendly-group-redirect.js",
         "public/boutique/js/b-share-phone-guard.js",
-        "public/boutique/js/collective-close-order-service.js",
-        "public/boutique/js/collective-ready-to-order-orchestrator.js",
         "public/boutique/js/group/group-state.js"
       ],
       "dbRead": [],
@@ -40090,8 +39700,6 @@
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-share-phone-guard.js",
-        "public/boutique/js/collective-close-order-service.js",
-        "public/boutique/js/collective-ready-to-order-orchestrator.js",
         "public/boutique/js/group/group-api.js",
         "public/boutique/js/group/group-helpers.js",
         "public/boutique/js/group/group-render-creator.js",
@@ -41342,52 +40950,6 @@
         "public/boutique/js/b-catalog.js"
       ]
     },
-    "public/boutique/js/collective-close-order-service.js": {
-      "role": "shared-cart-collective-close-order-service",
-      "domain": "shared-cart",
-      "criticality": "low",
-      "headerType": "lite",
-      "owner": "public/boutique/js/b-group-view.js",
-      "purpose": "supports public/boutique/js/b-group-view.js",
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "doctrines": [],
-      "impactAreas": [
-        "shared-cart",
-        "checkout"
-      ],
-      "mustCheck": [
-        "impact:checkout",
-        "impact:shared-cart",
-        "public/boutique/js/b-group-view.js"
-      ]
-    },
-    "public/boutique/js/collective-ready-to-order-orchestrator.js": {
-      "role": "shared-cart-collective-ready-to-order-orchestrator",
-      "domain": "shared-cart",
-      "criticality": "low",
-      "headerType": "lite",
-      "owner": "public/boutique/js/b-group-view.js",
-      "purpose": "supports public/boutique/js/b-group-view.js",
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "doctrines": [],
-      "impactAreas": [
-        "shared-cart",
-        "checkout"
-      ],
-      "mustCheck": [
-        "impact:checkout",
-        "impact:shared-cart",
-        "public/boutique/js/b-group-view.js"
-      ]
-    },
     "public/boutique/js/controllers/home-controller.js": {
       "role": "boutique-home-navigation-controller",
       "domain": "catalog",
@@ -41429,111 +40991,6 @@
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/shop-schema.js"
-      ]
-    },
-    "public/boutique/js/event-manage.js": {
-      "role": "collective-workspace-manager",
-      "domain": "collective-workspace",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "routes/collective-workspaces.js"
-      ],
-      "directUsedBy": [
-        "event-management-pages"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "doctrines": [
-        "workspace_partage_lisible",
-        "lien_public_controle",
-        "action_createur_tracee"
-      ],
-      "impactAreas": [
-        "collective-workspaces",
-        "event-flow",
-        "creator-management"
-      ],
-      "mustCheck": [
-        "doctrine:action_createur_tracee",
-        "doctrine:lien_public_controle",
-        "doctrine:workspace_partage_lisible",
-        "impact:collective-workspaces",
-        "impact:creator-management",
-        "impact:event-flow",
-        "routes/collective-workspaces.js"
-      ]
-    },
-    "public/boutique/js/event-pay.js": {
-      "role": "collective-workspace-payment",
-      "domain": "collective-workspace",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "routes/collective-workspaces.js",
-        "payment-api"
-      ],
-      "directUsedBy": [
-        "public_event_payment_links"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "doctrines": [
-        "paiement_seul_acte_engageant",
-        "lien_public_controle"
-      ],
-      "impactAreas": [
-        "collective-workspaces",
-        "payments",
-        "participant-flow"
-      ],
-      "mustCheck": [
-        "doctrine:lien_public_controle",
-        "doctrine:paiement_seul_acte_engageant",
-        "impact:collective-workspaces",
-        "impact:participant-flow",
-        "impact:payments",
-        "routes/collective-workspaces.js"
-      ]
-    },
-    "public/boutique/js/event-public.js": {
-      "role": "collective-workspace-public-view",
-      "domain": "collective-workspace",
-      "criticality": "medium",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "routes/collective-workspaces.js"
-      ],
-      "directUsedBy": [
-        "public_event_links"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "doctrines": [
-        "consultation_publique_sans_friction",
-        "lien_public_controle"
-      ],
-      "impactAreas": [
-        "event-flow",
-        "participant-flow",
-        "public-sharing"
-      ],
-      "mustCheck": [
-        "doctrine:consultation_publique_sans_friction",
-        "doctrine:lien_public_controle",
-        "impact:event-flow",
-        "impact:participant-flow",
-        "impact:public-sharing",
-        "routes/collective-workspaces.js"
       ]
     },
     "public/boutique/js/group/group-api.js": {
@@ -43528,9 +42985,6 @@
         "doctrine:resolve_before_behavior_change",
         "impact:shared-cart",
         "middleware/auth.js",
-        "public/boutique/js/event-manage.js",
-        "public/boutique/js/event-pay.js",
-        "public/boutique/js/event-public.js",
         "services/collective-workspace-engine.js"
       ]
     },
@@ -53285,30 +52739,6 @@
       "to": "public/boutique/js/boutique.js",
       "type": "uses",
       "label": "public/boutique/index.html"
-    },
-    {
-      "from": "event-management-pages",
-      "to": "public/boutique/js/event-manage.js",
-      "type": "uses",
-      "label": "event-management-pages"
-    },
-    {
-      "from": "public/boutique/js/event-pay.js",
-      "to": "payment-api",
-      "type": "depends",
-      "label": "payment-api"
-    },
-    {
-      "from": "public_event_payment_links",
-      "to": "public/boutique/js/event-pay.js",
-      "type": "uses",
-      "label": "public_event_payment_links"
-    },
-    {
-      "from": "public_event_links",
-      "to": "public/boutique/js/event-public.js",
-      "type": "uses",
-      "label": "public_event_links"
     },
     {
       "from": "public/boutique/js/group/group-api.js",

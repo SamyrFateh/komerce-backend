@@ -79,6 +79,33 @@ module.exports = {
     'docs/doctrine/DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md',
   ],
 
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'customs_shipment_parcels: R',
+      'customs_shipments: R',
+      'invoices: R',
+      'order_items: R',
+      'orders: R',
+      'parcel_items: R',
+      'parcels: R',
+      'products: R',
+      'recipients: R',
+      'refunds: R',
+      'relais: R',
+      'transaction_documents: RW',
+      'users: R',
+      'wallet_transactions: R',
+    ],
+  },
+
   contract: {
     exposes: [
       'GET /api/admin/documents',
@@ -105,6 +132,24 @@ module.exports = {
   ],
 
   // ── Autorite ─────────────────────────────────────────────────────────────
+  // ── Sécurité (constat factuel, audit 2026-07-06, §axe3) ─────────────────
+  // AUCUN middleware d'authentification détecté sur les 3 routes de cette
+  // feature (factures) ; aucune garde globale par défaut au niveau de
+  // l'application. Priorité de vérification la plus haute des 3 features
+  // signalées : ce sont des documents transactionnels (factures).
+  // DÉCISION REQUISE DE L'OWNER, en urgence.
+  security: {
+    status: 'CONFIRMED_PROTECTED',
+    authedRoutesDetected: 3,
+    totalRoutes: 3,
+    note: "Corrigé le 2026-07-06 (suite d'audit) : le constat initial (0/3, "
+        + "détecteur texte) était un faux négatif — les 3 routes utilisent "
+        + "`guard = [authenticate, requireRole([...])]` puis `...guard` en "
+        + "spread, non reconnu par le premier détecteur. Reconfirmé via "
+        + "scripts/gen-security-360.js : 3/3 routes classées PROTECTED, "
+        + "0 flaggée.",
+  },
+
   authority: 'backend-core — tout changement de gabarit de document doit etre valide par le proprietaire de document-service.js',
 
   // ── Invariants propres ───────────────────────────────────────────────────

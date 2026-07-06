@@ -56,6 +56,45 @@ module.exports = {
     'docs/prompts/PROMPT_DASHBOARD_ECONOMIQUE_BOITES_FLECHES.md',
   ],
 
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // Généré par parsing réel des appels .query() (pas un grep de mots) :
+  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
+  // Une table listée ici pour PLUSIEURS features est une vraie propriété
+  // partagée détectée dans le code, pas un artefact de méthode — à
+  // documenter explicitement si volontaire, ou à re-scoper sinon.
+  // Champ auto-généré : à corriger à la main si une requête dynamique
+  // (nom de table construit par variable) a échappé au scan.
+  db: {
+    tables: [
+      'business_rules: R',
+      'business_rules_history: R',
+      'customs_shipments: R',
+      'exchange_rates: R',
+      'incidents: RW',
+      'invoices: RW',
+      'loyalty_rewards: RW',
+      'order_comments: RW',
+      'order_incidents: RW',
+      'order_items: RW',
+      'order_status_history: RW',
+      'orders: RW',
+      'parcel_items: RW',
+      'parcels: RW',
+      'partners: RW',
+      'product_suppliers: W',
+      'products: RW',
+      'purchase_orders: RW',
+      'recipients: R',
+      'relais: RW',
+      'risk_provisions: RW',
+      'scan_events: RW',
+      'scans: RW',
+      'sms_log: RW',
+      'suppliers: RW',
+      'users: RW',
+    ],
+  },
+
   contract: {
     exposes: [
       'GET /api/admin/dashboard',

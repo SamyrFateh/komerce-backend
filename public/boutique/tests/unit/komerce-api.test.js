@@ -10,8 +10,8 @@
  * ui). On `require()` le fichier une fois (exécution du script, comme dans
  * un <script> classique) puis on pilote tout via `window.K`.
  *
- * `global.fetch` est réassigné directement dans chaque test (pattern déjà
- * utilisé dans event-pay.test.js) plutôt que via `mockResolvedValueOnce` :
+ * `global.fetch` est réassigné directement dans chaque test plutôt que via
+ * `mockResolvedValueOnce` :
  * la config `restoreMocks: true` ne restaure que les spies `jest.spyOn`,
  * pas un `jest.fn()` brut posé par `setup.js` — réassigner évite tout état
  * résiduel entre tests.

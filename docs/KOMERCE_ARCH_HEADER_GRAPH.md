@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 361
-- Files with full headers: 332
-- Files with lite headers: 29
-- Files with any headers: 361
+- Scanned code files: 356
+- Files with full headers: 329
+- Files with lite headers: 27
+- Files with any headers: 356
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 725
-- Edges: 3506
+- Graph nodes: 712
+- Edges: 3477
 - DB tables: 111
-- Doctrines: 133
-- Impact areas: 120
-- Unresolved code edges: 336
+- Doctrines: 129
+- Impact areas: 116
+- Unresolved code edges: 332
 
 ## Domains
 
@@ -28,7 +28,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - boutique: 36
 - catalog: 35
 - checkout: 2
-- collective-workspace: 3
 - customs: 6
 - dashboard: 30
 - documents: 11
@@ -42,7 +41,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - payment: 16
 - recommendations: 7
 - refunds: 2
-- shared-cart: 44
+- shared-cart: 42
 - tracking: 1
 - wallet: 6
 
@@ -65,11 +64,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - service: 144
 - state: 1
 - state-store: 1
-- ui-component: 39
+- ui-component: 37
 - ui-enhancer: 3
 - ui-experiment: 1
 - ui-infrastructure: 1
-- ui-page: 7
+- ui-page: 4
 - ui-renderer: 6
 - ui-service: 1
 - ui-state: 1
@@ -327,8 +326,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-product-open-contract.js -> owner public/boutique/js/b-modal-core.js (catalog-b-product-open-contract)
 - public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-group-view.js (boutique-b-share-phone-guard)
 - public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
-- public/boutique/js/collective-close-order-service.js -> owner public/boutique/js/b-group-view.js (shared-cart-collective-close-order-service)
-- public/boutique/js/collective-ready-to-order-orchestrator.js -> owner public/boutique/js/b-group-view.js (shared-cart-collective-ready-to-order-orchestrator)
 - public/boutique/js/group/group-state.js -> owner public/boutique/js/b-group-view.js (shared-cart-group-state)
 - public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
 - public/boutique/js/render/render-categories.js -> owner public/boutique/js/b-catalog.js (boutique-render-categories)
@@ -477,7 +474,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: core/test-whatsapp-notifications.js -> services/notification-service (services/notification-service)
 - uses: dashboards -> routes/wallet.js (dashboards)
 - uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
-- uses: event-management-pages -> public/boutique/js/event-manage.js (event-management-pages)
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
@@ -487,8 +483,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: modal-surfaces -> public/boutique/js/b-modal-approche-c-hybrid.js (modal-surfaces)
 - uses: notification-service.js -> services/whatsapp-meta.js (notification-service.js)
 - uses: paypal-flows -> services/order-payment-confirmation.js (paypal-flows)
-- uses: public_event_links -> public/boutique/js/event-public.js (public_event_links)
-- uses: public_event_payment_links -> public/boutique/js/event-pay.js (public_event_payment_links)
 - uses: public_shared_cart_links -> public/boutique/js/b-group-view.js (public_shared_cart_links)
 - uses: public/boutique/index.html -> public/boutique/js/boutique.js (public/boutique/index.html)
 - uses: public/boutique/index.html -> public/boutique/js/komerce-api.js (public/boutique/index.html)
@@ -498,7 +492,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-store.js -> sessionStorage (sessionStorage)
 - depends: public/boutique/js/b-utils.js -> fetch (fetch)
 - depends: public/boutique/js/b-utils.js -> Intl (Intl)
-- depends: public/boutique/js/event-pay.js -> payment-api (payment-api)
 - depends: public/boutique/js/group/group-api.js -> fetch (fetch)
 - depends: public/boutique/js/komerce-api.js -> backend_api (backend_api)
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
@@ -582,6 +575,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/dashboard-clients.js -> services/* (services/*)
 - depends: routes/dashboard-finance.js -> db.js (db.js)
 - depends: routes/dashboard-finance.js -> services/* (services/*)
+- depends: routes/dashboard-hub.js -> db.js (db.js)
+- depends: routes/dashboard-hub.js -> services/* (services/*)
+- depends: routes/dashboard-ops.js -> db.js (db.js)
+- depends: routes/dashboard-ops.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 
