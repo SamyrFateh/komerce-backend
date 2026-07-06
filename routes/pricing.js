@@ -244,19 +244,14 @@ router.put('/apply-all', ...adminOnly, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// GET /api/pricing/benchmarks — benchmarks sectoriels
-// ═══════════════════════════════════════════════════════════════════
-router.get('/benchmarks', authenticate, async (req, res, next) => {
-  try {
-    res.json(await pricingDashboard.listBenchmarks(req.query));
-  } catch (e) {
-    if (e.code === '42P01') {
-      return res.json({ count: 0, benchmarks: [], warning: 'Table pricing_benchmarks absente — migration 039 requise' });
-    }
-    next(e);
-  }
-});
+// NOTE gouvernance (résolu 2026-07-06) : un second handler GET /benchmarks
+// (table pricing_benchmarks, via pricingDashboard.listBenchmarks) était
+// déclaré ici et était mort — Express retenait toujours le premier (L106,
+// table cost_benchmarks). Supprimé. pricingDashboard.listBenchmarks() reste
+// une fonction testée (tests/unit/pricing-dashboard-truth.test.js) mais n'a
+// plus aucun point d'entrée HTTP — décision produit à prendre séparément :
+// l'exposer sous un autre chemin (ex. GET /pricing/benchmarks-catalog) ou
+// la retirer explicitement. Voir features/economic-engine.feature.js.
 
 // ═══════════════════════════════════════════════════════════════════
 // GET /api/pricing/benchmarks-gap — gap benchmark vs config actuelle

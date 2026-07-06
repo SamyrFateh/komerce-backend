@@ -17,8 +17,10 @@
  *   ✓ GET /alerts : 4 sources d'alertes fusionnées et triées par sévérité
  *   ✓ POST /alerts/:id/acknowledge : branche 'weight-' vs autre préfixe
  *   ✓ GET /parcels/:ref/detail : UUID vs référence, 404, items par commande
- *   ✓ GET /parcels/:id, /scans, /orders
- *   ✓ GET /invoices, /scan-events (limit borné), /parcels (liste)
+ *   ✓ GET /parcels/:id/scans, /parcels/:id/orders
+ *   ✓ GET /invoices, /scan-events (limit borné)
+ *   (GET /parcels/:id et GET /parcels (liste) supprimés le 2026-07-06 :
+ *    code mort, shadowed en production par parcel-api-v2 monté avant)
  *   ✓ Propagation d'erreur DB → next(err) pour chaque route
  */
 
@@ -391,32 +393,11 @@ describe('routes/ops-api — GET /parcels/:ref/detail', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// GET /parcels/:id
-// ═══════════════════════════════════════════════════════════════════════
-
-describe('routes/ops-api — GET /parcels/:id', () => {
-  it('renvoie le colis avec ses compteurs', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'p1', item_count: 3, scan_count: 5 }] });
-
-    const res = await request(app).get('/api/v2/parcels/p1');
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ id: 'p1', item_count: 3, scan_count: 5 });
-  });
-
-  it('404 si introuvable', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    const res = await request(app).get('/api/v2/parcels/inexistant');
-    expect(res.status).toBe(404);
-  });
-
-  it('500 si erreur DB', async () => {
-    mockQuery.mockRejectedValueOnce(new Error('boom'));
-    const res = await request(app).get('/api/v2/parcels/p1');
-    expect(res.status).toBe(500);
-  });
-});
+// NOTE gouvernance (résolu 2026-07-06) : le handler GET /parcels/:id de
+// routes/ops-api.js a été supprimé (code mort, shadowed en production par
+// parcel-api-v2 GET /:ref, monté avant). Ce test l'exerçait en isolation
+// (routeur monté seul, sans parcel-api-v2) donc masquait le shadowing —
+// il est retiré avec le handler plutôt que laissé à échouer.
 
 // ═══════════════════════════════════════════════════════════════════════
 // GET /parcels/:id/scans
@@ -538,23 +519,8 @@ describe('routes/ops-api — GET /scan-events', () => {
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// GET /parcels (liste)
-// ═══════════════════════════════════════════════════════════════════════
-
-describe('routes/ops-api — GET /parcels (liste)', () => {
-  it('renvoie la liste des colis actifs', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'p1' }, { id: 'p2' }] });
-
-    const res = await request(app).get('/api/v2/parcels');
-
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(2);
-  });
-
-  it('500 si erreur DB', async () => {
-    mockQuery.mockRejectedValueOnce(new Error('boom'));
-    const res = await request(app).get('/api/v2/parcels');
-    expect(res.status).toBe(500);
-  });
-});
+// NOTE gouvernance (résolu 2026-07-06) : le handler GET /parcels de
+// routes/ops-api.js a été supprimé (code mort, shadowed en production par
+// parcel-api-v2 GET /, monté avant). Ce test l'exerçait en isolation
+// (routeur monté seul, sans parcel-api-v2) donc masquait le shadowing —
+// il est retiré avec le handler plutôt que laissé à échouer.

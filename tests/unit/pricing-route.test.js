@@ -139,12 +139,13 @@ describe('routes/pricing', () => {
     });
   });
 
-  describe('GET /benchmarks (première déclaration — cost_benchmarks)', () => {
-    // NOTE gouvernance : la route déclare deux fois GET /benchmarks (L106 et
-    // L250). Express ne retient que le premier handler enregistré — celui
-    // qui lit `cost_benchmarks` directement. Le second handler (via
-    // pricingDashboard.listBenchmarks, qui lit `pricing_benchmarks`) est
-    // mort code. Signalé sans correction silencieuse (AGENTS.md §8).
+  describe('GET /benchmarks (cost_benchmarks)', () => {
+    // NOTE gouvernance (résolu 2026-07-06) : la route déclarait deux fois
+    // GET /benchmarks (L106 cost_benchmarks, L250 pricing_benchmarks via
+    // pricingDashboard.listBenchmarks — jamais atteint). Le second handler,
+    // mort, a été supprimé de routes/pricing.js. Cette assertion reste en
+    // place pour verrouiller le comportement : listBenchmarks ne doit jamais
+    // être appelé depuis GET /benchmarks.
     test('accessible à un client authentifié, lit cost_benchmarks', async () => {
       mockDbQuery.mockResolvedValueOnce({ rows: [{ category: 'all', cost_family: 'transport' }] });
 

@@ -453,33 +453,11 @@ router.get('/parcels/:ref/detail', async (req, res, next) => {
   }
 });
 
-// ——— GET /api/v2/parcels/:id ————————————————————————————————————————
-router.get('/parcels/:id', async (req, res, next) => {
-  try {
-    const { rows } = await pool.query(`
-      SELECT 
-        p.*,
-        o.reference AS order_reference, o.status AS order_status,
-        o.total_kmf, o.payment_mode, o.payment_status,
-        u.full_name AS customer_name, u.phone AS customer_phone,
-        r.name AS relay_name, r.island AS relay_island,
-        (SELECT COUNT(*) FROM parcel_items pi WHERE pi.parcel_id = p.id) AS item_count,
-        (SELECT COUNT(*) FROM scan_events se WHERE se.parcel_id = p.id) AS scan_count,
-        (SELECT COUNT(*) FROM incidents i WHERE i.parcel_id = p.id) AS incident_count
-      FROM parcels p
-      LEFT JOIN orders o ON p.order_id = o.id
-      LEFT JOIN users u ON o.user_id = u.id
-      LEFT JOIN relais r ON p.relais_id = r.id
-      WHERE p.id = $1
-    `, [req.params.id]);
-
-    if (!rows.length) return res.status(404).json({ error: 'Colis non trouvé' });
-    res.json(rows[0]);
-  } catch (err) {
-    next(err);
-  }
-});
-
+// NOTE gouvernance (resolu 2026-07-06) : GET /parcels/:id etait mort -- code
+// jamais atteint. parcel-api-v2 est monte en premier (/api/v2/parcels,
+// bootstrap/api-routes.js) et sa route GET /:ref (routes/parcel-api-v2/read.js)
+// capte toujours la requete avant celle-ci. Supprime. Voir
+// features/logistics.feature.js et features/platform-ops.feature.js.
 // ——— GET /api/v2/parcels/:id/scans ——————————————————————————————————
 router.get('/parcels/:id/scans', async (req, res, next) => {
   try {
@@ -599,34 +577,10 @@ router.get('/scan-events', async (req, res, next) => {
   }
 });
 
-// ——— GET /api/v2/parcels ————————————————————————————————————————————
-// List all parcels with order + relay info
-router.get('/parcels', async (req, res, next) => {
-  try {
-    const { rows } = await pool.query(`
-      SELECT 
-        p.id, p.reference, p.type, p.status, p.weight_kg,
-        p.destination_island, p.recipient_name, p.recipient_phone,
-        p.items_count, p.total_qty,
-        p.prepared_at, p.shipped_at, p.in_transit_at,
-        p.arrived_at, p.available_at, p.collected_at,
-        p.created_at,
-        o.reference AS order_reference, o.status AS order_status,
-        o.total_kmf, o.payment_mode, o.payment_status,
-        u.full_name AS customer_name, u.phone AS customer_phone,
-        r.name AS relay_name, r.zone AS relay_zone
-      FROM parcels p
-      LEFT JOIN orders o ON p.order_id = o.id
-      LEFT JOIN users u ON o.user_id = u.id
-      LEFT JOIN relais r ON p.relais_id = r.id
-      WHERE p.status NOT IN ('draft', 'cancelled')
-      ORDER BY p.created_at DESC
-      LIMIT 200
-    `);
-    res.json(rows);
-  } catch (err) {
-    next(err);
-  }
-});
+// NOTE gouvernance (resolu 2026-07-06) : GET /parcels etait mort -- code
+// jamais atteint. parcel-api-v2 est monte en premier (/api/v2/parcels,
+// bootstrap/api-routes.js) et sa route GET / (routes/parcel-api-v2/read.js)
+// capte toujours la requete avant celle-ci. Supprime. Voir
+// features/logistics.feature.js et features/platform-ops.feature.js.
 
 module.exports = router;

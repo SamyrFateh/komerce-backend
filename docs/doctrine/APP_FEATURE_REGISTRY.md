@@ -27,8 +27,8 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 |---:|---|---|---|---|---|---|
 | 1 | `shared-cart` | feature | backend + boutique | [`shared-cart.feature.js`](../../features/shared-cart.feature.js) | production | Panier partagé multi-participants, de la création au règlement |
 | 2 | `orders` | feature | backend | [`orders.feature.js`](../../features/orders.feature.js) | production | Commande : création, statut, coût, rattachement colis/achats |
-| 3 | `payment` | feature | backend + boutique | [`payment.feature.js`](../../features/payment.feature.js) | production | Encaissement (Stripe, PayPal, cash) et confirmation de paiement |
-| 4 | `wallet` | feature | backend + boutique | [`wallet.feature.js`](../../features/wallet.feature.js) | production | Solde client (wallet) et programme de fidélité |
+| 3 | `payments` | feature | backend + boutique | [`payments.feature.js`](../../features/payments.feature.js) | production | Encaissement (Stripe, PayPal, cash) et confirmation de paiement |
+| 4 | `wallet-loyalty` | feature | backend + boutique | [`wallet-loyalty.feature.js`](../../features/wallet-loyalty.feature.js) | production | Solde client (wallet) et programme de fidélité |
 | 5 | `logistics` | feature | backend + boutique | [`logistics.feature.js`](../../features/logistics.feature.js) | production | Colis : scan, transit, tracking, relais, transporteurs |
 | 6 | `economic-engine` | feature | backend | [`economic-engine.feature.js`](../../features/economic-engine.feature.js) | production | Pricing, coûts, marges, stratégies tarifaires |
 | 7 | `catalog` | feature | backend + boutique | [`catalog.feature.js`](../../features/catalog.feature.js) | production | Produits, connecteurs fournisseurs, publication boutique |

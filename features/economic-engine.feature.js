@@ -259,17 +259,16 @@ module.exports = {
         risk: 'faible — probablement une intention jamais réalisée plutôt qu\'une régression. ' +
               'À confirmer par le propriétaire avant suppression définitive de la mention.',
       },
-      { gap: 'BUG DE CODE découvert lors du rapatriement interface-inverse (audit 2026-07-06) : ' +
-             'routes/pricing.js déclare GET /benchmarks à deux reprises (ligne 106 et ligne 250). ' +
-             'Express retient la première déclaration : le handler ligne 106 (lit directement ' +
-             'la table cost_benchmarks) répond toujours ; le handler ligne 250 (appelle ' +
-             'pricingDashboard.listBenchmarks(), table pricing_benchmarks, avec message de repli ' +
-             'si absente) est du code mort, jamais atteint.',
-        risk: 'moyen — deux implémentations avec des sources de données différentes existent sous ' +
-              'le même chemin. Si quelqu\'un modifie le handler ligne 250 en pensant corriger le ' +
-              'comportement réel de GET /api/pricing/benchmarks, le changement sera silencieusement ' +
-              'sans effet. Décision de code à prendre (hors gouvernance) : fusionner les deux ' +
-              'implémentations ou supprimer le handler mort.',
+      { gap: 'RÉSOLU (2026-07-06) — routes/pricing.js déclarait GET /benchmarks à deux reprises ' +
+             '(cost_benchmarks en L106, et pricing_benchmarks via pricingDashboard.listBenchmarks ' +
+             'en L250, jamais atteint car Express retient la première déclaration). Le handler mort ' +
+             'a été supprimé ; GET /api/pricing/benchmarks lit uniquement cost_benchmarks, comme le ' +
+             'consomme réellement le front (getCostBenchmarks() dans api-client.js).',
+        risk: 'faible — décision produit restante, hors gouvernance de routes : ' +
+              'pricingDashboard.listBenchmarks() (table pricing_benchmarks) reste une fonction ' +
+              'testée mais sans aucun point d\'entrée HTTP depuis la suppression. À exposer sous ' +
+              'un nouveau chemin (ex. GET /pricing/benchmarks-catalog) ou à retirer explicitement ' +
+              '— ne pas laisser en zone grise.',
       },
     ],
   },

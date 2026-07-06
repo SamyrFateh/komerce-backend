@@ -124,8 +124,6 @@ module.exports = {
       'GET /api/v2/global',
       'GET /api/v2/incidents',
       'GET /api/v2/invoices',
-      'GET /api/v2/parcels',
-      'GET /api/v2/parcels/:id',
       'GET /api/v2/parcels/:id/orders',
       'GET /api/v2/parcels/:id/scans',
       'GET /api/v2/parcels/:ref/detail',
@@ -157,25 +155,17 @@ module.exports = {
               'rajouter "GET /api/config" à exposes tant que ce choix n\'est pas fait — ' +
               'ce serait re-déclarer une route qui ne répond toujours pas.',
       },
-      { gap: 'BUG DE CODE (pas un défaut de manifeste, ne pas "corriger" en éditant ' +
-             'exposes) : routes/ops-api.js déclare GET /parcels et GET /parcels/:id, ' +
-             'montées sous /api/v2 (bootstrap/api-routes.js:141, app.use(\'/api/v2\', ' +
-             'opsApiRouter)). Mais routes/parcel-api-v2/read.js (feature logistics) déclare ' +
-             'exactement les mêmes chemins structurels — GET / et GET /:ref — montées sous ' +
-             '/api/v2/parcels (bootstrap/api-routes.js:137, AVANT ops-api en ligne 141). ' +
-             'Express évalue les middlewares dans l\'ordre d\'enregistrement : pour toute ' +
-             'requête GET /api/v2/parcels ou GET /api/v2/parcels/<x>, parcelApiV2Router ' +
-             'répond en premier — les deux handlers de ops-api.js (lignes 604 et 457) sont ' +
-             'du code mort, jamais atteints en production.',
-        risk: 'élevé — deux implémentations DB différentes existent pour le même contrat ' +
-              'apparent (requêtes SQL différentes, champs retournés différents). Si ' +
-              'quelqu\'un modifie ops-api.js en pensant corriger le comportement réel de ' +
-              'GET /api/v2/parcels(/:id), le changement sera silencieusement sans effet. ' +
-              'Décision de code à prendre (hors gouvernance) : supprimer les handlers morts ' +
-              'dans ops-api.js, ou les renommer sous un préfixe non-collisionnant s\'ils ' +
-              'servent un usage distinct. Les 2 FAIL DUPLICATE_ROUTE_OWNER sont laissés ' +
-              'intentionnellement rouges tant que ce n\'est pas tranché — ce n\'est pas une ' +
-              'régression du gate, c\'est le gate qui fonctionne.',
+      { gap: 'RÉSOLU (2026-07-06) — routes/ops-api.js déclarait GET /parcels et GET /parcels/:id ' +
+             '(lignes 604 et 457), montées sous /api/v2 (bootstrap/api-routes.js:141). Elles ' +
+             'étaient shadowed par routes/parcel-api-v2/read.js (GET / et GET /:ref, feature ' +
+             'logistics), montées sous /api/v2/parcels AVANT ops-api (bootstrap/api-routes.js:137) ' +
+             '— code mort, jamais atteint. Les deux handlers ont été supprimés de ops-api.js ' +
+             '(remplacés par une note de gouvernance renvoyant ici et vers logistics.feature.js). ' +
+             'Les tests unitaires qui les exerçaient en isolation ont été retirés avec eux ' +
+             '(tests/unit/ops-api.test.js).',
+        risk: 'nul désormais — un seul contrat vivant reste sous /api/v2/parcels(/:ref), possédé ' +
+              'par logistics. Les FAIL DUPLICATE_ROUTE_OWNER et PARAM_NAME_MISMATCH liés ' +
+              'devraient disparaître au prochain run du gate ; à vérifier empiriquement.',
       },
     ],
   },

@@ -258,17 +258,13 @@ module.exports = {
              '(routes/parcel-api-v2/scans.js), montée sous /api/v2/parcels/:ref/scan.',
         risk: 'si un client externe (scanner physique, app mobile hub) appelle encore le ' +
               'chemin v1, il reçoit un 404 — à vérifier avant de considérer ce point clos.' },
-      { gap: 'FAIL [PARAM_NAME_MISMATCH] sur "GET /api/v2/parcels/:ref" : ce n\'est pas une ' +
-             'erreur de ce manifeste — c\'est un artefact du même bug de shadowing documenté ' +
-             'dans platform-ops.feature.js (debt.knownGaps) : routes/ops-api.js définit ' +
-             'GET /api/v2/parcels/:id (jamais atteint, code mort), qui partage la même ' +
-             'structure que le vrai GET /api/v2/parcels/:ref de routes/parcel-api-v2/read.js ' +
-             '(possédé ici). Le checker interface compare contre la première route ' +
-             'structurellement compatible du registre, pas nécessairement la nôtre. Ne pas ' +
-             'renommer :ref en :id ici pour "faire passer" le check — ce serait mentir sur ' +
-             'le vrai nom de paramètre utilisé par ce code. À résoudre en supprimant le code ' +
-             'mort de ops-api.js (décision de code, voir platform-ops).',
-        risk: 'aucun côté logistics — le vrai contrat (:ref) est correct et vérifié.' },
+      { gap: 'RÉSOLU (2026-07-06) — le FAIL [PARAM_NAME_MISMATCH] sur "GET /api/v2/parcels/:ref" ' +
+             'était un artefact du bug de shadowing documenté dans platform-ops.feature.js ' +
+             '(routes/ops-api.js déclarait GET /api/v2/parcels/:id, code mort, jamais atteint, ' +
+             'mais structurellement comparé par le checker au vrai GET /:ref). Les handlers ' +
+             'morts ont été supprimés de ops-api.js — le contrat :ref (celui réellement servi ' +
+             'par routes/parcel-api-v2/read.js) n\'a plus de faux jumeau à comparer.',
+        risk: 'nul désormais — à revérifier empiriquement au prochain run du gate.' },
     ],
   },
 

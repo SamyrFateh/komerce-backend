@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-06T08:35:54.342Z",
+  "generatedAt": "2026-07-06T09:17:33.565Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 471,
+  "count": 468,
   "routes": [
     {
       "method": "GET",
@@ -3312,16 +3312,6 @@
       ]
     },
     {
-      "method": "GET",
-      "fullPath": "/api/pricing/benchmarks",
-      "mountPrefix": "/api/pricing",
-      "localPath": "/benchmarks",
-      "routeFile": "routes/pricing.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
       "method": "PUT",
       "fullPath": "/api/pricing/benchmarks",
       "mountPrefix": "/api/pricing",
@@ -4491,26 +4481,6 @@
         "bootstrap/api-routes.js",
         "routes/parcel-api-v2.js",
         "routes/parcel-api-v2/index.js"
-      ]
-    },
-    {
-      "method": "GET",
-      "fullPath": "/api/v2/parcels",
-      "mountPrefix": "/api/v2",
-      "localPath": "/parcels",
-      "routeFile": "routes/ops-api.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
-      ]
-    },
-    {
-      "method": "GET",
-      "fullPath": "/api/v2/parcels/:id",
-      "mountPrefix": "/api/v2",
-      "localPath": "/parcels/:id",
-      "routeFile": "routes/ops-api.js",
-      "mountedFrom": [
-        "bootstrap/api-routes.js"
       ]
     },
     {
