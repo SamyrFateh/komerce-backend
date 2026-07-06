@@ -275,4 +275,33 @@ describe('processReceive', () => {
     const result = await processReceive({ id: 'po-1', qty_recue: null, actor: null });
     expect(result.httpError).toEqual({ error: 'Transition invalide', status: 409 });
   });
+
+  test('transitionOrderStatus noop (déjà au bon statut) → pas de httpError, réception validée quand même', async () => {
+    mockTransitionOrderStatus.mockResolvedValue({ success: false, noop: true });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'po-1', order_id: 'ord-1', qty: 2, received_qty: 0, status: 'pending', hub_received_at: null }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'received' }] })
+      .mockResolvedValueOnce({ rows: [{ total: '1', recus: '1', qty_totale: '2', qty_recue: '2' }] });
+
+    const result = await processReceive({ id: 'po-1', qty_recue: null, actor: { id: 'u1', role: 'admin' } });
+
+    expect(result.httpError).toBeUndefined();
+    expect(result.ready_to_prepare).toBe(true);
+    expect(mockTriggerScan3).toHaveBeenCalledWith('ord-1', 'u1');
+  });
+
+  test('triggerScan3 échoue (SMS) → réception validée quand même, erreur SMS avalée', async () => {
+    mockTransitionOrderStatus.mockResolvedValue({ success: true });
+    mockTriggerScan3.mockRejectedValueOnce(new Error('SMS gateway down'));
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'po-1', order_id: 'ord-1', qty: 2, received_qty: 0, status: 'pending', hub_received_at: null }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'received' }] })
+      .mockResolvedValueOnce({ rows: [{ total: '1', recus: '1', qty_totale: '2', qty_recue: '2' }] });
+
+    const result = await processReceive({ id: 'po-1', qty_recue: null, actor: { id: 'u1', role: 'admin' } });
+
+    expect(result.httpError).toBeUndefined();
+    expect(result.success).toBe(true);
+    expect(result.ready_to_prepare).toBe(true);
+  });
 });

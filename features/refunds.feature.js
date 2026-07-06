@@ -47,7 +47,6 @@ module.exports = {
     tests: [
       'tests/unit/refund-service.test.js',
       'tests/unit/refunds-util.test.js',
-      'tests/unit/refund-receipt.test.js',
       'tests/unit/refund-receipt-html.test.js',
     ],
   },

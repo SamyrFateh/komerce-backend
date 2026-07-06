@@ -141,6 +141,7 @@ module.exports = {
       'tests/unit/shared-cart-lot9-business.test.js',
       'tests/unit/shared-cart-v4-2-creation.test.js',
       'tests/unit/shared-cart-v41-reconciliation.test.js',
+      'tests/unit/collective-close-order-service.test.js',
     ],
     boutique: [
       'js/b-group-cart-flow.js',

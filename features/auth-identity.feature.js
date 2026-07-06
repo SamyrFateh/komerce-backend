@@ -58,6 +58,7 @@ module.exports = {
       'tests/unit/authkey-client.test.js',
       'tests/unit/otp-test-mode.test.js',
       'tests/unit/soft-auth.test.js',
+      'tests/unit/client-auth.test.js',
     ],
   },
 

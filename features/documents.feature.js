@@ -70,7 +70,7 @@ module.exports = {
       'tests/unit/pickup-proof.test.js',
       'tests/unit/wallet-receipt-html.test.js',
       'tests/unit/wallet-receipt.test.js',
-      'tests/unit/invoice-service.test.js',
+      'tests/unit/refund-receipt.test.js',
     ],
   },
 

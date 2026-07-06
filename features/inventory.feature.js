@@ -53,11 +53,6 @@ module.exports = {
       'tests/unit/unsold.test.js',
       'tests/integration/parcel-auto-create-cash-payment.test.js',
       'tests/parcelOptimization.test.js',
-      'tests/unit/hub-operations.test.js',
-      'tests/unit/parcel-auto-create-service.test.js',
-      'tests/unit/parcel-guards.test.js',
-      'tests/unit/parcel-operations.test.js',
-      'tests/unit/pickup-secret-service.test.js',
     ],
   },
 

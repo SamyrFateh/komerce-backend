@@ -134,6 +134,21 @@ function resolveRel(category, rel) {
  * "migrations/044_shared_cart.sql" → 44
  * "migrations/073a_shared_cart.sql" → 73  (lettre ignorée pour la séquentialité)
  */
+/**
+ * Clé de comparaison pour le rattachement fichier↔test (check 5).
+ * Prend le nom de fichier SANS aucune extension (pas seulement le ".js"
+ * final, pour gérer les extensions composées comme ".prompt.js" ou
+ * ".base.js") et unifie "_" et "-" pour gérer les conventions de nommage
+ * mixtes entre fichiers source (ex. "_helpers.js") et fichiers de test
+ * (ex. "foo-helpers.test.js").
+ */
+function testBaseKey(rel) {
+  const fname   = path.basename(rel);
+  const firstDot = fname.indexOf('.');
+  const stem    = firstDot === -1 ? fname : fname.slice(0, firstDot);
+  return stem.replace(/_/g, '-');
+}
+
 function migrationNum(rel) {
   const base = path.basename(rel);
   const m = base.match(/^(\d+)/);
@@ -275,8 +290,13 @@ function checkSlice(slice, allMigSlots) {
   if (['staging', 'production'].includes(status)) {
     const tests = new Set(slice.files.tests || []);
     for (const rel of [...(slice.files.services || []), ...(slice.files.routes || [])]) {
-      const base = path.basename(rel, '.js');
-      const covered = [...tests].some(t => path.basename(t).includes(base) || t.includes(base));
+      // Nom de base sans TOUTE extension (pas seulement le ".js" final) et
+      // séparateurs "_"/"-" unifiés : évite les faux positifs sur les fichiers
+      // à extension composée (ex. "catalog-enrichment.prompt.js",
+      // "api-connector.base.js") et les fichiers préfixés par "_"
+      // (ex. "_helpers.js" vs test "…-helpers.test.js").
+      const base = testBaseKey(rel);
+      const covered = [...tests].some(t => testBaseKey(t).includes(base));
       if (!covered) {
         warnings.push(`Pas de test déclaré pour ${rel} — ajouter dans files.tests ou créer le test`);
       }

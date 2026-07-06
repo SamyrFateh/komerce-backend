@@ -60,7 +60,6 @@ module.exports = {
       'tests/unit/auth-guest.test.js',
       'tests/unit/auth-middleware.test.js',
       'tests/unit/auth-route.test.js',
-      'tests/unit/client-auth.test.js',
       'tests/unit/otp-route.test.js',
       'tests/unit/require-verified-identity.test.js',
       'tests/unit/user-cache.test.js',

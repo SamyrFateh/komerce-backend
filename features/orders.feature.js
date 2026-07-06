@@ -95,7 +95,6 @@ module.exports = {
       'tests/unit/order-service.test.js',
       'tests/unit/orderParcelLinkRules.test.js',
       'tests/unit/orders-parcels-route.test.js',
-      'tests/unit/parcels-route.test.js',
       'tests/unit/parcels.test.js',
       'tests/unit/qr.test.js',
       'tests/unit/receive-purchase-order.test.js',
@@ -116,6 +115,9 @@ module.exports = {
       'tests/unit/orders-detail.test.js',
       'tests/unit/orders-list.test.js',
       'tests/unit/orders-status-route.test.js',
+      "tests/unit/purchasing-trigger-service.test.js",
+      "tests/unit/invoice-service.test.js",
+      'tests/unit/purchasing.test.js',
     ],
   },
 
