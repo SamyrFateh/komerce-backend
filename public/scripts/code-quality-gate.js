@@ -86,6 +86,8 @@ const files = scan();
 let totalErrors = 0;
 let totalWarnings = 0;
 let filesInViolation = 0;
+let strictErrors = 0;
+let noVarErrors = 0;
 
 console.log();
 console.log('╔══════════════════════════════════════════════════════════╗');
@@ -100,6 +102,8 @@ for (const file of files) {
   console.log(`❌ ${file.rel}`);
   for (const e of errors) {
     totalErrors++;
+    if (e.rule === 'N2-STRICT') strictErrors++;
+    if (e.rule === 'N2-NO-VAR') noVarErrors++;
     console.log(`     ❌ L${e.line}: [${e.rule}] ${e.msg}`);
   }
 }
@@ -115,7 +119,12 @@ if (FIX && totalErrors === 0) {
 
 if (totalErrors > 0) {
   console.log('\n❌ Violations bloquantes détectées.');
-  console.log('   Correctif rapide : node scripts/code-quality-gate.js --fix');
+  if (strictErrors > 0) {
+    console.log(`   ${strictErrors} violation(s) [N2-STRICT] — correctif auto : node scripts/code-quality-gate.js --fix`);
+  }
+  if (noVarErrors > 0) {
+    console.log(`   ${noVarErrors} violation(s) [N2-NO-VAR] — PAS de correctif auto (risque de casser des scopes de boucle/closure) : conversion var→let/const à faire à la main.`);
+  }
   if (STRICT) process.exit(1);
 } else {
   console.log('\n✅ Code propre — aucune violation.');
