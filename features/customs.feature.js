@@ -83,6 +83,27 @@ module.exports = {
   contract: {
     exposes: [
       'GET /api/admin/customs-shipments',
+      // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
+      // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
+      'GET /api/admin/customs',
+      'GET /api/admin/customs-categories',
+      'POST /api/admin/customs-categories',
+      'DELETE /api/admin/customs-categories/:key',
+      'GET /api/admin/customs-categories/:key',
+      'PUT /api/admin/customs-categories/:key',
+      'PUT /api/admin/customs-categories/:key/toggle',
+      'POST /api/admin/customs-shipments',
+      'DELETE /api/admin/customs-shipments/:id',
+      'GET /api/admin/customs-shipments/:id',
+      'PATCH /api/admin/customs-shipments/:id',
+      'POST /api/admin/customs-shipments/:id/activate',
+      'GET /api/admin/customs-shipments/:id/analytics',
+      'POST /api/admin/customs-shipments/:id/deactivate',
+      'POST /api/admin/customs-shipments/:id/declare',
+      'GET /api/admin/customs-shipments/analytics',
+      'GET /api/admin/customs-shipments/analytics/trends',
+      'GET /api/admin/customs-shipments/rates/effective',
+      'GET /api/admin/customs-shipments/status/pending',
     ],
     consumes: ['logistics (colis a classer)',
       'documents (facture douane generee)',

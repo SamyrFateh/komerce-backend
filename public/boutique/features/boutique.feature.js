@@ -130,7 +130,10 @@ module.exports = {
   ],
 
   contract: {
-    exposes: [
+    exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : socle technique
+    // transverse — exports JS internes, pas des routes HTTP.
+    internalApi: [
       'bus (b-bus.js)',
       'store / dom / state (b-store.js)',
       'utils / fmt / sanitize / apiGet / apiPost (b-utils.js)',

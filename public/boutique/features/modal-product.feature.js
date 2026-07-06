@@ -54,7 +54,10 @@ module.exports = {
   ],
 
   contract: {
-    exposes: [
+    exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : exports JS
+    // internes, pas des routes HTTP.
+    internalApi: [
       'b-modal-suggestions.js / suggestions produit dans la modal',
       'b-pdp-curation-suggestions.js / suggestions curatées PDP',
     ],

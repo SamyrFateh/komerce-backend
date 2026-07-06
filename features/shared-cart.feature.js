@@ -225,6 +225,13 @@ module.exports = {
       'POST   /api/admin/shared-carts/:id/extend',
       'POST   /api/admin/shared-carts/:id/note',
       'POST   /api/admin/shared-carts/refund-queue/:contributionId/mark-refunded',
+      // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
+      // — routes réelles câblées via bootstrap/api-routes.js (routes/shares.js,
+      // déjà dans le périmètre de fichiers), jamais déclarées jusqu'ici.
+      'POST /api/shares',
+      'GET /api/shares/:token',
+      'POST /api/shares/:token/contributions',
+      'PATCH /api/shares/:token/contributions/:id',
     ],
     consumes: ['orders',        // domaine propriétaire : order-status-machine
       'wallet',        // domaine propriétaire : wallet-service

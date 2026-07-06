@@ -442,7 +442,11 @@ module.exports = {
   },
 
   contract: {
-    exposes: [
+    exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : aucune de ces
+    // entrées n'est une route HTTP — ce sont des exports JS internes consommés
+    // par les features métier via require(), jamais via un client HTTP.
+    internalApi: [
       'middleware/error-handler.js — gestion centralisée des erreurs Express',
       'middleware/rate-limit.js — rate limiting par IP/route',
       'middleware/request-id.js — injection X-Request-Id',

@@ -67,17 +67,23 @@ module.exports = {
   ],
 
   contract: {
-    exposes: [
+    exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : exports JS
+    // internes, pas des routes HTTP.
+    internalApi: [
       'b-catalog.js / setActiveCat / scrollToCategorySection',
       'shop-schema.js / getCategoryIcon / normalizeCategoryKey',
       'b-pager.js',
       'b-subcat.js',
       'home-controller.js / syncRailActiveState / renderSubcatRail',
       'render-product-card.js / renderProductCard',
-      '/api/categories (shop-schema.js)',
     ],
     consumes: [
       'boutique — b-catalog.js, b-pager.js, b-subcat.js, b-product-open-contract.js importent b-bus.js, b-store.js, b-utils.js, b-scroll-owner.js, b-cart-core.js, b-cart.js, b-modal.js',
+      // Rangé ici et non dans exposes (audit 2026-07-06) : GET /api/categories est une
+      // route réelle du backend (routes/categories.js, feature catalog backend),
+      // appelée par shop-schema.js — ce n'est pas un endpoint exposé par la boutique.
+      'catalog (backend) — shop-schema.js appelle GET /api/categories',
     ],
   },
 

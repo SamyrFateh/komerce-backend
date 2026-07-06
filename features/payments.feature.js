@@ -117,6 +117,23 @@ module.exports = {
       'POST /api/payments/stripe/intent',
       'POST /api/payments/paypal/webhook',
       'POST /api/payments/cash/confirm',
+      // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
+      // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
+      'POST /api/cash/collect/:orderId',
+      'GET /api/cash/collections',
+      'POST /api/cash/deposit',
+      'GET /api/cash/deposits',
+      'POST /api/cash/deposits/:id/dispute',
+      'POST /api/cash/deposits/:id/verify',
+      'GET /api/cash/reconciliation',
+      'GET /api/cash/reconciliation/agents',
+      'GET /api/cash/uncollected',
+      'GET /api/payments/config',
+      'POST /api/payments/paypal/capture/:paypalOrderId',
+      'POST /api/payments/paypal/create-order',
+      'POST /api/payments/paypal/refund/:orderId',
+      'GET /api/payments/rates',
+      'POST /api/payments/stripe/webhook',
     ],
     consumes: [
       'orders (commande a payer)',

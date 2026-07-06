@@ -40,7 +40,10 @@ module.exports = {
   docs: [],
 
   contract: {
-    exposes: [
+    exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : exports JS
+    // internes consommés côté client, pas des routes HTTP.
+    internalApi: [
       'identity / requireIdentity / getCurrentIdentity / restoreIdentity / bindChangeIdentity (b-identity.js)',
       'phone (b-phone.js)',
     ],

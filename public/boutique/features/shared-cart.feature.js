@@ -53,7 +53,10 @@ module.exports = {
   ],
 
   contract: {
-    exposes: [
+    exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : exports JS
+    // internes, pas des routes HTTP.
+    internalApi: [
       'b-share-cart.js / partage de panier',
       'b-group-view.js / vue panier groupe',
       'b-group-banner.js / bannière groupe',

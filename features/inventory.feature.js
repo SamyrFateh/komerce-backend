@@ -65,7 +65,25 @@ module.exports = {
   docs: [],
 
   contract: {
-    exposes: [],
+    exposes: [
+      // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
+      // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
+      'GET /api/hub/inventory/buffer',
+      'GET /api/hub/inventory/open-parcels',
+      'GET /api/hub/inventory/order/:id/dispatch',
+      'GET /api/hub/inventory/proposals',
+      'POST /api/hub/inventory/propose-all',
+      'POST /api/hub/inventory/receive',
+      'POST /api/hub/inventory/scan-assign',
+      'GET /api/hub/inventory/stats',
+      'GET /api/unsold',
+      'GET /api/unsold/:id',
+      'PATCH /api/unsold/:id',
+      'POST /api/unsold/:id/resolve',
+      'GET /api/unsold/:id/whatsapp',
+      'POST /api/unsold/scan',
+      'GET /api/unsold/stats/summary',
+    ],
     consumes: ['catalog (produit concerne)',
       'auth',
     ],

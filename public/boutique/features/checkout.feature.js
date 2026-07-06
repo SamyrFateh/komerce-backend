@@ -40,7 +40,10 @@ module.exports = {
   docs: [],
 
   contract: {
-    exposes: [
+    exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : export JS
+    // interne, pas une route HTTP.
+    internalApi: [
       'b-checkout.js (orchestration checkout, validation commande)',
     ],
     consumes: [

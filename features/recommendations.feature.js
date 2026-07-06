@@ -64,6 +64,15 @@ module.exports = {
   contract: {
     exposes: [
       'GET /api/boutique/suggestions',
+      // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
+      // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
+      'GET /api/admin/signals',
+      'DELETE /api/admin/signals/:id',
+      'POST /api/admin/signals/:id/acknowledge',
+      'POST /api/admin/signals/:id/resolve',
+      'POST /api/admin/signals/:id/snooze',
+      'POST /api/admin/signals/generate',
+      'GET /api/admin/signals/stats',
     ],
     consumes: ['catalog (lecture produit)',
       'auth',

@@ -56,8 +56,12 @@ module.exports = {
   docs: [],
 
   contract: {
-    exposes: [
-      'fonction interne processRefund(orderOrCartId, reason)',
+    exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : pas de route
+    // HTTP propre — remboursement déclenché exclusivement par appel de
+    // fonction interne depuis les features consommatrices (orders, shared-cart).
+    internalApi: [
+      'processRefund(orderOrCartId, reason)',
     ],
     consumes: [
       'orders (commande source)',

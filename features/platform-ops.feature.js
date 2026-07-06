@@ -101,6 +101,41 @@ module.exports = {
     exposes: [
       'GET /health',
       'GET /api/modules',
+      // Rapatriées depuis le route-registry (audit 2026-07-06 §3) — routes
+      // réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
+      'POST /api/admin/simulator/cleanup',
+      'GET /api/admin/simulator/journal',
+      'POST /api/admin/simulator/start',
+      'GET /api/admin/simulator/status',
+      'POST /api/admin/simulator/stop',
+      'GET /api/modules/:type',
+      'GET /api/modules/fabrics',
+      'POST /api/modules/fabrics',
+      'GET /api/modules/models',
+      'POST /api/modules/models',
+      'POST /api/modules/price',
+      'POST /api/simulator/cleanup',
+      'GET /api/simulator/journal',
+      'POST /api/simulator/start',
+      'GET /api/simulator/status',
+      'POST /api/simulator/stop',
+      'GET /api/v2/alerts',
+      'POST /api/v2/alerts/:id/acknowledge',
+      'GET /api/v2/global',
+      'GET /api/v2/incidents',
+      'GET /api/v2/invoices',
+      'GET /api/v2/parcels',
+      'GET /api/v2/parcels/:id',
+      'GET /api/v2/parcels/:id/orders',
+      'GET /api/v2/parcels/:id/scans',
+      'GET /api/v2/parcels/:ref/detail',
+      'GET /api/v2/reconciliation',
+      'GET /api/v2/reconciliation/summary',
+      'GET /api/v2/scan-events',
+      'GET /health/detailed',
+      'GET /health/metrics',
+      'GET /health/ready',
+      'GET /health/version',
     ],
     consumes: [],
   },
@@ -121,6 +156,26 @@ module.exports = {
               'si le besoin existe encore, ou supprimer le fichier si obsolète. Ne pas ' +
               'rajouter "GET /api/config" à exposes tant que ce choix n\'est pas fait — ' +
               'ce serait re-déclarer une route qui ne répond toujours pas.',
+      },
+      { gap: 'BUG DE CODE (pas un défaut de manifeste, ne pas "corriger" en éditant ' +
+             'exposes) : routes/ops-api.js déclare GET /parcels et GET /parcels/:id, ' +
+             'montées sous /api/v2 (bootstrap/api-routes.js:141, app.use(\'/api/v2\', ' +
+             'opsApiRouter)). Mais routes/parcel-api-v2/read.js (feature logistics) déclare ' +
+             'exactement les mêmes chemins structurels — GET / et GET /:ref — montées sous ' +
+             '/api/v2/parcels (bootstrap/api-routes.js:137, AVANT ops-api en ligne 141). ' +
+             'Express évalue les middlewares dans l\'ordre d\'enregistrement : pour toute ' +
+             'requête GET /api/v2/parcels ou GET /api/v2/parcels/<x>, parcelApiV2Router ' +
+             'répond en premier — les deux handlers de ops-api.js (lignes 604 et 457) sont ' +
+             'du code mort, jamais atteints en production.',
+        risk: 'élevé — deux implémentations DB différentes existent pour le même contrat ' +
+              'apparent (requêtes SQL différentes, champs retournés différents). Si ' +
+              'quelqu\'un modifie ops-api.js en pensant corriger le comportement réel de ' +
+              'GET /api/v2/parcels(/:id), le changement sera silencieusement sans effet. ' +
+              'Décision de code à prendre (hors gouvernance) : supprimer les handlers morts ' +
+              'dans ops-api.js, ou les renommer sous un préfixe non-collisionnant s\'ils ' +
+              'servent un usage distinct. Les 2 FAIL DUPLICATE_ROUTE_OWNER sont laissés ' +
+              'intentionnellement rouges tant que ce n\'est pas tranché — ce n\'est pas une ' +
+              'régression du gate, c\'est le gate qui fonctionne.',
       },
     ],
   },

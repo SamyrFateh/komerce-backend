@@ -101,6 +101,10 @@ module.exports = {
     exposes: [
       'GET /api/v2/notifications',
       'GET /api/v2/notifications/stats',
+      // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
+      // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
+      'GET /webhook/meta-whatsapp',
+      'POST /webhook/meta-whatsapp',
     ],
     internalApi: [
       { fn: 'notifyOrder*',   file: 'services/notifications/order.js' },

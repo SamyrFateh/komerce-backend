@@ -48,7 +48,11 @@ module.exports = {
   docs: [],
 
   contract: {
-    exposes: [
+    exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : exports JS
+    // internes, pas des routes HTTP (les routes réelles sont déjà correctement
+    // documentées ci-dessous dans consumes).
+    internalApi: [
       'event-manage.js / gestion workspace collectif',
       'event-pay.js / paiement collectif',
       'event-public.js / vue publique workspace',
