@@ -32,6 +32,11 @@ const EXCLUDE = [
   /\.md$/, /\.feature\.js$/, /(^|\/)tests?\//, /\.spec\.js$/, /\.test\.js$/,
   /(^|\/)migrations\//, /(^|\/)scripts\//,
   /package(-lock)?\.json$/, /\.config\.(js|cjs|mjs)$/,
+  // Backfill gouvernance globale (governance/boutique-global-ownership) :
+  // sortie générée (rapport Playwright, jamais du code applicatif) et harnais
+  // de test manuel isolé — voir BOUTIQUE_COMPONENT_OWNERSHIP.md §6.2.
+  /(^|\/)playwright-report\//,
+  /(^|\/)test-modal-view-model\.html$/,
 ];
 
 function walk(dir, acc) {
