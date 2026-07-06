@@ -139,6 +139,105 @@ function resetLocalStorage() {
 }
 
 /**
+ * Remet `document.body.className` à vide entre deux tests.
+ *
+ * Piège récurrent (déjà rencontré séparément dans b-cart.test.js et
+ * b-modal-core.test.js, chacun avec son propre `classList.remove('cart-open',
+ * 'cart-empty', ...)` en dur) : plusieurs modules (`b-cart.js`,
+ * `b-modal-core.js`, `b-desktop-global-cart-access.js`...) posent des
+ * classes directement sur `document.body` (`cart-open`, `modal-open`, ...)
+ * plutôt que sur le fixture de `mountFixture()`. `mountFixture()` ne
+ * remplace que `#boutique-test-root`, jamais le body lui-même — sans ce
+ * reset explicite, une classe posée par un test fuit vers le test suivant
+ * du même fichier (ordre d'exécution non isolé).
+ *
+ * À appeler en `beforeEach`/`afterEach` dans tout fichier de test dont le
+ * module sous test touche `document.body.classList`.
+ */
+function resetBodyState() {
+  document.body.className = '';
+}
+
+/**
+ * Isole les listeners posés directement sur `document` (pas sur le fixture
+ * de mountFixture()) par le module sous test, pour les retirer en fin de
+ * test.
+ *
+ * Piège : plusieurs modules (`b-mobile-premium-v1.js:installQtyGuard`,
+ * `b-desktop-global-cart-access.js`...) font `document.addEventListener(
+ * 'click', fn, true)` derrière un guard *module-level* (`_qtyGuardInstalled`,
+ * `installed`). Avec le pattern `jest.resetModules()` + re-require par test
+ * (état module isolé, ex. `state` de b-store.js recréé à chaque test), le
+ * guard repart bien à `false` à chaque test — mais le `document` réel, lui,
+ * n'est jamais recréé : l'ancien listener (fermé sur l'ANCIEN `state`, donc
+ * sur des valeurs figées d'un test précédent) reste attaché et se déclenche
+ * EN PLUS du nouveau sur le même clic. Contrairement à la fuite de
+ * `document.body.classList` (cf. resetBodyState), un simple reset d'état ne
+ * suffit pas ici : il faut retirer le(s) listener(s) eux-mêmes.
+ *
+ * Usage :
+ *   let restoreDocListeners;
+ *   beforeEach(() => { restoreDocListeners = trackDocumentListeners(); });
+ *   afterEach(() => restoreDocListeners());
+ *
+ * @returns {function(): void} fonction à appeler en afterEach pour détacher
+ *   tous les listeners posés sur `document` depuis l'appel, et restaurer
+ *   `document.addEventListener` d'origine.
+ */
+function trackDocumentListeners() {
+  const originalAdd = document.addEventListener.bind(document);
+  const added = [];
+  document.addEventListener = function (type, listener, options) {
+    added.push([type, listener, options]);
+    return originalAdd(type, listener, options);
+  };
+  return function restore() {
+    added.forEach(([type, listener, options]) => {
+      try {
+        document.removeEventListener(type, listener, options);
+      } catch (_) {
+        // listener déjà retiré ou options incompatibles : sans impact,
+        // l'objectif est juste de ne rien laisser fuir vers le test suivant.
+      }
+    });
+    document.addEventListener = originalAdd;
+  };
+}
+
+/**
+ * Même piège que trackDocumentListeners mais pour `window` : plusieurs
+ * modules boutique (b-mini-cart.js, b-catalog-desktop-enhancers.js…) posent
+ * un listener 'resize' sans jamais le retirer (pas de guard d'idempotence,
+ * `window` n'est pas recréé par jest.resetModules()). Utilisé dès qu'un
+ * second fichier de test a reproduit ce même besoin (cf. AUD-06 /
+ * b-mini-cart.test.js) — centralisé ici pour éviter la duplication.
+ *
+ * Usage identique à trackDocumentListeners :
+ *   beforeEach(() => { restoreWindowListeners = trackWindowListeners(); });
+ *   afterEach(() => restoreWindowListeners());
+ *
+ * @returns {function(): void} fonction à appeler en afterEach.
+ */
+function trackWindowListeners() {
+  const originalAdd = window.addEventListener.bind(window);
+  const added = [];
+  window.addEventListener = function (type, listener, options) {
+    added.push([type, listener, options]);
+    return originalAdd(type, listener, options);
+  };
+  return function restore() {
+    added.forEach(([type, listener, options]) => {
+      try {
+        window.removeEventListener(type, listener, options);
+      } catch (_) {
+        // sans impact, l'objectif est juste de ne rien laisser fuir.
+      }
+    });
+    window.addEventListener = originalAdd;
+  };
+}
+
+/**
  * Dispatch un submit natif sur un <form>, en contournant la validation
  * HTML5 de jsdom (comme dashboardTestKit.submitForm).
  * @param {HTMLFormElement} form
@@ -155,5 +254,44 @@ module.exports = {
   mockWindowK,
   flush,
   resetLocalStorage,
+  resetBodyState,
+  trackDocumentListeners,
+  trackWindowListeners,
   submitForm,
 };
+
+/**
+ * Fixe window.innerWidth pour piloter isDesktop() (b-scroll-owner.js : retourne
+ * innerWidth >= 900) sans mocker le module. Réutilisé dans les tests de lot 5
+ * (b-cart-pill.js, b-pager.js, b-subcat.js).
+ * @param {number} width - Largeur à poser
+ */
+function setViewportWidth(width) {
+  Object.defineProperty(window, 'innerWidth', {
+    writable: true, configurable: true, value: width,
+  });
+}
+
+/**
+ * Helper "auto-init sans export" (sous-pattern lot 5) :
+ * pose le HTML de fixture dans document.body PUIS requiert le module,
+ * ce qui déclenche son auto-initialisation synchrone (readyState = 'complete'
+ * par défaut dans jsdom → la branche immédiate de b-cart-pill.js s'exécute).
+ *
+ * Prérequis : appeler jest.resetModules() en beforeEach pour que chaque
+ * appel obtienne une instance fraîche du module (nouvelles clôtures, _pillInited
+ * repart à false, etc.).
+ *
+ * @param {function(): any} requireFn - lambda qui fait require('../../js/xxx.js')
+ * @param {string} [fixtureHtml]     - HTML à injecter dans document.body avant le require
+ * @returns {any} valeur retournée par requireFn (souvent undefined pour les modules sans export)
+ */
+function mountAndRequireAutoInit(requireFn, fixtureHtml = '') {
+  document.body.innerHTML = fixtureHtml;
+  return requireFn();
+}
+
+module.exports = Object.assign(module.exports, {
+  setViewportWidth,
+  mountAndRequireAutoInit,
+});

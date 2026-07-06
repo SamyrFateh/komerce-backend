@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-06T15:01:28.703Z",
+  "generatedAt": "2026-07-06T18:33:02.497Z",
   "summary": {
     "modules": 70,
     "withHeader": 70,
@@ -653,7 +653,8 @@
       "imports": [
         "b-store",
         "b-cart-core",
-        "b-utils"
+        "b-utils",
+        "b-bus"
       ],
       "bodyClasses": []
     },

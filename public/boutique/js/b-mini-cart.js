@@ -30,6 +30,7 @@
 import { state }              from './b-store.js';
 import { cartQty, cartTotal } from './b-cart-core.js';
 import { optimizeImgUrl }     from './b-utils.js';
+import { bus }                from './b-bus.js';
 
 // ── Constantes ───────────────────────────────────────────────────────
 const MAX_THUMBS      = 3;
