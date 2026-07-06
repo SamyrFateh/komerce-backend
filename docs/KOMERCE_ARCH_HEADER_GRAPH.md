@@ -22,7 +22,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Domains
 
-- auth: 13
+- auth: 8
+- auth-identity: 5
 - bootstrap: 1
 - boutique: 36
 - catalog: 35
@@ -203,9 +204,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin/partners.js — dashboard-partners (dashboard, high, full)
 - routes/admin/system.js — dashboard-system (dashboard, high, full)
 - routes/admin/users.js — dashboard-users (dashboard, high, full)
-- routes/auth.js — auth-auth (auth, high, full)
+- routes/auth.js — auth-auth (auth-identity, high, full)
 - routes/boutique-suggestions.js — boutique-suggestions-http-facade (recommendations, high, full)
-- routes/client-auth.js — auth-client-auth (auth, high, full)
+- routes/client-auth.js — auth-client-auth (auth-identity, high, full)
 - routes/client-tracking.js — logistics-client-tracking (logistics, high, full)
 - routes/dashboard-clients.js — dashboard-dashboard-clients (dashboard, high, full)
 - routes/dashboard-finance.js — economic-engine-dashboard-finance (economic-engine, high, full)
@@ -216,7 +217,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/economic.js — economic-router (economic-engine, high, full)
 - routes/finance.js — economic-engine-finance (economic-engine, high, full)
 - routes/hub-dashboard.js — dashboard-hub-dashboard (dashboard, high, full)
-- routes/otp.js — client-otp-session (auth, high, full)
+- routes/otp.js — client-otp-session (auth-identity, high, full)
 - routes/parcel-api-v2.js — logistics-parcel-api-v2 (logistics, high, full)
 - routes/parcel-api-v2/helpers.js — logistics-helpers (logistics, high, full)
 - routes/parcel-api-v2/index.js — logistics-index (logistics, high, full)
@@ -232,7 +233,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/transit-dashboard.js — logistics-transit-dashboard (logistics, high, full)
 - routes/wallet.js — wallet-http-facade (wallet, high, full)
 - services/apply-pricing-updates.js — economic-engine-apply-pricing-updates (economic-engine, high, full)
-- services/authkey-client.js — auth-authkey-client (auth, high, full)
+- services/authkey-client.js — auth-authkey-client (auth-identity, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
 - services/catalog-approval.js — catalog-approval-queue (catalog, high, full)
 - services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)
@@ -268,7 +269,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/notifications/otp-auth.js — notification-otp-auth (notification, high, full)
 - services/notifications/parcel.js — notification-parcel (notification, high, full)
 - services/order-service.js — order-domain-helpers (orders, high, full)
-- services/otp-test-mode.js — auth-otp-test-mode (auth, high, full)
+- services/otp-test-mode.js — auth-otp-test-mode (auth-identity, high, full)
 - services/parcel-auto-create-service.js — logistics-parcel-auto-create-service (logistics, high, full)
 - services/parcel-guards.js — logistics-parcel-guards (logistics, high, full)
 - services/parcel-operations.js — logistics-parcel-operations (logistics, high, full)

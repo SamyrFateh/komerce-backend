@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          client-otp-session
- * @domain        auth
+ * @domain        auth-identity
  * @layer         route
  * @criticality   high
  * @inputs        phone, code, name, purpose

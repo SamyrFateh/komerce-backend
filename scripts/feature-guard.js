@@ -24,6 +24,28 @@ const path = require('path');
 const ROOT         = path.resolve(__dirname, '..');
 const FEATURES_DIR = path.join(ROOT, 'features');
 const BASELINE_FILE = path.join(__dirname, 'feature-guard-baseline.json');
+const MIGRATION_SLOT_EXEMPTIONS_FILE = path.join(ROOT, 'governance', 'migration-slot-exemptions.json');
+
+/**
+ * Créneaux de migration exemptés (accidents historiques déjà appliqués en
+ * prod, cf. governance/migration-slot-exemptions.json). Une exemption ne
+ * supprime pas la vérification pour tout le monde — elle ne couvre que les
+ * fichiers exacts listés pour le créneau exact listé.
+ */
+function loadMigrationSlotExemptions() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(MIGRATION_SLOT_EXEMPTIONS_FILE, 'utf8'));
+    const map = new Map(); // slot → Set(files exemptés)
+    for (const [slot, entry] of Object.entries(raw)) {
+      if (slot.startsWith('_')) continue;
+      map.set(slot, new Set(entry.files || []));
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+const MIGRATION_SLOT_EXEMPTIONS = loadMigrationSlotExemptions();
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
 const args = (() => {
@@ -118,6 +140,24 @@ function migrationNum(rel) {
   return m ? parseInt(m[1], 10) : null;
 }
 
+/**
+ * Créneau de migration pour la détection de collision — inclut le suffixe
+ * lettre (ex. "071b") s'il existe. Décision de gouvernance 2026-07-06 :
+ * Komerce numérote ses migrations par feature, pas globalement ; un même
+ * numéro de base peut légitimement porter plusieurs migrations-sœurs
+ * distinctes dans des features différentes, désambiguïsées par un suffixe
+ * lettre (071_relay_dashboard_tables.sql vs 071b_shared_cart_commitments.sql).
+ * Les deux sont déjà hashées et appliquées (governance/migration-hashes.json)
+ * — ce ne sont pas des doublons, donc pas une collision au sens de ce gate.
+ * Une vraie collision reste détectée : deux fichiers avec EXACTEMENT le même
+ * créneau (même numéro ET même suffixe, ou absence de suffixe des deux côtés).
+ */
+function migrationSlot(rel) {
+  const base = path.basename(rel);
+  const m = base.match(/^(\d+[a-z]?)_/);
+  return m ? m[1] : null;
+}
+
 /** Lit le @domain déclaré dans le header @komerce-arch d'un fichier. */
 function readHeaderDomain(rel) {
   const full = path.join(ROOT, rel);
@@ -168,7 +208,7 @@ function findImporters(rel, allPeriFiles) {
 }
 
 // ── Vérification d'un slice ────────────────────────────────────────────────────
-function checkSlice(slice, allMigNums) {
+function checkSlice(slice, allMigSlots) {
   const errors   = [];
   const warnings = [];
   const name     = slice.name || slice._file;
@@ -199,22 +239,30 @@ function checkSlice(slice, allMigNums) {
 
   const periSet = new Set(allDeclared);
 
-  // ── 3. Migrations — collision de numéro ─────────────────────────────────
-  const myMigNums = new Set();
+  // ── 3. Migrations — collision de créneau (numéro + suffixe lettre) ──────
+  const myMigSlots = new Set();
   for (const rel of (slice.files.migrations || [])) {
-    const n = migrationNum(rel);
-    if (n === null) { warnings.push(`Migration sans numéro de préfixe : ${rel}`); continue; }
-    if (allMigNums.has(n) && !myMigNums.has(n)) {
-      // le numéro est déjà revendiqué par un autre slice
-      errors.push(`Collision numéro migration ${n} avec un autre slice : ${rel}`);
+    const slot = migrationSlot(rel);
+    if (slot === null) { warnings.push(`Migration sans numéro de préfixe : ${rel}`); continue; }
+    if (allMigSlots.has(slot) && !myMigSlots.has(slot)) {
+      const exempted = MIGRATION_SLOT_EXEMPTIONS.get(slot);
+      if (exempted && exempted.has(rel)) {
+        warnings.push(`Collision créneau migration ${slot} exemptée (accident historique déjà appliqué — voir governance/migration-slot-exemptions.json) : ${rel}`);
+      } else {
+        errors.push(`Collision créneau migration ${slot} avec un autre slice : ${rel}`);
+      }
     }
-    myMigNums.add(n);
-    allMigNums.add(n);
+    myMigSlots.add(slot);
+    allMigSlots.add(slot);
   }
 
   // ── 4. Migrations séquentielles (staging+) ───────────────────────────────
   if (['staging', 'production'].includes(status)) {
-    const nums = [...myMigNums].sort((a, b) => a - b);
+    const nums = (slice.files.migrations || [])
+      .map(migrationNum)
+      .filter(n => n !== null)
+      .filter((n, i, a) => a.indexOf(n) === i)
+      .sort((a, b) => a - b);
     for (let i = 1; i < nums.length; i++) {
       const gap = nums[i] - nums[i - 1];
       if (gap > 20) {
@@ -300,10 +348,11 @@ function main() {
     process.exit(1);
   }
 
-  // Shared migration tracker (pour détecter collisions inter-slices)
-  const allMigNums = new Set();
+  // Shared migration tracker (pour détecter collisions inter-slices) —
+  // clé = numéro + suffixe lettre éventuel (071, 071b), cf. migrationSlot().
+  const allMigSlots = new Set();
 
-  const results = slices.map(s => checkSlice(s, allMigNums));
+  const results = slices.map(s => checkSlice(s, allMigSlots));
 
   // ── Rapport ────────────────────────────────────────────────────────────
   if (args.json) {

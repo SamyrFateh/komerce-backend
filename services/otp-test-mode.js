@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          auth-otp-test-mode
- * @domain        auth
+ * @domain        auth-identity
  * @layer         service
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload

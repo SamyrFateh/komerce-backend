@@ -1,0 +1,12 @@
+{
+  "_comment": "Collisions de créneau de migration (numéro + suffixe) exemptées du gate feature-guard.js.",
+  "_format": "{ \"créneau\": { \"files\": [...], \"justification\": \"...\" } }",
+  "_règle": "Une exemption ici documente un accident de nommage historique déjà appliqué en production (voir governance/migration-hashes.json) — ce n'est jamais une autorisation de créer une nouvelle collision. Toute nouvelle migration doit obtenir un créneau (numéro + suffixe) réellement unique ; ce fichier ne grandit pas au fil de l'eau.",
+  "074": {
+    "files": [
+      "migrations/074_add_v4_status_values.sql",
+      "migrations/074_invoice_public_token.sql"
+    ],
+    "justification": "Deux migrations distinctes (shared-cart, documents) numérotées par erreur sur le même créneau sans suffixe de désambiguïsation. Toutes deux déjà appliquées et hashées séparément (governance/migration-hashes.json) — aucun risque d'exécution, mais renommer un fichier de migration déjà appliqué est hors périmètre de ce correctif (nécessite un plan de migration dédié, décision produit/tech séparée). Exemption ajoutée le 2026-07-06, audit gouvernance feature."
+  }
+}

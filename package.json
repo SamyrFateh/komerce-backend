@@ -69,6 +69,8 @@
     "feature:registry": "node scripts/feature-registry-check.js --strict",
     "feature:registry:report": "node scripts/feature-registry-check.js",
     "feature:registry:orphans": "node scripts/feature-registry-check.js --orphans",
+    "feature:registry-doc": "node scripts/registry-doc-check.js --strict",
+    "feature:registry-doc:report": "node scripts/registry-doc-check.js",
     "feature:check": "node scripts/feature-guard.js --strict",
     "feature:classification": "node scripts/feature-classification-check.js",
     "feature:classification:strict": "node scripts/feature-classification-check.js --strict",

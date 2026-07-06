@@ -254,6 +254,35 @@ Le démontage est aussi propre que le montage. **Aucun fantôme.**
 
 ---
 
+## Numérotation des migrations — par feature, pas globale
+
+> **Décision de gouvernance — 2026-07-06**, suite à l'audit feature governance.
+
+Komerce **n'a pas** de séquence de numéro de migration unique et globale à travers les
+features. Un même numéro de base (ex. `071`, `074`, `023`, `036`) peut légitimement porter
+plusieurs migrations-sœurs indépendantes, une par feature, désambiguïsées par un suffixe
+lettre : `071_relay_dashboard_tables.sql` (`dashboard`) et
+`071b_shared_cart_commitments.sql` (`shared-cart`) ne sont pas deux candidats pour le même
+créneau — ce sont deux migrations distinctes qui partagent un numéro de base par
+coïncidence chronologique. Les deux existent déjà, sont hashées et appliquées
+(`governance/migration-hashes.json`) : ce ne sont pas des doublons à corriger.
+
+Ce que `feature-guard.js` vérifie (fonction `migrationSlot()`) : le **créneau exact**
+(numéro + suffixe lettre, ou absence de suffixe) doit être unique à travers tout le repo.
+Deux features ne peuvent pas déclarer toutes les deux `071_....sql` (sans suffixe, ou avec
+le même suffixe) — ça, c'est une vraie collision, signe que deux migrations distinctes ont
+reçu le même nom de fichier par erreur. Mais `071` et `071b` ne collisionnent jamais entre
+eux, quelle que soit la feature qui les porte.
+
+**Ce que cette règle ne fait pas** : elle ne garantit aucun ordre d'exécution global des
+migrations entre features (deux features peuvent avoir des historiques de migration
+totalement indépendants). L'ordre d'exécution réel est celui du système de migration
+utilisé en production (fichiers triés, appliqués en séquence) — cette doctrine ne le
+remplace pas, elle documente juste que la collision de *nommage* n'implique pas une
+collision d'*exécution*.
+
+---
+
 ## Workflow — l'IA intervient sur une feature
 
 Au lieu de grepper le repo entier, l'agent lit dans cet ordre :

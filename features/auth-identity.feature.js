@@ -1,7 +1,7 @@
 /**
  * @feature       auth-identity
  * @type          transversal
- * @domain        auth
+ * @domain        auth-identity
  * @status        production
  * @owner         backend-core
  * @since         2025-08
@@ -15,7 +15,7 @@ module.exports = {
   // ── Identite ─────────────────────────────────────────────────────────────
   name:     'auth-identity',
   type:     'transversal',   // feature | transversal
-  domain:   'auth',
+  domain:   'auth-identity',
   status:   'production',   // draft | staging | production | deprecated
   owner:    'backend-core',
   since:    '2025-08',

@@ -33,14 +33,25 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 6 | `economic-engine` | feature | backend | [`economic-engine.feature.js`](../../features/economic-engine.feature.js) | production | Pricing, coûts, marges, stratégies tarifaires |
 | 7 | `catalog` | feature | backend + boutique | [`catalog.feature.js`](../../features/catalog.feature.js) | production | Produits, connecteurs fournisseurs, publication boutique |
 | 8 | `customs` | feature | backend | [`customs.feature.js`](../../features/customs.feature.js) | production | Classification douanière, déclaration, analytics douane |
-| 9 | `notification` | feature | backend | [`notification.feature.js`](../../features/notification.feature.js) | production | Alertes et messages sortants (WhatsApp, notifications internes) |
+| 9 | `notifications` | feature | backend | [`notifications.feature.js`](../../features/notifications.feature.js) | production | Alertes et messages sortants (WhatsApp, notifications internes) |
 | 10 | `documents` | feature | backend | [`documents.feature.js`](../../features/documents.feature.js) | production | Génération de documents (preuve retrait, facture douane, reçu) |
 | 11 | `recommendations` | feature | backend | [`recommendations.feature.js`](../../features/recommendations.feature.js) | staging | Classement et suggestions boutique |
 | 12 | `inventory` | feature | backend | [`inventory.feature.js`](../../features/inventory.feature.js) | staging | Suivi de stock |
 | 13 | `refunds` | feature | backend | [`refunds.feature.js`](../../features/refunds.feature.js) | production | Remboursement transverse (wallet, cash, panier partagé) |
 | 14 | `dashboard` | feature | backend + dash | [`dashboard.feature.js`](../../features/dashboard.feature.js) | production | Tableaux de bord et back-office (admin, hub, relais, finance) |
-| 15 | `auth` | transversal | backend | [`auth.feature.js`](../../features/auth.feature.js) | production | Authentification, OTP, identité vérifiée — consommé par toutes les features |
-| 16 | `operations` | transversal | backend | [`operations.feature.js`](../../features/operations.feature.js) | production | Santé applicative, config, modules — infrastructure d'exploitation |
+| 15 | `auth` | transversal | backend | [`auth.feature.js`](../../features/auth.feature.js) | production | Garde transverse (middlewares OTP/session/identité vérifiée) — consommée par toutes les features |
+| 16 | `auth-identity` | transversal | backend | [`auth-identity.feature.js`](../../features/auth-identity.feature.js) | production | Routes actives d'identité : OTP, login, magic-link, inscription — partage `domain: 'auth'` avec la ligne #15, voir note ⚠ ci-dessous |
+| 17 | `platform-ops` | transversal | backend | [`platform-ops.feature.js`](../../features/platform-ops.feature.js) | production | Santé applicative, config, modules — infrastructure d'exploitation |
+| 18 | `infrastructure` | transversal | backend | [`infrastructure.feature.js`](../../features/infrastructure.feature.js) | production | Middleware non-auth (error-handler, rate-limit, upload, validate), utilitaires partagés, bootstrap applicatif |
+
+> ℹ️ **Note sur les lignes #15/#16** : `auth` et `auth-identity` étaient initialement deux
+> manifests distincts déclarant le même `domain: 'auth'`, ce qui produisait 5 faux
+> positifs dans `feature-guard.js`. Corrigé le 2026-07-06 : `auth-identity` a désormais
+> son propre `domain: 'auth-identity'` (manifest + headers `@komerce-arch` des 5 fichiers
+> concernés : `routes/otp.js`, `routes/auth.js`, `routes/client-auth.js`,
+> `services/otp-test-mode.js`, `services/authkey-client.js`). Les deux manifests restent
+> légitimement distincts (garde transverse pure côté `auth`, routes actives OTP/login côté
+> `auth-identity`) — seule l'étiquette de domaine était en cause, pas le découpage.
 
 ---
 

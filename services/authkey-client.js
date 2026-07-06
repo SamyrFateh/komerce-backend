@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          auth-authkey-client
- * @domain        auth
+ * @domain        auth-identity
  * @layer         service
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload

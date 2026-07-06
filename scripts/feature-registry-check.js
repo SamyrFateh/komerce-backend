@@ -85,7 +85,7 @@ function loadManifests() {
 const BACKEND_FILE_GROUPS = new Set(['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'migrations', 'tests', 'bootstrap', 'ci', 'db']);
 
 function declaredFiles(manifests) {
-  const declared = new Map(); // file → feature name
+  const declared = new Map(); // file → [feature name, ...] (plusieurs entrées = violation d'unicité)
   for (const m of manifests) {
     if (m._loadError) continue;
     const categories = m.files || {};
@@ -93,7 +93,9 @@ function declaredFiles(manifests) {
       if (!BACKEND_FILE_GROUPS.has(group)) continue; // boutique/dash/autres dépôts — non vérifiés ici
       if (!Array.isArray(files)) continue;
       for (const f of files) {
-        if (f && !f.endsWith('/')) declared.set(f, m.name);
+        if (!f || f.endsWith('/')) continue;
+        if (!declared.has(f)) declared.set(f, []);
+        declared.get(f).push(m.name);
       }
     }
   }
@@ -132,7 +134,7 @@ function run() {
   const manifests = loadManifests();
   const errors    = [];
   const warnings  = [];
-  const summary   = { features: 0, transversal: 0, declared: 0, missing: 0, orphans: 0, load_errors: 0 };
+  const summary   = { features: 0, transversal: 0, declared: 0, missing: 0, multiOwner: 0, orphans: 0, load_errors: 0 };
 
   // 1. Erreurs de chargement manifest
   for (const m of manifests) {
@@ -161,15 +163,20 @@ function run() {
     }
   }
 
-  // 3. Fichiers déclarés manquants sur disque
+  // 3. Fichiers déclarés manquants sur disque + unicité d'autorité (un fichier = une feature)
   const declared = declaredFiles(validManifests);
   summary.declared = declared.size;
 
-  for (const [file, feature] of declared.entries()) {
+  for (const [file, owners] of declared.entries()) {
     const abs = path.join(ROOT, file);
     if (!fs.existsSync(abs)) {
-      errors.push({ type: 'FILE-MISSING', feature, file, msg: `déclaré dans ${feature}.feature.js mais absent du disque` });
+      errors.push({ type: 'FILE-MISSING', feature: owners[0], file, msg: `déclaré dans ${owners[0]}.feature.js mais absent du disque` });
       summary.missing++;
+    }
+    if (owners.length > 1) {
+      errors.push({ type: 'MULTI-OWNER', feature: owners.join(', '), file,
+        msg: `déclaré par ${owners.length} manifests (${owners.join(', ')}) — unicité d'autorité violée (FEATURE_DOCTRINE.md, règle 2 du registre)` });
+      summary.multiOwner = (summary.multiOwner || 0) + 1;
     }
   }
 
@@ -229,6 +236,7 @@ function run() {
   console.log(`  Domaines transversaux : ${summary.transversal}`);
   console.log(`  Fichiers déclarés     : ${summary.declared}`);
   console.log(`  Fichiers manquants    : ${summary.missing}`);
+  console.log(`  Multipropriété        : ${summary.multiOwner || 0}`);
   console.log(`  Orphelins             : ${summary.orphans}`);
   if (summary.load_errors) console.log(`  Erreurs manifest       : ${summary.load_errors}`);
 
