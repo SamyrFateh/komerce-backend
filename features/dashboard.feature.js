@@ -59,12 +59,10 @@ module.exports = {
   contract: {
     exposes: [
       'GET /api/admin/dashboard',
-      'GET /api/admin/dashboard/clients',
-      'GET /api/admin/dashboard/ops',
-      'GET /api/admin/dashboard/hub',
-      'GET /api/dashboard',
       'GET /api/dashboard/clients',
       'GET /api/dashboard/ops',
+      'GET /api/dashboard/hub',
+      'GET /api/dashboard/finance',
       // dashboard-shared n'est pas une route HTTP : c'est un module utilitaire
       // interne (getEurKmf, cached, setCache, loadDashConfig) importé par
       // dashboard-clients/ops/hub/finance — jamais monté seul, donc absent d'exposes.
@@ -75,9 +73,11 @@ module.exports = {
       'GET /api/admin/loyalty/pending',
       'GET /api/admin/risk-provisions',
       'GET /api/admin/partners',
-      'GET /api/admin/system',
       'GET /api/admin/users',
-      'GET /api/admin/index',
+      'GET /api/admin/counts',
+      'POST /api/admin/reset',
+      'POST /api/admin/seed-test',
+      'POST /api/admin/purchasing/repair-ordered-without-pos',
     ],
     consumes: ['orders (lecture commandes)',
       'payments (lecture paiements)',
@@ -89,6 +89,32 @@ module.exports = {
       'customs',
       'documents',
       'recommendations',
+    ],
+  },
+
+  // ── Dette assumée / documentée ──────────────────────────────────────────
+  // (audit 2026-07-06 §2d — vérifié empiriquement contre le route-registry)
+  debt: {
+    knownGaps: [
+      { gap: 'ancien contrat déclaré "GET /api/admin/dashboard/clients", "/ops", "/hub" ' +
+             '(nesting sous /admin/dashboard) : aucune route ne sert ce style. Les vraies ' +
+             'routes sont montées sans imbrication, sous /api/dashboard/... directement ' +
+             '(routes/dashboard.js monte dashboard-ops/finance/clients/hub à la racine ' +
+             '/api/dashboard, cf. bootstrap/api-routes.js:131).',
+        risk: 'aucun connu, mais à vérifier côté SPA admin si un ancien build appelait ' +
+              'encore le chemin imbriqué.' },
+      { gap: 'ancien contrat déclaré "GET /api/dashboard" (bare, sans sous-chemin) : ' +
+             'aucune route ne sert la racine elle-même — dashboardRouter ne fait que ' +
+             'monter ses 4 sous-routers (ops/finance/clients/hub), sans handler propre sur "/".',
+        risk: 'aucun — probablement une intention de vue d\'ensemble jamais implémentée.' },
+      { gap: 'ancien contrat déclaré "GET /api/admin/system" et "GET /api/admin/index" : ' +
+             'ce ne sont pas des routes, ce sont des noms de fichiers (routes/admin/system.js, ' +
+             'routes/admin/index.js). admin/index.js est un pur agrégateur (aucune route ' +
+             'propre, seulement des router.use(\'/\', require(...))) ; admin/system.js expose ' +
+             '4 vraies routes maintenant listées ci-dessus (GET /counts, POST /reset, ' +
+             'POST /seed-test, POST /purchasing/repair-ordered-without-pos), montées sous ' +
+             '/api/admin via adminRouter.',
+        risk: 'aucun — contrat corrigé pour refléter les 4 vraies routes.' },
     ],
   },
 

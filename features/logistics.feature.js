@@ -155,7 +155,8 @@ module.exports = {
   contract: {
     exposes: [
       'GET/POST /api/parcels',
-      'POST /api/parcels/:id/scan',
+      'POST /api/v2/parcels/:ref/scan',
+      'GET /api/v2/parcels/:id/scans',
       'GET /api/tracking/:token',
     ],
     consumes: ['orders (commande rattachee au colis)',
@@ -167,6 +168,18 @@ module.exports = {
       'payment',
       'refunds',
       'wallet',
+    ],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06 §2d — vérifié empiriquement contre le route-registry)
+  debt: {
+    knownGaps: [
+      { gap: 'ancien contrat déclaré "POST /api/parcels/:id/scan" (v1) : aucune route ne ' +
+             'sert ce chemin. Le scan de colis est passé à l\'API v2 ' +
+             '(routes/parcel-api-v2/scans.js), montée sous /api/v2/parcels/:ref/scan.',
+        risk: 'si un client externe (scanner physique, app mobile hub) appelle encore le ' +
+              'chemin v1, il reçoit un 404 — à vérifier avant de considérer ce point clos.' },
     ],
   },
 

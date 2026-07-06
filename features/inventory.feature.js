@@ -65,11 +65,24 @@ module.exports = {
   docs: [],
 
   contract: {
-    exposes: [
-      'GET /api/inventory/:productId',
-    ],
+    exposes: [],
     consumes: ['catalog (produit concerne)',
       'auth',
+    ],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06, §2a — reclassé après vérification empirique)
+  debt: {
+    knownGaps: [
+      { gap: 'contrat historique "GET /api/inventory/:productId" : aucune route ne le sert. ' +
+             'Le stock disponible est porté par product_variants.stock (lu via GET /api/products/:id, ' +
+             'feature catalog) pour la vitrine, et par les endpoints opérationnels hub ' +
+             '(GET /api/hub/inventory/*, non exposés dans ce contrat car domaine hub, pas ' +
+             'consultation par produit).',
+        risk: 'faible — aucune consommation connue d\'un endpoint pricing/inventory par ' +
+              'productId séparé du catalogue. À confirmer avant suppression définitive.',
+      },
     ],
   },
 

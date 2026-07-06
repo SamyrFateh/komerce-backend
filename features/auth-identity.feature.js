@@ -66,9 +66,27 @@ module.exports = {
 
   contract: {
     exposes: [
-      'POST /api/auth/otp',
+      'POST /api/auth/otp/request',
+      'POST /api/auth/otp/verify',
+      'POST /api/auth/otp/test-reset',
     ],
     consumes: [],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06, §2c — vérifié empiriquement contre routes/otp.js)
+  debt: {
+    knownGaps: [
+      { gap: 'ancien contrat déclaré "POST /api/auth/otp" (sans sous-chemin) : aucune ' +
+             'route ne sert ce chemin exact. Les 3 vraies routes sont sous-chemins de ' +
+             'routes/otp.js : /request, /verify, /test-reset. "test-reset" est gardé par ' +
+             'isOtpTestMode() (doctrine test_mode_never_prod) — routé en toute condition ' +
+             'mais un no-op hors mode test, donc listé ici comme réel plutôt que dans ' +
+             'plannedInterfaces.',
+        risk: 'aucun — le contrat déclaré était simplement désynchronisé du découpage réel ' +
+              'en sous-routes.',
+      },
+    ],
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────

@@ -76,9 +76,14 @@ module.exports = {
   ],
 
   contract: {
-    exposes: [
-      'middleware requireAuth / requireVerifiedIdentity / softAuth',
-      'POST /api/auth/otp',
+    // (audit 2026-07-06, §2c — corrigé) : ce manifeste ne possède aucun
+    // fichier routes/ (files.routes = []) — c'est un transversal middleware
+    // pur. "POST /api/auth/otp" ne lui appartient pas : la route réelle vit
+    // dans routes/otp.js, possédé par la feature auth-identity, qui la
+    // déclare déjà correctement dans son propre contract.exposes.
+    exposes: [],
+    internalApi: [
+      { fn: 'requireAuth / requireVerifiedIdentity / softAuth', file: 'middleware/auth.js, middleware/require-verified-identity.js, middleware/soft-auth.js' },
     ],
     consumes: [
       'notification',

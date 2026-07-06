@@ -75,6 +75,22 @@ module.exports = {
       'tests/unit/b-checkout-pure.test.js',
       'tests/unit/relais-idor-probe.test.js',
       'tests/unit/validators.test.js',
+      // Rapatriés depuis features/operations.feature.js (doublon supprimé,
+      // audit 2026-07-06 §2c) — services/routes étaient déjà ici, seuls ces
+      // tests traînaient encore dans l'ancien manifeste.
+      'tests/unit/collective-cleanup-tombstones.test.js',
+      'tests/unit/config-route.test.js',
+      'tests/unit/health.test.js',
+      'tests/unit/incident-service.test.js',
+      'tests/unit/journal.test.js',
+      'tests/unit/modules.test.js',
+      'tests/unit/monitoring.test.js',
+      'tests/unit/ops-api.test.js',
+      'tests/unit/scenarios.test.js',
+      'tests/unit/simulator-engine.test.js',
+      'tests/unit/simulator-platform-ops.test.js',
+      'tests/unit/simulator-route.test.js',
+      'tests/unit/state-advancer.test.js',
     ],
   },
 
@@ -84,10 +100,29 @@ module.exports = {
   contract: {
     exposes: [
       'GET /health',
-      'GET /api/config',
       'GET /api/modules',
     ],
     consumes: [],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06 §2c — vérifié empiriquement contre bootstrap/api-routes.js)
+  debt: {
+    knownGaps: [
+      { gap: 'ancien contrat déclaré "GET /api/config" : routes/config.js existe bel et ' +
+             'bien et expose 5 endpoints réels (GET/PUT /api/config/rules, ' +
+             '/api/config/rules/:key, /api/config/rules/:key/reset, ' +
+             '/api/config/rules/:key/history) — mais ce fichier n\'est require() ni monté ' +
+             'nulle part dans bootstrap/api-routes.js ni server.js. Ce n\'est pas un contrat ' +
+             'désynchronisé d\'un chemin : c\'est du code mort jamais câblé.',
+        risk: 'moyen — 5 endpoints de gestion de règles métier (config runtime) sont ' +
+              'invisibles et inaccessibles en admin. Décision produit à trancher : câbler ' +
+              'routes/config.js sous un préfixe (ex. app.use(\'/api/config\', require(\'./routes/config\'))) ' +
+              'si le besoin existe encore, ou supprimer le fichier si obsolète. Ne pas ' +
+              'rajouter "GET /api/config" à exposes tant que ce choix n\'est pas fait — ' +
+              'ce serait re-déclarer une route qui ne répond toujours pas.',
+      },
+    ],
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────

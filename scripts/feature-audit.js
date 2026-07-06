@@ -111,6 +111,90 @@ function ownedFiles(m) {
   return flat;
 }
 
+// ── Route registry (docs/_generated/route-registry.json) ───────────────────
+// Généré par scripts/gen-route-registry.js à partir de server.js et
+// bootstrap/api-routes.js (traversée récursive des app.use / router.use).
+// C'est la table de vérité que le checker `interface` consulte : plus de
+// recherche de sous-chaîne locale à un fichier routes/.
+let __registryCache;
+function loadRouteRegistry() {
+  if (__registryCache !== undefined) return __registryCache;
+  const p = path.join(ROOT, 'docs/_generated/route-registry.json');
+  if (!fs.existsSync(p)) { __registryCache = null; return null; }
+  try {
+    const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+    __registryCache = data.routes || [];
+  } catch (e) { __registryCache = null; }
+  return __registryCache;
+}
+
+function splitPath(p) { return p.split('/').filter(Boolean); }
+
+// Une entrée `contract.exposes` s'écrit "GET /api/orders" ou, pour plusieurs
+// verbes sur le même chemin, "GET/POST /api/orders".
+function parseExposeEntry(raw) {
+  const s = raw.trim().replace(/\s+/g, ' ');
+  const m = /^([A-Z]+(?:\/[A-Z]+)*)\s+(\/\S*)$/.exec(s);
+  if (!m) return null;
+  const methods = m[1].split('/');
+  const rawPath = m[2].replace(/\/\*$/, '');
+  return { raw, methods, path: rawPath, segments: splitPath(rawPath) };
+}
+
+function isParamSeg(seg) { return seg.startsWith(':'); }
+
+// Deux chemins ont la « même structure » si, segment par segment, chaque
+// paramètre est en face d'un paramètre (peu importe son nom) et chaque
+// segment statique est identique.
+function sameStructure(aSegs, bSegs) {
+  if (aSegs.length !== bSegs.length) return false;
+  return aSegs.every((seg, i) => (isParamSeg(seg) && isParamSeg(bSegs[i])) || seg === bSegs[i]);
+}
+
+function samePrefix(aSegs, bSegs) {
+  const n = Math.min(aSegs.length, bSegs.length);
+  for (let i = 0; i < n; i++) {
+    const a = aSegs[i], b = bSegs[i];
+    if (isParamSeg(a) && isParamSeg(b)) continue;
+    if (a !== b) return i; // longueur du préfixe statique commun
+  }
+  return n;
+}
+
+// Compare une entrée `exposes` déclarée à la table réelle et rend un
+// diagnostic typé : OK | MOUNT_NOT_FOUND | MISSING_ROUTE | METHOD_MISMATCH |
+// PARAM_NAME_MISMATCH.
+function matchAgainstRegistry(declared, registry) {
+  const structural = registry.filter(r => sameStructure(declared.segments, splitPath(r.fullPath)));
+
+  if (structural.length) {
+    const methodHit = structural.find(r => declared.methods.includes(r.method));
+    if (methodHit) {
+      const realSegs = splitPath(methodHit.fullPath);
+      const paramMismatch = declared.segments.some((seg, i) => isParamSeg(seg) && isParamSeg(realSegs[i]) && seg !== realSegs[i]);
+      if (paramMismatch) {
+        return { code:'PARAM_NAME_MISMATCH', detail:`déclaré ${declared.path} vs réel ${methodHit.fullPath}` };
+      }
+      return { code:'OK' };
+    }
+    const realMethods = [...new Set(structural.map(r => r.method))].join(',');
+    return { code:'METHOD_MISMATCH', detail:`${declared.methods.join('/')} déclaré, réel: ${realMethods} sur ${structural[0].fullPath}` };
+  }
+
+  // Aucune route de même structure : mesurer le plus long préfixe statique
+  // commun avec N'IMPORTE QUELLE route du registre pour distinguer un
+  // mauvais préfixe de montage d'une route simplement jamais livrée.
+  let bestPrefix = 0;
+  for (const r of registry) {
+    const p = samePrefix(declared.segments, splitPath(r.fullPath));
+    if (p > bestPrefix) bestPrefix = p;
+  }
+  if (bestPrefix < Math.min(2, declared.segments.length)) {
+    return { code:'MOUNT_NOT_FOUND', detail:`aucune route du registre ne partage le préfixe ${declared.segments.slice(0,2).join('/')}` };
+  }
+  return { code:'MISSING_ROUTE', detail:'aucune route montée à ce chemin' };
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 //  CHECKERS — un par TYPE de contrat. Chacun rend {status, detail}.
 //  Tous dégradent en SKIP si la cible est absente (au lieu de FAIL).
@@ -166,65 +250,88 @@ const checkers = {
       : { status:'PASS', detail:`${present.length} fichiers conformes` };
   },
 
-  // interface : les endpoints déclarés `exposes` sont-ils réellement câblés dans
-  // les routes possédées ? (contrat d'interface ≠ wishlist). SKIP si routes absentes.
+  // interface : les endpoints déclarés `contract.exposes` correspondent-ils à
+  // une route RÉELLEMENT MONTÉE (docs/_generated/route-registry.json), plutôt
+  // qu'à une sous-chaîne trouvée par grep local au fichier ?
+  //
+  // Historique (AUDIT_FEATURE_FIRST_2026-07-06.md §1.2, §2c) : l'ancienne
+  // version faisait une recherche de sous-chaîne dans les fichiers routes/
+  // possédés. Deux angles morts en résultaient : (1) aucune route composée à
+  // travers bootstrap/api-routes.js + un fichier routes/ n'était validable ;
+  // (2) une sous-chaîne peut « trouver » un texte qui n'est pas une route
+  // (faux positif) tout en ratant une vraie route au préfixe de montage
+  // différent (faux négatif). Le registre remplace le grep par une
+  // comparaison structurelle méthode+chemin sur la table de montage réelle.
+  //
+  // Erreurs typées (voir errorCode dans le detail) :
+  //   MOUNT_NOT_FOUND     — aucune route du registre ne partage même le
+  //                         préfixe statique du chemin déclaré (mauvais
+  //                         préfixe de montage, feature probablement montée
+  //                         ailleurs que ce que le manifeste croit).
+  //   MISSING_ROUTE       — préfixe correct, mais ce chemin précis n'existe
+  //                         nulle part dans le registre (jamais implémenté,
+  //                         ou implémenté puis retiré).
+  //   METHOD_MISMATCH     — même chemin (structure), mais aucune route du
+  //                         registre à ce chemin ne répond au verbe déclaré.
+  //   PARAM_NAME_MISMATCH — même chemin, même verbe, mais le nom du paramètre
+  //                         diffère (ex: déclaré ':code', réel ':token') —
+  //                         inoffensif à l'exécution (Express ne voit que la
+  //                         position), mais un contrat qui ment sur le nom
+  //                         du paramètre peut induire un consommateur externe
+  //                         en erreur (doc, client généré, etc.) : à corriger.
   'interface'(m) {
     const exposes = (m.contract && m.contract.exposes) || [];
     if (!exposes.length) return { status:'SKIP', detail:'aucun endpoint exposé déclaré' };
-    const routes = ownedFiles(m).filter(f => f.layer === 'routes' && fs.existsSync(f.abs));
-    if (!routes.length) return { status:'SKIP', detail:'routes absentes de ce checkout' };
-    const blob = routes.map(f => fs.readFileSync(f.abs,'utf8')).join('\n');
-    const missing = exposes.filter(ep => {
-      // NB (2026-07) : on NE retire PLUS les `:param` du tail. Le code Express
-      // réel écrit ses routes avec la même convention littérale ('/:id/approve'),
-      // donc les garder tels quels dans le probe permet un match exact — les
-      // retirer cassait tout endpoint de forme /:id/action (le probe perdait
-      // le segment ':id' et cherchait 'ressource/action', absent du code réel
-      // qui contient bien '/:id/action' mais jamais 'ressource/action' contigu).
-      const tail = ep.replace(/^[A-Z]+\s+/, '').replace(/\/\*$/, '');
-      const probe = tail.split('/').filter(Boolean).slice(-2).join('/');
-      return probe && !blob.includes(probe);
-    });
-    return missing.length
-      ? { status:'FAIL', detail:`endpoint(s) non câblé(s): ${missing.join(', ')}` }
-      : { status:'PASS', detail:`${exposes.length} endpoint(s) câblé(s)` };
+    const registry = loadRouteRegistry();
+    if (!registry) return { status:'SKIP', detail:'route-registry.json absent — lancer scripts/gen-route-registry.js' };
+
+    const fails = [], warns = [];
+    for (const raw of exposes) {
+      const declared = parseExposeEntry(raw);
+      if (!declared) {
+        // UNPARSEABLE : l'entrée ne ressemble même pas à "VERBE(S) /chemin"
+        // (annotation collée, référence de fonction interne, chemin partiel).
+        // C'est une dette de FORMAT du manifeste — réelle, mais distincte
+        // d'une contradiction PROUVÉE entre contrat et code. On la reporte
+        // en WARN plutôt que FAIL : la corriger pour toutes les features où
+        // elle traîne est un chantier de nettoyage séparé (cf. contract.internalApi),
+        // pas une conséquence automatique du durcissement du checker `interface`.
+        warns.push({ code:'UNPARSEABLE', ep: raw });
+        continue;
+      }
+      const match = matchAgainstRegistry(declared, registry);
+      if (match.code !== 'OK') fails.push({ code: match.code, ep: raw, detail: match.detail });
+    }
+
+    if (!fails.length && !warns.length) return { status:'PASS', detail:`${exposes.length} endpoint(s) confirmé(s) dans le registre` };
+    const fmt = r => `[${r.code}] ${r.ep}${r.detail ? ' — ' + r.detail : ''}`;
+    if (fails.length) return { status:'FAIL', detail: fails.map(fmt).join(' | ') + (warns.length ? ` ‖ (+${warns.length} format à nettoyer, cf. internalApi)` : '') };
+    return { status:'WARN', detail: `${warns.length} entrée(s) exposes non-HTTP à migrer vers contract.internalApi: ${warns.map(fmt).join(' | ')}` };
   },
 
-  // interface-inverse : les routes possédées n'exposent aucun endpoint ABSENT
-  // de contract.exposes. Complément direct du checker `interface` : celui-ci
-  // vérifie déclaré→câblé, interface-inverse vérifie câblé→déclaré.
-  // Démarre en WARN (dette existante possible) ; passe FAIL si --strict.
-  // Seuls les verbes HTTP explicitement routés sont examinés
-  // (router.get / router.post / router.put / router.delete / router.patch).
+  // interface-inverse : les routes réellement montées et rattachées aux
+  // fichiers possédés par la feature (via routeFile du registre) sont-elles
+  // toutes déclarées dans contract.exposes ? Complément direct du checker
+  // `interface` (déclaré→réel) : ici c'est réel→déclaré, sur la même table
+  // de vérité. WARN par défaut (dette existante tolérée), pas FAIL.
   'interface-inverse'(m) {
     const exposes = (m.contract && m.contract.exposes) || [];
-    const routes = ownedFiles(m).filter(f => f.layer === 'routes' && fs.existsSync(f.abs));
-    if (!routes.length) return { status:'SKIP', detail:'routes absentes de ce checkout' };
+    const registry = loadRouteRegistry();
+    if (!registry) return { status:'SKIP', detail:'route-registry.json absent' };
 
-    // Construire l'ensemble des tails déclarés (ex. "wallet/balance")
-    const declaredTails = new Set(exposes.map(ep => {
-      const tail = ep.replace(/^[A-Z]+\s+/, '').replace(/\/\*$/, '').replace(/:[\w]+/g, '*');
-      return tail.split('/').filter(Boolean).slice(-2).join('/');
-    }).filter(Boolean));
+    const ownedRouteFiles = new Set(ownedFiles(m).filter(f => f.layer === 'routes').map(f => f.rel));
+    if (!ownedRouteFiles.size) return { status:'SKIP', detail:'aucune route possédée' };
 
-    // Scanner les routes réelles
-    const undeclared = [];
-    const routeRe = /router\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
-    for (const f of routes) {
-      const src = fs.readFileSync(f.abs, 'utf8');
-      let match;
-      while ((match = routeRe.exec(src)) !== null) {
-        const verb = match[1].toUpperCase();
-        const rawPath = match[2].replace(/:[\w]+/g, '*');
-        const tail = rawPath.split('/').filter(Boolean).slice(-2).join('/');
-        if (!tail) continue;
-        const declared = [...declaredTails].some(t => t === tail || tail.endsWith(t) || t.endsWith(tail));
-        if (!declared) undeclared.push(`${verb} ${match[2]} (${f.rel})`);
-      }
-    }
-    if (!undeclared.length) return { status:'PASS', detail:`toutes les routes câblées sont déclarées dans contract.exposes` };
-    // WARN par défaut — pas FAIL : dette initiale possible sur features existantes
-    return { status:'WARN', detail:`${undeclared.length} route(s) câblée(s) non déclarée(s): ${undeclared.slice(0,3).join(' | ')}${undeclared.length>3?` (+${undeclared.length-3})`:''}` };
+    const declared = exposes.map(parseExposeEntry).filter(Boolean);
+    const mine = registry.filter(r => ownedRouteFiles.has(r.routeFile));
+
+    const undeclared = mine.filter(r => {
+      return !declared.some(d => d.methods.includes(r.method) && sameStructure(d.segments, splitPath(r.fullPath)));
+    });
+
+    if (!undeclared.length) return { status:'PASS', detail:`${mine.length} route(s) réelle(s) toutes déclarées` };
+    const preview = undeclared.slice(0,3).map(r => `${r.method} ${r.fullPath}`).join(' | ');
+    return { status:'WARN', detail:`${undeclared.length} route(s) câblée(s) non déclarée(s): ${preview}${undeclared.length>3?` (+${undeclared.length-3})`:''}` };
   },
 
   // doctrine : dette de doctrine token (couleurs en dur) scopée aux fichiers de
@@ -266,6 +373,36 @@ function crossOwnership(manifests) {
   return clashes;
 }
 
+// ── Contrat transverse : un même endpoint RÉEL n'est déclaré `exposes` que
+//    par UNE seule feature. Deux manifestes qui revendiquent le même
+//    couple (méthode, chemin réel du registre) signalent soit un doublon de
+//    déclaration après scission de feature (cf. §1.3 de l'audit du 2026-07-06 :
+//    95 fichiers en multipropriété avant correctif), soit deux endpoints
+//    distincts qui répondent au même chemin (config de montage à corriger).
+function duplicateRouteOwners(manifests) {
+  const registry = loadRouteRegistry();
+  if (!registry) return [];
+  const claims = {}; // "METHOD path" -> [featureName]
+  for (const m of manifests) {
+    const exposes = (m.contract && m.contract.exposes) || [];
+    for (const raw of exposes) {
+      const declared = parseExposeEntry(raw);
+      if (!declared) continue;
+      for (const method of declared.methods) {
+        const hit = registry.find(r => r.method === method && sameStructure(declared.segments, splitPath(r.fullPath)));
+        if (!hit) continue; // déjà signalé par 'interface' (MISSING_ROUTE etc.)
+        const key = `${hit.method} ${hit.fullPath}`;
+        (claims[key] = claims[key] || new Set()).add(m.name);
+      }
+    }
+  }
+  const dups = [];
+  for (const [key, owners] of Object.entries(claims)) {
+    if (owners.size > 1) dups.push(`${key} : ${[...owners].join(' ⇆ ')}`);
+  }
+  return dups;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 //  RUN
 // ════════════════════════════════════════════════════════════════════════════
@@ -304,11 +441,17 @@ for (const m of manifests) {
   console.log();
 }
 
-// Multipropriété transverse
+// Multipropriété transverse (fichiers)
 const clashes = crossOwnership(manifests);
 console.log(`${C.bld}Transverse — multipropriété de fichiers${C.r}`);
 if (clashes.length) { fails += clashes.length; clashes.forEach(c => console.log(`    ${ICON.FAIL} ${c}`)); }
 else console.log(`    ${ICON.PASS} aucun fichier possédé par 2 features`);
+
+// Multipropriété transverse (endpoints réels — DUPLICATE_ROUTE_OWNER)
+const routeDups = duplicateRouteOwners(manifests);
+console.log(`${C.bld}Transverse — endpoints réels revendiqués par 2 features (DUPLICATE_ROUTE_OWNER)${C.r}`);
+if (routeDups.length) { fails += routeDups.length; routeDups.forEach(c => console.log(`    ${ICON.FAIL} ${c}`)); }
+else console.log(`    ${ICON.PASS} aucun endpoint réel revendiqué par 2 features`);
 
 console.log(`\n${C.bld}Résultat : ${fails?C.red:C.grn}${fails} FAIL${C.r}${C.bld}, ${warns} WARN${C.r}`);
 if (fails && STRICT) process.exit(1);

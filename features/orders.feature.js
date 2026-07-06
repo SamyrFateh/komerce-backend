@@ -106,6 +106,16 @@ module.exports = {
       'tests/unit/confirm-payment-cycle.test.js',
       'tests/unit/order-status-machine.test.js',
       'tests/unit/repair-ordered-without-purchase-orders.test.js',
+      // Rapatriés depuis features/notification.feature.js (doublon singulier
+      // supprimé, audit 2026-07-06 §2d) — mal rangés là-bas : ils testent en
+      // réalité routes/orders.js et ses sous-routers (déjà possédés ci-dessus
+      // dans files.routes), pas le domaine notification.
+      'tests/unit/orders-aggregator-route.test.js',
+      'tests/unit/orders-cancel-route.test.js',
+      'tests/unit/orders-create-route.test.js',
+      'tests/unit/orders-detail.test.js',
+      'tests/unit/orders-list.test.js',
+      'tests/unit/orders-status-route.test.js',
     ],
   },
 
@@ -113,9 +123,9 @@ module.exports = {
   contract: {
     exposes: [
       'GET/POST /api/orders',
-      'GET /api/orders/:id',
+      'GET /api/orders/:ref',
       'POST /api/orders/:id/cancel',
-      'GET /api/invoices/:token',
+      'GET /api/invoices/public/:token',
     ],
     consumes: ['wallet (application credit)',
       'economic-engine (cout figure a la commande)',
@@ -128,6 +138,25 @@ module.exports = {
       'notification',
       'payment',
       'refunds',
+    ],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06, §2b — corrigé après vérification empirique du code réel :
+  // le contrat déclaré n'était pas simplement désynchronisé du nom de route,
+  // il pointait vers un chemin qui n'a jamais existé sous cette forme exacte.)
+  debt: {
+    knownGaps: [
+      { gap: 'ancien contrat déclaré "GET /api/invoices/:token" (sans /public) : ' +
+             'aucune route ne sert ce chemin exact. Le vrai mécanisme public par ' +
+             'jeton existe bien, mais sous /api/invoices/public/:token (routes/invoices.js). ' +
+             'Un second mécanisme, GET /api/client/invoices (session authentifiée, ' +
+             'routes/client-auth.js), coexiste mais appartient à une autre feature — ' +
+             'orders ne le possède pas et ne doit pas le déclarer dans son propre contrat.',
+        risk: 'si un client externe (app mobile, intégration WhatsApp) construit encore ' +
+              'l\'URL sans /public, il reçoit un 404 — à vérifier avant de considérer ' +
+              'ce point clos.',
+      },
     ],
   },
 

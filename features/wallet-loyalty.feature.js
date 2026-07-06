@@ -48,12 +48,24 @@ module.exports = {
       'routes/wallet.js',
       'routes/loyalty.js',
     ],
+    migrations: [
+      'migrations/066_wallet_consumptions_append_only.sql',
+      'migrations/068_wallets_check_balance.sql',
+    ],
     boutique: [
       'js/b-wallet.js',
       'css/wallet.css',
     ],
     tests: [
       'tests/unit/wallet-service.test.js',
+      // Rapatriés depuis features/wallet.feature.js (doublon supprimé,
+      // audit 2026-07-06 §2c) — services/routes étaient déjà ici, seuls ces
+      // tests et migrations traînaient encore dans l'ancien manifeste.
+      'tests/unit/loyalty-notification.test.js',
+      'tests/unit/loyalty-route.test.js',
+      'tests/unit/loyalty-service.test.js',
+      'tests/unit/store-credits.test.js',
+      'tests/unit/wallet-route.test.js',
     ],
   },
 
@@ -68,12 +80,43 @@ module.exports = {
 
   contract: {
     exposes: [
-      'GET /api/wallet/:userId',
-      'POST /api/wallet/:userId/credit',
-      'GET /api/loyalty/:userId',
+      'GET /api/wallet',
+      'GET /api/wallet/transactions',
+      'POST /api/wallet/apply',
+      'POST /api/wallet/remove',
+      'GET /api/wallet/admin',
+      'GET /api/wallet/admin/:userId',
+      'POST /api/wallet/admin/credit',
+      'POST /api/wallet/admin/order-credit/:orderId',
+      'POST /api/wallet/admin/reverse-lot',
+      'GET /api/loyalty/tiers',
+      'GET /api/loyalty/me',
+      'GET /api/loyalty/users',
+      'GET /api/loyalty/stats',
+      'PUT /api/loyalty/tiers/:id',
+      'POST /api/loyalty/recalculate/:user_id',
+      'POST /api/loyalty/recalculate-all',
     ],
     consumes: [
       'auth-identity (identification du client)',
+    ],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06, §2b — vérifié empiriquement contre routes/wallet.js et
+  // routes/loyalty.js)
+  debt: {
+    knownGaps: [
+      { gap: 'ancien contrat déclaré "GET /api/wallet/:userId", "POST /api/wallet/:userId/credit", ' +
+             '"GET /api/loyalty/:userId" (ressource dans le chemin) : aucune route ne sert ' +
+             'ce style. Le solde self-service se lit par session (GET /api/wallet, pas de ' +
+             ':userId), et le crédit admin est un sous-espace /admin/... avec :userId ou ' +
+             ':orderId selon l\'action, jamais un simple crédit générique par utilisateur.',
+        risk: 'si un consommateur externe (dashboard legacy, script) construisait encore ' +
+              'des URLs /api/wallet/<id> ou /api/wallet/<id>/credit, il reçoit un 404 — ' +
+              'confirmé sans dépendance connue au moment de cette correction, à revalider ' +
+              'si un incident apparaît.',
+      },
     ],
   },
 

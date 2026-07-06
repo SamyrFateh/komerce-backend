@@ -45,6 +45,28 @@ module.exports = {
       'tests/notifications/notification-service-order-parcel-otp-auth-loyalty-misc.test.js',
       'tests/notifications/whatsapp-meta-alert-engine.test.js',
       'tests/notifications/notification-api-meta-whatsapp-alerts.test.js',
+      // Rapatriés depuis features/notification.feature.js (doublon singulier
+      // supprimé, audit 2026-07-06 §2d) — vérifié empiriquement, ces fichiers
+      // testent bien des modules déjà possédés ci-dessus (notifications/*,
+      // whatsapp-meta.js, email.js), pas les 6 tests orders-*-route qui
+      // étaient mal rangés dans ce même manifeste (rapatriés vers orders).
+      'tests/notifications/notification-api-meta-whatsapp-alerts-branches.test.js',
+      'tests/unit/email.test.js',
+      'tests/unit/notification-internals.test.js',
+      'tests/unit/notification-misc.test.js',
+      'tests/unit/notification-otp-auth.test.js',
+      'tests/unit/notification-service-barrel.test.js',
+      'tests/unit/notification-service.test.js',
+      'tests/unit/notification-whatsapp-meta.test.js',
+      'tests/unit/order-notification.test.js',
+      'tests/unit/parcel-notification.test.js',
+    ],
+    migrations: [
+      'migrations/022b_sms_queue.sql',
+      'migrations/023b_whatsapp_phone.sql',
+      'migrations/024_notification_log.sql',
+      'migrations/058_notification_log_recipient_nullable.sql',
+      'migrations/089_notification_log_ref_widening.sql',
     ],
     utils: [
       'utils/email.js',
@@ -77,10 +99,36 @@ module.exports = {
 
   contract: {
     exposes: [
-      'POST /api/notifications/send',
+      'GET /api/v2/notifications',
+      'GET /api/v2/notifications/stats',
+    ],
+    internalApi: [
+      { fn: 'notifyOrder*',   file: 'services/notifications/order.js' },
+      { fn: 'notifyParcel*',  file: 'services/notifications/parcel.js' },
+      { fn: 'sendOtpMessage / sendMagicLink', file: 'services/notifications/otp-auth.js' },
+      { fn: 'notifyLoyaltyEarned', file: 'services/notifications/loyalty.js' },
+      { fn: 'notifyText',    file: 'services/notifications/misc.js' },
     ],
     consumes: [
       'toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement',
+    ],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06, §2a — reclassé après vérification empirique)
+  debt: {
+    knownGaps: [
+      { gap: 'contrat historique "POST /api/notifications/send" : aucune route ne le sert. ' +
+             'L\'émission se fait exclusivement par appel de fonction interne ' +
+             '(notifyOrder*, notifyParcel*, ...), jamais par HTTP — ce qui est cohérent ' +
+             'avec l\'invariant déjà déclaré ("notifications est un puits d\'événements — ' +
+             'elle ne décide jamais elle-même qu\'un evenement metier a eu lieu"). ' +
+             'La seule surface HTTP réelle est la lecture admin (GET / et GET /stats, ' +
+             'montées sous /api/v2/notifications).',
+        risk: 'aucun — le contrat déclaré contredisait l\'invariant de la feature elle-même ; ' +
+              'ce n\'est pas une régression mais une intention jamais cohérente avec la ' +
+              'doctrine fire-and-forget déjà en place.',
+      },
     ],
   },
 

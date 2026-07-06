@@ -59,6 +59,9 @@ module.exports = {
       'routes/pickup-pay-cash.js',
       'routes/payments-paypal.js',
     ],
+    migrations: [
+      'migrations/079_paypal_payment_mode.sql',
+    ],
     boutique: [
       'js/b-checkout.js',
       'js/b-checkout-render.js',
@@ -77,6 +80,19 @@ module.exports = {
       'tests/unit/payments-webhook.test.js',
       'tests/unit/paypal-client.test.js',
       'tests/unit/paypal-webhook.test.js',
+      // Rapatriés depuis features/payment.feature.js (doublon supprimé,
+      // audit 2026-07-06 §2c) — services/routes étaient déjà ici, seuls ces
+      // tests traînaient encore dans l'ancien manifeste.
+      'tests/unit/cash-operations-service.test.js',
+      'tests/unit/cash-reminder-service.test.js',
+      'tests/unit/cash-route.test.js',
+      'tests/unit/confirm-pickup-cash-payment.test.js',
+      'tests/unit/create-stripe-order-intent.test.js',
+      'tests/unit/payment-paypal-events.test.js',
+      'tests/unit/payments-paypal.test.js',
+      'tests/unit/payments-route.test.js',
+      'tests/unit/pickup-pay-cash.test.js',
+      'tests/unit/reconciliation-service.test.js',
     ],
   },
 

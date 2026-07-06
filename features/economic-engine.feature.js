@@ -146,6 +146,10 @@ module.exports = {
       'tests/unit/pricing-rates.test.js',
       'tests/unit/pricing-strategy-service.test.js',
       'tests/unit/pricing-surcharge-benchmarks.test.js',
+      // Rapatrié depuis features/payment.feature.js (doublon supprimé, audit
+      // 2026-07-06 §2c) : teste services/finance-metrics/payments.js
+      // (déjà possédé par economic-engine ci-dessus), pas le domaine payment.
+      'tests/unit/finance-payments.test.js',
     ],
   },
 
@@ -165,7 +169,6 @@ module.exports = {
 
   contract: {
     exposes: [
-      'GET /api/pricing/:productId',
       'POST /api/pricing/recommend',
     ],
     consumes: ['catalog (donnees produit source)',
@@ -173,6 +176,21 @@ module.exports = {
       'dashboard',
       'orders',
       'wallet',
+    ],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06, §2a — reclassé après vérification empirique)
+  debt: {
+    knownGaps: [
+      { gap: 'contrat historique "GET /api/pricing/:productId" : aucune route ne le sert. ' +
+             'Le prix calculé n\'est pas lu à la demande par produit : il est stocké sur ' +
+             'la ligne products/product_variants (price_kmf) au moment de pricing-apply.js, ' +
+             'et lu directement par GET /api/products/:id (feature catalog). Aucun appelant ' +
+             'connu ne fait de lookup pricing par productId séparé du catalogue.',
+        risk: 'faible — probablement une intention jamais réalisée plutôt qu\'une régression. ' +
+              'À confirmer par le propriétaire avant suppression définitive de la mention.',
+      },
     ],
   },
 

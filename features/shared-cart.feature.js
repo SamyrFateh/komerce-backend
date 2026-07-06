@@ -196,14 +196,35 @@ module.exports = {
 
   contract: {
     exposes: [
-      'POST   /api/shared-carts',
+      'POST   /api/shared-carts/from-cart-items',
+      'POST   /api/shared-carts/from-basket',
+      'POST   /api/shared-carts/from-order',
+      'GET    /api/shared-carts/mine',
       'GET    /api/shared-carts/:id',
-      'POST   /api/shared-carts/:id/contribute',
+      'GET    /api/shared-carts/:id/as-cart-items',
+      'PUT    /api/shared-carts/:id/items',
       'POST   /api/shared-carts/:id/close',
+      'POST   /api/shared-carts/:id/finalize',
+      'POST   /api/shared-carts/:id/awaiting-choice/complete',
+      'POST   /api/shared-carts/:id/awaiting-choice/adjust',
+      'POST   /api/shared-carts/:id/awaiting-choice/cancel',
+      'POST   /api/shared-carts/:id/extend-window',
       'POST   /api/shared-carts/:id/cancel',
-      'GET    /api/shared-carts/:id/estimation',
-      'POST   /api/shared-carts/cash/:id/contribute',
-      'POST   /api/shared-carts/refund-admin/:id',
+      'GET    /api/shared-carts/public/:token',
+      'GET    /api/shared-carts/public/:token/estimations',
+      'POST   /api/shared-carts/public/:token/estimations',
+      'DELETE /api/shared-carts/public/:token/estimations/:estimationId',
+      'GET    /api/shared-carts/public/:token/estimations/by-phone',
+      'POST   /api/shared-carts/public/:token/contributions',
+      'POST   /api/shared-carts/public/:token/contributions/cash',
+      'POST   /api/shared-carts/contributions/:id/confirm-cash',
+      'GET    /api/admin/shared-carts',
+      'GET    /api/admin/shared-carts/refund-queue',
+      'GET    /api/admin/shared-carts/:id',
+      'POST   /api/admin/shared-carts/:id/expire',
+      'POST   /api/admin/shared-carts/:id/extend',
+      'POST   /api/admin/shared-carts/:id/note',
+      'POST   /api/admin/shared-carts/refund-queue/:contributionId/mark-refunded',
     ],
     consumes: ['orders',        // domaine propriétaire : order-status-machine
       'wallet',        // domaine propriétaire : wallet-service
@@ -213,6 +234,24 @@ module.exports = {
       'customs',
       'documents',
       'logistics',
+    ],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06, §2a — reclassé après vérification empirique)
+  debt: {
+    knownGaps: [
+      { gap: 'contrat historique en style verbe simple sur :id ("/:id/contribute", ' +
+             '"/cash/:id/contribute", "/refund-admin/:id") : aucune route ne sert ce style. ' +
+             'La doctrine "paiement = engagement" du panier partagé s\'incarne dans le code ' +
+             'réel en ressources nommées, pas en verbes : une contribution est un enregistrement ' +
+             '(POST .../public/:token/contributions[/cash]), jamais une action fugace sur ' +
+             'l\'identifiant du panier lui-même. Le flux de remboursement admin est de même ' +
+             'un enregistrement de file (POST /api/admin/shared-carts/refund-queue/:contributionId/mark-refunded), ' +
+             'pas un endpoint /refund-admin/:id générique.',
+        risk: 'aucun consommateur externe connu de l\'ancien style verbe. Les 29 endpoints ' +
+              'ci-dessus sont la surface réelle complète, vérifiée contre route-registry.json.',
+      },
     ],
   },
 

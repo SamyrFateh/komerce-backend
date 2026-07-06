@@ -83,12 +83,28 @@ module.exports = {
   contract: {
     exposes: [
       'GET /api/admin/customs-shipments',
-      'POST /api/admin/customs/classify',
     ],
     consumes: ['logistics (colis a classer)',
       'documents (facture douane generee)',
       'auth',
       'economic-engine',
+    ],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06, §2a — reclassé après vérification empirique)
+  debt: {
+    plannedInterfaces: [
+      { endpoint: 'POST /api/admin/customs/classify',
+        status: 'non développé',
+        decision: 'à trancher — la classification actuelle est 100% automatique ' +
+                  '(services/customs-classification.js:resolveFrozenClassification, ' +
+                  'appelée au gel de commande, jamais exposée en HTTP). Un endpoint de ' +
+                  'reclassification manuelle admin serait une nouvelle capacité, pas une ' +
+                  'régression — à ne construire que si un besoin métier réel de correction ' +
+                  'a posteriori est confirmé, et alors dans le respect de la doctrine ' +
+                  '"la déclaration est instrumentée, jamais optimisée".',
+      },
     ],
   },
 

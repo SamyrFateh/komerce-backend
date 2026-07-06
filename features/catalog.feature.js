@@ -163,7 +163,6 @@ module.exports = {
   contract: {
     exposes: [
       'GET /api/products',
-      'POST /api/admin/products/:id/publish',
       'GET /api/admin/catalog/approval-queue',
       'POST /api/admin/catalog/approval-queue/:id/approve',
       'POST /api/admin/catalog/approval-queue/:id/reject',
@@ -172,6 +171,25 @@ module.exports = {
     consumes: ['economic-engine (prix calcule)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
       'auth',
+    ],
+  },
+
+  // ── Dette assumée / documentée ────────────────────────────────────────────
+  // (audit 2026-07-06, §2a/§2b — reclassé après vérification empirique : ce
+  // n'est pas un simple "jamais construit", c'est un contrat rendu obsolète
+  // par la refonte K-4, ce qui change la décision à prendre.)
+  debt: {
+    knownGaps: [
+      { gap: 'contrat historique "POST /api/admin/products/:id/publish" : aucune route ne ' +
+             'le sert. Depuis la refonte K-4 (file d\'approbation, services/catalog-approval.js), ' +
+             'la publication (lifecycle_status → \'active\') se fait exclusivement via ' +
+             'POST /api/admin/catalog/approval-queue/:id/approve (ou :id/override), jamais ' +
+             'par un endpoint /publish dédié.',
+        risk: 'aucun — le mécanisme de publication existe et est couvert par le contrat ' +
+              'ci-dessus ; la ligne obsolète documentait une intention pré-K-4 abandonnée. ' +
+              'À retirer définitivement du manifeste dès confirmation par le propriétaire ' +
+              'de la feature qu\'aucun appelant n\'attend encore /publish.',
+      },
     ],
   },
 
