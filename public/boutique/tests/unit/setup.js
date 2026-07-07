@@ -14,3 +14,31 @@ global.localStorage = {
   removeItem(k) { delete this._store[k]; },
   clear() { this._store = {}; },
 };
+
+/* ── Réduction du bruit console en tests ─────────────────────────
+   Les warnings connus (shop-schema fallback, checkout relais, etc.)
+   polluent la sortie et noient les vrais FAIL.
+   On les filtre ICI (pas dans chaque test) pour que la sortie Jest
+   soit lisible d'un coup d'œil.
+   Ajouter un pattern ici si un nouveau warning récurrent apparaît.
+   ──────────────────────────────────────────────────────────────── */
+const KNOWN_NOISE = [
+  /\[shop-schema\] API indisponible/,
+  /\[checkout\] relais:/,
+  /\[PAYPAL\] (?:createOrder|onApprove|erreur SDK|paiement annulé)/,
+  /submitOrder:/,
+  /Not implemented: navigation/,
+];
+
+function isMuted(args) {
+  const msg = Array.prototype.slice.call(args).map(String).join(' ');
+  return KNOWN_NOISE.some(function(re) { return re.test(msg); });
+}
+
+const _origWarn = console.warn;
+const _origError = console.error;
+const _origInfo = console.info;
+
+console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };

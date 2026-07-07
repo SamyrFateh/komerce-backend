@@ -25,14 +25,14 @@
 | `layout.css` | 1168 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 301 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 357 | 🔴 **ORPHELIN** |
-| `modal-product.css` | 1154 | 🔴 **ORPHELIN** |
+| `modal-product.css` | 1304 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 899 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 962 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 71 | 🔴 **ORPHELIN** |
 | `shared-followup.css` | 3 | 🔴 **ORPHELIN** |
-| `tokens.css` | 511 | 🔴 **ORPHELIN** |
+| `tokens.css` | 512 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -40,9 +40,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=117
- 2. /boutique/css/dist/components.css?v=132
- 3. /boutique/css/dist/desktop.css?v=51
+ 1. /boutique/css/dist/base.css?v=118
+ 2. /boutique/css/dist/components.css?v=134
+ 3. /boutique/css/dist/desktop.css?v=52
  4. /boutique/css/dist/event.css?v=32
 ```
 

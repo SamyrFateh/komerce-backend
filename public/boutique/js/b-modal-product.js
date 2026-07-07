@@ -205,6 +205,8 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     if (!container) return;
     container.innerHTML = '';
 
+    let isMobile = window.innerWidth < 900;
+
     Object.keys(variants).forEach(function(type) {
       let options = variants[type];
       if (!options || !options.length) return;
@@ -213,64 +215,233 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       if (/couleur|color|coloris|teinte/i.test(type)) return;
 
       let isTaille = /taille|pointure/i.test(type);
+      let sizeType = /pointure/i.test(type) ? 'shoes' : 'clothes';
 
       let group = document.createElement('div');
       group.className = 'k-vg';
 
-      // Label "Taille · M  [📏 Guide des tailles]"
-      let labelRow = document.createElement('div');
-      labelRow.className = 'k-vg-label';
-      let guideHTML = isTaille
-        ? '<button type="button" class="k-vg-size-guide" data-size-type="' +
-            (/pointure/i.test(type) ? 'shoes' : 'clothes') +
-            '">📏 Guide des tailles</button>'
-        : '';
-      labelRow.innerHTML =
-        '<span class="k-vg-label-type">' + type + '</span>' +
-        '<span class="k-vg-label-sep">·</span>' +
-        '<span class="k-vg-label-val"></span>' +
-        guideHTML;
-      let labelVal = labelRow.querySelector('.k-vg-label-val');
+      /* ── État partagé entre trigger compact + sheet ── */
+      let selectedValue = null;
+      let selectedPrice = null;
 
-      let guideBtn = labelRow.querySelector('.k-vg-size-guide');
-      if (guideBtn) {
-        guideBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          openSizeGuide(guideBtn.dataset.sizeType);
+      /* ── Mobile + Taille/Pointure → bouton compact + bottom-sheet ── */
+      if (isMobile && isTaille) {
+        // Bouton compact "Taille · — ▾"
+        let trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'k-vs-trigger';
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.innerHTML =
+          '<span class="k-vs-trigger-label">' +
+            '<span class="k-vs-trigger-type">' + type + '</span>' +
+            '<span class="k-vs-trigger-sep">·</span>' +
+            '<span class="k-vs-trigger-val">Choisir</span>' +
+          '</span>' +
+          '<span class="k-vs-trigger-chevron">▾</span>';
+        let triggerVal = trigger.querySelector('.k-vs-trigger-val');
+
+        trigger.addEventListener('click', function() {
+          _openVariantSheet(type, sizeType, options, function(val, price) {
+            selectedValue = val;
+            selectedPrice = price;
+            triggerVal.textContent = val;
+            triggerVal.classList.add('is-set');
+            if (price) dom.modalPrice.textContent = fmtPrice(price);
+          }, selectedValue);
         });
+
+        group.appendChild(trigger);
+
+        // Desktop fallback : grille inline cachée par CSS (le trigger a display:none @≥900px)
+        // On ajoute quand même la grille pour le resize / orientation change
+        let wrap = _buildSizeGrid(options, type, sizeType, function(val, price) {
+          selectedValue = val;
+          selectedPrice = price;
+          triggerVal.textContent = val;
+          triggerVal.classList.add('is-set');
+        });
+        group.appendChild(wrap.label);
+        group.appendChild(wrap.grid);
+
+      } else {
+        /* ── Desktop ou type non-taille → grille inline (comportement existant) ── */
+        let wrap = _buildSizeGrid(options, type, sizeType, function(val, price) {
+          selectedValue = val;
+          selectedPrice = price;
+        });
+        group.appendChild(wrap.label);
+        group.appendChild(wrap.grid);
       }
 
-      group.appendChild(labelRow);
-
-      let wrap = document.createElement('div');
-      wrap.className = 'k-vg-sizes';
-
-      options.forEach(function(opt) {
-        let isOut = (opt.stock === 0);
-        let btn   = document.createElement('button');
-        btn.type  = 'button';
-        btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
-        btn.textContent = opt.value;
-        btn.disabled    = isOut;
-
-        btn.addEventListener('click', function() {
-          if (isOut) return;
-          wrap.querySelectorAll('.k-vp').forEach(function(b) { b.classList.remove('k-vp--active'); });
-          btn.classList.add('k-vp--active');
-          labelVal.textContent = opt.value;
-          if (opt.price_kmf) dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
-        });
-
-        wrap.appendChild(btn);
-      });
-
-      group.appendChild(wrap);
       container.appendChild(group);
     });
 
     // Ajuster le padding-bottom du scroll pour la barre d'actions fixe
-    // (les variants changent la hauteur du contenu, re-sync pour être sûr)
     _syncScrollPadding();
+  }
+
+  /* ── Helper : construire la grille de pills (réutilisé inline + dans la sheet) ── */
+  function _buildSizeGrid(options, type, sizeType, onSelect) {
+    let isTaille = /taille|pointure/i.test(type);
+
+    // Label "Taille · M  [📏 Guide des tailles]"
+    let labelRow = document.createElement('div');
+    labelRow.className = 'k-vg-label';
+    let guideHTML = isTaille
+      ? '<button type="button" class="k-vg-size-guide" data-size-type="' + sizeType +
+          '">📏 Guide des tailles</button>'
+      : '';
+    labelRow.innerHTML =
+      '<span class="k-vg-label-type">' + type + '</span>' +
+      '<span class="k-vg-label-sep">·</span>' +
+      '<span class="k-vg-label-val"></span>' +
+      guideHTML;
+    let labelVal = labelRow.querySelector('.k-vg-label-val');
+
+    let guideBtn = labelRow.querySelector('.k-vg-size-guide');
+    if (guideBtn) {
+      guideBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openSizeGuide(guideBtn.dataset.sizeType);
+      });
+    }
+
+    let wrap = document.createElement('div');
+    wrap.className = 'k-vg-sizes';
+
+    options.forEach(function(opt) {
+      let isOut = (opt.stock === 0);
+      let btn   = document.createElement('button');
+      btn.type  = 'button';
+      btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
+      btn.textContent = opt.value;
+      btn.disabled    = isOut;
+
+      btn.addEventListener('click', function() {
+        if (isOut) return;
+        wrap.querySelectorAll('.k-vp').forEach(function(b) { b.classList.remove('k-vp--active'); });
+        btn.classList.add('k-vp--active');
+        labelVal.textContent = opt.value;
+        if (opt.price_kmf) dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
+        if (onSelect) onSelect(opt.value, opt.price_kmf);
+      });
+
+      wrap.appendChild(btn);
+    });
+
+    return { label: labelRow, grid: wrap };
+  }
+
+  /* ── Bottom-sheet variantes (Lot 1) ── */
+  let _vsOverlay = null;
+
+  function _openVariantSheet(type, sizeType, options, onConfirm, currentValue) {
+    // Réutiliser l'overlay s'il existe déjà
+    if (_vsOverlay) _vsOverlay.remove();
+
+    _vsOverlay = document.createElement('div');
+    _vsOverlay.className = 'k-vs-overlay';
+    _vsOverlay.setAttribute('role', 'dialog');
+    _vsOverlay.setAttribute('aria-modal', 'true');
+    _vsOverlay.setAttribute('aria-label', 'Choisir ' + type.toLowerCase());
+
+    let pendingValue = currentValue || null;
+    let pendingPrice = null;
+
+    let html = [
+      '<div class="k-vs-panel">',
+        '<div class="k-vs-header">',
+          '<div class="k-vs-header-left">',
+            '<span class="k-vs-header-title">' + type + '</span>',
+            '<button type="button" class="k-vs-header-guide" data-size-type="' + sizeType + '">📏 Guide</button>',
+          '</div>',
+          '<button type="button" class="k-vs-close" aria-label="Fermer">',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+          '</button>',
+        '</div>',
+        '<div class="k-vs-body">',
+          '<div class="k-vg-sizes" id="k-vs-grid"></div>',
+        '</div>',
+        '<button type="button" class="k-vs-confirm" disabled>Confirmer</button>',
+      '</div>'
+    ].join('');
+
+    _vsOverlay.innerHTML = html;
+    document.body.appendChild(_vsOverlay);
+
+    // Remplir la grille
+    let grid = _vsOverlay.querySelector('#k-vs-grid');
+    let confirmBtn = _vsOverlay.querySelector('.k-vs-confirm');
+
+    options.forEach(function(opt) {
+      let isOut = (opt.stock === 0);
+      let btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
+      if (opt.value === currentValue) btn.className += ' k-vp--active';
+      btn.textContent = opt.value;
+      btn.disabled = isOut;
+
+      btn.addEventListener('click', function() {
+        if (isOut) return;
+        grid.querySelectorAll('.k-vp').forEach(function(b) { b.classList.remove('k-vp--active'); });
+        btn.classList.add('k-vp--active');
+        pendingValue = opt.value;
+        pendingPrice = opt.price_kmf || null;
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirmer — ' + opt.value;
+      });
+
+      grid.appendChild(btn);
+    });
+
+    // Si une valeur est déjà sélectionnée
+    if (currentValue) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirmer — ' + currentValue;
+      // Retrouver le prix
+      let match = options.find(function(o) { return o.value === currentValue; });
+      if (match) pendingPrice = match.price_kmf || null;
+    }
+
+    // Guide des tailles
+    _vsOverlay.querySelector('.k-vs-header-guide').addEventListener('click', function(e) {
+      e.stopPropagation();
+      openSizeGuide(sizeType);
+    });
+
+    // Fermeture
+    function close() { _closeVariantSheet(); }
+    _vsOverlay.querySelector('.k-vs-close').addEventListener('click', close);
+    _vsOverlay.addEventListener('click', function(e) {
+      if (e.target === _vsOverlay) close();
+    });
+    function _onKey(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', _onKey); }
+    }
+    document.addEventListener('keydown', _onKey);
+
+    // Confirmer
+    confirmBtn.addEventListener('click', function() {
+      if (pendingValue && onConfirm) onConfirm(pendingValue, pendingPrice);
+      close();
+    });
+
+    // Ouvrir avec animation
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        _vsOverlay.classList.add('is-open');
+      });
+    });
+  }
+
+  function _closeVariantSheet() {
+    if (!_vsOverlay) return;
+    _vsOverlay.classList.remove('is-open');
+    setTimeout(function() {
+      if (_vsOverlay && _vsOverlay.parentNode) _vsOverlay.remove();
+      _vsOverlay = null;
+    }, 260);
   }
 
   /* ════ ENCARTS MOBILE (livraison / trust / padding) ════ */

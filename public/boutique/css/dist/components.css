@@ -3588,6 +3588,153 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   LOT 1 — BOTTOM-SHEET TAILLE/POINTURE (mobile)
+   Bouton compact dans le flux + overlay sheet contenant la grille.
+   Pattern identique à .k-sg-overlay / .k-gsnap-overlay.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Bouton compact trigger — visible uniquement sur mobile */
+.k-vs-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--white);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-vs-trigger:active {
+  border-color: var(--coral);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 15%, transparent);
+}
+.k-vs-trigger-label { display: flex; align-items: baseline; gap: 6px; }
+.k-vs-trigger-type { color: var(--text); }
+.k-vs-trigger-sep { color: var(--text-muted); font-size: 11px; }
+.k-vs-trigger-val { color: var(--text-muted); font-weight: 400; }
+.k-vs-trigger-val.is-set { color: var(--coral-dark, var(--coral)); font-weight: 700; }
+.k-vs-trigger-chevron {
+  font-size: 16px; color: var(--text-muted);
+  transition: transform .2s;
+}
+.k-vs-trigger[aria-expanded="true"] .k-vs-trigger-chevron {
+  transform: rotate(180deg);
+}
+/* Sur desktop, le trigger est masqué — la grille inline s'affiche directement */
+@media (min-width: 900px) { .k-vs-trigger { display: none; } }
+
+/* Overlay */
+.k-vs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  background: var(--overlay-dark-md);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s var(--ease, ease);
+}
+.k-vs-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Panel */
+.k-vs-panel {
+  width: 100%;
+  max-width: 480px;
+  max-height: 70dvh;
+  background: var(--white);
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(32px);
+  transition: transform .25s cubic-bezier(.22,1,.36,1);
+  box-shadow: 0 -4px 32px var(--overlay-black-md);
+}
+.k-vs-overlay.is-open .k-vs-panel { transform: translateY(0); }
+
+/* Header */
+.k-vs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border-text-06, var(--border));
+}
+.k-vs-header-left { display: flex; align-items: baseline; gap: 8px; }
+.k-vs-header-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.k-vs-header-guide {
+  /* Inherits .k-vg-size-guide style — kept inline for simplicity */
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ocean, var(--blue-dark));
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-vs-close {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: var(--sand); border-radius: 50%;
+  color: var(--text-muted); cursor: pointer;
+  transition: background .12s;
+}
+.k-vs-close:active { background: var(--sand-dark); }
+.k-vs-close svg { width: 16px; height: 16px; }
+
+/* Body — la grille de pills */
+.k-vs-body {
+  padding: 16px 18px 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* On réutilise les classes .k-vg-sizes / .k-vp existantes à l'intérieur */
+
+/* Bouton "Confirmer" en bas */
+.k-vs-confirm {
+  display: block;
+  width: calc(100% - 36px);
+  margin: 0 18px 16px;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: var(--ocean, var(--cta));
+  color: var(--white);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .12s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.k-vs-confirm:active { filter: brightness(.92); }
+.k-vs-confirm:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+/* ══════════════════════════════════════════════════════════════
    GUIDE DES TAILLES — Overlay
    ══════════════════════════════════════════════════════════════ */
 
@@ -4112,8 +4259,8 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     padding-bottom: calc(172px + env(safe-area-inset-bottom));
   }
   html.k-mobile-premium-v1 #k-modal .k-modal-img-wrap {
-    min-height: 46vh;
-    max-height: 52vh;
+    min-height: 36vh;  /* Lot 0 — was 46vh, réduit pour remonter les variantes above fold */
+    max-height: 42vh;  /* Lot 0 — was 52vh */
     background: var(--sand);
   }
   html.k-mobile-premium-v1 #k-modal .k-modal-slide { object-fit: cover; }
@@ -4126,13 +4273,13 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     box-shadow: 0 -14px 36px var(--border-text-08);
     overflow: hidden;
   }
-  html.k-mobile-premium-v1 #k-modal .k-modal-info { padding: 24px 18px 12px; }
+  html.k-mobile-premium-v1 #k-modal .k-modal-info { padding: 16px 16px 10px; } /* Lot 0 — was 24px 18px 12px */
   html.k-mobile-premium-v1 #k-modal .k-modal-info::before {
     content: '';
     display: block;
     width: 44px;
     height: 5px;
-    margin: -10px auto 16px;
+    margin: -4px auto 10px; /* Lot 0 — was -10px auto 16px */
     border-radius: 999px;
     background: color-mix(in srgb, var(--text-muted) 28%, transparent);
   }
@@ -4140,25 +4287,28 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     gap: 12px;
     align-items: flex-start;
   }
+  /* Lot 0 — titre dé-héroïfié : was clamp(28px,8vw,38px) / 1.02 */
   html.k-mobile-premium-v1 #k-modal .k-modal-info h2 {
     font-family: var(--font-display, var(--font));
-    font-size: clamp(28px, 8vw, 38px);
-    line-height: 1.02;
-    letter-spacing: -.035em;
+    font-size: clamp(18px, 5.2vw, 22px);
+    line-height: 1.18;
+    letter-spacing: -.02em;
     color: var(--text);
   }
+  /* Lot 0 — was 58×58, réduit proportionnellement au titre */
   html.k-mobile-premium-v1 #k-modal .k-modal-fav-btn {
-    width: 58px;
-    height: 58px;
+    width: 44px;
+    height: 44px;
     flex: 0 0 auto;
     border-radius: 999px;
-    box-shadow: 0 12px 28px var(--border-text-08);
+    box-shadow: 0 8px 20px var(--border-text-08);
   }
-  html.k-mobile-premium-v1 #k-modal .k-modal-price-row { margin-top: 12px; }
+  html.k-mobile-premium-v1 #k-modal .k-modal-price-row { margin-top: 8px; } /* Lot 0 — was 12px */
+  /* Lot 0 — prix dé-héroïfié : was clamp(42px,12vw,58px) / .95 */
   html.k-mobile-premium-v1 #k-modal .k-modal-price {
-    font-size: clamp(42px, 12vw, 58px);
-    line-height: .95;
-    letter-spacing: -.045em;
+    font-size: clamp(24px, 7vw, 30px);
+    line-height: 1;
+    letter-spacing: -.025em;
   }
   html.k-mobile-premium-v1 #k-modal .k-modal-desc {
     margin-top: 10px;
