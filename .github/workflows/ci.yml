@@ -45,6 +45,15 @@ jobs:
           npx jest --testPathPatterns="tests/unit" --ci --runInBand
           --testPathIgnorePatterns="tests/integration" --coverage
 
+      # ING-4 (doctrine DOCTRINE_INGESTION_CATALOGUE, ING-I4) — répond par un
+      # code de sortie à « un fournisseur sale peut-il polluer la
+      # raffinerie ? ». Rejoue le contrat pivot v1 (ING-1) + le corpus de
+      # fixtures sales (ING-3). Non contournable : ni continue-on-error, ni
+      # entrée dans governance/test-exemptions.json (qui gouverne un autre
+      # gate, sans rapport avec l'ingestion catalogue).
+      - name: "Gate catalogue — un fournisseur sale ne peut pas polluer la raffinerie"
+        run: npm run gate:catalog-contract
+
       # Dette globale connue : ce gate détecte encore des manques historiques
       # dans plusieurs cartes. On garde le rapport visible en CI, mais les
       # garde-fous bloquants actifs passent par Carte First et map:check.

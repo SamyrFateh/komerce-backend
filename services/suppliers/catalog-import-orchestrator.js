@@ -46,6 +46,33 @@ const db = require('../../db');
 const scanner = require('../supplier-catalog-scanner');
 const pricingEngine = require('../pricing-engine');
 const eligibility = require('../catalog-eligibility');
+const { getRuleNumber } = require('../../utils/rules');
+
+/**
+ * Agrège les raisons de rejet d'un tableau d'entrées invalides en compte par
+ * raison — c'est la « ligne de synthèse » que lit le fondateur (doctrine
+ * ING-2, §8 de DOCTRINE_INGESTION_CATALOGUE) : il n'a jamais à relire une
+ * ligne fournisseur, seulement à voir « N fois telle raison ».
+ *
+ * Accepte les formes d'entrées invalid connues dans ce codebase :
+ *   { errors: string[] }  (connecteurs csv/manual, partitionValid)
+ *   { error: string }     (erreurs de traitement par produit, cf. ligne 266)
+ *
+ * @param {Array<{errors?: string[], error?: string}>} invalidArr
+ * @returns {Object<string, number>}
+ */
+function aggregateReasons(invalidArr) {
+  const counts = {};
+  for (const item of invalidArr || []) {
+    const reasons = Array.isArray(item.errors)
+      ? item.errors
+      : (item.error ? [item.error] : ['raison inconnue']);
+    for (const r of reasons) {
+      counts[r] = (counts[r] || 0) + 1;
+    }
+  }
+  return counts;
+}
 
 /**
  * Importe un catalogue fournisseur : dispatch connecteur → normalisation →
@@ -83,6 +110,27 @@ async function importCatalog(body, userId, dispatchToConnector) {
     return {
       status: 400,
       body: { error: 'Aucun produit valide trouvé', invalid: invalidFromConnector },
+    };
+  }
+
+  // ING-2 / ING-I4 : « le sale déclenche, il ne s'accumule pas ». Un fichier
+  // dont le taux d'invalides dépasse le seuil est un fichier malade — on
+  // refuse l'import EN BLOC plutôt que d'importer les bonnes lignes en
+  // laissant les mauvaises s'accumuler silencieusement import après import.
+  const totalFromConnector = products.length + invalidFromConnector.length;
+  const maxInvalidPct = await getRuleNumber('CATALOG_IMPORT_MAX_INVALID_PCT', 30);
+  const invalidPct = totalFromConnector > 0 ? (invalidFromConnector.length / totalFromConnector) * 100 : 0;
+  if (invalidPct > maxInvalidPct) {
+    return {
+      status: 400,
+      body: {
+        error: `Import refusé : fichier malade (${invalidPct.toFixed(1)}% invalides, seuil ${maxInvalidPct}%)`,
+        total: totalFromConnector,
+        accepted: products.length,
+        rejected: invalidFromConnector.length,
+        reject_reasons: aggregateReasons(invalidFromConnector),
+        unmapped_columns: connectorResult.unmapped_columns || [],
+      },
     };
   }
 
@@ -315,8 +363,12 @@ async function importCatalog(body, userId, dispatchToConnector) {
       updated: results.updated || 0,
       archived: results.archived || 0,
       errors: results.errors,
+      accepted: results.created + (results.updated || 0),
+      rejected: results.errors.length,
+      reject_reasons: aggregateReasons(results.errors),
+      unmapped_columns: connectorResult.unmapped_columns || [],
     },
   };
 }
 
-module.exports = { importCatalog };
+module.exports = { importCatalog, aggregateReasons };

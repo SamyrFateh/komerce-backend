@@ -59,6 +59,7 @@ module.exports = {
       'services/suppliers/connectors/api-connector.base.js',
       'services/suppliers/connectors/manual-connector.js',
       'services/suppliers/connectors/csv-connector.js',
+      'services/suppliers/connectors/_connector-utils.js',
       'services/suppliers/connectors/noon-connector.js',
       'services/supplier-catalog-scanner.js',
       'services/suppliers/catalog-import-orchestrator.js',

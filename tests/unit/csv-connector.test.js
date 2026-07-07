@@ -2,120 +2,180 @@
 
 /**
  * tests/unit/csv-connector.test.js
- * Couvre services/suppliers/connectors/csv-connector.js
+ * Couvre services/suppliers/connectors/csv-connector.js (ING-2)
  *
  * Connecteur fonctionnel pur (pas de DB, pas de mock nécessaire) :
- * parseCSV → rowsToNormalized → fetchProducts (délègue à partitionValid
- * de normalized-product.js, lui aussi pur — pas mocké, comportement réel testé).
+ * parseCSVRows → rowsToNormalized → fetchProducts (délègue à partitionValid
+ * de normalized-product.js, lui aussi pur — comportement réel testé).
+ *
+ * ING-2 inverse plusieurs tests qui verrouillaient les failles de l'ancien
+ * connecteur (colonnes inconnues ignorées, devise inventée, champs
+ * numériques droppés silencieusement) — chaque cas ci-dessous documente
+ * explicitement le AVANT/APRÈS dans son titre quand c'est un renversement.
  */
 
-const { fetchProducts, parseCSV, rowsToNormalized, DEFAULT_HEADER_ALIASES } = require('../../services/suppliers/connectors/csv-connector');
+const {
+  fetchProducts,
+  parseCSVRows,
+  rowsToNormalized,
+  DEFAULT_HEADER_ALIASES,
+} = require('../../services/suppliers/connectors/csv-connector');
 
-describe('parseCSV', () => {
-  it('csvText vide/null/undefined → tableau vide', () => {
-    expect(parseCSV('')).toEqual([]);
-    expect(parseCSV(null)).toEqual([]);
-    expect(parseCSV(undefined)).toEqual([]);
+describe('parseCSVRows', () => {
+  it('csvText vide/null/undefined → rows/invalid/unmappedColumns vides', () => {
+    expect(parseCSVRows('')).toEqual({ rows: [], invalid: [], unmappedColumns: [] });
+    expect(parseCSVRows(null)).toEqual({ rows: [], invalid: [], unmappedColumns: [] });
+    expect(parseCSVRows(undefined)).toEqual({ rows: [], invalid: [], unmappedColumns: [] });
   });
 
-  it('csvText non-string → tableau vide', () => {
-    expect(parseCSV(42)).toEqual([]);
+  it('csvText non-string → vide', () => {
+    expect(parseCSVRows(42)).toEqual({ rows: [], invalid: [], unmappedColumns: [] });
   });
 
-  it('une seule ligne (headers seuls, pas de données) → tableau vide', () => {
-    expect(parseCSV('name,price')).toEqual([]);
+  it('une seule ligne (headers seuls, pas de données) → vide', () => {
+    expect(parseCSVRows('name,price')).toEqual({ rows: [], invalid: [], unmappedColumns: [] });
   });
 
   it('CSV séparé par virgules, headers anglais → mappe correctement', () => {
-    const csv = 'name,price,stock\nCasque,5000,10';
-    const rows = parseCSV(csv);
-    expect(rows).toEqual([{ product_name: 'Casque', purchase_price: 5000, stock_available: 10 }]);
+    const csv = 'name,price,stock,currency\nCasque,5000,10,AED';
+    const { rows } = parseCSVRows(csv);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual(expect.objectContaining({
+      product_name: 'Casque', purchase_price: 5000, stock_available: 10,
+    }));
   });
 
   it('CSV séparé par point-virgules (auto-détection)', () => {
-    const csv = 'name;price\nCasque;5000';
-    const rows = parseCSV(csv);
-    expect(rows).toEqual([{ product_name: 'Casque', purchase_price: 5000 }]);
+    const csv = 'name;price;currency\nCasque;5000;AED';
+    const { rows } = parseCSVRows(csv);
+    expect(rows[0]).toEqual(expect.objectContaining({ product_name: 'Casque', purchase_price: 5000 }));
   });
 
   it('headers français reconnus via DEFAULT_HEADER_ALIASES', () => {
-    const csv = 'nom,prix_achat,categorie\nCasque,5000,Audio';
-    const rows = parseCSV(csv);
-    expect(rows).toEqual([{ product_name: 'Casque', purchase_price: 5000, supplier_category: 'Audio' }]);
+    const csv = 'nom,prix_achat,categorie,devise\nCasque,5000,Audio,AED';
+    const { rows } = parseCSVRows(csv);
+    expect(rows[0]).toEqual(expect.objectContaining({
+      product_name: 'Casque', purchase_price: 5000, supplier_category: 'Audio',
+    }));
   });
 
   it('headers insensibles à la casse', () => {
-    const csv = 'NAME,PRICE\nCasque,5000';
-    const rows = parseCSV(csv);
+    const csv = 'NAME,PRICE,CURRENCY\nCasque,5000,AED';
+    const { rows } = parseCSVRows(csv);
     expect(rows[0].product_name).toBe('Casque');
   });
 
   it('plusieurs lignes de données → une entrée par ligne, dans l\'ordre', () => {
-    const csv = 'name,price\nA,100\nB,200\nC,300';
-    const rows = parseCSV(csv);
+    const csv = 'name,price,currency\nA,100,AED\nB,200,AED\nC,300,AED';
+    const { rows } = parseCSVRows(csv);
     expect(rows.map(r => r.product_name)).toEqual(['A', 'B', 'C']);
   });
 
-  it('ligne sans product_name → exclue du résultat', () => {
-    const csv = 'name,price\n,100\nB,200';
-    const rows = parseCSV(csv);
-    expect(rows).toEqual([{ product_name: 'B', purchase_price: 200 }]);
+  it('ligne sans product_name → exclue du résultat (pas une erreur — ligne vide)', () => {
+    const csv = 'name,price,currency\n,100,AED\nB,200,AED';
+    const { rows, invalid } = parseCSVRows(csv);
+    expect(rows).toEqual([expect.objectContaining({ product_name: 'B' })]);
+    expect(invalid).toEqual([]);
   });
 
   it('lignes vides (blank lines) → ignorées', () => {
-    const csv = 'name,price\nA,100\n\n\nB,200';
-    const rows = parseCSV(csv);
+    const csv = 'name,price,currency\nA,100,AED\n\n\nB,200,AED';
+    const { rows } = parseCSVRows(csv);
     expect(rows).toHaveLength(2);
   });
 
-  it('valeurs entourées de guillemets → guillemets retirés', () => {
-    const csv = 'name,price\n"Casque Bluetooth",5000';
-    const rows = parseCSV(csv);
-    expect(rows[0].product_name).toBe('Casque Bluetooth');
+  it('virgule dans un titre entre guillemets (papaparse RFC-4180) → nom intact, prix intact', () => {
+    const csv = 'name,price,currency\n"Casque, Bluetooth Pro",5000,AED';
+    const { rows } = parseCSVRows(csv);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].product_name).toBe('Casque, Bluetooth Pro');
+    expect(rows[0].purchase_price).toBe(5000);
+  });
+
+  it('valeur multi-lignes entre guillemets → préservée sans corrompre les lignes suivantes', () => {
+    const csv = 'name,description,currency\nCasque,"Ligne1\nLigne2",AED\nEnceinte,ok,AED';
+    const { rows } = parseCSVRows(csv);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].description).toBe('Ligne1\nLigne2');
+    expect(rows[1].product_name).toBe('Enceinte');
   });
 
   it('champ numérique avec virgule décimale (FR) → convertie en point', () => {
-    const csv = 'name,weight\nCasque,1,5';
-    // weight alias = 'weight' colonne 2 ; valeur "1,5" mais séparateur global est ",", donc
-    // la colonne weight serait coupée — on teste plutôt avec un CSV ; pour isoler la virgule décimale
-    const csvSemi = 'name;weight\nCasque;1,5';
-    const rows = parseCSV(csvSemi);
+    const csvSemi = 'name;weight;currency\nCasque;1,5;AED';
+    const { rows } = parseCSVRows(csvSemi);
     expect(rows[0].weight_kg).toBe(1.5);
   });
 
-  it('champ numérique invalide → ignoré (pas ajouté à la ligne)', () => {
-    const csv = 'name,price\nCasque,non-numerique';
-    const rows = parseCSV(csv);
-    expect(rows[0]).toEqual({ product_name: 'Casque' });
+  // ── ING-2 : renversement — un champ illisible REJETTE la ligne ──────────
+
+  it('[AVANT: ignoré][APRÈS: rejeté] champ numérique invalide ("non-numerique") → ligne en invalid, pas droppée', () => {
+    const csv = 'name,price,currency\nCasque,non-numerique,AED';
+    const { rows, invalid } = parseCSVRows(csv);
+    expect(rows).toEqual([]);
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors).toEqual(
+      expect.arrayContaining([expect.stringContaining('purchase_price non numérique')])
+    );
   });
 
-  it('champ entier (stock) invalide → ignoré', () => {
-    const csv = 'name,stock\nCasque,beaucoup';
-    const rows = parseCSV(csv);
-    expect(rows[0]).toEqual({ product_name: 'Casque' });
+  it('[AVANT: ignoré][APRÈS: rejeté] "120 USD" en colonne prix → non numérique, ligne rejetée', () => {
+    const csv = 'name,price,currency\nCasque,120 USD,AED';
+    const { invalid } = parseCSVRows(csv);
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors[0]).toContain('purchase_price non numérique');
   });
 
-  it('colonnes inconnues (sans alias) → ignorées silencieusement', () => {
-    const csv = 'name,couleur_preferee\nCasque,bleu';
-    const rows = parseCSV(csv);
-    expect(rows[0]).toEqual({ product_name: 'Casque' });
+  it('[AVANT: ignoré][APRÈS: rejeté] stock "beaucoup" → non entier, ligne rejetée', () => {
+    const csv = 'name,stock,currency\nCasque,beaucoup,AED';
+    const { invalid } = parseCSVRows(csv);
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors[0]).toContain('stock_available non entier');
+  });
+
+  it('stock "12.9" (décimal) → non entier, ligne rejetée', () => {
+    const csv = 'name,stock,currency\nCasque,12.9,AED';
+    const { invalid } = parseCSVRows(csv);
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors[0]).toContain('stock_available non entier');
+  });
+
+  it('stock "-50" → numériquement valide (le rejet de la borne est au contrat, pas ici)', () => {
+    const csv = 'name,stock,currency\nCasque,-50,AED';
+    const { rows, invalid } = parseCSVRows(csv);
+    expect(invalid).toEqual([]);
+    expect(rows[0].stock_available).toBe(-50);
+  });
+
+  // ── ING-2 : renversement — colonnes inconnues conservées + signalées ────
+
+  it('[AVANT: ignorées silencieusement][APRÈS: conservées + signalées] colonnes sans alias → dans raw_payload et unmappedColumns', () => {
+    const csv = 'name,currency,couleur_preferee\nCasque,AED,bleu';
+    const { rows, unmappedColumns } = parseCSVRows(csv);
+    expect(rows[0].raw_payload).toEqual({ name: 'Casque', currency: 'AED', couleur_preferee: 'bleu' });
+    expect(unmappedColumns).toEqual(['couleur_preferee']);
+  });
+
+  it('raw_payload contient TOUTES les colonnes, y compris non mappées (hazmat caché — ING-I3)', () => {
+    const csv = 'name,currency,hazmat_class,battery_type\nCasque,AED,none,li-ion';
+    const { rows } = parseCSVRows(csv);
+    expect(rows[0].raw_payload).toEqual({ name: 'Casque', currency: 'AED', hazmat_class: 'none', battery_type: 'li-ion' });
   });
 
   it('customMapping → force le mapping même si le header ne matche pas les alias par défaut', () => {
-    const csv = 'libelle,montant\nCasque,5000';
-    const rows = parseCSV(csv, { product_name: 'libelle', purchase_price: 'montant' });
-    expect(rows).toEqual([{ product_name: 'Casque', purchase_price: 5000 }]);
+    const csv = 'libelle,montant,devise\nCasque,5000,AED';
+    const { rows } = parseCSVRows(csv, { product_name: 'libelle', purchase_price: 'montant', currency: 'devise' });
+    expect(rows[0]).toEqual(expect.objectContaining({ product_name: 'Casque', purchase_price: 5000 }));
   });
 
   it('customMapping insensible à la casse', () => {
-    const csv = 'LIBELLE\nCasque';
-    const rows = parseCSV(csv, { product_name: 'libelle' });
+    const csv = 'LIBELLE,DEVISE\nCasque,AED';
+    const { rows } = parseCSVRows(csv, { product_name: 'libelle', currency: 'devise' });
     expect(rows[0].product_name).toBe('Casque');
   });
 
   it('retours chariot Windows (\\r\\n) → gérés comme \\n', () => {
-    const csv = 'name,price\r\nCasque,5000\r\nEnceinte,8000';
-    const rows = parseCSV(csv);
+    const csv = 'name,price,currency\r\nCasque,5000,AED\r\nEnceinte,8000,AED';
+    const { rows } = parseCSVRows(csv);
     expect(rows).toHaveLength(2);
   });
 
@@ -126,28 +186,94 @@ describe('parseCSV', () => {
     expect(fields).toContain('supplier_product_id');
     expect(fields.length).toBe(15);
   });
+
+  // ── ING-2 : renversement — devise absente n'est plus un défaut AED ──────
+
+  it('[AVANT: défaut AED][APRÈS: rejeté] devise absente → ligne rejetée avec raison explicite', () => {
+    const csv = 'name,price\nCasque,5000';
+    const { rows, invalid } = parseCSVRows(csv);
+    expect(rows).toEqual([]);
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors).toEqual(
+      expect.arrayContaining([expect.stringContaining('devise absente')])
+    );
+  });
+
+  it('devise en minuscule ("usd") → acceptée, normalisée en majuscule par rowsToNormalized', () => {
+    const csv = 'name,price,currency\nCasque,5000,usd';
+    const { rows } = parseCSVRows(csv);
+    expect(rows[0].currency).toBe('usd'); // uppercase appliqué en aval (rowsToNormalized)
+  });
+
+  // ── ING-2 : en-têtes dupliqués → import refusé en bloc ──────────────────
+
+  it('[AVANT: première colonne gagne silencieusement][APRÈS: throw] en-têtes dupliqués (price,price) → import refusé', () => {
+    const csv = 'name,price,price\nCasque,5000,6000';
+    expect(() => parseCSVRows(csv)).toThrow(/en-têtes dupliqués/);
+  });
+
+  it('en-têtes dupliqués insensibles à la casse (Price,price) → détectés', () => {
+    const csv = 'name,Price,price\nCasque,5000,6000';
+    expect(() => parseCSVRows(csv)).toThrow(/en-têtes dupliqués/);
+  });
+
+  // ── ING-2 : ligne malformée (nombre de colonnes ≠ en-têtes) ─────────────
+
+  it('ligne avec moins de colonnes que les en-têtes → rejetée motif malformée', () => {
+    const csv = 'name,price,currency\nCasque';
+    const { rows, invalid } = parseCSVRows(csv);
+    expect(rows).toEqual([]);
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors[0]).toContain('ligne malformée');
+  });
+
+  it('ligne avec plus de colonnes que les en-têtes → rejetée motif malformée', () => {
+    const csv = 'name,price\nCasque,5000,en-trop';
+    const { invalid } = parseCSVRows(csv);
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors[0]).toContain('ligne malformée');
+  });
+
+  // ── ING-2 : doublon SKU intra-fichier ────────────────────────────────────
+
+  it('SKU dupliqué → la première ligne gagne, la suivante rejetée bruyamment', () => {
+    const csv = 'name,sku,price,currency\nCasque,SKU1,5000,AED\nCasque V2,SKU1,6000,AED';
+    const { rows, invalid } = parseCSVRows(csv);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].product_name).toBe('Casque');
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors[0]).toContain('duplicate_sku_in_file');
+  });
+
+  it('lignes sans SKU → aucune déduplication appliquée (rien à comparer)', () => {
+    const csv = 'name,price,currency\nA,100,AED\nB,200,AED';
+    const { rows, invalid } = parseCSVRows(csv);
+    expect(rows).toHaveLength(2);
+    expect(invalid).toEqual([]);
+  });
 });
 
 describe('rowsToNormalized', () => {
-  it('rawRows null/undefined → tableau vide', () => {
+  it('rows null/undefined → tableau vide', () => {
     expect(rowsToNormalized(null, 'Fournisseur')).toEqual([]);
     expect(rowsToNormalized(undefined, 'Fournisseur')).toEqual([]);
   });
 
   it('mappe les champs simples et applique supplier_name', () => {
-    const result = rowsToNormalized([{ product_name: 'Casque', purchase_price: 5000 }], 'Dragon Mart');
+    const result = rowsToNormalized([{ product_name: 'Casque', purchase_price: 5000, currency: 'AED' }], 'Dragon Mart');
     expect(result[0]).toEqual(expect.objectContaining({
-      supplier_name: 'Dragon Mart',
-      product_name: 'Casque',
-      purchase_price: 5000,
+      supplier_name: 'Dragon Mart', product_name: 'Casque', purchase_price: 5000, currency: 'AED',
     }));
   });
 
-  it('currency absente → défaut AED, uppercase appliqué', () => {
-    const r1 = rowsToNormalized([{ product_name: 'A' }], 'F')[0];
-    expect(r1.currency).toBe('AED');
-    const r2 = rowsToNormalized([{ product_name: 'A', currency: 'eur' }], 'F')[0];
-    expect(r2.currency).toBe('EUR');
+  it('currency uppercase appliqué', () => {
+    const r = rowsToNormalized([{ product_name: 'A', currency: 'eur' }], 'F')[0];
+    expect(r.currency).toBe('EUR');
+  });
+
+  it('currency absente → null (ING-2 : plus de défaut AED)', () => {
+    const r = rowsToNormalized([{ product_name: 'A' }], 'F')[0];
+    expect(r.currency).toBeNull();
   });
 
   it('champs optionnels absents → null', () => {
@@ -180,11 +306,11 @@ describe('rowsToNormalized', () => {
     expect(r.dimensions).toBeNull();
   });
 
-  it('conserve raw_payload (copie de la ligne brute)', () => {
-    const row = { product_name: 'A', purchase_price: 100 };
+  it('conserve raw_payload posé par parseCSVRows (brut intégral)', () => {
+    const row = { product_name: 'A', purchase_price: 100, raw_payload: { name: 'A', price: '100', extra: 'x' } };
     const r = rowsToNormalized([row], 'F')[0];
-    expect(r.raw_payload).toEqual(row);
-    expect(r.raw_payload).not.toBe(row); // copie, pas la même référence
+    expect(r.raw_payload).toEqual(row.raw_payload);
+    expect(r.raw_payload).not.toBe(row.raw_payload); // copie, pas la même référence
   });
 
   it('plusieurs lignes → une entrée normalisée par ligne, dans l\'ordre', () => {
@@ -211,26 +337,29 @@ describe('fetchProducts — intégration parse + normalize + validation', () => 
   });
 
   it('nominal → produits valides dans products, total = nombre de lignes parsées', () => {
-    const result = fetchProducts({ supplier_name: 'Dragon Mart', csv_text: 'name,price\nCasque,5000\nEnceinte,8000' });
+    const result = fetchProducts({
+      supplier_name: 'Dragon Mart',
+      csv_text: 'name,price,currency\nCasque,5000,AED\nEnceinte,8000,AED',
+    });
     expect(result.products).toHaveLength(2);
     expect(result.invalid).toEqual([]);
     expect(result.total).toBe(2);
     expect(result.products[0].supplier_name).toBe('Dragon Mart');
+    expect(result.unmapped_columns).toEqual([]);
   });
 
-  it('produit avec currency invalide → rejeté dans invalid avec ses erreurs', () => {
+  it('produit avec currency invalide (hors enum) → rejeté dans invalid avec ses erreurs (contrat v1)', () => {
     const result = fetchProducts({ supplier_name: 'F', csv_text: 'name,currency\nCasque,XYZ' });
     expect(result.products).toEqual([]);
     expect(result.invalid).toHaveLength(1);
     expect(result.invalid[0].errors).toContain('currency doit être AED, EUR, USD ou KMF');
   });
 
-  it('produit avec purchase_price négatif (forcé via mapping custom) → rejeté', () => {
+  it('produit avec purchase_price négatif → rejeté par le contrat (bornes, pas le parsing)', () => {
     const result = fetchProducts({
       supplier_name: 'F',
-      csv_text: 'name,price\nCasque,-100',
+      csv_text: 'name,price,currency\nCasque,-100,AED',
     });
-    // parseFloat("-100") = -100, valide numériquement côté parseCSV mais rejeté par validateNormalizedProduct
     expect(result.invalid).toHaveLength(1);
     expect(result.invalid[0].errors).toContain('purchase_price doit être un nombre positif');
   });
@@ -238,8 +367,8 @@ describe('fetchProducts — intégration parse + normalize + validation', () => 
   it('csv_mapping personnalisé propagé jusqu\'au parsing', () => {
     const result = fetchProducts({
       supplier_name: 'F',
-      csv_text: 'libelle\nCasque',
-      csv_mapping: { product_name: 'libelle' },
+      csv_text: 'libelle,devise\nCasque,AED',
+      csv_mapping: { product_name: 'libelle', currency: 'devise' },
     });
     expect(result.products[0].product_name).toBe('Casque');
   });
@@ -256,6 +385,36 @@ describe('fetchProducts — intégration parse + normalize + validation', () => 
 
   it('CSV sans lignes de données → products/invalid vides, total 0', () => {
     const result = fetchProducts({ supplier_name: 'F', csv_text: 'name,price' });
-    expect(result).toEqual({ products: [], invalid: [], total: 0 });
+    expect(result.products).toEqual([]);
+    expect(result.invalid).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+
+  it('en-têtes dupliqués → fetchProducts relaie le throw (l\'orchestrateur le transforme en 400)', () => {
+    expect(() => fetchProducts({
+      supplier_name: 'F',
+      csv_text: 'name,price,price\nCasque,5000,6000',
+    })).toThrow(/en-têtes dupliqués/);
+  });
+
+  it('devise absente sur toutes les lignes → total compte les rejets connecteur + colonnes remontées', () => {
+    const result = fetchProducts({
+      supplier_name: 'F',
+      csv_text: 'name,couleur\nCasque,bleu\nEnceinte,rouge',
+    });
+    expect(result.products).toEqual([]);
+    expect(result.invalid).toHaveLength(2);
+    expect(result.total).toBe(2);
+    expect(result.unmapped_columns).toEqual(['couleur']);
+  });
+
+  it('hazmat_class inconnu du mapping → présent dans raw_payload du produit importé', () => {
+    const result = fetchProducts({
+      supplier_name: 'F',
+      csv_text: 'name,currency,hazmat_class\nCasque,AED,none',
+    });
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0].raw_payload).toEqual({ name: 'Casque', currency: 'AED', hazmat_class: 'none' });
+    expect(result.unmapped_columns).toEqual(['hazmat_class']);
   });
 });

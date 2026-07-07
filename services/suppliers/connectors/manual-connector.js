@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       none
- * @db-write      none
+ * @db-read       @unknown
+ * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  catalog, product-discovery
@@ -25,58 +25,95 @@
  *
  * L'admin saisit un ou plusieurs produits via le formulaire de la vue
  * Scanner. Le connecteur :
- *   - normalise les types
- *   - regroupe les dimensions
- *   - valide la structure (via partitionValid)
+ *   - normalise les types (parsing STRICT — ING-I2, ING-2 : une valeur
+ *     fournie mais illisible ne devient jamais null en silence)
+ *   - regroupe et re-valide les dimensions champ par champ
+ *   - valide la structure (via partitionValid, contrat v1)
  *
- * Aucun parsing complexe : c'est juste une normalisation de formulaire.
+ * ING-2 : plus de défaut inventé (`currency || 'AED'`). Une devise absente
+ * n'est plus devinée — le contrat v1 la rejette (`currency requise`).
  */
 
 'use strict';
 
 const { partitionValid } = require('../normalized-product');
+const { parseStrictNumber, parseStrictInteger, parsePositiveDimension } = require('./_connector-utils');
 
 /**
  * Normalise un item de formulaire en NormalizedSupplierProduct.
+ * En cas de valeur illisible (ex: purchase_price:"beaucoup"), l'item porte
+ * une propriété non-énumérable `_connectorErrors` — fetchProducts() la
+ * détecte et route l'item directement en `invalid`, sans passer par le
+ * contrat (ING-I2 : la donnée n'est même pas structurellement exploitable).
  *
  * @param {Object} item   — payload form (ex: { product_name, purchase_price, weight_kg, dim_l_cm, ... })
  * @param {string} supplierName
  * @returns {NormalizedSupplierProduct}
  */
 function normalizeFormItem(item, supplierName) {
-  const dimensions = {};
-  if (item.dim_l_cm != null && item.dim_l_cm !== '') dimensions.l_cm = Number(item.dim_l_cm);
-  if (item.dim_w_cm != null && item.dim_w_cm !== '') dimensions.w_cm = Number(item.dim_w_cm);
-  if (item.dim_h_cm != null && item.dim_h_cm !== '') dimensions.h_cm = Number(item.dim_h_cm);
+  const errors = [];
 
-  // Si l'admin envoie déjà un objet 'dimensions', l'accepter aussi
-  const finalDimensions = item.dimensions
+  function numField(field, label) {
+    const r = parseStrictNumber(item[field]);
+    if (r.invalid) errors.push(`${label} invalide : "${item[field]}"`);
+    return r.value != null ? r.value : null;
+  }
+  function intField(field, label) {
+    const r = parseStrictInteger(item[field]);
+    if (r.invalid) errors.push(`${label} invalide : "${item[field]}"`);
+    return r.value != null ? r.value : null;
+  }
+
+  const purchasePrice = numField('purchase_price', 'purchase_price');
+  const stockAvailable = intField('stock_available', 'stock_available');
+  const minOrderQty = intField('min_order_qty', 'min_order_qty');
+  const supplierDelayDays = intField('supplier_delay_days', 'supplier_delay_days');
+  const weightKg = numField('weight_kg', 'weight_kg');
+
+  // Dimensions : re-validées champ par champ, qu'elles arrivent en dim_l_cm/
+  // dim_w_cm/dim_h_cm séparés OU déjà groupées dans un objet `dimensions`
+  // (ING-2 : plus d'objet libre accepté tel quel — chaque valeur est
+  // parsée strictement, une valeur illisible rejette la ligne).
+  const dimSource = item.dimensions && typeof item.dimensions === 'object'
     ? item.dimensions
-    : (Object.keys(dimensions).length ? dimensions : null);
+    : { l_cm: item.dim_l_cm, w_cm: item.dim_w_cm, h_cm: item.dim_h_cm };
 
-  return {
+  const dimensions = {};
+  for (const key of ['l_cm', 'w_cm', 'h_cm']) {
+    const r = parsePositiveDimension(dimSource[key]);
+    if (r.invalid) errors.push(`dimensions.${key} invalide : "${dimSource[key]}"`);
+    else if (r.value !== undefined) dimensions[key] = r.value;
+  }
+  const finalDimensions = Object.keys(dimensions).length ? dimensions : null;
+
+  const currency = item.currency ? String(item.currency).toUpperCase() : null;
+
+  const obj = {
     supplier_name: supplierName,
     supplier_product_id: item.supplier_product_id || null,
     product_name: (item.product_name || '').trim(),
     supplier_category: item.supplier_category || null,
-    purchase_price: item.purchase_price != null && item.purchase_price !== ''
-      ? Number(item.purchase_price)
-      : null,
-    currency: (item.currency || 'AED').toUpperCase(),
+    purchase_price: purchasePrice,
+    currency,
     image_url: item.image_url || null,
     product_url: item.product_url || null,
     description: item.description || null,
-    stock_available: item.stock_available != null && item.stock_available !== ''
-      ? parseInt(item.stock_available, 10) : null,
-    min_order_qty: item.min_order_qty != null && item.min_order_qty !== ''
-      ? parseInt(item.min_order_qty, 10) : null,
-    supplier_delay_days: item.supplier_delay_days != null && item.supplier_delay_days !== ''
-      ? parseInt(item.supplier_delay_days, 10) : null,
-    weight_kg: item.weight_kg != null && item.weight_kg !== ''
-      ? Number(item.weight_kg) : null,
+    stock_available: stockAvailable,
+    min_order_qty: minOrderQty,
+    supplier_delay_days: supplierDelayDays,
+    weight_kg: weightKg,
     dimensions: finalDimensions,
     raw_payload: { ...item },
   };
+
+  if (errors.length) {
+    Object.defineProperty(obj, '_connectorErrors', {
+      value: errors,
+      enumerable: false,
+    });
+  }
+
+  return obj;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -99,10 +136,24 @@ function fetchProducts(input) {
     throw new Error('items requis (tableau non vide)');
   }
   const normalized = input.items.map(it => normalizeFormItem(it, supplierName));
-  const { valid, invalid } = partitionValid(normalized);
+
+  // ING-2 : les items structurellement illisibles (parsing strict échoué)
+  // sont écartés AVANT le contrat v1 — inutile de leur faire subir une
+  // validation de schéma sur des champs qu'on sait déjà invalides.
+  const connectorInvalid = [];
+  const toValidate = [];
+  for (const n of normalized) {
+    if (n._connectorErrors && n._connectorErrors.length) {
+      connectorInvalid.push({ product: { ...n }, errors: n._connectorErrors });
+    } else {
+      toValidate.push(n);
+    }
+  }
+
+  const { valid, invalid: schemaInvalid } = partitionValid(toValidate);
   return {
     products: valid,
-    invalid,
+    invalid: [...connectorInvalid, ...schemaInvalid],
     total: normalized.length,
   };
 }

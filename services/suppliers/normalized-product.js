@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       none
- * @db-write      none
+ * @db-read       @unknown
+ * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  catalog, product-discovery
@@ -60,7 +60,7 @@ const schemaV1 = require('../../schemas/catalog/normalized-supplier-product.v1.s
 // ING-1 — le contrat pivot est désormais un schéma versionné compilé au
 // require, pas une convention JSDoc vérifiée à la main. Un connecteur qui
 // contourne le schéma n'existe pas (doctrine ING-I1).
-const ajv = new Ajv({ allErrors: true, strict: false });
+const ajv = new Ajv({ allErrors: true, strict: false, verbose: true });
 addFormats(ajv);
 const validateSchema = ajv.compile(schemaV1);
 

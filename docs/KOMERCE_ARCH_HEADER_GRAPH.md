@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 356
-- Files with full headers: 329
+- Scanned code files: 357
+- Files with full headers: 330
 - Files with lite headers: 27
-- Files with any headers: 356
+- Files with any headers: 357
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 712
-- Edges: 3474
+- Graph nodes: 717
+- Edges: 3487
 - DB tables: 111
-- Doctrines: 129
+- Doctrines: 133
 - Impact areas: 116
-- Unresolved code edges: 332
+- Unresolved code edges: 334
 
 ## Domains
 
@@ -26,7 +26,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 5
 - bootstrap: 1
 - boutique: 36
-- catalog: 35
+- catalog: 36
 - checkout: 2
 - customs: 6
 - dashboard: 30
@@ -72,7 +72,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-renderer: 6
 - ui-service: 1
 - ui-state: 1
-- util: 22
+- util: 23
 - util-ui: 2
 - validators: 1
 - view-model: 3
@@ -351,6 +351,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/dashboard-metrics/workspaces.js -> (none)
 - WRITE services/invoice-public-token.js -> (none)
 - WRITE services/prompts/catalog-enrichment.prompt.js -> (none)
+- WRITE services/suppliers/connectors/_connector-utils.js -> (none)
 - WRITE utils/documents/customs-invoice-html.js -> (none)
 - WRITE utils/documents/logo-base64.js -> (none)
 - WRITE utils/documents/pickup-proof-html.js -> (none)
@@ -455,7 +456,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/invoice-service.js -> invoices
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
-- WRITE routes/loyalty.js -> loyalty_tiers
 
 ## Unresolved Code Edges
 

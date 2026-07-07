@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 356,
-    "filesWithFullHeaders": 329,
+    "scannedCodeFiles": 357,
+    "filesWithFullHeaders": 330,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 356,
+    "filesWithAnyHeaders": 357,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 712,
-    "edges": 3474,
+    "graphNodes": 717,
+    "edges": 3487,
     "dbTables": 111,
-    "doctrines": 129,
+    "doctrines": 133,
     "impactAreas": 116,
-    "unresolvedCodeEdges": 332
+    "unresolvedCodeEdges": 334
   },
   "byDomain": {
     "infrastructure": 18,
@@ -33,7 +33,7 @@
     "auth": 8,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 35,
+    "catalog": 36,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 7,
@@ -67,7 +67,7 @@
     "util-ui": 2,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 22,
+    "util": 23,
     "controller": 1,
     "api-client": 2,
     "state-store": 1,
@@ -84,7 +84,7 @@
   },
   "byCriticality": {
     "critical": 76,
-    "medium": 98,
+    "medium": 99,
     "high": 148,
     "low": 34
   },
@@ -14456,6 +14456,47 @@
       "version": "2026-06"
     },
     {
+      "id": "services/suppliers/connectors/_connector-utils.js",
+      "file": "services/suppliers/connectors/_connector-utils.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "connector-utils",
+      "domain": "catalog",
+      "layer": "util",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "raw_value"
+      ],
+      "outputs": [
+        "parsed_value_or_invalid_flag"
+      ],
+      "depends": [
+        "@none"
+      ],
+      "usedBy": [
+        "services/suppliers/connectors/csv-connector.js",
+        "services/suppliers/connectors/manual-connector.js"
+      ],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "DOCTRINE_INGESTION_CATALOGUE (ING-I2)"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/suppliers/connectors/api-connector.base.js",
       "file": "services/suppliers/connectors/api-connector.base.js",
       "type": "file",
@@ -14509,21 +14550,29 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "papaparse",
+        "services/suppliers/normalized-product.js",
+        "services/suppliers/connectors/_connector-utils.js"
+      ],
+      "usedBy": [
+        "routes/sourcing-scanner.js"
+      ],
       "dbRead": [],
       "dbWrite": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "DOCTRINE_INGESTION_CATALOGUE (ING-I1",
+        "ING-I2",
+        "ING-I3)"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "services/suppliers/connectors/manual-connector.js",
@@ -16749,6 +16798,26 @@
       "id": "doctrine:token_public_controle",
       "type": "doctrine",
       "doctrine": "token_public_controle"
+    },
+    {
+      "id": "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I2)",
+      "type": "doctrine",
+      "doctrine": "DOCTRINE_INGESTION_CATALOGUE (ING-I2)"
+    },
+    {
+      "id": "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I1",
+      "type": "doctrine",
+      "doctrine": "DOCTRINE_INGESTION_CATALOGUE (ING-I1"
+    },
+    {
+      "id": "doctrine:ING-I2",
+      "type": "doctrine",
+      "doctrine": "ING-I2"
+    },
+    {
+      "id": "doctrine:ING-I3)",
+      "type": "doctrine",
+      "doctrine": "ING-I3)"
     },
     {
       "id": "doctrine:whatsapp_template_trace",
@@ -37279,6 +37348,48 @@
       "label": "catalog"
     },
     {
+      "from": "services/suppliers/connectors/_connector-utils.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/suppliers/connectors/csv-connector.js",
+      "to": "services/suppliers/connectors/_connector-utils.js",
+      "type": "uses",
+      "label": "services/suppliers/connectors/csv-connector.js"
+    },
+    {
+      "from": "services/suppliers/connectors/manual-connector.js",
+      "to": "services/suppliers/connectors/_connector-utils.js",
+      "type": "uses",
+      "label": "services/suppliers/connectors/manual-connector.js"
+    },
+    {
+      "from": "services/suppliers/connectors/_connector-utils.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "services/suppliers/connectors/_connector-utils.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/suppliers/connectors/_connector-utils.js",
+      "to": "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I2)",
+      "type": "doctrine",
+      "label": "DOCTRINE_INGESTION_CATALOGUE (ING-I2)"
+    },
+    {
+      "from": "services/suppliers/connectors/_connector-utils.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
       "from": "services/suppliers/connectors/api-connector.base.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
@@ -37298,9 +37409,45 @@
     },
     {
       "from": "services/suppliers/connectors/csv-connector.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "papaparse",
+      "type": "depends",
+      "label": "papaparse"
+    },
+    {
+      "from": "services/suppliers/connectors/csv-connector.js",
+      "to": "services/suppliers/normalized-product.js",
+      "type": "depends",
+      "label": "services/suppliers/normalized-product.js"
+    },
+    {
+      "from": "services/suppliers/connectors/csv-connector.js",
+      "to": "services/suppliers/connectors/_connector-utils.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/_connector-utils.js"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "services/suppliers/connectors/csv-connector.js",
+      "type": "uses",
+      "label": "routes/sourcing-scanner.js"
+    },
+    {
+      "from": "services/suppliers/connectors/csv-connector.js",
+      "to": "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I1",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "DOCTRINE_INGESTION_CATALOGUE (ING-I1"
+    },
+    {
+      "from": "services/suppliers/connectors/csv-connector.js",
+      "to": "doctrine:ING-I2",
+      "type": "doctrine",
+      "label": "ING-I2"
+    },
+    {
+      "from": "services/suppliers/connectors/csv-connector.js",
+      "to": "doctrine:ING-I3)",
+      "type": "doctrine",
+      "label": "ING-I3)"
     },
     {
       "from": "services/suppliers/connectors/csv-connector.js",
@@ -45406,7 +45553,8 @@
         "impact:logistics",
         "middleware/auth.js",
         "services/catalog-enrichment.js",
-        "services/suppliers/catalog-import-orchestrator.js"
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/suppliers/connectors/csv-connector.js"
       ]
     },
     "routes/sourcing.js": {
@@ -51686,6 +51834,41 @@
         "services/supplier-catalog-scanner.js"
       ]
     },
+    "services/suppliers/connectors/_connector-utils.js": {
+      "role": "connector-utils",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "@none"
+      ],
+      "directUsedBy": [
+        "services/suppliers/connectors/csv-connector.js",
+        "services/suppliers/connectors/manual-connector.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "DOCTRINE_INGESTION_CATALOGUE (ING-I2)"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I2)",
+        "impact:catalog",
+        "services/suppliers/connectors/csv-connector.js",
+        "services/suppliers/connectors/manual-connector.js"
+      ]
+    },
     "services/suppliers/connectors/api-connector.base.js": {
       "role": "api-connector-base",
       "domain": "catalog",
@@ -51718,22 +51901,35 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "papaparse",
+        "services/suppliers/normalized-product.js",
+        "services/suppliers/connectors/_connector-utils.js"
+      ],
+      "directUsedBy": [
+        "routes/sourcing-scanner.js"
+      ],
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "DOCTRINE_INGESTION_CATALOGUE (ING-I1",
+        "ING-I2",
+        "ING-I3)"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery"
       ],
       "mustCheck": [
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I1",
+        "doctrine:ING-I2",
+        "doctrine:ING-I3)",
         "impact:catalog",
-        "impact:product-discovery"
+        "impact:product-discovery",
+        "routes/sourcing-scanner.js",
+        "services/suppliers/connectors/_connector-utils.js",
+        "services/suppliers/normalized-product.js"
       ]
     },
     "services/suppliers/connectors/manual-connector.js": {
@@ -51758,7 +51954,8 @@
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
         "impact:catalog",
-        "impact:product-discovery"
+        "impact:product-discovery",
+        "services/suppliers/connectors/_connector-utils.js"
       ]
     },
     "services/suppliers/connectors/noon-connector.js": {
@@ -51808,7 +52005,8 @@
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
         "impact:catalog",
-        "impact:product-discovery"
+        "impact:product-discovery",
+        "services/suppliers/connectors/csv-connector.js"
       ]
     },
     "services/verify-qr-collection.js": {
@@ -54508,6 +54706,18 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/connectors/_connector-utils.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/suppliers/connectors/csv-connector.js",
+      "to": "papaparse",
+      "type": "depends",
+      "label": "papaparse"
     },
     {
       "from": "services/verify-qr-collection.js",

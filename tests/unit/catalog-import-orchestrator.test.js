@@ -55,6 +55,7 @@ function makeScan(overrides = {}) {
 describe('importCatalog', () => {
   beforeEach(() => {
     pricingEngine.loadGlobalConfig.mockResolvedValue(CONFIG);
+    require('../../utils/rules').invalidateCache();
   });
 
   // ── Validation ──────────────────────────────────────────────────────────
@@ -84,6 +85,88 @@ describe('importCatalog', () => {
     expect(result.status).toBe(400);
     expect(result.body.error).toMatch(/Aucun produit valide/);
     expect(result.body.invalid).toEqual([{ row: 1, error: 'champ manquant' }]);
+  });
+
+  // ── ING-2 : seuil fichier malade (ING-I4) ────────────────────────────────
+
+  test('fichier malade (>30% invalides, défaut) → import refusé en bloc, aucune écriture DB', async () => {
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [{ product_name: 'Bon' }],
+      invalid: [
+        { errors: ['devise absente — colonne currency requise'] },
+        { errors: ['devise absente — colonne currency requise'] },
+        { errors: ['purchase_price non numérique : "abc"'] },
+      ],
+      unmapped_columns: ['couleur'],
+    });
+    db.query.mockImplementation(() => Promise.resolve({ rows: [] }));
+
+    const result = await importCatalog({ supplier_name: 'Acme', source_type: 'csv' }, 1, dispatch);
+
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch(/fichier malade/);
+    expect(result.body.total).toBe(4);
+    expect(result.body.accepted).toBe(1);
+    expect(result.body.rejected).toBe(3);
+    expect(result.body.reject_reasons).toEqual({
+      'devise absente — colonne currency requise': 2,
+      'purchase_price non numérique : "abc"': 1,
+    });
+    expect(result.body.unmapped_columns).toEqual(['couleur']);
+    // Fichier malade → refus AVANT toute écriture (pas d'INSERT import)
+    expect(db.query).not.toHaveBeenCalledWith(expect.stringContaining('INSERT INTO supplier_catalog_imports'), expect.anything());
+  });
+
+  test('sous le seuil (< 30% invalides) → import continue normalement', async () => {
+    const product = { supplier_product_id: 'sku-1', product_name: 'Savon' };
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [product],
+      invalid: [],
+      unmapped_columns: [],
+    });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-1' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'cand-1', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+
+    const result = await importCatalog({ supplier_name: 'Acme', source_type: 'manual' }, 1, dispatch);
+    expect(result.status).toBe(200);
+  });
+
+  test('réponse finale enrichie : accepted/rejected/reject_reasons/unmapped_columns (ligne de synthèse fondateur)', async () => {
+    const product = { supplier_product_id: 'sku-1', product_name: 'Savon' };
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [product],
+      invalid: [{ errors: ['devise absente'] }],
+      unmapped_columns: ['couleur_preferee'],
+    });
+    // Seuil forcé haut pour ne pas déclencher le refus en bloc et observer
+    // la synthèse finale de la réponse 200.
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('SELECT key, value FROM business_rules')) {
+        return Promise.resolve({ rows: [{ key: 'CATALOG_IMPORT_MAX_INVALID_PCT', value: { value: 90 } }] });
+      }
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-9' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'cand-9', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+
+    const result = await importCatalog({ supplier_name: 'Acme', source_type: 'csv' }, 1, dispatch);
+
+    expect(result.status).toBe(200);
+    expect(result.body.accepted).toBe(1);
+    expect(result.body.rejected).toBe(1);
+    expect(result.body.reject_reasons).toEqual({ 'devise absente': 1 });
+    expect(result.body.unmapped_columns).toEqual(['couleur_preferee']);
   });
 
   // ── DSC-E1 : upsert idempotent ──────────────────────────────────────────

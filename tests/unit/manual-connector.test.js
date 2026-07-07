@@ -7,7 +7,7 @@
 const { fetchProducts, normalizeFormItem } = require('../../services/suppliers/connectors/manual-connector');
 
 describe('normalizeFormItem', () => {
-  it('item minimal → applique les defaults (currency AED, champs optionnels null)', () => {
+  it('item minimal → aucun défaut inventé (ING-2 : currency absente reste null, pas AED)', () => {
     const result = normalizeFormItem({ product_name: 'Chaise' }, 'Fournisseur X');
     expect(result).toEqual({
       supplier_name: 'Fournisseur X',
@@ -15,7 +15,7 @@ describe('normalizeFormItem', () => {
       product_name: 'Chaise',
       supplier_category: null,
       purchase_price: null,
-      currency: 'AED',
+      currency: null,
       image_url: null,
       product_url: null,
       description: null,
@@ -101,6 +101,49 @@ describe('normalizeFormItem', () => {
     expect(result.raw_payload).toEqual(item);
     expect(result.raw_payload).not.toBe(item); // copie, pas la meme reference
   });
+
+  // ── ING-2 : parsing strict, jamais deviner en silence (ING-I2) ──────────
+
+  it('purchase_price illisible ("beaucoup") → _connectorErrors, pas droppé en silence', () => {
+    const result = normalizeFormItem({ product_name: 'X', purchase_price: 'beaucoup' }, 'F');
+    expect(result.purchase_price).toBeNull();
+    expect(result._connectorErrors).toEqual(
+      expect.arrayContaining([expect.stringContaining('purchase_price invalide')])
+    );
+  });
+
+  it('stock_available illisible ("12 units") → _connectorErrors', () => {
+    const result = normalizeFormItem({ product_name: 'X', stock_available: '12 units' }, 'F');
+    expect(result._connectorErrors).toEqual(
+      expect.arrayContaining([expect.stringContaining('stock_available invalide')])
+    );
+  });
+
+  it('weight_kg illisible → _connectorErrors', () => {
+    const result = normalizeFormItem({ product_name: 'X', weight_kg: 'lourd' }, 'F');
+    expect(result._connectorErrors).toEqual(
+      expect.arrayContaining([expect.stringContaining('weight_kg invalide')])
+    );
+  });
+
+  it('dim_l_cm illisible → _connectorErrors, plus d\'objet dimensions accepté tel quel', () => {
+    const result = normalizeFormItem({ product_name: 'X', dim_l_cm: 'trente' }, 'F');
+    expect(result._connectorErrors).toEqual(
+      expect.arrayContaining([expect.stringContaining('dimensions.l_cm invalide')])
+    );
+  });
+
+  it('objet dimensions fourni avec une valeur négative → _connectorErrors', () => {
+    const result = normalizeFormItem({ product_name: 'X', dimensions: { l_cm: -5, w_cm: 10 } }, 'F');
+    expect(result._connectorErrors).toEqual(
+      expect.arrayContaining([expect.stringContaining('dimensions.l_cm invalide')])
+    );
+  });
+
+  it('_connectorErrors absent quand tout est propre', () => {
+    const result = normalizeFormItem({ product_name: 'X', purchase_price: '49.9', stock_available: '12' }, 'F');
+    expect(result._connectorErrors).toBeUndefined();
+  });
 });
 
 describe('fetchProducts', () => {
@@ -127,7 +170,7 @@ describe('fetchProducts', () => {
   it('nominal → normalise tous les items et les classe valid/invalid', () => {
     const result = fetchProducts({
       supplier_name: 'Fournisseur X',
-      items: [{ product_name: 'Chaise' }, { product_name: 'Table' }],
+      items: [{ product_name: 'Chaise', currency: 'AED' }, { product_name: 'Table', currency: 'EUR' }],
     });
     expect(result.total).toBe(2);
     expect(result.products).toHaveLength(2);
@@ -138,12 +181,21 @@ describe('fetchProducts', () => {
   it('item invalide (product_name manquant) → classe dans invalid avec errors, pas de crash', () => {
     const result = fetchProducts({
       supplier_name: 'Fournisseur X',
-      items: [{ product_name: 'Valide' }, { product_name: '' }],
+      items: [{ product_name: 'Valide', currency: 'AED' }, { product_name: '', currency: 'AED' }],
     });
     expect(result.total).toBe(2);
     expect(result.products).toHaveLength(1);
     expect(result.invalid).toHaveLength(1);
     expect(result.invalid[0].errors).toContain('product_name requis');
+  });
+
+  it('currency absente (ING-2 : plus de défaut AED) → item classe invalid', () => {
+    const result = fetchProducts({
+      supplier_name: 'F',
+      items: [{ product_name: 'Chaise' }],
+    });
+    expect(result.invalid).toHaveLength(1);
+    expect(result.invalid[0].errors).toContain('currency doit être AED, EUR, USD ou KMF');
   });
 
   it('currency invalide → item classe invalid', () => {
@@ -159,9 +211,21 @@ describe('fetchProducts', () => {
   it('purchase_price negatif → item classe invalid', () => {
     const result = fetchProducts({
       supplier_name: 'F',
-      items: [{ product_name: 'X', purchase_price: '-5' }],
+      items: [{ product_name: 'X', currency: 'AED', purchase_price: '-5' }],
     });
     expect(result.invalid).toHaveLength(1);
     expect(result.invalid[0].errors).toContain('purchase_price doit être un nombre positif');
+  });
+
+  it('purchase_price illisible → invalid via _connectorErrors, jamais silencieusement null en base', () => {
+    const result = fetchProducts({
+      supplier_name: 'F',
+      items: [{ product_name: 'X', currency: 'AED', purchase_price: 'beaucoup' }],
+    });
+    expect(result.products).toHaveLength(0);
+    expect(result.invalid).toHaveLength(1);
+    expect(result.invalid[0].errors).toEqual(
+      expect.arrayContaining([expect.stringContaining('purchase_price invalide')])
+    );
   });
 });

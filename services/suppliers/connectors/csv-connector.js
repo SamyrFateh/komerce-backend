@@ -6,35 +6,43 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
- * @db-read       none
- * @db-write      none
+ * @depends       papaparse, services/suppliers/normalized-product.js, services/suppliers/connectors/_connector-utils.js
+ * @used-by       routes/sourcing-scanner.js
+ * @db-read       @unknown
+ * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      DOCTRINE_INGESTION_CATALOGUE (ING-I1, ING-I2, ING-I3)
  * @impact-areas  catalog, product-discovery
- * @version       2026-06
+ * @version       2026-07
  */
 
 /**
- * KOMERCE — CSV Connector
+ * KOMERCE — CSV Connector (ING-2)
  * ═══════════════════════════════════════════════════════════════════
  *
- * Connecteur fonctionnel : parse un CSV brut en NormalizedSupplierProduct[].
+ * Connecteur fonctionnel : parse un CSV brut en NormalizedSupplierProduct[]
+ * ou en rejet motivé — jamais un troisième chemin (drop silencieux, défaut
+ * inventé). Politique d'erreur unique (doctrine ING-2) : une valeur
+ * inexploitable rejette la LIGNE avec sa raison.
  *
- * Première ligne = headers. Séparateur , ou ; auto-détecté.
- * Mapping flexible : reconnait les noms de colonnes courants en FR + EN.
- * Mapping custom possible via paramètre.
+ * Parsing via papaparse (RFC-4180) : guillemets, virgules internes,
+ * cellules multi-lignes, séparateur , ou ; auto-détecté — l'ancien
+ * split() maison ne survivait à aucun de ces cas.
  *
- * Aucune dépendance externe (pas de papaparse) — parsing simple
- * suffisant pour des catalogues d'admin (pas de virgules dans les valeurs).
- * Si tu as des CSV plus complexes (virgules dans les noms de produit,
- * échappements multi-lignes…), passer à papaparse plus tard.
+ * Ce que ce connecteur ne fait JAMAIS (ING-I2) :
+ *   - inventer une devise ("AED" par défaut) → ligne rejetée si absente
+ *   - droper un champ numérique illisible → ligne rejetée avec raison
+ *   - laisser passer une colonne inconnue sans trace → conservée dans
+ *     raw_payload (brut intégral, ING-I3) ET remontée dans unmapped_columns
+ *   - laisser un doublon SKU écraser silencieusement → rejeté, bruyamment
+ *   - laisser un fichier aux en-têtes dupliqués s'importer → échec net
  */
 
 'use strict';
 
+const Papa = require('papaparse');
 const { partitionValid } = require('../normalized-product');
+const { parseStrictNumber, parseStrictInteger, parsePositiveDimension } = require('./_connector-utils');
 
 // Mapping par défaut : alias -> nom canonique de NormalizedSupplierProduct
 const DEFAULT_HEADER_ALIASES = {
@@ -55,38 +63,39 @@ const DEFAULT_HEADER_ALIASES = {
   supplier_product_id: ['sku', 'ref', 'reference', 'product_id', 'supplier_product_id'],
 };
 
-const NUMERIC_FIELDS = new Set([
-  'purchase_price', 'weight_kg', 'dim_l_cm', 'dim_w_cm', 'dim_h_cm',
-]);
-const INTEGER_FIELDS = new Set([
-  'stock_available', 'min_order_qty', 'supplier_delay_days',
-]);
+const NUMERIC_FIELDS = new Set(['purchase_price', 'weight_kg', 'dim_l_cm', 'dim_w_cm', 'dim_h_cm']);
+const INTEGER_FIELDS = new Set(['stock_available', 'min_order_qty', 'supplier_delay_days']);
+const DIMENSION_FIELDS = new Set(['dim_l_cm', 'dim_w_cm', 'dim_h_cm']);
 
 /**
- * Parse un texte CSV en lignes brutes (objets clé/valeur).
+ * Résout, pour chaque champ cible, l'indice de colonne CSV correspondant.
+ * Lève si des en-têtes sont dupliqués (import refusé en bloc — ING-2).
  *
- * @param {string} csvText
- * @param {Object} [customMapping]  — { product_name: 'colA', purchase_price: 'colB', ... }
- *                                    pour forcer le mapping si le CSV a des headers exotiques.
- * @returns {Array<Object>}         — lignes { product_name, purchase_price, ... }
+ * @param {string[]} headersLower
+ * @param {string[]} headersOriginal
+ * @param {Object} [customMapping]
+ * @returns {{ headerIndex: Object<string, number>, unmappedColumns: string[] }}
  */
-function parseCSV(csvText, customMapping) {
-  if (!csvText || typeof csvText !== 'string') return [];
-  const firstLine = csvText.split(/\r?\n/)[0] || '';
-  const sep = firstLine.includes(';') ? ';' : ',';
-  const lines = csvText.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) return [];
+function resolveHeaderIndex(headersLower, headersOriginal, customMapping) {
+  const seen = new Map();
+  for (const h of headersLower) {
+    if (!h) continue;
+    seen.set(h, (seen.get(h) || 0) + 1);
+  }
+  const dupes = [...seen.entries()].filter(([, count]) => count > 1).map(([h]) => h);
+  if (dupes.length) {
+    throw new Error(
+      `en-têtes dupliqués dans le CSV : ${dupes.join(', ')} — import refusé (colonnes ambiguës).`
+    );
+  }
 
-  const headers = lines[0].split(sep).map(h => h.trim().toLowerCase());
-
-  // Index : pour chaque champ cible, l'indice de colonne CSV
   const headerIndex = {};
   Object.keys(DEFAULT_HEADER_ALIASES).forEach(field => {
     const candidates = (customMapping && customMapping[field])
       ? [customMapping[field].toLowerCase()]
       : DEFAULT_HEADER_ALIASES[field];
     for (const c of candidates) {
-      const idx = headers.indexOf(c);
+      const idx = headersLower.indexOf(c);
       if (idx !== -1) {
         headerIndex[field] = idx;
         break;
@@ -94,39 +103,125 @@ function parseCSV(csvText, customMapping) {
     }
   });
 
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cells = lines[i].split(sep);
-    const row = {};
-    Object.keys(headerIndex).forEach(field => {
-      const v = (cells[headerIndex[field]] || '').trim().replace(/^"|"$/g, '');
-      if (v !== '') {
-        if (NUMERIC_FIELDS.has(field)) {
-          const n = parseFloat(v.replace(',', '.'));
-          if (!isNaN(n)) row[field] = n;
-        } else if (INTEGER_FIELDS.has(field)) {
-          const n = parseInt(v, 10);
-          if (!isNaN(n)) row[field] = n;
-        } else {
-          row[field] = v;
-        }
-      }
-    });
-    if (row.product_name) rows.push(row);
-  }
-  return rows;
+  const mappedIdx = new Set(Object.values(headerIndex));
+  const unmappedColumns = headersOriginal.filter((h, idx) => h && !mappedIdx.has(idx));
+
+  return { headerIndex, unmappedColumns };
 }
 
 /**
- * Convertit les lignes brutes en NormalizedSupplierProduct[].
- * Regroupe les dimensions dans un sous-objet.
+ * Parse un texte CSV en lignes STRUCTURELLEMENT valides + lignes rejetées.
+ * C'est ici (pas dans rowsToNormalized) que vivent les rejets ING-2 :
+ * ligne malformée, champ numérique illisible, devise absente, SKU dupliqué.
  *
- * @param {Array<Object>} rawRows
+ * @param {string} csvText
+ * @param {Object} [customMapping]
+ * @returns {{ rows: Array<Object>, invalid: Array<{product: Object, errors: string[]}>, unmappedColumns: string[] }}
+ */
+function parseCSVRows(csvText, customMapping) {
+  if (!csvText || typeof csvText !== 'string') {
+    return { rows: [], invalid: [], unmappedColumns: [] };
+  }
+
+  const parsed = Papa.parse(csvText.trim(), { skipEmptyLines: true });
+  const data = parsed.data || [];
+  if (data.length < 2) return { rows: [], invalid: [], unmappedColumns: [] };
+
+  const headersOriginal = data[0].map(h => (h || '').trim());
+  const headersLower = headersOriginal.map(h => h.toLowerCase());
+  const { headerIndex, unmappedColumns } = resolveHeaderIndex(headersLower, headersOriginal, customMapping);
+
+  const rows = [];
+  const invalid = [];
+  const seenSkus = new Set();
+
+  for (let i = 1; i < data.length; i++) {
+    const cells = data[i];
+
+    // ── Ligne malformée : nombre de colonnes ≠ en-têtes (ING-2) ──
+    if (cells.length !== headersOriginal.length) {
+      invalid.push({
+        product: {
+          raw_payload: Object.fromEntries(cells.map((v, idx) => [headersOriginal[idx] || `col_${idx}`, v])),
+        },
+        errors: [`ligne malformée : ${cells.length} colonne(s) pour ${headersOriginal.length} en-tête(s)`],
+      });
+      continue;
+    }
+
+    // Brut intégral (ING-I3) : TOUTES les colonnes, y compris non mappées.
+    const rawPayloadFull = {};
+    headersOriginal.forEach((h, idx) => { rawPayloadFull[h || `col_${idx}`] = cells[idx]; });
+
+    const rowErrors = [];
+    const typed = {};
+
+    Object.keys(headerIndex).forEach(field => {
+      const raw = cells[headerIndex[field]];
+      const v = (raw == null ? '' : String(raw)).trim();
+      if (v === '') return; // absent : légitime, pas une erreur en soi
+
+      if (NUMERIC_FIELDS.has(field)) {
+        const r = DIMENSION_FIELDS.has(field) ? parsePositiveDimension(v) : parseStrictNumber(v);
+        if (r.invalid) rowErrors.push(`${field} non numérique : "${v}"`);
+        else if (r.value !== undefined) typed[field] = r.value;
+      } else if (INTEGER_FIELDS.has(field)) {
+        const r = parseStrictInteger(v);
+        if (r.invalid) rowErrors.push(`${field} non entier : "${v}"`);
+        else if (r.value !== undefined) typed[field] = r.value;
+      } else {
+        typed[field] = v;
+      }
+    });
+
+    // Pas de ligne exploitable sans nom produit.
+    if (!typed.product_name) continue;
+
+    // ING-2 : devise absente → rejet motivé, jamais un défaut inventé.
+    if (!typed.currency) {
+      rowErrors.push('devise absente — colonne currency requise ou csv_mapping.currency');
+    }
+
+    if (rowErrors.length) {
+      invalid.push({
+        product: { product_name: typed.product_name || null, raw_payload: rawPayloadFull },
+        errors: rowErrors,
+      });
+      continue;
+    }
+
+    // Dédup SKU intra-fichier (ING-2) : la première ligne gagne, mais bruyamment.
+    const sku = typed.supplier_product_id;
+    if (sku) {
+      if (seenSkus.has(sku)) {
+        invalid.push({
+          product: { product_name: typed.product_name, supplier_product_id: sku, raw_payload: rawPayloadFull },
+          errors: [`duplicate_sku_in_file : "${sku}" déjà vu dans ce fichier — ligne ignorée`],
+        });
+        continue;
+      }
+      seenSkus.add(sku);
+    }
+
+    typed.raw_payload = rawPayloadFull;
+    rows.push(typed);
+  }
+
+  return { rows, invalid, unmappedColumns };
+}
+
+/**
+ * Convertit les lignes structurellement valides en NormalizedSupplierProduct[].
+ * Regroupe les dimensions dans un sous-objet. raw_payload voyage tel quel
+ * (déjà posé par parseCSVRows — le brut intégral, pas seulement les colonnes
+ * mappées).
+ *
+ * @param {Array<Object>} rows
  * @param {string} supplierName
  * @returns {Array<NormalizedSupplierProduct>}
  */
-function rowsToNormalized(rawRows, supplierName) {
-  return (rawRows || []).map(row => {
+function rowsToNormalized(rows, supplierName) {
+  return (rows || []).map(row => {
     const dimensions = {};
     if (row.dim_l_cm != null) dimensions.l_cm = row.dim_l_cm;
     if (row.dim_w_cm != null) dimensions.w_cm = row.dim_w_cm;
@@ -137,7 +232,7 @@ function rowsToNormalized(rawRows, supplierName) {
       product_name: row.product_name,
       supplier_category: row.supplier_category || null,
       purchase_price: row.purchase_price != null ? Number(row.purchase_price) : null,
-      currency: (row.currency || 'AED').toUpperCase(),
+      currency: (row.currency || '').toUpperCase() || null,
       image_url: row.image_url || null,
       product_url: row.product_url || null,
       description: row.description || null,
@@ -146,7 +241,7 @@ function rowsToNormalized(rawRows, supplierName) {
       supplier_delay_days: row.supplier_delay_days != null ? Number(row.supplier_delay_days) : null,
       weight_kg: row.weight_kg != null ? Number(row.weight_kg) : null,
       dimensions: Object.keys(dimensions).length ? dimensions : null,
-      raw_payload: { ...row },
+      raw_payload: row.raw_payload ? { ...row.raw_payload } : { ...row },
     };
   });
 }
@@ -163,7 +258,7 @@ function rowsToNormalized(rawRows, supplierName) {
  * @param {string} input.supplier_name
  * @param {Object} [input.csv_mapping]
  *
- * @returns {{ products: Array<NormalizedSupplierProduct>, invalid: Array, total: number }}
+ * @returns {{ products, invalid, total, unmapped_columns }}
  */
 function fetchProducts(input) {
   const supplierName = (input?.supplier_name || '').trim();
@@ -171,20 +266,24 @@ function fetchProducts(input) {
   if (!supplierName) throw new Error('supplier_name requis');
   if (!csvText) throw new Error('csv_text requis');
 
-  const rawRows = parseCSV(csvText, input.csv_mapping);
-  const normalized = rowsToNormalized(rawRows, supplierName);
-  const { valid, invalid } = partitionValid(normalized);
+  // en-têtes dupliqués → l'import entier échoue (pas une ligne, le fichier).
+  const { rows, invalid: structuralInvalid, unmappedColumns } = parseCSVRows(csvText, input.csv_mapping);
+
+  const normalized = rowsToNormalized(rows, supplierName);
+  const { valid, invalid: schemaInvalid } = partitionValid(normalized);
+
   return {
     products: valid,
-    invalid,
-    total: normalized.length,
+    invalid: [...structuralInvalid, ...schemaInvalid],
+    total: valid.length + structuralInvalid.length + schemaInvalid.length,
+    unmapped_columns: unmappedColumns,
   };
 }
 
 module.exports = {
   fetchProducts,
   // Helpers exposés pour tests et usages avancés
-  parseCSV,
+  parseCSVRows,
   rowsToNormalized,
   DEFAULT_HEADER_ALIASES,
 };
