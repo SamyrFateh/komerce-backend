@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       db, utils/logger.js, utils/phone.js, utils/user-cache.js
  * @db-write      users
  * @db-read      revoked_tokens, users
- * @used-by       @unknown
+ * @used-by       routes/orders/create.js, routes/payments-paypal.js, routes/shared-cart.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  auth
  * @version       2026-06

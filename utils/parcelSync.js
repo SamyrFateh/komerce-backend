@@ -6,11 +6,11 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       db, services/order-status-machine.js, utils/logger.js, utils/parcels.js
  * @db-write      alerts, parcel_events, parcels, scans
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-read      parcel_items, parcels
- * @used-by       @unknown
+ * @used-by       routes/hub-dashboard.js, routes/logistics.js, routes/parcels.js, routes/transit-dashboard.js, routes/transitaire-api.js, services/hub-operations.js, services/parcelOptimizationService.js, services/scan-operations.js, services/verify-qr-collection.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
  * @version       2026-06

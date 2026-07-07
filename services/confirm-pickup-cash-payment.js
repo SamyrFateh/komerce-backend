@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/order-payment-confirmation.js, utils/logger.js
+ * @used-by       routes/pickup-pay-cash.js, routes/pickup-secret.js
  * @db-read       orders, users
  * @db-write      alerts, cash_collections
  * @db-txn        resolve_before_behavior_change

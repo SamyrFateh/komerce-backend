@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db
+ * @used-by       routes/invoices.js
  * @db-read       invoices, order_items, orders, parcels, products, recipients, relais
  * @db-write      invoices
  * @db-txn        resolve_before_behavior_change

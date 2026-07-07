@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, utils/logger.js
+ * @used-by       routes/shared-cart-cash.js
  * @db-read       shared_cart_contributions, shared_carts
  * @db-write      shared_cart_contributions, shared_cart_events, shared_carts
  * @db-txn        resolve_before_behavior_change

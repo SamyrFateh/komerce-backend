@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, utils/logger.js
+ * @used-by       routes/sourcing.js, services/sourcing-mutations.js
  * @db-read       business_rules, order_items, orders, product_variants, products
  * @doctrine      DOCTRINE_DENSITE_VALEUR (V-2 : margin_kmf_per_dm3 + review_volume, 2026-07-02)
  * @db-write      none

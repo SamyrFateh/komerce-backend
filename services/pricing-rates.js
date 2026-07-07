@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, utils/rates.js
+ * @used-by       routes/pricing.js
  * @db-read       exchange_rates, finance_config
  * @db-write      exchange_rates, finance_config
  * @db-txn        resolve_before_behavior_change

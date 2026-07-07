@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/collective-workspace-engine.js
+ * @used-by       services/repair-collective-stock-reservations.js
  * @db-read       collective_stock_reservations, collective_workspace_items, collective_workspaces, products
  * @db-write      collective_stock_reservations
  * @db-txn        resolve_before_behavior_change

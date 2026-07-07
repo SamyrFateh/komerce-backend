@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/pricing-engine.js, utils/logger.js
+ * @used-by       routes/orders/create.js, services/cost-allocation/_helpers.js
  * @db-read       order_item_cost_imputations, order_items, products
  * @db-write      order_item_cost_imputations, orders
  * @db-txn        resolve_before_behavior_change

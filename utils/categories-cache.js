@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       utils/logger.js
  * @db-write      none
  * @db-read      none
- * @used-by       @unknown
+ * @used-by       routes/admin-boutique-categories.js, routes/categories.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown
  * @version       2026-06

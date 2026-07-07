@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       schemas/catalog/normalized-supplier-product.v1.schema.json
+ * @used-by       services/suppliers/connectors/api-connector.base.js, services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js
  * @db-read       @unknown
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change

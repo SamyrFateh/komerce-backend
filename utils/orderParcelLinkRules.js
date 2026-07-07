@@ -6,10 +6,10 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       services/order-status-machine.js, utils/logger.js, utils/parcels.js
  * @db-write      none
  * @db-read      orders, parcels
- * @used-by       @unknown
+ * @used-by       routes/parcels.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  orders, checkout, logistics
  * @version       2026-06

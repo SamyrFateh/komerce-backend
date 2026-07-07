@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T19:41:24.125Z",
+  "generatedAt": "2026-07-07T19:59:42.641Z",
   "summary": {
     "modules": 65,
     "withHeader": 65,
@@ -43,8 +43,39 @@
       "doctrine": [
         "resolve_before_behavior_change"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "public/boutique/js/b-cart-core.js",
+        "public/boutique/js/b-cart-pill.js",
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-catalog-desktop-enhancers.js",
+        "public/boutique/js/b-catalog.js",
+        "public/boutique/js/b-checkout.js",
+        "public/boutique/js/b-desktop-sidebar.js",
+        "public/boutique/js/b-group-view.js",
+        "public/boutique/js/b-home-premium-v1.js",
+        "public/boutique/js/b-mini-cart.js",
+        "public/boutique/js/b-mobile-modal-v1.js",
+        "public/boutique/js/b-mobile-premium-v1.js",
+        "public/boutique/js/b-modal-approche-c-hybrid.js",
+        "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-desktop-enhancers.js",
+        "public/boutique/js/b-modal-image-ux.js",
+        "public/boutique/js/b-modal-nav.js",
+        "public/boutique/js/b-modal-product.js",
+        "public/boutique/js/b-modal-social-proof.js",
+        "public/boutique/js/b-modal-suggestions.js",
+        "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-pager.js",
+        "public/boutique/js/b-pdp-curation-suggestions.js",
+        "public/boutique/js/b-product-open-contract.js",
+        "public/boutique/js/b-store.js",
+        "public/boutique/js/b-subcat.js",
+        "public/boutique/js/boutique.js",
+        "public/boutique/js/main.js"
+      ],
       "emits": [],
       "listens": [],
       "imports": [],
@@ -61,8 +92,29 @@
       "doctrine": [
         "resolve_before_behavior_change"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "public/boutique/js/b-bus.js",
+        "public/boutique/js/b-store.js"
+      ],
+      "usedBy": [
+        "public/boutique/js/b-cart-pill.js",
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-catalog.js",
+        "public/boutique/js/b-checkout.js",
+        "public/boutique/js/b-favs.js",
+        "public/boutique/js/b-group-view.js",
+        "public/boutique/js/b-identity.js",
+        "public/boutique/js/b-mini-cart.js",
+        "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-desktop-enhancers.js",
+        "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-paypal.js",
+        "public/boutique/js/b-share-cart.js",
+        "public/boutique/js/b-subcat.js",
+        "public/boutique/js/b-tracking.js",
+        "public/boutique/js/boutique.js",
+        "public/boutique/js/render/render-product-card.js"
+      ],
       "emits": [
         "side-cart:render",
         "cart:update"

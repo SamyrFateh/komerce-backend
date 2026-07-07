@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/pricing-engine.js, utils/logger.js
+ * @used-by       routes/pricing.js
  * @db-read       charges, customs_categories, finance_config, pricing_components, products, risk_provisions
  * @db-write      none
  * @db-txn        resolve_before_behavior_change

@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, utils/logger.js
+ * @used-by       services/apply-pricing-updates.js, services/product-admin-service.js
  * @db-read       none
  * @db-write      price_history
  * @db-txn        resolve_before_behavior_change

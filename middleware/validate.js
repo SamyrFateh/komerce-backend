@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       none
  * @db-write      none
  * @db-read      none
- * @used-by       @unknown
+ * @used-by       routes/admin/partners.js, routes/admin/system.js, routes/auth.js, routes/config.js, routes/hub.js, routes/logistics.js, routes/modules.js, routes/orders/cancel.js, routes/orders/create.js, routes/orders/parcels.js, routes/orders/status.js, routes/parcels.js, routes/payments.js, routes/products.js, routes/scans.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  auth
  * @version       2026-06

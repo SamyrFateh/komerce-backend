@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/notification-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/refund-service.js, utils/logger.js, utils/reference.js, utils/rules.js
+ * @used-by       routes/orders/parcels.js
  * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      order_items, order_status_history, parcel_items, parcels, products
  * @db-write-via:order-status-machine product_variants, order_status_history, products

@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       utils/logger.js
+ * @used-by       middleware/error-handler.js, routes/health.js, routes/payments.js
  * @db-read       none
  * @db-write      none
  * @db-txn        resolve_before_behavior_change

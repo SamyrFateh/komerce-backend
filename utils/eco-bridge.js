@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       db, utils/logger.js
  * @db-write      none
  * @db-read      charges, economic_variables
- * @used-by       @unknown
+ * @used-by       routes/economic.js, services/economic-engine-queries.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown
  * @version       2026-06

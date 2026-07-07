@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/pricing-cdr.js, services/pricing-output.js
+ * @used-by       routes/modules.js, routes/pricing.js, routes/sourcing-scanner.js, services/apply-pricing-updates.js, services/order-cost-snapshot.js, services/pricing-dashboard.js, services/pricing-recommend.js, services/supplier-catalog-scanner.js, services/suppliers/catalog-import-orchestrator.js
  * @db-read       order_items, orders, products
  * @db-write      none
  * @db-txn        resolve_before_behavior_change

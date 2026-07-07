@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/notification-service.js, services/order-status-machine.js, utils/logger.js, utils/rules.js
+ * @used-by       bootstrap/crons.js
  * @db-read       orders, parcels, users
  * @db-write      orders, parcels
  * @db-txn        resolve_before_behavior_change

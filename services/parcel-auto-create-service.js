@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/order-status-machine.js, services/payment-service.js, utils/logger.js
+ * @used-by       routes/order-api-v2.js
  * @db-read       order_items, orders, parcels, products, relais, users
  * @db-write      orders, parcel_items, parcels, scan_events
  * @db-write-via:order-status-machine product_variants, order_status_history, products

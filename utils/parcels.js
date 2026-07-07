@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       utils/logger.js, utils/reference.js, utils/rules.js
  * @db-write      none
  * @db-read      none
- * @used-by       @unknown
+ * @used-by       routes/client-tracking.js, routes/parcels.js, routes/tracking.js, services/parcel-service.js, services/parcelOptimizationService.js, services/radar-queries.js, services/reconciliation-service.js, utils/orderParcelLinkRules.js, utils/parcelSync.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
  * @version       2026-06

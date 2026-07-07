@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/notification-service.js, utils/logger.js
+ * @used-by       routes/admin-finance-config.js, routes/cash.js, routes/orders/create.js, routes/pickup-secret.js, routes/shared-cart.js, services/payment-cash-confirm.js, services/payment-stripe.js
  * @db-read       finance_config, loyalty_rewards, orders, users
  * @db-write      loyalty_rewards, users
  * @db-txn        resolve_before_behavior_change

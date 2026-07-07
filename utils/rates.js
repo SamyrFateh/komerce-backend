@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       db, utils/logger.js, utils/rules.js
  * @db-write      none
  * @db-read      finance_config
- * @used-by       @unknown
+ * @used-by       routes/admin-finance-config.js, routes/dashboard-shared.js, routes/finance.js, routes/modules.js, routes/orders/create.js, routes/payments.js, services/pricing-rates.js, services/shared-cart-lifecycle.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown
  * @version       2026-06

@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, utils/logger.js
+ * @used-by       routes/auto-distribute-api.js
  * @db-read       order_items, orders, parcel_items, parcels, relais, users
  * @db-write      parcel_items, parcels
  * @db-txn        resolve_before_behavior_change

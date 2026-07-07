@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db
+ * @used-by       none
  * @db-read       order_items, orders, purchase_orders
  * @db-write      none
  * @db-txn        resolve_before_behavior_change

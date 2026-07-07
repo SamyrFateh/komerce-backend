@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       db, utils/logger.js
  * @db-write      business_rules, business_rules_history
  * @db-read      business_rules, business_rules_history, users
- * @used-by       @unknown
+ * @used-by       bootstrap/crons.js, routes/admin-rules.js, routes/config.js, routes/dashboard-shared.js, routes/orders/cancel.js, routes/orders/create.js, routes/orders/list.js, routes/orders/qr.js, services/cash-reminder-service.js, services/catalog-enrichment.js, services/parcel-operations.js, services/radar-queries.js, services/suppliers/catalog-import-orchestrator.js, utils/parcels.js, utils/rates.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown
  * @version       2026-06

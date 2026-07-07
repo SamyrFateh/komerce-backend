@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, routes/loyalty.js, services/notification-service.js, services/order-status-machine.js, utils/logger.js, utils/parcelSync.js
+ * @used-by       routes/scans.js
  * @db-read       order_items, orders, recipients, relais, users
  * @db-write      alerts, orders, scans
  * @db-write-via:order-status-machine product_variants, order_status_history, products

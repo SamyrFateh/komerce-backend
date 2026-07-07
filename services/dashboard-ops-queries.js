@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, routes/dashboard-shared.js, services/economic-engine-queries.js, utils/logger.js
+ * @used-by       routes/dashboard-ops.js
  * @db-read       customs_effective_rates, exchange_rates, incidents, invoices, order_items, orders, parcels, products, recipients, relais, scan_events, users
  * @db-write      none
  * @db-txn        resolve_before_behavior_change

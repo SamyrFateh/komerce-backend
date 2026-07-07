@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       utils/logger.js
+ * @used-by       routes/hub-dashboard.js, routes/logistics.js, routes/parcels.js, server.js
  * @db-read       parcels
  * @db-write      parcel_events, parcels
  * @db-txn        resolve_before_behavior_change

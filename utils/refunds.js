@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       services/wallet-service.js, utils/logger.js
  * @db-write      refunds
  * @db-read      none
- * @used-by       @unknown
+ * @used-by       none
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown
  * @version       2026-06

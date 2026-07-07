@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       services/catalog-overrides.js, services/product-price-audit.js,
  *                services/product-publication-guard.js
- * @used-by       @unknown
+ * @used-by       routes/products.js
  * @db-read       boutique_categories, boutique_subcategories, catalog_field_overrides, order_items, orders, product_variants, products
  * @db-write      catalog_field_overrides, product_variants, products
  * @db-txn        resolve_before_behavior_change

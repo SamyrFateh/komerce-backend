@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/sourcing-analysis.js
+ * @used-by       routes/sourcing.js
  * @db-read       order_items, orders, product_variants, products
  * @db-write      product_variants, products
  * @db-txn        resolve_before_behavior_change

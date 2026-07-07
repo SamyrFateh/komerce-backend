@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
+ * @depends       scripts/migration-037-fix-products.js, scripts/migration-038-replace-products.js, scripts/migration-039-french-descriptions.js, scripts/run-migrations.js, utils/logger.js
  * @db-write      charges, finance_config, users
  * @db-read      charges, columns, pg_constraint, pg_enum, pg_type
- * @used-by       @unknown
+ * @used-by       server.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  bootstrap
  * @version       2026-06

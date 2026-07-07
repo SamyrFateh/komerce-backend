@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       services/cost-allocation/index.js, services/documents/customs-invoice.js
+ * @used-by       routes/admin-customs-shipments.js, services/order-status-machine.js
  * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_items, orders, parcels, products
  * @db-write      customs_shipment_parcels, customs_shipments, orders, parcels
  * @db-txn        resolve_before_behavior_change

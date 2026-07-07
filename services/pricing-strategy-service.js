@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db
+ * @used-by       routes/pricing-strategy.js
  * @db-read       charges, competitor_prices, customs_categories, finance_config, order_items, orders, pricing_components, pricing_strategies, products, risk_provisions, users
  * @db-write      competitor_prices, price_history, pricing_strategies, pricing_strategy_history, products
  * @db-txn        resolve_before_behavior_change

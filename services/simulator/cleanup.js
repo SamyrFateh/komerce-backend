@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db
+ * @used-by       routes/simulator.js
  * @db-read       parcel_items, parcels, scans
  * @db-write      parcel_items, parcels, scans
  * @db-txn        resolve_before_behavior_change

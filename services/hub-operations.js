@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, utils/parcelSync.js
+ * @used-by       routes/hub.js
  * @db-read       business_rules, parcel_items, parcels, products, scan_events
  * @db-write      parcels, products, scan_events
  * @db-txn        resolve_before_behavior_change

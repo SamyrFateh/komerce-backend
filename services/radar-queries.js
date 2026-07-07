@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, utils/parcels.js, utils/rules.js
+ * @used-by       routes/admin-radar.js
  * @db-read       cash_collections, cash_deposits, finance_config, incidents, orders, parcels, products, signals, users, wallets
  * @db-write      none
  * @db-txn        resolve_before_behavior_change

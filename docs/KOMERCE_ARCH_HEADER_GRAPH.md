@@ -14,11 +14,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 715
-- Edges: 3468
+- Edges: 4124
 - DB tables: 109
 - Doctrines: 133
 - Impact areas: 116
-- Unresolved code edges: 331
+- Unresolved code edges: 392
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 1
 
@@ -559,6 +559,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
 - depends: bootstrap/api-routes.js -> routes/economic-engine.js (routes/economic-engine.js)
+- depends: bootstrap/startup-migrations.js -> scripts/migration-037-fix-products.js (scripts/migration-037-fix-products.js)
+- depends: bootstrap/startup-migrations.js -> scripts/migration-038-replace-products.js (scripts/migration-038-replace-products.js)
+- depends: bootstrap/startup-migrations.js -> scripts/migration-039-french-descriptions.js (scripts/migration-039-french-descriptions.js)
+- depends: bootstrap/startup-migrations.js -> scripts/run-migrations.js (scripts/run-migrations.js)
 - uses: cancellation-flows -> services/order-status-machine.js (cancellation-flows)
 - uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
 - uses: checkout-flows -> services/order-service.js (checkout-flows)
@@ -570,6 +574,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
+- depends: middleware/auth-guest.js -> db (db)
+- depends: middleware/auth.js -> db (db)
+- depends: middleware/require-verified-identity.js -> db (db)
+- depends: middleware/soft-auth.js -> db (db)
 - depends: middleware/upload-hub.js -> middleware/upload.js (validateMagicBytes) (middleware/upload.js (validateMagicBytes))
 - uses: modal-modules -> public/boutique/js/b-scroll-owner.js (modal-modules)
 - uses: modal-suggestions -> routes/boutique-suggestions.js (modal-suggestions)
@@ -664,14 +672,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/collective-workspaces.js -> services/* (services/*)
 - depends: routes/config.js -> db.js (db.js)
 - depends: routes/config.js -> services/* (services/*)
-- depends: routes/dashboard-clients.js -> db.js (db.js)
-- depends: routes/dashboard-clients.js -> services/* (services/*)
-- depends: routes/dashboard-finance.js -> db.js (db.js)
-- depends: routes/dashboard-finance.js -> services/* (services/*)
-- depends: routes/dashboard-hub.js -> db.js (db.js)
-- depends: routes/dashboard-hub.js -> services/* (services/*)
-- depends: routes/dashboard-ops.js -> db.js (db.js)
-- depends: routes/dashboard-ops.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 

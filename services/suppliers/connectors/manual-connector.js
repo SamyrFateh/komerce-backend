@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       services/suppliers/connectors/_connector-utils.js, services/suppliers/normalized-product.js
+ * @used-by       routes/sourcing-scanner.js
  * @db-read       @unknown
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change

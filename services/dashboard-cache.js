@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       none
+ * @used-by       routes/admin-costing.js, routes/admin-dashboard.js
  * @db-read       none
  * @db-write      none
  * @db-txn        resolve_before_behavior_change

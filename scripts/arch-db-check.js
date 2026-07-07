@@ -19,15 +19,30 @@
  *
  * Dependency-free. Ne modifie aucun comportement applicatif.
  *
- * Perimetre (post base-0, 2026-06-16) :
+ * Perimetre (post base-0, 2026-06-16 ; @depends/@used-by durcis 2026-07-07) :
  *   BLOQUANT (exit 1 hors --report) :
  *     - fichiers sans header
  *     - lite sans owner
  *     - mots-clefs SQL dans @db-read / @db-write
+ *     - @unknown dans @depends / @used-by (voir note ci-dessous)
  *   OBSERVE (informatif, jamais bloquant) :
  *     - edges morts (structurel)
- *     - @unknown (SQL dynamique assume)
+ *     - @unknown en @db-read/@db-write (SQL dynamique assume)
  *     - presence de l'invariant resolve_before_behavior_change (sain)
+ *
+ * Note 2026-07-07 (audit @unknown, 108 fichiers verifies) : contrairement a
+ * @db-read/@db-write, ou une table peut etre construite dynamiquement
+ * (`${tableName}`) et rester une incertitude legitime, les dependances de
+ * module de ce repo sont TOUJOURS statiques (aucun require()/import
+ * dynamique trouve sur l'ensemble des SCAN_ROOTS lors de l'audit). Un
+ * @unknown en @depends/@used-by n'est donc jamais une incertitude assumee :
+ * soit la resolution statique existe (require/import litteral, ou appelant
+ * trouvable par grep) et le header aurait du la porter, soit elle est
+ * verifiablement absente et la valeur correcte est "none" (comme @db-read/
+ * @db-write none), jamais "@unknown". D'ou le passage au tier BLOQUANT.
+ * Outillage : scripts/classify-unknown-depends.js (classification) +
+ * scripts/fix-unknown-depends.js (application), rejouables si une regression
+ * apparait.
  *
  * La juridiction des tables vs DB (fiction / fantome / non-documente) appartient a
  * scripts/arch-schema-drift-check.js, qui compare a docs/db/railway-live-schema.sql.
@@ -117,6 +132,22 @@ function main() {
     }
   }
 
+  // @unknown en @depends / @used-by : toujours evitable dans ce repo (aucun
+  // require()/import dynamique n'existe sur les SCAN_ROOTS), donc bloquant.
+  // IMPORTANT : on relit le texte brut des fichiers, pas les tableaux
+  // node.depends/node.usedBy du graphe -- splitList() y filtre deja le
+  // token '@unknown' (il le traite comme "liste vide"), donc il serait
+  // invisible si on ne regardait que le JSON deja parse.
+  const dependsUsedByUnknownHits = [];
+  for (const file of walk('.')) {
+    const rel = path.relative(ROOT, file).replace(/\\/g, '/');
+    if (!(graph.scanRoots || []).some(r => rel === r || rel.startsWith(r + '/'))) continue;
+    let txt;
+    try { txt = fs.readFileSync(file, 'utf8'); } catch { continue; }
+    if (/^\s*\*\s+@depends\s+@unknown\s*$/m.test(txt)) dependsUsedByUnknownHits.push(`${rel} [depends] -> @unknown`);
+    if (/^\s*\*\s+@used-by\s+@unknown\s*$/m.test(txt)) dependsUsedByUnknownHits.push(`${rel} [used-by] -> @unknown`);
+  }
+
   // ---- OBSERVE (informatif, jamais bloquant) ----
   // Note: la juridiction des tables (fiction / fantome / non-documente) appartient
   // desormais a scripts/arch-schema-drift-check.js, qui compare a la DB live.
@@ -142,6 +173,9 @@ function main() {
   if (noiseHits.length > 0) {
     hard.push(`Mots-clefs SQL dans @db-read/@db-write: ${noiseHits.length}\n  - ` + noiseHits.slice(0, 60).join('\n  - '));
   }
+  if (dependsUsedByUnknownHits.length > 0) {
+    hard.push(`@unknown dans @depends/@used-by (toujours evitable ici, cf note en tete de fichier): ${dependsUsedByUnknownHits.length}\n  - ` + dependsUsedByUnknownHits.slice(0, 60).join('\n  - '));
+  }
 
   // ---- Rapport ----
   console.log('============================================================');
@@ -156,6 +190,7 @@ function main() {
   console.log(`Header mal place        : ${misplacedHeaders.length}`);
   console.log(`Lite sans owner         : ${liteNoOwner.length}`);
   console.log(`Mots-clefs SQL          : ${noiseHits.length}`);
+  console.log(`@unknown depends/used-by: ${dependsUsedByUnknownHits.length}`);
   console.log('');
   console.log('--- OBSERVE (informatif, jamais bloquant) ---');
   console.log(`Edges morts (structurel): ${deadEdges}`);

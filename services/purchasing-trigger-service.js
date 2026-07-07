@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db, services/notification-service.js, utils/logger.js
+ * @used-by       routes/cash.js, routes/purchasing.js
  * @db-read       order_items, orders, product_suppliers, products, purchase_orders, relais, suppliers
  * @db-write      alerts, purchase_orders
  * @db-txn        resolve_before_behavior_change
