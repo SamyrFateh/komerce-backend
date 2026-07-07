@@ -299,7 +299,7 @@ async function replaceVariants(productId, variants) {
           v.stock      === undefined || v.stock      === null ? null : Number(v.stock),
           v.price_kmf  === undefined || v.price_kmf  === null ? null : Number(v.price_kmf),
           v.image_url  ? String(v.image_url).trim()  : null,
-          JSON.stringify(Array.isArray(v.images) ? v.images : (v.image_url ? [v.image_url] : [])),
+          JSON.stringify(Array.isArray(v.images) ? v.images : (v.image_url ? [String(v.image_url).trim()] : [])),
           v.display_order != null ? Number(v.display_order) : 0,
         ]
       );

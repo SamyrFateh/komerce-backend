@@ -155,7 +155,7 @@ describe('product-admin-service', () => {
     const result = await svc.replaceVariants(dbPool, 'prod-001', [{ type: ' Taille ', value: ' M ', stock: 2, price_kmf: 1500 }]);
 
     expect(result).toMatchObject({ product_id: 'prod-001', has_variants: true, count: 1 });
-    expect(client.calls[3].params).toEqual(['prod-001', 'Taille', 'M', null, 2, 1500, null, '[]', 0]);
+    expect(client.calls[3].params).toEqual(['prod-001', 'Taille', 'M', null, 2, 1500, null, JSON.stringify([]), 0]);
     expectTransactionCommitted(client);
   });
 
