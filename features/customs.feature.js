@@ -91,12 +91,16 @@ module.exports = {
   db: {
     tables: [
       'customs_categories: RW',
+      'customs_effective_rates: R',
       'customs_shipment_parcels: RW',
       'customs_shipments: RW',
+      'order_item_real_cost_allocations: W',
       'order_items: R',
       'orders: RW',
+      'parcel_items: R',
       'parcels: RW',
       'products: R',
+      'transaction_documents: W',
     ],
   },
 

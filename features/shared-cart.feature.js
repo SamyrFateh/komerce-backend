@@ -229,6 +229,7 @@ module.exports = {
       'shared_cart_items: RW',
       'shared_carts: RW',
       'stripe_events_processed: RW',
+      'transaction_documents: W',
       'users: R',
     ],
   },

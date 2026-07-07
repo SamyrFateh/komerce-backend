@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result
  * @depends       ./finance-summary, ./annulations, ./payments, ./sales-analysis
  * @used-by       routes/dashboard-finance.js
- * @db-read       age, finance_config, order_items, orders, parcel_items, parcels, products, recipients, refunds, relais, store_credits, users
+ * @db-read       finance_config, order_items, orders, parcel_items, parcels, products, recipients, refunds, relais, store_credits, users
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

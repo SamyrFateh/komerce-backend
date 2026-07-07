@@ -102,6 +102,7 @@ module.exports = {
       'relais: R',
       'transaction_documents: RW',
       'users: R',
+      'wallet_credit_lots: R',
       'wallet_transactions: R',
     ],
   },

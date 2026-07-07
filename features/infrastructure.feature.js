@@ -456,11 +456,14 @@ module.exports = {
       'charges: RW',
 
       'economic_snapshots: RW',
-      'exchange_rates: R',
       'finance_config: RW',
       'pickup_print_tokens: RW',
       'pickup_reveal_codes: RW',
       'revoked_tokens: RW',
+      // schema_migrations : écrit par scripts/run-migrations.js (runner CI/deploy).
+      // Ce fichier est hors des SCAN_ROOTS du générateur de graphe (scripts/ non
+      // scanné), donc invérifiable par header — c'est un angle mort de l'outil,
+      // pas une fausse déclaration. Vérifié manuellement le 2026-07-07.
       'schema_migrations: RW',
       'users: RW',
     ],

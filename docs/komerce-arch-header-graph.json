@@ -20,9 +20,9 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 716,
-    "edges": 3471,
-    "dbTables": 110,
+    "graphNodes": 715,
+    "edges": 3468,
+    "dbTables": 109,
     "doctrines": 133,
     "impactAreas": 116,
     "unresolvedCodeEdges": 331,
@@ -9834,7 +9834,6 @@
         "routes/dashboard-finance.js"
       ],
       "dbRead": [
-        "age",
         "finance_config",
         "order_items",
         "orders",
@@ -10612,7 +10611,6 @@
         "routes/dashboard-finance.js"
       ],
       "dbRead": [
-        "age",
         "finance_config",
         "order_items",
         "orders",
@@ -10664,7 +10662,6 @@
         "services/finance-metrics/index.js"
       ],
       "dbRead": [
-        "age",
         "orders",
         "parcels",
         "recipients",
@@ -16449,11 +16446,6 @@
       "id": "db:customs_effective_rates",
       "type": "db-table",
       "table": "customs_effective_rates"
-    },
-    {
-      "id": "db:age",
-      "type": "db-table",
-      "table": "age"
     },
     {
       "id": "db:store_credits",
@@ -30501,12 +30493,6 @@
     },
     {
       "from": "services/dashboard-finance-metrics.js",
-      "to": "db:age",
-      "type": "db-read",
-      "label": "age"
-    },
-    {
-      "from": "services/dashboard-finance-metrics.js",
       "to": "db:finance_config",
       "type": "db-read",
       "label": "finance_config"
@@ -31743,12 +31729,6 @@
     },
     {
       "from": "services/finance-metrics/index.js",
-      "to": "db:age",
-      "type": "db-read",
-      "label": "age"
-    },
-    {
-      "from": "services/finance-metrics/index.js",
       "to": "db:finance_config",
       "type": "db-read",
       "label": "finance_config"
@@ -31848,12 +31828,6 @@
       "to": "services/finance-metrics/payments.js",
       "type": "uses",
       "label": "services/finance-metrics/index.js"
-    },
-    {
-      "from": "services/finance-metrics/payments.js",
-      "to": "db:age",
-      "type": "db-read",
-      "label": "age"
     },
     {
       "from": "services/finance-metrics/payments.js",
@@ -47805,7 +47779,6 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "age",
         "finance_config",
         "order_items",
         "orders",
@@ -47828,7 +47801,6 @@
         "admin-dashboard"
       ],
       "mustCheck": [
-        "db:age",
         "db:finance_config",
         "db:order_items",
         "db:orders",
@@ -48566,7 +48538,6 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "age",
         "finance_config",
         "order_items",
         "orders",
@@ -48589,7 +48560,6 @@
         "admin-dashboard"
       ],
       "mustCheck": [
-        "db:age",
         "db:finance_config",
         "db:order_items",
         "db:orders",
@@ -48628,7 +48598,6 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "age",
         "orders",
         "parcels",
         "recipients",
@@ -48646,7 +48615,6 @@
         "admin-dashboard"
       ],
       "mustCheck": [
-        "db:age",
         "db:orders",
         "db:parcels",
         "db:recipients",

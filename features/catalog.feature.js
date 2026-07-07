@@ -176,6 +176,7 @@ module.exports = {
       'catalog_exclusions: R',
       'catalog_field_overrides: RW',
       'catalog_glossary: R',
+      'catalog_enrichment_runs: W',
       'order_items: R',
       'orders: R',
       'price_history: W',

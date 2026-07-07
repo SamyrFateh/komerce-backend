@@ -76,6 +76,7 @@ module.exports = {
       'parcels: R',
       'products: R',
       'unsold_items: RW',
+      'v_unsold_pipeline: R',
     ],
   },
 

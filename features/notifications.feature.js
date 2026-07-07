@@ -107,6 +107,7 @@ module.exports = {
   // (nom de table construit par variable) a échappé au scan.
   db: {
     tables: [
+      'alerts: W',
       'incidents: RW',
       'notification_log: RW',
       'orders: R',
