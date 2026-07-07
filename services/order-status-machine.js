@@ -421,12 +421,39 @@ async function transitionOrderStatus({
 }
 
 
+/**
+ * appendOrderHistoryNote — Sprint A (MULTI_WRITER_TABLES.md).
+ *
+ * Historise un événement sur la commande SANS changer orders.status.
+ * Distinct de transitionOrderStatus() : ne valide aucune transition, ne
+ * déclenche aucun effet de bord (stock, wallet, notifications) — c'est
+ * une simple note d'audit (ex: "Colis X → shipped", "Backorder annulé").
+ *
+ * Introduit pour que order_status_history reste écrit depuis un seul
+ * point de code partagé, même quand l'appelant (ex: logistics) ne fait
+ * pas une transition de commande à proprement parler.
+ *
+ * @param {object} client    - client DB (transaction en cours chez l'appelant)
+ * @param {string} orderId
+ * @param {string} status    - statut courant de la commande (non modifié)
+ * @param {string} note
+ * @param {string} changedBy - user.id
+ */
+async function appendOrderHistoryNote(client, orderId, status, note, changedBy) {
+  return client.query(
+    `INSERT INTO order_status_history (order_id, status, note, changed_by)
+     VALUES ($1, $2, $3, $4)`,
+    [orderId, status, note, changedBy]
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPORTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 module.exports = {
   transitionOrderStatus,
+  appendOrderHistoryNote,
   ORDER_STATUSES,
   VALID_TRANSITIONS,
   TRANSITION_ROLES,

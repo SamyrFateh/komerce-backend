@@ -38,6 +38,15 @@ jest.mock('../../services/refund-service', () => ({
 }));
 jest.mock('../../services/order-status-machine', () => ({
   transitionOrderStatus: jest.fn().mockResolvedValue({ success: true }),
+  // Sprint A — délègue réellement à client.query pour ne pas décaler les
+  // scripts de mock positionnels (voir tests-harness/mock-db.js) : le nombre
+  // d'appels client.query doit rester identique à avant l'extraction.
+  appendOrderHistoryNote: jest.fn((client, orderId, status, note, changedBy) =>
+    client.query(
+      'INSERT INTO order_status_history (order_id, status, note, changed_by) VALUES ($1, $2, $3, $4)',
+      [orderId, status, note, changedBy],
+    )
+  ),
 }));
 
 const pool = require('../../db');

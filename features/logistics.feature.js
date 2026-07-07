@@ -168,7 +168,12 @@ module.exports = {
       'incidents: RW',
       'invoices: R',
       'order_items: RW',
-      'order_status_history: W',
+      // order_status_history retiré (Sprint A, 2026-07-07) : les 4 anciennes
+      // écritures directes (markAvailability, partialShip, updateParcelStatus,
+      // cancelBackorder) délèguent maintenant à
+      // order-status-machine.appendOrderHistoryNote(). Logistics ne lit
+      // jamais cette table — pas de déclaration R/W requise (cf. convention
+      // W-via ci-dessous, qui ne s'applique qu'aux tables aussi lues).
       'orders: RW',
       'parcel_events: RW',
       'parcel_items: RW',

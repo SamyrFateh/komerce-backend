@@ -3854,10 +3854,16 @@
         "customs_shipments",
         "order_item_real_cost_allocations",
         "orders",
-        "parcels",
-        "transaction_documents"
+        "parcels"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "customs-invoice",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7750,12 +7756,22 @@
         "shared_cart_contributions",
         "shared_carts"
       ],
-      "dbWrite": [
-        "refunds",
-        "shared_cart_contributions",
-        "transaction_documents"
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "shared-cart-refund-queue",
+          "tables": [
+            "refunds",
+            "shared_cart_contributions"
+          ]
+        },
+        {
+          "via": "refund-receipt",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
       ],
-      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8305,13 +8321,19 @@
         "wallets"
       ],
       "dbWrite": [
-        "transaction_documents",
         "wallet_consumptions",
         "wallet_credit_lots",
         "wallet_transactions",
         "wallets"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "wallet-receipt",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
+      ],
       "dbTxn": [
         "ledger_append_only",
         "credit_debit_idempotent"
@@ -24039,8 +24061,9 @@
     {
       "from": "routes/admin-customs-shipments.js",
       "to": "db:transaction_documents",
-      "type": "db-write",
-      "label": "transaction_documents"
+      "type": "db-write-via",
+      "label": "transaction_documents",
+      "via": "customs-invoice"
     },
     {
       "from": "routes/admin-customs-shipments.js",
@@ -29471,20 +29494,23 @@
     {
       "from": "routes/shared-cart-refund-admin.js",
       "to": "db:refunds",
-      "type": "db-write",
-      "label": "refunds"
+      "type": "db-write-via",
+      "label": "refunds",
+      "via": "shared-cart-refund-queue"
     },
     {
       "from": "routes/shared-cart-refund-admin.js",
       "to": "db:shared_cart_contributions",
-      "type": "db-write",
-      "label": "shared_cart_contributions"
+      "type": "db-write-via",
+      "label": "shared_cart_contributions",
+      "via": "shared-cart-refund-queue"
     },
     {
       "from": "routes/shared-cart-refund-admin.js",
       "to": "db:transaction_documents",
-      "type": "db-write",
-      "label": "transaction_documents"
+      "type": "db-write-via",
+      "label": "transaction_documents",
+      "via": "refund-receipt"
     },
     {
       "from": "routes/shared-cart-refund-admin.js",
@@ -30293,12 +30319,6 @@
     },
     {
       "from": "routes/wallet.js",
-      "to": "db:transaction_documents",
-      "type": "db-write",
-      "label": "transaction_documents"
-    },
-    {
-      "from": "routes/wallet.js",
       "to": "db:wallet_consumptions",
       "type": "db-write",
       "label": "wallet_consumptions"
@@ -30320,6 +30340,13 @@
       "to": "db:wallets",
       "type": "db-write",
       "label": "wallets"
+    },
+    {
+      "from": "routes/wallet.js",
+      "to": "db:transaction_documents",
+      "type": "db-write-via",
+      "label": "transaction_documents",
+      "via": "wallet-receipt"
     },
     {
       "from": "routes/wallet.js",
@@ -47272,10 +47299,16 @@
         "customs_shipments",
         "order_item_real_cost_allocations",
         "orders",
-        "parcels",
-        "transaction_documents"
+        "parcels"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "customs-invoice",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50946,12 +50979,22 @@
         "shared_cart_contributions",
         "shared_carts"
       ],
-      "dbWrite": [
-        "refunds",
-        "shared_cart_contributions",
-        "transaction_documents"
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "shared-cart-refund-queue",
+          "tables": [
+            "refunds",
+            "shared_cart_contributions"
+          ]
+        },
+        {
+          "via": "refund-receipt",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
       ],
-      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51484,13 +51527,19 @@
         "wallets"
       ],
       "dbWrite": [
-        "transaction_documents",
         "wallet_consumptions",
         "wallet_credit_lots",
         "wallet_transactions",
         "wallets"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "wallet-receipt",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
+      ],
       "doctrines": [
         "wallet_ledger_trace",
         "credit_debit_idempotent",
@@ -59925,34 +59974,6 @@
       ]
     },
     {
-      "table": "shared_cart_contributions",
-      "writerCount": 8,
-      "writers": [
-        "routes/shared-cart-refund-admin.js",
-        "services/cancel-shared-cart-with-refunds.js",
-        "services/shared-cart-cash-service.js",
-        "services/shared-cart-contributions.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-financial-guard.js",
-        "services/shared-cart-queries.js",
-        "services/shared-cart-refund-queue.js"
-      ]
-    },
-    {
-      "table": "transaction_documents",
-      "writerCount": 8,
-      "writers": [
-        "routes/admin-customs-shipments.js",
-        "routes/shared-cart-refund-admin.js",
-        "routes/wallet.js",
-        "services/documents/customs-invoice.js",
-        "services/documents/document-service.js",
-        "services/documents/pickup-proof.js",
-        "services/documents/refund-receipt.js",
-        "services/documents/wallet-receipt.js"
-      ]
-    },
-    {
       "table": "users",
       "writerCount": 8,
       "writers": [
@@ -59993,6 +60014,19 @@
       ]
     },
     {
+      "table": "shared_cart_contributions",
+      "writerCount": 7,
+      "writers": [
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/shared-cart-cash-service.js",
+        "services/shared-cart-contributions.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-financial-guard.js",
+        "services/shared-cart-queries.js",
+        "services/shared-cart-refund-queue.js"
+      ]
+    },
+    {
       "table": "collective_workspace_events",
       "writerCount": 6,
       "writers": [
@@ -60002,18 +60036,6 @@
         "services/collective-workspace-internals.js",
         "services/collective-workspace-items.js",
         "services/collective-workspace-lifecycle.js"
-      ]
-    },
-    {
-      "table": "refunds",
-      "writerCount": 6,
-      "writers": [
-        "routes/shared-cart-refund-admin.js",
-        "services/cancel-shared-cart-with-refunds.js",
-        "services/payment-paypal.js",
-        "services/refund-service.js",
-        "services/shared-cart-refund-queue.js",
-        "utils/refunds.js"
       ]
     },
     {
@@ -60059,6 +60081,28 @@
         "services/purchasing-receive-service.js",
         "services/purchasing-trigger-service.js",
         "services/receive-purchase-order.js"
+      ]
+    },
+    {
+      "table": "refunds",
+      "writerCount": 5,
+      "writers": [
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/payment-paypal.js",
+        "services/refund-service.js",
+        "services/shared-cart-refund-queue.js",
+        "utils/refunds.js"
+      ]
+    },
+    {
+      "table": "transaction_documents",
+      "writerCount": 5,
+      "writers": [
+        "services/documents/customs-invoice.js",
+        "services/documents/document-service.js",
+        "services/documents/pickup-proof.js",
+        "services/documents/refund-receipt.js",
+        "services/documents/wallet-receipt.js"
       ]
     },
     {

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T20:07:16.221Z",
+  "generatedAt": "2026-07-07T20:57:56.650Z",
   "sources": {
     "backend": {
       "nodes": 715
@@ -20,7 +20,7 @@
     "endpointsConsumed": 85,
     "sharedEndpoints": 2,
     "phantomSeams": 1,
-    "sharedTables": 11
+    "sharedTables": 10
   },
   "endpoints": {
     "/api/shares": {
@@ -85,7 +85,6 @@
         "users",
         "wallet_credit_lots",
         "wallets",
-        "transaction_documents",
         "wallet_consumptions",
         "wallet_transactions"
       ]
@@ -290,7 +289,6 @@
         "users",
         "wallet_credit_lots",
         "wallets",
-        "transaction_documents",
         "wallet_consumptions",
         "wallet_transactions"
       ]
@@ -848,8 +846,7 @@
         "customs_shipments",
         "order_item_real_cost_allocations",
         "orders",
-        "parcels",
-        "transaction_documents"
+        "parcels"
       ]
     },
     "/api/admin/customs-shipments/rates/effective": {
@@ -869,8 +866,7 @@
         "customs_shipments",
         "order_item_real_cost_allocations",
         "orders",
-        "parcels",
-        "transaction_documents"
+        "parcels"
       ]
     },
     "/api/admin/partners": {
@@ -1469,7 +1465,6 @@
       "products",
       "relais",
       "scan_events",
-      "transaction_documents",
       "users"
     ]
   },
@@ -1633,20 +1628,6 @@
         "b-wallet"
       ],
       "dashboards": []
-    },
-    "transaction_documents": {
-      "routes": [
-        "routes/admin-customs-shipments.js",
-        "routes/wallet.js"
-      ],
-      "boutique": [
-        "b-checkout",
-        "b-wallet"
-      ],
-      "dashboards": [
-        "CustomsView",
-        "SanteView"
-      ]
     },
     "wallet_consumptions": {
       "routes": [

@@ -100,7 +100,9 @@ module.exports = {
       'parcel_items: R',
       'parcels: RW',
       'products: R',
-      'transaction_documents: W',
+      // transaction_documents retiré (2026-07-07) : délégué à
+      // services/documents/customs-invoice.js — customs ne lit/écrit jamais
+      // cette table en direct (voir MULTI_WRITER_TABLES.md).
     ],
   },
 

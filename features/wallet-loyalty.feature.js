@@ -92,7 +92,9 @@ module.exports = {
       'loyalty_rewards: RW',
       'loyalty_tiers: RW',
       'orders: RW',
-      'transaction_documents: W',
+      // transaction_documents retiré (2026-07-07) : délégué à
+      // services/documents/wallet-receipt.js — wallet-loyalty ne lit/écrit
+      // jamais cette table en direct (voir MULTI_WRITER_TABLES.md).
       'users: RW',
       'v_loyalty_summary: R',
       'wallet_consumptions: RW',

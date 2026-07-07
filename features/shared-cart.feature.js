@@ -229,7 +229,9 @@ module.exports = {
       'shared_cart_items: RW',
       'shared_carts: RW',
       'stripe_events_processed: RW',
-      'transaction_documents: W',
+      // transaction_documents retiré (2026-07-07) : délégué à
+      // services/documents/refund-receipt.js — shared-cart ne lit/écrit
+      // jamais cette table en direct (voir MULTI_WRITER_TABLES.md).
       'users: R',
     ],
   },
