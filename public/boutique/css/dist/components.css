@@ -3375,41 +3375,81 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-sug-add img { width: 28px; height: 28px; display: block; mix-blend-mode: multiply; }
 .k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: var(--white); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
 
-/* ── F3 — LIVRAISON MOBILE ───────────────────────────────────── */
-/* Encart minimal toujours présent sur mobile.
-   Invariant : afficher "Livraison relais" en fallback si pas de données.
-   Masqué desktop : les blocs enrichis §6 prennent le relais (b-modal-desktop-enhancers.js). */
-.k-modal-delivery-mobile {
-  display: flex; align-items: center; gap: 8px;
+/* ── LOT 3 — RÉASSURANCE MOBILE COMPACTE ──────────────────────
+   Ligne unique : icône 📦 + "Livraison relais · 3 à 5 semaines" + chevron.
+   Accordéon déplié sur clic → 3 items trust (retrait / cash / échange).
+   Remplace l'ancien bandeau vert .k-modal-delivery-mobile + les 3 pills
+   .k-modal-trust-mobile. Masqué desktop. ──────────────────────────────── */
+.k-modal-reassurance {
   margin: 8px 14px 0;
-  padding: 9px 12px;
-  background: var(--green-bg); border-radius: 10px;
-  font-size: 12px; color: var(--text);
 }
-.k-modal-delivery-mobile-icon { font-size: 16px; flex-shrink: 0; }
-.k-modal-delivery-mobile-label { font-weight: 600; }
-.k-modal-delivery-mobile-delay { color: var(--text-muted); margin-left: 4px; }
-@media (min-width: 900px) { .k-modal-delivery-mobile { display: none; } }
-
-/* ── F4 — TRUST BAR MOBILE ──────────────────────────────────── */
-/* 3 pills horizontaux au-dessus de .k-modal-actions.
-   Masqué desktop : le trust bar §6 enrichi (b-modal-desktop-enhancers.js) prend le relais.
-   FIX: flex-shrink:0 — la trust bar est enfant flex direct de #k-modal après le déplacement
-   des actions par setupModal() ; sans cette propriété elle peut être écrasée sur petits écrans.
-   FIX: pas de border-top ici — .k-modal-actions en a déjà un ; double bordure supprimée. */
-.k-modal-trust-mobile {
-  display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap;
-  gap: 6px; padding: 8px 14px 4px;
+.k-modal-reassurance-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--sand);
+  border: 1px solid var(--border-text-06, var(--border));
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-modal-reassurance-toggle:active {
+  background: var(--sand-dark);
+}
+.k-modal-reassurance-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.k-modal-reassurance-icon { font-size: 14px; flex-shrink: 0; }
+.k-modal-reassurance-label { font-weight: 600; }
+.k-modal-reassurance-delay { color: var(--text-muted); }
+.k-modal-reassurance-chevron {
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: transform .2s;
   flex-shrink: 0;
 }
-.k-modal-trust-mobile-item {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 10px; border-radius: 999px;
-  background: var(--sand); border: 1px solid var(--overlay-black-sm);
-  font-size: 11px; font-weight: 600; color: var(--text-muted);
+.k-modal-reassurance-toggle[aria-expanded="true"] .k-modal-reassurance-chevron {
+  transform: rotate(180deg);
+}
+.k-modal-reassurance-toggle[aria-expanded="true"] {
+  border-radius: 10px 10px 0 0;
+  border-bottom-color: transparent;
+}
+.k-modal-reassurance-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--sand);
+  border: 1px solid var(--border-text-06, var(--border));
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+.k-modal-reassurance-details[hidden] { display: none; }
+.k-modal-reassurance-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
   white-space: nowrap;
 }
-@media (min-width: 900px) { .k-modal-trust-mobile { display: none; } }
+@media (min-width: 900px) { .k-modal-reassurance { display: none; } }
+
+/* ── Legacy : masquer les anciens blocs si encore dans le DOM ── */
+.k-modal-delivery-mobile { display: none; }
+.k-modal-trust-mobile { display: none; }
 
 /* ══════════════════════════════════════════════════════════════
    4. VARIANTES — SKUs couleur + grille tailles / pointures
