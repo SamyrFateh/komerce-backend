@@ -715,17 +715,28 @@ describe('sourcing-scanner — dispatchToConnector — api actif mais non câbl�
 });
 
 describe('sourcing-scanner — branches fallback défensifs (req.user sans id, valeurs absentes)', () => {
-  it('PUT /candidates/:id : currency absente → repli sur la currency DB, puis "AED" si la ligne DB n\'a pas de currency', async () => {
+  it('PUT /candidates/:id : currency absente du body mais présente en DB → repli sur la currency DB (toujours valide)', async () => {
     mockConvertToKMF.mockReturnValueOnce(1000);
     mockQuery
-      .mockResolvedValueOnce({ rows: [{}] })                          // SELECT currency → pas de champ currency
+      .mockResolvedValueOnce({ rows: [{ currency: 'EUR' }] })          // SELECT currency → présente en DB
       .mockResolvedValueOnce({ rows: [{ id: 'c1' }] })                 // UPDATE RETURNING *
       .mockResolvedValueOnce({ rows: [] });                            // INSERT event
 
     const res = await request(app).put('/api/admin/sourcing/candidates/c1').send({ purchase_price: 50 });
 
     expect(res.status).toBe(200);
-    expect(mockConvertToKMF).toHaveBeenCalledWith(50, 'AED', {});
+    expect(mockConvertToKMF).toHaveBeenCalledWith(50, 'EUR', {});
+  });
+
+  it('PUT /candidates/:id : currency absente et ligne DB sans currency → 400 explicite (ING-I2 : jamais de défaut fabriqué)', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{}] });                          // SELECT currency → pas de champ currency
+
+    const res = await request(app).put('/api/admin/sourcing/candidates/c1').send({ purchase_price: 50 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/devise introuvable/i);
+    expect(mockConvertToKMF).not.toHaveBeenCalled();
   });
 
   it('PUT /candidates/:id : purchase_price absent mais currency fournie → repli sur le prix DB', async () => {

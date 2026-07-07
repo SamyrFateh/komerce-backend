@@ -314,7 +314,21 @@ router.put('/candidates/:id', authenticate, requireAdminOrFounder, async (req, r
 
     if (b.purchase_price !== undefined || b.currency !== undefined) {
       const config = await pricingEngine.loadGlobalConfig();
-      const cur = b.currency || (await db.query('SELECT currency FROM sourcing_candidates WHERE id = $1', [req.params.id])).rows[0]?.currency || 'AED';
+      // ING-5 (durcissement) — doctrine ING-I2 : jamais de défaut fabriqué sur
+      // la devise. Avant : repli silencieux sur 'AED' si ni le body ni la ligne
+      // DB n'avaient de currency. Inerte en pratique (currency toujours posée à
+      // l'INSERT depuis la donnée validée par le contrat v1), mais une mine
+      // dormante si un futur chemin d'écriture contourne ce contrat — on la
+      // désamorce en refusant explicitement plutôt qu'en devinant.
+      const dbCurrency = b.currency === undefined
+        ? (await db.query('SELECT currency FROM sourcing_candidates WHERE id = $1', [req.params.id])).rows[0]?.currency
+        : undefined;
+      const cur = b.currency !== undefined ? b.currency : dbCurrency;
+      if (!cur) {
+        return res.status(400).json({
+          error: 'Devise introuvable : ni fournie dans la requête, ni présente en base pour ce candidat. Fournir explicitement currency.',
+        });
+      }
       const price = b.purchase_price !== undefined
         ? b.purchase_price
         : (await db.query('SELECT purchase_price FROM sourcing_candidates WHERE id = $1', [req.params.id])).rows[0]?.purchase_price;

@@ -20,12 +20,14 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 717,
-    "edges": 3487,
-    "dbTables": 111,
+    "graphNodes": 716,
+    "edges": 3471,
+    "dbTables": 110,
     "doctrines": 133,
     "impactAreas": 116,
-    "unresolvedCodeEdges": 334
+    "unresolvedCodeEdges": 331,
+    "dbWriteViaOverlapWarnings": 1,
+    "multiWriterTables": 62
   },
   "byDomain": {
     "infrastructure": 18,
@@ -120,6 +122,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "routes_canoniques",
@@ -179,6 +182,7 @@
         "pickup_reveal_codes",
         "revoked_tokens"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "shared_cart_state_machine_v41",
@@ -217,6 +221,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -249,6 +254,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -281,6 +287,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -313,6 +320,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -355,6 +363,7 @@
         "finance_config",
         "users"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -394,6 +403,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -431,6 +441,7 @@
       "dbWrite": [
         "users"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -466,6 +477,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -498,6 +510,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -530,6 +543,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -562,6 +576,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -597,6 +612,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -632,6 +648,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -667,6 +684,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "DOCTRINE_NON_CONFORMITE (Q-1)"
@@ -700,6 +718,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -732,6 +751,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -764,6 +784,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -790,6 +811,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -820,6 +842,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -852,6 +875,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -894,6 +918,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "panier_visible_sans_friction",
@@ -925,6 +950,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -973,6 +999,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "panier_ouvert_ferme",
@@ -1023,6 +1050,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "boutique_canal_decouverte",
@@ -1078,6 +1106,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "boutique_canal_decouverte",
@@ -1124,6 +1153,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "checkout_sans_friction",
@@ -1179,6 +1209,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "paiement_seul_acte_engageant",
@@ -1212,6 +1243,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1236,6 +1268,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1260,6 +1293,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1297,6 +1331,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "favoris_locaux_simples",
@@ -1327,6 +1362,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1351,6 +1387,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1390,6 +1427,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "suivi_panier_visible",
@@ -1421,6 +1459,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1468,6 +1507,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "paiement_seul_acte_engageant",
@@ -1501,6 +1541,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1542,6 +1583,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "otp_une_fois",
@@ -1587,6 +1629,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "side_cart_non_intrusif",
@@ -1617,6 +1660,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1641,6 +1685,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1679,6 +1724,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "modal_produit_sans_chevauchement",
@@ -1710,6 +1756,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1759,6 +1806,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "participant_peut_verifier",
@@ -1810,6 +1858,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "modal_produit_sans_chevauchement",
@@ -1853,6 +1902,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "image_produit_inspectable",
@@ -1882,6 +1932,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1920,6 +1971,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "boutique_preuve_confiance",
@@ -1951,6 +2003,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -1989,6 +2042,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "suggestions_decouverte_non_intrusives",
@@ -2020,6 +2074,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -2071,6 +2126,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "navigation_sans_friction",
@@ -2118,6 +2174,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "navigation_sans_friction",
@@ -2149,6 +2206,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -2173,6 +2231,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -2211,6 +2270,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "phone_normalization",
@@ -2243,6 +2303,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -2286,6 +2347,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "scroll_owner_unique",
@@ -2338,6 +2400,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "partager_geste_natif",
@@ -2371,6 +2434,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -2411,6 +2475,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "state_partage_explicite",
@@ -2465,6 +2530,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "categorie_souscategorie_switch_fluide",
@@ -2515,6 +2581,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "otp_une_fois",
@@ -2562,6 +2629,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "sanitize_before_render",
@@ -2607,6 +2675,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "wallet_visible_client",
@@ -2658,6 +2727,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "boutique_canal_decouverte",
@@ -2691,6 +2761,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -2731,6 +2802,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "navigation_sans_friction",
@@ -2775,6 +2847,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "backend_source_verite",
@@ -2821,6 +2894,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "estimations_indicatives",
@@ -2868,6 +2942,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "createur_decide_gap",
@@ -2899,6 +2974,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -2936,6 +3012,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "api_frontend_unique",
@@ -2968,6 +3045,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -3007,6 +3085,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "product_source_unique",
@@ -3038,6 +3117,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -3075,6 +3155,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "boutique_canal_decouverte",
@@ -3106,6 +3187,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -3146,6 +3228,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "taxonomy_source_unique",
@@ -3177,6 +3260,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -3215,6 +3299,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "fiche_produit_lisible",
@@ -3245,6 +3330,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -3270,6 +3356,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -3316,6 +3403,7 @@
         "boutique_categories",
         "boutique_subcategories"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "taxonomy_order_consistency",
         "admin_only_mutation"
@@ -3362,6 +3450,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3409,6 +3498,7 @@
         "cost_component_events",
         "cost_components"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3462,6 +3552,7 @@
       "dbWrite": [
         "finance_config"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3507,6 +3598,7 @@
       "dbWrite": [
         "customs_categories"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3558,6 +3650,7 @@
         "parcels",
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3608,6 +3701,7 @@
         "signals"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3654,6 +3748,7 @@
         "exchange_rates",
         "finance_config"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3701,6 +3796,7 @@
       "dbWrite": [
         "loyalty_rewards"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3746,6 +3842,7 @@
       "dbWrite": [
         "pricing_components"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3795,6 +3892,7 @@
         "pricing_category_taxes",
         "pricing_matrices_audit"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3836,6 +3934,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3881,6 +3980,7 @@
       "dbWrite": [
         "risk_provisions"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3926,6 +4026,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -3967,6 +4068,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4005,6 +4107,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4046,6 +4149,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4087,6 +4191,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4137,6 +4242,7 @@
         "scans",
         "sms_log"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4183,12 +4289,9 @@
         "transaction_documents",
         "users"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
-      "dbTxn": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
       "doctrine": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -4226,6 +4329,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4274,6 +4378,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4323,6 +4428,7 @@
       "dbWrite": [
         "partners"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4389,6 +4495,7 @@
         "wallet_transactions",
         "wallets"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4445,6 +4552,7 @@
         "wallet_transactions",
         "wallets"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4486,6 +4594,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4532,6 +4641,7 @@
         "revoked_tokens",
         "users"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4572,6 +4682,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4612,6 +4723,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4656,6 +4768,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "read_mostly",
         "suggestions_non_blocking"
@@ -4709,6 +4822,7 @@
         "carriers",
         "parcels"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4756,6 +4870,7 @@
       "dbWrite": [
         "cash_deposits"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4799,6 +4914,7 @@
         "boutique_subcategories"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4849,6 +4965,7 @@
       "dbWrite": [
         "users"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4897,6 +5014,7 @@
         "scan_events"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4937,6 +5055,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -4977,6 +5096,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5017,6 +5137,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5058,6 +5179,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5106,6 +5228,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5147,6 +5270,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5188,6 +5312,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5229,6 +5354,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5275,6 +5401,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "invalidate_cache_after_mutation",
         "admin_only_mutation"
@@ -5327,6 +5454,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5371,6 +5499,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5423,6 +5552,7 @@
         "parcels",
         "scans"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5468,6 +5598,7 @@
       "dbWrite": [
         "order_comments"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5514,6 +5645,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5554,6 +5686,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5599,6 +5732,7 @@
       "dbWrite": [
         "invoices"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5651,6 +5785,7 @@
       "dbWrite": [
         "shipments"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5697,6 +5832,7 @@
       "dbWrite": [
         "loyalty_tiers"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5737,6 +5873,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5784,6 +5921,7 @@
         "fabrics",
         "garment_models"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5826,6 +5964,7 @@
         "notification_log"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5879,6 +6018,7 @@
       "dbWrite": [
         "incidents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5927,6 +6067,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -5977,6 +6118,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "order_creation_idempotency",
         "stock_after_payment_only"
@@ -6034,6 +6176,20 @@
         "order_status_history",
         "orders"
       ],
+      "dbWriteVia": [
+        {
+          "via": "refund-service",
+          "tables": [
+            "refunds"
+          ]
+        },
+        {
+          "via": "refund-receipt",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6087,6 +6243,7 @@
         "orders",
         "recipients"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6136,6 +6293,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6184,6 +6342,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6231,6 +6390,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6279,6 +6439,7 @@
       "dbWrite": [
         "orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6329,6 +6490,7 @@
         "customs_history",
         "orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6385,6 +6547,7 @@
         "otp_codes",
         "users"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "otp_single_use",
         "test_mode_never_prod",
@@ -6434,6 +6597,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6478,6 +6642,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6518,6 +6683,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6568,6 +6734,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6610,6 +6777,7 @@
         "parcels"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6658,6 +6826,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6711,6 +6880,7 @@
         "parcel_items",
         "parcels"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6753,9 +6923,8 @@
       "dbRead": [
         "orders"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "route = auth + ownership + validate + appel service + réponse HTTP"
@@ -6803,6 +6972,7 @@
         "stripe_events_processed"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "raw_body_preserved",
         "mutation_delegated_to_payment_services"
@@ -6851,6 +7021,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6903,6 +7074,7 @@
         "pickup_print_tokens",
         "pickup_reveal_codes"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6943,6 +7115,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6990,6 +7163,7 @@
       "dbWrite": [
         "cost_benchmarks"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7038,6 +7212,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "product_reference_stable",
         "deactivate_not_delete"
@@ -7093,6 +7268,7 @@
         "product_suppliers",
         "suppliers"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7135,6 +7311,7 @@
         "relais"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7180,6 +7357,7 @@
         "order_comments",
         "order_incidents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7228,6 +7406,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7268,6 +7447,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7318,6 +7498,7 @@
         "shared_cart_items",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7367,6 +7548,7 @@
         "shared_cart_contributions",
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7420,6 +7602,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "delegated_to_shared_cart_services",
         "stripe_webhook_idempotency"
@@ -7478,6 +7661,7 @@
         "cart_contributions",
         "cart_shares"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7522,6 +7706,7 @@
       "dbWrite": [
         "signals"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7562,6 +7747,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7611,6 +7797,14 @@
         "sourcing_candidate_events",
         "sourcing_candidates"
       ],
+      "dbWriteVia": [
+        {
+          "via": "catalog-import-orchestrator",
+          "tables": [
+            "supplier_catalog_imports"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7654,6 +7848,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7706,6 +7901,7 @@
         "orders",
         "pickup_verify_attempts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7751,6 +7947,7 @@
       "dbWrite": [
         "scans"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7802,6 +7999,7 @@
         "parcels",
         "scan_events"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7850,6 +8048,7 @@
       "dbWrite": [
         "unsold_items"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7905,6 +8104,7 @@
         "wallet_transactions",
         "wallets"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "ledger_append_only",
         "credit_debit_idempotent"
@@ -7959,6 +8159,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "raw_body_webhook_intact",
@@ -8012,6 +8213,7 @@
         "alerts",
         "orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8055,6 +8257,7 @@
       "dbWrite": [
         "incidents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8093,6 +8296,7 @@
       "dbWrite": [
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8127,6 +8331,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8171,6 +8376,7 @@
         "parcel_items",
         "parcels"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8209,6 +8415,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8248,6 +8455,7 @@
         "alerts",
         "purchase_orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8298,6 +8506,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8339,6 +8548,7 @@
         "alerts",
         "cash_collections"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8380,6 +8590,7 @@
         "orders",
         "parcels"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8429,6 +8640,7 @@
         "alerts",
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
@@ -8468,6 +8680,7 @@
         "catalog_exclusions"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
@@ -8516,6 +8729,7 @@
         "catalog_enrichment_runs",
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
@@ -8564,6 +8778,7 @@
         "catalog_field_overrides",
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
@@ -8591,21 +8806,14 @@
       "outputs": [
         "public_product_view"
       ],
-      "depends": [
-        "(none)"
-      ],
+      "depends": [],
       "usedBy": [
         "routes/products.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
-      "dbTxn": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
       ],
@@ -8639,6 +8847,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8674,6 +8883,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8709,6 +8919,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8751,6 +8962,7 @@
       "dbWrite": [
         "collective_stock_reservations"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8796,6 +9008,7 @@
         "collective_workspace_contributions",
         "collective_workspace_events"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "required_for_state_transition"
       ],
@@ -8836,13 +9049,12 @@
       "usedBy": [
         "services/collective-workspace-engine.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
+      "dbRead": [],
       "dbWrite": [
         "collective_workspace_events",
         "collective_workspaces"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "required_for_state_transition"
       ],
@@ -8902,6 +9114,7 @@
         "collective_workspace_items",
         "collective_workspaces"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8924,12 +9137,8 @@
       "criticality": "critical",
       "owner": null,
       "purpose": null,
-      "inputs": [
-        "(none)"
-      ],
-      "outputs": [
-        "(none)"
-      ],
+      "inputs": [],
+      "outputs": [],
       "depends": [
         "db.js"
       ],
@@ -8940,12 +9149,11 @@
         "services/collective-workspace-contributions.js",
         "services/collective-workspace-lifecycle.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
+      "dbRead": [],
       "dbWrite": [
         "collective_workspace_events"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8992,6 +9200,7 @@
         "collective_workspace_events",
         "collective_workspace_items"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "required_for_state_transition"
       ],
@@ -9046,6 +9255,7 @@
         "collective_workspace_items",
         "collective_workspaces"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "required_for_state_transition"
       ],
@@ -9098,12 +9308,9 @@
         "collective_workspaces",
         "relais"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
-      "dbTxn": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
       ],
@@ -9141,6 +9348,7 @@
         "alerts",
         "cash_collections"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -9179,12 +9387,9 @@
         "allocate.js",
         "variance.js (services/cost-allocation/*)"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "@none"
       ],
@@ -9235,6 +9440,7 @@
       "dbWrite": [
         "order_item_real_cost_allocations"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -9289,6 +9495,7 @@
       "dbWrite": [
         "order_item_real_cost_allocations"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -9331,9 +9538,8 @@
         "order_items",
         "orders"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "@none"
       ],
@@ -9373,6 +9579,7 @@
       "dbWrite": [
         "orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -9418,12 +9625,9 @@
         "parcel_items",
         "parcels"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
-      "dbTxn": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
       "doctrine": [
         "douane_declaration_pivot"
       ],
@@ -9462,9 +9666,8 @@
       "dbRead": [
         "customs_categories"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "read_within_caller_transaction"
       ],
@@ -9514,6 +9717,7 @@
         "orders",
         "parcels"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -9548,6 +9752,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -9592,6 +9797,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -9642,6 +9848,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -9682,12 +9889,9 @@
         "logistics.js",
         "workspaces.js (services/dashboard-metrics/*)"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "@none"
       ],
@@ -9734,9 +9938,8 @@
         "scan_events",
         "signals"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "@none"
       ],
@@ -9782,9 +9985,8 @@
         "order_item_real_cost_allocations",
         "orders"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "@none"
       ],
@@ -9838,6 +10040,7 @@
         "signals"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -9882,9 +10085,8 @@
         "orders",
         "parcels"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "@none"
       ],
@@ -9931,9 +10133,8 @@
         "collective_workspaces",
         "orders"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "@none"
       ],
@@ -9983,6 +10184,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10035,6 +10237,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "caller_transaction_optional"
       ],
@@ -10080,6 +10283,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "caller_transaction_optional"
       ],
@@ -10127,6 +10331,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "caller_transaction_optional"
       ],
@@ -10171,6 +10376,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "caller_transaction_optional"
       ],
@@ -10215,6 +10421,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "caller_transaction_optional"
       ],
@@ -10266,6 +10473,7 @@
         "economic_snapshots",
         "economic_variables"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "snapshot_debounce",
         "coherence_model_recalculation"
@@ -10319,6 +10527,7 @@
         "store_credits"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10363,6 +10572,7 @@
         "refunds"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10416,6 +10626,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10462,6 +10673,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10509,6 +10721,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10555,6 +10768,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10600,6 +10814,7 @@
         "products",
         "scan_events"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10643,6 +10858,7 @@
       "dbWrite": [
         "incidents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10688,6 +10904,7 @@
         "orders",
         "parcel_items"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10726,12 +10943,9 @@
         "routes/invoices.js",
         "services/authkey-client.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "lien_facture_public_non_devinable",
@@ -10778,6 +10992,7 @@
       "dbWrite": [
         "invoices"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10821,6 +11036,7 @@
         "loyalty_rewards",
         "users"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10855,6 +11071,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -10907,6 +11124,7 @@
         "alerts",
         "notification_log"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "notification_non_blocking"
       ],
@@ -10956,6 +11174,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "notification_non_blocking"
       ],
@@ -11005,6 +11224,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "notification_non_blocking"
       ],
@@ -11048,6 +11268,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "notification_non_blocking"
       ],
@@ -11106,6 +11327,7 @@
         "alerts",
         "notification_log"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "notification_non_blocking",
         "failure_logged_not_rolled_back"
@@ -11164,6 +11386,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "notification_non_blocking"
       ],
@@ -11217,6 +11440,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "notification_non_blocking"
       ],
@@ -11270,6 +11494,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "notification_non_blocking"
       ],
@@ -11314,6 +11539,7 @@
         "order_item_cost_imputations",
         "orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11370,6 +11596,7 @@
         "product_variants",
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "caller_transaction_required",
         "stock_for_update",
@@ -11426,6 +11653,7 @@
         "orders"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "order_reference_unique",
         "wallet_application_idempotent"
@@ -11488,6 +11716,7 @@
         "product_variants",
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "single_status_transition_gate",
         "append_history_before_side_effects"
@@ -11531,6 +11760,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11577,6 +11807,16 @@
         "parcels",
         "scan_events"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11611,6 +11851,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11659,6 +11900,16 @@
         "parcels",
         "products"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11668,7 +11919,8 @@
       "impactAreas": [
         "logistics"
       ],
-      "version": "2026-06"
+      "version": "2026-06",
+      "dbWriteViaOverlapWarning": "services/parcel-operations.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> order_status_history, products"
     },
     {
       "id": "services/parcel-security.js",
@@ -11698,6 +11950,7 @@
         "parcel_events",
         "parcels"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11732,6 +11985,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11775,6 +12029,7 @@
         "parcel_items",
         "parcels"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11823,6 +12078,7 @@
         "alerts",
         "orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "cash_confirmation_idempotency",
         "rollback_or_alert_on_stock_failure"
@@ -11867,6 +12123,7 @@
       "dbWrite": [
         "paypal_events_processed"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11922,6 +12179,7 @@
         "paypal_events_processed",
         "refunds"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11970,6 +12228,7 @@
       "dbWrite": [
         "orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "payment_status_single_owner",
         "optional_caller_transaction"
@@ -12026,6 +12285,7 @@
         "orders",
         "stripe_events_processed"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "stripe_event_idempotency",
         "payment_to_stock_single_entry"
@@ -12070,6 +12330,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12124,6 +12385,16 @@
         "pickup_print_tokens",
         "pickup_reveal_codes"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12163,6 +12434,7 @@
         "price_history",
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12205,6 +12477,7 @@
         "risk_provisions"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12247,6 +12520,7 @@
         "risk_provisions"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12286,6 +12560,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12320,6 +12595,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12354,6 +12630,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12394,6 +12671,7 @@
         "exchange_rates",
         "finance_config"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12435,6 +12713,7 @@
         "risk_provisions"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12487,6 +12766,7 @@
         "pricing_strategy_history",
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12536,6 +12816,7 @@
         "product_variants",
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12575,6 +12856,7 @@
       "dbWrite": [
         "price_history"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12617,6 +12899,7 @@
       "dbWrite": [
         "alerts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12649,18 +12932,13 @@
         "prompt_strings",
         "output_validation_verdict"
       ],
-      "depends": [
-        "(none)"
-      ],
+      "depends": [],
       "usedBy": [
         "services/catalog-enrichment.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
@@ -12701,6 +12979,7 @@
         "purchase_orders",
         "suppliers"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12740,6 +13019,7 @@
       "dbWrite": [
         "purchase_orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12785,6 +13065,7 @@
         "alerts",
         "purchase_orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12830,6 +13111,7 @@
         "wallets"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12868,6 +13150,7 @@
       "dbWrite": [
         "purchase_orders"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12912,6 +13195,7 @@
       "dbWrite": [
         "incidents"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -12965,6 +13249,7 @@
       "dbWrite": [
         "refunds"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13014,6 +13299,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13054,6 +13340,7 @@
       "dbWrite": [
         "alerts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13094,6 +13381,7 @@
       "dbWrite": [
         "alerts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13132,6 +13420,7 @@
         "purchase_orders"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13172,6 +13461,7 @@
       "dbWrite": [
         "alerts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13212,6 +13502,7 @@
         "orders",
         "relais"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13261,6 +13552,16 @@
         "parcels",
         "scan_events"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13305,6 +13606,16 @@
         "orders",
         "scans"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13346,6 +13657,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -13395,6 +13707,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "idempotent_payment_events"
       ],
@@ -13453,6 +13766,7 @@
         "shared_cart_items",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "required_for_state_transition",
         "snapshot_consistency"
@@ -13529,6 +13843,7 @@
         "shared_cart_items",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "required_for_state_transition",
         "idempotent_payment_events",
@@ -13590,6 +13905,7 @@
         "shared_cart_estimations",
         "shared_cart_events"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "estimation_is_not_payment",
         "aggregate_recalculation"
@@ -13646,6 +13962,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "idempotent_contribution_event",
         "no_silent_overcollection"
@@ -13698,6 +14015,7 @@
       "dbWrite": [
         "shared_cart_events"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [],
       "impactAreas": [
@@ -13748,6 +14066,7 @@
         "shared_cart_items",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "open_cart_only",
         "snapshot_locked_after_close"
@@ -13822,6 +14141,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "required_for_state_transition",
         "idempotent_payment_events",
@@ -13891,6 +14211,7 @@
         "shared_carts",
         "stripe_events_processed"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "centralized_lookup_no_mutation"
       ],
@@ -13946,6 +14267,7 @@
       "dbWrite": [
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "snapshot_fige"
@@ -13994,6 +14316,7 @@
         "shared_cart_contributions",
         "shared_cart_events"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14039,6 +14362,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "pure_projection_no_db_write"
       ],
@@ -14089,6 +14413,7 @@
       "dbWrite": [
         "signals"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14131,6 +14456,7 @@
         "parcels",
         "scans"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14167,6 +14493,7 @@
         "orders"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14201,6 +14528,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14235,6 +14563,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14280,6 +14609,7 @@
         "scans",
         "store_credits"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14320,6 +14650,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14362,6 +14693,7 @@
         "product_variants",
         "products"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14396,6 +14728,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14444,6 +14777,7 @@
         "sourcing_candidates",
         "supplier_catalog_imports"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14479,12 +14813,9 @@
         "services/suppliers/connectors/csv-connector.js",
         "services/suppliers/connectors/manual-connector.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14519,6 +14850,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14560,6 +14892,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14597,6 +14930,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14632,6 +14966,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14667,6 +15002,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14720,6 +15056,7 @@
         "orders",
         "scans"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14775,6 +15112,7 @@
         "wallet_transactions",
         "wallets"
       ],
+      "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14820,6 +15158,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [
         "external_provider_only",
         "secrets_env_only"
@@ -14861,6 +15200,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -14893,15 +15233,10 @@
       "usedBy": [
         "routes/documents-html.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
-      "dbTxn": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
       "doctrine": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -14922,27 +15257,18 @@
       "criticality": "low",
       "owner": null,
       "purpose": null,
-      "inputs": [
-        "(none)"
-      ],
+      "inputs": [],
       "outputs": [
         "string data-URI PNG (logo Komerce)"
       ],
-      "depends": [
-        "(none)"
-      ],
+      "depends": [],
       "usedBy": [
         "utils/documents/*-html.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
-      "dbTxn": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
       "doctrine": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -14974,15 +15300,10 @@
       "usedBy": [
         "routes/documents-html.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
-      "dbTxn": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
       "doctrine": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -15015,15 +15336,10 @@
       "usedBy": [
         "routes/documents-html.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
-      "dbTxn": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
       "doctrine": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -15056,15 +15372,10 @@
       "usedBy": [
         "routes/documents-html.js"
       ],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
-      "dbTxn": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
       "doctrine": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -15100,6 +15411,7 @@
         "economic_variables"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15132,6 +15444,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15164,6 +15477,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15199,6 +15513,7 @@
         "parcels"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15241,6 +15556,16 @@
         "parcels",
         "scans"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15273,6 +15598,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15305,6 +15631,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15337,6 +15664,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15369,6 +15697,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15403,6 +15732,7 @@
         "finance_config"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15435,6 +15765,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15469,6 +15800,7 @@
       "dbWrite": [
         "refunds"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15508,6 +15840,7 @@
         "business_rules",
         "business_rules_history"
       ],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15540,6 +15873,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15572,6 +15906,7 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "resolve_before_behavior_change"
@@ -15608,6 +15943,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
         "API_CONTRACTS"
@@ -15823,11 +16159,6 @@
       "id": "db:sms_log",
       "type": "db-table",
       "table": "sms_log"
-    },
-    {
-      "id": "db:(none)",
-      "type": "db-table",
-      "table": "(none)"
     },
     {
       "id": "db:recipients",
@@ -22613,12 +22944,6 @@
     },
     {
       "from": "routes/admin/documents.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "routes/admin/documents.js",
       "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
       "type": "doctrine",
       "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
@@ -25229,6 +25554,20 @@
     },
     {
       "from": "routes/orders/cancel.js",
+      "to": "db:refunds",
+      "type": "db-write-via",
+      "label": "refunds",
+      "via": "refund-service"
+    },
+    {
+      "from": "routes/orders/cancel.js",
+      "to": "db:transaction_documents",
+      "type": "db-write-via",
+      "label": "transaction_documents",
+      "via": "refund-receipt"
+    },
+    {
+      "from": "routes/orders/cancel.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -26348,12 +26687,6 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
-    },
-    {
-      "from": "routes/payments-paypal.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "routes/payments-paypal.js",
@@ -27614,6 +27947,13 @@
       "to": "db:sourcing_candidates",
       "type": "db-write",
       "label": "sourcing_candidates"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-write-via",
+      "label": "supplier_catalog_imports",
+      "via": "catalog-import-orchestrator"
     },
     {
       "from": "routes/sourcing-scanner.js",
@@ -28918,28 +29258,10 @@
       "label": "admin-dashboard"
     },
     {
-      "from": "services/catalog-public-view.js",
-      "to": "(none)",
-      "type": "depends",
-      "label": "(none)"
-    },
-    {
       "from": "routes/products.js",
       "to": "services/catalog-public-view.js",
       "type": "uses",
       "label": "routes/products.js"
-    },
-    {
-      "from": "services/catalog-public-view.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "services/catalog-public-view.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "services/catalog-public-view.js",
@@ -29114,12 +29436,6 @@
       "to": "services/collective-workspace-creation.js",
       "type": "uses",
       "label": "services/collective-workspace-engine.js"
-    },
-    {
-      "from": "services/collective-workspace-creation.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
     },
     {
       "from": "services/collective-workspace-creation.js",
@@ -29321,12 +29637,6 @@
     },
     {
       "from": "services/collective-workspace-internals.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "services/collective-workspace-internals.js",
       "to": "db:collective_workspace_events",
       "type": "db-write",
       "label": "collective_workspace_events"
@@ -29543,12 +29853,6 @@
     },
     {
       "from": "services/collective-workspace-reads.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "services/collective-workspace-reads.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -29618,18 +29922,6 @@
       "to": "services/cost-allocation/_helpers.js",
       "type": "uses",
       "label": "variance.js (services/cost-allocation/*)"
-    },
-    {
-      "from": "services/cost-allocation/_helpers.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "services/cost-allocation/_helpers.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "services/cost-allocation/_helpers.js",
@@ -29873,12 +30165,6 @@
     },
     {
       "from": "services/cost-allocation/variance.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "services/cost-allocation/variance.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -29969,12 +30255,6 @@
     },
     {
       "from": "services/customs-analytics.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "services/customs-analytics.js",
       "to": "doctrine:douane_declaration_pivot",
       "type": "doctrine",
       "label": "douane_declaration_pivot"
@@ -30020,12 +30300,6 @@
       "to": "db:customs_categories",
       "type": "db-read",
       "label": "customs_categories"
-    },
-    {
-      "from": "services/customs-classification.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "services/customs-classification.js",
@@ -30347,18 +30621,6 @@
     },
     {
       "from": "services/dashboard-metrics/_helpers.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "services/dashboard-metrics/_helpers.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "services/dashboard-metrics/_helpers.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -30431,12 +30693,6 @@
     },
     {
       "from": "services/dashboard-metrics/control-tower.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "services/dashboard-metrics/control-tower.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -30500,12 +30756,6 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
-    },
-    {
-      "from": "services/dashboard-metrics/costing.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "services/dashboard-metrics/costing.js",
@@ -30683,12 +30933,6 @@
     },
     {
       "from": "services/dashboard-metrics/logistics.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "services/dashboard-metrics/logistics.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -30758,12 +31002,6 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
-    },
-    {
-      "from": "services/dashboard-metrics/workspaces.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "services/dashboard-metrics/workspaces.js",
@@ -32030,18 +32268,6 @@
       "to": "services/invoice-public-token.js",
       "type": "uses",
       "label": "services/authkey-client.js"
-    },
-    {
-      "from": "services/invoice-public-token.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "services/invoice-public-token.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "services/invoice-public-token.js",
@@ -33383,6 +33609,27 @@
     },
     {
       "from": "services/parcel-auto-create-service.js",
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/parcel-auto-create-service.js",
+      "to": "db:order_status_history",
+      "type": "db-write-via",
+      "label": "order_status_history",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/parcel-auto-create-service.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/parcel-auto-create-service.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -33476,6 +33723,27 @@
       "to": "db:products",
       "type": "db-write",
       "label": "products"
+    },
+    {
+      "from": "services/parcel-operations.js",
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/parcel-operations.js",
+      "to": "db:order_status_history",
+      "type": "db-write-via",
+      "label": "order_status_history",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/parcel-operations.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "order-status-machine"
     },
     {
       "from": "services/parcel-operations.js",
@@ -34121,6 +34389,27 @@
     },
     {
       "from": "services/pickup-secret-service.js",
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:order_status_history",
+      "type": "db-write-via",
+      "label": "order_status_history",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -34690,28 +34979,10 @@
       "label": "product-discovery"
     },
     {
-      "from": "services/prompts/catalog-enrichment.prompt.js",
-      "to": "(none)",
-      "type": "depends",
-      "label": "(none)"
-    },
-    {
       "from": "services/catalog-enrichment.js",
       "to": "services/prompts/catalog-enrichment.prompt.js",
       "type": "uses",
       "label": "services/catalog-enrichment.js"
-    },
-    {
-      "from": "services/prompts/catalog-enrichment.prompt.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "services/prompts/catalog-enrichment.prompt.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "services/prompts/catalog-enrichment.prompt.js",
@@ -35447,6 +35718,27 @@
     },
     {
       "from": "services/scan-engine.js",
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/scan-engine.js",
+      "to": "db:order_status_history",
+      "type": "db-write-via",
+      "label": "order_status_history",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/scan-engine.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/scan-engine.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -35504,6 +35796,27 @@
       "to": "db:scans",
       "type": "db-write",
       "label": "scans"
+    },
+    {
+      "from": "services/scan-operations.js",
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/scan-operations.js",
+      "to": "db:order_status_history",
+      "type": "db-write-via",
+      "label": "order_status_history",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/scan-operations.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "order-status-machine"
     },
     {
       "from": "services/scan-operations.js",
@@ -37367,18 +37680,6 @@
     },
     {
       "from": "services/suppliers/connectors/_connector-utils.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "services/suppliers/connectors/_connector-utils.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "services/suppliers/connectors/_connector-utils.js",
       "to": "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I2)",
       "type": "doctrine",
       "label": "DOCTRINE_INGESTION_CATALOGUE (ING-I2)"
@@ -37823,18 +38124,6 @@
     },
     {
       "from": "utils/documents/customs-invoice-html.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "utils/documents/customs-invoice-html.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "utils/documents/customs-invoice-html.js",
       "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
       "type": "doctrine",
       "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
@@ -37852,28 +38141,10 @@
       "label": "douane"
     },
     {
-      "from": "utils/documents/logo-base64.js",
-      "to": "(none)",
-      "type": "depends",
-      "label": "(none)"
-    },
-    {
       "from": "utils/documents/*-html.js",
       "to": "utils/documents/logo-base64.js",
       "type": "uses",
       "label": "utils/documents/*-html.js"
-    },
-    {
-      "from": "utils/documents/logo-base64.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "utils/documents/logo-base64.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "utils/documents/logo-base64.js",
@@ -37898,18 +38169,6 @@
       "to": "utils/documents/pickup-proof-html.js",
       "type": "uses",
       "label": "routes/documents-html.js"
-    },
-    {
-      "from": "utils/documents/pickup-proof-html.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "utils/documents/pickup-proof-html.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "utils/documents/pickup-proof-html.js",
@@ -37943,18 +38202,6 @@
     },
     {
       "from": "utils/documents/refund-receipt-html.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "utils/documents/refund-receipt-html.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
-    },
-    {
-      "from": "utils/documents/refund-receipt-html.js",
       "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
       "type": "doctrine",
       "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
@@ -37982,18 +38229,6 @@
       "to": "utils/documents/wallet-receipt-html.js",
       "type": "uses",
       "label": "routes/documents-html.js"
-    },
-    {
-      "from": "utils/documents/wallet-receipt-html.js",
-      "to": "db:(none)",
-      "type": "db-read",
-      "label": "(none)"
-    },
-    {
-      "from": "utils/documents/wallet-receipt-html.js",
-      "to": "db:(none)",
-      "type": "db-write",
-      "label": "(none)"
     },
     {
       "from": "utils/documents/wallet-receipt-html.js",
@@ -38132,6 +38367,27 @@
       "to": "db:scans",
       "type": "db-write",
       "label": "scans"
+    },
+    {
+      "from": "utils/parcelSync.js",
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "utils/parcelSync.js",
+      "to": "db:order_status_history",
+      "type": "db-write-via",
+      "label": "order_status_history",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "utils/parcelSync.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "order-status-machine"
     },
     {
       "from": "utils/parcelSync.js",
@@ -38367,6 +38623,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "routes_canoniques",
         "stripe_raw_body_preserve",
@@ -38520,6 +38777,7 @@
         "pickup_reveal_codes",
         "revoked_tokens"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "shared_cart_state_machine_v41",
         "idempotence_cron",
@@ -38565,6 +38823,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38589,6 +38848,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38613,6 +38873,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38637,6 +38898,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38670,6 +38932,7 @@
         "finance_config",
         "users"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38705,6 +38968,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "whatsapp",
@@ -38734,6 +38998,7 @@
       "dbWrite": [
         "users"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38763,6 +39028,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38882,6 +39148,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38905,6 +39172,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38928,6 +39196,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38954,6 +39223,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -38982,6 +39252,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -39011,6 +39282,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_NON_CONFORMITE (Q-1)"
       ],
@@ -39036,6 +39308,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -39059,6 +39332,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -39082,6 +39356,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -39105,6 +39380,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -39126,6 +39402,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -39155,6 +39432,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -39196,6 +39474,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "panier_visible_sans_friction",
         "side_cart_non_intrusif",
@@ -39235,6 +39514,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "catalog",
@@ -39273,6 +39553,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "panier_ouvert_ferme",
         "participant_lecture_seule",
@@ -39333,6 +39614,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "boutique_canal_decouverte",
         "desktop_premium",
@@ -39398,6 +39680,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "boutique_canal_decouverte",
         "categorie_souscategorie_switch_fluide",
@@ -39464,6 +39747,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "checkout_sans_friction",
         "otp_une_fois",
@@ -39517,6 +39801,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "paiement_seul_acte_engageant",
         "otp_une_fois",
@@ -39567,6 +39852,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -39588,6 +39874,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -39610,6 +39897,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -39638,6 +39926,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "favoris_locaux_simples",
         "boutique_canal_decouverte"
@@ -39674,6 +39963,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -39695,6 +39985,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -39723,6 +40014,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "suivi_panier_visible",
         "panier_ouvert_ferme",
@@ -39761,6 +40053,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -39797,6 +40090,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "paiement_seul_acte_engageant",
         "estimations_indicatives",
@@ -39846,6 +40140,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -39875,6 +40170,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "otp_une_fois",
         "session_client_legere",
@@ -39924,6 +40220,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "side_cart_non_intrusif",
         "panier_visible_sans_friction"
@@ -39959,6 +40256,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -39980,6 +40278,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -40007,6 +40306,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "modal_produit_sans_chevauchement",
         "partager_geste_natif",
@@ -40043,6 +40343,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -40086,6 +40387,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "participant_peut_verifier",
         "boutique_preuve_confiance",
@@ -40150,6 +40452,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "modal_produit_sans_chevauchement",
         "desktop_premium",
@@ -40194,6 +40497,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "image_produit_inspectable",
         "modal_produit_sans_chevauchement"
@@ -40225,6 +40529,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -40252,6 +40557,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "boutique_preuve_confiance",
         "fiche_produit_lisible",
@@ -40289,6 +40595,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -40318,6 +40625,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "suggestions_decouverte_non_intrusives",
         "boutique_canal_decouverte",
@@ -40356,6 +40664,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -40397,6 +40706,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "navigation_sans_friction",
         "mobile_desktop_coherence"
@@ -40451,6 +40761,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "navigation_sans_friction",
         "categorie_souscategorie_switch_fluide",
@@ -40490,6 +40801,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "payment"
@@ -40511,6 +40823,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "recommendations"
@@ -40537,6 +40850,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "phone_normalization",
         "format_local_lisible",
@@ -40576,6 +40890,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "catalog",
@@ -40608,6 +40923,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "scroll_owner_unique",
         "mobile_desktop_coherence",
@@ -40661,6 +40977,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "partager_geste_natif",
         "panier_ouvert_ferme",
@@ -40710,6 +41027,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -40737,6 +41055,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "state_partage_explicite",
         "panier_local_source_unique",
@@ -40804,6 +41123,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "categorie_souscategorie_switch_fluide",
         "navigation_sans_friction",
@@ -40855,6 +41175,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "otp_une_fois",
         "suivi_client_simple",
@@ -40902,6 +41223,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "sanitize_before_render",
         "api_errors_lisibles",
@@ -40958,6 +41280,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "wallet_visible_client",
         "navigation_sans_friction",
@@ -41007,6 +41330,7 @@
       ],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "boutique_canal_decouverte",
         "navigation_sans_friction",
@@ -41067,6 +41391,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -41094,6 +41419,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "navigation_sans_friction",
         "categorie_souscategorie_switch_fluide",
@@ -41136,6 +41462,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "backend_source_verite",
         "paiement_seul_acte_engageant",
@@ -41179,6 +41506,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "estimations_indicatives",
         "montant_lisible",
@@ -41222,6 +41550,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "createur_decide_gap",
         "estimations_indicatives",
@@ -41259,6 +41588,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "shared-cart"
@@ -41287,6 +41617,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "api_frontend_unique",
         "credentials_preserved",
@@ -41324,6 +41655,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -41352,6 +41684,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "product_source_unique",
         "catalogue_cache_fallback",
@@ -41388,6 +41721,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "boutique"
@@ -41414,6 +41748,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "boutique_canal_decouverte",
         "rendu_sans_logique_metier",
@@ -41450,6 +41785,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "catalog",
@@ -41480,6 +41816,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "taxonomy_source_unique",
         "categories_sans_hardcode_metier",
@@ -41522,6 +41859,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "catalog"
@@ -41548,6 +41886,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "fiche_produit_lisible",
         "modal_contract_stable",
@@ -41582,6 +41921,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "catalog",
@@ -41605,6 +41945,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "catalog",
@@ -41641,6 +41982,7 @@
         "boutique_categories",
         "boutique_subcategories"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "categories_maj_sans_code",
         "taxonomy_source_db",
@@ -41684,6 +42026,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -41723,6 +42066,7 @@
         "cost_component_events",
         "cost_components"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -41770,6 +42114,7 @@
       "dbWrite": [
         "finance_config"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -41817,6 +42162,7 @@
       "dbWrite": [
         "customs_categories"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -41861,6 +42207,7 @@
         "parcels",
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -41910,6 +42257,7 @@
         "signals"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -41956,6 +42304,7 @@
         "exchange_rates",
         "finance_config"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -41997,6 +42346,7 @@
       "dbWrite": [
         "loyalty_rewards"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42037,6 +42387,7 @@
       "dbWrite": [
         "pricing_components"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42079,6 +42430,7 @@
         "pricing_category_taxes",
         "pricing_matrices_audit"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42116,6 +42468,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42153,6 +42506,7 @@
       "dbWrite": [
         "risk_provisions"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42191,6 +42545,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42227,6 +42582,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42260,6 +42616,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md §6"
       ],
@@ -42294,6 +42651,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42327,6 +42685,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42369,6 +42728,7 @@
         "scans",
         "sms_log"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42411,9 +42771,8 @@
         "transaction_documents",
         "users"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -42421,7 +42780,6 @@
         "documents"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:transaction_documents",
         "db:users",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
@@ -42448,6 +42806,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42490,6 +42849,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42539,6 +42899,7 @@
       "dbWrite": [
         "partners"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42601,6 +42962,7 @@
         "wallet_transactions",
         "wallets"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42667,6 +43029,7 @@
         "wallet_transactions",
         "wallets"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42712,6 +43075,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42749,6 +43113,7 @@
         "revoked_tokens",
         "users"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42783,6 +43148,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42814,6 +43180,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42847,6 +43214,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "suggestions_decouverte_non_intrusives",
         "personnalisation_navigation",
@@ -42895,6 +43263,7 @@
         "carriers",
         "parcels"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42935,6 +43304,7 @@
       "dbWrite": [
         "cash_deposits"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -42973,6 +43343,7 @@
         "boutique_subcategories"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43016,6 +43387,7 @@
       "dbWrite": [
         "users"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43062,6 +43434,7 @@
         "scan_events"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43100,6 +43473,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43132,6 +43506,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43163,6 +43538,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43196,6 +43572,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43238,6 +43615,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43277,6 +43655,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43310,6 +43689,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43347,6 +43727,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43381,6 +43762,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "moteur_economique_lisible",
         "route_facade_service",
@@ -43431,6 +43813,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43470,6 +43853,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43516,6 +43900,7 @@
         "parcels",
         "scans"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43561,6 +43946,7 @@
       "dbWrite": [
         "order_comments"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43601,6 +43987,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43636,6 +44023,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43672,6 +44060,7 @@
       "dbWrite": [
         "invoices"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "facture_apres_paiement_confirme",
         "lien_facture_whatsapp_token_public"
@@ -43721,6 +44110,7 @@
       "dbWrite": [
         "shipments"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43765,6 +44155,7 @@
       "dbWrite": [
         "loyalty_tiers"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43799,6 +44190,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43838,6 +44230,7 @@
         "fabrics",
         "garment_models"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43874,6 +44267,7 @@
         "notification_log"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43919,6 +44313,7 @@
       "dbWrite": [
         "incidents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -43968,6 +44363,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44012,6 +44408,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "paiement_seul_acte_engageant",
         "order_creation_idempotent",
@@ -44072,6 +44469,20 @@
         "order_status_history",
         "orders"
       ],
+      "dbWriteVia": [
+        {
+          "via": "refund-service",
+          "tables": [
+            "refunds"
+          ]
+        },
+        {
+          "via": "refund-receipt",
+          "tables": [
+            "transaction_documents"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44085,6 +44496,7 @@
         "db:orders",
         "db:recipients",
         "db:refunds",
+        "db:transaction_documents",
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
@@ -44123,6 +44535,7 @@
         "orders",
         "recipients"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44173,6 +44586,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44220,6 +44634,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44265,6 +44680,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44311,6 +44727,7 @@
       "dbWrite": [
         "orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44356,6 +44773,7 @@
         "customs_history",
         "orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "order_status_machine",
         "pickup_collected_proof",
@@ -44408,6 +44826,7 @@
         "otp_codes",
         "users"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "otp_une_fois",
         "session_client_legere",
@@ -44460,6 +44879,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44495,6 +44915,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44529,6 +44950,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44570,6 +44992,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44612,6 +45035,7 @@
         "parcels"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44652,6 +45076,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44703,6 +45128,7 @@
         "parcel_items",
         "parcels"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44745,9 +45171,8 @@
       "dbRead": [
         "orders"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "route = auth + ownership + validate + appel service + réponse HTTP"
       ],
@@ -44757,7 +45182,6 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:(none)",
         "db:orders",
         "doctrine:route = auth + ownership + validate + appel service + réponse HTTP",
         "impact:checkout",
@@ -44792,6 +45216,7 @@
         "stripe_events_processed"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "raw_body_webhook_intact",
         "idempotence_stripe",
@@ -44844,6 +45269,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44888,6 +45314,7 @@
         "pickup_print_tokens",
         "pickup_reveal_codes"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44929,6 +45356,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -44967,6 +45395,7 @@
       "dbWrite": [
         "cost_benchmarks"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45008,6 +45437,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "catalogue_source_db",
         "produit_reference_stable",
@@ -45065,6 +45495,7 @@
         "product_suppliers",
         "suppliers"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45103,6 +45534,7 @@
         "relais"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45140,6 +45572,7 @@
         "order_comments",
         "order_incidents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45183,6 +45616,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45220,6 +45654,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45261,6 +45696,7 @@
         "shared_cart_items",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45309,6 +45745,7 @@
         "shared_cart_contributions",
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45355,6 +45792,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "paiement_seul_acte_engageant",
         "estimations_indicatives",
@@ -45427,6 +45865,7 @@
         "cart_contributions",
         "cart_shares"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45465,6 +45904,7 @@
       "dbWrite": [
         "signals"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45497,6 +45937,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45536,6 +45977,14 @@
         "products",
         "sourcing_candidate_events",
         "sourcing_candidates"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "catalog-import-orchestrator",
+          "tables": [
+            "supplier_catalog_imports"
+          ]
+        }
       ],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -45578,6 +46027,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45623,6 +46073,7 @@
         "orders",
         "pickup_verify_attempts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45667,6 +46118,7 @@
       "dbWrite": [
         "scans"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45713,6 +46165,7 @@
         "parcels",
         "scan_events"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45758,6 +46211,7 @@
       "dbWrite": [
         "unsold_items"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45807,6 +46261,7 @@
         "wallet_transactions",
         "wallets"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "wallet_ledger_trace",
         "credit_debit_idempotent",
@@ -45862,6 +46317,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "raw_body_webhook_intact",
         "routes_canoniques",
@@ -45919,6 +46375,7 @@
         "alerts",
         "orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45962,6 +46419,7 @@
       "dbWrite": [
         "incidents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -45993,6 +46451,7 @@
       "dbWrite": [
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46017,6 +46476,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46057,6 +46517,7 @@
         "parcel_items",
         "parcels"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46090,6 +46551,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46121,6 +46583,7 @@
         "alerts",
         "purchase_orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46163,6 +46626,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46201,6 +46665,7 @@
         "alerts",
         "cash_collections"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46235,6 +46700,7 @@
         "orders",
         "parcels"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46273,6 +46739,7 @@
         "alerts",
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
         "§6"
@@ -46311,6 +46778,7 @@
         "catalog_exclusions"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
       ],
@@ -46352,6 +46820,7 @@
         "catalog_enrichment_runs",
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
       ],
@@ -46399,6 +46868,7 @@
         "catalog_field_overrides",
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
       ],
@@ -46424,19 +46894,14 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [
-        "(none)"
-      ],
+      "directDependsOn": [],
       "directUsedBy": [
         "routes/products.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
       ],
@@ -46446,7 +46911,6 @@
         "modal"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
         "impact:catalog",
         "impact:modal",
@@ -46466,6 +46930,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46491,6 +46956,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46516,6 +46982,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46548,6 +47015,7 @@
       "dbWrite": [
         "collective_stock_reservations"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46585,6 +47053,7 @@
         "collective_workspace_contributions",
         "collective_workspace_events"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46615,13 +47084,12 @@
         "services/collective-workspace-engine.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
+      "dbRead": [],
       "dbWrite": [
         "collective_workspace_events",
         "collective_workspaces"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46629,7 +47097,6 @@
         "shared-cart"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:collective_workspace_events",
         "db:collective_workspaces",
         "doctrine:resolve_before_behavior_change",
@@ -46675,6 +47142,7 @@
         "collective_workspace_items",
         "collective_workspaces"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46720,12 +47188,11 @@
         "services/collective-workspace-lifecycle.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
+      "dbRead": [],
       "dbWrite": [
         "collective_workspace_events"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46733,7 +47200,6 @@
         "shared-cart"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:collective_workspace_events",
         "doctrine:resolve_before_behavior_change",
         "impact:shared-cart",
@@ -46767,6 +47233,7 @@
         "collective_workspace_events",
         "collective_workspace_items"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46814,6 +47281,7 @@
         "collective_workspace_items",
         "collective_workspaces"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46858,9 +47326,8 @@
         "collective_workspaces",
         "relais"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46868,7 +47335,6 @@
         "shared-cart"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:collective_payment_sessions",
         "db:collective_payment_tokens",
         "db:collective_workspace_contributions",
@@ -46900,6 +47366,7 @@
         "alerts",
         "cash_collections"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46932,12 +47399,9 @@
         "variance.js (services/cost-allocation/*)"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -46945,7 +47409,6 @@
         "economic-engine"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
         "services/cost-allocation/allocate.js"
@@ -46979,6 +47442,7 @@
       "dbWrite": [
         "order_item_real_cost_allocations"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47033,6 +47497,7 @@
       "dbWrite": [
         "order_item_real_cost_allocations"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47078,9 +47543,8 @@
         "order_items",
         "orders"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47089,7 +47553,6 @@
         "admin-costing"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:order_items",
@@ -47116,6 +47579,7 @@
       "dbWrite": [
         "orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47151,9 +47615,8 @@
         "parcel_items",
         "parcels"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "douane_declaration_pivot"
       ],
@@ -47162,7 +47625,6 @@
         "economic-engine"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:customs_shipment_parcels",
         "db:customs_shipments",
         "db:order_items",
@@ -47193,9 +47655,8 @@
       "dbRead": [
         "customs_categories"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "douane_declaration_pivot"
       ],
@@ -47205,7 +47666,6 @@
         "marge"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:customs_categories",
         "doctrine:douane_declaration_pivot",
         "impact:douane",
@@ -47241,6 +47701,7 @@
         "orders",
         "parcels"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47272,6 +47733,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47306,6 +47768,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47356,6 +47819,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47400,12 +47864,9 @@
         "workspaces.js (services/dashboard-metrics/*)"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47414,7 +47875,6 @@
         "admin-dashboard"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
@@ -47446,9 +47906,8 @@
         "scan_events",
         "signals"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47457,7 +47916,6 @@
         "admin-dashboard"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:orders",
@@ -47493,9 +47951,8 @@
         "order_item_real_cost_allocations",
         "orders"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47505,7 +47962,6 @@
         "admin-costing"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:orders",
@@ -47546,6 +48002,7 @@
         "signals"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47594,9 +48051,8 @@
         "orders",
         "parcels"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47606,7 +48062,6 @@
         "orders-logistics"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:orders",
         "db:parcels",
         "doctrine:resolve_before_behavior_change",
@@ -47638,9 +48093,8 @@
         "collective_workspaces",
         "orders"
       ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47650,7 +48104,6 @@
         "event-workspaces"
       ],
       "mustCheck": [
-        "db:(none)",
         "db:collective_payment_sessions",
         "db:collective_workspace_contributions",
         "db:collective_workspace_items",
@@ -47688,6 +48141,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -47742,6 +48196,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "douane_declaration_pivot"
       ],
@@ -47788,6 +48243,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -47834,6 +48290,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -47877,6 +48334,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -47922,6 +48380,7 @@
       "dbWrite": [
         "transaction_documents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -47966,6 +48425,7 @@
         "economic_snapshots",
         "economic_variables"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "couts_repartis_par_commande",
         "coherence_model_economique",
@@ -48021,6 +48481,7 @@
         "store_credits"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48066,6 +48527,7 @@
         "refunds"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48118,6 +48580,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48174,6 +48637,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48222,6 +48686,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48268,6 +48733,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48313,6 +48779,7 @@
         "products",
         "scan_events"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change",
         "DOCTRINE_DENSITE_VALEUR (V-4",
@@ -48352,6 +48819,7 @@
       "dbWrite": [
         "incidents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48390,6 +48858,7 @@
         "orders",
         "parcel_items"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48424,12 +48893,9 @@
         "services/authkey-client.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "lien_facture_public_non_devinable",
         "facture_apres_paiement_confirme"
@@ -48441,7 +48907,6 @@
         "customer-support"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:facture_apres_paiement_confirme",
         "doctrine:lien_facture_public_non_devinable",
         "impact:customer-support",
@@ -48474,6 +48939,7 @@
       "dbWrite": [
         "invoices"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48514,6 +48980,7 @@
         "loyalty_rewards",
         "users"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48542,6 +49009,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -48581,6 +49049,7 @@
         "alerts",
         "notification_log"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "notification_non_bloquante"
       ],
@@ -48642,6 +49111,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "notification_non_bloquante",
         "fallback_trace"
@@ -48692,6 +49162,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "notification_non_bloquante"
       ],
@@ -48728,6 +49199,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "notification_non_bloquante"
       ],
@@ -48776,6 +49248,7 @@
         "alerts",
         "notification_log"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "notification_non_bloquante",
         "otp_message_lisible",
@@ -48839,6 +49312,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "notification_non_bloquante",
         "fallback_trace"
@@ -48890,6 +49364,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "notification_non_bloquante",
         "otp_message_lisible"
@@ -48941,6 +49416,7 @@
       "dbWrite": [
         "notification_log"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "notification_non_bloquante",
         "fallback_trace"
@@ -48986,6 +49462,7 @@
         "order_item_cost_imputations",
         "orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49032,6 +49509,7 @@
         "product_variants",
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "transaction_existante_obligatoire",
         "confirmPaymentCycle_unique",
@@ -49093,6 +49571,7 @@
         "orders"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "reference_commande_lisible",
         "wallet_applique_une_fois",
@@ -49150,6 +49629,7 @@
         "product_variants",
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "status_transition_source_unique",
         "payment_to_stock_single_entry",
@@ -49201,6 +49681,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49237,6 +49718,16 @@
         "parcels",
         "scan_events"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49245,9 +49736,11 @@
       ],
       "mustCheck": [
         "db:order_items",
+        "db:order_status_history",
         "db:orders",
         "db:parcel_items",
         "db:parcels",
+        "db:product_variants",
         "db:products",
         "db:relais",
         "db:scan_events",
@@ -49269,6 +49762,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49306,6 +49800,16 @@
         "parcels",
         "products"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49318,6 +49822,7 @@
         "db:orders",
         "db:parcel_items",
         "db:parcels",
+        "db:product_variants",
         "db:products",
         "db:relais",
         "db:users",
@@ -49342,6 +49847,7 @@
         "parcel_events",
         "parcels"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49367,6 +49873,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49399,6 +49906,7 @@
         "parcel_items",
         "parcels"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49439,6 +49947,7 @@
         "alerts",
         "orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "payment_to_stock_single_entry",
         "cash_validation_tracee",
@@ -49483,6 +49992,7 @@
       "dbWrite": [
         "paypal_events_processed"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49526,6 +50036,7 @@
         "paypal_events_processed",
         "refunds"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49574,6 +50085,7 @@
       "dbWrite": [
         "orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change",
         "payment_status_single_entry"
@@ -49622,6 +50134,7 @@
         "orders",
         "stripe_events_processed"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "idempotence_stripe",
         "payment_to_stock_single_entry",
@@ -49674,6 +50187,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49720,6 +50234,16 @@
         "pickup_print_tokens",
         "pickup_reveal_codes"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49728,9 +50252,11 @@
       ],
       "mustCheck": [
         "db:order_items",
+        "db:order_status_history",
         "db:orders",
         "db:pickup_print_tokens",
         "db:pickup_reveal_codes",
+        "db:product_variants",
         "db:products",
         "db:relais",
         "db:users",
@@ -49761,6 +50287,7 @@
         "price_history",
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49794,6 +50321,7 @@
         "risk_provisions"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49832,6 +50360,7 @@
         "risk_provisions"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49868,6 +50397,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49895,6 +50425,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49918,6 +50449,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49947,6 +50479,7 @@
         "exchange_rates",
         "finance_config"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -49979,6 +50512,7 @@
         "risk_provisions"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50026,6 +50560,7 @@
         "pricing_strategy_history",
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50077,6 +50612,7 @@
         "product_variants",
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md §5",
         "§7"
@@ -50118,6 +50654,7 @@
       "dbWrite": [
         "price_history"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50152,6 +50689,7 @@
       "dbWrite": [
         "alerts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
       ],
@@ -50175,19 +50713,14 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [
-        "(none)"
-      ],
+      "directDependsOn": [],
       "directUsedBy": [
         "services/catalog-enrichment.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_CATALOGUE.md"
       ],
@@ -50195,7 +50728,6 @@
         "catalog"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
         "impact:catalog",
         "services/catalog-enrichment.js"
@@ -50221,6 +50753,7 @@
         "purchase_orders",
         "suppliers"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50254,6 +50787,7 @@
       "dbWrite": [
         "purchase_orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50289,6 +50823,7 @@
         "alerts",
         "purchase_orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50331,6 +50866,7 @@
         "wallets"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50368,6 +50904,7 @@
       "dbWrite": [
         "purchase_orders"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50403,6 +50940,7 @@
       "dbWrite": [
         "incidents"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50446,6 +50984,7 @@
       "dbWrite": [
         "refunds"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "refund_confirmed_only",
         "idempotent_stripe_refund",
@@ -50496,6 +51035,7 @@
         "users"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50536,6 +51076,7 @@
       "dbWrite": [
         "alerts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50568,6 +51109,7 @@
       "dbWrite": [
         "alerts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50599,6 +51141,7 @@
         "purchase_orders"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50632,6 +51175,7 @@
       "dbWrite": [
         "alerts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50665,6 +51209,7 @@
         "orders",
         "relais"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50707,6 +51252,16 @@
         "parcels",
         "scan_events"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50716,9 +51271,11 @@
       "mustCheck": [
         "db:incidents",
         "db:order_items",
+        "db:order_status_history",
         "db:orders",
         "db:parcel_items",
         "db:parcels",
+        "db:product_variants",
         "db:products",
         "db:relais",
         "db:scan_events",
@@ -50748,6 +51305,16 @@
         "orders",
         "scans"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50757,7 +51324,10 @@
       "mustCheck": [
         "db:alerts",
         "db:order_items",
+        "db:order_status_history",
         "db:orders",
+        "db:product_variants",
+        "db:products",
         "db:recipients",
         "db:relais",
         "db:scans",
@@ -50785,6 +51355,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -50824,6 +51395,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "paiement_seul_acte_engageant",
         "idempotence_financiere"
@@ -50875,6 +51447,7 @@
         "shared_cart_items",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "panier_ouvert_ferme",
         "snapshot_fige"
@@ -50944,6 +51517,7 @@
         "shared_cart_items",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "paiement_seul_acte_engageant",
         "panier_ouvert_ferme",
@@ -51028,6 +51602,7 @@
         "shared_cart_estimations",
         "shared_cart_events"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "estimations_indicatives",
         "paiement_seul_acte_engageant",
@@ -51081,6 +51656,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "idempotence_financiere",
         "paiement_seul_acte_engageant",
@@ -51133,6 +51709,7 @@
       "dbWrite": [
         "shared_cart_events"
       ],
+      "dbWriteVia": [],
       "doctrines": [],
       "impactAreas": [
         "participant-flow",
@@ -51176,6 +51753,7 @@
         "shared_cart_items",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "panier_ouvert_modifiable",
         "snapshot_fige_apres_fermeture",
@@ -51249,6 +51827,7 @@
         "shared_cart_events",
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "paiement_seul_acte_engageant",
         "panier_ouvert_ferme",
@@ -51333,6 +51912,7 @@
         "shared_carts",
         "stripe_events_processed"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "backend_source_verite",
         "lookup_centralise",
@@ -51394,6 +51974,7 @@
       "dbWrite": [
         "shared_carts"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "snapshot_fige"
       ],
@@ -51441,6 +52022,7 @@
         "shared_cart_contributions",
         "shared_cart_events"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51480,6 +52062,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "panier_ouvert_ferme",
         "fenetre_paiement_48h",
@@ -51530,6 +52113,7 @@
       "dbWrite": [
         "signals"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51568,6 +52152,7 @@
         "parcels",
         "scans"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51596,6 +52181,7 @@
         "orders"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51620,6 +52206,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51643,6 +52230,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51677,6 +52265,7 @@
         "scans",
         "store_credits"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51713,6 +52302,7 @@
         "products"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51749,6 +52339,7 @@
         "product_variants",
         "products"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51776,6 +52367,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51815,6 +52407,7 @@
         "sourcing_candidates",
         "supplier_catalog_imports"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51849,12 +52442,9 @@
         "services/suppliers/connectors/manual-connector.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_INGESTION_CATALOGUE (ING-I2)"
       ],
@@ -51862,7 +52452,6 @@
         "catalog"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I2)",
         "impact:catalog",
         "services/suppliers/connectors/csv-connector.js",
@@ -51881,6 +52470,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51912,6 +52502,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_INGESTION_CATALOGUE (ING-I1",
         "ING-I2",
@@ -51944,6 +52535,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51970,6 +52562,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -51995,6 +52588,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52037,6 +52631,7 @@
         "orders",
         "scans"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "pickup_collected_proof",
         "resolve_before_behavior_change"
@@ -52092,6 +52687,7 @@
         "wallet_transactions",
         "wallets"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "wallet_ledger_trace",
         "credit_debit_idempotent",
@@ -52137,6 +52733,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "whatsapp_template_trace",
         "provider_adapter_isole",
@@ -52176,6 +52773,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52201,12 +52799,9 @@
         "routes/documents-html.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -52215,7 +52810,6 @@
         "douane"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:documents",
         "impact:douane",
@@ -52229,19 +52823,14 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [
-        "(none)"
-      ],
+      "directDependsOn": [],
       "directUsedBy": [
         "utils/documents/*-html.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -52249,7 +52838,6 @@
         "documents"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:documents"
       ]
@@ -52268,12 +52856,9 @@
         "routes/documents-html.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -52282,7 +52867,6 @@
         "orders"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:documents",
         "impact:orders",
@@ -52303,12 +52887,9 @@
         "routes/documents-html.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -52317,7 +52898,6 @@
         "refunds"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:documents",
         "impact:refunds",
@@ -52338,12 +52918,9 @@
         "routes/documents-html.js"
       ],
       "ownedFiles": [],
-      "dbRead": [
-        "(none)"
-      ],
-      "dbWrite": [
-        "(none)"
-      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
       ],
@@ -52352,7 +52929,6 @@
         "wallet"
       ],
       "mustCheck": [
-        "db:(none)",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:documents",
         "impact:wallet",
@@ -52374,6 +52950,7 @@
         "economic_variables"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52401,6 +52978,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52424,6 +53002,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52452,6 +53031,7 @@
         "parcels"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52489,6 +53069,16 @@
         "parcels",
         "scans"
       ],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "product_variants",
+            "order_status_history",
+            "products"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52497,9 +53087,12 @@
       ],
       "mustCheck": [
         "db:alerts",
+        "db:order_status_history",
         "db:parcel_events",
         "db:parcel_items",
         "db:parcels",
+        "db:product_variants",
+        "db:products",
         "db:scans",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
@@ -52518,6 +53111,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52541,6 +53135,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52565,6 +53160,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52589,6 +53185,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52614,6 +53211,7 @@
         "finance_config"
       ],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52641,6 +53239,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52666,6 +53265,7 @@
       "dbWrite": [
         "refunds"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52697,6 +53297,7 @@
         "business_rules",
         "business_rules_history"
       ],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52726,6 +53327,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52749,6 +53351,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -52776,6 +53379,7 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
+      "dbWriteVia": [],
       "doctrines": [
         "API_CONTRACTS"
       ],
@@ -52792,6 +53396,704 @@
       ]
     }
   },
+  "dbWriteViaOverlapWarnings": [
+    "services/parcel-operations.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> order_status_history, products"
+  ],
+  "multiWriterTables": [
+    {
+      "table": "orders",
+      "writerCount": 32,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/orders/cancel.js",
+        "routes/orders/create.js",
+        "routes/orders/qr.js",
+        "routes/orders/status.js",
+        "routes/parcels.js",
+        "routes/pickup-secret.js",
+        "routes/tracking.js",
+        "services/admin-order-refund.js",
+        "services/cash-reminder-service.js",
+        "services/create-stripe-order-intent.js",
+        "services/customs-shipment-service.js",
+        "services/inventory-service.js",
+        "services/order-cost-snapshot.js",
+        "services/order-status-machine.js",
+        "services/parcel-auto-create-service.js",
+        "services/parcelOptimizationService.js",
+        "services/payment-cash-confirm.js",
+        "services/payment-paypal.js",
+        "services/payment-service.js",
+        "services/payment-stripe.js",
+        "services/pickup-secret-service.js",
+        "services/purchasing-admin-service.js",
+        "services/routing.js",
+        "services/scan-operations.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-lifecycle.js",
+        "services/simulator/state-advancer.js",
+        "services/verify-qr-collection.js",
+        "services/wallet-service.js"
+      ]
+    },
+    {
+      "table": "alerts",
+      "writerCount": 18,
+      "writers": [
+        "services/admin-order-refund.js",
+        "services/cancel-order-purchase-orders.js",
+        "services/cash-operations.js",
+        "services/catalog-approval.js",
+        "services/confirm-pickup-cash-payment.js",
+        "services/notification-service.js",
+        "services/notifications/notification-service.js",
+        "services/order-payment-confirmation.js",
+        "services/payment-cash-confirm.js",
+        "services/payment-paypal.js",
+        "services/payment-stripe.js",
+        "services/product-publication-guard.js",
+        "services/purchasing-trigger-service.js",
+        "services/repair-collective-ready-to-capture.js",
+        "services/repair-collective-stock-reservations.js",
+        "services/repair-ordered-without-purchase-orders.js",
+        "services/scan-operations.js",
+        "utils/parcelSync.js"
+      ]
+    },
+    {
+      "table": "parcels",
+      "writerCount": 18,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "routes/admin/system.js",
+        "routes/carriers.js",
+        "routes/hub-dashboard.js",
+        "routes/parcels.js",
+        "routes/transitaire-api.js",
+        "services/auto-parcel.js",
+        "services/cash-reminder-service.js",
+        "services/customs-shipment-service.js",
+        "services/hub-operations.js",
+        "services/parcel-auto-create-service.js",
+        "services/parcel-operations.js",
+        "services/parcel-security.js",
+        "services/parcelOptimizationService.js",
+        "services/scan-engine.js",
+        "services/simulator/cleanup.js",
+        "services/simulator/state-advancer.js",
+        "utils/parcelSync.js"
+      ]
+    },
+    {
+      "table": "products",
+      "writerCount": 15,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/sourcing-scanner.js",
+        "services/apply-pricing-updates.js",
+        "services/catalog-approval.js",
+        "services/catalog-enrichment.js",
+        "services/catalog-overrides.js",
+        "services/hub-operations.js",
+        "services/order-payment-confirmation.js",
+        "services/order-status-machine.js",
+        "services/parcel-operations.js",
+        "services/pricing-apply.js",
+        "services/pricing-strategy-service.js",
+        "services/product-admin-service.js",
+        "services/sourcing-mutations.js",
+        "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    {
+      "table": "shared_cart_events",
+      "writerCount": 13,
+      "writers": [
+        "routes/shared-cart-from-order.js",
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/shared-cart-cash-service.js",
+        "services/shared-cart-contributions.js",
+        "services/shared-cart-creation.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-estimation-service.js",
+        "services/shared-cart-financial-guard.js",
+        "services/shared-cart-internals.js",
+        "services/shared-cart-items-service.js",
+        "services/shared-cart-lifecycle.js",
+        "services/shared-cart-queries.js",
+        "services/shared-cart-refund-queue.js"
+      ]
+    },
+    {
+      "table": "parcel_items",
+      "writerCount": 11,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/hub-dashboard.js",
+        "routes/parcels.js",
+        "services/auto-parcel.js",
+        "services/inventory-service.js",
+        "services/parcel-auto-create-service.js",
+        "services/parcel-operations.js",
+        "services/parcelOptimizationService.js",
+        "services/scan-engine.js",
+        "services/simulator/cleanup.js",
+        "services/simulator/state-advancer.js"
+      ]
+    },
+    {
+      "table": "shared_carts",
+      "writerCount": 11,
+      "writers": [
+        "routes/shared-cart-from-order.js",
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/shared-cart-cash-service.js",
+        "services/shared-cart-contributions.js",
+        "services/shared-cart-creation.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-financial-guard.js",
+        "services/shared-cart-items-service.js",
+        "services/shared-cart-lifecycle.js",
+        "services/shared-cart-queries.js",
+        "services/shared-cart-reads.js"
+      ]
+    },
+    {
+      "table": "order_status_history",
+      "writerCount": 10,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/orders/cancel.js",
+        "routes/orders/create.js",
+        "services/order-status-machine.js",
+        "services/parcel-operations.js",
+        "services/payment-paypal.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-lifecycle.js"
+      ]
+    },
+    {
+      "table": "notification_log",
+      "writerCount": 9,
+      "writers": [
+        "services/notification-service.js",
+        "services/notifications/internals.js",
+        "services/notifications/loyalty.js",
+        "services/notifications/misc.js",
+        "services/notifications/notification-service.js",
+        "services/notifications/order.js",
+        "services/notifications/otp-auth.js",
+        "services/notifications/parcel.js",
+        "services/simulator/state-advancer.js"
+      ]
+    },
+    {
+      "table": "scans",
+      "writerCount": 9,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/users.js",
+        "routes/hub-dashboard.js",
+        "routes/transit-dashboard.js",
+        "services/scan-operations.js",
+        "services/simulator/cleanup.js",
+        "services/simulator/state-advancer.js",
+        "services/verify-qr-collection.js",
+        "utils/parcelSync.js"
+      ]
+    },
+    {
+      "table": "shared_cart_contributions",
+      "writerCount": 8,
+      "writers": [
+        "routes/shared-cart-refund-admin.js",
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/shared-cart-cash-service.js",
+        "services/shared-cart-contributions.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-financial-guard.js",
+        "services/shared-cart-queries.js",
+        "services/shared-cart-refund-queue.js"
+      ]
+    },
+    {
+      "table": "transaction_documents",
+      "writerCount": 8,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "routes/shared-cart-refund-admin.js",
+        "routes/wallet.js",
+        "services/documents/customs-invoice.js",
+        "services/documents/document-service.js",
+        "services/documents/pickup-proof.js",
+        "services/documents/refund-receipt.js",
+        "services/documents/wallet-receipt.js"
+      ]
+    },
+    {
+      "table": "users",
+      "writerCount": 8,
+      "writers": [
+        "bootstrap/startup-migrations.js",
+        "middleware/auth-guest.js",
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/auth.js",
+        "routes/client-auth.js",
+        "routes/otp.js",
+        "services/loyalty-service.js"
+      ]
+    },
+    {
+      "table": "incidents",
+      "writerCount": 7,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/ops-api.js",
+        "services/alert-engine.js",
+        "services/incident-service.js",
+        "services/reconciliation-service.js",
+        "services/scan-engine.js"
+      ]
+    },
+    {
+      "table": "order_items",
+      "writerCount": 7,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/orders/create.js",
+        "services/parcel-operations.js",
+        "services/scan-engine.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-lifecycle.js"
+      ]
+    },
+    {
+      "table": "collective_workspace_events",
+      "writerCount": 6,
+      "writers": [
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
+      "table": "refunds",
+      "writerCount": 6,
+      "writers": [
+        "routes/shared-cart-refund-admin.js",
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/payment-paypal.js",
+        "services/refund-service.js",
+        "services/shared-cart-refund-queue.js",
+        "utils/refunds.js"
+      ]
+    },
+    {
+      "table": "scan_events",
+      "writerCount": 6,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/transitaire-api.js",
+        "services/hub-operations.js",
+        "services/parcel-auto-create-service.js",
+        "services/scan-engine.js"
+      ]
+    },
+    {
+      "table": "basket_items",
+      "writerCount": 5,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "services/shared-cart-creation.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-lifecycle.js"
+      ]
+    },
+    {
+      "table": "baskets",
+      "writerCount": 5,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "services/shared-cart-creation.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-lifecycle.js"
+      ]
+    },
+    {
+      "table": "purchase_orders",
+      "writerCount": 5,
+      "writers": [
+        "services/cancel-order-purchase-orders.js",
+        "services/purchasing-admin-service.js",
+        "services/purchasing-receive-service.js",
+        "services/purchasing-trigger-service.js",
+        "services/receive-purchase-order.js"
+      ]
+    },
+    {
+      "table": "finance_config",
+      "writerCount": 4,
+      "writers": [
+        "bootstrap/startup-migrations.js",
+        "routes/admin-costing.js",
+        "routes/admin-finance-config.js",
+        "services/pricing-rates.js"
+      ]
+    },
+    {
+      "table": "product_variants",
+      "writerCount": 4,
+      "writers": [
+        "services/order-payment-confirmation.js",
+        "services/order-status-machine.js",
+        "services/product-admin-service.js",
+        "services/sourcing-mutations.js"
+      ]
+    },
+    {
+      "table": "recipients",
+      "writerCount": 4,
+      "writers": [
+        "routes/admin/users.js",
+        "routes/orders/create.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-lifecycle.js"
+      ]
+    },
+    {
+      "table": "shared_cart_items",
+      "writerCount": 4,
+      "writers": [
+        "routes/shared-cart-from-order.js",
+        "services/shared-cart-creation.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-items-service.js"
+      ]
+    },
+    {
+      "table": "wallet_transactions",
+      "writerCount": 4,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/wallet.js",
+        "services/wallet-service.js"
+      ]
+    },
+    {
+      "table": "wallets",
+      "writerCount": 4,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/wallet.js",
+        "services/wallet-service.js"
+      ]
+    },
+    {
+      "table": "collective_workspace_contributions",
+      "writerCount": 3,
+      "writers": [
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
+      "table": "collective_workspace_items",
+      "writerCount": 3,
+      "writers": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
+      "table": "collective_workspaces",
+      "writerCount": 3,
+      "writers": [
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
+      "table": "invoices",
+      "writerCount": 3,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/invoices.js",
+        "services/invoice-service.js"
+      ]
+    },
+    {
+      "table": "order_comments",
+      "writerCount": 3,
+      "writers": [
+        "routes/hub-dashboard.js",
+        "routes/hub-mark-ordered.js",
+        "routes/relay-dashboard.js"
+      ]
+    },
+    {
+      "table": "order_item_real_cost_allocations",
+      "writerCount": 3,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "services/cost-allocation/allocate.js",
+        "services/cost-allocation/index.js"
+      ]
+    },
+    {
+      "table": "pickup_print_tokens",
+      "writerCount": 3,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-secret-service.js"
+      ]
+    },
+    {
+      "table": "pickup_reveal_codes",
+      "writerCount": 3,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/pickup-secret.js",
+        "services/pickup-secret-service.js"
+      ]
+    },
+    {
+      "table": "price_history",
+      "writerCount": 3,
+      "writers": [
+        "services/pricing-apply.js",
+        "services/pricing-strategy-service.js",
+        "services/product-price-audit.js"
+      ]
+    },
+    {
+      "table": "sms_log",
+      "writerCount": 3,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/admin/users.js"
+      ]
+    },
+    {
+      "table": "cart_shares",
+      "writerCount": 2,
+      "writers": [
+        "routes/orders/create.js",
+        "routes/shares.js"
+      ]
+    },
+    {
+      "table": "cash_collections",
+      "writerCount": 2,
+      "writers": [
+        "services/cash-operations.js",
+        "services/confirm-pickup-cash-payment.js"
+      ]
+    },
+    {
+      "table": "catalog_field_overrides",
+      "writerCount": 2,
+      "writers": [
+        "services/catalog-overrides.js",
+        "services/product-admin-service.js"
+      ]
+    },
+    {
+      "table": "charges",
+      "writerCount": 2,
+      "writers": [
+        "bootstrap/startup-migrations.js",
+        "services/economic-engine-queries.js"
+      ]
+    },
+    {
+      "table": "collective_payment_sessions",
+      "writerCount": 2,
+      "writers": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
+      "table": "collective_payment_tokens",
+      "writerCount": 2,
+      "writers": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
+      "table": "customs_shipment_parcels",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "services/customs-shipment-service.js"
+      ]
+    },
+    {
+      "table": "customs_shipments",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "services/customs-shipment-service.js"
+      ]
+    },
+    {
+      "table": "economic_snapshots",
+      "writerCount": 2,
+      "writers": [
+        "bootstrap/crons.js",
+        "services/economic-engine-queries.js"
+      ]
+    },
+    {
+      "table": "exchange_rates",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin-finance-config.js",
+        "services/pricing-rates.js"
+      ]
+    },
+    {
+      "table": "loyalty_rewards",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin-loyalty.js",
+        "services/loyalty-service.js"
+      ]
+    },
+    {
+      "table": "order_incidents",
+      "writerCount": 2,
+      "writers": [
+        "routes/hub-dashboard.js",
+        "routes/relay-dashboard.js"
+      ]
+    },
+    {
+      "table": "parcel_events",
+      "writerCount": 2,
+      "writers": [
+        "services/parcel-security.js",
+        "utils/parcelSync.js"
+      ]
+    },
+    {
+      "table": "partners",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin/partners.js",
+        "routes/admin/system.js"
+      ]
+    },
+    {
+      "table": "paypal_events_processed",
+      "writerCount": 2,
+      "writers": [
+        "services/payment-paypal-events.js",
+        "services/payment-paypal.js"
+      ]
+    },
+    {
+      "table": "product_suppliers",
+      "writerCount": 2,
+      "writers": [
+        "routes/purchasing.js",
+        "services/purchasing-admin-service.js"
+      ]
+    },
+    {
+      "table": "relais",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin/system.js",
+        "services/routing.js"
+      ]
+    },
+    {
+      "table": "revoked_tokens",
+      "writerCount": 2,
+      "writers": [
+        "bootstrap/crons.js",
+        "routes/auth.js"
+      ]
+    },
+    {
+      "table": "signals",
+      "writerCount": 2,
+      "writers": [
+        "routes/signals.js",
+        "services/signal-service.js"
+      ]
+    },
+    {
+      "table": "sourcing_candidate_events",
+      "writerCount": 2,
+      "writers": [
+        "routes/sourcing-scanner.js",
+        "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    {
+      "table": "sourcing_candidates",
+      "writerCount": 2,
+      "writers": [
+        "routes/sourcing-scanner.js",
+        "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    {
+      "table": "stripe_events_processed",
+      "writerCount": 2,
+      "writers": [
+        "services/payment-stripe.js",
+        "services/shared-cart-queries.js"
+      ]
+    },
+    {
+      "table": "suppliers",
+      "writerCount": 2,
+      "writers": [
+        "routes/purchasing.js",
+        "services/purchasing-admin-service.js"
+      ]
+    },
+    {
+      "table": "wallet_consumptions",
+      "writerCount": 2,
+      "writers": [
+        "routes/wallet.js",
+        "services/wallet-service.js"
+      ]
+    },
+    {
+      "table": "wallet_credit_lots",
+      "writerCount": 2,
+      "writers": [
+        "routes/wallet.js",
+        "services/wallet-service.js"
+      ]
+    }
+  ],
   "unresolvedCodeEdges": [
     {
       "from": "bootstrap/api-routes.js",
@@ -54156,12 +55458,6 @@
       "label": "db.js"
     },
     {
-      "from": "services/catalog-public-view.js",
-      "to": "(none)",
-      "type": "depends",
-      "label": "(none)"
-    },
-    {
       "from": "services/collective-workspace-internals.js",
       "to": "db.js",
       "type": "depends",
@@ -54606,12 +55902,6 @@
       "label": "db.js"
     },
     {
-      "from": "services/prompts/catalog-enrichment.prompt.js",
-      "to": "(none)",
-      "type": "depends",
-      "label": "(none)"
-    },
-    {
       "from": "services/refund-service.js",
       "to": "db.js",
       "type": "depends",
@@ -54754,12 +56044,6 @@
       "to": "utils/documents/customs-invoice-html.js",
       "type": "uses",
       "label": "routes/documents-html.js"
-    },
-    {
-      "from": "utils/documents/logo-base64.js",
-      "to": "(none)",
-      "type": "depends",
-      "label": "(none)"
     },
     {
       "from": "utils/documents/*-html.js",

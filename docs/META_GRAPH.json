@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-07T18:33:06.999Z",
+  "generatedAt": "2026-07-07T19:18:56.158Z",
   "sources": {
     "backend": {
-      "nodes": 717
+      "nodes": 716
     },
     "boutique": {
       "modules": 65,
@@ -223,8 +223,7 @@
         "services/payment-paypal.js"
       ],
       "tables": [
-        "orders",
-        "(none)"
+        "orders"
       ]
     },
     "/api/shared-carts/from-cart-items": {
@@ -1705,15 +1704,6 @@
       "boutique": [
         "b-identity",
         "b-tracking"
-      ],
-      "dashboards": []
-    },
-    "(none)": {
-      "routes": [
-        "routes/payments-paypal.js"
-      ],
-      "boutique": [
-        "b-paypal"
       ],
       "dashboards": []
     },

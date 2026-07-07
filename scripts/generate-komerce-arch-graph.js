@@ -102,7 +102,7 @@ function parseHeader(src) {
 function splitList(value) {
   if (!value) return [];
   const clean = String(value).trim();
-  if (!clean || clean === 'none' || clean === 'n/a') return [];
+  if (!clean || /^\(?(none|n\/a)\)?$/i.test(clean)) return [];
 
   return clean
     .split(',')
@@ -120,7 +120,7 @@ function normalizeTarget(target) {
 }
 
 function edgeId(edge) {
-  return [edge.from, edge.to, edge.type, edge.label || ''].join('::');
+  return [edge.from, edge.to, edge.type, edge.label || '', edge.via || ''].join('::');
 }
 
 function groupCount(items, keyFn) {
@@ -174,6 +174,17 @@ function main() {
     }
 
     const isLite = fields.__headerType === 'lite';
+    // ING/DB-4 — délégation d'écriture : @db-write-via:<service> liste des
+    // tables écrites indirectement (le fichier appelle le service propriétaire
+    // au lieu d'écrire lui-même). Le nom du tag porte le service car FIELD_RE
+    // capture jusqu'au premier espace (`@db-write-via:refund-service refunds`
+    // -> key="db-write-via:refund-service", value="refunds"). Un même fichier
+    // peut déléguer à plusieurs services -> plusieurs tags db-write-via:*.
+    const dbWriteVia = Object.keys(fields)
+      .filter(k => k.startsWith('db-write-via:'))
+      .map(k => ({ via: k.slice('db-write-via:'.length), tables: splitList(fields[k]) }))
+      .filter(entry => entry.via && entry.tables.length);
+
     const node = {
       id: file,
       file,
@@ -191,11 +202,24 @@ function main() {
       usedBy: splitList(fields['used-by']),
       dbRead: splitList(fields['db-read']),
       dbWrite: splitList(fields['db-write']),
+      dbWriteVia,
       dbTxn: splitList(fields['db-txn']),
       doctrine: splitList(fields.doctrine),
       impactAreas: splitList(fields['impact-areas']),
       version: fields.version || null
     };
+
+    // Garde-fou : une table déclarée à la fois en écriture directe (@db-write)
+    // et déléguée (@db-write-via:X) est un double-compte — elle fausse le
+    // dénombrement des écrivains directs par table (cf. audit monorepo §4,
+    // bug trouvé sur parcel-operations.js). On le signale plutôt que de
+    // trancher silencieusement dans un sens ou l'autre.
+    const delegatedTables = new Set(dbWriteVia.flatMap(e => e.tables));
+    const overlap = node.dbWrite.filter(t => delegatedTables.has(t));
+    if (overlap.length) {
+      node.dbWriteViaOverlapWarning =
+        `${file}: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> ${overlap.join(', ')}`;
+    }
 
     nodes.push(node);
     if (node.role) roleToFile.set(node.role, file);
@@ -268,6 +292,11 @@ function main() {
     for (const table of node.dbWrite) {
       rawEdges.push({ from: node.id, to: addTableNode(table), type: 'db-write', label: table });
     }
+    for (const entry of node.dbWriteVia) {
+      for (const table of entry.tables) {
+        rawEdges.push({ from: node.id, to: addTableNode(table), type: 'db-write-via', label: table, via: entry.via });
+      }
+    }
     for (const doctrine of node.doctrine) {
       rawEdges.push({ from: node.id, to: addDoctrineNode(doctrine), type: 'doctrine', label: doctrine });
     }
@@ -320,6 +349,7 @@ function main() {
       ownedFiles: adjacent.filter(e => e.to === node.id && e.type === 'owned-by').map(e => e.from),
       dbRead: node.dbRead,
       dbWrite: node.dbWrite,
+      dbWriteVia: node.dbWriteVia,
       doctrines: node.doctrine,
       impactAreas: node.impactAreas,
       mustCheck: Array.from(new Set([
@@ -331,10 +361,31 @@ function main() {
         ...node.impactAreas.map(area => `impact:${area}`),
         ...node.doctrine.map(doc => `doctrine:${doc}`),
         ...node.dbRead.map(table => `db:${table}`),
-        ...node.dbWrite.map(table => `db:${table}`)
+        ...node.dbWrite.map(table => `db:${table}`),
+        ...node.dbWriteVia.flatMap(entry => entry.tables.map(table => `db:${table}`))
       ])).sort()
     };
   }
+
+  const dbWriteViaOverlapWarnings = nodes
+    .map(n => n.dbWriteViaOverlapWarning)
+    .filter(Boolean);
+
+  // Multipropriété d'écriture, mesurée sur les seuls écrivains directs
+  // (edges type 'db-write') — les délégations ('db-write-via') ne comptent
+  // pas comme un écrivain de plus pour la table cible, seul le service
+  // délégataire l'est déjà via ses propres edges db-write. Répond
+  // directement à l'audit monorepo §4 : distingue enfin W de W-via.
+  const directWritersByTable = {};
+  for (const edge of edges) {
+    if (edge.type !== 'db-write') continue;
+    const table = edge.label;
+    (directWritersByTable[table] = directWritersByTable[table] || new Set()).add(edge.from);
+  }
+  const multiWriterTables = Object.entries(directWritersByTable)
+    .filter(([, writers]) => writers.size >= 2)
+    .map(([table, writers]) => ({ table, writerCount: writers.size, writers: Array.from(writers).sort() }))
+    .sort((a, b) => b.writerCount - a.writerCount || a.table.localeCompare(b.table));
 
   const graph = {
     version: '2026-06',
@@ -353,7 +404,9 @@ function main() {
       dbTables: tableNodes.size,
       doctrines: doctrineNodes.size,
       impactAreas: impactNodes.size,
-      unresolvedCodeEdges: unresolvedCodeEdges.length
+      unresolvedCodeEdges: unresolvedCodeEdges.length,
+      dbWriteViaOverlapWarnings: dbWriteViaOverlapWarnings.length,
+      multiWriterTables: multiWriterTables.length
     },
     byDomain: groupCount(nodes, n => n.domain),
     byLayer: groupCount(nodes, n => n.layer),
@@ -361,6 +414,8 @@ function main() {
     nodes: allNodes,
     edges,
     interventionIndex,
+    dbWriteViaOverlapWarnings,
+    multiWriterTables,
     unresolvedCodeEdges,
     filesWithoutHeaders,
     filesWithMisplacedHeaders,
@@ -385,6 +440,18 @@ function main() {
     .sort((a, b) => `${a.label}${a.from}`.localeCompare(`${b.label}${b.from}`))
     .slice(0, 120)
     .map(e => `- WRITE ${e.from} -> ${e.label}`);
+
+  const dbWritesVia = edges
+    .filter(e => e.type === 'db-write-via')
+    .sort((a, b) => `${a.label}${a.from}`.localeCompare(`${b.label}${b.from}`))
+    .slice(0, 120)
+    .map(e => `- WRITE ${e.from} -> ${e.label} (via ${e.via})`);
+
+  const multiWriterRows = multiWriterTables
+    .slice(0, 60)
+    .map(m => `- ${m.table}: ${m.writerCount} écrivains directs — ${m.writers.join(', ')}`);
+
+  const overlapRows = dbWriteViaOverlapWarnings.map(w => `- ${w}`);
 
   const unresolvedRows = unresolvedCodeEdges
     .sort((a, b) => `${a.from}${a.to}${a.type}`.localeCompare(`${b.from}${b.to}${b.type}`))
@@ -421,6 +488,8 @@ function main() {
   md.push(`- Doctrines: ${graph.totals.doctrines}`);
   md.push(`- Impact areas: ${graph.totals.impactAreas}`);
   md.push(`- Unresolved code edges: ${graph.totals.unresolvedCodeEdges}`);
+  md.push(`- Tables multi-écrivains directs (>=2): ${graph.totals.multiWriterTables}`);
+  md.push(`- Avertissements db-write / db-write-via en chevauchement: ${graph.totals.dbWriteViaOverlapWarnings}`);
   md.push('');
 
   pushSortedList(md, 'Domains', Object.entries(graph.byDomain).sort().map(([domain, count]) => `- ${domain}: ${count}`));
@@ -428,6 +497,9 @@ function main() {
   pushSortedList(md, 'Critical And High Files', criticalFiles);
   pushSortedList(md, 'Lite Aggregated Files', liteRows);
   pushSortedList(md, 'DB Write Edges', dbWrites);
+  pushSortedList(md, 'DB Write-Via Edges (délégation déclarée)', dbWritesVia);
+  pushSortedList(md, 'Multi-Writer Tables (>=2 écrivains directs, hors délégations)', multiWriterRows);
+  pushSortedList(md, 'DB Write / Write-Via Overlap Warnings', overlapRows);
   pushSortedList(md, 'Unresolved Code Edges', unresolvedRows);
   pushSortedList(md, 'Files Still Without Headers Or Aggregation', uncoveredRows);
   pushSortedList(md, 'Files With Misplaced Headers (Shebang/Code Before Block)', misplacedRows);
