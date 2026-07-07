@@ -46,6 +46,22 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 19 | `admin-dashboard` | feature | dash | [`admin-dashboard.feature.js`](../../public/dashboards/features/admin-dashboard.feature.js) | production | Tableau de bord admin SPA multi-vues (`dashboards/admin/**`) |
 | 20 | `legacy-control-tower` | feature | dash | [`legacy-control-tower.feature.js`](../../public/dashboards/features/legacy-control-tower.feature.js) | deprecated | Ancien control tower, remplacé par `admin-dashboard` (`dashboards/admin-legacy/**`) |
 | 21 | `platform` | transversal | dash | [`platform.feature.js`](../../public/features/platform.feature.js) | production | Infrastructure transversale dashboards (auth-guard, service worker, composants colis partagés, QR viewer) — hors `admin/` |
+| 22 | `admin-dashboard` (copie `public/features/`) | feature | dash | [`admin-dashboard.feature.js`](../../public/features/admin-dashboard.feature.js) | production | Copie octet-pour-octet du manifest #19, présente dans `public/features/` en plus de `public/dashboards/features/` — voir note ⚠ ci-dessous |
+| 23 | `legacy-control-tower` (copie `public/features/`) | feature | dash | [`legacy-control-tower.feature.js`](../../public/features/legacy-control-tower.feature.js) | deprecated | Copie octet-pour-octet du manifest #20, présente dans `public/features/` en plus de `public/dashboards/features/` — voir note ⚠ ci-dessous |
+
+> ⚠️ **Note sur les lignes #19/#20 vs #22/#23** : le dépôt dashboards contient un
+> sous-dossier `dashboards/` imbriqué (donc `public/dashboards/**` une fois déployé)
+> qui duplique intégralement `admin/`, `admin-legacy/`, `features/`, `docs/`,
+> `scripts/`, `tests/` — fichiers identiques byte-for-byte, y compris les deux
+> manifests `admin-dashboard.feature.js` et `legacy-control-tower.feature.js`.
+> Origine non déterminée (mirroring volontaire d'anciennes URLs `/dashboards/...`,
+> ou copie accidentelle) — **à trancher avec l'équipe avant suppression**, `db:sync`
+> et le service statique Express pouvant dépendre de l'un ou l'autre chemin. En
+> attendant l'arbitrage, les deux copies sont enregistrées ici pour que
+> `registry-doc-check.js` reste en bijection stricte avec le disque.
+> Si la duplication est confirmée accidentelle : supprimer `dashboards/dashboards/`
+> (dépôt dashboards) ou `public/dashboards/` (déployé), puis retirer les lignes
+> #19/#20 (ou #22/#23) ci-dessus en conséquence.
 
 > ℹ️ **Note sur les lignes #15/#16** : `auth` et `auth-identity` étaient initialement deux
 > manifests distincts déclarant le même `domain: 'auth'`, ce qui produisait 5 faux

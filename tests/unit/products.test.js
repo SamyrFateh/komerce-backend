@@ -239,7 +239,7 @@ describe('GET /api/products/:id — détail', () => {
     expect(res.status).toBe(200);
     expect(res.body.variants.taille).toHaveLength(2);
     expect(res.body.variants.couleur).toHaveLength(1);
-    expect(res.body.variants.taille[0]).toEqual({ value: 'M', stock: 5, price_kmf: 1000, image_url: null, sku: 'SKU-M' });
+    expect(res.body.variants.taille[0]).toEqual({ value: 'M', stock: 5, price_kmf: 1000, image_url: null, images: [], sku: 'SKU-M' });
   });
 
   it('erreur DB → 500', async () => {

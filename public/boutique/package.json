@@ -61,8 +61,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@babel/core": "^8.0.1",
-    "@babel/preset-env": "^8.0.2",
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
     "@playwright/test": "^1.44.0",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",

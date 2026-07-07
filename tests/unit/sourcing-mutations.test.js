@@ -327,7 +327,7 @@ describe('replaceVariants', () => {
 
     expect(result.status).toBe(200);
     const insertCall = client.query.mock.calls.find(c => String(c[0]).includes('INSERT INTO product_variants'));
-    expect(insertCall[1]).toEqual(['p1', 'couleur', 'rouge', 'SKU1', 10, 5000, 'http://x/1.png', 2]);
+    expect(insertCall[1]).toEqual(['p1', 'couleur', 'rouge', 'SKU1', 10, 5000, 'http://x/1.png', '[" http://x/1.png "]', 2]);
   });
 
   test('garde-fou : commandes pending existent mais ne référencent aucune variante supprimée → pas de 409', async () => {

@@ -3217,7 +3217,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-sku {
   display: block;
   font-size: 12px;
-  color: var(--text-muted, #6B7B63);
+  color: var(--text-muted);
   margin-top: 2px;
   letter-spacing: 0.02em;
 }
