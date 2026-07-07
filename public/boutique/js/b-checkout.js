@@ -1096,7 +1096,8 @@ export async function submitOrder(btn) {
     const items = state.cart.map(i => ({
       product_id: String(i.product.id),
       quantity: i.qty,
-      confection_type: 'aucun'
+      confection_type: 'aucun',
+      variant_combo: i.variant_combo || null,
     }));
 
     let orderData = null;
@@ -1265,6 +1266,7 @@ async function _createKomerceOrderForPayPal() {
     product_id: String(i.product.id),
     quantity:   i.qty,
     confection_type: 'aucun',
+    variant_combo: i.variant_combo || null,
   }));
 
   const apiResult = await apiPost('/api/orders', {

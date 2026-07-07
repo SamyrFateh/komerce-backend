@@ -138,6 +138,61 @@ describe('importCatalog', () => {
     expect(result.body.updated).toBe(1);
   });
 
+  // ── ING-5 (verrou 4, doctrine ING-I3) : le brut ne se perd jamais ────────
+
+  test('persiste product.raw_payload dans l\'INSERT sourcing_candidates', async () => {
+    const product = {
+      supplier_product_id: 'sku-1',
+      product_name: 'Savon',
+      raw_payload: { product_name: 'Savon', hazmat_class: 'none', prix: '5000' },
+    };
+    const dispatch = jest.fn().mockResolvedValue({ products: [product] });
+
+    let insertParams;
+    db.query.mockImplementation((sql, params) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) {
+        return Promise.resolve({ rows: [{ id: 'import-7' }] });
+      }
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        insertParams = params;
+        return Promise.resolve({ rows: [{ id: 'cand-1', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+
+    await importCatalog({ supplier_name: 'Acme', source_type: 'manual' }, 'user-1', dispatch);
+
+    expect(insertParams).toContain(JSON.stringify(product.raw_payload));
+  });
+
+  test('raw_payload absent du produit → NULL, pas d\'exception', async () => {
+    const product = { supplier_product_id: 'sku-2', product_name: 'Sans brut' };
+    const dispatch = jest.fn().mockResolvedValue({ products: [product] });
+
+    let insertParams;
+    db.query.mockImplementation((sql, params) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) {
+        return Promise.resolve({ rows: [{ id: 'import-8' }] });
+      }
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        insertParams = params;
+        return Promise.resolve({ rows: [{ id: 'cand-2', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+
+    const result = await importCatalog({ supplier_name: 'Acme', source_type: 'manual' }, 'user-1', dispatch);
+
+    expect(result.status).toBe(200);
+    expect(insertParams).toContain(null);
+  });
+
   // ── DSC-E2 : verrou champs manuels ──────────────────────────────────────
 
   test('journalise les champs verrouillés "manual" lors d\'un ré-import', async () => {

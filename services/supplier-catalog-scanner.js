@@ -58,16 +58,26 @@ const pricingEngine = require('./pricing-engine');
  * @param {object} finance   { taux_aed_kmf, taux_change_eur_kmf }
  * @returns {number} montant en KMF (entier)
  */
+const SUPPORTED_CURRENCIES = ['AED', 'EUR', 'USD', 'KMF'];
+
 function convertToKMF(amount, currency, finance) {
   const v = Number(amount) || 0;
   if (!v) return 0;
-  const cur = (currency || 'AED').toUpperCase();
+  // ING-5 (verrou 3, doctrine ING-I2) — jamais deviner en silence : une devise
+  // hors whitelist (ou absente) sur un montant réel est une erreur bloquante,
+  // pas un repli discret. Avant : `return Math.round(v)` traitait n'importe
+  // quelle devise inconnue comme du KMF (ex: GBP ÷~550 sur la valeur réelle).
+  const cur = (currency || '').toUpperCase();
+  if (!SUPPORTED_CURRENCIES.includes(cur)) {
+    throw new Error(
+      `Devise inconnue ou absente : "${currency}". Devises supportées : ${SUPPORTED_CURRENCIES.join(', ')}.`
+    );
+  }
   if (cur === 'KMF') return Math.round(v);
   if (cur === 'AED') return Math.round(v * (Number(finance?.taux_aed_kmf) || 138));
   if (cur === 'EUR') return Math.round(v * (Number(finance?.taux_change_eur_kmf) || 492));
   // USD : approx 0.92 EUR (à raffiner si besoin avec taux dédié)
-  if (cur === 'USD') return Math.round(v * 0.92 * (Number(finance?.taux_change_eur_kmf) || 492));
-  return Math.round(v);
+  return Math.round(v * 0.92 * (Number(finance?.taux_change_eur_kmf) || 492));
 }
 
 /**
@@ -244,6 +254,21 @@ async function normalizeCandidate(product, options = {}) {
  */
 async function scanCandidate(candidate, options = {}) {
   const config = options.config || (await pricingEngine.loadGlobalConfig());
+
+  // ING-5 (verrou 3, doctrine ING-I6) — pas de décision sourcing sur du vide.
+  // Un prix d'achat manquant ou nul court-circuite en WATCH, sans même
+  // consulter pricing-engine : avant, un coût de 0 pouvait produire une
+  // marge "saine" et une décision TEST.
+  if (!candidate.purchase_price_kmf) {
+    return {
+      scan_result: null,
+      sourcing_decision: 'WATCH',
+      reason: 'Prix d\'achat manquant — décision impossible.',
+      recommended_action: 'Mettre en watchlist, ne pas importer pour l\'instant',
+      market_confidence: 'unknown',
+      confidence: candidate.confidence || 'low',
+    };
+  }
 
   const input = {
     product_id: null,

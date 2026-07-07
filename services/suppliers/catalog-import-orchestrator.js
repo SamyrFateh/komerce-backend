@@ -152,7 +152,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
            komerce_category, estimated_weight_kg, estimated_volume_m3,
            purchase_price_kmf, target_margin_pct,
            data_sources, scan_result, scan_at, confidence,
-           state, rejected_reason, updated_by
+           state, rejected_reason, updated_by, raw_payload
          ) VALUES (
            $1, $2, $3,
            $4, $5, $6, $7,
@@ -162,7 +162,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
            $18, $19, $20,
            $21, $22,
            $23::jsonb, $24, NOW(), $25,
-           $26, $27, $28
+           $26, $27, $28, $29::jsonb
          )
          ON CONFLICT (supplier_name, supplier_product_id)
            WHERE supplier_product_id IS NOT NULL
@@ -195,6 +195,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
            image_url           = EXCLUDED.image_url,
            product_url         = EXCLUDED.product_url,
            description         = EXCLUDED.description,
+           raw_payload         = EXCLUDED.raw_payload,
            stock_available     = EXCLUDED.stock_available,
            min_order_qty       = EXCLUDED.min_order_qty,
            supplier_delay_days = EXCLUDED.supplier_delay_days,
@@ -227,6 +228,10 @@ async function importCatalog(body, userId, dispatchToConnector) {
           normalized.purchase_price_kmf, normalized.target_margin_pct,
           incomingDataSources, scanJson, scan.confidence,
           autoState, autoRejectedReason, userId || null,
+          // ING-5 (verrou 4, ING-I3) — le brut ne se perd jamais : la donnée
+          // source intégrale (toutes colonnes, y compris non mappées) voyage
+          // jusqu'en base, indépendamment de ce que la normalisation a retenu.
+          product.raw_payload ? JSON.stringify(product.raw_payload) : null,
         ]
       );
 

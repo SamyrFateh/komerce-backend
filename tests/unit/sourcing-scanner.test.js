@@ -132,6 +132,14 @@ describe('sourcing-scanner — PUT /candidates/:id', () => {
     expect(res.status).toBe(404);
   });
 
+  // ING-5 (verrou 2, doctrine ING-I2) — une devise hors whitelist ne doit plus
+  // jamais pouvoir produire un purchase_price_kmf faux (ex: GBP traité comme KMF).
+  it('400 si currency fournie est hors whitelist (ex: GBP)', async () => {
+    const res = await request(app).put('/api/admin/sourcing/candidates/c1').send({ currency: 'GBP' });
+    expect(res.status).toBe(400);
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
   it('déclenche la conversion KMF et l\'audit "data_correction" quand purchase_price change', async () => {
     mockConvertToKMF.mockReturnValueOnce(45000);
     mockQuery
@@ -198,6 +206,22 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
     expect(res.status).toBe(409);
     expect(res.body.product_id).toBe('p1');
+  });
+
+  // ING-5 (verrou 1, doctrine ING-I5) — une exclusion absolue est terminale partout.
+  it('409 si le candidat est à l\'état "rejected" (rejet manuel ou auto-exclusion)', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ state: 'rejected', scan_result: {} }] });
+    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
+    expect(res.status).toBe(409);
+    expect(mockScanCandidate).not.toHaveBeenCalled();
+  });
+
+  it('409 si scan_result.sourcing_decision vaut "EXCLUDED" même si le state n\'est pas "rejected"', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ state: 'scanned', scan_result: { sourcing_decision: 'EXCLUDED' } }],
+    });
+    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
+    expect(res.status).toBe(409);
   });
 
   it('400 si aucun prix calculable', async () => {

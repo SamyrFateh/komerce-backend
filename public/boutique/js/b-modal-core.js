@@ -239,6 +239,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // Variants — fetch full product if has_variants (lazy, non-blocking)
     let _variantContainer = dom.modalVariants || document.getElementById('k-modal-variants');
     if (_variantContainer) _variantContainer.innerHTML = '';
+    state.modalVariantCombo = {}; // Lot 2 — reset à chaque ouverture
     if (product.has_variants) {
       let _variantProductId = product.id;
       fetch('/api/products/' + _variantProductId, { credentials: 'include' })
@@ -254,6 +255,15 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     }
 
     dom.modalName.textContent = product.name;
+    if (dom.modalSku) {
+      if (product.sku) {
+        dom.modalSku.textContent = 'Réf. ' + product.sku;
+        dom.modalSku.hidden = false;
+      } else {
+        dom.modalSku.textContent = '';
+        dom.modalSku.hidden = true;
+      }
+    }
     dom.modalDesc.textContent = product.description || '';
     dom.modalDesc.classList.remove('is-expanded'); // reset truncation on each open
     dom.modalDesc.onclick = function() { dom.modalDesc.classList.toggle('is-expanded'); };

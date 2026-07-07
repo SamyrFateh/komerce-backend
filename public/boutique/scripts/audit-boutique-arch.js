@@ -143,6 +143,10 @@ const HEX_ALLOWLIST = [
 
   // layout.css — fallback de var(--green-dark-text, #1d5b2a) ; le token existe (même valeur).
   { file: 'layout.css', hex: '#1d5b2a', reason: 'Fallback var(--green-dark-text) – filet navigateurs anciens' },
+
+  // modal-product.css — fallback de var(--text-muted, #6B7B63) sur .k-modal-sku ;
+  // le token existe dans tokens.css (même valeur), même doctrine que les fallbacks ci-dessus.
+  { file: 'modal-product.css', hex: '#6B7B63', reason: 'Fallback var(--text-muted) – filet navigateurs anciens' },
 ];
 
 // Bundles attendus — source unique de vérité : scripts/css-bundles.js

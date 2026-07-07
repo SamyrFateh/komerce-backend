@@ -185,8 +185,18 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
   function addToCart(product, qty, sourceBtn) {
   qty = qty || 1;
 
+  // Lot 2 — capturer le variant_combo au moment de l'ajout (snapshot)
+  let combo = null;
+  let comboLabel = '';
+  if (state.modalProduct && String(state.modalProduct.id) === String(product.id)
+      && state.modalVariantCombo && Object.keys(state.modalVariantCombo).length > 0) {
+    combo = Object.assign({}, state.modalVariantCombo);
+    comboLabel = Object.values(combo).join(' / ');
+  }
+
   const existing = state.cart.find(i =>
     String(i.product?.id ?? i.id) === String(product.id)
+    && JSON.stringify(i.variant_combo || null) === JSON.stringify(combo)
   );
 
   if (existing) {
@@ -203,7 +213,9 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
       name: product.name,
       price: product.price_kmf ?? product.price ?? 0,
       image: product.image_url || product.image || '',
-      qty: qty
+      qty: qty,
+      variant_combo: combo,
+      variant_label: comboLabel,
     });
   }
 

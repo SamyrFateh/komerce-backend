@@ -189,12 +189,42 @@ describe('supplier-catalog-scanner', () => {
 
     it('transforme danger en AVOID et loss en LOSS', async () => {
       pricingEngine.recommend.mockResolvedValueOnce({ health_status: 'danger' });
-      await expect(scanCandidate({ komerce_category: 'maison' }, { config }))
+      await expect(scanCandidate({ komerce_category: 'maison', purchase_price_kmf: 1000 }, { config }))
         .resolves.toEqual(expect.objectContaining({ sourcing_decision: 'AVOID' }));
 
       pricingEngine.recommend.mockResolvedValueOnce({ health_status: 'loss' });
-      await expect(scanCandidate({ komerce_category: 'maison' }, { config }))
+      await expect(scanCandidate({ komerce_category: 'maison', purchase_price_kmf: 1000 }, { config }))
         .resolves.toEqual(expect.objectContaining({ sourcing_decision: 'LOSS' }));
+    });
+
+    // ING-5 (verrou 3, doctrine ING-I6) — pas de décision sourcing sur du vide.
+    it('court-circuite en WATCH sans appeler pricing-engine quand purchase_price_kmf est absent ou nul', async () => {
+      const resultAbsent = await scanCandidate({ komerce_category: 'maison' }, { config });
+      expect(resultAbsent).toEqual(expect.objectContaining({
+        sourcing_decision: 'WATCH',
+        reason: 'Prix d\'achat manquant — décision impossible.',
+      }));
+      expect(pricingEngine.recommend).not.toHaveBeenCalled();
+
+      const resultZero = await scanCandidate({ komerce_category: 'maison', purchase_price_kmf: 0 }, { config });
+      expect(resultZero.sourcing_decision).toBe('WATCH');
+      expect(pricingEngine.recommend).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('convertToKMF — ING-5 (verrou 3, doctrine ING-I2)', () => {
+    it('lève une erreur sur devise inconnue au lieu de deviner (ex: GBP)', () => {
+      expect(() => convertToKMF(100, 'GBP', config.finance)).toThrow(/Devise inconnue/);
+    });
+
+    it('lève une erreur sur devise absente quand le montant est réel', () => {
+      expect(() => convertToKMF(100, undefined, config.finance)).toThrow(/Devise inconnue/);
+      expect(() => convertToKMF(100, null, config.finance)).toThrow(/Devise inconnue/);
+    });
+
+    it('ne lève rien quand le montant est nul, même avec une devise absente', () => {
+      expect(convertToKMF(0, undefined, config.finance)).toBe(0);
+      expect(convertToKMF(null, 'GBP', config.finance)).toBe(0);
     });
   });
 });

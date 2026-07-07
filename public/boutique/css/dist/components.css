@@ -3214,6 +3214,14 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 .k-modal-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
 .k-modal-price-row { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; flex-wrap: nowrap; }
+.k-modal-sku {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted, #6B7B63);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+.k-modal-sku[hidden] { display: none; }
 .k-modal-price { font-family: var(--font); font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -.015em; }
 /* F1 — prix promo en coral sur mobile (classe posée par b-modal.js openModal) */
 .k-modal--has-promo .k-modal-price { color: var(--coral); font-size: clamp(20px, 5vw, 26px); font-weight: 700; }

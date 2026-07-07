@@ -96,6 +96,9 @@ export const state = {
   modalSubcatFilter: null,
   modalQty: 1,
   modalHistory: [],
+  /** Variantes sélectionnées par l'utilisateur : { "Couleur": "Bleu", "Taille": "M" }.
+      Transmis comme variant_combo à submitOrder. Réinitialisé à chaque ouverture de modal. */
+  modalVariantCombo: {},
   /** Historique des produits vus (IDs), persisté en localStorage.
       Utilisé pour la section "Vu récemment" en desktop. */
   viewedHistory: JSON.parse(localStorage.getItem('k_viewed_history') || '[]'),
@@ -230,6 +233,7 @@ export function initDom() {
     modalDetails:       $('#k-modal-details'),
     modalPromoBadge:    $('#k-modal-promo-badge'),
     modalName:          $('#k-modal-name'),
+    modalSku:           $('#k-modal-sku'),
     modalDesc:          $('#k-modal-desc'),
     modalPrice:         $('#k-modal-price'),
     modalOldPrice:      $('#k-modal-old-price'),

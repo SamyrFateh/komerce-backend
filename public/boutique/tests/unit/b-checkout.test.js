@@ -403,7 +403,7 @@ describe('b-checkout', () => {
       await submitOrder(btn);
 
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
-        items: [{ product_id: '1', quantity: 2, confection_type: 'aucun' }],
+        items: [{ product_id: '1', quantity: 2, confection_type: 'aucun', variant_combo: null }],
         relais_id: 7,
         recipient_name: 'Amina',
         recipient_phone: '+269123456',
@@ -941,7 +941,7 @@ describe('b-checkout', () => {
       const result = await prepareKomerceOrder();
 
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
-        items: [{ product_id: '42', quantity: 2, confection_type: 'aucun' }],
+        items: [{ product_id: '42', quantity: 2, confection_type: 'aucun', variant_combo: null }],
         relais_id: 7,
         recipient_name: 'Fatima',
         recipient_phone: '3211234',

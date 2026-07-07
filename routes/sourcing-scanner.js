@@ -276,6 +276,16 @@ router.get('/candidates/:id', authenticate, requireAdminOrFounder, async (req, r
 router.put('/candidates/:id', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
     const b = req.body || {};
+
+    // ING-5 (verrou 2) — une devise saisie hors whitelist ne doit plus jamais
+    // pouvoir produire un purchase_price_kmf faux (ex: GBP traité comme KMF).
+    const CURRENCY_WHITELIST = ['AED', 'EUR', 'USD', 'KMF'];
+    if (b.currency !== undefined && !CURRENCY_WHITELIST.includes(b.currency)) {
+      return res.status(400).json({
+        error: `currency doit être l'une de : ${CURRENCY_WHITELIST.join(', ')}`,
+      });
+    }
+
     const allowed = ['komerce_category', 'estimated_weight_kg', 'estimated_volume_m3',
                      'purchase_price', 'currency', 'target_margin_pct', 'notes',
                      'product_name', 'supplier_category'];
@@ -425,6 +435,15 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
 
     if (c.state === 'imported_to_catalog' && c.product_id) {
       return res.status(409).json({ error: 'Déjà importé', product_id: c.product_id });
+    }
+
+    // ING-5 (verrou 1) — une exclusion absolue est terminale partout (ING-I5).
+    // Un candidat rejeté (rejet manuel OU auto-exclusion douane/légale) n'est
+    // JAMAIS ré-importable, quel que soit le chemin emprunté par la route.
+    if (c.state === 'rejected' || c.scan_result?.sourcing_decision === 'EXCLUDED') {
+      return res.status(409).json({
+        error: 'Candidat exclu (douane/légal) — import interdit, non ré-évaluable.',
+      });
     }
 
     const sr = c.scan_result || {};

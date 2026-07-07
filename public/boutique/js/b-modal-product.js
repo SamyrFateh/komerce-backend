@@ -205,6 +205,9 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     if (!container) return;
     container.innerHTML = '';
 
+    // Lot 2 — reset du combo à chaque (re)rendu des variantes (nouveau produit)
+    state.modalVariantCombo = {};
+
     let isMobile = window.innerWidth < 900;
 
     Object.keys(variants).forEach(function(type) {
@@ -269,6 +272,9 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
               sku.classList.add(thumbUrl ? 'k-sku--active' : 'k-vp--active');
               labelVal.textContent = opt.value || '';
 
+              // Lot 2 — combo variante courant
+              state.modalVariantCombo[type] = opt.value;
+
               // Prix
               if (opt.price_kmf) {
                 dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
@@ -318,6 +324,8 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
             triggerVal.textContent = val;
             triggerVal.classList.add('is-set');
             if (price) dom.modalPrice.textContent = fmtPrice(price);
+            // Lot 2 — combo variante courant (bottom-sheet mobile)
+            state.modalVariantCombo[type] = val;
           }, selectedValue);
         });
 
@@ -394,6 +402,8 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
         btn.classList.add('k-vp--active');
         labelVal.textContent = opt.value;
         if (opt.price_kmf) dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
+        // Lot 2 — combo variante courant
+        state.modalVariantCombo[type] = opt.value;
         if (onSelect) onSelect(opt.value, opt.price_kmf);
       });
 
