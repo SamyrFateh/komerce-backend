@@ -8,7 +8,6 @@ module.exports = {
     '../admin/js/api-client-unsold.js',
     '../admin/js/api-client.js',
     '../admin/js/app.js',
-    '../admin/js/ClientsView.js',
     '../admin/js/components/Charts.js',
     '../admin/js/components/KpiCard.js',
     '../admin/js/components/UI.js',
