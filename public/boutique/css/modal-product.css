@@ -23,7 +23,7 @@
   background: var(--coral); color: var(--white);
   font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
   letter-spacing: .2px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  box-shadow: 0 1px 4px var(--overlay-black-15);
 }
 .k-modal-promo-badge.show { display: inline-block; }
 /* PR-D1 — Desktop : badge ancré sur l'image (pas sur le thumb strip).
@@ -71,7 +71,7 @@
   border: 1.5px solid transparent;
   transition: border-color .2s, background .2s, box-shadow .2s;
 }
-.k-modal-inner-search:focus-within { border-color: var(--ocean); background: var(--white); box-shadow: 0 0 0 3px rgba(100,175,90,.1); }
+.k-modal-inner-search:focus-within { border-color: var(--ocean); background: var(--white); box-shadow: 0 0 0 3px var(--border-ocean-10); }
 .k-modal-inner-search-icon { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
 .k-modal-inner-search-input { flex: 1; border: none; background: transparent; font-size: 13px; font-family: var(--font); color: var(--text); outline: none; min-width: 0; }
 .k-modal-inner-search-input::placeholder { color: var(--text-muted); }
@@ -146,7 +146,7 @@
   gap: 10px;
   margin-bottom: 14px;
   padding: 10px 14px;
-  background: linear-gradient(135deg, rgba(100,175,90,.10), rgba(100,175,90,.04));
+  background: linear-gradient(135deg, var(--border-ocean-10), var(--border-ocean-04));
   border-left: 3px solid var(--ocean, var(--ocean));
   border-radius: 0 10px 10px 0;
 }
@@ -159,7 +159,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(100,175,90,.20), rgba(100,175,90,.08));
+  background: linear-gradient(135deg, var(--border-ocean-20), var(--border-ocean-08));
   flex-shrink: 0;
 }
 .k-sug-title-text {
@@ -234,7 +234,7 @@
 .k-modal-trust-mobile-item {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 4px 10px; border-radius: 999px;
-  background: var(--sand); border: 1px solid rgba(0,0,0,.08);
+  background: var(--sand); border: 1px solid var(--overlay-black-sm);
   font-size: 11px; font-weight: 600; color: var(--text-muted);
   white-space: nowrap;
 }
@@ -322,7 +322,7 @@
 .k-sku:hover:not(.k-sku--out) {
   border-color: var(--coral);
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(200, 92, 45, .18);
+  box-shadow: 0 4px 10px var(--coral-shadow-18);
 }
 
 /* Sélectionné */

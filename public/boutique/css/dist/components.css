@@ -2114,7 +2114,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-search-mic:active { transform: scale(.88); }
 .k-modal-search-mic.is-listening { background: var(--hero-red); animation: k-mic-pulse 1s ease-in-out infinite; }
 .k-modal-search-mic.is-listening svg { stroke: var(--white); }
-@keyframes k-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.35); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
+@keyframes k-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--red-pulse-35); } 50% { box-shadow: 0 0 0 8px var(--red-pulse-0); } }
 
 /* ── ACTIONS (mobile : sticky bas, flex-shrink:0) ────────────── */
 .k-modal-actions {
@@ -2443,8 +2443,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-counter { display: none; }
   #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
-  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid rgba(31,48,36,.10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
-  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: rgba(200,92,45,.45); box-shadow: 0 10px 22px rgba(31,48,36,.10); }
+  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
+  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: var(--coral-focus-45); box-shadow: 0 10px 22px var(--border-text-10); }
   #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
   .k-modal-zoom-preview {
     display: block; position: absolute;
@@ -2466,9 +2466,9 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-zoom-lens {
     display: block; position: absolute;
     width: 36%; height: 36%;
-    border: 2px solid rgba(255,255,255,.85);
-    background: rgba(255,255,255,.18);
-    box-shadow: 0 0 0 9999px rgba(0,0,0,.18);
+    border: 2px solid var(--surface-white-85);
+    background: var(--surface-white-18);
+    box-shadow: 0 0 0 9999px var(--overlay-black-18);
     border-radius: 6px;
     opacity: 0; pointer-events: none; z-index: 70;
     transition: opacity .12s var(--ease);
@@ -2643,10 +2643,10 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex; flex-direction: column;
     grid-template-columns: unset; grid-template-rows: unset;
     min-height: unset; height: auto; border-radius: 14px; overflow: hidden;
-    background: var(--white); box-shadow: 0 4px 16px rgba(31,48,36,.07);
+    background: var(--white); box-shadow: 0 4px 16px var(--border-text-07);
     transition: transform .18s, box-shadow .18s; cursor: pointer;
   }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(31,48,36,.12); }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px var(--border-text-12); }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img { width: 100%; height: auto; aspect-ratio: 1; grid-column: unset; grid-row: unset; border-radius: 0; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: unset; grid-row: unset; padding: 8px 10px 4px; font-size: 13px; }
@@ -2656,7 +2656,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section { margin-top: 32px; }
 
   /* ── Hover & focus ───────────────────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px rgba(100,175,90,.1); }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px var(--border-ocean-10); }
   .k-msearch-item:hover { background: var(--sand); }
   .k-msearch-footer:hover { background: var(--sand); color: var(--coral); }
   .k-modal-search-clear:hover { background: var(--border); color: var(--text); }
@@ -2666,7 +2666,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal, .k-modal * { -webkit-tap-highlight-color: transparent; }
   .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
   .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }
-  button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid rgba(42,122,62,.45); outline-offset: 2px; }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--focus-cta-45); outline-offset: 2px; }
 }
 
 
@@ -2838,7 +2838,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     max-width: min(1040px, calc(100vw - 56px));
     border-radius: 26px;
     /* PALETTE-FIX-01 */
-    box-shadow: 0 30px 80px rgba(100,175,90, .18);
+    box-shadow: 0 30px 80px var(--border-ocean-18);
   }
 
   .k-modal-img-wrap {
@@ -3194,7 +3194,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   background: var(--coral); color: var(--white);
   font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
   letter-spacing: .2px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  box-shadow: 0 1px 4px var(--overlay-black-15);
 }
 .k-modal-promo-badge.show { display: inline-block; }
 /* PR-D1 — Desktop : badge ancré sur l'image (pas sur le thumb strip).
@@ -3242,7 +3242,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   border: 1.5px solid transparent;
   transition: border-color .2s, background .2s, box-shadow .2s;
 }
-.k-modal-inner-search:focus-within { border-color: var(--ocean); background: var(--white); box-shadow: 0 0 0 3px rgba(100,175,90,.1); }
+.k-modal-inner-search:focus-within { border-color: var(--ocean); background: var(--white); box-shadow: 0 0 0 3px var(--border-ocean-10); }
 .k-modal-inner-search-icon { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
 .k-modal-inner-search-input { flex: 1; border: none; background: transparent; font-size: 13px; font-family: var(--font); color: var(--text); outline: none; min-width: 0; }
 .k-modal-inner-search-input::placeholder { color: var(--text-muted); }
@@ -3317,7 +3317,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   gap: 10px;
   margin-bottom: 14px;
   padding: 10px 14px;
-  background: linear-gradient(135deg, rgba(100,175,90,.10), rgba(100,175,90,.04));
+  background: linear-gradient(135deg, var(--border-ocean-10), var(--border-ocean-04));
   border-left: 3px solid var(--ocean, var(--ocean));
   border-radius: 0 10px 10px 0;
 }
@@ -3330,7 +3330,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(100,175,90,.20), rgba(100,175,90,.08));
+  background: linear-gradient(135deg, var(--border-ocean-20), var(--border-ocean-08));
   flex-shrink: 0;
 }
 .k-sug-title-text {
@@ -3405,7 +3405,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-trust-mobile-item {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 4px 10px; border-radius: 999px;
-  background: var(--sand); border: 1px solid rgba(0,0,0,.08);
+  background: var(--sand); border: 1px solid var(--overlay-black-sm);
   font-size: 11px; font-weight: 600; color: var(--text-muted);
   white-space: nowrap;
 }
@@ -3493,7 +3493,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-sku:hover:not(.k-sku--out) {
   border-color: var(--coral);
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(200, 92, 45, .18);
+  box-shadow: 0 4px 10px var(--coral-shadow-18);
 }
 
 /* Sélectionné */

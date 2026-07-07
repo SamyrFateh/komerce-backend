@@ -69,6 +69,8 @@ function hoursAgoIso(hours) {
   return new Date(Date.now() - hours * 3_600_000).toISOString();
 }
 
+const { makeKmcApi, cleanupGlobals } = require('./helpers/dashboardTestKit');
+
 describe('HubRelaisView', () => {
   let root;
 
@@ -77,7 +79,7 @@ describe('HubRelaisView', () => {
     document.body.innerHTML = '<div id="main"></div>';
     root = document.getElementById('main');
 
-    global.KmcApi = {
+    makeKmcApi({
       getPipeline: jest.fn().mockResolvedValue(emptyPipeline()),
       getParcels: jest.fn().mockResolvedValue({ parcels: [] }),
       getDistribution: jest.fn().mockResolvedValue({ parcels: [], unassigned: [], saturated: [] }),
@@ -87,14 +89,14 @@ describe('HubRelaisView', () => {
       relaisConfirmCash: jest.fn().mockResolvedValue({}),
       relaisReceive: jest.fn().mockResolvedValue({}),
       relaisCollect: jest.fn().mockResolvedValue({}),
-    };
+    });
     global.confirm = jest.fn(() => true);
 
     require('../../admin/js/views/HubRelaisView.js');
   });
 
   afterEach(() => {
-    delete global.KmcApi;
+    cleanupGlobals('KmcApi');
     delete global.confirm;
   });
 

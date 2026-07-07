@@ -49,6 +49,8 @@ function daysAgoIso(days) {
   return new Date(Date.now() - days * 86_400_000).toISOString();
 }
 
+const { makeKmcApi, cleanupGlobals } = require('./helpers/dashboardTestKit');
+
 describe('ProblemsView', () => {
   let root;
 
@@ -57,10 +59,10 @@ describe('ProblemsView', () => {
     document.body.innerHTML = '<div id="main"></div>';
     root = document.getElementById('main');
 
-    global.KmcApi = {
+    makeKmcApi({
       getOrders: jest.fn().mockResolvedValue([]),
       getParcelReconciliation: jest.fn().mockResolvedValue({ parcels: [], summary: {} }),
-    };
+    });
     global.window.open = jest.fn();
 
     require('../../admin/js/views/ProblemsView.js');
@@ -69,7 +71,7 @@ describe('ProblemsView', () => {
   afterEach(() => {
     window.ProblemsView.destroy();
     jest.useRealTimers();
-    delete global.KmcApi;
+    cleanupGlobals('KmcApi');
     delete global.KmcApp;
   });
 

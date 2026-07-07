@@ -7,11 +7,16 @@
  * Codifie les pièges redécouverts à chaque vue (Problems, HubRelais, Sales,
  * Products, Accounting…) :
  *
- *   - Les vues s'attachent à `global.<Nom>` (IIFE), sous 2 formes réelles :
+ *   - Les vues s'attachent à `global.<Nom>` (IIFE), sous 3 formes réelles :
  *       objet { render }          (ex: SalesView, AccountingView)
  *       fonction bare async(root) (ex: SettingsView)
- *     loadView() normalise toujours en { render } pour que les tests
- *     n'aient jamais à distinguer les deux.
+ *       constructeur `function X(){ this.render = ... }` (ex: SourcingScannerView,
+ *         SuppliersView) — s'utilise en prod via `new X()` puis `instance.render()`
+ *         (cf. app.js#invokeView)
+ *     loadView() normalise toujours en objet `{ render }` pour que les tests
+ *     n'aient jamais à distinguer les 3 — passer `opts.newable: true` pour le
+ *     3e cas (sinon une fonction bare et un constructeur sont indistinguables
+ *     de l'extérieur sans risquer d'exécuter le mauvais code au chargement).
  *   - KmcApi / KmcFilters / KpiCard sont des globals posés par des IIFE
  *     (api-client.js, filters-store.js, components/KpiCard.js) — en test on
  *     les remplace entièrement par des mocks (makeKmcApi/makeKmcFilters/
@@ -44,7 +49,7 @@ function requireFresh(relPathFromTestsUnit) {
 /**
  * Charge une vue fraîche et retourne son objet normalisé { render }.
  * @param {string} relPath - chemin de la vue relatif à tests/unit/
- *   (ex: '../../admin/js/views/AccountingView.js')
+ *   (ex: '../admin/js/views/AccountingView.js')
  * @param {string} globalName - nom sous lequel la vue s'attache à `global`
  *   (ex: 'AccountingView')
  * @param {object} [opts]
@@ -53,6 +58,12 @@ function requireFresh(relPathFromTestsUnit) {
  *   nécessaire — KmcApi/KmcFilters/KpiCard sont mockés, pas chargés
  * @param {boolean} [opts.skipBaseDeps] - ne pas charger utils.js (vues qui
  *   n'utilisent pas esc/escAttr)
+ * @param {boolean} [opts.newable] - la vue exporte un constructeur
+ *   (`function X(){ this.render=... }`, ex: SourcingScannerView, SuppliersView)
+ *   plutôt qu'un objet { render } ou une fonction bare — loadView instancie
+ *   alors avec `new` avant de retourner l'instance. Sans ce flag, un
+ *   constructeur serait pris à tort pour une fonction bare (cf. doc en tête
+ *   de fichier) : à mettre systématiquement pour ce patron, jamais deviné.
  */
 function loadView(relPath, globalName, opts = {}) {
   jest.resetModules();
@@ -66,6 +77,13 @@ function loadView(relPath, globalName, opts = {}) {
       `loadView: global.${globalName} introuvable après require('${relPath}') — ` +
       `vérifier le nom exact sous lequel la vue s'attache (window.${globalName} = ...)`
     );
+  }
+  if (opts.newable) {
+    const instance = new View();
+    if (typeof instance.render !== 'function') {
+      throw new Error(`loadView: opts.newable=true mais l'instance de global.${globalName} n'a pas de .render()`);
+    }
+    return instance;
   }
   if (typeof View.render === 'function') return View;
   if (typeof View === 'function') return { render: View };

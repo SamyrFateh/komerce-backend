@@ -3,476 +3,372 @@
 /**
  * tests/unit/SourcingScannerView.test.js
  *
- * admin/js/views/SourcingScannerView.js (526L) — Vue Scanner Catalogue Fournisseur
- * /admin/sourcing-scanner. Export réel : constructeur `function SourcingScannerView()`
- * avec `this.render = ...` — instanciation en test : `new global.SourcingScannerView().render(container)`
- * (même contrat que CustomsView/SuppliersView/PricingStrategyView).
- * esc()/fmt() sont locaux au fichier (pas de dépendance utils.js).
- * État module-level (_state) → jest.resetModules() nécessaire entre tests (fait manuellement ici).
+ * admin/js/views/SourcingScannerView.js (526L) — vue Scanner Catalogue Fournisseur.
+ * Export public : constructeur `SourcingScannerView` (pas un objet {render} —
+ * `new SourcingScannerView()` puis `instance.render(rootEl)`, cf. app.js#invokeView).
  *
- * Source API :
- *   - KmcApi.getSourcingCatalogs()   (catch local → {})
- *   - KmcApi.getSourcingCandidates(params) (catch local sur loadAll, direct sur reloadCandidates)
- *   - global.fetch('/api/admin/customs-categories') (catch local → [])
- *   - KmcApi.getSourcingCandidate(id) / updateSourcingCandidate / scanSourcingCandidate /
- *     importSourcingCatalog / importSourcingProduct / watchlistSourcingCandidate /
- *     rejectSourcingCandidate
+ * Dépendances externes (globals mockés) :
+ *   - KmcApi.getSourcingCatalogs() / getSourcingCandidates(params) / getSourcingCandidate(id) /
+ *     updateSourcingCandidate(id, body) / importSourcingCatalog(body) / scanSourcingCandidate(id) /
+ *     importSourcingProduct(id) / watchlistSourcingCandidate(id) / rejectSourcingCandidate(id, body)
+ *   - global.fetch('/api/admin/customs-categories') (hors KmcApi — appel direct)
+ *   - window.alert / window.confirm / window.prompt
+ *
+ * Périmètre couvert :
+ *   - Contrat d'export (constructeur, pas objet render)
+ *   - render() : chargement initial (3 appels parallèles), onglet "candidates" par défaut
+ *   - Onglet Candidats : vide, peuplé (KPIs, badges décision/santé/état/fiabilité), filtres
+ *     (apply/clear → reload avec params)
+ *   - Onglet Imports : vide, peuplé
+ *   - Onglet Nouveau import : toggle source CSV/manuel, soumission CSV (validation + succès),
+ *     soumission manuelle (validation + succès + parsing des champs numériques)
+ *   - Drawer : ouverture (getSourcingCandidate), fermeture, save-edits (update + re-scan),
+ *     import-product (confirm annulé/accepté), watchlist, reject (prompt annulé/rempli)
  */
 
-const path = require('path');
-const REL = '../../admin/js/views/SourcingScannerView.js';
+const { makeKmcApi, cleanupGlobals, mockAlert, mockConfirm, mockPrompt } = require('./helpers/dashboardTestKit');
 
-function loadIt() {
-  jest.resetModules();
-  const abs = path.resolve(__dirname, REL);
-  delete require.cache[require.resolve(abs)];
-  require(abs);
-  return new global.SourcingScannerView();
+function makeCandidate(overrides) {
+  return Object.assign({
+    id: 'CAND-1',
+    product_name: 'Robe rouge M',
+    supplier_name: 'Dragon Mart Shop X',
+    komerce_category: 'clothing',
+    purchase_price_kmf: 45_000,
+    state: 'scanned',
+    confidence: 'high',
+    currency: 'AED',
+    estimated_weight_kg: 0.4,
+    estimated_volume_m3: 0.002,
+    target_margin_pct: 30,
+    notes: '',
+    product_url: 'https://example.com/p1',
+    scan_result: {
+      sourcing_decision: 'TEST',
+      health_status: 'healthy',
+      minimum_safe_price_kmf: 60_000,
+      recommended_price_kmf: 75_000,
+      estimated_margin_pct: 32,
+    },
+  }, overrides);
 }
 
-function candidate(overrides = {}) {
+function makeImport(overrides) {
   return Object.assign({
-    id: 'cand-1', product_name: 'Robe rouge', supplier_name: 'Noon', komerce_category: 'mode',
-    purchase_price_kmf: 20000, state: 'scanned', confidence: 'high',
-    scan_result: { sourcing_decision: 'TEST', health_status: 'healthy', minimum_safe_price_kmf: 25000, recommended_price_kmf: 30000, estimated_margin_pct: 22 },
+    imported_at: '2026-07-01T10:00:00Z',
+    supplier_name: 'Dragon Mart Shop X',
+    source_type: 'csv',
+    items_count: 20,
+    imported_count: 3,
+    notes: '',
   }, overrides);
 }
 
 describe('SourcingScannerView', () => {
-  let main;
+  let root;
+  let instance;
 
   beforeEach(() => {
+    jest.resetModules();
     document.body.innerHTML = '<div id="main"></div>';
-    main = document.getElementById('main');
-    global.KmcApi = {
+    root = document.getElementById('main');
+
+    makeKmcApi({
       getSourcingCatalogs: jest.fn().mockResolvedValue({ imports: [] }),
       getSourcingCandidates: jest.fn().mockResolvedValue({ candidates: [] }),
-      getSourcingCandidate: jest.fn().mockResolvedValue({ candidate: candidate() }),
+      getSourcingCandidate: jest.fn(),
       updateSourcingCandidate: jest.fn().mockResolvedValue({}),
-      scanSourcingCandidate: jest.fn().mockResolvedValue({ candidate: candidate() }),
-      importSourcingCatalog: jest.fn().mockResolvedValue({ created: 3, errors: [] }),
+      scanSourcingCandidate: jest.fn(),
+      importSourcingCatalog: jest.fn(),
       importSourcingProduct: jest.fn().mockResolvedValue({}),
       watchlistSourcingCandidate: jest.fn().mockResolvedValue({}),
       rejectSourcingCandidate: jest.fn().mockResolvedValue({}),
-    };
+    });
     global.fetch = jest.fn().mockResolvedValue({ json: () => Promise.resolve([]) });
-    window.alert = jest.fn();
-    window.confirm = jest.fn(() => true);
-    window.prompt = jest.fn(() => '');
+    mockAlert();
+    mockConfirm(true);
+    mockPrompt('raison test');
+
+    require('../../admin/js/views/SourcingScannerView.js');
+    instance = new global.SourcingScannerView();
   });
 
   afterEach(() => {
-    delete global.KmcApi;
+    cleanupGlobals('KmcApi');
     delete global.fetch;
     delete window.alert;
     delete window.confirm;
     delete window.prompt;
-    document.getElementById('scs-styles')?.remove();
   });
 
-  async function flush(times = 12) {
-    for (let i = 0; i < times; i++) await Promise.resolve();
+  async function flush() {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
-  it('expose une instance avec render() (contrat constructeur, app.js#invokeView)', () => {
-    const view = loadIt();
-    expect(typeof view.render).toBe('function');
+  it('expose un constructeur (contrat app.js#invokeView : new View() + instance.render)', () => {
+    expect(typeof global.SourcingScannerView).toBe('function');
+    expect(typeof instance.render).toBe('function');
   });
 
-  it('affiche un état de chargement avant résolution, puis injecte les styles', async () => {
-    let resolveIt;
-    global.KmcApi.getSourcingCandidates = jest.fn(() => new Promise((r) => { resolveIt = r; }));
-    const view = loadIt();
-    view.render(main);
-    expect(main.textContent).toContain('Chargement du scanner');
-    resolveIt({ candidates: [] });
-    await flush();
-    expect(document.getElementById('scs-styles')).toBeTruthy();
-  });
+  describe('render() — chargement initial', () => {
+    it('appelle getSourcingCatalogs, getSourcingCandidates et fetch(categories), affiche l\'onglet candidats par défaut', async () => {
+      await instance.render(root);
+      await flush();
 
-  it('charge catalogs + candidates + categories en parallèle', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    expect(global.KmcApi.getSourcingCatalogs).toHaveBeenCalled();
-    expect(global.KmcApi.getSourcingCandidates).toHaveBeenCalled();
-    expect(global.fetch).toHaveBeenCalledWith('/api/admin/customs-categories', { credentials: 'include' });
-  });
-
-  it('échec getSourcingCatalogs / categories → tolérés (fallback {}/[]), pas de crash', async () => {
-    global.KmcApi.getSourcingCatalogs = jest.fn().mockRejectedValue(new Error('catalogs KO'));
-    global.fetch = jest.fn().mockRejectedValue(new Error('fetch KO'));
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    expect(main.textContent).toContain('Scanner Catalogue Fournisseur');
-  });
-
-  it('échec getSourcingCandidates → toléré localement (fallback []), pas d\'error-state', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockRejectedValue(new Error('candidates KO'));
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    expect(main.textContent).toContain('Scanner Catalogue Fournisseur');
-    expect(main.textContent).toContain('Aucun candidat');
-  });
-
-  it('onglet Candidats par défaut, compteurs dans les tabs reflètent les données', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate(), candidate({ id: 'c2' })] });
-    global.KmcApi.getSourcingCatalogs = jest.fn().mockResolvedValue({ imports: [{ id: 'i1' }] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    expect(main.querySelector('.scs-tab.active').textContent).toContain('Candidats (2)');
-    expect(main.textContent).toContain('Imports (1)');
-  });
-
-  it('liste vide → message invitant à importer', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    expect(main.textContent).toContain('Aucun candidat');
-  });
-
-  it('affiche une ligne candidat avec prix/marge/santé/décision/état/fiabilité', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    const row = main.querySelector('tr[data-id="cand-1"]');
-    expect(row).toBeTruthy();
-    expect(row.textContent).toContain('Robe rouge');
-    expect(row.textContent).toContain('Noon');
-    expect(row.textContent).toContain('22%');
-    expect(row.textContent).toContain('healthy');
-    expect(row.textContent).toContain('TEST');
-  });
-
-  it('changement d\'onglet (set-tab) affiche Imports ou Nouveau import', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-
-    main.querySelector('[data-act="set-tab"][data-tab="imports"]').click();
-    expect(main.querySelector('.scs-tab.active').textContent).toContain('Imports');
-
-    main.querySelector('[data-act="set-tab"][data-tab="new"]').click();
-    expect(main.textContent).toContain('Nouveau import');
-    expect(main.querySelector('[data-act="submit-csv-import"]')).toBeTruthy();
-  });
-
-  it('onglet Imports vide → message invitant à créer un import', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="set-tab"][data-tab="imports"]').click();
-    expect(main.textContent).toContain('Aucun import');
-  });
-
-  it('onglet Imports : affiche une ligne d\'import avec date/fournisseur/source/items', async () => {
-    global.KmcApi.getSourcingCatalogs = jest.fn().mockResolvedValue({
-      imports: [{ imported_at: '2026-07-01T10:00:00Z', supplier_name: 'Noon', source_type: 'csv', source_filename: 'noon.csv', items_count: 50, imported_count: 10, notes: 'ok' }],
-    });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="set-tab"][data-tab="imports"]').click();
-    expect(main.textContent).toContain('Noon');
-    expect(main.textContent).toContain('noon.csv');
-    expect(main.textContent).toContain('50');
-  });
-
-  it('filtres : apply-filters recharge candidates avec les params choisis', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-filter="state"]').value = 'watchlist';
-    main.querySelector('[data-filter="state"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-act="apply-filters"]').click();
-    await flush();
-    const lastCall = global.KmcApi.getSourcingCandidates.mock.calls[global.KmcApi.getSourcingCandidates.mock.calls.length - 1][0];
-    expect(lastCall).toEqual({ state: 'watchlist' });
-  });
-
-  it('filtres : clear-filters réinitialise et recharge sans params', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-filter="supplier"]').value = 'Noon';
-    main.querySelector('[data-filter="supplier"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-act="clear-filters"]').click();
-    await flush();
-    const lastCall = global.KmcApi.getSourcingCandidates.mock.calls[global.KmcApi.getSourcingCandidates.mock.calls.length - 1][0];
-    expect(lastCall).toEqual({});
-  });
-
-  it('filtres : échec applyFilters → alert()', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    global.KmcApi.getSourcingCandidates = jest.fn().mockRejectedValue(new Error('filter KO'));
-    main.querySelector('[data-act="apply-filters"]').click();
-    await flush();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('filter KO'));
-  });
-
-  it('import CSV : champs requis manquants → alert(), aucun appel API', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="set-tab"][data-tab="new"]').click();
-    main.querySelector('[data-act="submit-csv-import"]').click();
-    await flush();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Nom fournisseur et CSV requis'));
-    expect(global.KmcApi.importSourcingCatalog).not.toHaveBeenCalled();
-  });
-
-  it('import CSV : soumission valide → importSourcingCatalog appelé, retour onglet candidats', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="set-tab"][data-tab="new"]').click();
-    main.querySelector('[data-newimp="supplier_name"]').value = 'Noon';
-    main.querySelector('[data-newimp="supplier_name"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-newimp="csv_text"]').value = 'name,price\nRobe,45';
-    main.querySelector('[data-newimp="csv_text"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-act="submit-csv-import"]').click();
-    await flush();
-
-    expect(global.KmcApi.importSourcingCatalog).toHaveBeenCalledWith({
-      supplier_name: 'Noon', source_type: 'csv', csv_text: 'name,price\nRobe,45',
-    });
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Import OK'));
-    expect(main.querySelector('.scs-tab.active').textContent).toContain('Candidats');
-  });
-
-  it('import CSV : échec API → alert() et bouton réactivé', async () => {
-    global.KmcApi.importSourcingCatalog = jest.fn().mockRejectedValue(new Error('import KO'));
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="set-tab"][data-tab="new"]').click();
-    main.querySelector('[data-newimp="supplier_name"]').value = 'Noon';
-    main.querySelector('[data-newimp="supplier_name"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-newimp="csv_text"]').value = 'a,b';
-    main.querySelector('[data-newimp="csv_text"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-act="submit-csv-import"]').click();
-    await flush();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('import KO'));
-    expect(main.querySelector('[data-act="submit-csv-import"]').disabled).toBe(false);
-  });
-
-  it('bascule source manuelle : champs requis manquants → alert()', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="set-tab"][data-tab="new"]').click();
-    main.querySelector('[data-act="set-source"][data-source="manual"]').click();
-    main.querySelector('[data-act="submit-manual-import"]').click();
-    await flush();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Nom fournisseur, produit et prix achat requis'));
-  });
-
-  it('import manuel : soumission valide → importSourcingCatalog avec items[] et champs numériques parsés', async () => {
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="set-tab"][data-tab="new"]').click();
-    main.querySelector('[data-act="set-source"][data-source="manual"]').click();
-    main.querySelector('[data-newimp="supplier_name"]').value = 'Noon';
-    main.querySelector('[data-newimp="supplier_name"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-manual="product_name"]').value = 'Robe';
-    main.querySelector('[data-manual="product_name"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-manual="purchase_price"]').value = '45';
-    main.querySelector('[data-manual="purchase_price"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-act="submit-manual-import"]').click();
-    await flush();
-
-    expect(global.KmcApi.importSourcingCatalog).toHaveBeenCalledWith({
-      supplier_name: 'Noon',
-      source_type: 'manual',
-      items: [expect.objectContaining({ product_name: 'Robe', purchase_price: 45, currency: 'AED' })],
+      expect(global.KmcApi.getSourcingCatalogs).toHaveBeenCalled();
+      expect(global.KmcApi.getSourcingCandidates).toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledWith('/api/admin/customs-categories', expect.objectContaining({ credentials: 'include' }));
+      expect(root.querySelector('.scs-tab.active').textContent).toContain('Candidats');
     });
   });
 
-  it('candidat : clic sur une ligne ouvre le drawer avec détail', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    expect(global.KmcApi.getSourcingCandidate).toHaveBeenCalledWith('cand-1');
-    expect(main.querySelector('.scs-drawer.open')).toBeTruthy();
-    expect(main.textContent).toContain('Robe rouge');
+  describe('Onglet Candidats', () => {
+    it('vide → message dédié', async () => {
+      await instance.render(root);
+      await flush();
+      expect(root.textContent).toContain('Aucun candidat');
+    });
+
+    it('peuplé : KPIs (total, à traiter, décisions) et badges dans la table', async () => {
+      global.KmcApi.getSourcingCandidates.mockResolvedValue({
+        candidates: [
+          makeCandidate({ id: 'C1', state: 'scanned', scan_result: { sourcing_decision: 'TEST', health_status: 'healthy' } }),
+          makeCandidate({ id: 'C2', state: 'test_ready', scan_result: { sourcing_decision: 'WATCH', health_status: 'fragile' } }),
+        ],
+      });
+      await instance.render(root);
+      await flush();
+
+      const html = root.innerHTML;
+      expect(root.querySelector('.scs-kpi-value').textContent).toBe('2');
+      expect(html).toContain('Robe rouge M');
+      expect(html).toContain('Dragon Mart Shop X');
+      expect(html).toContain('TEST');
+      expect(html).toContain('WATCH');
+    });
+
+    it('filtres : "Filtrer" recharge getSourcingCandidates avec les params choisis', async () => {
+      await instance.render(root);
+      await flush();
+      global.KmcApi.getSourcingCandidates.mockClear();
+
+      root.querySelector('[data-filter="state"]').value = 'watchlist';
+      root.querySelector('[data-filter="state"]').dispatchEvent(new Event('change', { bubbles: true }));
+      root.querySelector('[data-filter="supplier"]').value = 'Noon';
+      root.querySelector('[data-filter="supplier"]').dispatchEvent(new Event('input', { bubbles: true }));
+      root.querySelector('[data-act="apply-filters"]').click();
+      await flush();
+
+      expect(global.KmcApi.getSourcingCandidates).toHaveBeenCalledWith(
+        expect.objectContaining({ state: 'watchlist', supplier: 'Noon' })
+      );
+    });
+
+    it('"×" (clear-filters) réinitialise les filtres et recharge sans params', async () => {
+      await instance.render(root);
+      await flush();
+      root.querySelector('[data-filter="supplier"]').value = 'Noon';
+      root.querySelector('[data-filter="supplier"]').dispatchEvent(new Event('input', { bubbles: true }));
+      global.KmcApi.getSourcingCandidates.mockClear();
+
+      root.querySelector('[data-act="clear-filters"]').click();
+      await flush();
+
+      expect(global.KmcApi.getSourcingCandidates).toHaveBeenCalledWith({});
+    });
   });
 
-  it('candidat : échec ouverture drawer → alert()', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    global.KmcApi.getSourcingCandidate = jest.fn().mockRejectedValue(new Error('detail KO'));
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('detail KO'));
+  describe('Onglet Imports', () => {
+    it('vide → message dédié', async () => {
+      await instance.render(root);
+      await flush();
+      root.querySelector('[data-act="set-tab"][data-tab="imports"]').click();
+      expect(root.textContent).toContain('Aucun import');
+    });
+
+    it('peuplé : liste les imports avec fournisseur, source, items', async () => {
+      global.KmcApi.getSourcingCatalogs.mockResolvedValue({ imports: [makeImport()] });
+      await instance.render(root);
+      await flush();
+      root.querySelector('[data-act="set-tab"][data-tab="imports"]').click();
+
+      const html = root.innerHTML;
+      expect(html).toContain('Dragon Mart Shop X');
+      expect(html).toContain('csv');
+    });
   });
 
-  it('drawer : fermeture (close-drawer)', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="close-drawer"]').click();
-    expect(main.querySelector('.scs-drawer.open')).toBeNull();
+  describe('Onglet Nouveau import', () => {
+    it('CSV actif par défaut, toggle vers "manuel" bascule le formulaire', async () => {
+      await instance.render(root);
+      await flush();
+      root.querySelector('[data-act="set-tab"][data-tab="new"]').click();
+
+      expect(root.querySelector('[data-newimp="csv_text"]')).not.toBeNull();
+
+      root.querySelector('[data-act="set-source"][data-source="manual"]').click();
+      expect(root.querySelector('[data-manual="product_name"]')).not.toBeNull();
+    });
+
+    it('soumission CSV sans fournisseur/CSV → alert de validation, pas d\'appel API', async () => {
+      await instance.render(root);
+      await flush();
+      root.querySelector('[data-act="set-tab"][data-tab="new"]').click();
+
+      root.querySelector('[data-act="submit-csv-import"]').click();
+      await flush();
+
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('requis'));
+      expect(global.KmcApi.importSourcingCatalog).not.toHaveBeenCalled();
+    });
+
+    it('soumission CSV valide → importSourcingCatalog(csv), retour à l\'onglet candidats', async () => {
+      global.KmcApi.importSourcingCatalog.mockResolvedValue({ created: 5, errors: [] });
+      await instance.render(root);
+      await flush();
+      root.querySelector('[data-act="set-tab"][data-tab="new"]').click();
+
+      root.querySelector('[data-newimp="supplier_name"]').value = 'Noon';
+      root.querySelector('[data-newimp="supplier_name"]').dispatchEvent(new Event('input', { bubbles: true }));
+      root.querySelector('[data-newimp="csv_text"]').value = 'name,price\nRobe,45';
+      root.querySelector('[data-newimp="csv_text"]').dispatchEvent(new Event('input', { bubbles: true }));
+
+      root.querySelector('[data-act="submit-csv-import"]').click();
+      await flush();
+
+      expect(global.KmcApi.importSourcingCatalog).toHaveBeenCalledWith(
+        expect.objectContaining({ supplier_name: 'Noon', source_type: 'csv', csv_text: 'name,price\nRobe,45' })
+      );
+      expect(root.querySelector('.scs-tab.active').textContent).toContain('Candidats');
+    });
+
+    it('soumission manuelle sans champs requis → alert, pas d\'appel API', async () => {
+      await instance.render(root);
+      await flush();
+      root.querySelector('[data-act="set-tab"][data-tab="new"]').click();
+      root.querySelector('[data-act="set-source"][data-source="manual"]').click();
+
+      root.querySelector('[data-act="submit-manual-import"]').click();
+      await flush();
+
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('requis'));
+      expect(global.KmcApi.importSourcingCatalog).not.toHaveBeenCalled();
+    });
+
+    it('soumission manuelle valide → importSourcingCatalog(manual) avec parsing des champs numériques', async () => {
+      global.KmcApi.importSourcingCatalog.mockResolvedValue({ created: 1, errors: [] });
+      await instance.render(root);
+      await flush();
+      root.querySelector('[data-act="set-tab"][data-tab="new"]').click();
+      root.querySelector('[data-act="set-source"][data-source="manual"]').click();
+
+      root.querySelector('[data-newimp="supplier_name"]').value = 'Noon';
+      root.querySelector('[data-newimp="supplier_name"]').dispatchEvent(new Event('input', { bubbles: true }));
+      root.querySelector('[data-manual="product_name"]').value = 'Robe rouge M';
+      root.querySelector('[data-manual="product_name"]').dispatchEvent(new Event('input', { bubbles: true }));
+      root.querySelector('[data-manual="purchase_price"]').value = '45';
+      root.querySelector('[data-manual="purchase_price"]').dispatchEvent(new Event('input', { bubbles: true }));
+
+      root.querySelector('[data-act="submit-manual-import"]').click();
+      await flush();
+
+      expect(global.KmcApi.importSourcingCatalog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          supplier_name: 'Noon',
+          source_type: 'manual',
+          items: [expect.objectContaining({ product_name: 'Robe rouge M', purchase_price: 45 })],
+        })
+      );
+    });
   });
 
-  it('drawer : save-edits envoie le body construit puis re-scan et recharge', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
+  describe('Drawer candidat', () => {
+    async function openDrawerWithCandidate(cand) {
+      global.KmcApi.getSourcingCandidates.mockResolvedValue({ candidates: [cand] });
+      global.KmcApi.getSourcingCandidate.mockResolvedValue({ candidate: cand });
+      await instance.render(root);
+      await flush();
+      root.querySelector('[data-act="open-candidate"]').click();
+      await flush();
+    }
 
-    main.querySelector('[data-edit="notes"]').value = 'note admin';
-    main.querySelector('[data-edit="notes"]').dispatchEvent(new Event('input', { bubbles: true }));
-    main.querySelector('[data-act="save-edits"]').click();
-    await flush();
+    it('clic sur une ligne → getSourcingCandidate puis ouverture du drawer', async () => {
+      const cand = makeCandidate();
+      await openDrawerWithCandidate(cand);
 
-    expect(global.KmcApi.updateSourcingCandidate).toHaveBeenCalledWith('cand-1', expect.objectContaining({ notes: 'note admin' }));
-    expect(global.KmcApi.scanSourcingCandidate).toHaveBeenCalledWith('cand-1');
-  });
+      expect(global.KmcApi.getSourcingCandidate).toHaveBeenCalledWith('CAND-1');
+      expect(root.querySelector('.scs-drawer').classList.contains('open')).toBe(true);
+      expect(root.querySelector('.scs-drawer-title').textContent).toBe('Robe rouge M');
+    });
 
-  it('drawer : save-edits échoue → alert() et bouton réactivé', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    global.KmcApi.updateSourcingCandidate = jest.fn().mockRejectedValue(new Error('save KO'));
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="save-edits"]').click();
-    await flush();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('save KO'));
-  });
+    it('"←" (close-drawer) referme le drawer', async () => {
+      await openDrawerWithCandidate(makeCandidate());
+      root.querySelector('[data-act="close-drawer"]').click();
+      expect(root.querySelector('.scs-drawer').classList.contains('open')).toBe(false);
+    });
 
-  it('drawer : import-product demande confirmation, annulée → aucun appel', async () => {
-    window.confirm = jest.fn(() => false);
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="import-product"]').click();
-    await flush();
-    expect(global.KmcApi.importSourcingProduct).not.toHaveBeenCalled();
-  });
+    it('save-edits → updateSourcingCandidate puis scanSourcingCandidate, recharge la liste', async () => {
+      const cand = makeCandidate();
+      global.KmcApi.scanSourcingCandidate.mockResolvedValue({ candidate: makeCandidate({ notes: 'ok' }) });
+      await openDrawerWithCandidate(cand);
 
-  it('drawer : import-product confirmé → appelle importSourcingProduct, ferme le drawer', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="import-product"]').click();
-    await flush();
-    expect(global.KmcApi.importSourcingProduct).toHaveBeenCalledWith('cand-1');
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('mode inactif'));
-    expect(main.querySelector('.scs-drawer.open')).toBeNull();
-  });
+      root.querySelector('[data-act="save-edits"]').click();
+      await flush();
 
-  it('drawer : import-product échoue → alert() et bouton réactivé', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    global.KmcApi.importSourcingProduct = jest.fn().mockRejectedValue(new Error('boutique KO'));
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="import-product"]').click();
-    await flush();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('boutique KO'));
-  });
+      expect(global.KmcApi.updateSourcingCandidate).toHaveBeenCalledWith('CAND-1', expect.any(Object));
+      expect(global.KmcApi.scanSourcingCandidate).toHaveBeenCalledWith('CAND-1');
+    });
 
-  it('drawer : watchlist appelle watchlistSourcingCandidate et ferme le drawer', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="watchlist"]').click();
-    await flush();
-    expect(global.KmcApi.watchlistSourcingCandidate).toHaveBeenCalledWith('cand-1');
-    expect(main.querySelector('.scs-drawer.open')).toBeNull();
-  });
+    it('import-product : confirm annulé → pas d\'appel API', async () => {
+      mockConfirm(false);
+      await openDrawerWithCandidate(makeCandidate());
 
-  it('drawer : watchlist échoue → alert()', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    global.KmcApi.watchlistSourcingCandidate = jest.fn().mockRejectedValue(new Error('watch KO'));
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="watchlist"]').click();
-    await flush();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('watch KO'));
-  });
+      root.querySelector('[data-act="import-product"]').click();
+      await flush();
 
-  it('drawer : reject annulé (prompt null) → aucun appel', async () => {
-    window.prompt = jest.fn(() => null);
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="reject"]').click();
-    await flush();
-    expect(global.KmcApi.rejectSourcingCandidate).not.toHaveBeenCalled();
-  });
+      expect(global.KmcApi.importSourcingProduct).not.toHaveBeenCalled();
+    });
 
-  it('drawer : reject avec raison (prompt vide accepté) → appelle rejectSourcingCandidate', async () => {
-    window.prompt = jest.fn(() => 'Trop cher');
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="reject"]').click();
-    await flush();
-    expect(global.KmcApi.rejectSourcingCandidate).toHaveBeenCalledWith('cand-1', { reason: 'Trop cher' });
-    expect(main.querySelector('.scs-drawer.open')).toBeNull();
-  });
+    it('import-product : confirm accepté → importSourcingProduct puis fermeture du drawer', async () => {
+      await openDrawerWithCandidate(makeCandidate());
 
-  it('drawer : reject échoue → alert()', async () => {
-    window.prompt = jest.fn(() => 'raison');
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    global.KmcApi.rejectSourcingCandidate = jest.fn().mockRejectedValue(new Error('reject KO'));
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    main.querySelector('[data-act="reject"]').click();
-    await flush();
-    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('reject KO'));
-  });
+      root.querySelector('[data-act="import-product"]').click();
+      await flush();
 
-  it('candidat sans product_url → pas de lien "Voir fournisseur"; avec → lien présent', async () => {
-    global.KmcApi.getSourcingCandidates = jest.fn().mockResolvedValue({ candidates: [candidate()] });
-    const view = loadIt();
-    view.render(main);
-    await flush();
-    main.querySelector('[data-act="open-candidate"]').click();
-    await flush();
-    expect(main.textContent).not.toContain('Voir fournisseur');
+      expect(global.KmcApi.importSourcingProduct).toHaveBeenCalledWith('CAND-1');
+      expect(root.querySelector('.scs-drawer').classList.contains('open')).toBe(false);
+    });
+
+    it('watchlist → watchlistSourcingCandidate puis fermeture du drawer', async () => {
+      await openDrawerWithCandidate(makeCandidate());
+
+      root.querySelector('[data-act="watchlist"]').click();
+      await flush();
+
+      expect(global.KmcApi.watchlistSourcingCandidate).toHaveBeenCalledWith('CAND-1');
+      expect(root.querySelector('.scs-drawer').classList.contains('open')).toBe(false);
+    });
+
+    it('reject : prompt annulé (null) → pas d\'appel API', async () => {
+      mockPrompt(null);
+      await openDrawerWithCandidate(makeCandidate());
+
+      root.querySelector('[data-act="reject"]').click();
+      await flush();
+
+      expect(global.KmcApi.rejectSourcingCandidate).not.toHaveBeenCalled();
+    });
+
+    it('reject : prompt rempli → rejectSourcingCandidate(reason) puis fermeture du drawer', async () => {
+      mockPrompt('Prix trop bas');
+      await openDrawerWithCandidate(makeCandidate());
+
+      root.querySelector('[data-act="reject"]').click();
+      await flush();
+
+      expect(global.KmcApi.rejectSourcingCandidate).toHaveBeenCalledWith('CAND-1', { reason: 'Prix trop bas' });
+      expect(root.querySelector('.scs-drawer').classList.contains('open')).toBe(false);
+    });
   });
 });

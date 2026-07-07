@@ -136,8 +136,10 @@ module.exports = {
       },
     ],
 
-    // Dette de doctrine token scopée à la modal, sous cliquet (les 4 rgba du fix
-    // ont été retokenisés → cliquet bas attendu). Une hausse bloque.
-    doctrine: { scope: 'boutique', max: 21 },
+    // Dette de doctrine token scopée à la modal — RÉSORBÉE (session 6) : les 21
+    // rgba(...) ont été retokenisés (20 vers des tokens tokens.css existants,
+    // 1 nouveau — --overlay-black-15). Cliquet redescendu à 0 : toute
+    // réintroduction de rgba(...) brut dans ces fichiers bloque désormais.
+    doctrine: { scope: 'boutique', max: 0 },
   },
 };

@@ -139,10 +139,34 @@ function checkSlice(slice) {
   }
 
   // ── 5. Doctrine token budget ────────────────────────────────────────────
-  // Si contracts.doctrine existe, verifier le budget max
-  if (slice.contracts && slice.contracts.doctrine && slice.contracts.doctrine.max !== undefined) {
-    // Ce check necessite le script css-guard ou equivalent — on flag juste la presence
-    warnings.push(`Doctrine token budget declare (max: ${slice.contracts.doctrine.max}) — verifier via css-guard`);
+  // Si contracts.doctrine = {scope, max} existe, compter reellement les
+  // rgba(...) non-tokenises dans slice.files[scope] et bloquer tout depassement.
+  // (Avant : simple warning texte renvoyant vers css-guard, qui ne verifie
+  // pas ca — le budget declare n'etait donc jamais controle.)
+  let doctrineReport = null;
+  if (slice.contracts && slice.contracts.doctrine && typeof slice.contracts.doctrine === 'object'
+      && slice.contracts.doctrine.max !== undefined) {
+    const { scope, max } = slice.contracts.doctrine;
+    const scopeFiles = (slice.files && slice.files[scope]) || [];
+    if (scopeFiles.length === 0) {
+      warnings.push(`Doctrine token budget declare (max: ${max}) mais scope "${scope}" ne correspond a aucun groupe de files.* — impossible a verifier`);
+    } else {
+      let count = 0;
+      const perFile = {};
+      for (const rel of scopeFiles) {
+        const abs = resolveFile(rel);
+        if (!fs.existsSync(abs)) continue; // deja signale en section 2 (fichier declare absent)
+        const raw = fs.readFileSync(abs, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''); // hors commentaires
+        const n = (raw.match(/rgba\(/g) || []).length;
+        if (n > 0) perFile[rel] = n;
+        count += n;
+      }
+      doctrineReport = { scope, max, count, perFile };
+      if (count > max) {
+        errors.push(`[DOCTRINE] Budget rgba depasse (scope "${scope}") : ${count}/${max} — ` +
+          Object.entries(perFile).map(([f, n]) => `${f}:${n}`).join(', '));
+      }
+    }
   }
 
   // ── 6. Deprecated slice checks ──────────────────────────────────────────
@@ -156,10 +180,15 @@ function checkSlice(slice) {
     }
   }
 
-  return { name, status, errors, warnings };
+  return { name, status, errors, warnings, doctrineReport };
 }
 
-// ── Point d'entree ────────────────────────────────────────────────────────
+function describeDoctrine(count, max) {
+  if (count > max) return { icon: '❌', note: ' — DEPASSE' };
+  if (max === 0)    return { icon: '✅', note: count === 0 ? ' — entierement tokenise' : '' };
+  if (count === max) return { icon: '⚠️ ', note: ' — au plafond, plus de marge' };
+  return { icon: '✅', note: '' };
+}
 
 function main() {
   let manifests = loadManifests();
@@ -189,8 +218,19 @@ function main() {
   console.log(`  Erreurs           : ${totalErr}`);
   console.log(`  Avertissements    : ${totalWarn}`);
 
+  const doctrineResults = results.filter(r => r.doctrineReport);
+
   if (totalErr === 0 && totalWarn === 0) {
     console.log('\n  ✅ Tous les slices sont coherents.\n');
+    if (doctrineResults.length) {
+      console.log('Budgets doctrine token (rgba non-tokenises) :');
+      for (const r of doctrineResults) {
+        const { scope, max, count } = r.doctrineReport;
+        const { icon, note } = describeDoctrine(count, max);
+        console.log(`  ${icon} ${r.name} (scope "${scope}") : ${count}/${max}${note}`);
+      }
+      console.log('');
+    }
     if (STRICT) process.exit(0);
     return;
   }
@@ -207,6 +247,16 @@ function main() {
   }
 
   console.log(`Doctrine : docs/doctrine/FEATURE_SLICE_DOCTRINE.md\n`);
+
+  if (doctrineResults.length) {
+    console.log('Budgets doctrine token (rgba non-tokenises) :');
+    for (const r of doctrineResults) {
+      const { scope, max, count } = r.doctrineReport;
+      const { icon, note } = describeDoctrine(count, max);
+      console.log(`  ${icon} ${r.name} (scope "${scope}") : ${count}/${max}${note}`);
+    }
+    console.log('');
+  }
 
   if (STRICT && totalErr > 0) {
     console.log('  ──  Mode --strict : exit(1)\n');

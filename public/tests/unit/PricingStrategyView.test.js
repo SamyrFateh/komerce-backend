@@ -61,25 +61,27 @@ function strategyData(overrides = {}) {
   }, overrides);
 }
 
+const { makeKmcApi, cleanupGlobals } = require('./helpers/dashboardTestKit');
+
 describe('PricingStrategyView', () => {
   let main;
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="main"></div>';
     main = document.getElementById('main');
-    global.KmcApi = {
+    makeKmcApi({
       getProducts: jest.fn().mockResolvedValue({ products: [product(), product({ id: 'p2', name: 'Sac tressé', category: 'accessoires', price_kmf: 8000 })] }),
       getPricingStrategy: jest.fn().mockResolvedValue(strategyData()),
       createPricingCompetitor: jest.fn().mockResolvedValue({}),
       deletePricingCompetitor: jest.fn().mockResolvedValue({}),
       applyPricingStrategy: jest.fn().mockResolvedValue({ products_affected: 1 }),
-    };
+    });
     window.alert = jest.fn();
     window.confirm = jest.fn(() => true);
   });
 
   afterEach(() => {
-    delete global.KmcApi;
+    cleanupGlobals('KmcApi');
     delete window.alert;
     delete window.confirm;
     document.getElementById('ps-styles')?.remove();

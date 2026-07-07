@@ -157,6 +157,7 @@
   --overlay-dark-sm:   rgba(0,0,0,.4);
   --overlay-black-xs:  rgba(0,0,0,.06);
   --overlay-black-sm:  rgba(0,0,0,.08);
+  --overlay-black-15:  rgba(0,0,0,.15);  /* promo badge shadow — modal-product */
   --overlay-black-md:  rgba(0,0,0,.12);
   --overlay-black-lg:  rgba(0,0,0,.3);
 

@@ -48,6 +48,8 @@ function baseSalesData(overrides) {
   }, overrides);
 }
 
+const { makeKmcApi, makeKpiCard, cleanupGlobals } = require('./helpers/dashboardTestKit');
+
 describe('SalesView', () => {
   let root;
   let kpiCalls;
@@ -58,22 +60,17 @@ describe('SalesView', () => {
     root = document.getElementById('main');
 
     kpiCalls = [];
-    global.KpiCard = { renderBar: jest.fn((el, kpis) => { kpiCalls.push(kpis); el.innerHTML = '<div class="kpi-rendered"></div>'; }) };
-    global.KmcApi = {
+    makeKpiCard({ renderBar: jest.fn((el, kpis) => { kpiCalls.push(kpis); el.innerHTML = '<div class="kpi-rendered"></div>'; }) });
+    makeKmcApi({
       getSales: jest.fn().mockResolvedValue(baseSalesData()),
-      ApiError: class ApiError extends Error {
-        constructor(msg, status) { super(msg); this.status = status; }
-      },
-    };
+    });
     delete global.KmcFilters;
 
     require('../../admin/js/views/SalesView.js');
   });
 
   afterEach(() => {
-    delete global.KpiCard;
-    delete global.KmcApi;
-    delete global.KmcFilters;
+    cleanupGlobals('KpiCard', 'KmcApi', 'KmcFilters');
   });
 
   async function flush() {
