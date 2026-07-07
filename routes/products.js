@@ -192,7 +192,7 @@ router.get('/:id', requireUUID, async (req, res, next) => {
 
     if (product.has_variants) {
       const { rows: vRows } = await db.query(
-        `SELECT variant_type, variant_value, stock, price_kmf, image_url, sku, display_order
+        `SELECT variant_type, variant_value, stock, price_kmf, image_url, images, sku, display_order
            FROM product_variants
           WHERE product_id = $1
           ORDER BY variant_type, display_order ASC, variant_value ASC`,
@@ -201,11 +201,16 @@ router.get('/:id', requireUUID, async (req, res, next) => {
       const variants = {};
       for (const v of vRows) {
         if (!variants[v.variant_type]) variants[v.variant_type] = [];
+        // Normalisation images : images[] prioritaire, fallback image_url
+        let imgs = Array.isArray(v.images) && v.images.length > 0
+          ? v.images
+          : (v.image_url ? [v.image_url] : []);
         variants[v.variant_type].push({
           value:     v.variant_value,
           stock:     v.stock,
           price_kmf: v.price_kmf,
           image_url: v.image_url,
+          images:    imgs,
           sku:       v.sku,
         });
       }
@@ -319,7 +324,7 @@ router.get('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
 
     const { rows: variants } = await db.query(
       `SELECT id, variant_type, variant_value, sku, stock, price_kmf,
-              image_url, display_order, created_at, updated_at
+              image_url, images, display_order, created_at, updated_at
          FROM product_variants
         WHERE product_id = $1
         ORDER BY variant_type, display_order ASC, variant_value ASC`,

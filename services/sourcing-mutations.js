@@ -289,8 +289,8 @@ async function replaceVariants(productId, variants) {
     for (const v of variants) {
       await client.query(
         `INSERT INTO product_variants
-           (product_id, variant_type, variant_value, sku, stock, price_kmf, image_url, display_order)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+           (product_id, variant_type, variant_value, sku, stock, price_kmf, image_url, images, display_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           productId,
           v.type.trim(),
@@ -299,6 +299,7 @@ async function replaceVariants(productId, variants) {
           v.stock      === undefined || v.stock      === null ? null : Number(v.stock),
           v.price_kmf  === undefined || v.price_kmf  === null ? null : Number(v.price_kmf),
           v.image_url  ? String(v.image_url).trim()  : null,
+          JSON.stringify(Array.isArray(v.images) ? v.images : (v.image_url ? [v.image_url] : [])),
           v.display_order != null ? Number(v.display_order) : 0,
         ]
       );
@@ -312,7 +313,7 @@ async function replaceVariants(productId, variants) {
     await client.query('COMMIT');
 
     const { rows: freshRows } = await db.query(
-      `SELECT id, variant_type, variant_value, sku, stock, price_kmf, image_url, display_order
+      `SELECT id, variant_type, variant_value, sku, stock, price_kmf, image_url, images, display_order
          FROM product_variants
         WHERE product_id = $1
         ORDER BY variant_type ASC, display_order ASC, variant_value ASC`,

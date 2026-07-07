@@ -72,6 +72,7 @@ module.exports = {
     migrations: [
       'migrations/098_catalog_refinery_foundation.sql',
       'migrations/100_catalog_enrichment_runs.sql',
+      'migrations/101_variant_images.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_CATALOGUE.md',

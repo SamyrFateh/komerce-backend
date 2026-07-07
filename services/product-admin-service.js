@@ -500,8 +500,8 @@ async function replaceVariants(dbPool, productId, variants) {
       const v = variants[i];
       const { rows: [row] } = await client.query(
         `INSERT INTO product_variants
-           (product_id, variant_type, variant_value, sku, stock, price_kmf, image_url, display_order)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           (product_id, variant_type, variant_value, sku, stock, price_kmf, image_url, images, display_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
           productId,
@@ -511,6 +511,7 @@ async function replaceVariants(dbPool, productId, variants) {
           v.stock      !== undefined ? v.stock : 0,
           v.price_kmf  || null,
           v.image_url  || null,
+          JSON.stringify(Array.isArray(v.images) ? v.images : (v.image_url ? [v.image_url] : [])),
           v.display_order !== undefined ? v.display_order : i,
         ]
       );
