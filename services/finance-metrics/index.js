@@ -9,7 +9,7 @@
  * @depends       ./finance-summary, ./annulations, ./payments, ./sales-analysis
  * @used-by       routes/dashboard-finance.js
  * @db-read       finance_config, order_items, orders, parcel_items, parcels, products, recipients, refunds, relais, store_credits, users
- * @db-write      @unknown
+ * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine, admin-dashboard

@@ -93,7 +93,15 @@ function normalize(p) {
 
 function matchContract(consumed, contractPaths) {
   const cNorm = normalize(consumed).replace(/\{[^}]+\}/g, '{x}');
-  return contractPaths.some(cp => cp.replace(/\{[^}]+\}/g, '{x}') === cNorm);
+  return contractPaths.some(cp => {
+    const cpNorm = cp.replace(/\{[^}]+\}/g, '{x}');
+    // Match exact
+    if (cpNorm === cNorm) return true;
+    // Match préfixe : le frontend a extrait /api/foo/ (avant la concaténation + var)
+    // et le contrat a /api/foo/{id} ou /api/foo/{id}/action
+    if (cpNorm.startsWith(cNorm + '/') || cpNorm.startsWith(cNorm.replace(/\/$/, '') + '/')) return true;
+    return false;
+  });
 }
 
 // ── Vérification ─────────────────────────────────────────────────────────────

@@ -3193,7 +3193,8 @@ CREATE TABLE public.products (
     CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
     CONSTRAINT chk_products_stock CHECK ((stock >= 0)),
     CONSTRAINT chk_stock_nonneg CHECK (((stock >= 0) OR (stock IS NULL))),
-    CONSTRAINT price_eur_positive CHECK (((price_eur IS NULL) OR (price_eur >= (0)::numeric)))
+    CONSTRAINT price_eur_positive CHECK (((price_eur IS NULL) OR (price_eur >= (0)::numeric))),
+    enrichment_confidence numeric(4,3)
 );
 
 
@@ -3855,7 +3856,8 @@ CREATE TABLE public.sourcing_candidates (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_by uuid,
     CONSTRAINT sourcing_candidates_confidence_check CHECK ((confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
-    CONSTRAINT sourcing_candidates_state_check CHECK ((state = ANY (ARRAY['raw_imported'::text, 'normalized'::text, 'scanned'::text, 'test_ready'::text, 'watchlist'::text, 'imported_to_catalog'::text, 'rejected'::text, 'archived'::text])))
+    CONSTRAINT sourcing_candidates_state_check CHECK ((state = ANY (ARRAY['raw_imported'::text, 'normalized'::text, 'scanned'::text, 'test_ready'::text, 'watchlist'::text, 'imported_to_catalog'::text, 'rejected'::text, 'archived'::text]))),
+    raw_payload jsonb
 );
 
 

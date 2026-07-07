@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       papaparse, services/suppliers/normalized-product.js, services/suppliers/connectors/_connector-utils.js
  * @used-by       routes/sourcing-scanner.js
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       none
+ * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      DOCTRINE_INGESTION_CATALOGUE (ING-I1, ING-I2, ING-I3)
  * @impact-areas  catalog, product-discovery

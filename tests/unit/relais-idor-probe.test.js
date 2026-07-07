@@ -37,7 +37,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
+const dbUrl = process.env.DATABASE_URL || '';
+const hasIntegrationEnv = dbUrl.startsWith('postgresql://') && !dbUrl.startsWith('postgresql://x') && dbUrl.length > 20;
 
 if (!hasIntegrationEnv) {
   describe.skip('relais-idor-probe (needs DATABASE_URL)', () => {
@@ -45,14 +46,15 @@ if (!hasIntegrationEnv) {
   });
 } else {
   const request = require('supertest');
-  const { createUser, cleanup } = require('./test-harness/seed-helpers');
 
   let app;
   let db;
+  let createUser, cleanup;
 
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'ci-test-secret-not-for-prod';
+    ({ createUser, cleanup } = require('../integration/test-harness/seed-helpers'));
     app = require('../../server');
     db = require('../../db');
     await new Promise((r) => setTimeout(r, 2000)); // laisse le boot/migrations finir
