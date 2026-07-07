@@ -34,11 +34,14 @@ const JSON_OUTPUT   = process.argv.includes('--json');
 // dédié (gen-ownership.js, css-guard.js, check-css-dist-only.js) qui suit
 // une logique différente (multipropriété de sélecteur, pas rattachement
 // fichier↔feature) — pas la peine de dupliquer ici.
-// 2026-07-06 (audit gouvernance) : ce script scannait 'admin' + 'admin-legacy/js'
-// relatifs à public/, qui pointait sur public/admin (arbre mort, supprimé §4).
-// public/features/ ne déclare plus que 'platform' (admin-dashboard et
-// legacy-control-tower manifests supprimés — doublons de dashboards/features/) :
-// le périmètre réel de ce registre est désormais public/js uniquement.
+// 2026-07-07 (audit gouvernance) : ce script scannait 'admin' + 'admin-legacy/js'
+// relatifs à public/, qui pointait sur public/admin (arbre mort — l'arbre
+// réellement servi en prod est public/dashboards/admin, routé par
+// bootstrap/html-routes.js). public/admin et public/admin-legacy ont été
+// supprimés ce jour ; les manifests admin-dashboard/legacy-control-tower de
+// public/features/ (doublons pointant sur ce même arbre mort) aussi.
+// public/features/ ne déclare donc plus que 'platform' : le périmètre réel
+// de ce registre est désormais public/js uniquement.
 // L'audit de dashboards/admin est déjà couvert par
 // public/dashboards/scripts/feature-registry-check.js (FEATURES_DIR propre).
 const SOURCE_DIRS = ['js'];

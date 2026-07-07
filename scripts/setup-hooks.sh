@@ -46,10 +46,10 @@ if [ ! -f "scripts/impact-config.json" ]; then
 fi
 
 # gen-dashboards-360.js est optionnel a l'installation : le hook le gere lui-meme
-# (garde "if [ -d dashboards/admin/js ]"), donc non bloquant ici si absent pour
+# (garde "if [ -d public/dashboards/admin/js ]"), donc non bloquant ici si absent pour
 # l'instant — juste un avertissement pour ne pas le perdre de vue.
-if [ -d "dashboards/admin/js" ] && [ ! -f "scripts/gen-dashboards-360.js" ]; then
-  echo "⚠️  dashboards/admin/js present mais scripts/gen-dashboards-360.js absent"
+if [ -d "public/dashboards/admin/js" ] && [ ! -f "scripts/gen-dashboards-360.js" ]; then
+  echo "⚠️  public/dashboards/admin/js present mais scripts/gen-dashboards-360.js absent"
   echo "   Le bloc 7 du hook pre-commit (carte 360 dashboards) sera silencieusement inactif."
 fi
 
@@ -303,7 +303,7 @@ fi
 #    une regression reelle au-dela du cliquet fige (route orpheline, methode API manquante
 #    -> crash garanti, methode API morte, violation de la doctrine kmc_api_only).
 #    Les contrats non prouves (UNKNOWN) restent informatifs, jamais bloquants.
-if [ -d dashboards/admin/js ]; then
+if [ -d public/dashboards/admin/js ]; then
   node scripts/gen-dashboards-360.js >/dev/null 2>&1 || true
   git add docs/DASHBOARDS_360.json docs/DASHBOARDS_360.md 2>/dev/null || true
 
