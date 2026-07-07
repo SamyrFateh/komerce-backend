@@ -25,7 +25,7 @@
 | `layout.css` | 1168 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 301 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 357 | 🔴 **ORPHELIN** |
-| `modal-product.css` | 1344 | 🔴 **ORPHELIN** |
+| `modal-product.css` | 1352 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 899 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 962 | 🔴 **ORPHELIN** |
@@ -41,7 +41,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=118
- 2. /boutique/css/dist/components.css?v=135
+ 2. /boutique/css/dist/components.css?v=136
  3. /boutique/css/dist/desktop.css?v=52
  4. /boutique/css/dist/event.css?v=32
 ```
@@ -75,13 +75,14 @@ Aucun. ✅
 
 ## 5. Hex hardcodés hors tokens.css
 
-25 occurrence(s) au total, répartition :
+26 occurrence(s) au total, répartition :
 
 | Fichier | Nombre |
 |---|---:|
 | `paypal.css` | 14 |
 | `group-cart-flow.css` | 10 |
 | `layout.css` | 1 |
+| `modal-product.css` | 1 |
 
 ## 6. `!important` par fichier
 
@@ -109,7 +110,7 @@ Aucun. ✅
 
 - **CSS orphelins** : 20 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
-- **Hex hardcodés** : 25 (cible : 0 ou allowlist)
+- **Hex hardcodés** : 26 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)
 - **Sélecteurs multi-owner** : 11 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
 

@@ -153,9 +153,9 @@ describe('ApiConnectorBase — finalize (délègue à partitionValid, réel)', (
   test('sépare produits valides et invalides, calcule total', () => {
     const c = new ApiConnectorBase();
     const products = [
-      { product_name: 'T-shirt', supplier_name: 'Noon', purchase_price: 10, currency: 'EUR' },
-      { product_name: '', supplier_name: 'Noon' }, // invalide : product_name vide
-      { product_name: 'Sac', supplier_name: 'Noon', currency: 'XXX' }, // invalide : currency
+      { product_name: 'T-shirt', supplier_name: 'Noon', purchase_price: 10, currency: 'EUR', raw_payload: { name: 'T-shirt' } },
+      { product_name: '', supplier_name: 'Noon', currency: 'EUR', raw_payload: {} }, // invalide : product_name vide
+      { product_name: 'Sac', supplier_name: 'Noon', currency: 'XXX', raw_payload: {} }, // invalide : currency
     ];
     const result = c.finalize(products);
     expect(result.total).toBe(3);

@@ -53,34 +53,95 @@
 
 'use strict';
 
+const Ajv = require('ajv');
+const addFormats = require('ajv-formats');
+const schemaV1 = require('../../schemas/catalog/normalized-supplier-product.v1.schema.json');
+
+// ING-1 — le contrat pivot est désormais un schéma versionné compilé au
+// require, pas une convention JSDoc vérifiée à la main. Un connecteur qui
+// contourne le schéma n'existe pas (doctrine ING-I1).
+const ajv = new Ajv({ allErrors: true, strict: false });
+addFormats(ajv);
+const validateSchema = ajv.compile(schemaV1);
+
+// Messages lisibles par champ + par règle violée. Le fallback générique
+// couvre toute règle non listée ici (bornes, format...) — cf. doctrine ING-1 :
+// « weight_kg hors bornes (0, 500] », traduit depuis le schéma, pas en dur.
+const FIELD_MESSAGES = {
+  product_name:  { required: 'product_name requis', minLength: 'product_name requis' },
+  supplier_name: { required: 'supplier_name requis' },
+  currency:      { required: 'currency requise', enum: 'currency doit être AED, EUR, USD ou KMF' },
+  purchase_price: {
+    type: 'purchase_price doit être un nombre positif',
+    exclusiveMinimum: 'purchase_price doit être un nombre positif',
+  },
+  weight_kg: {
+    type: 'weight_kg doit être un nombre positif',
+    exclusiveMinimum: 'weight_kg doit être un nombre positif',
+  },
+  raw_payload: { required: 'raw_payload requis (ING-I3 : le brut ne se perd jamais)' },
+};
+
+function boundsPhrase(err) {
+  const schema = err.parentSchema || {};
+  const lo = schema.exclusiveMinimum != null ? `(${schema.exclusiveMinimum}` : (schema.minimum != null ? `[${schema.minimum}` : '(-∞');
+  const hi = schema.maximum != null ? `${schema.maximum}]` : '∞)';
+  return `${lo}, ${hi}`;
+}
+
 /**
- * Valide qu'un objet ressemble à un NormalizedSupplierProduct.
+ * Traduit une erreur ajv en message lisible pour l'admin (doctrine ING-1).
+ * Ces messages remontent jusqu'à l'écran admin — ils ne doivent jamais
+ * exposer le jargon JSON Schema brut.
+ */
+function humanizeError(err) {
+  const field = err.keyword === 'required'
+    ? err.params.missingProperty
+    : (err.instancePath || '').replace(/^\//, '').split('/')[0] || '(objet)';
+
+  const known = FIELD_MESSAGES[field]?.[err.keyword];
+  if (known) return known;
+
+  switch (err.keyword) {
+    case 'required':
+      return `${err.params.missingProperty} requis`;
+    case 'additionalProperties':
+      return `champ inconnu hors contrat : "${err.params.additionalProperty}"`;
+    case 'enum':
+      return `${field} doit être l'une de : ${err.params.allowedValues.join(', ')}`;
+    case 'minimum':
+    case 'maximum':
+    case 'exclusiveMinimum':
+    case 'exclusiveMaximum':
+      return `${field} hors bornes ${boundsPhrase(err)}`;
+    case 'minLength':
+      return `${field} trop court (minimum ${err.params.limit} caractères)`;
+    case 'maxLength':
+      return `${field} trop long (maximum ${err.params.limit} caractères)`;
+    case 'format':
+      return `${field} format invalide (${err.params.format} attendu)`;
+    case 'type':
+      return `${field} doit être de type ${[].concat(err.schema).join('/')}`;
+    default:
+      return `${field} invalide (${err.keyword})`;
+  }
+}
+
+/**
+ * Valide qu'un objet est un NormalizedSupplierProduct conforme au contrat v1.
  * Utilisé par tous les connecteurs avant de retourner leurs résultats.
  *
  * @param {Object} obj
  * @returns {{ valid: boolean, errors: string[] }}
  */
 function validateNormalizedProduct(obj) {
-  const errors = [];
-  if (!obj || typeof obj !== 'object') {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
     return { valid: false, errors: ['Objet invalide'] };
   }
-  if (!obj.product_name || typeof obj.product_name !== 'string' || !obj.product_name.trim()) {
-    errors.push('product_name requis');
-  }
-  if (!obj.supplier_name || typeof obj.supplier_name !== 'string' || !obj.supplier_name.trim()) {
-    errors.push('supplier_name requis');
-  }
-  if (obj.purchase_price != null && (isNaN(Number(obj.purchase_price)) || Number(obj.purchase_price) < 0)) {
-    errors.push('purchase_price doit être un nombre positif');
-  }
-  if (obj.currency && !['AED', 'EUR', 'USD', 'KMF'].includes(obj.currency)) {
-    errors.push('currency doit être AED, EUR, USD ou KMF');
-  }
-  if (obj.weight_kg != null && (isNaN(Number(obj.weight_kg)) || Number(obj.weight_kg) < 0)) {
-    errors.push('weight_kg doit être un nombre positif');
-  }
-  return { valid: errors.length === 0, errors };
+  const ok = validateSchema(obj);
+  if (ok) return { valid: true, errors: [] };
+  const errors = (validateSchema.errors || []).map(humanizeError);
+  return { valid: false, errors };
 }
 
 /**

@@ -1,0 +1,32 @@
+{
+  "$id": "komerce/catalog/normalized-supplier-product/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["supplier_name", "product_name", "currency", "raw_payload"],
+  "properties": {
+    "schema_version":      { "const": "1" },
+    "supplier_name":       { "type": "string", "minLength": 1 },
+    "supplier_product_id": { "type": ["string", "null"], "maxLength": 128 },
+    "product_name":        { "type": "string", "minLength": 2, "maxLength": 300 },
+    "supplier_category":   { "type": ["string", "null"], "maxLength": 200 },
+    "purchase_price":      { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10000000 },
+    "currency":            { "enum": ["AED", "EUR", "USD", "KMF"] },
+    "image_url":           { "type": ["string", "null"], "format": "uri", "maxLength": 2000 },
+    "product_url":         { "type": ["string", "null"], "format": "uri", "maxLength": 2000 },
+    "description":         { "type": ["string", "null"], "maxLength": 10000 },
+    "stock_available":     { "type": ["integer", "null"], "minimum": 0 },
+    "min_order_qty":       { "type": ["integer", "null"], "minimum": 1 },
+    "supplier_delay_days": { "type": ["integer", "null"], "minimum": 0, "maximum": 365 },
+    "weight_kg":           { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 500 },
+    "dimensions": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "l_cm": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 },
+        "w_cm": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 },
+        "h_cm": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 }
+      }
+    },
+    "raw_payload":         { "type": "object" }
+  }
+}

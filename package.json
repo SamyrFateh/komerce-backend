@@ -97,6 +97,8 @@
     "predeploy:skip-tests": "node scripts/predeploy-gate.js --skip-tests"
   },
   "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

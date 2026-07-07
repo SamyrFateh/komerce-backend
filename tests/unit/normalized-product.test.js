@@ -24,10 +24,10 @@ describe('normalized-product', () => {
       expect(result.errors).toContain('product_name requis');
     });
 
-    it('product_name vide ou espaces uniquement → erreur', () => {
-      const result = validateNormalizedProduct({ product_name: '   ', supplier_name: 'Noon' });
-      expect(result.errors).toContain('product_name requis');
-    });
+    // Le trim de product_name est la responsabilité des connecteurs (déjà
+    // couvert par manual-connector.test.js / csv-connector.test.js), pas du
+    // schéma v1 lui-même : minLength ne trim pas. Un "   " brut passé ici
+    // directement compte pour 3 caractères et n'est plus l'affaire du contrat.
 
     it('supplier_name manquant → erreur dediee', () => {
       const result = validateNormalizedProduct({ product_name: 'Produit X' });
@@ -45,17 +45,44 @@ describe('normalized-product', () => {
     });
 
     it('currency hors liste autorisee → erreur', () => {
-      const result = validateNormalizedProduct({ product_name: 'X', supplier_name: 'Y', currency: 'GBP' });
+      const result = validateNormalizedProduct({ product_name: 'X', supplier_name: 'Y', currency: 'GBP', raw_payload: {} });
       expect(result.errors).toContain('currency doit être AED, EUR, USD ou KMF');
     });
 
+    it('currency absente (mais requise par le contrat v1) → erreur', () => {
+      const result = validateNormalizedProduct({ product_name: 'X', supplier_name: 'Y', raw_payload: {} });
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('currency requise');
+    });
+
+    it('raw_payload absent (ING-I3 : le brut ne se perd jamais) → erreur', () => {
+      const result = validateNormalizedProduct({ product_name: 'X', supplier_name: 'Y', currency: 'AED' });
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('raw_payload requis (ING-I3 : le brut ne se perd jamais)');
+    });
+
+    it('champ inconnu hors contrat (additionalProperties:false) → erreur', () => {
+      const result = validateNormalizedProduct({
+        product_name: 'X', supplier_name: 'Y', currency: 'AED', raw_payload: {}, is_admin: true,
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('is_admin'))).toBe(true);
+    });
+
     it('weight_kg negatif → erreur', () => {
-      const result = validateNormalizedProduct({ product_name: 'X', supplier_name: 'Y', weight_kg: -1 });
+      const result = validateNormalizedProduct({ product_name: 'X', supplier_name: 'Y', currency: 'AED', raw_payload: {}, weight_kg: -1 });
       expect(result.errors).toContain('weight_kg doit être un nombre positif');
     });
 
-    it('objet minimal valide (juste product_name + supplier_name) → valide', () => {
-      const result = validateNormalizedProduct({ product_name: 'Produit X', supplier_name: 'Noon' });
+    it('weight_kg hors plafond contrat (500 kg) → erreur', () => {
+      const result = validateNormalizedProduct({ product_name: 'X', supplier_name: 'Y', currency: 'AED', raw_payload: {}, weight_kg: 25000 });
+      expect(result.valid).toBe(false);
+    });
+
+    it('objet minimal valide (product_name + supplier_name + currency + raw_payload) → valide', () => {
+      const result = validateNormalizedProduct({
+        product_name: 'Produit X', supplier_name: 'Noon', currency: 'AED', raw_payload: {},
+      });
       expect(result).toEqual({ valid: true, errors: [] });
     });
 
@@ -66,13 +93,14 @@ describe('normalized-product', () => {
         purchase_price: 100,
         currency: 'AED',
         weight_kg: 2.5,
+        raw_payload: { product_name: 'Produit X' },
       });
       expect(result.valid).toBe(true);
     });
 
-    it('purchase_price=0 → accepte (pas strictement positif requis, juste >=0)', () => {
-      const result = validateNormalizedProduct({ product_name: 'X', supplier_name: 'Y', purchase_price: 0 });
-      expect(result.valid).toBe(true);
+    it('purchase_price=0 → invalide (contrat v1 : exclusiveMinimum, prix inconnu doit être null, pas 0)', () => {
+      const result = validateNormalizedProduct({ product_name: 'X', supplier_name: 'Y', currency: 'AED', raw_payload: {}, purchase_price: 0 });
+      expect(result.valid).toBe(false);
     });
   });
 
@@ -85,13 +113,13 @@ describe('normalized-product', () => {
 
     it('separe correctement valides et invalides avec leurs erreurs', () => {
       const products = [
-        { product_name: 'A', supplier_name: 'Noon' },
-        { product_name: '', supplier_name: 'Noon' },
-        { product_name: 'C', supplier_name: 'Noon', currency: 'XXX' },
+        { product_name: 'AA', supplier_name: 'Noon', currency: 'AED', raw_payload: {} },
+        { product_name: '', supplier_name: 'Noon', currency: 'AED', raw_payload: {} },
+        { product_name: 'CC', supplier_name: 'Noon', currency: 'XXX', raw_payload: {} },
       ];
       const { valid, invalid } = partitionValid(products);
       expect(valid).toHaveLength(1);
-      expect(valid[0].product_name).toBe('A');
+      expect(valid[0].product_name).toBe('AA');
       expect(invalid).toHaveLength(2);
       expect(invalid[0].errors).toContain('product_name requis');
       expect(invalid[1].errors).toContain('currency doit être AED, EUR, USD ou KMF');
@@ -99,8 +127,8 @@ describe('normalized-product', () => {
 
     it('tous valides → invalid vide', () => {
       const products = [
-        { product_name: 'A', supplier_name: 'S1' },
-        { product_name: 'B', supplier_name: 'S2' },
+        { product_name: 'AA', supplier_name: 'S1', currency: 'AED', raw_payload: {} },
+        { product_name: 'BB', supplier_name: 'S2', currency: 'AED', raw_payload: {} },
       ];
       const { valid, invalid } = partitionValid(products);
       expect(valid).toHaveLength(2);
