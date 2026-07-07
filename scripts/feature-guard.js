@@ -25,6 +25,7 @@ const ROOT         = path.resolve(__dirname, '..');
 const FEATURES_DIR = path.join(ROOT, 'features');
 const BASELINE_FILE = path.join(__dirname, 'feature-guard-baseline.json');
 const MIGRATION_SLOT_EXEMPTIONS_FILE = path.join(ROOT, 'governance', 'migration-slot-exemptions.json');
+const MIGRATION_GUARD_EXEMPTIONS_FILE = path.join(ROOT, 'governance', 'migration-guard-exemptions.json');
 
 /**
  * Créneaux de migration exemptés (accidents historiques déjà appliqués en
@@ -46,6 +47,23 @@ function loadMigrationSlotExemptions() {
   }
 }
 const MIGRATION_SLOT_EXEMPTIONS = loadMigrationSlotExemptions();
+
+/**
+ * Exemptions supplémentaires : fichiers sans préfixe numérique connus,
+ * et gaps inter-feature documentés (cf. governance/migration-guard-exemptions.json).
+ */
+function loadMigrationGuardExemptions() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(MIGRATION_GUARD_EXEMPTIONS_FILE, 'utf8'));
+    return {
+      noPrefix: new Set((raw.no_prefix || {}).files || []),
+      gaps: Object.values(raw.gaps || {}).map(g => ({ feature: g.feature, from: g.from, to: g.to })),
+    };
+  } catch {
+    return { noPrefix: new Set(), gaps: [] };
+  }
+}
+const MIGRATION_GUARD_EXEMPTIONS = loadMigrationGuardExemptions();
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
 const args = (() => {
@@ -146,13 +164,16 @@ function testBaseKey(rel) {
   const fname   = path.basename(rel);
   const firstDot = fname.indexOf('.');
   const stem    = firstDot === -1 ? fname : fname.slice(0, firstDot);
-  return stem.replace(/_/g, '-');
+  return stem.replace(/^_+/, '').replace(/_/g, '-'); // strip leading _ (ex: _connector-utils → connector-utils)
 }
 
 function migrationNum(rel) {
   const base = path.basename(rel);
   const m = base.match(/^(\d+)/);
-  return m ? parseInt(m[1], 10) : null;
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  // Ignorer les numéros qui ressemblent à des années (> 999) — convention de nommage exceptionnelle
+  return n > 999 ? null : n;
 }
 
 /**
@@ -258,11 +279,16 @@ function checkSlice(slice, allMigSlots) {
   const myMigSlots = new Set();
   for (const rel of (slice.files.migrations || [])) {
     const slot = migrationSlot(rel);
-    if (slot === null) { warnings.push(`Migration sans numéro de préfixe : ${rel}`); continue; }
+    if (slot === null) {
+      if (!MIGRATION_GUARD_EXEMPTIONS.noPrefix.has(rel)) {
+        warnings.push(`Migration sans numéro de préfixe : ${rel}`);
+      }
+      continue;
+    }
     if (allMigSlots.has(slot) && !myMigSlots.has(slot)) {
       const exempted = MIGRATION_SLOT_EXEMPTIONS.get(slot);
       if (exempted && exempted.has(rel)) {
-        warnings.push(`Collision créneau migration ${slot} exemptée (accident historique déjà appliqué — voir governance/migration-slot-exemptions.json) : ${rel}`);
+        // Collision documentée et exemptée → silencieux (voir governance/migration-slot-exemptions.json)
       } else {
         errors.push(`Collision créneau migration ${slot} avec un autre slice : ${rel}`);
       }
@@ -281,7 +307,12 @@ function checkSlice(slice, allMigSlots) {
     for (let i = 1; i < nums.length; i++) {
       const gap = nums[i] - nums[i - 1];
       if (gap > 20) {
-        warnings.push(`Gap important entre migrations ${nums[i - 1]} et ${nums[i]} — vérifier l'ordre`);
+        const isExempted = MIGRATION_GUARD_EXEMPTIONS.gaps.some(
+          e => e.feature === slice.name && e.from === nums[i - 1] && e.to === nums[i]
+        );
+        if (!isExempted) {
+          warnings.push(`Gap important entre migrations ${nums[i - 1]} et ${nums[i]} — vérifier l'ordre`);
+        }
       }
     }
   }

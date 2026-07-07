@@ -49,6 +49,43 @@ function isNamedException(filePath, category, line) {
   );
 }
 
+// ── Index manifest : file → { feature, routes, tables } ─────
+// Construit au démarrage depuis les features/*.feature.js pour résoudre
+// les services/utils non configurés dans impact-config.json.
+function buildManifestIndex() {
+  const index = new Map(); // filePath → { feature, routes: string[], tables: string[] }
+  const featuresDir = path.join(__dirname, '..', 'features');
+  let files;
+  try { files = fs.readdirSync(featuresDir).filter(f => f.endsWith('.feature.js')); }
+  catch { return index; }
+
+  for (const fname of files) {
+    const featName = fname.replace('.feature.js', '');
+    let src;
+    try { src = fs.readFileSync(path.join(featuresDir, fname), 'utf8'); } catch { continue; }
+
+    // Routes exposées
+    const routes = [...src.matchAll(/'((?:GET|POST|PUT|PATCH|DELETE)\s+[^\s']+)'/g)].map(m => m[1]);
+
+    // Tables DB
+    const tablesM = src.match(/tables:\s*\[([\s\S]*?)\]/);
+    const tables = tablesM
+      ? [...tablesM[1].matchAll(/'([a-z_]+):\s*[RW]+'/g)].map(m => m[1])
+      : [];
+
+    // Fichiers owned
+    const fileMatches = [...src.matchAll(/'((?:routes|services|middleware|utils|bootstrap|validators)[^']+\.js)'/g)];
+    for (const [, rel] of fileMatches) {
+      if (!index.has(rel)) index.set(rel, { feature: featName, routes: [], tables: [] });
+      const entry = index.get(rel);
+      entry.routes.push(...routes);
+      entry.tables.push(...tables);
+    }
+  }
+  return index;
+}
+const MANIFEST_INDEX = buildManifestIndex();
+
 // ── Arguments CLI ────────────────────────────────────────────
 const args = parseArgs(process.argv.slice(2));
 
@@ -127,16 +164,17 @@ function getChangedFiles() {
     }
   }
 
-  // Défaut : diff par rapport à HEAD
+  // Défaut : fichiers stagés (git diff --cached)
+  // On attrape silencieusement l'erreur — pas de repo git = pas de fichiers stagés
   try {
-    const staged = execSync('git diff --cached --numstat', { encoding: 'utf-8' }).trim();
+    const staged = execSync('git diff --cached --numstat', { encoding: 'utf-8', stdio: ['pipe','pipe','pipe'] }).trim();
     if (staged) {
       return staged.split('\n').map(line => {
         const [add, del, file] = line.split('\t');
         return { file, additions: parseInt(add) || 0, deletions: parseInt(del) || 0 };
       }).filter(f => !isIgnored(f.file));
     }
-  } catch { /* ignore */ }
+  } catch { /* pas de repo git ou rien de stagé — normal */ }
 
   console.error('❌ Aucune source de fichiers. Utilisez --diff, --files ou --all');
   process.exit(1);
@@ -181,6 +219,7 @@ function isIgnored(filePath) {
 // ── Catégorisation des fichiers ──────────────────────────────
 function categorizeFile(filePath) {
   if (filePath.startsWith('routes/'))     return { category: 'route',      name: path.basename(filePath) };
+  if (filePath.startsWith('services/'))   return { category: 'service',    name: path.basename(filePath) };
   if (filePath.startsWith('middleware/')) return { category: 'middleware',  name: path.basename(filePath) };
   if (filePath.startsWith('utils/'))     return { category: 'utils',      name: path.basename(filePath) };
   if (filePath.startsWith('db/'))        return { category: 'db',         name: path.basename(filePath) };
@@ -205,7 +244,7 @@ function getChangedLineMap() {
     : 'git diff --cached --unified=0';
   let out;
   try {
-    out = execSync(cmd, { encoding: 'utf-8', timeout: 30000 });
+    out = execSync(cmd, { encoding: 'utf-8', timeout: 30000, stdio: ['pipe','pipe','pipe'] });
   } catch {
     return null; // en cas de doute, pas de filtrage -> comportement historique
   }
@@ -246,6 +285,22 @@ function analyzeImpact(changedFiles, changedLines) {
 
     // — Direct impact analysis —
     switch (category) {
+      case 'service': {
+        // Résolution via l'index manifest : file → feature → routes exposées + tables
+        const manifest = MANIFEST_INDEX.get(file);
+        if (manifest) {
+          manifest.routes.forEach(r => impact.routes.add(r));
+          manifest.tables.forEach(t => impact.tables.add(t));
+        }
+        // Fallback : chercher dans impact-config.json services si déclaré
+        const svcConfig = (CONFIG.architecture.services || {})[name];
+        if (svcConfig) {
+          (svcConfig.tables  || []).forEach(t => impact.tables.add(t));
+          (svcConfig.services|| []).forEach(s => impact.services.add(s));
+          if (svcConfig.critical) impact.criticalFiles.push(file);
+        }
+        break;
+      }
       case 'route': {
         const routeKey = name.replace('.js', '') + '.js';
         const routeConfig = CONFIG.architecture.routes[routeKey];

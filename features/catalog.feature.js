@@ -132,6 +132,7 @@ module.exports = {
       'tests/unit/api-connector-base.test.js',
       'tests/unit/categories-cache.test.js',
       'tests/unit/categories.test.js',
+      'tests/unit/connector-utils.test.js',
       'tests/unit/csv-connector.test.js',
       'tests/unit/manual-connector.test.js',
       'tests/unit/noon-connector.test.js',
