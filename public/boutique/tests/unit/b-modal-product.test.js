@@ -154,9 +154,24 @@ describe('b-modal-product', () => {
       expect(() => _renderVariants({ Taille: [{ value: 'M', stock: 5 }] }, makeProduct())).not.toThrow();
     });
 
-    it('type "Couleur" est ignoré (porté par les SKUs, pas re-rendu ici)', () => {
-      _renderVariants({ Couleur: [{ value: 'Rouge', stock: 5 }] }, makeProduct());
-      expect(dom.modalVariants.children).toHaveLength(0);
+    it('type "Couleur" → génère des swatches .k-sku avec image ou .k-vp sans image (Lot 2)', () => {
+      _renderVariants({
+        Couleur: [
+          { value: 'Rouge', stock: 5, image_url: 'http://img/rouge.jpg' },
+          { value: 'Bleu', stock: 0, image_url: 'http://img/bleu.jpg' },
+          { value: 'Vert', stock: 3 },
+        ]
+      }, makeProduct());
+      // 1 groupe créé
+      expect(dom.modalVariants.children).toHaveLength(1);
+      // 2 swatches photo + 1 pill texte (pas d'image)
+      const skus = dom.modalVariants.querySelectorAll('.k-sku');
+      expect(skus).toHaveLength(2);
+      const pills = dom.modalVariants.querySelectorAll('.k-vp');
+      expect(pills).toHaveLength(1);
+      // Rupture de stock
+      expect(skus[1].classList.contains('k-sku--out')).toBe(true);
+      expect(skus[1].disabled).toBe(true);
     });
 
     it('type "Taille" → groupe créé avec bouton guide des tailles (data-size-type=clothes)', () => {
@@ -214,23 +229,23 @@ describe('b-modal-product', () => {
       expect(() => _injectMobileDelivery(makeProduct())).not.toThrow();
     });
 
-    it('injecte l\'encart livraison avec le délai par défaut', () => {
+    it('injecte l\'encart réassurance avec le délai par défaut', () => {
       _injectMobileDelivery(makeProduct({ delivery_delay: undefined }));
-      const el = dom.modal.querySelector('[data-mobile-delivery]');
+      const el = dom.modal.querySelector('[data-mobile-reassurance]');
       expect(el).not.toBeNull();
       expect(el.textContent).toContain('3 à 5 semaines');
     });
 
     it('utilise le délai personnalisé du produit si fourni', () => {
       _injectMobileDelivery(makeProduct({ delivery_delay: '48h' }));
-      const el = dom.modal.querySelector('[data-mobile-delivery]');
+      const el = dom.modal.querySelector('[data-mobile-reassurance]');
       expect(el.textContent).toContain('48h');
     });
 
     it('dédoublonne : un second appel retire l\'ancien encart avant d\'insérer le nouveau', () => {
       _injectMobileDelivery(makeProduct({ delivery_delay: '48h' }));
       _injectMobileDelivery(makeProduct({ delivery_delay: '72h' }));
-      const els = dom.modal.querySelectorAll('[data-mobile-delivery]');
+      const els = dom.modal.querySelectorAll('[data-mobile-reassurance]');
       expect(els).toHaveLength(1);
       expect(els[0].textContent).toContain('72h');
     });
@@ -242,16 +257,16 @@ describe('b-modal-product', () => {
       expect(() => _injectMobileTrust()).not.toThrow();
     });
 
-    it('injecte 3 pills de réassurance dans .k-modal-info', () => {
-      _injectMobileTrust();
-      const el = dom.modal.querySelector('[data-mobile-trust]');
-      expect(el.querySelectorAll('.k-modal-trust-mobile-item')).toHaveLength(3);
+    it('_injectMobileDelivery injecte 3 items trust dans l\'accordéon', () => {
+      _injectMobileDelivery(makeProduct());
+      const el = dom.modal.querySelector('[data-mobile-reassurance]');
+      expect(el.querySelectorAll('.k-modal-reassurance-item')).toHaveLength(3);
     });
 
     it('dédoublonne au second appel', () => {
-      _injectMobileTrust();
-      _injectMobileTrust();
-      expect(dom.modal.querySelectorAll('[data-mobile-trust]')).toHaveLength(1);
+      _injectMobileDelivery(makeProduct());
+      _injectMobileDelivery(makeProduct());
+      expect(dom.modal.querySelectorAll('[data-mobile-reassurance]')).toHaveLength(1);
     });
   });
 

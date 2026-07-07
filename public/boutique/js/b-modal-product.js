@@ -211,14 +211,85 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       let options = variants[type];
       if (!options || !options.length) return;
 
-      // Les couleurs sont portées par les SKUs/images produit — on ne les ré-affiche pas ici.
-      if (/couleur|color|coloris|teinte/i.test(type)) return;
-
+      let isCouleur = /couleur|color|coloris|teinte/i.test(type);
       let isTaille = /taille|pointure/i.test(type);
       let sizeType = /pointure/i.test(type) ? 'shoes' : 'clothes';
 
       let group = document.createElement('div');
       group.className = 'k-vg';
+
+      /* ── Couleur → swatches photo .k-sku (Lot 2) ── */
+      if (isCouleur) {
+        // Label "Couleur · Bleu"
+        let labelRow = document.createElement('div');
+        labelRow.className = 'k-vg-label';
+        labelRow.innerHTML =
+          '<span class="k-vg-label-type">' + type + '</span>' +
+          '<span class="k-vg-label-sep">·</span>' +
+          '<span class="k-vg-label-val"></span>';
+        let labelVal = labelRow.querySelector('.k-vg-label-val');
+        group.appendChild(labelRow);
+
+        let skuWrap = document.createElement('div');
+        skuWrap.className = 'k-vg-skus';
+
+        let activeIndex = -1;
+
+        options.forEach(function(opt, i) {
+          let isOut = (opt.stock === 0);
+          // Normaliser : images[] ou image_url ou fallback product
+          let optImages = opt.images && opt.images.length
+            ? opt.images
+            : (opt.image_url ? [opt.image_url] : null);
+          let thumbUrl = optImages ? optImages[0] : null;
+
+          let sku = document.createElement('button');
+          sku.type = 'button';
+          sku.className = 'k-sku' + (isOut ? ' k-sku--out' : '');
+
+          if (thumbUrl) {
+            sku.innerHTML =
+              '<img src="' + optimizeImgUrl(thumbUrl, 120) + '" alt="' + (opt.value || '') + '">' +
+              (isOut ? '<span class="k-sku-slash"></span>' : '') +
+              '<span class="k-sku-name">' + (opt.value || '') + '</span>';
+          } else {
+            // Pas d'image → pill texte simple (pas de rond coloré)
+            sku.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
+            sku.textContent = opt.value || '';
+          }
+
+          if (isOut) {
+            sku.disabled = true;
+          } else {
+            sku.addEventListener('click', function() {
+              // État actif
+              skuWrap.querySelectorAll('.k-sku, .k-vp').forEach(function(s) {
+                s.classList.remove('k-sku--active', 'k-vp--active');
+              });
+              sku.classList.add(thumbUrl ? 'k-sku--active' : 'k-vp--active');
+              labelVal.textContent = opt.value || '';
+
+              // Prix
+              if (opt.price_kmf) {
+                dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
+              }
+
+              // Swap carousel avec les images de CE SKU
+              if (optImages && optImages.length) {
+                let skuProduct = Object.assign({}, product, { images: optImages });
+                buildCarouselSlides(skuProduct);
+                goToSlide(0);
+              }
+            });
+          }
+
+          skuWrap.appendChild(sku);
+        });
+
+        group.appendChild(skuWrap);
+        container.appendChild(group);
+        return; // couleur traitée, passer au type suivant
+      }
 
       /* ── État partagé entre trigger compact + sheet ── */
       let selectedValue = null;
@@ -474,31 +545,54 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     });
   }
 
-  /* ── F3 — LIVRAISON MOBILE ──────────────────────────────────────
-     Injecte un encart livraison minimal dans .k-modal-info sur mobile.
-     Masqué desktop par CSS (display:none @min-width:900px).
-     Évite le double-inject via data-mobile-delivery.              */
-  function _injectMobileDelivery(product) {
+  /* ── LOT 3 — RÉASSURANCE MOBILE COMPACTE ─────────────────────────
+     Remplace _injectMobileDelivery + _injectMobileTrust par une seule
+     ligne compacte : icône + délai livraison, dépliable en accordéon
+     pour révéler les 3 items trust (retrait relais / cash / échange).
+     Masqué desktop par CSS. Dédoublonnage via data-mobile-reassurance. */
+  function _injectMobileReassurance(product) {
     if (!dom.modal) return;
-    // Retirer l'ancien si présent (changement de produit)
-    let old = dom.modal.querySelector('[data-mobile-delivery]');
-    if (old) old.remove();
+    // Nettoyer : supprimer l'ancien format ET l'ancien lot 3 si présent
+    let oldD = dom.modal.querySelector('[data-mobile-delivery]');
+    let oldT = dom.modal.querySelector('[data-mobile-trust]');
+    let oldR = dom.modal.querySelector('[data-mobile-reassurance]');
+    if (oldD) oldD.remove();
+    if (oldT) oldT.remove();
+    if (oldR) oldR.remove();
 
     let info = dom.modal.querySelector('.k-modal-info');
     if (!info) return;
 
     let delay = (product && product.delivery_delay) || '3 à 5 semaines';
-    let el = document.createElement('div');
-    el.className = 'k-modal-delivery-mobile';
-    el.setAttribute('data-mobile-delivery', '1');
-    el.innerHTML =
-      '<span class="k-modal-delivery-mobile-icon">📦</span>' +
-      '<span>' +
-        '<span class="k-modal-delivery-mobile-label">Livraison relais</span>' +
-        '<span class="k-modal-delivery-mobile-delay">· ' + delay + '</span>' +
-      '</span>';
 
-    // Insérer après .k-modal-meta (juste après les badges social proof)
+    let el = document.createElement('div');
+    el.className = 'k-modal-reassurance';
+    el.setAttribute('data-mobile-reassurance', '1');
+    el.innerHTML =
+      '<button type="button" class="k-modal-reassurance-toggle" aria-expanded="false">' +
+        '<span class="k-modal-reassurance-main">' +
+          '<span class="k-modal-reassurance-icon">📦</span>' +
+          '<span class="k-modal-reassurance-label">Livraison relais</span>' +
+          '<span class="k-modal-reassurance-delay">· ' + delay + '</span>' +
+        '</span>' +
+        '<span class="k-modal-reassurance-chevron">▾</span>' +
+      '</button>' +
+      '<div class="k-modal-reassurance-details" hidden>' +
+        '<span class="k-modal-reassurance-item">📍 Retrait en relais</span>' +
+        '<span class="k-modal-reassurance-item">💵 Paiement cash</span>' +
+        '<span class="k-modal-reassurance-item">🔄 Échange 14 j</span>' +
+      '</div>';
+
+    // Accordéon
+    let toggle = el.querySelector('.k-modal-reassurance-toggle');
+    let details = el.querySelector('.k-modal-reassurance-details');
+    toggle.addEventListener('click', function() {
+      let open = details.hidden;
+      details.hidden = !open;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    // Insérer après .k-modal-meta
     let meta = info.querySelector('.k-modal-meta');
     if (meta && meta.nextSibling) {
       info.insertBefore(el, meta.nextSibling);
@@ -507,32 +601,9 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     }
   }
 
-  /* ── F4 — TRUST BAR MOBILE ──────────────────────────────────────
-     Injecte 3 pills de réassurance en FIN de .k-modal-info (dans le scroll).
-     FIX VIS-3A : l'ancienne version faisait insertBefore(.k-modal-actions) —
-     mais après Fix-v5, .k-modal-actions est SORTI du scroll (enfant direct de
-     #k-modal via setupModal). Ancrer sur parentNode(actions) plaçait la trust-bar
-     hors du scroll en sibling épinglé → gonflement de la zone basse fixe →
-     description + CTA débordaient. Solution : ancrer sur .k-modal-info (stable,
-     toujours dans le scroll), masqué ≥900px par modal.css.                   */
-  function _injectMobileTrust() {
-    if (!dom.modal) return;
-    let old = dom.modal.querySelector('[data-mobile-trust]');
-    if (old) old.remove();
-
-    let info = dom.modal.querySelector('.k-modal-info'); /* ancre STABLE dans le scroll */
-    if (!info) return;
-
-    let el = document.createElement('div');
-    el.className = 'k-modal-trust-mobile';
-    el.setAttribute('data-mobile-trust', '1');
-    el.innerHTML =
-      '<span class="k-modal-trust-mobile-item">📍 Retrait en relais</span>' +
-      '<span class="k-modal-trust-mobile-item">💵 Paiement cash</span>' +
-      '<span class="k-modal-trust-mobile-item">🔄 Échange 14 j</span>';
-
-    info.appendChild(el); /* dernier élément scrollable, avant la CTA épinglée */
-  }
+  /* Backward-compat : les anciens noms redirigent vers le nouveau */
+  function _injectMobileDelivery(product) { _injectMobileReassurance(product); }
+  function _injectMobileTrust() { /* absorbé par _injectMobileReassurance */ }
 
   /* ════ TOPBAR ENRICHIE + RETOUR HAUT ════ */
 
