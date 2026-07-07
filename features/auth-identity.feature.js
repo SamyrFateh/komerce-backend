@@ -88,6 +88,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 7,
+    totalRoutes: 20,
+    note: "7/20 routes protégées (tableau de bord, refresh, etc.). 13 routes publiques par design : OTP (cooldown 5 min/phone + plafond journalier DB, test-reset gaté par isOtpTestMode() → 404 en prod), magic-link (token signé), guest-checkout (flux boutique public), orders-by-phone (client lookup public), admin-reset gaté applicativement (ADMIN_RESET_KEY ≥ 32 chars obligatoire + ALLOW_ADMIN_RESET=true requis en prod — désactivé par défaut).",
+  },
   contract: {
     exposes: [
       'POST /api/auth/otp/request',

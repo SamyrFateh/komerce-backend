@@ -10,6 +10,7 @@
  * @used-by       routes/pickup-secret.js, services/payment-stripe.js, services/payment-paypal.js, routes/pickup-pay-cash.js
  * @db-read       order_items, orders, pickup_print_tokens, pickup_reveal_codes, products, relais, users
  * @db-write      orders, pickup_print_tokens, pickup_reveal_codes
+ * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics

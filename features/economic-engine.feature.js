@@ -224,6 +224,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 65,
+    totalRoutes: 67,
+    note: "65/67 routes protégées. 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless).",
+  },
   contract: {
     exposes: [
       'POST /api/pricing/recommend',

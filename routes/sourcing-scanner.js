@@ -9,7 +9,8 @@
  * @depends       db.js, middleware/auth.js, services/*, services/suppliers/catalog-import-orchestrator.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
- * @db-write      products, sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
+ * @db-write      products, sourcing_candidate_events, sourcing_candidates
+ * @db-write-via:catalog-import-orchestrator supplier_catalog_imports
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics

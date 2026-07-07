@@ -181,11 +181,17 @@ module.exports = {
       'product_variants: RW',
       'products: RW',
       'sourcing_candidate_events: W',
-      'sourcing_candidates: W',
+      'sourcing_candidates: RW',
       'supplier_catalog_imports: W',
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 21,
+    totalRoutes: 26,
+    note: "21/26 routes protégées (admin catalog, overrides, approbation). 5 routes publiques par design : GET /api/products, /products/:id, /products/categories, /products/subcategories, /api/categories — catalogue public en lecture pour la boutique.",
+  },
   contract: {
     exposes: [
       'GET /api/products',

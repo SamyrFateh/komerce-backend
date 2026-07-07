@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       cash_collections, cash_deposits, finance_config, incidents, orders, parcels, products, signals, users, wallets
- * @db-write      @unknown
+ * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown

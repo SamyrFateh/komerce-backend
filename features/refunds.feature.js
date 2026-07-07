@@ -68,6 +68,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_PROTECTED',
+    authedRoutesDetected: 0,
+    totalRoutes: 0,
+    note: "Feature sans routes HTTP directes. Le remboursement est déclenché exclusivement via services internes (refund-service.js, shared-cart-refund-queue.js) appelés par d'autres features protégées (orders, payments, shared-cart). Aucune surface d'attaque externe.",
+  },
   contract: {
     exposes: [],
     // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : pas de route

@@ -9,7 +9,9 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, recipients, refunds, users
- * @db-write      order_status_history, orders, refunds, transaction_documents
+ * @db-write      order_status_history, orders
+ * @db-write-via:refund-service      refunds
+ * @db-write-via:refund-receipt      transaction_documents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  orders, checkout

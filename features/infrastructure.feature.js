@@ -454,23 +454,24 @@ module.exports = {
       'business_rules: RW',
       'business_rules_history: RW',
       'charges: RW',
-      'customs_categories: R',
+
       'economic_snapshots: RW',
       'exchange_rates: R',
       'finance_config: RW',
-      'loyalty_tiers: R',
-      'orders: RW',
-      'partners: R',
       'pickup_print_tokens: RW',
       'pickup_reveal_codes: RW',
-      'products: R',
       'revoked_tokens: RW',
       'schema_migrations: RW',
-      'sourcing_candidates: R',
       'users: RW',
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 2,
+    totalRoutes: 5,
+    note: "3 routes publiques par design : GET /health, /health/ready, /health/version (sondes Railway/uptime, pas de données sensibles). GET /api/public/config public par design (clés publiques Stripe/PayPal). GET /*.html : routes HTML des dashboards, protégées par session côté client. Webhook authkey-whatsapp : vérifié par token WhatsApp (META_WA_VERIFY_TOKEN).",
+  },
   contract: {
     // Ajouté (audit 2026-07-06, §axe1-bug2) : ces 5 routes sont câblées
     // directement sur `app` dans server.js (pas via un `router` local), ce

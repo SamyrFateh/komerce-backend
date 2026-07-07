@@ -26,8 +26,6 @@
     "GET /api/shares/{token}",
     "GET /api/tracking/{token}",
     "GET /health",
-    "GET /health/detailed",
-    "GET /health/metrics",
     "GET /health/ready",
     "GET /health/version",
     "GET /webhook/meta-whatsapp",

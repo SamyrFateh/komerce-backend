@@ -116,8 +116,8 @@ CT.api = {
 
   // ---- Hub operational ----
   hubMarkOrdered: function(ref) { return this.post("/api/hub/orders/mark-ordered", { reference: ref }); },
-  hubShip: function(parcelId) { return this.post("/api/hub-dash/ship/" + parcelId); },
-  hubStartPrep: function(parcelId) { return this.post("/api/hub-dash/start-prep/" + parcelId); },
+  hubShip: function(parcelId) { return this.post("/api/hub-dash/parcels/" + parcelId + "/ship"); },
+  hubStartPrep: function(orderId) { return this.post("/api/hub-dash/orders/" + orderId + "/start-prep"); },
   hubParcels: function() { return this.get("/api/v2/parcels"); },
 
   // ---- Relais operational ----
@@ -129,7 +129,7 @@ CT.api = {
   // ---- Auto-Distribution ----
   autoDistribute: function() { return this.post('/api/hub/auto-distribute'); },
   getDistribution: function() { return this.get('/api/hub/auto-distribute'); },
-  reassignOrder: function(orderId, parcelId) { return this.post('/api/hub/reassign-order', { order_id: orderId, target_parcel_id: parcelId }); },
+  reassignOrder: function(orderId, parcelId) { return Promise.reject(new Error('TODO: reassign-order — route backend non implémentée')); },
 
   // ---- Hub Inventory ----
   hubInventoryStats: function() { return this.get('/api/hub/inventory/stats'); },
@@ -165,8 +165,8 @@ CT.api = {
   // Loyalty admin
   loyaltyPending: function() { return this.get('/api/admin/loyalty/pending'); },
   loyaltyHistory: function() { return this.get('/api/admin/loyalty/history'); },
-  loyaltyGrant: function(userId) { return this.post('/api/admin/loyalty/' + userId + '/grant'); },
-  loyaltySkip: function(userId) { return this.post('/api/admin/loyalty/' + userId + '/skip'); },
+  loyaltyGrant: function(rewardId) { return this.post('/api/admin/loyalty/reward/' + rewardId); },
+  loyaltySkip: function(rewardId) { return this.post('/api/admin/loyalty/skip/' + rewardId); },
 
   // ---- Signals (CT/BO platform) ----
   signalsList: function(params) { var q = params ? '?' + new URLSearchParams(params).toString() : ''; return this.get('/api/admin/signals' + q); },

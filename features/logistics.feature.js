@@ -177,22 +177,28 @@ module.exports = {
       'pickup_reveal_codes: RW',
       'pickup_verify_attempts: RW',
       'product_suppliers: R',
-      'product_variants: RW',
+      'product_variants: R',          // W-via:order-status-machine (service orders)
       'products: RW',
       'purchase_orders: R',
       'recipients: R',
       'relais: RW',
-      'revoked_tokens: W',
+
       'scan_events: RW',
       'scans: RW',
       'shipments: RW',
       'sourcing_candidate_events: RW',
       'sourcing_candidates: RW',
-      'supplier_catalog_imports: R',
-      'users: RW',
+      'supplier_catalog_imports: R',  // W-via:catalog-import-orchestrator (service catalog)
+      'users: R',
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 74,
+    totalRoutes: 79,
+    note: "74/79 routes protégées. 5 routes publiques par design : GET /api/relais, /relais/public, /relais/:id (annuaire public des points relais) ; GET /api/tracking/:token et POST /api/tracking/:token/verify-pickup (capability token documenté — pas d'accès aux données client sans token valide).",
+  },
   contract: {
     exposes: [
       'GET/POST /api/parcels',

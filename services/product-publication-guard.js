@@ -8,7 +8,7 @@
  * @outputs       validation_result, side_effects
  * @depends       db.js
  * @used-by       services/product-admin-service.js, services/catalog-approval.js
- * @db-read       @unknown
+ * @db-read       none
  * @db-write      alerts
  * @db-txn        resolve_before_behavior_change
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md

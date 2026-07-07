@@ -10,7 +10,7 @@
  * @used-by       @unknown
  * @db-read       business_rules, order_items, orders, product_variants, products
  * @doctrine      DOCTRINE_DENSITE_VALEUR (V-2 : margin_kmf_per_dm3 + review_volume, 2026-07-02)
- * @db-write      @unknown
+ * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown

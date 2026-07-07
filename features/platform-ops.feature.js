@@ -117,7 +117,7 @@ module.exports = {
       'parcel_items: RW',
       'parcels: RW',
       'products: R',
-      'relais: RW',
+      'relais: R',
       'scan_events: R',
       'scans: RW',
       'store_credits: W',
@@ -125,6 +125,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 25,
+    totalRoutes: 33,
+    note: "25/33 routes protégées. 8 routes publiques par design : GET /health, /health/ready, /health/version (sondes infra) ; GET /api/modules, /modules/:type, /modules/fabrics, /modules/models et POST /api/modules/price (configurateur de modules public, consommé par la boutique).",
+  },
   contract: {
     exposes: [
       'GET /health',

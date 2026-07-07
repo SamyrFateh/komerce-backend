@@ -233,6 +233,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 0,
+    totalRoutes: 33,
+    note: "0/33 routes avec middleware Express authenticate — toutes les routes shared-cart opèrent sur capability tokens (:token dans le path) validés applicativement. Point d'attention §5 : POST /api/shares et POST /api/shares/:token/contributions ne sont couverts que par le globalLimiter (500 req/15 min/IP), pas de limiteur dédié — vecteur potentiel de spam de paniers partagés à évaluer.",
+  },
   contract: {
     exposes: [
       'POST   /api/shared-carts/from-cart-items',

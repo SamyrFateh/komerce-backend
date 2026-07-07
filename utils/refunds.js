@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @db-write      refunds
- * @db-read      @unknown
+ * @db-read      none
  * @used-by       @unknown
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown

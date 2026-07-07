@@ -79,6 +79,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_PROTECTED',
+    authedRoutesDetected: 15,
+    totalRoutes: 15,
+    note: "15/15 routes protégées via authenticate + requireRole(['admin']) ou requireAdminOrFounder. Confirmé via gen-security-360.js.",
+  },
   contract: {
     exposes: [
       // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)

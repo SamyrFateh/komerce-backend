@@ -9,7 +9,7 @@
  * @depends       ./_helpers, ./control-tower, ./costing, ./logistics, ./workspaces
  * @used-by       @unknown
  * @db-read       collective_payment_sessions, collective_workspace_contributions, collective_workspace_items, collective_workspaces, order_item_cost_imputations, order_item_real_cost_allocations, orders, parcels, scan_events, signals
- * @db-write      @unknown
+ * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  dashboard, admin-dashboard

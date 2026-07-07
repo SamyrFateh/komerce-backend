@@ -8,8 +8,8 @@
  * @outputs       http_response
  * @depends       middleware/auth.js, services/catalog-approval.js
  * @used-by       routes/admin/index.js
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       none
+ * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md §6
  * @impact-areas  catalog, admin-dashboard

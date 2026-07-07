@@ -118,6 +118,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_WEBHOOK_SIGNED',
+    authedRoutesDetected: 2,
+    totalRoutes: 4,
+    note: "2/4 routes internes protégées. 2 routes webhook WhatsApp (GET + POST /webhook/meta-whatsapp) : protégées par signature HMAC-SHA256 (META_WA_APP_SECRET) + verify token — pas de middleware Express authenticate, d'où UNKNOWN dans le scanner statique. Protection applicative confirmée dans routes/meta-whatsapp.js.",
+  },
   contract: {
     exposes: [
       'GET /api/v2/notifications',

@@ -157,6 +157,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 41,
+    totalRoutes: 43,
+    note: "41/43 routes protégées. 2 routes publiques par design : GET /api/invoices/public/:token (token de facture partageable, lecture seule) ; GET /api/orders/retrait/:token (capability token QR de retrait, validé côté service par verify-qr-collection.js).",
+  },
   contract: {
     exposes: [
       'GET/POST /api/orders',

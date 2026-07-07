@@ -41,7 +41,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=118
- 2. /boutique/css/dist/components.css?v=136
+ 2. /boutique/css/dist/components.css?v=137
  3. /boutique/css/dist/desktop.css?v=52
  4. /boutique/css/dist/event.css?v=32
 ```
@@ -75,14 +75,13 @@ Aucun. ✅
 
 ## 5. Hex hardcodés hors tokens.css
 
-26 occurrence(s) au total, répartition :
+25 occurrence(s) au total, répartition :
 
 | Fichier | Nombre |
 |---|---:|
 | `paypal.css` | 14 |
 | `group-cart-flow.css` | 10 |
 | `layout.css` | 1 |
-| `modal-product.css` | 1 |
 
 ## 6. `!important` par fichier
 
@@ -98,11 +97,11 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js/b-pager.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×2) ⚠️ multi-owner |
-| `--pager-w` | `js/b-pager.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--bnav-h` | `js/b-pager.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--modal-scroll-y` | `js/b-modal-core.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--pager-top` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×2) ⚠️ multi-owner |
+| `--pager-w` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--bnav-h` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--modal-scroll-y` | `js\b-modal-core.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 
@@ -110,7 +109,7 @@ Aucun. ✅
 
 - **CSS orphelins** : 20 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
-- **Hex hardcodés** : 26 (cible : 0 ou allowlist)
+- **Hex hardcodés** : 25 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)
 - **Sélecteurs multi-owner** : 11 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
 

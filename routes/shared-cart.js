@@ -8,8 +8,8 @@
  * @outputs       shared_cart_api, stripe_sessions, notifications, admin_views
  * @depends       services/shared-cart-engine.js, services/shared-cart-estimation-service.js, services/shared-cart-financial-guard.js, services/shared-cart-items-service.js, services/shared-cart-v41-transitions.js, services/shared-cart-queries.js
  * @used-by       server.js, public/boutique/js/b-group-view.js, public/boutique/js/b-share-cart.js, public/boutique/js/b-cart.js
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       none
+ * @db-write      none
  * @db-txn        delegated_to_shared_cart_services, stripe_webhook_idempotency
  * @doctrine      paiement_seul_acte_engageant, estimations_indicatives, participant_peut_verifier, retour_stripe_boutique, panier_ouvert_ferme
  * @impact-areas  shared-cart, checkout, participant-flow, creator-dashboard, stripe, whatsapp, boutique

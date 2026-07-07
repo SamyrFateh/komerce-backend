@@ -8,6 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @db-write      alerts, parcel_events, parcels, scans
+ * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-read      parcel_items, parcels
  * @used-by       @unknown
  * @doctrine      resolve_before_behavior_change

@@ -9,7 +9,7 @@
  * @depends       db.js, routes/dashboard-shared.js
  * @used-by       services/finance-metrics/index.js
  * @db-read       order_items, orders, parcel_items, parcels, refunds, relais, store_credits
- * @db-write      @unknown
+ * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine, admin-dashboard

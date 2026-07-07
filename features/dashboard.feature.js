@@ -66,8 +66,15 @@ module.exports = {
   // (nom de table construit par variable) a échappé au scan.
   db: {
     tables: [
+      'basket_items: W',
+      'baskets: W',
       'business_rules: R',
       'business_rules_history: R',
+      'collective_payment_sessions: R',
+      'collective_workspace_contributions: R',
+      'collective_workspace_items: R',
+      'collective_workspaces: R',
+      'customs_effective_rates: R',
       'customs_shipments: R',
       'exchange_rates: R',
       'incidents: RW',
@@ -75,6 +82,8 @@ module.exports = {
       'loyalty_rewards: RW',
       'order_comments: RW',
       'order_incidents: RW',
+      'order_item_cost_imputations: R',
+      'order_item_real_cost_allocations: R',
       'order_items: RW',
       'order_status_history: RW',
       'orders: RW',
@@ -84,17 +93,27 @@ module.exports = {
       'product_suppliers: W',
       'products: RW',
       'purchase_orders: RW',
-      'recipients: R',
+      'recipients: RW',
       'relais: RW',
       'risk_provisions: RW',
       'scan_events: RW',
       'scans: RW',
+      'signals: R',
       'sms_log: RW',
       'suppliers: RW',
+      'suppliers_stats: R',
       'users: RW',
+      'wallet_transactions: W',
+      'wallets: W',
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_PROTECTED',
+    authedRoutesDetected: 76,
+    totalRoutes: 76,
+    note: "76/76 routes protégées via authenticate + requireRole(['admin']) monté au niveau du routeur parent (routes/dashboard.js et routes/admin.js) — les gardes sont appliquées une fois en tête de routeur, invisibles route-par-route mais confirmées empiriquement via gen-security-360.js (analyse hybride runtime + statique).",
+  },
   contract: {
     exposes: [
       'GET /api/admin/dashboard',

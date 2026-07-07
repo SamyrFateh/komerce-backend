@@ -100,6 +100,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 15,
+    totalRoutes: 16,
+    note: "15/16 routes protégées. 1 route publique par design : GET /api/loyalty/tiers (grille des paliers de fidélité, information publique vitrine).",
+  },
   contract: {
     exposes: [
       'GET /api/wallet',

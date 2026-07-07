@@ -868,8 +868,8 @@ CT.views.economic = async function(container) {
             html += '<td style="text-align:right;">' + fmtKMF(rw.avg_basket || 0) + '</td>';
             html += '<td>' + (rw.suggested_gift || 'À définir') + '</td>';
             html += '<td>';
-            html += '<button class="btn-sm loyalty-grant" data-user-id="' + rw.user_id + '" style="padding:3px 8px;font-size:11px;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:4px;">✅ Accorder</button>';
-            html += '<button class="btn-sm loyalty-skip" data-user-id="' + rw.user_id + '" style="padding:3px 8px;font-size:11px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;">⏭ Ignorer</button>';
+            html += '<button class="btn-sm loyalty-grant" data-reward-id="' + rw.reward_id + '" style="padding:3px 8px;font-size:11px;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:4px;">✅ Accorder</button>';
+            html += '<button class="btn-sm loyalty-skip" data-reward-id="' + rw.reward_id + '" style="padding:3px 8px;font-size:11px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;">⏭ Ignorer</button>';
             html += '</td>';
             html += '</tr>';
           }
@@ -937,10 +937,10 @@ CT.views.economic = async function(container) {
       var grantBtns = content.querySelectorAll('.loyalty-grant');
       grantBtns.forEach(function(btn) {
         btn.addEventListener('click', async function() {
-          var userId = btn.getAttribute('data-user-id');
+          var rewardId = btn.getAttribute('data-reward-id');
           btn.textContent = '⏳';
           try {
-            await CT.api.post('/api/admin/loyalty/' + userId + '/grant');
+            await CT.api.post('/api/admin/loyalty/reward/' + rewardId);
             btn.textContent = '✅ Accordé';
             btn.disabled = true;
           } catch (e) {
@@ -953,10 +953,10 @@ CT.views.economic = async function(container) {
       var skipBtns = content.querySelectorAll('.loyalty-skip');
       skipBtns.forEach(function(btn) {
         btn.addEventListener('click', async function() {
-          var userId = btn.getAttribute('data-user-id');
+          var rewardId = btn.getAttribute('data-reward-id');
           btn.textContent = '⏳';
           try {
-            await CT.api.post('/api/admin/loyalty/' + userId + '/skip');
+            await CT.api.post('/api/admin/loyalty/skip/' + rewardId);
             btn.textContent = '⏭ Ignoré';
             btn.disabled = true;
           } catch (e) {

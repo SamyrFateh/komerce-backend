@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       @unknown
+ * @db-read       none
  * @db-write      paypal_events_processed
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

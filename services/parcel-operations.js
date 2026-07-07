@@ -10,6 +10,7 @@
  * @used-by       @unknown
  * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      order_items, order_status_history, parcel_items, parcels, products
+ * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics

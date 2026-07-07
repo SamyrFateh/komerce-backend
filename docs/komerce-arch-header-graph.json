@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 712,
-    "edges": 3477,
+    "edges": 3474,
     "dbTables": 111,
     "doctrines": 129,
     "impactAreas": 116,
@@ -6032,9 +6032,7 @@
       ],
       "dbWrite": [
         "order_status_history",
-        "orders",
-        "refunds",
-        "transaction_documents"
+        "orders"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -7611,8 +7609,7 @@
       "dbWrite": [
         "products",
         "sourcing_candidate_events",
-        "sourcing_candidates",
-        "supplier_catalog_imports"
+        "sourcing_candidates"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -25163,18 +25160,6 @@
     },
     {
       "from": "routes/orders/cancel.js",
-      "to": "db:refunds",
-      "type": "db-write",
-      "label": "refunds"
-    },
-    {
-      "from": "routes/orders/cancel.js",
-      "to": "db:transaction_documents",
-      "type": "db-write",
-      "label": "transaction_documents"
-    },
-    {
-      "from": "routes/orders/cancel.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -27560,12 +27545,6 @@
       "to": "db:sourcing_candidates",
       "type": "db-write",
       "label": "sourcing_candidates"
-    },
-    {
-      "from": "routes/sourcing-scanner.js",
-      "to": "db:supplier_catalog_imports",
-      "type": "db-write",
-      "label": "supplier_catalog_imports"
     },
     {
       "from": "routes/sourcing-scanner.js",
@@ -43944,9 +43923,7 @@
       ],
       "dbWrite": [
         "order_status_history",
-        "orders",
-        "refunds",
-        "transaction_documents"
+        "orders"
       ],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -43961,7 +43938,6 @@
         "db:orders",
         "db:recipients",
         "db:refunds",
-        "db:transaction_documents",
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
@@ -45412,8 +45388,7 @@
       "dbWrite": [
         "products",
         "sourcing_candidate_events",
-        "sourcing_candidates",
-        "supplier_catalog_imports"
+        "sourcing_candidates"
       ],
       "doctrines": [
         "resolve_before_behavior_change"

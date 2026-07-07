@@ -89,6 +89,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_TRANSVERSAL',
+    authedRoutesDetected: 0,
+    totalRoutes: 0,
+    note: "Feature transversale : aucune route HTTP exposée directement. Les middlewares authenticate, requireRole, requireAdmin sont la couche de garde de toutes les autres features. Sécurité de la feature elle-même : JWT_SECRET en env, tokens révoqués en DB (revoked_tokens), rate-limit via authLimiter.",
+  },
   contract: {
     // (audit 2026-07-06, §2c — corrigé) : ce manifeste ne possède aucun
     // fichier routes/ (files.routes = []) — c'est un transversal middleware

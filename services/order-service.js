@@ -9,7 +9,7 @@
  * @depends       db.js, services/wallet-service.js
  * @used-by       routes/orders.js, shared-cart-engine.js, checkout-flows
  * @db-read       orders
- * @db-write      @unknown
+ * @db-write      none
  * @db-txn        order_reference_unique, wallet_application_idempotent
  * @doctrine      reference_commande_lisible, wallet_applique_une_fois, helpers_sans_route_http
  * @impact-areas  checkout, orders, wallet, tracking, shared-cart

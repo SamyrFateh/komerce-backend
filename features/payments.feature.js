@@ -138,6 +138,12 @@ module.exports = {
     ],
   },
 
+  security: {
+    status: 'CONFIRMED_MIXED',
+    authedRoutesDetected: 13,
+    totalRoutes: 18,
+    note: "13/18 routes protégées. 2 webhooks légitimement publics : POST /stripe/webhook (signature Stripe), POST /paypal/webhook (vérifié applicativement). 3 routes publiques par design : GET /api/payments/config (clés publiques), POST /api/payments/paypal/create-order et /capture/:id (flux de paiement boutique public — pas d'accès au profil client).",
+  },
   contract: {
     exposes: [
       'POST /api/payments/stripe/intent',

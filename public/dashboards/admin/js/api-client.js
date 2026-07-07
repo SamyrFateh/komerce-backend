@@ -248,7 +248,8 @@
   // Loyalty
   function getLoyaltyPending()                 { return fetchJSON(apiUrl('/admin/loyalty/pending')); }
   function getLoyaltyHistory(params)           { return fetchJSON(apiUrl('/admin/loyalty/history', params)); }
-  function createLoyaltyAction(id, body)       { return fetchMutation(apiUrl('/admin/loyalty/' + id), 'POST', body); }
+  function createLoyaltyReward(rewardId, body) { return fetchMutation(apiUrl('/admin/loyalty/reward/' + rewardId), 'POST', body); }
+  function createLoyaltySkip(rewardId)         { return fetchMutation(apiUrl('/admin/loyalty/skip/' + rewardId), 'POST'); }
 
   // ── Vague 1 — Transitaire ────────────────────────────────────────────────
 
@@ -715,7 +716,8 @@
     deleteCostBenchmark,
     getLoyaltyPending,
     getLoyaltyHistory,
-    createLoyaltyAction,
+    createLoyaltyReward,
+    createLoyaltySkip,
 
     // Signals / ActionCenterView (6)
     getSignalsStats,
