@@ -42,20 +42,32 @@ pool.on('error', (err) => {
 // message, payload), alors que le schéma réel est alerts(type, entity_type,
 // entity_id, severity, title, description). On réécrit ces requêtes ici pour
 // couvrir db.query(...) et les transactions client.query(...), sans masquer les
-// autres erreurs SQL.
-function runQuery(target, text, params, ...rest) {
+// autres erreurs SQL ni altérer les signatures pg non concernées.
+function rewriteQueryArgs(args) {
+  const [text, params, ...rest] = args;
+
+  if (typeof text !== 'string') return args;
+
+  if (typeof params === 'function') {
+    const rewritten = rewriteLegacyAlertInsert(text, []);
+    if (rewritten.rewritten) return [rewritten.text, rewritten.params, params, ...rest];
+    return args;
+  }
+
   const rewritten = rewriteLegacyAlertInsert(text, params);
-  return target.query(rewritten.text, rewritten.params, ...rest);
+  if (rewritten.rewritten) return [rewritten.text, rewritten.params, ...rest];
+  return args;
+}
+
+function runQuery(target, ...args) {
+  return target.query(...rewriteQueryArgs(args));
 }
 
 function wrapClient(client) {
   if (!client || client.__komerceAlertsCompatWrapped) return client;
 
   const originalQuery = client.query.bind(client);
-  client.query = (text, params, ...rest) => {
-    const rewritten = rewriteLegacyAlertInsert(text, params);
-    return originalQuery(rewritten.text, rewritten.params, ...rest);
-  };
+  client.query = (...args) => originalQuery(...rewriteQueryArgs(args));
 
   Object.defineProperty(client, '__komerceAlertsCompatWrapped', {
     value: true,
@@ -104,7 +116,7 @@ async function healthcheck() {
 }
 
 module.exports = {
-  query: (text, params, ...rest) => runQuery(pool, text, params, ...rest),
+  query: (...args) => runQuery(pool, ...args),
   getClient: async () => wrapClient(await pool.connect()),
   pool,
   healthcheck,
