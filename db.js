@@ -41,8 +41,9 @@ pool.on('error', (err) => {
 // Plusieurs services historiques écrivaient encore dans alerts(level, source,
 // message, payload), alors que le schéma réel est alerts(type, entity_type,
 // entity_id, severity, title, description). On réécrit ces requêtes ici pour
-// couvrir db.query(...), db.pool.query(...), db.getClient() et db.pool.connect(),
-// sans masquer les autres erreurs SQL ni altérer les signatures pg non concernées.
+// couvrir db.query(...), db.pool.query(...), db.getClient(), db.connect() et
+// db.pool.connect(), sans masquer les autres erreurs SQL ni altérer les
+// signatures pg non concernées.
 function rewriteQueryArgs(args) {
   const [text, params, ...rest] = args;
 
@@ -89,6 +90,10 @@ pool.connect = (...args) => {
   return originalPoolConnect(...args).then(wrapClient);
 };
 
+function connect(...args) {
+  return pool.connect(...args);
+}
+
 // ── V2.8: Pool health monitoring ────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
   const MONITOR_INTERVAL = 5 * 60 * 1000; // 5 min
@@ -129,7 +134,8 @@ async function healthcheck() {
 
 module.exports = {
   query: (...args) => pool.query(...args),
-  getClient: (...args) => pool.connect(...args),
+  getClient: connect,
+  connect,
   pool,
   healthcheck,
 };
