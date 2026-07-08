@@ -221,7 +221,7 @@ module.exports = {
       'orders: RW',
       'products: R',
       'recipients: RW',
-      'refunds: RW',
+      // refunds : W-via:refund-service (recordExternalRefund — shared-cart-refund-queue.js, cancel-shared-cart-with-refunds.js)
       'relais: R',
       'shared_cart_contributions: RW',
       'shared_cart_estimations: RW',

@@ -17,6 +17,7 @@
 jest.mock('../../services/order-status-machine', () => ({ transitionOrderStatus: jest.fn() }));
 jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() })),
+  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 jest.mock('../../db', () => ({ query: jest.fn() }));
 

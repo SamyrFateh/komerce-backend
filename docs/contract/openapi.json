@@ -18594,6 +18594,86 @@
           }
         }
       }
+    },
+    "/api/admin/catalog/approval-queue": {
+      "get": {
+        "summary": "GET /api/admin/catalog/approval-queue",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Contrat à préciser (route ajoutée manuellement — dette documentée dans DEBT.md)",
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue/{id}/approve": {
+      "post": {
+        "summary": "POST /api/admin/catalog/approval-queue/{id}/approve",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Contrat à préciser (route ajoutée manuellement — dette documentée dans DEBT.md)",
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue/{id}/reject": {
+      "post": {
+        "summary": "POST /api/admin/catalog/approval-queue/{id}/reject",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Contrat à préciser (route ajoutée manuellement — dette documentée dans DEBT.md)",
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue/{id}/override": {
+      "post": {
+        "summary": "POST /api/admin/catalog/approval-queue/{id}/override",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Contrat à préciser (route ajoutée manuellement — dette documentée dans DEBT.md)",
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "x-inventory-source": "runtime-introspection"

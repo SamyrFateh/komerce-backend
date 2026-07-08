@@ -126,12 +126,12 @@ module.exports = {
       'cash_deposits: RW',
       'incidents: RW',
       'order_items: R',
-      'order_status_history: W',
+      // order_status_history : W-via:order-status-machine (appendOrderHistoryNote — payment-paypal.js)
       'orders: RW',
       'parcel_items: R',
       'parcels: RW',
       'paypal_events_processed: RW',
-      'refunds: W',
+      // refunds : W-via:refund-service (recordExternalRefund — payment-paypal.js)
       'scan_events: R',
       'stripe_events_processed: RW',
       'users: R',

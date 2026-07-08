@@ -235,4 +235,78 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
   return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf, refundRowId };
 }
 
-module.exports = { processRefund, processRefundWithFallback, _buildIdempotencyKey };
+// ─────────────────────────────────────────────────────────────────────────────
+// recordExternalRefund — trace comptable d'un remboursement déjà effectué
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Insère une ligne `refunds` avec status='completed' pour un remboursement
+ * dont l'appel externe (PayPal, Stripe) a déjà abouti.
+ *
+ * Contrairement à processRefund (pending→completed), cette fonction enregistre
+ * directement l'état final. Elle est le SEUL chemin d'écriture directe sur
+ * `refunds` pour les features payments et shared-cart.
+ *
+ * @param {object} dbClient   Client de transaction actif (ou pool global)
+ * @param {object} opts
+ * @param {string}  opts.orderId           UUID de la commande
+ * @param {number}  opts.amountKmf         Montant en KMF
+ * @param {number}  opts.amountEur         Montant en EUR (peut être null)
+ * @param {string}  opts.refundType        'full' | 'partial'
+ * @param {string}  opts.method            'paypal' | 'stripe' | 'wallet_credit' | …
+ * @param {string}  opts.externalRefundId  ID externe (stripe_refund_id, ref PayPal) ou null
+ * @param {string}  opts.reason            Motif lisible
+ * @param {string}  opts.initiatedBy       UUID de l'acteur (null = système)
+ * @param {string}  opts.conflictOn        Clé d'idempotence :
+ *                    'order_refund_type' → ON CONFLICT (order_id, refund_type)
+ *                    'stripe_refund_id'  → ON CONFLICT (stripe_refund_id)
+ *                    'any'               → ON CONFLICT DO NOTHING
+ * @param {Date}   [opts.completedAt]      Date de completion (défaut : NOW())
+ * @returns {Promise<string|null>}         UUID de la ligne insérée, ou celle
+ *                                         retrouvée via la clé d'idempotence en cas de conflit
+ */
+async function recordExternalRefund(dbClient, {
+  orderId, amountKmf, amountEur, refundType, method,
+  externalRefundId = null, reason, initiatedBy = null,
+  conflictOn = 'any', completedAt = null,
+}) {
+  const conflictClause =
+    conflictOn === 'order_refund_type' ? 'ON CONFLICT (order_id, refund_type) DO NOTHING' :
+    conflictOn === 'stripe_refund_id'  ? 'ON CONFLICT (stripe_refund_id) DO NOTHING' :
+                                         'ON CONFLICT DO NOTHING';
+
+  const { rows: [row] } = await dbClient.query(
+    `INSERT INTO refunds
+       (order_id, amount_kmf, amount_eur, refund_type, refund_method,
+        stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
+     VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, 'completed', $9)
+     ${conflictClause}
+     RETURNING id`,
+    [
+      orderId, amountKmf, amountEur ?? null, refundType, method,
+      externalRefundId, reason, initiatedBy,
+      completedAt ?? new Date(),
+    ]
+  );
+
+  if (row) return row.id;
+
+  // Conflit (retry) — retrouver l'existant via la clé d'idempotence
+  if (conflictOn === 'stripe_refund_id' && externalRefundId) {
+    const { rows: [existing] } = await dbClient.query(
+      `SELECT id FROM refunds WHERE stripe_refund_id = $1 LIMIT 1`,
+      [externalRefundId]
+    );
+    return existing?.id ?? null;
+  }
+  if (conflictOn === 'order_refund_type') {
+    const { rows: [existing] } = await dbClient.query(
+      `SELECT id FROM refunds WHERE order_id = $1 AND refund_type = $2 LIMIT 1`,
+      [orderId, refundType]
+    );
+    return existing?.id ?? null;
+  }
+  return null;
+}
+
+module.exports = { processRefund, processRefundWithFallback, recordExternalRefund, _buildIdempotencyKey };

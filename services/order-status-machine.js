@@ -9,7 +9,8 @@
  * @depends       db.js, services/notification-service.js
  * @used-by       order-payment-confirmation.js, routes/orders.js, cancellation-flows, admin-flows
  * @db-read       order_items, orders, products
- * @db-write      order_status_history, orders, product_variants, products
+ * @db-write      order_status_history, orders
+ * @db-write-via:product-admin-service products, product_variants
  * @db-txn        single_status_transition_gate, append_history_before_side_effects
  * @doctrine      status_transition_source_unique, payment_to_stock_single_entry, annulation_tracee
  * @impact-areas  orders, payments, stock, wallet, sourcing, notifications, dashboards
@@ -50,6 +51,7 @@
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'order-status-machine' });
 const { randomBytes } = require('crypto');
+const { adjustStock } = require('./product-admin-service');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -360,24 +362,7 @@ async function transitionOrderStatus({
           WHERE oi.order_id = $1`,
         [orderId]
       );
-      for (const item of items) {
-        await q.query(
-          'UPDATE products SET stock = stock + $1 WHERE id = $2',
-          [item.quantity, item.product_id]
-        );
-        // Variantes — miroir exact de la décrémentation (VAGUE 3).
-        if (item.has_variants && item.variant_combo) {
-          for (const [vType, vValue] of Object.entries(item.variant_combo)) {
-            await q.query(
-              `UPDATE product_variants
-                  SET stock = stock + $1
-                WHERE product_id = $2 AND variant_type = $3 AND variant_value = $4
-                  AND stock IS NOT NULL`,
-              [item.quantity, item.product_id, vType, vValue]
-            );
-          }
-        }
-      }
+      await adjustStock(q, items, 'increment');
       cancelEffects.stockItemsRestored = items.length;
       if (items.length > 0) {
         log.info({ order_id: orderId, items_count: items.length, previous_status: previousStatus }, 'Stock restored after order cancellation');

@@ -9,7 +9,9 @@
  * @depends       db.js, services/paypal-client.js, services/order-payment-confirmation.js, services/documents/refund-receipt.js, routes/pickup-secret.js
  * @used-by       routes/payments-paypal.js
  * @db-read       orders, paypal_events_processed
- * @db-write      alerts, order_status_history, orders, paypal_events_processed, refunds
+ * @db-write      alerts, orders, paypal_events_processed
+ * @db-write-via:refund-service refunds
+ * @db-write-via:order-status-machine order_status_history
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  payment, checkout
@@ -42,6 +44,8 @@ const refundReceiptService = require('./documents/refund-receipt');
 
 const { confirmPaymentCycle }    = require('./order-payment-confirmation');
 const { markRefunded }           = require('./payment-service');
+const { recordExternalRefund }   = require('./refund-service');
+const { appendOrderHistoryNote } = require('./order-status-machine');
 const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
 const log = require('../utils/logger').child({ module: 'payment-paypal' });
 
@@ -550,26 +554,21 @@ async function refundPaypalOrder({ orderId, amountEur, reason, adminUser, paypal
     : (totalEur > 0 ? Math.round(refundAmount * totalKmf / totalEur) : 0);
   const refundType   = isFullRefund ? 'full' : 'partial';
 
-  const { rows: [refundRow] } = await db.query(
-    `INSERT INTO refunds
-       (order_id, amount_kmf, amount_eur, refund_type, refund_method,
-        stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
-     VALUES ($1, $2, $3, $4, 'paypal', $5, NULL, $6, $7, 'completed', NOW())
-     ON CONFLICT DO NOTHING
-     RETURNING id`,
-    [
-      order.id, amountKmf, refundAmount, refundType,
-      refund.id || null,
-      reason || 'admin_refund',
-      adminUser?.id || null,
-    ]
-  );
+  const refundRowId = await recordExternalRefund(db, {
+    orderId:          order.id,
+    amountKmf,
+    amountEur:        refundAmount,
+    refundType,
+    method:           'paypal',
+    externalRefundId: refund.id || null,
+    reason:           reason || 'admin_refund',
+    initiatedBy:      adminUser?.id || null,
+    conflictOn:       'any',
+  });
 
-  await db.query(
-    `INSERT INTO order_status_history (order_id, status, note, changed_by)
-     VALUES ($1, 'refunded', $2, $3)`,
-    [order.id, `Refund PayPal ${refund.id || ''} — ${refundAmount} EUR`, adminUser?.id || null]
-  );
+  await appendOrderHistoryNote(db, order.id, 'refunded',
+    `Refund PayPal ${refund.id || ''} — ${refundAmount} EUR`,
+    adminUser?.id || null);
 
   await markRefunded(order.id, { client: db });
 
@@ -589,8 +588,8 @@ async function refundPaypalOrder({ orderId, amountEur, reason, adminUser, paypal
     [order.id]
   );
 
-  if (refundRow?.id) {
-    refundReceiptService.issue(refundRow.id, { issuedBy: adminUser?.id }).catch(err => {
+  if (refundRowId) {
+    refundReceiptService.issue(refundRowId, { issuedBy: adminUser?.id }).catch(err => {
       log.warn({ err, order_id: order.id }, '[payment-paypal] reçu remboursement échoué (non-fatal)');
     });
   }

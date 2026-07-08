@@ -22,6 +22,7 @@
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
+  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
 jest.mock('../../middleware/auth',       () => ({ authenticate: (req, res, next) => next(), requireAdmin: (req, res, next) => next(), requireRole: () => (req, res, next) => next() }));

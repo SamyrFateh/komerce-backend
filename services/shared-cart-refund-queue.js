@@ -9,7 +9,8 @@
  * @depends       db.js, services/refund-service.js, services/documents/refund-receipt.js
  * @used-by       services/cancel-shared-cart-with-refunds.js, routes/shared-cart-refund-admin.js
  * @db-read       shared_cart_contributions, shared_carts, users
- * @db-write      refunds, shared_cart_contributions, shared_cart_events
+ * @db-write      shared_cart_contributions, shared_cart_events
+ * @db-write-via:refund-service refunds
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  shared-cart
@@ -35,6 +36,7 @@
  */
 
 const db = require('../db');
+const { recordExternalRefund } = require('./refund-service');
 const refundReceiptService = require('./documents/refund-receipt');
 const log = require('../utils/logger').child({ module: 'shared-cart-refund-queue' });
 
@@ -219,30 +221,18 @@ async function markManualRefundProcessed(contributionId, adminUserId, options = 
 
     let refundRowId = null;
     if (orderId) {
-      const { rows: [refundRow] } = await client.query(
-        `INSERT INTO refunds
-           (order_id, amount_kmf, amount_eur, refund_type, refund_method,
-            stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
-         VALUES ($1, $2, $3, 'partial', $4, $5, NULL, $6, $7, 'completed', $8)
-         ON CONFLICT (order_id, refund_type) DO NOTHING
-         RETURNING id`,
-        [
-          orderId, amountKmf, amountEur, refundMethod,
-          contribMeta.manual_refund_reference || null,
-          note || `Remboursement manuel contribution panier partagé`,
-          adminUserId,
-          now,
-        ]
-      );
-      if (refundRow) {
-        refundRowId = refundRow.id;
-      } else {
-        const { rows: [existing] } = await client.query(
-          `SELECT id FROM refunds WHERE order_id = $1 AND refund_type = 'partial' LIMIT 1`,
-          [orderId]
-        );
-        refundRowId = existing?.id || null;
-      }
+      refundRowId = await recordExternalRefund(client, {
+        orderId,
+        amountKmf,
+        amountEur,
+        refundType:       'partial',
+        method:           refundMethod,
+        externalRefundId: contribMeta.manual_refund_reference || null,
+        reason:           note || 'Remboursement manuel contribution panier partagé',
+        initiatedBy:      adminUserId,
+        conflictOn:       'order_refund_type',
+        completedAt:      now,
+      });
     }
 
     return { contribution: updatedContribution, refundRowId };

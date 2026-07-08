@@ -146,8 +146,8 @@ module.exports = {
       'parcel_items: R',
       'parcels: R',
       'product_suppliers: RW',
-      'product_variants: RW',
-      'products: RW',
+      'product_variants: R',  // W-via:product-admin-service (adjustStock variantes)
+      'products: R',          // W-via:product-admin-service (adjustStock — order-payment-confirmation.js, order-status-machine.js)
       'purchase_orders: RW',
       'recipients: RW',
       'refunds: R',

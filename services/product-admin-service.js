@@ -576,6 +576,45 @@ async function deleteVariant(db, productId, variantId) {
   };
 }
 
+// ── Gestion du stock ──────────────────────────────────────────────────────────
+
+/**
+ * Ajuste le stock de produits (et de leurs variantes) en une seule opération.
+ * SEUL chemin d'écriture autorisé sur `products.stock` et `product_variants.stock`
+ * pour les features externes (orders, logistics). Feature catalog = owner.
+ *
+ * @param {object}  dbClient    Client de transaction actif
+ * @param {Array}   items       Articles à ajuster :
+ *   [{ product_id, quantity, has_variants?, variant_combo? }]
+ * @param {'increment'|'decrement'} direction
+ *   'decrement' → stock - quantity  (paiement confirmé)
+ *   'increment' → stock + quantity  (annulation, restauration backorder)
+ */
+async function adjustStock(dbClient, items, direction) {
+  const op = direction === 'decrement' ? '-' : '+';
+
+  for (const item of items) {
+    await dbClient.query(
+      `UPDATE products SET stock = stock ${op} $1 WHERE id = $2`,
+      [item.quantity, item.product_id]
+    );
+
+    if (item.has_variants && item.variant_combo) {
+      for (const [vType, vValue] of Object.entries(item.variant_combo)) {
+        await dbClient.query(
+          `UPDATE product_variants
+              SET stock = stock ${op} $1
+            WHERE product_id = $2
+              AND variant_type = $3
+              AND variant_value = $4
+              AND stock IS NOT NULL`,
+          [item.quantity, item.product_id, vType, vValue]
+        );
+      }
+    }
+  }
+}
+
 // ── Exports ───────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -587,4 +626,5 @@ module.exports = {
   appendImages,
   replaceVariants,
   deleteVariant,
+  adjustStock,
 };

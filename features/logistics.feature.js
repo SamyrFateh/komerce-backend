@@ -183,7 +183,7 @@ module.exports = {
       'pickup_verify_attempts: RW',
       'product_suppliers: R',
       'product_variants: R',          // W-via:order-status-machine (service orders)
-      'products: RW',
+      'products: R',          // W-via:product-admin-service (adjustStock — parcel-operations.js)
       'purchase_orders: R',
       'recipients: R',
       'relais: RW',

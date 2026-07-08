@@ -9,7 +9,8 @@
  * @depends       services/order-status-machine.js, db.js
  * @used-by       services/payment-stripe.js, services/payment-cash-confirm.js, services/shared-cart-engine.js, paypal-flows, wallet-full-order-flows
  * @db-read       order_items, product_variants, products
- * @db-write      alerts, product_variants, products
+ * @db-write      alerts
+ * @db-write-via:product-admin-service products, product_variants
  * @db-txn        caller_transaction_required, stock_for_update, confirmPaymentCycle_unique
  * @doctrine      transaction_existante_obligatoire, confirmPaymentCycle_unique, stock_for_update, cash_rollback_vs_stripe_alert
  * @impact-areas  orders, stock, payments, shared-cart, wallet, sourcing, loyalty
@@ -64,6 +65,7 @@
  */
 
 const { transitionOrderStatus } = require('./order-status-machine');
+const { adjustStock }           = require('./product-admin-service');
 const log = require('../utils/logger').child({ module: 'order-payment-confirmation' });
 const db  = require('../db');
 
@@ -219,25 +221,8 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   }
 
   // Stock suffisant pour tous les articles → décrémenter
-  // (D'abord stock global, puis stocks variantes — toujours dans la même TX).
-  for (const item of items) {
-    await dbClient.query(
-      'UPDATE products SET stock = stock - $1 WHERE id = $2',
-      [item.quantity, item.product_id]
-    );
-    // VAGUE 3 — Décrémentation stocks variantes (mêmes conditions que vérif).
-    if (item.has_variants && item.variant_combo) {
-      for (const [vType, vValue] of Object.entries(item.variant_combo)) {
-        await dbClient.query(
-          `UPDATE product_variants
-              SET stock = stock - $1
-            WHERE product_id = $2 AND variant_type = $3 AND variant_value = $4
-              AND stock IS NOT NULL`,
-          [item.quantity, item.product_id, vType, vValue]
-        );
-      }
-    }
-  }
+  // (produits + variantes dans la même TX — VAGUE 3, via product-admin-service)
+  await adjustStock(dbClient, items, 'decrement');
 
   // LOY-01 : hook fidélité branché en post-commit dans chaque chemin de paiement
   // (payment-stripe, payment-paypal ×2, payment-cash-confirm, routes/cash,

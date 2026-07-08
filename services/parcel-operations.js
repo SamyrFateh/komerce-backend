@@ -9,7 +9,9 @@
  * @depends       db, services/notification-service.js, services/order-status-machine.js, services/parcel-guards.js, services/parcel-service.js, services/refund-service.js, utils/logger.js, utils/reference.js, utils/rules.js
  * @used-by       routes/orders/parcels.js
  * @db-read       order_items, orders, parcel_items, parcels, products, relais, users
- * @db-write      order_items, order_status_history, parcel_items, parcels, products
+ * @db-write      order_items, parcel_items, parcels
+ * @db-write-via:order-status-machine order_status_history
+ * @db-write-via:product-admin-service products
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -49,7 +51,8 @@ const { getRule, getRuleNumber }        = require('../utils/rules');
 const { generateParcelRef }             = require('../utils/reference');
 const { processRefundWithFallback }     = require('./refund-service');
 const { PARCEL_SMS }                    = require('./parcel-service');
-const { transitionOrderStatus }         = require('./order-status-machine');
+const { transitionOrderStatus, appendOrderHistoryNote } = require('./order-status-machine');
+const { adjustStock }                   = require('./product-admin-service');
 const {
   validateParcelCreate,
   validateSplitItems,
@@ -122,16 +125,9 @@ async function markAvailability(orderId, items, user) {
     const delayCount = items.filter(i => i.status === 'delayed').length;
     const boCount    = items.filter(i => i.status === 'backorder').length;
 
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, $2, $3, $4)`,
-      [
-        orderId,
-        order.status,
-        `Disponibilité mise à jour — ${availCount} disponible(s), ${delayCount} retardé(s), ${boCount} en backorder`,
-        user.id,
-      ]
-    );
+    await appendOrderHistoryNote(client, orderId, order.status,
+      `Disponibilité mise à jour — ${availCount} disponible(s), ${delayCount} retardé(s), ${boCount} en backorder`,
+      user.id);
 
     await client.query('COMMIT');
 
@@ -301,16 +297,9 @@ async function partialShip(orderId, body, user) {
 
     // ── 8. Historique (I-04) ────────────────────────────────────────────────
     const backorderQty = allBackorderItems.reduce((s, i) => s + i.quantity, 0);
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, $2, $3, $4)`,
-      [
-        orderId,
-        order.status,
-        `Expédition partielle créée — ${availableQty} articles expédiés (${psRef}), ${backorderQty} en backorder${boRef ? ` (${boRef})` : ''}`,
-        user.id,
-      ]
-    );
+    await appendOrderHistoryNote(client, orderId, order.status,
+      `Expédition partielle créée — ${availableQty} articles expédiés (${psRef}), ${backorderQty} en backorder${boRef ? ` (${boRef})` : ''}`,
+      user.id);
 
     await client.query('COMMIT');
 
@@ -427,16 +416,9 @@ async function updateParcelStatus(parcelId, body, user) {
     );
 
     // Historique sur la commande parent (I-04)
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, $2, $3, $4)`,
-      [
-        parcel.parent_id,
-        parcel.parent_status,
-        `Colis ${parcel.reference} → ${status}${note ? ` — ${note}` : ''}`,
-        user.id,
-      ]
-    );
+    await appendOrderHistoryNote(client, parcel.parent_id, parcel.parent_status,
+      `Colis ${parcel.reference} → ${status}${note ? ` — ${note}` : ''}`,
+      user.id);
 
     // Vérifier si TOUS les colis sont « collected » → transition commande (I-01)
     if (status === 'collected') {
@@ -559,13 +541,8 @@ async function cancelBackorder(orderId, body, user) {
       [reason || 'Annulation backorder client', parcelId]
     );
 
-    // Restaurer le stock (I-06)
-    for (const item of boItems) {
-      await client.query(
-        'UPDATE products SET stock = stock + $1 WHERE id = $2',
-        [item.quantity, item.product_id]
-      );
-    }
+    // Restaurer le stock (I-06, via product-admin-service)
+    await adjustStock(client, boItems, 'increment');
 
     // Crédit boutique ou remboursement Stripe (I-06, avec fallback silencieux)
     let refundResult    = null;
@@ -588,16 +565,9 @@ async function cancelBackorder(orderId, body, user) {
     }
 
     // Historique (I-04)
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, $2, $3, $4)`,
-      [
-        orderId,
-        order.status,
-        `Backorder ${parcel.reference} annulé — ${boItems.length} article(s), ${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF ${refundResult?.method === 'stripe' ? 'remboursé (Stripe)' : 'crédité (boutique)'}`,
-        user.id,
-      ]
-    );
+    await appendOrderHistoryNote(client, orderId, order.status,
+      `Backorder ${parcel.reference} annulé — ${boItems.length} article(s), ${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF ${refundResult?.method === 'stripe' ? 'remboursé (Stripe)' : 'crédité (boutique)'}`,
+      user.id);
 
     await client.query('COMMIT');
 

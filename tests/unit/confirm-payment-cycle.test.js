@@ -32,6 +32,7 @@ jest.mock('../../utils/logger', () => ({
     error: jest.fn(),
     debug: jest.fn(),
   }),
+  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 // db.query utilisé pour l'alerte INSERT — on le mock silencieusement
 jest.mock('../../db', () => ({ query: jest.fn().mockResolvedValue({ rows: [] }) }));

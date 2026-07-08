@@ -9,7 +9,8 @@
  * @depends       db.js, services/refund-service.js, services/shared-cart-refund-queue.js
  * @used-by       routes/shared-cart.js, routes/shared-cart-refund-admin.js
  * @db-read       shared_cart_contributions, shared_carts
- * @db-write      refunds, shared_cart_contributions, shared_cart_events, shared_carts
+ * @db-write      shared_cart_contributions, shared_cart_events, shared_carts
+ * @db-write-via:refund-service refunds
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  shared-cart
@@ -56,6 +57,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const log = require('../utils/logger').child({ module: 'cancel-shared-cart-with-refunds' });
 const { sendTemplateWhatsApp } = require('./whatsapp-meta');
 const refundReceiptService = require('./documents/refund-receipt');
+const { recordExternalRefund } = require('./refund-service');
 
 function r(n) {
   return Math.round(Number(n) || 0);
@@ -184,29 +186,25 @@ async function refundOneContribution(cart, contribution) {
     const amountKmf = r(contribution.amount_kmf);
     const amountEur = contribution.amount_eur ? Number(contribution.amount_eur) : null;
 
-    const { rows: [refundRow] } = await db.query(
-      `INSERT INTO refunds
-         (order_id, amount_kmf, amount_eur, refund_type, refund_method,
-          stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
-       VALUES (
-         (SELECT order_id FROM shared_carts WHERE id = $1),
-         $2, $3, 'partial', 'stripe', $4, NULL,
-         'shared_cart_cancellation', NULL, 'completed', NOW()
-       )
-       ON CONFLICT (stripe_refund_id) DO NOTHING
-       RETURNING id`,
-      [cart.id, amountKmf, amountEur, refund.id]
+    // Résoudre l'orderId avant l'appel (évite la subquery SQL dans le service)
+    const { rows: [cartRow] } = await db.query(
+      `SELECT order_id FROM shared_carts WHERE id = $1`,
+      [cart.id]
     );
+    const orderId = cartRow?.order_id || null;
 
-    if (refundRow) {
-      refundRowId = refundRow.id;
-    } else {
-      // Conflict (retry) → retrouver l'existant
-      const { rows: [existing] } = await db.query(
-        `SELECT id FROM refunds WHERE stripe_refund_id = $1 LIMIT 1`,
-        [refund.id]
-      );
-      refundRowId = existing?.id || null;
+    if (orderId) {
+      refundRowId = await recordExternalRefund(db, {
+        orderId,
+        amountKmf,
+        amountEur,
+        refundType:       'partial',
+        method:           'stripe',
+        externalRefundId: refund.id,
+        reason:           'shared_cart_cancellation',
+        initiatedBy:      null,
+        conflictOn:       'stripe_refund_id',
+      });
     }
   } catch (err) {
     log.warn({ err, contribution_id: contribution.id, cart_id: cart.id },

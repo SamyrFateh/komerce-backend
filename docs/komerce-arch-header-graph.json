@@ -21,12 +21,12 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 715,
-    "edges": 4124,
+    "edges": 4123,
     "dbTables": 109,
     "doctrines": 133,
     "impactAreas": 116,
     "unresolvedCodeEdges": 392,
-    "dbWriteViaOverlapWarnings": 1,
+    "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
   "byDomain": {
@@ -8758,12 +8758,18 @@
         "shared_carts"
       ],
       "dbWrite": [
-        "refunds",
         "shared_cart_contributions",
         "shared_cart_events",
         "shared_carts"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "refund-service",
+          "tables": [
+            "refunds"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -11948,11 +11954,17 @@
         "products"
       ],
       "dbWrite": [
-        "alerts",
-        "product_variants",
-        "products"
+        "alerts"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "product-admin-service",
+          "tables": [
+            "products",
+            "product_variants"
+          ]
+        }
+      ],
       "dbTxn": [
         "caller_transaction_required",
         "stock_for_update",
@@ -12068,11 +12080,17 @@
       ],
       "dbWrite": [
         "order_status_history",
-        "orders",
-        "product_variants",
-        "products"
+        "orders"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "product-admin-service",
+          "tables": [
+            "products",
+            "product_variants"
+          ]
+        }
+      ],
       "dbTxn": [
         "single_status_transition_gate",
         "append_history_before_side_effects"
@@ -12276,10 +12294,8 @@
       ],
       "dbWrite": [
         "order_items",
-        "order_status_history",
         "parcel_items",
-        "parcels",
-        "products"
+        "parcels"
       ],
       "dbWriteVia": [
         {
@@ -12287,6 +12303,12 @@
           "tables": [
             "product_variants",
             "order_status_history",
+            "products"
+          ]
+        },
+        {
+          "via": "product-admin-service",
+          "tables": [
             "products"
           ]
         }
@@ -12300,8 +12322,7 @@
       "impactAreas": [
         "logistics"
       ],
-      "version": "2026-06",
-      "dbWriteViaOverlapWarning": "services/parcel-operations.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> order_status_history, products"
+      "version": "2026-06"
     },
     {
       "id": "services/parcel-security.js",
@@ -12573,12 +12594,23 @@
       ],
       "dbWrite": [
         "alerts",
-        "order_status_history",
         "orders",
-        "paypal_events_processed",
-        "refunds"
+        "paypal_events_processed"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "refund-service",
+          "tables": [
+            "refunds"
+          ]
+        },
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "order_status_history"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -14853,11 +14885,17 @@
         "users"
       ],
       "dbWrite": [
-        "refunds",
         "shared_cart_contributions",
         "shared_cart_events"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "refund-service",
+          "tables": [
+            "refunds"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -30926,12 +30964,6 @@
     },
     {
       "from": "services/cancel-shared-cart-with-refunds.js",
-      "to": "db:refunds",
-      "type": "db-write",
-      "label": "refunds"
-    },
-    {
-      "from": "services/cancel-shared-cart-with-refunds.js",
       "to": "db:shared_cart_contributions",
       "type": "db-write",
       "label": "shared_cart_contributions"
@@ -30947,6 +30979,13 @@
       "to": "db:shared_carts",
       "type": "db-write",
       "label": "shared_carts"
+    },
+    {
+      "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "db:refunds",
+      "type": "db-write-via",
+      "label": "refunds",
+      "via": "refund-service"
     },
     {
       "from": "services/cancel-shared-cart-with-refunds.js",
@@ -35660,15 +35699,17 @@
     },
     {
       "from": "services/order-payment-confirmation.js",
-      "to": "db:product_variants",
-      "type": "db-write",
-      "label": "product_variants"
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "product-admin-service"
     },
     {
       "from": "services/order-payment-confirmation.js",
-      "to": "db:products",
-      "type": "db-write",
-      "label": "products"
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "product-admin-service"
     },
     {
       "from": "services/order-payment-confirmation.js",
@@ -35888,15 +35929,17 @@
     },
     {
       "from": "services/order-status-machine.js",
-      "to": "db:product_variants",
-      "type": "db-write",
-      "label": "product_variants"
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "product-admin-service"
     },
     {
       "from": "services/order-status-machine.js",
-      "to": "db:products",
-      "type": "db-write",
-      "label": "products"
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "product-admin-service"
     },
     {
       "from": "services/order-status-machine.js",
@@ -36233,12 +36276,6 @@
     },
     {
       "from": "services/parcel-operations.js",
-      "to": "db:order_status_history",
-      "type": "db-write",
-      "label": "order_status_history"
-    },
-    {
-      "from": "services/parcel-operations.js",
       "to": "db:parcel_items",
       "type": "db-write",
       "label": "parcel_items"
@@ -36248,12 +36285,6 @@
       "to": "db:parcels",
       "type": "db-write",
       "label": "parcels"
-    },
-    {
-      "from": "services/parcel-operations.js",
-      "to": "db:products",
-      "type": "db-write",
-      "label": "products"
     },
     {
       "from": "services/parcel-operations.js",
@@ -36275,6 +36306,13 @@
       "type": "db-write-via",
       "label": "products",
       "via": "order-status-machine"
+    },
+    {
+      "from": "services/parcel-operations.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "product-admin-service"
     },
     {
       "from": "services/parcel-operations.js",
@@ -36638,12 +36676,6 @@
     },
     {
       "from": "services/payment-paypal.js",
-      "to": "db:order_status_history",
-      "type": "db-write",
-      "label": "order_status_history"
-    },
-    {
-      "from": "services/payment-paypal.js",
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
@@ -36657,8 +36689,16 @@
     {
       "from": "services/payment-paypal.js",
       "to": "db:refunds",
-      "type": "db-write",
-      "label": "refunds"
+      "type": "db-write-via",
+      "label": "refunds",
+      "via": "refund-service"
+    },
+    {
+      "from": "services/payment-paypal.js",
+      "to": "db:order_status_history",
+      "type": "db-write-via",
+      "label": "order_status_history",
+      "via": "order-status-machine"
     },
     {
       "from": "services/payment-paypal.js",
@@ -40331,12 +40371,6 @@
     },
     {
       "from": "services/shared-cart-refund-queue.js",
-      "to": "db:refunds",
-      "type": "db-write",
-      "label": "refunds"
-    },
-    {
-      "from": "services/shared-cart-refund-queue.js",
       "to": "db:shared_cart_contributions",
       "type": "db-write",
       "label": "shared_cart_contributions"
@@ -40346,6 +40380,13 @@
       "to": "db:shared_cart_events",
       "type": "db-write",
       "label": "shared_cart_events"
+    },
+    {
+      "from": "services/shared-cart-refund-queue.js",
+      "to": "db:refunds",
+      "type": "db-write-via",
+      "label": "refunds",
+      "via": "refund-service"
     },
     {
       "from": "services/shared-cart-refund-queue.js",
@@ -51949,12 +51990,18 @@
         "shared_carts"
       ],
       "dbWrite": [
-        "refunds",
         "shared_cart_contributions",
         "shared_cart_events",
         "shared_carts"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "refund-service",
+          "tables": [
+            "refunds"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -55001,11 +55048,17 @@
         "products"
       ],
       "dbWrite": [
-        "alerts",
-        "product_variants",
-        "products"
+        "alerts"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "product-admin-service",
+          "tables": [
+            "products",
+            "product_variants"
+          ]
+        }
+      ],
       "doctrines": [
         "transaction_existante_obligatoire",
         "confirmPaymentCycle_unique",
@@ -55124,11 +55177,17 @@
       ],
       "dbWrite": [
         "order_status_history",
-        "orders",
-        "product_variants",
-        "products"
+        "orders"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "product-admin-service",
+          "tables": [
+            "products",
+            "product_variants"
+          ]
+        }
+      ],
       "doctrines": [
         "status_transition_source_unique",
         "payment_to_stock_single_entry",
@@ -55337,10 +55396,8 @@
       ],
       "dbWrite": [
         "order_items",
-        "order_status_history",
         "parcel_items",
-        "parcels",
-        "products"
+        "parcels"
       ],
       "dbWriteVia": [
         {
@@ -55348,6 +55405,12 @@
           "tables": [
             "product_variants",
             "order_status_history",
+            "products"
+          ]
+        },
+        {
+          "via": "product-admin-service",
+          "tables": [
             "products"
           ]
         }
@@ -55614,12 +55677,23 @@
       ],
       "dbWrite": [
         "alerts",
-        "order_status_history",
         "orders",
-        "paypal_events_processed",
-        "refunds"
+        "paypal_events_processed"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "refund-service",
+          "tables": [
+            "refunds"
+          ]
+        },
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "order_status_history"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -57821,11 +57895,17 @@
         "users"
       ],
       "dbWrite": [
-        "refunds",
         "shared_cart_contributions",
         "shared_cart_events"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "refund-service",
+          "tables": [
+            "refunds"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -59763,9 +59843,7 @@
       ]
     }
   },
-  "dbWriteViaOverlapWarnings": [
-    "services/parcel-operations.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> order_status_history, products"
-  ],
+  "dbWriteViaOverlapWarnings": [],
   "multiWriterTables": [
     {
       "table": "orders",
@@ -59854,27 +59932,6 @@
       ]
     },
     {
-      "table": "products",
-      "writerCount": 15,
-      "writers": [
-        "routes/admin/system.js",
-        "routes/sourcing-scanner.js",
-        "services/apply-pricing-updates.js",
-        "services/catalog-approval.js",
-        "services/catalog-enrichment.js",
-        "services/catalog-overrides.js",
-        "services/hub-operations.js",
-        "services/order-payment-confirmation.js",
-        "services/order-status-machine.js",
-        "services/parcel-operations.js",
-        "services/pricing-apply.js",
-        "services/pricing-strategy-service.js",
-        "services/product-admin-service.js",
-        "services/sourcing-mutations.js",
-        "services/suppliers/catalog-import-orchestrator.js"
-      ]
-    },
-    {
       "table": "shared_cart_events",
       "writerCount": 13,
       "writers": [
@@ -59891,6 +59948,24 @@
         "services/shared-cart-lifecycle.js",
         "services/shared-cart-queries.js",
         "services/shared-cart-refund-queue.js"
+      ]
+    },
+    {
+      "table": "products",
+      "writerCount": 12,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/sourcing-scanner.js",
+        "services/apply-pricing-updates.js",
+        "services/catalog-approval.js",
+        "services/catalog-enrichment.js",
+        "services/catalog-overrides.js",
+        "services/hub-operations.js",
+        "services/pricing-apply.js",
+        "services/pricing-strategy-service.js",
+        "services/product-admin-service.js",
+        "services/sourcing-mutations.js",
+        "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
     {
@@ -59928,22 +60003,6 @@
       ]
     },
     {
-      "table": "order_status_history",
-      "writerCount": 10,
-      "writers": [
-        "routes/admin/delete-order-cascade.js",
-        "routes/admin/system.js",
-        "routes/admin/users.js",
-        "routes/orders/cancel.js",
-        "routes/orders/create.js",
-        "services/order-status-machine.js",
-        "services/parcel-operations.js",
-        "services/payment-paypal.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js"
-      ]
-    },
-    {
       "table": "notification_log",
       "writerCount": 9,
       "writers": [
@@ -59971,6 +60030,20 @@
         "services/simulator/state-advancer.js",
         "services/verify-qr-collection.js",
         "utils/parcelSync.js"
+      ]
+    },
+    {
+      "table": "order_status_history",
+      "writerCount": 8,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/orders/cancel.js",
+        "routes/orders/create.js",
+        "services/order-status-machine.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-lifecycle.js"
       ]
     },
     {
@@ -60084,17 +60157,6 @@
       ]
     },
     {
-      "table": "refunds",
-      "writerCount": 5,
-      "writers": [
-        "services/cancel-shared-cart-with-refunds.js",
-        "services/payment-paypal.js",
-        "services/refund-service.js",
-        "services/shared-cart-refund-queue.js",
-        "utils/refunds.js"
-      ]
-    },
-    {
       "table": "transaction_documents",
       "writerCount": 5,
       "writers": [
@@ -60113,16 +60175,6 @@
         "routes/admin-costing.js",
         "routes/admin-finance-config.js",
         "services/pricing-rates.js"
-      ]
-    },
-    {
-      "table": "product_variants",
-      "writerCount": 4,
-      "writers": [
-        "services/order-payment-confirmation.js",
-        "services/order-status-machine.js",
-        "services/product-admin-service.js",
-        "services/sourcing-mutations.js"
       ]
     },
     {
@@ -60381,6 +60433,22 @@
       "writers": [
         "routes/purchasing.js",
         "services/purchasing-admin-service.js"
+      ]
+    },
+    {
+      "table": "product_variants",
+      "writerCount": 2,
+      "writers": [
+        "services/product-admin-service.js",
+        "services/sourcing-mutations.js"
+      ]
+    },
+    {
+      "table": "refunds",
+      "writerCount": 2,
+      "writers": [
+        "services/refund-service.js",
+        "utils/refunds.js"
       ]
     },
     {

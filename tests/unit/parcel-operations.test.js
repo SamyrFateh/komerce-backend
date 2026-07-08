@@ -20,7 +20,8 @@ const {
 // ── Mocks ────────────────────────────────────────────────────────────────────
 jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 jest.mock('../../utils/logger', () => ({
-  child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
+  child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
+  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 jest.mock('../../services/notification-service', () => ({
   notifyText:        jest.fn().mockResolvedValue(undefined),
