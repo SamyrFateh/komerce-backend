@@ -1,3 +1,21 @@
+/**
+ * @komerce-arch
+ * @role          alerts-schema-compat
+ * @domain        operations
+ * @layer         util
+ * @criticality   high
+ * @inputs        sql_query, sql_params
+ * @outputs       rewritten_sql_query, rewritten_sql_params
+ * @depends       none
+ * @used-by       db.js
+ * @db-read       none
+ * @db-write      alerts
+ * @db-txn        compatible_with_caller
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  operations, payment, logistics, catalog, refunds
+ * @version       2026-07
+ */
+
 'use strict';
 
 /**
