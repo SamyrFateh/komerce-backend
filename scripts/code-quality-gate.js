@@ -314,12 +314,23 @@ const RULES = [
         const stripped = lines[i].trim();
         // Doit être un return ou throw en position de statement (pas dans un ternaire, arrow, etc.)
         if (!/^(return|throw)\b/.test(stripped)) continue;
-        // Ignorer si la ligne se termine par une virgule/paren/accolade ouvrante — multi-ligne
-        if (/[,({]$/.test(stripped)) continue;
+        // Ignorer si la ligne se termine par une virgule/paren/accolade/crochet ouvrant — multi-ligne
+        if (/[,({[]$/.test(stripped)) continue;
         // Ignorer si la ligne ouvre un template literal non fermé (backticks impairs)
         if ((stripped.match(/`/g) || []).length % 2 === 1) continue;
+        // Ignorer si l'instruction ne se termine pas par ; sur cette ligne : c'est une
+        // expression return/throw multi-lignes (chaînage .replace(), ternaire ?:, concat +,
+        // opérateurs ||/&&) qui continue sur les lignes suivantes — pas un statement complet.
+        if (!/;\s*$/.test(stripped)) continue;
         // Ignorer les return de fonctions fléchées imbriquées : `=> {` juste avant
         // n'est pas un indicateur fiable, on ignore ce cas
+        // Ignorer si ce return/throw est le corps d'un if/else-if SANS accolades
+        // (clause de garde à une ligne) : le code qui suit n'est pas mort, il correspond
+        // à la branche implicite où la condition est fausse.
+        let j = i - 1;
+        while (j >= 0 && lines[j].trim() === '') j--;
+        const prev = j >= 0 ? lines[j].trim() : '';
+        if (/^(if|else if)\s*\(.*\)$/.test(prev)) continue;
 
         const next = lines[i + 1].trim();
         if (!next) continue;                                    // ligne vide — OK
