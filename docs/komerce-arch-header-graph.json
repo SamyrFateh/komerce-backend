@@ -13,11 +13,11 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 357,
+    "scannedCodeFiles": 358,
     "filesWithFullHeaders": 330,
     "filesWithLiteHeaders": 27,
     "filesWithAnyHeaders": 357,
-    "filesWithoutHeaders": 0,
+    "filesWithoutHeaders": 1,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 715,
@@ -62878,7 +62878,9 @@
       "label": "routes/*"
     }
   ],
-  "filesWithoutHeaders": [],
+  "filesWithoutHeaders": [
+    "utils/alerts-compat.js"
+  ],
   "filesWithMisplacedHeaders": [],
   "liteWithoutOwner": []
 }
