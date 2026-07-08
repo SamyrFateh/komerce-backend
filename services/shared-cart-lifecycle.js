@@ -21,6 +21,7 @@
 const crypto = require('crypto');
 const db = require('../db');
 const { CONFIG, r, withTransaction, addEvent } = require('./shared-cart-internals');
+const { appendOrderHistoryNote } = require('./order-status-machine');
 const { sendTemplateWhatsApp } = require('./whatsapp-meta');
 const { getUniqueRef, generatePickupCode } = require('./order-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
@@ -247,11 +248,8 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       ]
     );
 
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'pending', 'Commande créée depuis panier partagé V4.1', $2)`,
-      [order.id, userId]
-    );
+    await appendOrderHistoryNote(client, order.id, 'pending',
+      'Commande créée depuis panier partagé V4.1', userId);
 
     // 6. Créer les order_items depuis le snapshot figé
     // Gel de la classification douanière — I-DOUANE-1 (doctrine DOUANE_DECLARATION_PIVOT)

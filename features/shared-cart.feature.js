@@ -217,7 +217,7 @@ module.exports = {
       'collective_workspaces: RW',
       'finance_config: R',
       'order_items: RW',
-      'order_status_history: W',
+      // order_status_history : W-via:order-status-machine (appendOrderHistoryNote — shared-cart-lifecycle.js)
       'orders: RW',
       'products: R',
       'recipients: RW',

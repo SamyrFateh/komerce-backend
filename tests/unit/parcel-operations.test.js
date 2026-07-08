@@ -20,8 +20,7 @@ const {
 // ── Mocks ────────────────────────────────────────────────────────────────────
 jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 jest.mock('../../utils/logger', () => ({
-  child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
-  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
+  child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 jest.mock('../../services/notification-service', () => ({
   notifyText:        jest.fn().mockResolvedValue(undefined),
@@ -306,9 +305,10 @@ describe('updateParcelStatus', () => {
 
   function makeStatusScript(parcel, newStatus, allParcels = null) {
     const script = [
-      { rows: [parcel] },         // SELECT parcel + order
-      { rows: [], rowCount: 1 },  // UPDATE parcels SET status
-      { rows: [], rowCount: 1 },  // INSERT order_status_history
+      { rows: [parcel] },                         // SELECT parcel + order (updateParcelStatus)
+      { rows: [{ status: parcel.status }] },       // SELECT status FROM parcels (transitionParcelStatus)
+      { rows: [], rowCount: 1 },                   // UPDATE parcels SET status (transitionParcelStatus)
+      { rows: [], rowCount: 1 },                   // INSERT order_status_history (appendOrderHistoryNote)
     ];
     if (newStatus === 'collected') {
       script.push({ rows: allParcels || [{ id: parcel.id, status: 'collected' }] });
@@ -338,7 +338,10 @@ describe('updateParcelStatus', () => {
 
   test('422 — transition illégale collected → preparation', async () => {
     const parcel = makeParcel({ status: 'collected' });
-    const client = makeClient([{ rows: [parcel] }]);
+    const client = makeClient([
+      { rows: [parcel] },
+      { rows: [{ status: 'collected' }] },
+    ]);
     pool.getClient.mockResolvedValue(client);
 
     const result = await updateParcelStatus(PARCEL_ID, { status: 'preparation' }, USER_ADMIN);

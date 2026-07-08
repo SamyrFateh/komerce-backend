@@ -384,36 +384,12 @@ async function updateParcelStatus(parcelId, body, user) {
       return { status: 403, body: { error: "Ce colis n'appartient pas à une commande de votre relais" } };
     }
 
-    // Valider la transition (I-03 parcel)
-    const transGuard = validateParcelTransition(parcel.status, status);
-    if (!transGuard.ok) {
+    // Valider la transition et mettre à jour le statut (I-03 parcel, via SSOT)
+    const transResult = await transitionParcelStatus(client, parcelId, status, { trackingRef: tracking_ref });
+    if (!transResult.ok) {
       await client.query('ROLLBACK');
-      return { status: transGuard.status, body: transGuard.body };
+      return { status: transResult.status, body: transResult.body };
     }
-
-    // Mettre à jour le statut du colis
-    const updates = ['status = $1::parcel_status', 'updated_at = NOW()'];
-    const params  = [status];
-    let pi = 2;
-
-    if (status === 'preparation') updates.push('prepared_at = COALESCE(prepared_at, NOW())');
-    if (status === 'shipped')     updates.push('shipped_at = COALESCE(shipped_at, NOW())');
-    if (status === 'in_transit')  updates.push('in_transit_at = COALESCE(in_transit_at, NOW())');
-    if (status === 'arrived')     updates.push('arrived_at = COALESCE(arrived_at, NOW())');
-    if (status === 'available')   updates.push('available_at = COALESCE(available_at, NOW())');
-    if (status === 'collected')   updates.push('collected_at = COALESCE(collected_at, NOW())');
-    if (status === 'cancelled')   updates.push('cancelled_at = COALESCE(cancelled_at, NOW())');
-
-    if (tracking_ref) {
-      updates.push(`reference = $${pi++}`);
-      params.push(tracking_ref);
-    }
-    params.push(parcelId);
-
-    await client.query(
-      `UPDATE parcels SET ${updates.join(', ')} WHERE id = $${pi}`,
-      params
-    );
 
     // Historique sur la commande parent (I-04)
     await appendOrderHistoryNote(client, parcel.parent_id, parcel.parent_status,
@@ -610,4 +586,67 @@ async function cancelBackorder(orderId, body, user) {
   }
 }
 
-module.exports = { markAvailability, partialShip, updateParcelStatus, cancelBackorder };
+// ── transitionParcelStatus — SSOT pour toute écriture parcels.status ─────────
+
+/**
+ * Met à jour le statut d'un colis avec timestamps automatiques et validation.
+ * SEUL point d'écriture autorisé sur `parcels.status` pour TOUTES les features.
+ *
+ * @param {object} dbClient   Client de transaction actif (ou pool)
+ * @param {string} parcelId   UUID du colis
+ * @param {string} newStatus  Nouveau statut (validé contre PARCEL_TRANSITIONS)
+ * @param {object} [opts]
+ * @param {string} [opts.trackingRef]  Référence tracking à poser
+ * @param {boolean} [opts.skipValidation=false]  Bypass la validation (simulator uniquement)
+ * @returns {Promise<{ ok:boolean, status?:number, body?:object }>}
+ */
+async function transitionParcelStatus(dbClient, parcelId, newStatus, opts = {}) {
+  const { trackingRef, skipValidation = false } = opts;
+
+  if (!skipValidation) {
+    // Charger le statut actuel
+    const { rows: [parcel] } = await dbClient.query(
+      `SELECT status FROM parcels WHERE id = $1`,
+      [parcelId]
+    );
+    if (!parcel) return { ok: false, status: 404, body: { error: 'Colis introuvable' } };
+
+    const guard = validateParcelTransition(parcel.status, newStatus);
+    if (!guard.ok) return guard;
+  }
+
+  const updates = ['status = $1::parcel_status', 'updated_at = NOW()'];
+  const params  = [newStatus];
+  let pi = 2;
+
+  // Timestamps automatiques
+  const TIMESTAMP_MAP = {
+    preparation: 'prepared_at',
+    shipped:     'shipped_at',
+    in_transit:  'in_transit_at',
+    arrived:     'arrived_at',
+    available:   'available_at',
+    collected:   'collected_at',
+    cancelled:   'cancelled_at',
+  };
+  const tsCol = TIMESTAMP_MAP[newStatus];
+  if (tsCol) updates.push(`${tsCol} = COALESCE(${tsCol}, NOW())`);
+
+  // Alias spécifique : scan-engine pose received_at pour 'available'
+  if (newStatus === 'available') updates.push(`received_at = COALESCE(received_at, NOW())`);
+
+  if (trackingRef) {
+    updates.push(`reference = $${pi++}`);
+    params.push(trackingRef);
+  }
+  params.push(parcelId);
+
+  await dbClient.query(
+    `UPDATE parcels SET ${updates.join(', ')} WHERE id = $${pi}`,
+    params
+  );
+
+  return { ok: true };
+}
+
+module.exports = { markAvailability, partialShip, updateParcelStatus, cancelBackorder, transitionParcelStatus };

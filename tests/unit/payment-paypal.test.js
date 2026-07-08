@@ -37,6 +37,16 @@ jest.mock('../../routes/purchasing', () => ({
 jest.mock('../../services/documents/refund-receipt', () => ({
   issue: jest.fn().mockResolvedValue({ id: 'receipt-1' }),
 }));
+jest.mock('../../services/order-status-machine', () => ({
+  transitionOrderStatus: jest.fn().mockResolvedValue({ success: true, previousStatus: 'confirmed', newStatus: 'refunded' }),
+  appendOrderHistoryNote: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('../../services/refund-service', () => ({
+  recordExternalRefund: jest.fn().mockResolvedValue('mock-refund-id'),
+  processRefund: jest.fn(),
+  processRefundWithFallback: jest.fn(),
+  _buildIdempotencyKey: jest.fn(),
+}));
 
 const { confirmPaymentCycle } = require('../../services/order-payment-confirmation');
 const { generateAndStoreSecret, cacheCodeForReveal } = require('../../routes/pickup-secret');
@@ -215,16 +225,16 @@ describe('refundPaypalOrder', () => {
       amountEur: 10, reason: 'Client request',
     }));
 
-    // P3-A.4 : payment_status passe par markRefunded (payment-service.js),
-    // status reste une mutation directe distincte (I3, exception documentée).
-    expect(mockDbQuery).toHaveBeenNthCalledWith(4,
-      `UPDATE orders SET payment_status = 'refunded', updated_at = NOW() WHERE id = $1`,
-      ['order-6']
-    );
-    expect(mockDbQuery).toHaveBeenNthCalledWith(5,
-      `UPDATE orders SET status = 'refunded' WHERE id = $1`,
-      ['order-6']
-    );
+    // Post Sprint B/D-02 : recordExternalRefund et transitionOrderStatus sont mockés.
+    // markRefunded (payment_status) est le seul db.query direct restant.
+    const { recordExternalRefund } = require('../../services/refund-service');
+    expect(recordExternalRefund).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      orderId: 'order-6', method: 'paypal',
+    }));
+    const { transitionOrderStatus } = require('../../services/order-status-machine');
+    expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({
+      orderId: 'order-6', newStatus: 'refunded', source: 'refund_external',
+    }));
   });
 
   test('502 si refundCapture échoue', async () => {
@@ -740,11 +750,11 @@ describe('refundPaypalOrder — validations montant', () => {
     });
 
     expect(result.status).toBe(200);
-    // 25/100 * 50000 = 12500
-    expect(mockDbQuery).toHaveBeenNthCalledWith(2,
-      expect.stringContaining('INSERT INTO refunds'),
-      expect.arrayContaining(['o-part', 12500, 25, 'partial'])
-    );
+    // 25/100 * 50000 = 12500 → vérifié via le mock recordExternalRefund
+    const { recordExternalRefund } = require('../../services/refund-service');
+    expect(recordExternalRefund).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      orderId: 'o-part', amountKmf: 12500, amountEur: 25, refundType: 'partial',
+    }));
   });
 
   test('échec de l\'émission du reçu de remboursement est non-bloquant (log warn, pas de throw)', async () => {

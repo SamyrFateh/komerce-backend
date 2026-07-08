@@ -214,7 +214,8 @@ async function scanAdvance(orderId, tracked, targetStep) {
   const parcel = parcels[0];
 
   try {
-    await db.query("UPDATE parcels SET status = $1, updated_at = NOW() WHERE id = $2", [targetStep, parcel.id]);
+    const { transitionParcelStatus } = require('../parcel-operations');
+    await transitionParcelStatus(db, parcel.id, targetStep, { skipValidation: true });
 
     await db.query(
       "INSERT INTO scans (parcel_id, step, notes, created_at) VALUES ($1, $2, $3, NOW())",
@@ -287,11 +288,15 @@ async function refundOrder(orderId, tracked) {
     ).catch(() => {});
   }
 
-  // Cancel all parcels
-  await db.query(
-    "UPDATE parcels SET status = 'cancelled', updated_at = NOW() WHERE order_id = $1",
+  // Cancel all parcels — bulk via requête directe (simulator uniquement, pas de validation)
+  const { transitionParcelStatus } = require('../parcel-operations');
+  const { rows: parcelsToCancel } = await db.query(
+    "SELECT id FROM parcels WHERE order_id = $1 AND status != 'cancelled'",
     [orderId]
-  ).catch(() => {});
+  );
+  for (const p of parcelsToCancel) {
+    await transitionParcelStatus(db, p.id, 'cancelled', { skipValidation: true }).catch(() => {});
+  }
 
   return { success: true, from, to: 'refunded', action: 'refund' };
 }

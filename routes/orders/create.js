@@ -32,6 +32,7 @@ const { authenticate }                   = require('../../middleware/auth');
 const { authenticateOrCreateGuest }      = require('../../middleware/auth-guest');
 const { getLoyaltyDiscount }             = require('../loyalty');
 const { getRule }                        = require('../../utils/rules');
+const { appendOrderHistoryNote }         = require('../../services/order-status-machine');
 const { getRates }                       = require('../../utils/rates');
 const { validate }                       = require('../../middleware/validate');
 const { orders }                         = require('../../validators');
@@ -349,11 +350,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
   ]
 );
 
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'pending', 'Commande créée', $2)`,
-      [order.id, req.user.id]
-    );
+    await appendOrderHistoryNote(client, order.id, 'pending',
+      'Commande créée', req.user.id);
 
     if (creditApplied > 0) {
       await walletService.debit(client, {

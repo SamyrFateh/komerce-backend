@@ -339,24 +339,10 @@ async function _applyEvent(client, params, parcel, parcelItems, flow, result) {
     await cascadeQuantities(client, params.parcel_id, flow.qty_field);
   }
 
-  // ── 7. Mettre à jour le statut du colis ──
+  // ── 7. Mettre à jour le statut du colis (via SSOT parcel-operations) ──
   if (flow.parcel_status) {
-    const updateFields = [`status = $2`];
-    const updateValues = [params.parcel_id, flow.parcel_status];
-
-    // Timestamps automatiques selon le statut
-    if (flow.parcel_status === 'shipped') {
-      updateFields.push(`shipped_at = COALESCE(shipped_at, NOW())`);
-    } else if (flow.parcel_status === 'available') {
-      updateFields.push(`received_at = COALESCE(received_at, NOW())`);
-    } else if (flow.parcel_status === 'collected') {
-      updateFields.push(`collected_at = COALESCE(collected_at, NOW())`);
-    }
-
-    await client.query(
-      `UPDATE parcels SET ${updateFields.join(', ')} WHERE id = $1`,
-      updateValues
-    );
+    const { transitionParcelStatus } = require('./parcel-operations');
+    await transitionParcelStatus(client, params.parcel_id, flow.parcel_status, { skipValidation: true });
   }
 
   // ── 8. Traitement spécifique: weight_check ──

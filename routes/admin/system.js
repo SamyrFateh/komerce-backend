@@ -22,6 +22,7 @@ const crypto = require('crypto');
 const express = require('express');
 const router  = express.Router();
 const db      = require('../../db');
+const { appendOrderHistoryNote } = require('../../services/order-status-machine');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate } = require('../../middleware/validate');
 const { admin } = require('../../validators');
@@ -107,9 +108,6 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
       if (!CLEAN_TABLES_ALLOWLIST.includes(tbl)) throw new Error(`Table non autorisée: ${tbl}`); // AUD-07 safety net
       try {
         await client.query(`SAVEPOINT sp_clean_${tbl}`);
-        // arch-safe: whitelist literal — tbl vient exclusivement de CLEAN_TABLES_ALLOWLIST
-        // (tableau littéral en dur ci-dessus, jamais d'entrée utilisateur) ; le garde
-        // AUD-07 à la ligne précédente re-vérifie l'appartenance avant tout usage.
         const r = await client.query(`DELETE FROM ${tbl}`);
         report.deleted[tbl] = r.rowCount;
         await client.query(`RELEASE SAVEPOINT sp_clean_${tbl}`);
@@ -393,11 +391,8 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
 
       try {
         await client.query('SAVEPOINT sp_osh');
-        await client.query(
-          `INSERT INTO order_status_history (order_id, status, note, changed_by)
-           VALUES ($1::uuid, $2, $3, $4::uuid)`,
-          [orderId, s.st, 'Seed test data v2', cl.id]
-        );
+        await appendOrderHistoryNote(client, orderId, s.st,
+          'Seed test data v2', cl.id);
         await client.query('RELEASE SAVEPOINT sp_osh');
       } catch (_) {
         await client.query('ROLLBACK TO SAVEPOINT sp_osh');

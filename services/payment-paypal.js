@@ -45,7 +45,7 @@ const refundReceiptService = require('./documents/refund-receipt');
 const { confirmPaymentCycle }    = require('./order-payment-confirmation');
 const { markRefunded }           = require('./payment-service');
 const { recordExternalRefund }   = require('./refund-service');
-const { appendOrderHistoryNote } = require('./order-status-machine');
+const { appendOrderHistoryNote, transitionOrderStatus } = require('./order-status-machine');
 const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
 const log = require('../utils/logger').child({ module: 'payment-paypal' });
 
@@ -572,21 +572,17 @@ async function refundPaypalOrder({ orderId, amountEur, reason, adminUser, paypal
 
   await markRefunded(order.id, { client: db });
 
-  // I-BACK-3 : mutation directe de orders.status hors order-status-machine.js.
-  // Exception délibérée (pas une dette à fermer comme les autres) : un refund
-  // PayPal n'exige PAS que la commande soit déjà 'cancelled' (seule précondition :
-  // payment_status='paid' + capture existante, cf. docs/audit/
-  // REFACTO_ROUTES_VERIFICATION_2026-06-14.md). order-status-machine n'autorise
-  // 'refunded' que depuis 'cancelled' (VALID_TRANSITIONS) — y passer bloquerait
-  // ce refund après que l'argent ait déjà été rendu via paypal.refundCapture()
-  // ci-dessus (incohérence DB post-remboursement réel, pire que le statu quo).
-  // Décision P3-A.4 (2026-06) : on isole strictement le payment_status (I4,
-  // résolu) et on laisse le status en dehors du scope de ce lot (I3, allowlisté
-  // explicitement ci-dessous).
-  await db.query(
-    `UPDATE orders SET status = 'refunded' WHERE id = $1`,
-    [order.id]
-  );
+  // I-BACK-3 : le remboursement PayPal est DÉJÀ effectué (capture.refund ci-dessus).
+  // La transition status → refunded passe par la machine avec source='refund_external'
+  // qui autorise * → refunded (l'argent est parti, bloquer = incohérence).
+  await transitionOrderStatus({
+    orderId: order.id,
+    newStatus: 'refunded',
+    actor: { id: adminUser?.id || null, role: 'admin' },
+    source: 'refund_external',
+    note: `Refund PayPal ${refund.id || ''} — ${refundAmount} EUR`,
+    dbClient: db,
+  });
 
   if (refundRowId) {
     refundReceiptService.issue(refundRowId, { issuedBy: adminUser?.id }).catch(err => {

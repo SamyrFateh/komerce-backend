@@ -36,7 +36,13 @@
  * l'appellent tous les deux plutôt que de faire chacun leur propre UPDATE.
  */
 
-const { OVERRIDABLE_FIELDS } = require('./catalog-enrichment');
+// Whitelist PARTAGÉE avec l'enrichissement IA (OVERRIDABLE_FIELDS).
+// Dupliquée ici (identique à catalog-enrichment.js:60) pour éviter un require
+// circulaire : catalog-overrides ← catalog-enrichment ← logger.forModule()
+// qui force le chargement de toute la raffinerie au require-time de product-admin-service.
+// Si la liste change dans catalog-enrichment.js, elle doit changer ici aussi
+// (le test catalog-overrides.test.js vérifie la cohérence).
+const OVERRIDABLE_FIELDS = ['name', 'description', 'category', 'fragility', 'emoji'];
 
 /**
  * Un produit est-il "issu du pipeline" (connecteur ou IA) ? Seuls ceux-là

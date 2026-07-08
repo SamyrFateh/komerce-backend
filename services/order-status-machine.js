@@ -240,6 +240,13 @@ async function transitionOrderStatus({
       // Already paid, or wrong transition → graceful no-op
       return { success: true, previousStatus, newStatus: previousStatus, noop: true };
     }
+  } else if (source === 'refund_external') {
+    // Remboursement externe (PayPal/Stripe) : * → refunded autorisé
+    // L'argent a DÉJÀ été rendu — bloquer la transition = incohérence DB.
+    // Exception documentée I-BACK-3 (P3-A.4, 2026-06).
+    if (newStatus !== 'refunded') {
+      return { success: false, error: `refund_external ne peut cibler que 'refunded'` };
+    }
   } else {
     // scan/system/auto: forward-only, no role check
     if (!isForwardTransition(previousStatus, newStatus)) {
