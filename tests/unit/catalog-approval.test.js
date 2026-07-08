@@ -123,7 +123,10 @@ describe('rejectProduct', () => {
     expect(updateCall.sql).toContain("lifecycle_status = 'rejected'");
     const alertCall = calls.find(c => c.sql.includes('INSERT INTO alerts'));
     expect(alertCall).toBeDefined();
+    expect(alertCall.sql).toContain('type, entity_type, entity_id, severity, title, description');
+    expect(alertCall.params[0]).toBe(PRODUCT_ID);
     expect(alertCall.params[1]).toContain('photo non conforme');
+    expect(alertCall.params[2]).toContain('photo non conforme');
   });
 });
 

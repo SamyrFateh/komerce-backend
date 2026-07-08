@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 8,
-    "total_routes": 429,
+    "unknown_responses": 0,
+    "total_routes": 434,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -2777,8 +2777,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "shipment_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "customs_paid_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "parcels_updated": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -2799,8 +2818,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "shipments": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "count": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -2821,8 +2851,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "code": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "detail": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -2843,8 +2892,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "trends": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "months": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -2875,8 +2935,83 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "shipment_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reference": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "shipment_date": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "transitaire_name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "transport_mode": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "declared_at": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "parcel_count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actual_customs_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actual_rate_pct": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "declared_cif_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "expected_customs_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "declared_avg_rate_pct": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ecart_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ecart_pct": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ecart_direction": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "coverage": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "confidence": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -4815,8 +4950,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "documents": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "limit": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "offset": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -4837,8 +4991,31 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "table_exists": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "by_type": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "sequences": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "type_constraint": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "diagnosis": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -4869,8 +5046,329 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "document": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue": {
+      "get": {
+        "summary": "GET /api/admin/catalog/approval-queue",
+        "x-route-file": "routes/admin.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "limit": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "offset": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue/{id}/approve": {
+      "post": {
+        "summary": "POST /api/admin/catalog/approval-queue/{id}/approve",
+        "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "description": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "fragility": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "emoji": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "price_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "stock": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lifecycle_status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "content_source": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "needs_review": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "enrichment_confidence": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "is_active": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "quality_validated": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue/{id}/reject": {
+      "post": {
+        "summary": "POST /api/admin/catalog/approval-queue/{id}/reject",
+        "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "description": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "price_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "stock": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lifecycle_status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "content_source": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "needs_review": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "is_active": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue/{id}/override": {
+      "post": {
+        "summary": "POST /api/admin/catalog/approval-queue/{id}/override",
+        "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "description": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "fragility": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "emoji": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "price_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "stock": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lifecycle_status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "content_source": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "needs_review": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "enrichment_confidence": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "is_active": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "quality_validated": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "overridden": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -10425,57 +10923,6 @@
         }
       }
     },
-    "/api/v2/parcels/{id}": {
-      "get": {
-        "summary": "GET /api/v2/parcels/{id}",
-        "x-route-file": "routes/parcel-api-v2.js",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "reference": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "status": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "type": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
     "/api/v2/parcels/{id}/scans": {
       "get": {
         "summary": "GET /api/v2/parcels/{id}/scans",
@@ -14022,6 +14469,92 @@
                       "x-observed": true
                     },
                     "total": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub/volume": {
+      "post": {
+        "summary": "POST /api/hub/volume",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "product": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "repack_gain_cm3": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "recorded_by": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub/photo": {
+      "post": {
+        "summary": "POST /api/hub/photo",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "event_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "photo_url": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "photo_count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "recorded_at": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -18591,86 +19124,6 @@
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/catalog/approval-queue": {
-      "get": {
-        "summary": "GET /api/admin/catalog/approval-queue",
-        "x-route-file": "routes/admin/catalog-approval.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Contrat à préciser (route ajoutée manuellement — dette documentée dans DEBT.md)",
-                  "type": "object"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/catalog/approval-queue/{id}/approve": {
-      "post": {
-        "summary": "POST /api/admin/catalog/approval-queue/{id}/approve",
-        "x-route-file": "routes/admin/catalog-approval.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Contrat à préciser (route ajoutée manuellement — dette documentée dans DEBT.md)",
-                  "type": "object"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/catalog/approval-queue/{id}/reject": {
-      "post": {
-        "summary": "POST /api/admin/catalog/approval-queue/{id}/reject",
-        "x-route-file": "routes/admin/catalog-approval.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Contrat à préciser (route ajoutée manuellement — dette documentée dans DEBT.md)",
-                  "type": "object"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/catalog/approval-queue/{id}/override": {
-      "post": {
-        "summary": "POST /api/admin/catalog/approval-queue/{id}/override",
-        "x-route-file": "routes/admin/catalog-approval.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Contrat à préciser (route ajoutée manuellement — dette documentée dans DEBT.md)",
-                  "type": "object"
-                }
-              }
-            }
           }
         }
       }

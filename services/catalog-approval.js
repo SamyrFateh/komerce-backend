@@ -173,11 +173,12 @@ async function rejectProduct(q = db, productId, { reason } = {}, adminUser) {
 
   try {
     await q.query(
-      `INSERT INTO alerts (level, source, message, payload)
-       VALUES ('info', 'catalog_approval_reject', $1, $2)`,
+      `INSERT INTO alerts (type, entity_type, entity_id, severity, title, description)
+       VALUES ('catalog_approval_reject', 'product', $1, 'low', $2, $3)`,
       [
-        `Produit ${productId} rejeté en approbation: ${reason}`,
-        JSON.stringify({ product_id: productId, reason, actor: adminUser?.id || null }),
+        productId,
+        `Produit rejeté en approbation: ${reason}`,
+        `Raison: ${reason} — décidé par ${adminUser?.id || 'admin'}`,
       ]
     );
   } catch (err) {

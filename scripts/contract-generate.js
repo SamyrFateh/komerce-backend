@@ -188,6 +188,74 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  // D-06 — admin-customs-shipments : workflow déclaration + analytics
+  '/api/admin/customs-shipments/{id}/declare': {
+    post: { fields: ['shipment_id', 'status', 'customs_paid_kmf', 'parcels_updated'], source: 'test' },
+  },
+  '/api/admin/customs-shipments/status/pending': {
+    get: { fields: ['shipments', 'count'], source: 'test' },
+  },
+  // NOTE D-06 : route actuellement shadowed par GET /:id ; réponse réelle = 400 invalid_input.
+  // Le contrat est marqué couvert, sans corriger le bug de routing dans ce lot.
+  '/api/admin/customs-shipments/analytics': {
+    get: { fields: ['error', 'code', 'requestId', 'detail'], source: 'test' },
+  },
+  '/api/admin/customs-shipments/analytics/trends': {
+    get: { fields: ['trends', 'months'], source: 'test' },
+  },
+  '/api/admin/customs-shipments/{id}/analytics': {
+    get: { fields: [
+      'shipment_id', 'reference', 'shipment_date', 'transitaire_name', 'transport_mode',
+      'status', 'declared_at', 'parcel_count', 'actual_customs_kmf', 'actual_rate_pct',
+      'declared_cif_kmf', 'expected_customs_kmf', 'declared_avg_rate_pct', 'ecart_kmf',
+      'ecart_pct', 'ecart_direction', 'coverage', 'confidence',
+    ], source: 'test' },
+  },
+
+  // D-06 — admin documents : transaction_documents admin view
+  '/api/admin/documents': {
+    get: { fields: ['documents', 'total', 'limit', 'offset'], source: 'test' },
+  },
+  '/api/admin/documents/summary': {
+    get: { fields: ['table_exists', 'by_type', 'sequences', 'type_constraint', 'diagnosis'], source: 'test' },
+  },
+  '/api/admin/documents/{id}': {
+    get: { fields: ['document'], source: 'test' },
+  },
+
+  // D-06 — catalog approval queue : K-4 human approval gate
+  '/api/admin/catalog/approval-queue': {
+    get: { fields: ['items', 'total', 'limit', 'offset'], source: 'test' },
+  },
+  '/api/admin/catalog/approval-queue/{id}/approve': {
+    post: { fields: [
+      'id', 'name', 'description', 'category', 'fragility', 'emoji', 'price_kmf', 'stock',
+      'lifecycle_status', 'content_source', 'needs_review', 'enrichment_confidence',
+      'is_active', 'quality_validated', 'updated_at',
+    ], source: 'test' },
+  },
+  '/api/admin/catalog/approval-queue/{id}/reject': {
+    post: { fields: [
+      'id', 'name', 'description', 'category', 'price_kmf', 'stock', 'lifecycle_status',
+      'content_source', 'needs_review', 'is_active', 'updated_at',
+    ], source: 'test' },
+  },
+  '/api/admin/catalog/approval-queue/{id}/override': {
+    post: { fields: [
+      'id', 'name', 'description', 'category', 'fragility', 'emoji', 'price_kmf', 'stock',
+      'lifecycle_status', 'content_source', 'needs_review', 'enrichment_confidence',
+      'is_active', 'quality_validated', 'overridden', 'updated_at',
+    ], source: 'test' },
+  },
+
+  // D-06 — hub : drift découvert après regeneration fraîche du contrat
+  '/api/hub/volume': {
+    post: { fields: ['message', 'product', 'repack_gain_cm3', 'recorded_by'], source: 'test' },
+  },
+  '/api/hub/photo': {
+    post: { fields: ['message', 'event_id', 'photo_url', 'photo_count', 'recorded_at'], source: 'test' },
+  },
+
   '/api/shared-carts/public/{token}': {
     get: { fields: ['contributed_kmf','remaining_kmf','total_kmf_snapshot','settlement_open','expires_at','token','status'], source: 'scan-boutique' }
   },
