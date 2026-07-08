@@ -148,6 +148,8 @@ module.exports = {
       'tests/unit/scan-engine-extras.test.js',
       'tests/unit/catalog-public-view.test.js',
       'tests/unit/catalog-enrichment.test.js',
+      'tests/unit/catalog-enrichment-extended.test.js',
+      'tests/unit/catalog-enrichment-fixtures.js',
       'tests/unit/catalog-overrides.test.js',
       'tests/unit/catalog-approval.test.js',
     ],

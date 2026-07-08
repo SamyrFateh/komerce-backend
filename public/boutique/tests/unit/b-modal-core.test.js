@@ -200,6 +200,7 @@ describe('b-modal-core', () => {
       expect(state.modalProduct.id).toBe(1);
       expect(dom.modalName.textContent).toBe('Riz basmati 5kg');
       expect(dom.modalDesc.textContent).toBe('Sac de riz importé');
+      expect(dom.modalCat.textContent).toBe('🍚 Alimentation');
       expect(dom.modalPrice.textContent).toBe('5000 KMF');
       expect(dom.modalOverlay.classList.contains('open')).toBe(true);
       expect(document.body.classList.contains('modal-open')).toBe(true);
