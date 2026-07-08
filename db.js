@@ -16,6 +16,7 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 const log = require('./utils/logger').forModule('db');
+const { rewriteLegacyAlertInsert } = require('./utils/alerts-compat');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -35,6 +36,63 @@ const pool = new Pool({
 pool.on('error', (err) => {
   log.error({ err }, 'PostgreSQL pool error');
 });
+
+// ── Compatibilité alertes legacy ─────────────────────────────────────────────
+// Plusieurs services historiques écrivaient encore dans alerts(level, source,
+// message, payload), alors que le schéma réel est alerts(type, entity_type,
+// entity_id, severity, title, description). On réécrit ces requêtes ici pour
+// couvrir db.query(...), db.pool.query(...), db.getClient(), db.connect() et
+// db.pool.connect(), sans masquer les autres erreurs SQL ni altérer les
+// signatures pg non concernées.
+function rewriteQueryArgs(args) {
+  const [text, params, ...rest] = args;
+
+  if (typeof text !== 'string') return args;
+
+  if (typeof params === 'function') {
+    const rewritten = rewriteLegacyAlertInsert(text, []);
+    if (rewritten.rewritten) return [rewritten.text, rewritten.params, params, ...rest];
+    return args;
+  }
+
+  const rewritten = rewriteLegacyAlertInsert(text, params);
+  if (rewritten.rewritten) return [rewritten.text, rewritten.params, ...rest];
+  return args;
+}
+
+function wrapClient(client) {
+  if (!client || client.__komerceAlertsCompatWrapped) return client;
+
+  const originalQuery = client.query.bind(client);
+  client.query = (...args) => originalQuery(...rewriteQueryArgs(args));
+
+  Object.defineProperty(client, '__komerceAlertsCompatWrapped', {
+    value: true,
+    enumerable: false,
+  });
+
+  return client;
+}
+
+const originalPoolQuery = pool.query.bind(pool);
+const originalPoolConnect = pool.connect.bind(pool);
+
+pool.query = (...args) => originalPoolQuery(...rewriteQueryArgs(args));
+
+pool.connect = (...args) => {
+  if (typeof args[0] === 'function') {
+    return originalPoolConnect((err, client, done) => {
+      if (client) wrapClient(client);
+      args[0](err, client, done);
+    });
+  }
+
+  return originalPoolConnect(...args).then(wrapClient);
+};
+
+function connect(...args) {
+  return pool.connect(...args);
+}
 
 // ── V2.8: Pool health monitoring ────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
@@ -75,8 +133,9 @@ async function healthcheck() {
 }
 
 module.exports = {
-  query: (text, params) => pool.query(text, params),
-  getClient: () => pool.connect(),
+  query: (...args) => pool.query(...args),
+  getClient: connect,
+  connect,
   pool,
   healthcheck,
 };
