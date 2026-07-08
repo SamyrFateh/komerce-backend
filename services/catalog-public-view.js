@@ -56,6 +56,7 @@ const PUBLIC_PRODUCT_FIELDS = [
   'images',
   'badge',
   'emoji',
+  'fragility',
   'promo_pct',
   'is_available',
   'customs_risk_coeff',
