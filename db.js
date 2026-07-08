@@ -16,6 +16,7 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 const log = require('./utils/logger').forModule('db');
+const { rewriteLegacyAlertInsert } = require('./utils/alerts-compat');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -35,6 +36,34 @@ const pool = new Pool({
 pool.on('error', (err) => {
   log.error({ err }, 'PostgreSQL pool error');
 });
+
+// ── Compatibilité alertes legacy ─────────────────────────────────────────────
+// Plusieurs services historiques écrivaient encore dans alerts(level, source,
+// message, payload), alors que le schéma réel est alerts(type, entity_type,
+// entity_id, severity, title, description). On réécrit ces requêtes ici pour
+// couvrir db.query(...) et les transactions client.query(...), sans masquer les
+// autres erreurs SQL.
+function runQuery(target, text, params, ...rest) {
+  const rewritten = rewriteLegacyAlertInsert(text, params);
+  return target.query(rewritten.text, rewritten.params, ...rest);
+}
+
+function wrapClient(client) {
+  if (!client || client.__komerceAlertsCompatWrapped) return client;
+
+  const originalQuery = client.query.bind(client);
+  client.query = (text, params, ...rest) => {
+    const rewritten = rewriteLegacyAlertInsert(text, params);
+    return originalQuery(rewritten.text, rewritten.params, ...rest);
+  };
+
+  Object.defineProperty(client, '__komerceAlertsCompatWrapped', {
+    value: true,
+    enumerable: false,
+  });
+
+  return client;
+}
 
 // ── V2.8: Pool health monitoring ────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
@@ -75,8 +104,8 @@ async function healthcheck() {
 }
 
 module.exports = {
-  query: (text, params) => pool.query(text, params),
-  getClient: () => pool.connect(),
+  query: (text, params, ...rest) => runQuery(pool, text, params, ...rest),
+  getClient: async () => wrapClient(await pool.connect()),
   pool,
   healthcheck,
 };
