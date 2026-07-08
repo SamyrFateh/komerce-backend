@@ -1,43 +1,42 @@
-# Comment appliquer ce zip sur D:\komerce-backend
+# D-13 — nettoyage migration dupliquée (PAS un renommage)
 
-Ce zip reproduit l'arborescence RELATIVE À LA RACINE du monorepo
-(donc `public/...` = `D:\komerce-backend\public\...`, etc.).
+## Ce qui a été trouvé (change la donne du doc de dette initial)
+`migrations/2026_cost_benchmarks.sql` était byte-identique à
+`migrations/090_cost_benchmarks.sql`. Cause réelle : `docs/chantier/STATUS.md`
+(item GOV-08) montre que ce fichier a déjà été renommé 2026_ → 090_ le
+2026-06-24 — mais l'ancien fichier n'a jamais été supprimé après coup.
+Le renommer une 2e fois vers 103_ (comme le suggérait le doc de dette,
+qui n'avait pas cette info) aurait recréé le problème que la doctrine de
+gouvernance (`governance/migration-slot-exemptions.json`) interdit
+explicitement de faire sans plan dédié.
 
-## Étapes
-1. Dézipper à la racine du repo en écrasant les fichiers existants
-   (chaque chemin ci-dessous correspond à un fichier déjà connu, pas de nouveau dossier à créer) :
+## Action effectuée (nettoyage, pas renommage)
+- Supprimé `migrations/2026_cost_benchmarks.sql` (résidu dupliqué, jamais
+  nettoyé après le rename de juin — contenu 100% identique à 090_, donc
+  aucune perte).
+- Retiré la référence dans `features/economic-engine.feature.js` (liste
+  des migrations de la feature economic-engine).
+- Retiré la même référence dans `tests/unit/economic-engine.feature.js`
+  (copie orpheline/moins à jour du fichier ci-dessus — à noter : encore
+  un doublon architecture, pas traité ici, hors scope).
+- Retiré l'entrée `"2026_cost_benchmarks.sql"` de
+  `governance/migration-hashes.json`.
+- **Fichier migration lui-même NON inclus dans ce zip** — l'action est une
+  suppression, il n'y a rien à copier. Pense à supprimer manuellement
+  `migrations/2026_cost_benchmarks.sql` sur ta machine après avoir appliqué
+  les 3 fichiers ci-dessous.
 
-   - public/dashboards/admin/js/api-client.js
-   - public/dashboards/admin/js/views/HubRelaisView.js
-   - public/dashboards/admin/js/views/SourcingScannerView.js
-   - public/dashboards/tests/unit/SourcingScannerView.test.js
-   - middleware/rate-limit.js
-   - routes/shares.js
-   - tests/unit/shares-route.test.js
-   - scripts/audit-backend-arch.js
-   - audit-backend-arch.js               (copie racine, doublon connu — voir dette D-15/duplication)
-   - routes/admin/system.js
-   - docs/DASHBOARDS_360.md
-   - docs/DASHBOARDS_360.json
-   - docs/META_GRAPH.md
-   - docs/META_GRAPH.json
-   - scripts/.dashboards-360-baseline.json
-   - DETTE_TECHNIQUE_CRUD_2026-07-08.md  (mis à jour : D-12 ✅, nouveau D-16)
+## Validation
+- `node scripts/feature-guard.js --strict` : 18 slices, 0 erreur.
+- `node scripts/audit-backend-arch.js` : Aucune violation (les 4 collisions
+  014/072/073/+1 restent, ce sont D-05, hors scope, déjà connues).
+- Suite complète : 5703/5738 (exactement les 13 échecs D-16 pré-existants,
+  aucune régression).
 
-2. Vérifier :
-   cd D:\komerce-backend
-   node scripts/audit-backend-arch.js        # doit dire "Aucune violation"
-   node scripts/gen-dashboards-360.js --check # doit dire 0/0/0/0
-   cd public\dashboards && npx jest           # 38/38 suites, 972/972 tests
-   cd ..\..\ && npx jest                      # 5703/5738 (13 échecs connus, voir D-16)
+## Fichiers à merger
+- features/economic-engine.feature.js
+- tests/unit/economic-engine.feature.js
+- governance/migration-hashes.json
 
-## Items mergés dans ce zip
-D-03 (méthodes API mortes), D-04 (fetch → KmcApi), D-08 (rate-limit shares),
-D-12 (endpoint fantôme /v2/scan), D-14 (SQL interpolé commenté).
-
-## Nouveau dans le doc de dette
-D-16 : `tests/unit/catalog-enrichment-fixtures.js` fait 0 octet (confirmé vide
-dans backend.zip lui-même) → 13 échecs dans catalog-enrichment-extended.test.js.
-Ce n'est PAS lié à D-10 (schema drift) contrairement à ce qu'une note précédente
-supposait — c'est un fichier de fixtures manquant/non commité. Ce fichier n'est
-PAS inclus dans ce zip (je ne l'ai pas reconstruit, décision 👤 à prendre d'abord).
+## À supprimer manuellement
+- migrations/2026_cost_benchmarks.sql

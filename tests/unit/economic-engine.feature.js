@@ -101,7 +101,6 @@ module.exports = {
       'migrations/067_finance_config_provision_risque.sql',
       'migrations/076_sourcing_candidates_unique.sql',
       'migrations/090_cost_benchmarks.sql',
-      'migrations/2026_cost_benchmarks.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4

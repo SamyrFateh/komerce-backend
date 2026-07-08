@@ -85,7 +85,6 @@
   "092_customs_shipments_declaration_workflow.sql": "5281144df7772cc1",
   "093_customs_invoice_document_type.sql": "da25989c125e0b5a",
   "094_parcel_reconciliation_view.sql": "7458a8eb8a073c7e",
-  "2026_cost_benchmarks.sql": "5665ca0ee7e163db",
   "AUD-10_rename_tracking_fix.sql": "1a4c1147d176b8e9",
   "deploy-all.sql": "793b8aa64e7b0da1",
   "migrate-categories-v2.sql": "87f2806aa94a2e5c",
