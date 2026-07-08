@@ -28,11 +28,12 @@
  *   alerts(type, entity_type, entity_id, severity, title, description, created_at, ...)
  *
  * Cette couche réécrit uniquement ces anciens INSERT au moment d'appeler pg.
- * Elle couvre db.query(...) et les clients transactionnels client.query(...)
- * via db.js, sans modifier le comportement des autres requêtes.
+ * Elle couvre les formes simples, ainsi que les suffixes SQL non liés aux
+ * anciennes colonnes (`RETURNING ...`, `ON CONFLICT DO NOTHING`, etc.).
  */
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const LEGACY_COLUMNS = new Set(['level', 'source', 'message', 'payload']);
 
 function splitSqlArgs(input) {
   const out = [];
@@ -148,20 +149,85 @@ function descriptionFromLegacy({ source, level, payload }) {
   ].join('\n');
 }
 
+function findMatchingParen(input, openIndex) {
+  let depth = 0;
+  let inQuote = false;
+
+  for (let i = openIndex; i < input.length; i += 1) {
+    const ch = input[i];
+    const next = input[i + 1];
+
+    if (ch === "'") {
+      if (inQuote && next === "'") {
+        i += 1;
+      } else {
+        inQuote = !inQuote;
+      }
+      continue;
+    }
+
+    if (inQuote) continue;
+    if (ch === '(') depth += 1;
+    if (ch === ')') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+
+  return -1;
+}
+
+function extractLegacyAlertInsert(text) {
+  const normalized = String(text || '').replace(/\s+/g, ' ').trim().replace(/;$/, '');
+  const prefix = /^INSERT\s+INTO\s+alerts\s*/i.exec(normalized);
+  if (!prefix) return null;
+
+  const columnsOpen = normalized.indexOf('(', prefix[0].length - 1);
+  if (columnsOpen < 0) return null;
+
+  const columnsClose = findMatchingParen(normalized, columnsOpen);
+  if (columnsClose < 0) return null;
+
+  const columnsText = normalized.slice(columnsOpen + 1, columnsClose);
+  const afterColumns = normalized.slice(columnsClose + 1).trim();
+  const valuesPrefix = /^VALUES\s*/i.exec(afterColumns);
+  if (!valuesPrefix) return null;
+
+  const valuesOpen = normalized.indexOf('(', columnsClose + 1);
+  if (valuesOpen < 0) return null;
+
+  const valuesClose = findMatchingParen(normalized, valuesOpen);
+  if (valuesClose < 0) return null;
+
+  const valuesText = normalized.slice(valuesOpen + 1, valuesClose);
+  const suffix = normalized.slice(valuesClose + 1).trim();
+
+  return { columnsText, valuesText, suffix };
+}
+
+function suffixIsSafeToPreserve(suffix) {
+  if (!suffix) return true;
+  const lowered = suffix.toLowerCase();
+  return ![...LEGACY_COLUMNS].some((column) => new RegExp(`\\b${column}\\b`, 'i').test(lowered));
+}
+
 function rewriteLegacyAlertInsert(text, params = []) {
   if (typeof text !== 'string' || !/insert\s+into\s+alerts/i.test(text)) {
     return { text, params, rewritten: false };
   }
 
-  const normalized = text.replace(/\s+/g, ' ').trim().replace(/;$/, '');
-  const match = /^INSERT\s+INTO\s+alerts\s*\(([^)]+)\)\s*VALUES\s*\((.+)\)$/i.exec(normalized);
-  if (!match) return { text, params, rewritten: false };
+  const parsed = extractLegacyAlertInsert(text);
+  if (!parsed) return { text, params, rewritten: false };
 
-  const columns = splitSqlArgs(match[1]).map(cleanIdentifier);
-  const values = splitSqlArgs(match[2]);
+  const columns = splitSqlArgs(parsed.columnsText).map(cleanIdentifier);
+  const values = splitSqlArgs(parsed.valuesText);
 
-  const hasLegacyColumns = ['level', 'source', 'message', 'payload'].every((c) => columns.includes(c));
+  const hasLegacyColumns = [...LEGACY_COLUMNS].every((c) => columns.includes(c));
   if (!hasLegacyColumns) return { text, params, rewritten: false };
+
+  if (!suffixIsSafeToPreserve(parsed.suffix)) {
+    return { text, params, rewritten: false };
+  }
 
   const legacyLevel = resolveSqlToken(values[columns.indexOf('level')], params);
   const legacySource = resolveSqlToken(values[columns.indexOf('source')], params);
@@ -170,10 +236,11 @@ function rewriteLegacyAlertInsert(text, params = []) {
 
   const { entityType, entityId } = pickEntity(legacyPayload, legacySource);
   const title = String(legacyMessage || `${legacySource || 'system'} alert`).slice(0, 500);
+  const suffix = parsed.suffix ? ` ${parsed.suffix}` : '';
 
   return {
     text: `INSERT INTO alerts (type, entity_type, entity_id, severity, title, description, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())${suffix}`,
     params: [
       String(legacySource || 'legacy_alert').slice(0, 120),
       entityType,
