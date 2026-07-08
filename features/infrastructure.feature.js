@@ -434,6 +434,7 @@ module.exports = {
       'tests/unit/order-parcel-link-rules.test.js',
       'tests/unit/phone.test.js',
       'tests/unit/rate-limit.test.js',
+      'tests/unit/alerts-compat.test.js',
       'tests/unit/rates.test.js',
       'tests/unit/reference.test.js',
       'tests/unit/request-id.test.js',

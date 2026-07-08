@@ -48,12 +48,22 @@ const LEGACY_ALERTS_RE = /^\s*INSERT\s+INTO\s+alerts\s*\(\s*level\s*,\s*source\s
  * Map legacy level → severity (colonnes enum DB : 'low' | 'medium' | 'high').
  */
 const SEVERITY_MAP = {
-  low:      'low',
-  medium:   'medium',
+  // Haute sévérité
+  critical: 'high',
   elevated: 'high',
   high:     'high',
-  critical: 'high',
+  error:    'high',
+  fatal:    'high',
+  // Sévérité moyenne
+  medium:   'medium',
   warning:  'medium',
+  warn:     'medium',
+  // Basse sévérité
+  low:      'low',
+  info:     'low',
+  debug:    'low',
+  notice:   'low',
+  trace:    'low',
 };
 
 /**
