@@ -41,8 +41,8 @@ pool.on('error', (err) => {
 // Plusieurs services historiques écrivaient encore dans alerts(level, source,
 // message, payload), alors que le schéma réel est alerts(type, entity_type,
 // entity_id, severity, title, description). On réécrit ces requêtes ici pour
-// couvrir db.query(...) et les transactions client.query(...), sans masquer les
-// autres erreurs SQL ni altérer les signatures pg non concernées.
+// couvrir db.query(...), db.pool.query(...), db.getClient() et db.pool.connect(),
+// sans masquer les autres erreurs SQL ni altérer les signatures pg non concernées.
 function rewriteQueryArgs(args) {
   const [text, params, ...rest] = args;
 
@@ -59,10 +59,6 @@ function rewriteQueryArgs(args) {
   return args;
 }
 
-function runQuery(target, ...args) {
-  return target.query(...rewriteQueryArgs(args));
-}
-
 function wrapClient(client) {
   if (!client || client.__komerceAlertsCompatWrapped) return client;
 
@@ -76,6 +72,22 @@ function wrapClient(client) {
 
   return client;
 }
+
+const originalPoolQuery = pool.query.bind(pool);
+const originalPoolConnect = pool.connect.bind(pool);
+
+pool.query = (...args) => originalPoolQuery(...rewriteQueryArgs(args));
+
+pool.connect = (...args) => {
+  if (typeof args[0] === 'function') {
+    return originalPoolConnect((err, client, done) => {
+      if (client) wrapClient(client);
+      args[0](err, client, done);
+    });
+  }
+
+  return originalPoolConnect(...args).then(wrapClient);
+};
 
 // ── V2.8: Pool health monitoring ────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
@@ -116,8 +128,8 @@ async function healthcheck() {
 }
 
 module.exports = {
-  query: (...args) => runQuery(pool, ...args),
-  getClient: async () => wrapClient(await pool.connect()),
+  query: (...args) => pool.query(...args),
+  getClient: (...args) => pool.connect(...args),
   pool,
   healthcheck,
 };
