@@ -2,7 +2,8 @@
   "orphanRoutes": [],
   "deadApiMethods": [
     "createEconomicCharge",
-    "createLoyaltyAction",
+    "createLoyaltyReward",
+    "createLoyaltySkip",
     "deleteCostBenchmark",
     "getCostBenchmarks",
     "getLoyaltyHistory",
@@ -21,10 +22,7 @@
   ],
   "missingApiMethods": [],
   "doctrineViolations": [
-    "views/PricingView.js (2 fetch() brut)",
-    "views/PricingWorkshopView.js (1 fetch() brut)",
-    "views/ProductsView.js (4 fetch() brut)",
     "views/SourcingScannerView.js (1 fetch() brut)"
   ],
-  "savedAt": "2026-06-26T14:38:49.913Z"
+  "savedAt": "2026-07-08T08:15:08.705Z"
 }

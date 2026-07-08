@@ -172,3 +172,44 @@ komerce-backend/
 - **Tu touches Boutique** : lire `docs/boutique/README.md` et `public/boutique/README.md`.
 
 > Une PR qui modifie le comportement ou le schéma DB sans mettre à jour la cartographie architecture et le schéma canonique est à refuser ou à marquer comme dette explicite avant merge.
+## Hooks Git
+
+Les hooks sont installés automatiquement au `npm install` (via le script `prepare`).
+Si vous les avez désactivés ou si vous clonez sans npm, relancez manuellement :
+
+```bash
+bash scripts/setup-hooks.sh
+```
+
+### Pre-commit (automatique)
+
+À chaque `git commit`, le hook vérifie :
+
+| # | Gate | Ce qu'elle fait |
+|---|---|---|
+| 0a | `feature-registry-check` | Chaque fichier appartient à une feature déclarée |
+| 0b | `code-quality-gate` | `use strict`, `const/let`, pas de SQL concaténé |
+| 0 | `enrich-komerce-arch-db-fields` | Remplit automatiquement `@db-read/@db-write` depuis le SQL réel |
+| 1 | `generate-komerce-arch-graph` | Régénère le graphe d'architecture |
+| 2 | `arch-reconcile` | Élague les fictions résolues, abaisse le cliquet |
+| 4 | `arch-db-check` + `arch-header-sql-check` | Headers ↔ SQL cohérents |
+| 5 | `arch-doctrine-sanitize-check` | Pas d'injection HTML non échappée |
+| 5b | `audit-backend-arch` | Invariants I-BACK-* (SQL paramétré, auth admin…) |
+| 6 | Boutique CSS + `check:fast` | Bundles CSS régénérés, ownership, tokens |
+| 7 | `gen-dashboards-360` | Carte 360 admin (routes ↔ vues ↔ API ↔ contrat) |
+| 8 | `gen-boutique-360` | Carte 360 boutique (bus ↔ endpoints ↔ contrat) |
+| 9 | `gen-meta-graph` | Méta-graphe coutures backend + boutique + dashboards |
+
+### Pre-push (automatique)
+
+À chaque `git push`, le hook lance `impact-check.js` et :
+- **SAFE** (0-29) → push autorisé
+- **REVIEW** (30-69) → confirmation demandée
+- **BLOCK** (70-100) → push bloqué (bypass : `git push --no-verify`)
+
+### Bypass d'urgence
+
+```bash
+git commit --no-verify   # skip pre-commit
+git push --no-verify     # skip pre-push
+```
