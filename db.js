@@ -16,7 +16,7 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 const log = require('./utils/logger').forModule('db');
-const { rewriteLegacyAlertInsert } = require('./utils/alerts-compat');
+const { rewriteLegacyAlertInsert, LEGACY_ALERTS_RE } = require('./utils/alerts-compat');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -36,58 +36,6 @@ const pool = new Pool({
 pool.on('error', (err) => {
   log.error({ err }, 'PostgreSQL pool error');
 });
-
-// ── Compatibilité alertes legacy ─────────────────────────────────────────────
-// Plusieurs services historiques écrivaient encore dans alerts(level, source,
-// message, payload), alors que le schéma réel est alerts(type, entity_type,
-// entity_id, severity, title, description). On réécrit ces requêtes ici pour
-// couvrir db.query(...), db.pool.query(...), db.getClient() et db.pool.connect(),
-// sans masquer les autres erreurs SQL ni altérer les signatures pg non concernées.
-function rewriteQueryArgs(args) {
-  const [text, params, ...rest] = args;
-
-  if (typeof text !== 'string') return args;
-
-  if (typeof params === 'function') {
-    const rewritten = rewriteLegacyAlertInsert(text, []);
-    if (rewritten.rewritten) return [rewritten.text, rewritten.params, params, ...rest];
-    return args;
-  }
-
-  const rewritten = rewriteLegacyAlertInsert(text, params);
-  if (rewritten.rewritten) return [rewritten.text, rewritten.params, ...rest];
-  return args;
-}
-
-function wrapClient(client) {
-  if (!client || client.__komerceAlertsCompatWrapped) return client;
-
-  const originalQuery = client.query.bind(client);
-  client.query = (...args) => originalQuery(...rewriteQueryArgs(args));
-
-  Object.defineProperty(client, '__komerceAlertsCompatWrapped', {
-    value: true,
-    enumerable: false,
-  });
-
-  return client;
-}
-
-const originalPoolQuery = pool.query.bind(pool);
-const originalPoolConnect = pool.connect.bind(pool);
-
-pool.query = (...args) => originalPoolQuery(...rewriteQueryArgs(args));
-
-pool.connect = (...args) => {
-  if (typeof args[0] === 'function') {
-    return originalPoolConnect((err, client, done) => {
-      if (client) wrapClient(client);
-      args[0](err, client, done);
-    });
-  }
-
-  return originalPoolConnect(...args).then(wrapClient);
-};
 
 // ── V2.8: Pool health monitoring ────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
@@ -127,9 +75,37 @@ async function healthcheck() {
   }
 }
 
+// ── PR563: alerts-compat interceptor ────────────────────────────────────────
+// Réécrit silencieusement les INSERT INTO alerts legacy (level, source, message, payload)
+// vers le schéma réel (type, entity_type, entity_id, severity, title, description).
+// Pas d'impact sur les autres requêtes.
+function patchedQuery(...args) {
+  const [text, params] = args;
+  if (typeof text === 'string' && LEGACY_ALERTS_RE.test(text)) {
+    const rewritten = rewriteLegacyAlertInsert(text, params || []);
+    return pool.query(rewritten.sql, rewritten.params);
+  }
+  return pool.query(...args);
+}
+
+// Client patché (getClient) : surcharge query() sur le client acquis
+async function patchedGetClient() {
+  const client = await pool.connect();
+  const originalQuery = client.query.bind(client);
+  client.query = (...args) => {
+    const [text, params] = args;
+    if (typeof text === 'string' && LEGACY_ALERTS_RE.test(text)) {
+      const rewritten = rewriteLegacyAlertInsert(text, params || []);
+      return originalQuery(rewritten.sql, rewritten.params);
+    }
+    return originalQuery(...args);
+  };
+  return client;
+}
+
 module.exports = {
-  query: (...args) => pool.query(...args),
-  getClient: (...args) => pool.connect(...args),
+  query: patchedQuery,
+  getClient: patchedGetClient,
   pool,
   healthcheck,
 };

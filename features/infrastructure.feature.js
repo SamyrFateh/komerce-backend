@@ -42,12 +42,12 @@ module.exports = {
       'middleware/validate.js',
     ],
     utils: [
+      'utils/alerts-compat.js',
       'utils/logger.js',
       'utils/phone.js',
       'utils/rates.js',
       'utils/reference.js',
       'utils/rules.js',
-      'utils/alerts-compat.js',
     ],
     validators: [
       'validators/index.js',

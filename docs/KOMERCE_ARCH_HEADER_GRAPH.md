@@ -13,12 +13,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 716
-- Edges: 4131
+- Graph nodes: 717
+- Edges: 4128
 - DB tables: 109
 - Doctrines: 133
-- Impact areas: 116
-- Unresolved code edges: 393
+- Impact areas: 117
+- Unresolved code edges: 394
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -34,11 +34,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 30
 - documents: 11
 - economic-engine: 36
-- infrastructure: 18
+- infrastructure: 19
 - inventory: 3
 - logistics: 35
 - notification: 15
-- operations: 13
+- operations: 12
 - orders: 29
 - payment: 16
 - recommendations: 7
@@ -300,7 +300,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
 - services/wallet-service.js — wallet-wallet-service (wallet, high, full)
 - services/whatsapp-meta.js — meta-whatsapp-adapter (notification, high, full)
-- utils/alerts-compat.js — alerts-schema-compat (operations, high, full)
 - utils/documents/customs-invoice-html.js — customs-invoice-html (documents, high, full)
 - utils/parcels.js — logistics-parcels (logistics, high, full)
 - utils/parcelSync.js — logistics-parcel-sync (logistics, high, full)

@@ -29,7 +29,9 @@ const contractPaths = Object.keys(contract.paths || {});
 const WATCHED_FIELDS = [
   'contributed_kmf','remaining_kmf','total_kmf_snapshot','settlement_open',
   'expires_at','pickup_code','pickup_secret','reference','token',
-  'shared_cart_id','fully_funded',
+  'shared_cart_id',
+  // 'fully_funded' — exclu : c'est une clé de mapping status → libellé dans les vues,
+  //   pas un champ de réponse API. Documenté dans docs/contract/DEBT.md.
 ];
 
 // Routes connues comme mortes (710 côté backend) — avertissement, pas erreur
