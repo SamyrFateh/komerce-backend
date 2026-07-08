@@ -171,9 +171,6 @@
     return fetchJSON(apiUrl('/v2/parcels', params));
   }
 
-  function getParcelKpis()         { return fetchJSON(apiUrl('/v2/parcels/kpis')); }
-  function getParcelAlerts()       { return fetchJSON(apiUrl('/v2/parcels/alerts')); }
-  function getParcelCritical()     { return fetchJSON(apiUrl('/v2/parcels/critical')); }
   function getParcelReconciliation() { return fetchJSON(apiUrl('/v2/parcels/reconciliation')); }
 
   // ── Vague 2 — Finance & pricing ───────────────────────────────────────────
@@ -193,14 +190,9 @@
   function getEconomicVariables()        { return fetchJSON(apiUrl('/admin/economic/variables')); }
   function getEconomicCharges(params)    { return fetchJSON(apiUrl('/admin/economic/charges', params)); }
   function getEconomicCoherence()        { return fetchJSON(apiUrl('/admin/economic/coherence')); }
-  function updateEconomicVariable(id, body) { return fetchMutation(apiUrl('/admin/economic/variables/' + id), 'PUT', body); }
-  function createEconomicCharge(body)    { return fetchMutation(apiUrl('/admin/economic/charges'), 'POST', body); }
-  function updateEconomicCharge(id, body){ return fetchMutation(apiUrl('/admin/economic/charges/' + id), 'PUT', body); }
-  function redistributeEconomic(body)    { return fetchMutation(apiUrl('/admin/economic/redistribute'), 'POST', body); }
 
   // Finance config
   function getFinanceConfig()            { return fetchJSON(apiUrl('/admin/finance-config')); }
-  function updateFinanceConfig(id, body) { return fetchMutation(apiUrl('/admin/finance-config/' + id), 'PUT', body); }
 
   // Cash
   function getCashUncollected(params)    { return fetchJSON(apiUrl('/cash/uncollected', params)); }
@@ -216,7 +208,7 @@
   function getCustomsShipment(id)              { return fetchJSON(apiUrl('/admin/customs-shipments/' + id)); }
   function getCustomsRatesEffective()          { return fetchJSON(apiUrl('/admin/customs-shipments/rates/effective')); }
   function createCustomsShipment(body)         { return fetchMutation(apiUrl('/admin/customs-shipments'), 'POST', body); }
-  function updateCustomsShipment(id, body)     { return fetchMutation(apiUrl('/admin/customs-shipments/' + id), 'POST', body); }
+  function getCustomsCategories(params)        { return fetchJSON(apiUrl('/admin/customs-categories', params)); }
 
   // Suppliers / Partners
   function getPartners(params)                 { return fetchJSON(apiUrl('/admin/partners', params)); }
@@ -232,7 +224,6 @@
   // ── Pricing Strategy (ADR-013) — manquait dans KmcApi, vues jamais branchées ──
   function getPricingStrategy(params)           { return fetchJSON(apiUrl('/pricing/strategy', params)); }
   function applyPricingStrategy(body)           { return fetchMutation(apiUrl('/pricing/strategy/apply'), 'POST', body); }
-  function getPricingCompetitors(params)        { return fetchJSON(apiUrl('/pricing/strategy/competitors', params)); }
   function createPricingCompetitor(body)        { return fetchMutation(apiUrl('/pricing/strategy/competitors'), 'POST', body); }
   function deletePricingCompetitor(id)          { return fetchMutation(apiUrl('/pricing/strategy/competitors/' + id), 'DELETE'); }
 
@@ -240,16 +231,6 @@
   function getPricingFlow(body)                { return fetchMutation(apiUrl('/pricing/flow'), 'POST', body || {}); }
   // Pricing — pilotage catalogue (vérité unique, relaie le moteur)
   function getPricingDashboard()               { return fetchJSON(apiUrl('/pricing/dashboard')); }
-  // Pricing — benchmarks de surcharge par famille (calibration §6)
-  function getCostBenchmarks()                 { return fetchJSON(apiUrl('/pricing/benchmarks')); }
-  function upsertCostBenchmark(body)           { return fetchMutation(apiUrl('/pricing/benchmarks'), 'PUT', body); }
-  function deleteCostBenchmark(cat, family)    { return fetchMutation(apiUrl('/pricing/benchmarks/' + encodeURIComponent(cat) + '/' + encodeURIComponent(family)), 'DELETE'); }
-
-  // Loyalty
-  function getLoyaltyPending()                 { return fetchJSON(apiUrl('/admin/loyalty/pending')); }
-  function getLoyaltyHistory(params)           { return fetchJSON(apiUrl('/admin/loyalty/history', params)); }
-  function createLoyaltyReward(rewardId, body) { return fetchMutation(apiUrl('/admin/loyalty/reward/' + rewardId), 'POST', body); }
-  function createLoyaltySkip(rewardId)         { return fetchMutation(apiUrl('/admin/loyalty/skip/' + rewardId), 'POST'); }
 
   // ── Vague 1 — Transitaire ────────────────────────────────────────────────
 
@@ -352,10 +333,9 @@
    * @param {string} ref  Référence colis
    */
   function hubShip(ref) {
-    return fetchMutation(apiUrl('/v2/scan'), 'POST', {
-      reference: ref,
-      action: 'shipped',
-      note: 'Expédié Hub — CT',
+    return fetchMutation(apiUrl('/v2/parcels/' + ref + '/scan'), 'POST', {
+      event_type: 'shipped',
+      notes: 'Expédié Hub — CT',
     });
   }
 
@@ -386,10 +366,9 @@
    * @param {string} ref  Référence colis
    */
   function relaisReceive(ref) {
-    return fetchMutation(apiUrl('/v2/scan'), 'POST', {
-      reference: ref,
-      action: 'arrived',
-      note: 'Réception relais — CT',
+    return fetchMutation(apiUrl('/v2/parcels/' + ref + '/scan'), 'POST', {
+      event_type: 'arrived',
+      notes: 'Réception relais — CT',
     });
   }
 
@@ -398,10 +377,9 @@
    * @param {string} ref  Référence colis
    */
   function relaisCollect(ref) {
-    return fetchMutation(apiUrl('/v2/scan'), 'POST', {
-      reference: ref,
-      action: 'collected',
-      note: 'Remis client — CT',
+    return fetchMutation(apiUrl('/v2/parcels/' + ref + '/scan'), 'POST', {
+      event_type: 'collected',
+      notes: 'Remis client — CT',
     });
   }
 
@@ -457,14 +435,6 @@
     return fetchMutation(
       apiUrl('/admin/sourcing/products/' + encodeURIComponent(id)),
       'PUT',
-      body
-    );
-  }
-
-  function sourcingBulkRail(body) {
-    return fetchMutation(
-      apiUrl('/admin/sourcing/bulk-rail'),
-      'POST',
       body
     );
   }
@@ -665,9 +635,6 @@
     getOps,
     getPipeline,
     getParcels,
-    getParcelKpis,
-    getParcelAlerts,
-    getParcelCritical,
     getParcelReconciliation,
     getTransitaireStats,
     getTransitaireParcels,
@@ -681,12 +648,7 @@
     getEconomicVariables,
     getEconomicCharges,
     getEconomicCoherence,
-    updateEconomicVariable,
-    createEconomicCharge,
-    updateEconomicCharge,
-    redistributeEconomic,
     getFinanceConfig,
-    updateFinanceConfig,
     getCashUncollected,
     getCashReconciliation,
     getInvoices,
@@ -696,7 +658,7 @@
     getCustomsShipment,
     getCustomsRatesEffective,
     createCustomsShipment,
-    updateCustomsShipment,
+    getCustomsCategories,
     getPartners,
     getPartnersLogistique,
     getPartnersStats,
@@ -706,18 +668,10 @@
     getProducts,
     getPricingStrategy,
     applyPricingStrategy,
-    getPricingCompetitors,
     createPricingCompetitor,
     deletePricingCompetitor,
     getPricingFlow,
     getPricingDashboard,
-    getCostBenchmarks,
-    upsertCostBenchmark,
-    deleteCostBenchmark,
-    getLoyaltyPending,
-    getLoyaltyHistory,
-    createLoyaltyReward,
-    createLoyaltySkip,
 
     // Signals / ActionCenterView (6)
     getSignalsStats,
@@ -746,11 +700,10 @@
     hubInventoryScanAssign,
     hubInventoryProposeAll,
 
-    // Lot 4 — Sourcing Intelligence (4)
+    // Lot 4 — Sourcing Intelligence (3)
     getSourcingSynthesis,
     getSourcingAnalysis,
     updateSourcingProduct,
-    sourcingBulkRail,
 
     // Lot 4 — Scanner catalogue (9)
     getSourcingCatalogs,

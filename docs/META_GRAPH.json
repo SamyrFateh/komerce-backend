@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-08T08:20:45.470Z",
+  "generatedAt": "2026-07-08T10:59:51.020Z",
   "sources": {
     "backend": {
       "nodes": 715
@@ -9,8 +9,8 @@
       "endpoints": 51
     },
     "dashboards": {
-      "modules": 40,
-      "callEdges": 111
+      "modules": 41,
+      "callEdges": 112
     },
     "contract": {
       "endpoints": 433
@@ -19,7 +19,7 @@
   "summary": {
     "endpointsConsumed": 85,
     "sharedEndpoints": 2,
-    "phantomSeams": 1,
+    "phantomSeams": 0,
     "sharedTables": 10
   },
   "endpoints": {
@@ -1011,17 +1011,6 @@
         "users"
       ]
     },
-    "/api/v2/scan": {
-      "boutique": [],
-      "dashboards": [
-        "HubRelaisView"
-      ],
-      "inContract": false,
-      "status": "NOT_FOUND",
-      "routeFile": null,
-      "services": [],
-      "tables": []
-    },
     "/api/hub/auto-distribute": {
       "boutique": [],
       "dashboards": [
@@ -1305,6 +1294,21 @@
         "products"
       ]
     },
+    "/api/admin/customs-categories": {
+      "boutique": [],
+      "dashboards": [
+        "SourcingScannerView"
+      ],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/admin-customs-categories.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "customs_categories"
+      ]
+    },
     "/api/admin/sourcing/catalogs/import": {
       "boutique": [],
       "dashboards": [
@@ -1452,9 +1456,7 @@
       "/api/orders",
       "/api/products"
     ],
-    "phantomSeams": [
-      "/api/v2/scan"
-    ],
+    "phantomSeams": [],
     "sharedTables": [
       "invoices",
       "order_items",
@@ -2024,6 +2026,15 @@
       "boutique": [],
       "dashboards": [
         "SanteView"
+      ]
+    },
+    "customs_categories": {
+      "routes": [
+        "routes/admin-customs-categories.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "SourcingScannerView"
       ]
     }
   }

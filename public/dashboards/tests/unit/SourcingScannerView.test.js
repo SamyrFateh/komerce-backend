@@ -10,8 +10,8 @@
  * Dépendances externes (globals mockés) :
  *   - KmcApi.getSourcingCatalogs() / getSourcingCandidates(params) / getSourcingCandidate(id) /
  *     updateSourcingCandidate(id, body) / importSourcingCatalog(body) / scanSourcingCandidate(id) /
- *     importSourcingProduct(id) / watchlistSourcingCandidate(id) / rejectSourcingCandidate(id, body)
- *   - global.fetch('/api/admin/customs-categories') (hors KmcApi — appel direct)
+ *     importSourcingProduct(id) / watchlistSourcingCandidate(id) / rejectSourcingCandidate(id, body) /
+ *     getCustomsCategories()
  *   - window.alert / window.confirm / window.prompt
  *
  * Périmètre couvert :
@@ -83,8 +83,8 @@ describe('SourcingScannerView', () => {
       importSourcingProduct: jest.fn().mockResolvedValue({}),
       watchlistSourcingCandidate: jest.fn().mockResolvedValue({}),
       rejectSourcingCandidate: jest.fn().mockResolvedValue({}),
+      getCustomsCategories: jest.fn().mockResolvedValue([]),
     });
-    global.fetch = jest.fn().mockResolvedValue({ json: () => Promise.resolve([]) });
     mockAlert();
     mockConfirm(true);
     mockPrompt('raison test');
@@ -95,7 +95,6 @@ describe('SourcingScannerView', () => {
 
   afterEach(() => {
     cleanupGlobals('KmcApi');
-    delete global.fetch;
     delete window.alert;
     delete window.confirm;
     delete window.prompt;
@@ -112,13 +111,13 @@ describe('SourcingScannerView', () => {
   });
 
   describe('render() — chargement initial', () => {
-    it('appelle getSourcingCatalogs, getSourcingCandidates et fetch(categories), affiche l\'onglet candidats par défaut', async () => {
+    it('appelle getSourcingCatalogs, getSourcingCandidates et getCustomsCategories, affiche l\'onglet candidats par défaut', async () => {
       await instance.render(root);
       await flush();
 
       expect(global.KmcApi.getSourcingCatalogs).toHaveBeenCalled();
       expect(global.KmcApi.getSourcingCandidates).toHaveBeenCalled();
-      expect(global.fetch).toHaveBeenCalledWith('/api/admin/customs-categories', expect.objectContaining({ credentials: 'include' }));
+      expect(global.KmcApi.getCustomsCategories).toHaveBeenCalled();
       expect(root.querySelector('.scs-tab.active').textContent).toContain('Candidats');
     });
   });

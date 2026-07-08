@@ -38,10 +38,6 @@
  *   relaisConfirmCash(ref)                     → cash pending → confirmed
  *   relaisReceive(ref)                         → in_transit → available
  *   relaisCollect(ref)                         → available → collected
- *
- * NOTE pour api-client.js (Vague 0 — à ajouter avant merge) :
- *   Les 7 mutations ci-dessus ne sont pas encore dans KmcApi. Voir bloc
- *   «  ── Mutations à ajouter dans api-client.js ──  » en bas de ce fichier.
  */
 
 'use strict';
@@ -953,44 +949,3 @@
   global.HubRelaisView = { render };
 
 })(window);
-
-
-/* ════════════════════════════════════════════════════════════════════════════
-   ── Mutations à ajouter dans api-client.js (Vague 0 / avant merge) ──
-
-   Dans la zone « Vague 1 — Domaines opérationnels » de api-client.js,
-   ajouter les 7 fonctions suivantes puis les exposer dans KmcApi :
-
-   // Hub mutations
-   function hubMarkOrdered(ref) {
-     return fetchMutation(apiUrl(`/v2/orders/${ref}/mark-ordered`), 'POST');
-   }
-   function hubShip(ref) {
-     return fetchMutation(apiUrl('/v2/scan'), 'POST', { reference: ref, action: 'shipped', note: 'Expédié Hub — CT' });
-   }
-   function autoDistribute() {
-     return fetchMutation(apiUrl('/v2/orders/auto-distribute'), 'POST');
-   }
-   function getDistribution() {
-     return fetchJSON(apiUrl('/v2/orders/distribution'));
-   }
-
-   // Relais mutations
-   function relaisConfirmCash(ref) {
-     return fetchMutation(apiUrl(`/v2/orders/${ref}/confirm-cash`), 'POST');
-   }
-   function relaisReceive(ref) {
-     return fetchMutation(apiUrl('/v2/scan'), 'POST', { reference: ref, action: 'arrived', note: 'Réception relais — CT' });
-   }
-   function relaisCollect(ref) {
-     return fetchMutation(apiUrl('/v2/scan'), 'POST', { reference: ref, action: 'collected', note: 'Remis client — CT' });
-   }
-
-   Puis dans global.KmcApi = { … } :
-     hubMarkOrdered, hubShip, autoDistribute, getDistribution,
-     relaisConfirmCash, relaisReceive, relaisCollect,
-
-   Vérifier les URL réelles dans ct-api.js (CT.api.hubMarkOrdered,
-   CT.api.v2Scan, CT.api.autoDistribute, CT.api.getDistribution,
-   CT.api.v2ConfirmCash, CT.api.markInTransit) avant de confirmer les paths.
-   ════════════════════════════════════════════════════════════════════════════ */

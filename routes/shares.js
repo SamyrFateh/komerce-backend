@@ -22,6 +22,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
+const { sharedCartLimiter } = require('../middleware/rate-limit');
 const log = require('../utils/logger').child({ module: 'shares' });
 
 // ── DDL géré par migrations/075_hub_shares_collective_schema.sql ────────────
@@ -67,7 +68,7 @@ async function enrichItems(items) {
 }
 
 /* ── POST /api/shares — créer un lien (simple ou événement) ── */
-router.post('/', async (req, res, next) => {
+router.post('/', sharedCartLimiter, async (req, res, next) => {
   try {
   
     const {
@@ -181,7 +182,7 @@ router.get('/:token', async (req, res, next) => {
 });
 
 /* ── POST /api/shares/:token/contributions — pledger ── */
-router.post('/:token/contributions', async (req, res, next) => {
+router.post('/:token/contributions', sharedCartLimiter, async (req, res, next) => {
   try {
   
     const { token } = req.params;

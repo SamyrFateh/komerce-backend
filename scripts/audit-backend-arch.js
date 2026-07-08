@@ -247,6 +247,12 @@ const ALLOWED_RAW_SQL_PATTERNS = [
   /CREATE\s+(TABLE|INDEX|SEQUENCE)/i,
   /ALTER\s+TABLE/i,
   /DROP\s+(TABLE|INDEX)/i,
+
+  // D-14 — routes/admin/system.js:110 : `DELETE FROM ${tbl}` où tbl itère sur
+  // CLEAN_TABLES_ALLOWLIST (tableau littéral en dur, re-vérifié par un garde AUD-07
+  // avant chaque usage) — jamais une entrée utilisateur. Cf. commentaire arch-safe
+  // sur place.
+  /DELETE\s+FROM\s+\$\{tbl\}/,
 ];
 
 // ════════════════════════════════════════════════════════════════

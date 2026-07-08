@@ -1,7 +1,7 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-08T08:20:45.470Z.
+> Régénéré le 2026-07-08T10:59:51.020Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
@@ -9,13 +9,13 @@
 
 - Backend : **715** nœuds · Contrat : **433** endpoints
 - Boutique : **65** modules, 51 endpoints
-- Dashboards : **40** modules, 111 arêtes d'appel
+- Dashboards : **41** modules, 112 arêtes d'appel
 
 ## Synthèse des coutures
 
 - Endpoints consommés par au moins un front : **85**
 - 🔗 Endpoints **partagés** (boutique + dashboards) : **2** — rayon de casse amplifié
-- 🔴 Coutures **fantômes** (front → hors contrat) : **1**
+- 🔴 Coutures **fantômes** (front → hors contrat) : **0**
 - ⚠️ Tables touchées par **les deux** fronts : **10**
 
 ## 1. Endpoints partagés — toucher = casse double
@@ -24,14 +24,6 @@
 |---|---|---|---|---|
 | `/api/orders` | `routes/orders.js` | b-checkout, b-tracking, komerce-api | OrdersLogisticsView, ProblemsView | — |
 | `/api/products` | `routes/products.js` | komerce-api | EconomicFlowView, PricingStrategyView | `product_variants`, `products` |
-
-## 2. Coutures fantômes (à trancher)
-
-Endpoints appelés par un front mais absents du contrat backend — route legacy non nettoyée, ou bug qui couve (classe `.orders` / `getCosting`).
-
-| Endpoint | Appelé par |
-|---|---|
-| `/api/v2/scan` ❌ | dashboards:HubRelaisView |
 
 ## 3. Tables à rayon de casse maximal (lues/écrites pour les 2 fronts)
 
@@ -61,8 +53,6 @@ graph TD
   ep__api_products["/api/products"] --> rt_routes_products_js["routes/products.js"]
   BTQ((boutique)) -->|1| ep__api_products
   DASH((dashboards)) -->|2| ep__api_products
-  ep__api_v2_scan["/api/v2/scan ❌"]:::phantom
-  DASH((dashboards)) -->|1| ep__api_v2_scan
   classDef phantom fill:#fdd,stroke:#c00;
 ```
 

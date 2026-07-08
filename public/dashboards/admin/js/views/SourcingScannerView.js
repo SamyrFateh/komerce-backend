@@ -150,7 +150,7 @@
     const [catResp, candResp, catsResp] = await Promise.all([
       global.KmcApi.getSourcingCatalogs().catch(() => ({})),
       global.KmcApi.getSourcingCandidates().catch(() => ({})),
-      fetch('/api/admin/customs-categories', { credentials: 'include' }).then(r => r.json()).catch(() => []),
+      global.KmcApi.getCustomsCategories().catch(() => []),
     ]);
     _state.imports    = catResp.imports || catResp.catalogs || [];
     _state.candidates = candResp.candidates || [];

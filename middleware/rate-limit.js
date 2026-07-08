@@ -155,6 +155,18 @@ const adminLimiter = createLimiter({
   message: { error: 'Trop de requêtes admin, réessayez dans 1 minute' },
 }, 'admin');
 
+// ── Shared-cart limiter: 30 attempts per 15 minutes per IP ─────────────────────
+// D-08 (audit sécurité §5) : POST /api/shares et POST /api/shares/:token/contributions
+// n'étaient couvertes que par le globalLimiter (500/15min) — vecteur de spam de
+// paniers/contributions partagés. Limiter dédié, même fenêtre que authLimiter.
+const sharedCartLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes sur les paniers partagés, réessayez dans 15 minutes' },
+}, 'shared-cart');
+
 module.exports = {
   globalLimiter,
   authLimiter,
@@ -163,4 +175,5 @@ module.exports = {
   orderCreateLimiter,
   dashboardLimiter,
   adminLimiter,
+  sharedCartLimiter,
 };

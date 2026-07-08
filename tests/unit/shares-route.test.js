@@ -21,6 +21,7 @@ const request = require('supertest');
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ warn: jest.fn(), info: jest.fn(), error: jest.fn() }),
+  forModule: () => ({ warn: jest.fn(), info: jest.fn(), error: jest.fn() }),
 }));
 
 const mockDbQuery = jest.fn();

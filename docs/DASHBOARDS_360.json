@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-06-26T15:34:35.429Z",
+  "generatedAt": "2026-07-08T10:50:11.276Z",
   "summary": {
-    "modules": 40,
-    "routes": 30,
-    "apiMethodsExported": 117,
-    "apiMethodsCalled": 98,
+    "modules": 41,
+    "routes": 31,
+    "apiMethodsExported": 101,
+    "apiMethodsCalled": 99,
     "orphanRoutes": 0,
-    "deadApiMethods": 17,
+    "deadApiMethods": 0,
     "missingApiMethods": 0,
-    "doctrineViolations": 1,
-    "unprovenContracts": 59
+    "doctrineViolations": 0,
+    "unprovenContracts": 60
   },
   "modules": [
     {
@@ -298,6 +298,28 @@
         "resolveSignal",
         "generateSignals"
       ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/CatalogApprovalView.js",
+      "id": "CatalogApprovalView",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "admin-catalog-approval-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
+      "owner": null,
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
+      "apiCalls": [],
       "rawFetchCount": 0
     },
     {
@@ -1011,6 +1033,7 @@
       "apiCalls": [
         "getSourcingCatalogs",
         "getSourcingCandidates",
+        "getCustomsCategories",
         "importSourcingCatalog",
         "getSourcingCandidate",
         "updateSourcingCandidate",
@@ -1019,7 +1042,7 @@
         "watchlistSourcingCandidate",
         "rejectSourcingCandidate"
       ],
-      "rawFetchCount": 1
+      "rawFetchCount": 0
     },
     {
       "file": "views/SourcingView.js",
@@ -1237,6 +1260,14 @@
     {
       "path": "/admin/products",
       "view": "ProductsView",
+      "shell": "ct",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "path": "/admin/catalog-approval",
+      "view": "CatalogApprovalView",
       "shell": "ct",
       "roles": [
         "admin"
@@ -1665,10 +1696,10 @@
       "view": "HubRelaisView",
       "method": "hubShip",
       "defined": true,
-      "route": "/api/v2/scan",
+      "route": "/api/v2/parcels",
       "httpMethod": "POST",
-      "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
     },
     {
       "view": "HubRelaisView",
@@ -1701,19 +1732,19 @@
       "view": "HubRelaisView",
       "method": "relaisReceive",
       "defined": true,
-      "route": "/api/v2/scan",
+      "route": "/api/v2/parcels",
       "httpMethod": "POST",
-      "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
     },
     {
       "view": "HubRelaisView",
       "method": "relaisCollect",
       "defined": true,
-      "route": "/api/v2/scan",
+      "route": "/api/v2/parcels",
       "httpMethod": "POST",
-      "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
     },
     {
       "view": "InventoryView",
@@ -2176,6 +2207,15 @@
     },
     {
       "view": "SourcingScannerView",
+      "method": "getCustomsCategories",
+      "defined": true,
+      "route": "/api/admin/customs-categories",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SourcingScannerView",
       "method": "importSourcingCatalog",
       "defined": true,
       "route": "/api/admin/sourcing/catalogs/import",
@@ -2347,42 +2387,23 @@
     }
   ],
   "headerCoverage": {
-    "total": 40,
-    "full": 40,
+    "total": 41,
+    "full": 41,
     "lite": 0,
     "missing": 0
   },
   "liteMissingOwner": [],
   "diagnostics": {
     "orphanRoutes": [],
-    "deadApiMethods": [
-      "createEconomicCharge",
-      "createLoyaltyAction",
-      "deleteCostBenchmark",
-      "getCostBenchmarks",
-      "getLoyaltyHistory",
-      "getLoyaltyPending",
-      "getParcelAlerts",
-      "getParcelCritical",
-      "getParcelKpis",
-      "getPricingCompetitors",
-      "redistributeEconomic",
-      "sourcingBulkRail",
-      "updateCustomsShipment",
-      "updateEconomicCharge",
-      "updateEconomicVariable",
-      "updateFinanceConfig",
-      "upsertCostBenchmark"
-    ],
+    "deadApiMethods": [],
     "missingApiMethods": [],
-    "doctrineViolations": [
-      "views/SourcingScannerView.js (1 fetch() brut)"
-    ],
+    "doctrineViolations": [],
     "rawFetchDebt": [],
     "unprovenContracts": [
       "GET /api/admin/costing/orders",
       "GET /api/admin/costing/products",
       "GET /api/admin/costing/relais",
+      "GET /api/admin/customs-categories",
       "GET /api/admin/customs-shipments",
       "GET /api/admin/customs-shipments/rates/effective",
       "GET /api/admin/dashboard/control-tower",
@@ -2440,9 +2461,7 @@
       "POST /api/pricing/strategy/competitors",
       "POST /api/transitaire/ship"
     ],
-    "notFoundContracts": [
-      "POST /api/v2/scan"
-    ],
+    "notFoundContracts": [],
     "unresolvedRoutes": [
       "expireSharedCart",
       "extendSharedCart",
@@ -2471,9 +2490,12 @@
       "deletePricingCompetitor (préfixe: DELETE /api/pricing/strategy/competitors/…)",
       "getCustomsShipment (préfixe: GET /api/admin/customs-shipments/…)",
       "getSourcingCandidate (préfixe: GET /api/admin/sourcing/candidates/…)",
+      "hubShip (préfixe: POST /api/v2/parcels/…)",
       "importSourcingProduct (préfixe: POST /api/admin/sourcing/candidates/…)",
       "rejectSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)",
+      "relaisCollect (préfixe: POST /api/v2/parcels/…)",
       "relaisConfirmCash (préfixe: POST /api/v2/orders/…)",
+      "relaisReceive (préfixe: POST /api/v2/parcels/…)",
       "resolveSignal (préfixe: POST /api/admin/signals/…)",
       "scanSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)",
       "snoozeSignal (préfixe: POST /api/admin/signals/…)",
@@ -2497,6 +2519,7 @@
       "utils.js",
       "views/AccountingView.js",
       "views/ActionCenterView.js",
+      "views/CatalogApprovalView.js",
       "views/CategoriesView.js",
       "views/ClientsView.js",
       "views/ControlTowerView.js",

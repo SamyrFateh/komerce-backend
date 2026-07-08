@@ -1,16 +1,16 @@
 # Dashboards 360 — carte d'architecture admin (générée)
 
 > ⚠️ Fichier **généré** par `scripts/gen-dashboards-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-26T15:34:35.429Z.
+> Régénéré le 2026-07-08T10:50:11.276Z.
 > Pendant front du graphe backend : les dashboards se couplent par la chaîne **route → vue → KmcApi → endpoint → contrat**, pas par un bus ni par les imports.
 
 ## Synthèse
 
-- Modules JS : **40** (40 header complet, 0 lite, **0 sans header**)
-- Routes SPA : **30**
-- Méthodes `KmcApi` : **117** exportées, 98 appelées par au moins une vue
-- Santé chaîne : 0 route(s) orpheline(s), 17 méthode(s) API morte(s), 0 méthode(s) API absente(s) (crash garanti), 1 violation(s) de doctrine
-- Contrats non prouvés réellement appelés : **59** (signal de risque, cf. bug `getOps()`/`.orders`)
+- Modules JS : **41** (41 header complet, 0 lite, **0 sans header**)
+- Routes SPA : **31**
+- Méthodes `KmcApi` : **101** exportées, 99 appelées par au moins une vue
+- Santé chaîne : 0 route(s) orpheline(s), 0 méthode(s) API morte(s), 0 méthode(s) API absente(s) (crash garanti), 0 violation(s) de doctrine
+- Contrats non prouvés réellement appelés : **60** (signal de risque, cf. bug `getOps()`/`.orders`)
 
 ## 1. Routeur SPA → Vues
 
@@ -34,6 +34,7 @@
 | `/admin/economic-flow` | EconomicFlowView | ct | admin, sourcing, finance | ✅ |
 | `/admin/categories` | CategoriesView | ct | admin | ✅ |
 | `/admin/products` | ProductsView | ct | admin | ✅ |
+| `/admin/catalog-approval` | CatalogApprovalView | ct | admin | ✅ |
 | `/admin/problems` | ProblemsView | bo | tous | ✅ |
 | `/admin/alerts` | ActionCenterView | bo | tous | ✅ |
 | `/admin/clients` | ClientsView | bo | admin, support, finance | ✅ |
@@ -88,10 +89,10 @@
 | HubRelaisView | `getParcels` | ✅ | `GET /api/v2/parcels` | ⚪ non prouvé |
 | HubRelaisView | `getPipeline` | ✅ | `GET /api/dashboard/pipeline` | ⚪ non prouvé |
 | HubRelaisView | `hubMarkOrdered` | ✅ | `POST /api/hub/orders/mark-ordered` | ⚪ non prouvé |
-| HubRelaisView | `hubShip` | ✅ | `POST /api/v2/scan` | 🔴 endpoint introuvable |
-| HubRelaisView | `relaisCollect` | ✅ | `POST /api/v2/scan` | 🔴 endpoint introuvable |
+| HubRelaisView | `hubShip` | ✅ | `POST /api/v2/parcels/…` | 🔵 url dynamique (non comparable) |
+| HubRelaisView | `relaisCollect` | ✅ | `POST /api/v2/parcels/…` | 🔵 url dynamique (non comparable) |
 | HubRelaisView | `relaisConfirmCash` | ✅ | `POST /api/v2/orders/…` | 🔵 url dynamique (non comparable) |
-| HubRelaisView | `relaisReceive` | ✅ | `POST /api/v2/scan` | 🔴 endpoint introuvable |
+| HubRelaisView | `relaisReceive` | ✅ | `POST /api/v2/parcels/…` | 🔵 url dynamique (non comparable) |
 | InventoryView | `getHubInventoryOpenParcels` | ✅ | `GET /api/hub/inventory/open-parcels` | ⚪ non prouvé |
 | InventoryView | `getHubInventoryProposals` | ✅ | `GET /api/hub/inventory/proposals` | ⚪ non prouvé |
 | InventoryView | `getHubInventoryStats` | ✅ | `GET /api/hub/inventory/stats` | ⚪ non prouvé |
@@ -141,6 +142,7 @@
 | SimulatorView | `simStart` | ✅ | — | ❓ url non résolue |
 | SimulatorView | `simStatus` | ✅ | — | ❓ url non résolue |
 | SimulatorView | `simStop` | ✅ | — | ❓ url non résolue |
+| SourcingScannerView | `getCustomsCategories` | ✅ | `GET /api/admin/customs-categories` | ⚪ non prouvé |
 | SourcingScannerView | `getSourcingCandidate` | ✅ | `GET /api/admin/sourcing/candidates/…` | 🔵 url dynamique (non comparable) |
 | SourcingScannerView | `getSourcingCandidates` | ✅ | `GET /api/admin/sourcing/candidates` | ⚪ non prouvé |
 | SourcingScannerView | `getSourcingCatalogs` | ✅ | `GET /api/admin/sourcing/catalogs` | ⚪ non prouvé |
@@ -185,6 +187,7 @@ graph LR
   _admin_economic_flow["/admin/economic-flow"] --> EconomicFlowView["EconomicFlowView"]
   _admin_categories["/admin/categories"] --> CategoriesView["CategoriesView"]
   _admin_products["/admin/products"] --> ProductsView["ProductsView"]
+  _admin_catalog_approval["/admin/catalog-approval"] --> CatalogApprovalView["CatalogApprovalView"]
   _admin_problems["/admin/problems"] --> ProblemsView["ProblemsView"]
   _admin_alerts["/admin/alerts"] --> ActionCenterView["ActionCenterView"]
   _admin_clients["/admin/clients"] --> ClientsView["ClientsView"]
@@ -231,12 +234,12 @@ graph LR
   HubRelaisView -->|getPipeline❓| _api_dashboard_pipeline["/api/dashboard/pipeline"]
   HubRelaisView -->|getParcels❓| _api_v2_parcels["/api/v2/parcels"]
   HubRelaisView -->|hubMarkOrdered❓| _api_hub_orders_mark_ordered["/api/hub/orders/mark-ordered"]
-  HubRelaisView -->|hubShip| _api_v2_scan["/api/v2/scan"]
+  HubRelaisView -->|hubShip| _api_v2_parcels["/api/v2/parcels"]
   HubRelaisView -->|autoDistribute❓| _api_hub_auto_distribute["/api/hub/auto-distribute"]
   HubRelaisView -->|getDistribution❓| _api_hub_auto_distribute["/api/hub/auto-distribute"]
   HubRelaisView -->|relaisConfirmCash| _api_v2_orders["/api/v2/orders"]
-  HubRelaisView -->|relaisReceive| _api_v2_scan["/api/v2/scan"]
-  HubRelaisView -->|relaisCollect| _api_v2_scan["/api/v2/scan"]
+  HubRelaisView -->|relaisReceive| _api_v2_parcels["/api/v2/parcels"]
+  HubRelaisView -->|relaisCollect| _api_v2_parcels["/api/v2/parcels"]
   InventoryView -->|hubInventoryScanAssign❓| _api_hub_inventory_scan_assign["/api/hub/inventory/scan-assign"]
   InventoryView -->|getHubInventoryStats❓| _api_hub_inventory_stats["/api/hub/inventory/stats"]
   InventoryView -->|getHubInventoryProposals❓| _api_hub_inventory_proposals["/api/hub/inventory/proposals"]
@@ -269,6 +272,7 @@ graph LR
   SanteView -->|getFinanceConfig❓| _api_admin_finance_config["/api/admin/finance-config"]
   SourcingScannerView -->|getSourcingCatalogs❓| _api_admin_sourcing_catalogs["/api/admin/sourcing/catalogs"]
   SourcingScannerView -->|getSourcingCandidates❓| _api_admin_sourcing_candidates["/api/admin/sourcing/candidates"]
+  SourcingScannerView -->|getCustomsCategories❓| _api_admin_customs_categories["/api/admin/customs-categories"]
   SourcingScannerView -->|importSourcingCatalog❓| _api_admin_sourcing_catalogs_import["/api/admin/sourcing/catalogs/import"]
   SourcingScannerView -->|getSourcingCandidate| _api_admin_sourcing_candidates["/api/admin/sourcing/candidates"]
   SourcingScannerView -->|updateSourcingCandidate| _api_admin_sourcing_candidates["/api/admin/sourcing/candidates"]
@@ -290,21 +294,15 @@ graph LR
   TransitaireView -->|getTransitaireHistory❓| _api_transitaire_history["/api/transitaire/history"]
 ```
 
-## 3. Anomalies bloquantes (cliquet)
-
-- 🟠 **Méthodes API mortes** (exportées, jamais appelées) : `createEconomicCharge`, `createLoyaltyAction`, `deleteCostBenchmark`, `getCostBenchmarks`, `getLoyaltyHistory`, `getLoyaltyPending`, `getParcelAlerts`, `getParcelCritical`, `getParcelKpis`, `getPricingCompetitors`, `redistributeEconomic`, `sourcingBulkRail`, `updateCustomsShipment`, `updateEconomicCharge`, `updateEconomicVariable`, `updateFinanceConfig`, `upsertCostBenchmark`
-- 🟣 **Violations de doctrine `kmc_api_only`** (fetch() brut malgré la doctrine déclarée) : `views/SourcingScannerView.js (1 fetch() brut)`
-
 ## 4. Signaux informatifs (non bloquants)
 
-- ⚪ **Contrats appelés mais non prouvés** (`UNKNOWN` dans openapi.json — aucun test d'intégration ne couvre la forme de réponse) : `GET /api/admin/costing/orders`, `GET /api/admin/costing/products`, `GET /api/admin/costing/relais`, `GET /api/admin/customs-shipments`, `GET /api/admin/customs-shipments/rates/effective`, `GET /api/admin/dashboard/control-tower`, `GET /api/admin/dashboard/costing`, `GET /api/admin/dashboard/event-workspaces`, `GET /api/admin/dashboard/logistics`, `GET /api/admin/dashboard/unified`, `GET /api/admin/economic/charges`, `GET /api/admin/economic/coherence`, `GET /api/admin/economic/executive`, `GET /api/admin/economic/history`, `GET /api/admin/economic/variables`, `GET /api/admin/finance-config`, `GET /api/admin/partners`, `GET /api/admin/partners/stats`, `GET /api/admin/signals`, `GET /api/admin/signals/stats`, `GET /api/admin/sourcing/analysis`, `GET /api/admin/sourcing/candidates`, `GET /api/admin/sourcing/catalogs`, `GET /api/admin/sourcing/synthesis`, `GET /api/cash/reconciliation`, `GET /api/cash/uncollected`, `GET /api/dashboard/clients`, `GET /api/dashboard/clients/detail`, `GET /api/dashboard/clients/list`, `GET /api/dashboard/finance`, `GET /api/dashboard/ops`, `GET /api/dashboard/pipeline`, `GET /api/dashboard/sales`, `GET /api/hub/auto-distribute`, `GET /api/hub/inventory/open-parcels`, `GET /api/hub/inventory/proposals`, `GET /api/hub/inventory/stats`, `GET /api/invoices`, `GET /api/orders`, `GET /api/pricing/dashboard`, `GET /api/pricing/strategy`, `GET /api/products`, `GET /api/transitaire/history`, `GET /api/transitaire/parcels`, `GET /api/transitaire/stats`, `GET /api/v2/parcels`, `GET /api/v2/parcels/reconciliation`, `POST /api/admin/customs-shipments`, `POST /api/admin/partners`, `POST /api/admin/signals/generate`, `POST /api/admin/sourcing/catalogs/import`, `POST /api/hub/auto-distribute`, `POST /api/hub/inventory/propose-all`, `POST /api/hub/inventory/scan-assign`, `POST /api/hub/orders/mark-ordered`, `POST /api/pricing/flow`, `POST /api/pricing/strategy/apply`, `POST /api/pricing/strategy/competitors`, `POST /api/transitaire/ship`
-- ❔ **Endpoints résolus mais absents du contrat OpenAPI** (à vérifier — route peut-être non montée ou contrat backend pas régénéré) : `POST /api/v2/scan`
-- 🔵 **URLs construites dynamiquement** (segment avec id/paramètre concaténé — non comparables au contrat tel quel, à vérifier à la main si besoin) : `acknowledgeSignal (préfixe: POST /api/admin/signals/…)`, `deletePartner (préfixe: DELETE /api/admin/partners/…)`, `deletePricingCompetitor (préfixe: DELETE /api/pricing/strategy/competitors/…)`, `getCustomsShipment (préfixe: GET /api/admin/customs-shipments/…)`, `getSourcingCandidate (préfixe: GET /api/admin/sourcing/candidates/…)`, `importSourcingProduct (préfixe: POST /api/admin/sourcing/candidates/…)`, `rejectSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `relaisConfirmCash (préfixe: POST /api/v2/orders/…)`, `resolveSignal (préfixe: POST /api/admin/signals/…)`, `scanSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `snoozeSignal (préfixe: POST /api/admin/signals/…)`, `updatePartner (préfixe: PUT /api/admin/partners/…)`, `updateSourcingCandidate (préfixe: PUT /api/admin/sourcing/candidates/…)`, `updateSourcingProduct (préfixe: PUT /api/admin/sourcing/products/…)`, `watchlistSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`
+- ⚪ **Contrats appelés mais non prouvés** (`UNKNOWN` dans openapi.json — aucun test d'intégration ne couvre la forme de réponse) : `GET /api/admin/costing/orders`, `GET /api/admin/costing/products`, `GET /api/admin/costing/relais`, `GET /api/admin/customs-categories`, `GET /api/admin/customs-shipments`, `GET /api/admin/customs-shipments/rates/effective`, `GET /api/admin/dashboard/control-tower`, `GET /api/admin/dashboard/costing`, `GET /api/admin/dashboard/event-workspaces`, `GET /api/admin/dashboard/logistics`, `GET /api/admin/dashboard/unified`, `GET /api/admin/economic/charges`, `GET /api/admin/economic/coherence`, `GET /api/admin/economic/executive`, `GET /api/admin/economic/history`, `GET /api/admin/economic/variables`, `GET /api/admin/finance-config`, `GET /api/admin/partners`, `GET /api/admin/partners/stats`, `GET /api/admin/signals`, `GET /api/admin/signals/stats`, `GET /api/admin/sourcing/analysis`, `GET /api/admin/sourcing/candidates`, `GET /api/admin/sourcing/catalogs`, `GET /api/admin/sourcing/synthesis`, `GET /api/cash/reconciliation`, `GET /api/cash/uncollected`, `GET /api/dashboard/clients`, `GET /api/dashboard/clients/detail`, `GET /api/dashboard/clients/list`, `GET /api/dashboard/finance`, `GET /api/dashboard/ops`, `GET /api/dashboard/pipeline`, `GET /api/dashboard/sales`, `GET /api/hub/auto-distribute`, `GET /api/hub/inventory/open-parcels`, `GET /api/hub/inventory/proposals`, `GET /api/hub/inventory/stats`, `GET /api/invoices`, `GET /api/orders`, `GET /api/pricing/dashboard`, `GET /api/pricing/strategy`, `GET /api/products`, `GET /api/transitaire/history`, `GET /api/transitaire/parcels`, `GET /api/transitaire/stats`, `GET /api/v2/parcels`, `GET /api/v2/parcels/reconciliation`, `POST /api/admin/customs-shipments`, `POST /api/admin/partners`, `POST /api/admin/signals/generate`, `POST /api/admin/sourcing/catalogs/import`, `POST /api/hub/auto-distribute`, `POST /api/hub/inventory/propose-all`, `POST /api/hub/inventory/scan-assign`, `POST /api/hub/orders/mark-ordered`, `POST /api/pricing/flow`, `POST /api/pricing/strategy/apply`, `POST /api/pricing/strategy/competitors`, `POST /api/transitaire/ship`
+- 🔵 **URLs construites dynamiquement** (segment avec id/paramètre concaténé — non comparables au contrat tel quel, à vérifier à la main si besoin) : `acknowledgeSignal (préfixe: POST /api/admin/signals/…)`, `deletePartner (préfixe: DELETE /api/admin/partners/…)`, `deletePricingCompetitor (préfixe: DELETE /api/pricing/strategy/competitors/…)`, `getCustomsShipment (préfixe: GET /api/admin/customs-shipments/…)`, `getSourcingCandidate (préfixe: GET /api/admin/sourcing/candidates/…)`, `hubShip (préfixe: POST /api/v2/parcels/…)`, `importSourcingProduct (préfixe: POST /api/admin/sourcing/candidates/…)`, `rejectSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `relaisCollect (préfixe: POST /api/v2/parcels/…)`, `relaisConfirmCash (préfixe: POST /api/v2/orders/…)`, `relaisReceive (préfixe: POST /api/v2/parcels/…)`, `resolveSignal (préfixe: POST /api/admin/signals/…)`, `scanSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `snoozeSignal (préfixe: POST /api/admin/signals/…)`, `updatePartner (préfixe: PUT /api/admin/partners/…)`, `updateSourcingCandidate (préfixe: PUT /api/admin/sourcing/candidates/…)`, `updateSourcingProduct (préfixe: PUT /api/admin/sourcing/products/…)`, `watchlistSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`
 - ❓ **Méthodes API dont l'URL n'a pas pu être résolue statiquement** (à vérifier à la main) : `expireSharedCart`, `extendSharedCart`, `getSettingRule`, `getSettings`, `getSettingsAudit`, `getSettingsDims`, `getSettingsTaxes`, `getSharedCart`, `getSharedCarts`, `getUnsoldStats`, `noteSharedCart`, `patchSettingRule`, `putSettingsDims`, `putSettingsTaxes`, `resetSettingRule`, `simCleanup`, `simJournal`, `simStart`, `simStatus`, `simStop`
 
 ## 5. Couverture des headers
 
-Complet : **40** · Lite : **0** · Sans header : **0**
+Complet : **41** · Lite : **0** · Sans header : **0**
 
 ## 6. Modules par domaine
 
@@ -324,6 +322,7 @@ Complet : **40** · Lite : **0** · Sans header : **0**
 | `utils.js` | admin-xss-escape-helpers | ui-renderer | medium | none |
 | `views/AccountingView.js` | admin-accounting-view | ui-page | high | kmc_api_only |
 | `views/ActionCenterView.js` | admin-action-center-view | ui-page | high | kmc_api_only |
+| `views/CatalogApprovalView.js` | admin-catalog-approval-view | ui-page | high | kmc_api_only |
 | `views/CategoriesView.js` | admin-categories-view | ui-page | medium | kmc_api_only |
 | `views/ClientsView.js` | admin-clients-view | ui-page | medium | kmc_api_only |
 | `views/ControlTowerView.js` | admin-control-tower-view | ui-page | high | kmc_api_only |

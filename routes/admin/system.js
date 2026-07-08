@@ -107,6 +107,9 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
       if (!CLEAN_TABLES_ALLOWLIST.includes(tbl)) throw new Error(`Table non autorisée: ${tbl}`); // AUD-07 safety net
       try {
         await client.query(`SAVEPOINT sp_clean_${tbl}`);
+        // arch-safe: whitelist literal — tbl vient exclusivement de CLEAN_TABLES_ALLOWLIST
+        // (tableau littéral en dur ci-dessus, jamais d'entrée utilisateur) ; le garde
+        // AUD-07 à la ligne précédente re-vérifie l'appartenance avant tout usage.
         const r = await client.query(`DELETE FROM ${tbl}`);
         report.deleted[tbl] = r.rowCount;
         await client.query(`RELEASE SAVEPOINT sp_clean_${tbl}`);
