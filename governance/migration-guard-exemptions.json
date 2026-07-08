@@ -5,9 +5,10 @@
     "files": [
       "migrations/_superseded/RECONCILIATION_PROD.sql",
       "migrations/AUD-10_rename_tracking_fix.sql",
-      "migrations/deploy-all.sql"
+      "migrations/deploy-all.sql",
+      "migrations/_superseded/2026_cost_benchmarks.sql"
     ],
-    "justification": "Fichiers historiques antérieurs à la convention NNN_nom.sql. _superseded/ = archive inactive. AUD-10 = renommage d'audit avec préfixe lettré (pas de conflit d'ordre). deploy-all.sql = script d'orchestration, pas une migration indépendante. Aucun de ces fichiers ne sera réexécuté."
+    "justification": "Fichiers historiques antérieurs à la convention NNN_nom.sql. _superseded/ = archive inactive. AUD-10 = renommage d'audit avec préfixe lettré (pas de conflit d'ordre). deploy-all.sql = script d'orchestration, pas une migration indépendante. Aucun de ces fichiers ne sera réexécuté. 2026_cost_benchmarks.sql = nommé avec une année au lieu d'un numéro séquentiel, archivé en _superseded après renommage en 103_."
   },
   "gaps": {
     "customs_36_91": {

@@ -85,8 +85,16 @@
   "092_customs_shipments_declaration_workflow.sql": "5281144df7772cc1",
   "093_customs_invoice_document_type.sql": "da25989c125e0b5a",
   "094_parcel_reconciliation_view.sql": "7458a8eb8a073c7e",
+  "095_value_density_foundation.sql": "d03402d327c81c77",
+  "096_quality_foundation.sql": "b612ef81611464c6",
+  "098_catalog_refinery_foundation.sql": "3a5d81fcbb4630c5",
+  "099_drop_zombie_shared_cart_commitments.sql": "0c04d763e02a4905",
+  "100_catalog_enrichment_runs.sql": "bfafe6397e15930b",
+  "101_variant_images.sql": "d6e540ef29ee415f",
+  "102_sourcing_candidates_raw_payload.sql": "302250b23c0bfa83",
   "AUD-10_rename_tracking_fix.sql": "1a4c1147d176b8e9",
   "deploy-all.sql": "793b8aa64e7b0da1",
   "migrate-categories-v2.sql": "87f2806aa94a2e5c",
-  "patch_variants.sql": "080f639615b3698d"
+  "patch_variants.sql": "080f639615b3698d",
+  "103_cost_benchmarks.sql": "5665ca0ee7e163db"
 }
