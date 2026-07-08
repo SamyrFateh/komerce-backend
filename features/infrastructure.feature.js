@@ -47,6 +47,7 @@ module.exports = {
       'utils/rates.js',
       'utils/reference.js',
       'utils/rules.js',
+      'utils/alerts-compat.js',
     ],
     validators: [
       'validators/index.js',

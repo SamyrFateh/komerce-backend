@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 357,
-    "filesWithFullHeaders": 330,
+    "scannedCodeFiles": 358,
+    "filesWithFullHeaders": 331,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 357,
+    "filesWithAnyHeaders": 358,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 715,
-    "edges": 4123,
+    "graphNodes": 716,
+    "edges": 4131,
     "dbTables": 109,
     "doctrines": 133,
     "impactAreas": 116,
-    "unresolvedCodeEdges": 392,
+    "unresolvedCodeEdges": 393,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -48,7 +48,7 @@
     "orders": 29,
     "documents": 11,
     "auth-identity": 5,
-    "operations": 12,
+    "operations": 13,
     "inventory": 3,
     "bootstrap": 1,
     "refunds": 2
@@ -69,7 +69,7 @@
     "util-ui": 2,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 23,
+    "util": 24,
     "controller": 1,
     "api-client": 2,
     "state-store": 1,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 99,
-    "high": 148,
+    "high": 149,
     "low": 34
   },
   "nodes": [
@@ -15819,6 +15819,49 @@
         "checkout"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "utils/alerts-compat.js",
+      "file": "utils/alerts-compat.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "alerts-schema-compat",
+      "domain": "operations",
+      "layer": "util",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "sql_query",
+        "sql_params"
+      ],
+      "outputs": [
+        "rewritten_sql_query",
+        "rewritten_sql_params"
+      ],
+      "depends": [],
+      "usedBy": [
+        "db.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "alerts"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "compatible_with_caller"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "operations",
+        "payment",
+        "logistics",
+        "catalog",
+        "refunds"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "utils/categories-cache.js",
@@ -41547,6 +41590,54 @@
       "label": "checkout"
     },
     {
+      "from": "db.js",
+      "to": "utils/alerts-compat.js",
+      "type": "uses",
+      "label": "db.js"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "impact:operations",
+      "type": "impact",
+      "label": "operations"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
       "from": "utils/categories-cache.js",
       "to": "utils/logger.js",
       "type": "depends",
@@ -58743,6 +58834,43 @@
         "services/shared-cart-lifecycle.js"
       ]
     },
+    "utils/alerts-compat.js": {
+      "role": "alerts-schema-compat",
+      "domain": "operations",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "db.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "alerts"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "operations",
+        "payment",
+        "logistics",
+        "catalog",
+        "refunds"
+      ],
+      "mustCheck": [
+        "db:alerts",
+        "doctrine:resolve_before_behavior_change",
+        "impact:catalog",
+        "impact:logistics",
+        "impact:operations",
+        "impact:payment",
+        "impact:refunds"
+      ]
+    },
     "utils/categories-cache.js": {
       "role": "categories-cache",
       "domain": "catalog",
@@ -59885,7 +60013,7 @@
     },
     {
       "table": "alerts",
-      "writerCount": 18,
+      "writerCount": 19,
       "writers": [
         "services/admin-order-refund.js",
         "services/cancel-order-purchase-orders.js",
@@ -59904,6 +60032,7 @@
         "services/repair-collective-stock-reservations.js",
         "services/repair-ordered-without-purchase-orders.js",
         "services/scan-operations.js",
+        "utils/alerts-compat.js",
         "utils/parcelSync.js"
       ]
     },
@@ -62810,6 +62939,12 @@
       "to": "services/whatsapp-meta.js",
       "type": "uses",
       "label": "notification-service.js"
+    },
+    {
+      "from": "db.js",
+      "to": "utils/alerts-compat.js",
+      "type": "uses",
+      "label": "db.js"
     },
     {
       "from": "routes/documents-html.js",
