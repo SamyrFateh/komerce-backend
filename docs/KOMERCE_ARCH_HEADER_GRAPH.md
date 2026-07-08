@@ -6,11 +6,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 357
+- Scanned code files: 358
 - Files with full headers: 330
 - Files with lite headers: 27
 - Files with any headers: 357
-- Files without headers: 0
+- Files without headers: 1
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 715
@@ -689,7 +689,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Files Still Without Headers Or Aggregation
 
-- none
+- utils/alerts-compat.js
 
 ## Files With Misplaced Headers (Shebang/Code Before Block)
 
