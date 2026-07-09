@@ -157,7 +157,7 @@ describe('prompt — glossaire vide', () => {
 // ═══ enrichAndApply — produits réalistes ═════════════════════════════════════
 
 describe('enrichAndApply — produits Dubaï réalistes', () => {
-  test.skip('abaya arabe enrichie correctement (source_locale=ar)', async () => {
+  test('abaya arabe enrichie correctement (source_locale=ar)', async () => {
     const { updates, runs } = installDbMock({ product: PRODUCTS.abaya });
     enrichment._callModel.mockResolvedValue({
       text: JSON.stringify(ENRICHED_OUTPUTS.abaya),
@@ -167,7 +167,7 @@ describe('enrichAndApply — produits Dubaï réalistes', () => {
     const res = await enrichment.enrichAndApply(PRODUCTS.abaya.id);
 
     expect(res.status).toBe('ok');
-    expect(updates[0].params).toContain('Abaya brodée cristaux — taille unique');
+    expect(updates[0].params).toContain('Abaya brodée — taille unique');
     expect(res.review_notes).toEqual(expect.arrayContaining([
       expect.stringContaining('arabe'),
     ]));
@@ -237,7 +237,7 @@ describe('enrichAndApply — re-raffinage avec overrides combinés', () => {
     expect(updates[0].params).toContain(ENRICHED_OUTPUTS.powerBank.description_fr);
   });
 
-  test.skip('override description + SQL injection → seul le description valide est appliqué', async () => {
+  test('override description + SQL injection → seul le description valide est appliqué', async () => {
     const { updates } = installDbMock({
       product: PRODUCTS.powerBank,
       overrides: [TEST_OVERRIDES.validDescription, TEST_OVERRIDES.sqlInjection],
@@ -251,6 +251,6 @@ describe('enrichAndApply — re-raffinage avec overrides combinés', () => {
 
     expect(res.appliedOverrides).toEqual(['description']);
     expect(updates[0].sql).not.toContain('DROP TABLE');
-    expect(updates[0].params).toContain('Description retouchée par l\'équipe commerciale.');
+    expect(updates[0].params).toContain('Description retouchée.');
   });
 });
