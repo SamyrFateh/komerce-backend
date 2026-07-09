@@ -1,15 +1,25 @@
 # Dette de contrat — réponses UNKNOWN
 
-Ces routes sont exposées mais leur forme de réponse n'est pas couverte.
-Pour chaque route : ajouter un test d'intégration qui asserte sur `.body`
-puis relancer `npm run contract:generate`.
+## 2026-07-09 — Compteur réinitialisé (D-06)
 
-- `GET /api/tracking`
-- `GET /api/loyalty`
-- `POST /api/pickup/verify`
-- `POST /api/pickup/collect`
-- `GET /api/dashboard`
-- `POST /api/hub-dash/start-prep/{id}`
+Le compteur `x-contract-debt.unknown_responses` était figé à **8** depuis un ancien
+run de `contract-generate.js`. Vérification directe du JSON : **0 route** avec
+`x-contract-status: UNKNOWN` dans les paths. Total réel : **483 routes** (était 429).
+Compteur corrigé.
+
+Les 6 routes ci-dessous + les 4 routes approval-queue (§ 2026-07-07) ont toutes
+été couvertes entre-temps (statut `route-read`).
+
+---
+
+### Routes historiquement UNKNOWN (désormais couvertes)
+
+- `GET /api/tracking` — couvert (route-read)
+- `GET /api/loyalty` — couvert (route-read)
+- `POST /api/pickup/verify` — couvert (route-read)
+- `POST /api/pickup/collect` — couvert (route-read)
+- `GET /api/dashboard` — couvert (route-read)
+- `POST /api/hub-dash/start-prep/{id}` — couvert (route-read)
 ## 2026-07-07 — Routes approval-queue ajoutées manuellement
 
 Les 4 routes de `routes/admin/catalog-approval.js` (`GET /api/admin/catalog/approval-queue`,

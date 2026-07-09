@@ -171,3 +171,47 @@
 | 11 | D-16 | 30 min–2h | 👤/🤖 Retrouver/reconstruire `catalog-enrichment-fixtures.js` (13 tests cassés) |
 
 **Convention pour Sonnet :** après chaque modification, lancer `bash .git/hooks/pre-commit` pour vérifier que toutes les gates passent. Si un `--save` ou `--write` est mentionné, le lancer pour figer la nouvelle baseline.
+
+---
+
+## MISE À JOUR — 2026-07-09
+
+Audit complet du dépôt GitHub + résolution des items restants.
+
+### Items résolus lors de cette session
+
+| Item | Action effectuée |
+|------|-----------------|
+| **D-13** | `git rm migrations/2026_cost_benchmarks.sql` — doublon de `103_cost_benchmarks.sql` supprimé. Le regex `MIGRATION_RE = /^\d{3}.*\.sql$/` ne l'aurait pas matché (4 chiffres), donc pas de risque de rejeu, mais nettoyage nécessaire. |
+| **D-06** | Compteur `x-contract-debt` corrigé : `unknown_responses` 8→0, `total_routes` 429→483. Aucune route UNKNOWN réelle dans les paths du contrat. `docs/contract/DEBT.md` mis à jour. |
+| **D-01** | `cancelBackorder()` migré vers `transitionParcelStatus()`. Ajout de `opts.cancelReason` dans la signature du SSOT. **100% des transitions `parcels.status` passent désormais par `transitionParcelStatus`.** |
+| **D-02** | `wallet-service.js` migré : écriture `wallet_applied_kmf` séparée de la mutation `payment_status`, qui passe désormais par `payment-service.markPaid()` (SSOT, invariant I-BACK-4). **0 violation restante sur `orders.status` ET `orders.payment_status`.** |
+
+### Constat D-02 post-audit
+
+Le "chantier D-02 de 4h+" s'est avéré être un fix de 15 minutes :
+- `transitionOrderStatus()` est massivement adopté (30+ appelants, 0 violation sur `orders.status`)
+- `payment-service.js` owne `payment_status` avec `markPaid/markRefunded/markFailed`
+- Seul `wallet-service.js` écrivait `payment_status` en direct — corrigé
+- Les 25+ autres `UPDATE orders` sont des écritures de **métadonnées** par leurs domaines respectifs (payment IDs, customs, pickup, wallet, routing…) — c'est **correct par design** en architecture feature-first
+
+### État final de la dette
+
+| Item | Statut |
+|------|--------|
+| D-01 | ✅ **Résolu** |
+| D-02 | ✅ **Résolu** |
+| D-03 | ✅ Résolu (session précédente) |
+| D-04 | ✅ Résolu (session précédente) |
+| D-05 | 📋 Documenté dans `migrations/GAPS.md` — pas de fix possible (migrations appliquées en prod) |
+| D-06 | ✅ **Résolu** |
+| D-07 | ✅ Résolu (session précédente) |
+| D-08 | ✅ Résolu (session précédente) |
+| D-09 | ⏸ Décision produit — features `inventory`/`recommendations` en staging |
+| D-10 | ⏸ Décision produit — migration 100 à déployer sur Railway |
+| D-11 | 📋 Érosion progressive — 59 contrats dashboards, à couvrir au fil des tickets |
+| D-12 | ✅ Résolu (session précédente) |
+| D-13 | ✅ **Résolu** |
+| D-14 | ✅ Résolu (session précédente) |
+| D-15 | 📋 Informatif — 10 tables lues par 2 fronts, normal |
+| D-16 | ✅ Résolu — fixtures reconstruites (3079 octets) |

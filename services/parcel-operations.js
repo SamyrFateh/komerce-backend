@@ -508,14 +508,10 @@ async function cancelBackorder(orderId, body, user) {
       (sum, i) => sum + (Number(i.price_kmf) * i.quantity), 0
     );
 
-    // Annuler le colis
-    await client.query(
-      `UPDATE parcels
-       SET status = 'cancelled'::parcel_status, cancel_reason = $1,
-           cancelled_at = NOW(), updated_at = NOW()
-       WHERE id = $2`,
-      [reason || 'Annulation backorder client', parcelId]
-    );
+    // Annuler le colis (D-01 : passe par le SSOT transitionParcelStatus)
+    await transitionParcelStatus(client, parcelId, 'cancelled', {
+      cancelReason: reason || 'Annulation backorder client',
+    });
 
     // Restaurer le stock (I-06, via product-admin-service)
     await adjustStock(client, boItems, 'increment');
@@ -601,7 +597,7 @@ async function cancelBackorder(orderId, body, user) {
  * @returns {Promise<{ ok:boolean, status?:number, body?:object }>}
  */
 async function transitionParcelStatus(dbClient, parcelId, newStatus, opts = {}) {
-  const { trackingRef, skipValidation = false } = opts;
+  const { trackingRef, skipValidation = false, cancelReason } = opts;
 
   if (!skipValidation) {
     // Charger le statut actuel
@@ -639,6 +635,13 @@ async function transitionParcelStatus(dbClient, parcelId, newStatus, opts = {}) 
     updates.push(`reference = $${pi++}`);
     params.push(trackingRef);
   }
+
+  // cancel_reason pour les annulations (D-01 consolidation)
+  if (cancelReason && newStatus === 'cancelled') {
+    updates.push(`cancel_reason = $${pi++}`);
+    params.push(cancelReason);
+  }
+
   params.push(parcelId);
 
   await dbClient.query(

@@ -36,6 +36,7 @@
 
 const db = require('../db');
 const walletReceiptService = require('./documents/wallet-receipt');
+const { markPaid } = require('./payment-service');
 const log = require('../utils/logger').child({ module: 'wallet-service' });
 
 // ── Schema Migration ────────────────────────────────────────────────────────
@@ -292,13 +293,16 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
   });
 
   const remainingToPay = Math.max(0, order.total_kmf - max);
-  await client.query(`
-    UPDATE orders SET
-      wallet_applied_kmf = $1,
-      payment_status = CASE WHEN $2 <= 0 THEN 'paid' ELSE payment_status END,
-      updated_at = NOW()
-    WHERE id = $3
-  `, [max, remainingToPay, orderId]);
+
+  // D-02 : séparation des responsabilités — wallet écrit wallet_applied_kmf,
+  // payment-service.markPaid() owne payment_status (invariant I-BACK-4).
+  await client.query(
+    `UPDATE orders SET wallet_applied_kmf = $1, updated_at = NOW() WHERE id = $2`,
+    [max, orderId]
+  );
+  if (remainingToPay <= 0) {
+    await markPaid(orderId, { client });
+  }
 
   return { ...result, applied_kmf: max, remaining_to_pay: remainingToPay };
 }
