@@ -8,6 +8,7 @@ const {
   resolveRoutingFromRelais,
   normalizeIsland,
   ensureRoutingColumns,
+  backfillRoutingData,
   RoutingError,
   ROUTING_MODES,
   TRANSIT_HUB,
@@ -103,7 +104,11 @@ describe('routing', () => {
   });
 
   describe('ensureRoutingColumns', () => {
-    it('execute les migrations additives et les backfills de facon idempotente', async () => {
+    // FIX 2026-07-09 : ensureRoutingColumns ne fait plus QUE le DDL additif
+    // (ALTER TABLE ... ADD COLUMN IF NOT EXISTS), rapide et sûr au boot. Le
+    // backfill de données (lourd, potentiellement bloquant sous trafic live)
+    // est sorti dans backfillRoutingData — voir describe() dédié plus bas.
+    it('execute les 4 migrations additives de facon idempotente, sans backfill', async () => {
       const db = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
 
       await ensureRoutingColumns(db);
@@ -113,11 +118,10 @@ describe('routing', () => {
       expect(sqls[1]).toContain('ALTER TABLE orders ADD COLUMN IF NOT EXISTS destination_island');
       expect(sqls[2]).toContain('ALTER TABLE orders ADD COLUMN IF NOT EXISTS routing_mode');
       expect(sqls[3]).toContain('ALTER TABLE orders ADD COLUMN IF NOT EXISTS transit_hub');
-      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE relais SET island_code = $1'), ['ANJOUAN', 'Anjouan']);
-      expect(sqls.some(sql => sql.includes('UPDATE orders o SET'))).toBe(true);
+      expect(db.query).toHaveBeenCalledTimes(4);
     });
 
-    it('ignore les erreurs already exists et continue les backfills', async () => {
+    it('ignore les erreurs already exists et continue', async () => {
       const db = {
         query: jest.fn()
           .mockRejectedValueOnce(new Error('column already exists'))
@@ -125,7 +129,7 @@ describe('routing', () => {
       };
 
       await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
-      expect(db.query).toHaveBeenCalledTimes(9);
+      expect(db.query).toHaveBeenCalledTimes(4);
     });
 
     it('logue un warning pour une erreur de migration autre que already exists', async () => {
@@ -136,33 +140,39 @@ describe('routing', () => {
       };
 
       await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
-      // Pas d'assertion sur le logger mocké directement (child() renvoie un nouveau mock à
-      // chaque appel), on vérifie juste que l'exécution continue malgré l'erreur non "already exists".
-      expect(db.query).toHaveBeenCalledTimes(9);
+      expect(db.query).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  describe('backfillRoutingData', () => {
+    // FIX 2026-07-09 : ce backfill tournait auparavant dans ensureRoutingColumns
+    // au boot du serveur public. Sorti dans sa propre fonction, appelée
+    // manuellement via scripts/backfill-boot-data.js, hors du chemin de boot.
+    it('backfille island_code dans relais et destination_island/routing_mode/transit_hub dans orders', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
+
+      await backfillRoutingData(db);
+
+      const sqls = db.query.mock.calls.map(call => String(call[0]));
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE relais SET island_code = $1'), ['ANJOUAN', 'Anjouan']);
+      expect(sqls.some(sql => sql.includes('UPDATE orders o SET'))).toBe(true);
+      expect(db.query).toHaveBeenCalledTimes(5); // 4 backfills relais + 1 backfill orders
     });
 
     it('logue le nombre de relais backfillés quand rowCount > 0', async () => {
       const db = {
         query: jest.fn()
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER relais
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER orders x3
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
           .mockResolvedValueOnce({ rows: [], rowCount: 2 }) // backfill relais "Anjouan" → 2 lignes
           .mockResolvedValue({ rows: [], rowCount: 0 }),
       };
 
-      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
-      expect(db.query).toHaveBeenCalledTimes(9);
+      await expect(backfillRoutingData(db)).resolves.toBeUndefined();
+      expect(db.query).toHaveBeenCalledTimes(5);
     });
 
     it('logue le nombre de commandes enrichies quand le backfill orders a rowCount > 0', async () => {
       const db = {
         query: jest.fn()
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER relais
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER orders x3
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
           .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // backfill relais x4
           .mockResolvedValueOnce({ rows: [], rowCount: 0 })
           .mockResolvedValueOnce({ rows: [], rowCount: 0 })
@@ -170,32 +180,24 @@ describe('routing', () => {
           .mockResolvedValueOnce({ rows: [], rowCount: 5 }), // backfill orders → 5 lignes
       };
 
-      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
-      expect(db.query).toHaveBeenCalledTimes(9);
+      await expect(backfillRoutingData(db)).resolves.toBeUndefined();
+      expect(db.query).toHaveBeenCalledTimes(5);
     });
 
     it('logue un warning et continue si le backfill relais echoue', async () => {
       const db = {
         query: jest.fn()
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER relais
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER orders x3
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
           .mockRejectedValueOnce(new Error('backfill relais down')) // 1er backfill relais échoue
           .mockResolvedValue({ rows: [], rowCount: 0 }),
       };
 
-      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
-      expect(db.query).toHaveBeenCalledTimes(9);
+      await expect(backfillRoutingData(db)).resolves.toBeUndefined();
+      expect(db.query).toHaveBeenCalledTimes(5);
     });
 
     it('logue un warning et continue si le backfill orders echoue', async () => {
       const db = {
         query: jest.fn()
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER relais
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // ALTER orders x3
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-          .mockResolvedValueOnce({ rows: [], rowCount: 0 })
           .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // backfill relais x4
           .mockResolvedValueOnce({ rows: [], rowCount: 0 })
           .mockResolvedValueOnce({ rows: [], rowCount: 0 })
@@ -203,8 +205,8 @@ describe('routing', () => {
           .mockRejectedValueOnce(new Error('backfill orders down')), // backfill orders échoue
       };
 
-      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
-      expect(db.query).toHaveBeenCalledTimes(9);
+      await expect(backfillRoutingData(db)).resolves.toBeUndefined();
+      expect(db.query).toHaveBeenCalledTimes(5);
     });
   });
 });

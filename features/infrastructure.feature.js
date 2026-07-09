@@ -91,6 +91,7 @@ module.exports = {
       'scripts/audit-backend-arch.js',
       'scripts/audit-komerce-arch-headers.js',
       'scripts/audit-sourcing.js',
+      'scripts/backfill-boot-data.js',
       'scripts/boutique-ownership-check.js',
       'scripts/boutique-ownership-full-check.js',
       'scripts/check-boutique-doc-ack.js',

@@ -50,10 +50,15 @@ function startServerLifecycle({
     log.info(`KOMERCE API v12.4 — port ${port} — démarrage immédiat — init tables + migrations en background`);
 
     setImmediate(async () => {
+      const skipBootEnsure = process.env.KOMERCE_SKIP_BOOT_ENSURE === 'true';
+      if (skipBootEnsure) {
+        log.info('[boot-guard] ensureRoutingColumns/ensureSecurityTables ignorés (KOMERCE_SKIP_BOOT_ENSURE=true) — ensureWalletTables reste actif (31ms, sans risque)');
+      }
+
       await runSequential([
         { label: 'ensureWalletTables', run: () => walletService.ensureWalletTables() },
-        { label: 'ensureRoutingColumns', run: () => routingService.ensureRoutingColumns(db) },
-        { label: 'ensureSecurityTables', run: () => parcelSecurity.ensureSecurityTables(db) },
+        { label: 'ensureRoutingColumns', run: () => routingService.ensureRoutingColumns(db), skip: skipBootEnsure },
+        { label: 'ensureSecurityTables', run: () => parcelSecurity.ensureSecurityTables(db), skip: skipBootEnsure },
       ], { log });
 
       if (process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS === 'true') {

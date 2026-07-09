@@ -186,6 +186,54 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
     });
   });
 
+  describe('KOMERCE_SKIP_BOOT_ENSURE', () => {
+    // FIX 2026-07-09 : incident prod — ensureRoutingColumns/ensureSecurityTables
+    // en contention avec du trafic live, pool DB immobilisé au boot (catalogue
+    // en spinner). Ce flag permet de sauter ces deux étapes au redémarrage sans
+    // toucher à ensureWalletTables (31ms, sans risque, toujours actif).
+    const ORIGINAL_SKIP = process.env.KOMERCE_SKIP_BOOT_ENSURE;
+
+    afterEach(() => {
+      if (ORIGINAL_SKIP === undefined) delete process.env.KOMERCE_SKIP_BOOT_ENSURE;
+      else process.env.KOMERCE_SKIP_BOOT_ENSURE = ORIGINAL_SKIP;
+    });
+
+    test('KOMERCE_SKIP_BOOT_ENSURE=true → ensureRoutingColumns/ensureSecurityTables jamais appelés, ensureWalletTables l\'est toujours', async () => {
+      process.env.KOMERCE_SKIP_BOOT_ENSURE = 'true';
+      const { deps } = makeDeps();
+      startServerLifecycle(deps);
+      await flush();
+      await flush();
+      await flush();
+      expect(deps.walletService.ensureWalletTables).toHaveBeenCalledTimes(1);
+      expect(deps.routingService.ensureRoutingColumns).not.toHaveBeenCalled();
+      expect(deps.parcelSecurity.ensureSecurityTables).not.toHaveBeenCalled();
+      expect(mockLog.info).toHaveBeenCalledWith(
+        expect.stringMatching(/KOMERCE_SKIP_BOOT_ENSURE=true/)
+      );
+      expect(mockLog.info).toHaveBeenCalledWith(
+        expect.objectContaining({ step: 'ensureRoutingColumns' }),
+        expect.stringMatching(/ignoré \(flag env\)/)
+      );
+      expect(mockLog.info).toHaveBeenCalledWith(
+        expect.objectContaining({ step: 'ensureSecurityTables' }),
+        expect.stringMatching(/ignoré \(flag env\)/)
+      );
+    });
+
+    test('flag absent ou différent de "true" → les 3 étapes tournent normalement', async () => {
+      delete process.env.KOMERCE_SKIP_BOOT_ENSURE;
+      const { deps } = makeDeps();
+      startServerLifecycle(deps);
+      await flush();
+      await flush();
+      await flush();
+      expect(deps.walletService.ensureWalletTables).toHaveBeenCalledTimes(1);
+      expect(deps.routingService.ensureRoutingColumns).toHaveBeenCalledWith(deps.db);
+      expect(deps.parcelSecurity.ensureSecurityTables).toHaveBeenCalledWith(deps.db);
+    });
+  });
+
   describe('démarrage du serveur HTTP', () => {
     test('app.listen appelé avec le port par défaut 3000 si PORT non défini', () => {
       const { deps } = makeDeps();

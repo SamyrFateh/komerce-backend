@@ -245,7 +245,23 @@ async function ensureSecurityTables(db) {
       ON parcels(external_code) WHERE external_code IS NOT NULL
     `);
 
-    // Backfill existing parcels without external_code
+    log.info('Security tables ready');
+  } catch (err) {
+    log.error({ err }, 'Security migration error');
+  }
+}
+
+/**
+ * FIX 2026-07-09 : ce backfill tournait auparavant DANS ensureSecurityTables,
+ * au boot du serveur public — une boucle SÉQUENTIELLE (1 SELECT + N UPDATE,
+ * un aller-retour DB par colis orphelin). Sur une table `parcels` avec ne
+ * serait-ce que quelques milliers de lignes sans external_code, ça dépasse
+ * largement le timeout boot-guard (15s) et immobilise une connexion du pool
+ * pendant toute la durée. Sorti du chemin de boot : à lancer manuellement
+ * (scripts/backfill-parcel-external-codes.js), idéalement en heure creuse.
+ */
+async function backfillParcelExternalCodes(db) {
+  try {
     const { rows: orphans } = await db.query(`
       SELECT id FROM parcels WHERE external_code IS NULL
     `);
@@ -256,10 +272,8 @@ async function ensureSecurityTables(db) {
     if (orphans.length) {
       log.info({ count: orphans.length }, 'Backfilled parcels with external_code');
     }
-
-    log.info('Security tables ready');
   } catch (err) {
-    log.error({ err }, 'Security migration error');
+    log.error({ err }, 'Parcel external_code backfill error');
   }
 }
 
@@ -272,5 +286,6 @@ module.exports = {
   checkWeightIntegrity,
   verifySeal,
   ensureSecurityTables,
+  backfillParcelExternalCodes,
   EVENT_TYPES,
 };

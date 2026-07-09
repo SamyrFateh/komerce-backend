@@ -152,7 +152,7 @@ function resolveRoutingFromRelais(relais) {
 }
 
 // ── Migration DB safe (additive, idempotente) ────────────────────────────────
-// Ajoute les colonnes routing si elles n'existent pas + backfill les données
+// Ajoute les colonnes routing si elles n'existent pas (DDL seule, rapide et sûre au boot)
 
 async function ensureRoutingColumns(db) {
   const migrations = [
@@ -175,6 +175,19 @@ async function ensureRoutingColumns(db) {
     }
   }
 
+  log.info('✅ Routing columns ready');
+}
+
+/**
+ * FIX 2026-07-09 : ce backfill (UPDATE ... FROM sur toute la table `orders`)
+ * tournait auparavant DANS ensureRoutingColumns, exécuté au boot du serveur
+ * public. Sur une table `orders` sous trafic live, l'UPDATE peut entrer en
+ * contention avec les écritures concurrentes et bloquer largement au-delà du
+ * timeout boot-guard (15s), saturant le pool de connexions au démarrage.
+ * Sorti du chemin de boot : à lancer manuellement (scripts/backfill-routing.js),
+ * idéalement en heure creuse.
+ */
+async function backfillRoutingData(db) {
   // ── Backfill island_code dans relais (depuis island human-readable) ────────
   const BACKFILL_MAP = {
     'Anjouan':       'ANJOUAN',
@@ -224,7 +237,7 @@ async function ensureRoutingColumns(db) {
     log.warn(`[Routing] Order backfill error: ${e.message}`);
   }
 
-  log.info('✅ Routing columns ready');
+  log.info('✅ Routing backfill terminé');
 }
 
 // ── Exports ──────────────────────────────────────────────────────────────────
@@ -233,6 +246,7 @@ module.exports = {
   resolveRoutingFromRelais,
   normalizeIsland,
   ensureRoutingColumns,
+  backfillRoutingData,
   RoutingError,
   DESTINATIONS,
   ROUTING_MODES,

@@ -35,6 +35,7 @@ const {
   checkWeightIntegrity,
   verifySeal,
   ensureSecurityTables,
+  backfillParcelExternalCodes,
 } = require('../../services/parcel-security');
 
 describe('parcel-security — generateExternalCode [S4]', () => {
@@ -168,14 +169,16 @@ describe('parcel-security — verifySeal [S5]', () => {
 });
 
 describe('parcel-security — ensureSecurityTables [AUD-07]', () => {
-  it('exécute le DDL idempotent puis backfill uniquement les colis orphelins', async () => {
+  // FIX 2026-07-09 : ensureSecurityTables ne fait plus QUE le DDL (CREATE TABLE
+  // IF NOT EXISTS, index, ALTER TABLE ADD COLUMN), rapide et sûr au boot. Le
+  // backfill external_code (boucle SELECT+N×UPDATE, potentiellement lourd sous
+  // trafic live) est sorti dans backfillParcelExternalCodes — voir describe()
+  // dédié plus bas.
+  it('exécute le DDL idempotent, sans backfill', async () => {
     const queries = [];
     const db = {
       query: jest.fn(async (sql, params) => {
         queries.push({ sql, params });
-        if (sql.includes('SELECT id FROM parcels WHERE external_code IS NULL')) {
-          return { rows: [{ id: 'orphan-1' }, { id: 'orphan-2' }] };
-        }
         return { rows: [] };
       }),
     };
@@ -189,13 +192,41 @@ describe('parcel-security — ensureSecurityTables [AUD-07]', () => {
     }
 
     const updateCalls = queries.filter(q => q.sql.includes('UPDATE parcels SET external_code'));
-    expect(updateCalls.length).toBe(2); // un par orphelin
-    expect(updateCalls.map(c => c.params[1])).toEqual(['orphan-1', 'orphan-2']);
-    expect(updateCalls[0].params[0]).toMatch(/^KP-[A-Z0-9]{6}$/);
+    expect(updateCalls.length).toBe(0); // plus de backfill dans ensureSecurityTables
   });
 
   it('ne throw jamais même si une requête de migration échoue (non-bloquant)', async () => {
     const db = { query: jest.fn().mockRejectedValue(new Error('migration failed')) };
     await expect(ensureSecurityTables(db)).resolves.toBeUndefined();
+  });
+});
+
+describe('parcel-security — backfillParcelExternalCodes', () => {
+  // FIX 2026-07-09 : ce backfill tournait auparavant dans ensureSecurityTables
+  // au boot du serveur public. Sorti dans sa propre fonction, appelée
+  // manuellement via scripts/backfill-boot-data.js, hors du chemin de boot.
+  it('backfille uniquement les colis orphelins (sans external_code)', async () => {
+    const queries = [];
+    const db = {
+      query: jest.fn(async (sql, params) => {
+        queries.push({ sql, params });
+        if (sql.includes('SELECT id FROM parcels WHERE external_code IS NULL')) {
+          return { rows: [{ id: 'orphan-1' }, { id: 'orphan-2' }] };
+        }
+        return { rows: [] };
+      }),
+    };
+
+    await backfillParcelExternalCodes(db);
+
+    const updateCalls = queries.filter(q => q.sql.includes('UPDATE parcels SET external_code'));
+    expect(updateCalls.length).toBe(2); // un par orphelin
+    expect(updateCalls.map(c => c.params[1])).toEqual(['orphan-1', 'orphan-2']);
+    expect(updateCalls[0].params[0]).toMatch(/^KP-[A-Z0-9]{6}$/);
+  });
+
+  it('ne throw jamais même si une requête échoue (non-bloquant)', async () => {
+    const db = { query: jest.fn().mockRejectedValue(new Error('backfill failed')) };
+    await expect(backfillParcelExternalCodes(db)).resolves.toBeUndefined();
   });
 });
