@@ -184,7 +184,7 @@ function collectHtmlFiles(rootDir) {
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
     catch { return; }
     for (const entry of entries) {
-      if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'playwright-report' || entry.name === 'test-results') continue;
+      if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'playwright-report' || entry.name === 'test-results' || entry.name === 'coverage') continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) { walk(full); continue; }
       if (entry.name.endsWith('.html')) results.push(full);
