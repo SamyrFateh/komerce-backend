@@ -438,6 +438,17 @@ describe('getCharges', () => {
     const result = await ecoQueries.getCharges();
     expect(result.totals.monthly).toBe(400);
   });
+
+  it('utilise un label/emoji par defaut pour une famille inconnue et cumule les charges weekly', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [
+        { family: 'famille_inconnue', name: 'X', amount_kmf: 100, is_active: true, recurrence_period: 'weekly' },
+      ],
+    });
+    const result = await ecoQueries.getCharges();
+    expect(result.families.famille_inconnue).toMatchObject({ label: 'famille_inconnue', emoji: '📦' });
+    expect(result.totals.weekly).toBe(100);
+  });
 });
 
 // ── getHistory ────────────────────────────────────────────────────────────────
@@ -612,5 +623,276 @@ describe('deleteCharge', () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: '3', is_deletable: false }] });
     const result = await ecoQueries.deleteCharge('3', true);
     expect(result.forbidden).toBe(true);
+  });
+});
+
+// ── seedEconomicData ────────────────────────────────────────────────────────
+
+describe('seedEconomicData', () => {
+  it('insere les 36 variables et les 5 charges de demarrage sans throw', async () => {
+    db.query.mockImplementation(async (sql) => {
+      if (sql.includes('INSERT INTO economic_variables') || sql.includes('INSERT INTO charges')) {
+        return { rows: [] };
+      }
+      return { rows: [] };
+    });
+
+    await expect(ecoQueries.seedEconomicData()).resolves.toBeUndefined();
+
+    const insertVarCalls = db.query.mock.calls.filter(([sql]) => sql.includes('INSERT INTO economic_variables'));
+    const insertChargeCalls = db.query.mock.calls.filter(([sql]) => sql.includes('INSERT INTO charges'));
+    expect(insertVarCalls.length).toBe(38);
+    expect(insertChargeCalls.length).toBe(5);
+  });
+
+  it('ignore silencieusement les erreurs si les tables legacy n\'existent pas encore', async () => {
+    db.query.mockImplementation(async (sql) => {
+      if (sql.includes("UPDATE charges SET name = 'Hub Dubai'")
+        || sql.includes('UPDATE charges SET recurrence_period')
+        || sql.includes("UPDATE economic_variables SET label = 'Hub (Dubai)'")) {
+        throw new Error('relation does not exist');
+      }
+      return { rows: [] };
+    });
+
+    await expect(ecoQueries.seedEconomicData()).resolves.toBeUndefined();
+    // Malgre les rejets sur les migrations legacy, le seed des variables/charges continue
+    const insertVarCalls = db.query.mock.calls.filter(([sql]) => sql.includes('INSERT INTO economic_variables'));
+    expect(insertVarCalls.length).toBe(38);
+  });
+});
+
+// ── redistribute : charges monthly/weekly ───────────────────────────────────
+
+describe('redistribute - repartition des couts monthly/weekly', () => {
+  it('additionne correctement les charges monthly et weekly (weekly x4.33)', async () => {
+    const charges = [
+      { amount_kmf: 300, recurrence_period: 'monthly', is_active: true },
+      { amount_kmf: 100, recurrence_period: 'weekly', is_active: true },
+    ];
+    mockRedistribute({ charges, varValue: 100 });
+    const result = await ecoQueries.redistribute('monthly_weekly_test');
+    // totalMonthlyCost = 300 + round(100*4.33) = 300 + 433 = 733
+    // ordersPerMonth = 100 -> monthlyPerOrder = round(733/100) = 7
+    // totalCostPerOrder = perOrderCost(0) + monthlyPerOrder(7) = 7
+    expect(result.totalCostPerOrder).toBe(7);
+  });
+
+  it('gere ordersPerMonth<=0, weightedMargin<=0 et targetBasket<=0 (branches defensives)', async () => {
+    mockRedistribute({ varValue: 0 }); // toutes les variables (mix, marges, orders, targetBasket) = 0
+    const result = await ecoQueries.redistribute('zero_vars_test');
+    // ordersPerMonth=0 -> monthlyPerOrder=0 ; weightedMargin=0 -> breakEven=999999
+    // targetBasket=0 -> safetyRatio=0, marginPressure=100
+    expect(result.breakEven).toBe(999999);
+    expect(result.safetyRatio).toBe(0);
+    expect(result.marginPressure).toBe(100);
+  });
+
+  it('reinsere un snapshot si le dernier date de plus de 15 minutes', async () => {
+    const oldDate = new Date(Date.now() - 20 * 60 * 1000).toISOString(); // 20 min
+    let insertCalled = false;
+    db.query.mockImplementation(async (sql) => {
+      const s = sql.trim();
+      if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
+      if (s.includes('FROM economic_variables WHERE key')) return { rows: [{ value_used: 100, value_supposed: 100 }] };
+      if (s.startsWith('UPDATE economic_variables')) return { rows: [] };
+      if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
+      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [{ created_at: oldDate }] };
+      if (s.includes('INSERT INTO economic_snapshots')) { insertCalled = true; return { rows: [] }; }
+      return { rows: [] };
+    });
+    await ecoQueries.redistribute('old_snapshot_test');
+    expect(insertCalled).toBe(true);
+  });
+
+  it("utilise 'manual' comme trigger_event par defaut si aucun n'est fourni", async () => {
+    mockRedistribute({ varValue: 100 });
+    await ecoQueries.redistribute();
+    const insertCall = db.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO economic_snapshots'));
+    expect(insertCall[1][2]).toBe('manual');
+  });
+});
+
+// ── buildExecutiveSummary ───────────────────────────────────────────────────
+
+describe('buildExecutiveSummary', () => {
+  it('agrege les charges par famille/type et trie les alertes par severite', async () => {
+    const charges = [
+      { family: 'operationnelle', amount_kmf: 200, recurrence_period: 'per_order', is_active: true },
+      { family: 'operationnelle', amount_kmf: 400, recurrence_period: 'monthly', is_active: true },
+      { family: 'demarrage', amount_kmf: 100, recurrence_period: 'weekly', is_active: true },
+      { family: 'incident', amount_kmf: 999, recurrence_period: 'one_time', is_active: false },
+    ];
+    const vars = {
+      mix_rail_a: 25, mix_rail_b: 25, mix_rail_c: 25, mix_rail_d: 25,
+      margin_rail_a: 10, margin_rail_b: 10, margin_rail_c: 10, margin_rail_d: 10,
+      orders_per_month: 100,
+      target_basket_avg: 1000, // panier bas -> plusieurs alertes (blocking + marginPressure + netProfit<0)
+    };
+    db.query.mockImplementation(async (sql, params) => {
+      const s = sql.trim();
+      if (s.includes('FROM charges WHERE is_active')) return { rows: charges };
+      if (s.includes('FROM economic_variables WHERE key')) {
+        const v = vars[params && params[0]];
+        return { rows: v != null ? [{ value_used: v, value_supposed: v }] : [] };
+      }
+      if (s.startsWith('UPDATE economic_variables')) return { rows: [] };
+      if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
+      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [] };
+      if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const summary = await ecoQueries.buildExecutiveSummary();
+
+    expect(summary.charges_summary.by_family).toEqual({
+      operationnelle: 600, demarrage: 100, incident: 999,
+    });
+    expect(summary.charges_summary.total_per_order).toBe(200);
+    expect(summary.charges_summary.total_monthly).toBe(400 + Math.round(100 * 4.33));
+    expect(summary.charges_summary.count_active).toBe(4);
+    // Au moins 2 alertes -> le comparateur de tri est bien exerce
+    expect(summary.alerts.length).toBeGreaterThanOrEqual(2);
+    expect(summary.status).toBe('blocking');
+    expect(summary.kpis).toHaveLength(5);
+  });
+});
+
+// ── getCoherence ─────────────────────────────────────────────────────────────
+
+describe('getCoherence', () => {
+  it('combine redistribute + checkSOVDrift et retourne le statut agrege', async () => {
+    mockRedistribute({ varValue: 100 });
+    const result = await ecoQueries.getCoherence();
+    expect(result).toHaveProperty('status');
+    expect(result).toHaveProperty('status_label');
+    expect(result).toHaveProperty('alerts');
+    expect(result).toHaveProperty('checked_at');
+  });
+});
+
+// ── updateCharge ─────────────────────────────────────────────────────────────
+
+describe('updateCharge', () => {
+  it('retourne notFound si la charge n\'existe pas', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await ecoQueries.updateCharge('99', { name: 'X' });
+    expect(result.notFound).toBe(true);
+  });
+
+  it('retourne noFields si aucun champ reconnu', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: '5' }] });
+    const result = await ecoQueries.updateCharge('5', { unknown_field: 'x' });
+    expect(result.noFields).toBe(true);
+  });
+
+  it('effectue bien l\'UPDATE et retourne { charge, executive }', async () => {
+    db.query.mockImplementation(async (sql) => {
+      const s = sql.trim();
+      if (s.startsWith('SELECT * FROM charges WHERE id')) return { rows: [{ id: '5', name: 'Old' }] };
+      if (s.startsWith('UPDATE charges SET')) return { rows: [{ id: '5', name: 'Nouveau nom' }] };
+      if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
+      if (s.includes('FROM economic_variables WHERE key')) return { rows: [{ value_used: 100, value_supposed: 100 }] };
+      if (s.startsWith('UPDATE economic_variables SET value_used')) return { rows: [] };
+      if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
+      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [] };
+      if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const result = await ecoQueries.updateCharge('5', { name: 'Nouveau nom' });
+    expect(result.charge).toEqual({ id: '5', name: 'Nouveau nom' });
+    expect(result).toHaveProperty('executive');
+  });
+});
+
+// ── toggleCharge ─────────────────────────────────────────────────────────────
+
+describe('toggleCharge', () => {
+  it('retourne notFound si la charge n\'existe pas', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await ecoQueries.toggleCharge('99');
+    expect(result.notFound).toBe(true);
+  });
+
+  it('inverse is_active et retourne { charge, executive }', async () => {
+    db.query.mockImplementation(async (sql) => {
+      const s = sql.trim();
+      if (s.startsWith('UPDATE charges SET is_active = NOT is_active')) return { rows: [{ id: '5', is_active: false }] };
+      if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
+      if (s.includes('FROM economic_variables WHERE key')) return { rows: [{ value_used: 100, value_supposed: 100 }] };
+      if (s.startsWith('UPDATE economic_variables SET value_used')) return { rows: [] };
+      if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
+      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [] };
+      if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const result = await ecoQueries.toggleCharge('5');
+    expect(result.charge).toEqual({ id: '5', is_active: false });
+    expect(result).toHaveProperty('executive');
+  });
+});
+
+// ── updateVariable : branche source_used === 'observed' ─────────────────────
+
+describe('updateVariable - sync value_used depuis value_observed', () => {
+  it('met a jour value_used = value_observed si source_used === "observed"', async () => {
+    db.query.mockImplementation(async (sql) => {
+      const s = sql.trim();
+      if (s.startsWith('SELECT * FROM economic_variables WHERE key')) {
+        return { rows: [{ key: 'cost_transit', is_computed: false, source_used: 'observed', value_supposed: 600, value_observed: 550, value_used: 550 }] };
+      }
+      if (s.startsWith('UPDATE economic_variables SET value_supposed')) {
+        return { rows: [{ source_used: 'observed', value_supposed: 600, value_observed: 550 }] };
+      }
+      if (s.includes('value_used = value_observed')) return { rows: [] };
+      if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
+      if (s.includes('FROM economic_variables WHERE key')) return { rows: [{ value_used: 100, value_supposed: 100 }] };
+      if (s.startsWith('UPDATE economic_variables SET value_used')) return { rows: [] };
+      if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
+      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [] };
+      if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const result = await ecoQueries.updateVariable('cost_transit', { value_supposed: 600 });
+    expect(result).not.toHaveProperty('notFound');
+    const syncCall = db.query.mock.calls.find(([sql]) => sql.includes('value_used = value_observed'));
+    expect(syncCall).toBeDefined();
+    expect(syncCall[1]).toEqual(['cost_transit']);
+  });
+});
+
+describe('updateVariable - construction dynamique des champs SET', () => {
+  it('inclut value_observed, value_used et source_used dans le SET quand fournis', async () => {
+    db.query.mockImplementation(async (sql) => {
+      const s = sql.trim();
+      if (s.startsWith('SELECT * FROM economic_variables WHERE key')) {
+        return { rows: [{ key: 'cost_transit', is_computed: false, source_used: 'manual', value_supposed: 600, value_observed: 550, value_used: 500 }] };
+      }
+      if (s.startsWith('UPDATE economic_variables SET value_observed')) {
+        return { rows: [{ source_used: 'manual', value_supposed: 600, value_observed: 550 }] };
+      }
+      if (s.includes('FROM charges WHERE is_active')) return { rows: [] };
+      if (s.includes('FROM economic_variables WHERE key')) return { rows: [{ value_used: 100, value_supposed: 100 }] };
+      if (s.startsWith('UPDATE economic_variables SET value_used')) return { rows: [] };
+      if (s.includes('ABS(value_observed - value_supposed)')) return { rows: [] };
+      if (s.includes('FROM economic_snapshots ORDER BY created_at DESC LIMIT 1')) return { rows: [] };
+      if (s.includes('INSERT INTO economic_snapshots')) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const result = await ecoQueries.updateVariable('cost_transit', {
+      value_observed: 550, value_used: 550, source_used: 'observed',
+    });
+    expect(result).not.toHaveProperty('notFound');
+
+    const updateCall = db.query.mock.calls.find(([sql]) => sql.startsWith('UPDATE economic_variables SET value_observed'));
+    expect(updateCall).toBeDefined();
+    expect(updateCall[0]).toContain('value_observed = $1');
+    expect(updateCall[0]).toContain('value_used = $2');
+    expect(updateCall[0]).toContain('source_used = $3');
+    expect(updateCall[1]).toEqual([550, 550, 'observed', 'cost_transit']);
   });
 });
