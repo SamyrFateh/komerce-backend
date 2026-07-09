@@ -61,12 +61,18 @@ function startServerLifecycle({
   });
 
   // NEW-07 — Crash guards : éviter qu'une promesse non catchée tue le process
+  //
+  // FIX 2026-07-09 : `log.error(msg, err)` était dans le mauvais ordre pour
+  // pino (convention projet = `log.error({ err }, msg)`, cf. utils/logger.js).
+  // Avec le 1er argument en string, pino ignore silencieusement le 2ᵉ
+  // argument positionnel : reason/err n'apparaissait JAMAIS dans les logs,
+  // masquant la cause réelle des rejets (dont la fuite de pool DB en prod).
   process.on('unhandledRejection', (reason) => {
-    log.error('[unhandledRejection]', reason);
+    log.error({ err: reason }, '[unhandledRejection]');
   });
 
   process.on('uncaughtException', (err) => {
-    log.error('[uncaughtException]', err);
+    log.error({ err }, '[uncaughtException]');
     // Sortir proprement — l'état du process est incertain après uncaughtException
     setTimeout(() => process.exit(1), 500);
   });

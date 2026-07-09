@@ -45,6 +45,26 @@ pool.on('error', (err) => {
   log.error({ err }, 'PostgreSQL pool error');
 });
 
+// ── FIX 2026-07-09 : filet de sécurité idle_in_transaction ─────────────────
+// `statement_timeout` (30s) ne protège que les requêtes SQL actives. Si un
+// client fait BEGIN puis reste bloqué côté JS avant COMMIT/ROLLBACK (ex. un
+// appel externe — SMS/WhatsApp/paiement — qui ne timeout jamais), la
+// transaction reste ouverte indéfiniment et le client ne revient JAMAIS au
+// pool, même avec release() appelé correctement en amont dans le code
+// applicatif. Incident 2026-07-09 : pool saturé à 20/20 (max), idleCount=0,
+// sans qu'aucune fuite classique (getClient sans release) n'ait été trouvée
+// après audit des ~44 call-sites — cohérent avec ce scénario.
+// idle_in_transaction_session_timeout tue côté Postgres toute session restée
+// en transaction sans requête active au-delà du délai — indépendamment
+// d'OÙ dans le code la transaction a été abandonnée. Filet de sécurité, pas
+// un remplacement de la vraie correction (qui reste à identifier via les
+// logs [unhandledRejection] maintenant lisibles).
+const IDLE_IN_TX_TIMEOUT_MS = parseInt(process.env.DB_IDLE_IN_TX_TIMEOUT || '20000', 10);
+pool.on('connect', (client) => {
+  client.query(`SET idle_in_transaction_session_timeout = ${IDLE_IN_TX_TIMEOUT_MS}`)
+    .catch((err) => log.error({ err }, 'Échec configuration idle_in_transaction_session_timeout'));
+});
+
 // ── PR563: alerts-compat interceptor ────────────────────────────────────────
 // Réécrit silencieusement les INSERT INTO alerts legacy (level, source,
 // message, payload) vers le schéma réel (type, entity_type, entity_id,

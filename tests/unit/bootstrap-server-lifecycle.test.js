@@ -233,7 +233,7 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       startServerLifecycle(deps);
       const reason = new Error('promise oubliée');
       handlers.unhandledRejection(reason);
-      expect(mockLog.error).toHaveBeenCalledWith('[unhandledRejection]', reason);
+      expect(mockLog.error).toHaveBeenCalledWith({ err: reason }, '[unhandledRejection]');
       expect(exitSpy).not.toHaveBeenCalled();
     });
 
@@ -242,7 +242,7 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
       startServerLifecycle(deps);
       const err = new Error('crash fatal');
       handlers.uncaughtException(err);
-      expect(mockLog.error).toHaveBeenCalledWith('[uncaughtException]', err);
+      expect(mockLog.error).toHaveBeenCalledWith({ err }, '[uncaughtException]');
     });
 
     test('uncaughtException programme un process.exit(1) à 500ms', () => {
