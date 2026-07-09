@@ -13,7 +13,7 @@
  * @db-txn        compatible_with_caller
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  operations, payment, logistics, catalog, refunds
- * @version       2026-07-09
+ * @version       2026-07-09b
  */
 
 'use strict';
@@ -46,6 +46,9 @@
  *   payload → description (JSON stringifié si objet, sinon tel quel)
  *
  * entity_type et entity_id sont déduits du payload JSON (best-effort, nullable en schema).
+ * Fallback si aucun ID métier n'est trouvé : entity_type = `source` legacy normalisé
+ * (ex. 'parcel_sync', 'refund_manual_cash'), entity_id = null. Générique 'system'
+ * uniquement si `source` est lui-même vide/absent.
  */
 
 // Détection "classique" — ordre exact des colonnes. Conservée telle quelle
@@ -117,10 +120,32 @@ function safeJsonParse(value) {
 }
 
 /**
- * Déduit entity_type + entity_id depuis le payload JSON (best-effort).
- * Retourne { entity_type, entity_id } ou les valeurs par défaut.
+ * Normalise une valeur `source` legacy en identifiant entity_type utilisable
+ * (minuscules, underscores, sans caractères spéciaux). Retourne 'system'
+ * si la source est vide ou ne contient aucun caractère alphanumérique.
  */
-function pickEntity(payload) {
+function normalizeSource(source) {
+  const cleaned = String(source || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return cleaned || 'system';
+}
+
+/**
+ * Déduit entity_type + entity_id depuis le payload JSON (best-effort).
+ * Si aucun ID métier n'est trouvé dans le payload, le fallback utilise le
+ * `source` legacy normalisé comme entity_type (ex. 'parcel_sync',
+ * 'refund_manual_cash') plutôt qu'un générique 'system', afin de conserver
+ * un minimum de contexte de triage. `source` est optionnel : à défaut,
+ * le fallback reste 'system'.
+ *
+ * @param {*} payload
+ * @param {string} [source]
+ * @returns {{ entity_type: string, entity_id: string|null }}
+ */
+function pickEntity(payload, source) {
   const parsed = safeJsonParse(payload);
 
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
@@ -132,7 +157,7 @@ function pickEntity(payload) {
     }
   }
 
-  return { entity_type: 'system', entity_id: null };
+  return { entity_type: source ? normalizeSource(source) : 'system', entity_id: null };
 }
 
 function descriptionFromLegacy({ source, level, payload }) {
@@ -297,7 +322,7 @@ function rewriteLegacyAlertInsert(sql, params = []) {
   const legacyMessage = resolveSqlToken(values[columns.indexOf('message')], params);
   const legacyPayload = resolveSqlToken(values[columns.indexOf('payload')], params);
 
-  const { entity_type, entity_id } = pickEntity(legacyPayload);
+  const { entity_type, entity_id } = pickEntity(legacyPayload, legacySource);
   const title = String(legacyMessage || `${legacySource || 'system'} alert`).slice(0, 500);
   const severity = severityFromLegacy(legacyLevel);
   const description = descriptionFromLegacy({ source: legacySource, level: legacyLevel, payload: legacyPayload });
@@ -318,4 +343,4 @@ function rewriteLegacyAlertInsert(sql, params = []) {
   };
 }
 
-module.exports = { rewriteLegacyAlertInsert, LEGACY_ALERTS_RE, severityFromLegacy, pickEntity };
+module.exports = { rewriteLegacyAlertInsert, LEGACY_ALERTS_RE, severityFromLegacy, pickEntity, normalizeSource };

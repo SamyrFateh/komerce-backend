@@ -72,7 +72,7 @@ describe('rewrite — colonnes de sortie', () => {
     expect(sql).toMatch(/INSERT INTO alerts\s*\(type, entity_type, entity_id, severity, title, description\)/i);
     expect(params).toHaveLength(6);
     expect(params[0]).toBe('payment_cycle');   // type
-    expect(params[1]).toBe('system');          // entity_type (fallback)
+    expect(params[1]).toBe('payment_cycle');   // entity_type (fallback = source normalisé, point 9)
     expect(params[2]).toBeNull();              // entity_id (null)
     expect(params[3]).toBe('high');            // severity
     expect(params[4]).toBe('Alerte test');     // title
@@ -142,6 +142,54 @@ describe('pickEntity', () => {
     const { entity_type, entity_id } = pickEntity('pas du json');
     expect(entity_type).toBe('system');
     expect(entity_id).toBeNull();
+  });
+});
+
+// ── 6bis. pickEntity — fallback source normalisé (correction point 9) ─────
+// Spec : si aucun ID métier n'est trouvé, entity_type doit être le `source`
+// legacy normalisé, pas un générique 'system' — sauf si source est vide.
+
+describe('pickEntity — fallback source normalisé', () => {
+  it('payload vide + source fournie → entity_type = source normalisé', () => {
+    const { entity_type, entity_id } = pickEntity('{}', 'parcel_sync');
+    expect(entity_type).toBe('parcel_sync');
+    expect(entity_id).toBeNull();
+  });
+
+  it('source avec espaces/majuscules/tirets → normalisée en snake_case minuscule', () => {
+    const { entity_type } = pickEntity(null, 'Refund Manual-Cash');
+    expect(entity_type).toBe('refund_manual_cash');
+  });
+
+  it('payload avec UUID invalide + source fournie → fallback sur source, pas system', () => {
+    const { entity_type, entity_id } = pickEntity(JSON.stringify({ order_id: 'pas-un-uuid' }), 'purchasing');
+    expect(entity_type).toBe('purchasing');
+    expect(entity_id).toBeNull();
+  });
+
+  it('source vide/absente → fallback reste system (comportement historique)', () => {
+    expect(pickEntity('{}', '').entity_type).toBe('system');
+    expect(pickEntity('{}', null).entity_type).toBe('system');
+    expect(pickEntity('{}', undefined).entity_type).toBe('system');
+  });
+
+  it('source non-alphanumérique uniquement → fallback system', () => {
+    expect(pickEntity('{}', '!!!').entity_type).toBe('system');
+  });
+
+  it('ID métier trouvé dans le payload → source ignorée, priorité au payload', () => {
+    const payload = JSON.stringify({ order_id: 'aabbccdd-0000-0000-0000-000000000009' });
+    const { entity_type, entity_id } = pickEntity(payload, 'some_other_source');
+    expect(entity_type).toBe('order');
+    expect(entity_id).toBe('aabbccdd-0000-0000-0000-000000000009');
+  });
+
+  it('rewriteLegacyAlertInsert bout-en-bout : entity_type reflète le source, pas system', () => {
+    const sql = `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'parcel_sync', $1, $2)`;
+    const { params } = rewrite(sql, ['sync failed', JSON.stringify({ step: 'scan' })]);
+    // params = [source, entity_type, entity_id, severity, title, description]
+    expect(params[1]).toBe('parcel_sync'); // entity_type
+    expect(params[2]).toBeNull();          // entity_id
   });
 });
 

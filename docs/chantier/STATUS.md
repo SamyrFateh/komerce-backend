@@ -1,8 +1,8 @@
 # Komerce — Etat operatoire du chantier
 
-> Mis a jour : **2026-06-24**  
+> Mis a jour : **2026-07-09**  
 > Repo : `SamyrFateh/komerce-backend` — branche de reference : `main`  
-> Commit de reference : `71e7efc15290801c40531d6599c9a22ae87401df` (base) — gouvernance ajoutée post-2026-06-16  
+> Commit de reference : non confirmé côté GitHub à cette session (voir §21) — dernière base documentée : `71e7efc15290801c40531d6599c9a22ae87401df` (2026-06-16)  
 > Role : point de verite operatoire pour Sonnet/agent dev.  
 > Principe : un audit historique est un indice, pas une verite. Une dette est ouverte seulement si le code actuel, la DB live ou une doc active la confirme.
 
@@ -1282,3 +1282,88 @@ Le fichier était présent et complet :
 - **SRC-03** — consolidation PO par fournisseur — bloqué ARCH-COUTURE-00
 - **TRACK-02** — timeline frontend — P2, différé
 - **ARCH-COUTURE-00** — architecture couture/variantes — en attente décision produit
+
+---
+
+## 21. Session — PR563 : récursion db.js, alerts-compat, entity_type (2026-07-09)
+
+> Contexte : ce zip a circulé en plusieurs versions divergentes (même nom de fichier,
+> contenus différents) au fil des livraisons — chaque point ci-dessous a été
+> revérifié empiriquement sur le contenu réellement présent dans l'archive traitée
+> cette session, pas sur la doc ni sur une livraison précédente.
+
+### db.js — récursion infinie corrigée
+
+Statut : **corrigé et testé — 2026-07-09**.
+
+- Bug : `pool.connect = patchedConnect` où `patchedConnect` rappelait `pool.connect()`
+  en interne → `RangeError: Maximum call stack size exceeded` dès le premier
+  `db.connect()` / `db.getClient()` / `db.pool.connect()`.
+- Fix : `originalPoolQuery` / `originalPoolConnect` capturés via `.bind(pool)`
+  **avant** toute surcharge (V2.9). Les fonctions patchées n'appellent plus jamais
+  `pool.query`/`pool.connect` eux-mêmes.
+- `db.connect()` réexporté (alias de `getClient`) — `services/confirm-pickup-cash-payment.js`
+  en dépend directement et était cassé (`db.connect is not a function`) dans une
+  version intermédiaire du fix.
+- Preuve : `tests/unit/db.test.js` (nouveau, exécute le vrai module, pg mocké
+  uniquement) — 8/8 vert : `connect`/`getClient`/`pool.connect` résolvent sans
+  récursion, `client.query()` issu de ces trois chemins réécrit bien un INSERT
+  `alerts` legacy.
+
+### utils/alerts-compat.js — réécriture robuste des INSERT `alerts` legacy
+
+Statut : **corrigé et testé — 2026-07-09**.
+
+- Parsing par profondeur de parenthèses/quotes (`splitSqlArgs`, `findMatchingParen`) —
+  remplace un `split(',')` naïf qui cassait sur les payloads JSON contenant des virgules.
+- Colonnes legacy (`level, source, message, payload`) détectées indépendamment de
+  leur ordre dans la requête.
+- Suffixe SQL (`RETURNING ...`, `ON CONFLICT DO NOTHING`) préservé tant qu'il ne
+  référence pas une colonne legacy ; refusé sinon (sécurité).
+- `SEVERITY_MAP` complète : `critical/elevated/high/error/fatal → high`,
+  `medium/warning/warn → medium`, `low/info/debug/notice/trace → low`, défaut `medium`.
+- **Correctif entity_type (point 9 de l'audit)** : le fallback, quand aucun ID métier
+  UUID n'est trouvé dans le payload, utilisait un générique `'system'`. Corrigé pour
+  utiliser le `source` legacy normalisé (`normalizeSource()` : minuscules, snake_case),
+  ex. `parcel_sync`, `refund_manual_cash`, `purchasing` — conserve le contexte de
+  triage. `'system'` reste le fallback uniquement si `source` est vide/absent.
+- Header `@komerce-arch` restauré (`@version 2026-07-09b`).
+- Preuve : `tests/unit/alerts-compat.test.js` — 45/45 vert (38 tests PR563 initiaux +
+  7 tests dédiés au fallback `entity_type`/source normalisé).
+
+### Impact métier vérifié
+
+- `services/admin-order-refund.js` (cas `manual_cash`) : le risque initial (500 +
+  rollback au lieu d'un `202 manual_required` propre) est résolu par effet de bord —
+  `client = await db.getClient()` passe par le module patché, l'INSERT `alerts`
+  legacy y est réécrit avant Postgres.
+- 16 fichiers de services écrivent toujours l'ancien format `INSERT INTO alerts
+  (level, source, message, payload)` (`payment-paypal.js`, `payment-stripe.js`,
+  `confirm-pickup-cash-payment.js`, `parcelSync.js`, etc.) — **attendu**, stratégie
+  de compat centralisée dans `db.js`. Vérifié : aucun de ces fichiers ni aucun
+  autre service ne contourne `db.js` (seuls deux scripts hors chemin de requête,
+  `scripts/audit-sourcing.js` et `scripts/reset-admin.js`, instancient `pg`
+  directement, et aucun des deux n'écrit dans `alerts`).
+- Cas limite testé : `utils/parcelSync.js` insère 5 colonnes (`+ created_at`) —
+  le rewrite fonctionne, `created_at` est droppé silencieusement mais la colonne a
+  un `DEFAULT now()` en base (`docs/db/railway-live-schema.sql`), donc pas de perte
+  réelle.
+
+### Suite complète
+
+`tests/unit` : **5655/5655** verts, hors `tests/unit/verify-rewrite.test.js` — script
+de debug non-Jest pré-existant (`console.log`/`process.exit`, référence `.text` au
+lieu de `.sql`, cassé avant cette session, jamais un vrai test). Décision en attente :
+suppression ou réécriture propre.
+
+### Dettes différées (inchangées après cette session)
+
+- **README.md racine** — toujours cassé (double corruption : fichier encodé en
+  UTF-16LE dont le contenu est lui-même un texte UTF-8 déjà mal réencodé), et le
+  contenu réel n'est pas un README mais une note de session sur le job CI
+  `dashboards-quality`. Traité séparément cette session (voir commit associé) —
+  à vérifier que la nouvelle version est bien celle poussée.
+- **tests/unit/verify-rewrite.test.js** — cf. ci-dessus, non traité.
+- Aucune vérification GitHub Actions (check-runs / combined status) effectuée
+  cette session — le dernier état confirmé côté CI reste celui documenté en §17-18
+  (2026-06-24), potentiellement obsolète.

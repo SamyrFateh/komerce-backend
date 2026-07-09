@@ -436,6 +436,7 @@ module.exports = {
       'tests/unit/rate-limit.test.js',
       'tests/unit/alerts-compat.test.js',
       'tests/unit/db.test.js',
+      'tests/unit/verify-rewrite.test.js',
       'tests/unit/rates.test.js',
       'tests/unit/reference.test.js',
       'tests/unit/request-id.test.js',
