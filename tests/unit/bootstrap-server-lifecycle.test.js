@@ -3,9 +3,15 @@
  *
  * `bootstrap/server-lifecycle.js` était absent de `collectCoverageFrom`
  * (angle mort structurel, Lot 0). C'est le fichier H2 qui démarre le serveur,
- * lance les init tables (wallet/routing/security) en fire-and-forget,
- * déclenche les migrations de démarrage en `setImmediate`, et pose les
- * garde-fous process (SIGTERM gracieux, unhandledRejection, uncaughtException).
+ * lance les init tables (wallet/routing/security) en SÉQUENCE (boot-guard.js,
+ * timeout + logging par étape) APRÈS app.listen, déclenche les migrations de
+ * démarrage en `setImmediate`, et pose les garde-fous process (SIGTERM
+ * gracieux, unhandledRejection, uncaughtException).
+ *
+ * FIX 2026-07-09 : l'init des tables était en fire-and-forget parallèle AVANT
+ * app.listen ; elle est maintenant séquentielle, APRÈS app.listen (le serveur
+ * répond déjà), via `runSequential` (boot-guard.js). Les tests ci-dessous sont
+ * donc `async` et attendent un `flush()` avant d'observer les appels ensure*.
  *
  * Stratégie de mock :
  * - `process.on` est mocké pour capturer les handlers sans les enregistrer
@@ -79,46 +85,104 @@ describe('bootstrap/server-lifecycle — startServerLifecycle', () => {
     process.env.PORT = ORIGINAL_PORT;
   });
 
-  describe('initialisation des tables (fire-and-forget)', () => {
-    test('appelle ensureWalletTables, ensureRoutingColumns(db), ensureSecurityTables(db)', () => {
+  describe('initialisation des tables (séquentielle, post-listen, boot-guard)', () => {
+    test('appelle ensureWalletTables, ensureRoutingColumns(db), ensureSecurityTables(db) en séquence après listen', async () => {
       const { deps } = makeDeps();
       startServerLifecycle(deps);
+      // synchrone : rien n'est encore appelé, tout part dans le setImmediate post-listen
+      expect(deps.walletService.ensureWalletTables).not.toHaveBeenCalled();
+      await flush();
+      await flush();
+      await flush();
       expect(deps.walletService.ensureWalletTables).toHaveBeenCalledTimes(1);
       expect(deps.routingService.ensureRoutingColumns).toHaveBeenCalledWith(deps.db);
       expect(deps.parcelSecurity.ensureSecurityTables).toHaveBeenCalledWith(deps.db);
     });
 
-    test('rejet de ensureWalletTables → log.error, pas de crash', async () => {
+    test('succès de chaque étape → log.info "[boot-guard] ... OK" avec une durée', async () => {
+      const { deps } = makeDeps();
+      startServerLifecycle(deps);
+      await flush();
+      await flush();
+      await flush();
+      expect(mockLog.info).toHaveBeenCalledWith(
+        expect.objectContaining({ step: 'ensureWalletTables', duration_ms: expect.any(Number) }),
+        expect.stringMatching(/"ensureWalletTables" OK/)
+      );
+    });
+
+    test('rejet de ensureWalletTables → log.error boot-guard, pas de crash, séquence continue', async () => {
       const { deps } = makeDeps();
       deps.walletService.ensureWalletTables.mockRejectedValue(new Error('wallet down'));
       startServerLifecycle(deps);
       await flush();
+      await flush();
+      await flush();
       expect(mockLog.error).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error) }),
-        expect.stringMatching(/Wallet init error/)
+        expect.objectContaining({ step: 'ensureWalletTables', err: expect.any(Error) }),
+        expect.stringMatching(/"ensureWalletTables" échec/)
       );
+      // la séquence continue malgré l'échec
+      expect(deps.routingService.ensureRoutingColumns).toHaveBeenCalledWith(deps.db);
+      expect(deps.parcelSecurity.ensureSecurityTables).toHaveBeenCalledWith(deps.db);
     });
 
-    test('rejet de ensureRoutingColumns → log.error, pas de crash', async () => {
+    test('rejet de ensureRoutingColumns → log.error boot-guard, pas de crash', async () => {
       const { deps } = makeDeps();
       deps.routingService.ensureRoutingColumns.mockRejectedValue(new Error('routing down'));
       startServerLifecycle(deps);
       await flush();
+      await flush();
+      await flush();
       expect(mockLog.error).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error) }),
-        expect.stringMatching(/Routing init error/)
+        expect.objectContaining({ step: 'ensureRoutingColumns', err: expect.any(Error) }),
+        expect.stringMatching(/"ensureRoutingColumns" échec/)
       );
     });
 
-    test('rejet de ensureSecurityTables → log.error, pas de crash', async () => {
+    test('rejet de ensureSecurityTables → log.error boot-guard, pas de crash', async () => {
       const { deps } = makeDeps();
       deps.parcelSecurity.ensureSecurityTables.mockRejectedValue(new Error('security down'));
       startServerLifecycle(deps);
       await flush();
+      await flush();
+      await flush();
       expect(mockLog.error).toHaveBeenCalledWith(
-        expect.objectContaining({ err: expect.any(Error) }),
-        expect.stringMatching(/Security init error/)
+        expect.objectContaining({ step: 'ensureSecurityTables', err: expect.any(Error) }),
+        expect.stringMatching(/"ensureSecurityTables" échec/)
       );
+    });
+  });
+
+  describe('KOMERCE_SKIP_STARTUP_MIGRATIONS', () => {
+    const ORIGINAL_SKIP = process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS;
+
+    afterEach(() => {
+      if (ORIGINAL_SKIP === undefined) delete process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS;
+      else process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS = ORIGINAL_SKIP;
+    });
+
+    test('KOMERCE_SKIP_STARTUP_MIGRATIONS=true → runStartupMigrations jamais appelé', async () => {
+      process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS = 'true';
+      const { deps } = makeDeps();
+      startServerLifecycle(deps);
+      await flush();
+      await flush();
+      await flush();
+      expect(deps.runStartupMigrations).not.toHaveBeenCalled();
+      expect(mockLog.info).toHaveBeenCalledWith(
+        expect.stringMatching(/runStartupMigrations ignoré/)
+      );
+    });
+
+    test('flag absent ou différent de "true" → runStartupMigrations appelé normalement', async () => {
+      delete process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS;
+      const { deps } = makeDeps();
+      startServerLifecycle(deps);
+      await flush();
+      await flush();
+      await flush();
+      expect(deps.runStartupMigrations).toHaveBeenCalledTimes(1);
     });
   });
 

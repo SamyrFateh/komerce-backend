@@ -54,6 +54,7 @@ module.exports = {
     ],
     bootstrap: [
       'bootstrap/api-routes.js',
+      'bootstrap/boot-guard.js',
       'bootstrap/crons.js',
       'bootstrap/env.js',
       'bootstrap/html-routes.js',

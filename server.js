@@ -227,8 +227,14 @@ mountHtmlRoutes(app, __dirname);
 app.use(errorHandler);
 
 // ── Operational crons ───────────────────────────────────────────────────────
+// KOMERCE_DISABLE_CRONS=true : utile pour isoler un diagnostic (ex. fuite de
+// pool DB) sans le bruit des crons catalogue/wallet en tâche de fond.
 const { startOperationalCrons } = require('./bootstrap/crons');
-startOperationalCrons();
+if (process.env.KOMERCE_DISABLE_CRONS === 'true') {
+  log.info('[boot-guard] Crons opérationnels désactivés (KOMERCE_DISABLE_CRONS=true)');
+} else {
+  startOperationalCrons();
+}
 const { runStartupMigrations } = require('./bootstrap/startup-migrations');
 
 // ── Server lifecycle ────────────────────────────────────────────────────────

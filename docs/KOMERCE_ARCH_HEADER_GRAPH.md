@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 358
-- Files with full headers: 331
+- Scanned code files: 359
+- Files with full headers: 332
 - Files with lite headers: 27
-- Files with any headers: 358
+- Files with any headers: 359
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 716
-- Edges: 4131
+- Graph nodes: 717
+- Edges: 4134
 - DB tables: 109
 - Doctrines: 133
 - Impact areas: 116
@@ -34,7 +34,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 30
 - documents: 11
 - economic-engine: 36
-- infrastructure: 19
+- infrastructure: 20
 - inventory: 3
 - logistics: 35
 - notification: 15
@@ -50,7 +50,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Layers
 
 - api-client: 2
-- bootstrap: 5
+- bootstrap: 6
 - controller: 1
 - cron: 1
 - data-service: 1

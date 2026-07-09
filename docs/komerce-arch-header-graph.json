@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 358,
-    "filesWithFullHeaders": 331,
+    "scannedCodeFiles": 359,
+    "filesWithFullHeaders": 332,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 358,
+    "filesWithAnyHeaders": 359,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 716,
-    "edges": 4131,
+    "graphNodes": 717,
+    "edges": 4134,
     "dbTables": 109,
     "doctrines": 133,
     "impactAreas": 116,
@@ -30,7 +30,7 @@
     "multiWriterTables": 62
   },
   "byDomain": {
-    "infrastructure": 19,
+    "infrastructure": 20,
     "notification": 15,
     "auth": 8,
     "logistics": 35,
@@ -55,8 +55,8 @@
   },
   "byLayer": {
     "route-manifest": 1,
+    "bootstrap": 6,
     "cron": 1,
-    "bootstrap": 5,
     "manual-test": 1,
     "middleware": 11,
     "ui-component": 37,
@@ -86,7 +86,7 @@
   },
   "byCriticality": {
     "critical": 76,
-    "medium": 99,
+    "medium": 100,
     "high": 149,
     "low": 34
   },
@@ -139,6 +139,40 @@
         "boutique"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "bootstrap/boot-guard.js",
+      "file": "bootstrap/boot-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "bootstrap-boot-guard",
+      "domain": "infrastructure",
+      "layer": "bootstrap",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "async_init_steps"
+      ],
+      "outputs": [
+        "side_effects",
+        "structured_logs"
+      ],
+      "depends": [],
+      "usedBy": [
+        "bootstrap/server-lifecycle.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "bootstrap"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "bootstrap/crons.js",
@@ -342,7 +376,7 @@
       "impactAreas": [
         "bootstrap"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "bootstrap/startup-migrations.js",
@@ -17454,6 +17488,11 @@
       "doctrine": "alias_historiques_limites"
     },
     {
+      "id": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "doctrine": "resolve_before_behavior_change"
+    },
+    {
       "id": "doctrine:shared_cart_state_machine_v41",
       "type": "doctrine",
       "doctrine": "shared_cart_state_machine_v41"
@@ -17467,11 +17506,6 @@
       "id": "doctrine:retention_snapshots",
       "type": "doctrine",
       "doctrine": "retention_snapshots"
-    },
-    {
-      "id": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "doctrine": "resolve_before_behavior_change"
     },
     {
       "id": "doctrine:DOCTRINE_NON_CONFORMITE (Q-1)",
@@ -18139,6 +18173,11 @@
       "area": "boutique"
     },
     {
+      "id": "impact:bootstrap",
+      "type": "impact-area",
+      "area": "bootstrap"
+    },
+    {
       "id": "impact:cash-reminders",
       "type": "impact-area",
       "area": "cash-reminders"
@@ -18152,11 +18191,6 @@
       "id": "impact:auth-security",
       "type": "impact-area",
       "area": "auth-security"
-    },
-    {
-      "id": "impact:bootstrap",
-      "type": "impact-area",
-      "area": "bootstrap"
     },
     {
       "id": "impact:whatsapp",
@@ -18792,6 +18826,24 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
+    },
+    {
+      "from": "bootstrap/server-lifecycle.js",
+      "to": "bootstrap/boot-guard.js",
+      "type": "uses",
+      "label": "bootstrap/server-lifecycle.js"
+    },
+    {
+      "from": "bootstrap/boot-guard.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "bootstrap/boot-guard.js",
+      "to": "impact:bootstrap",
+      "type": "impact",
+      "label": "bootstrap"
     },
     {
       "from": "bootstrap/crons.js",
@@ -43655,6 +43707,33 @@
         "server.js"
       ]
     },
+    "bootstrap/boot-guard.js": {
+      "role": "bootstrap-boot-guard",
+      "domain": "infrastructure",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "bootstrap/server-lifecycle.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "bootstrap"
+      ],
+      "mustCheck": [
+        "bootstrap/server-lifecycle.js",
+        "doctrine:resolve_before_behavior_change",
+        "impact:bootstrap"
+      ]
+    },
     "bootstrap/crons.js": {
       "role": "operational-crons",
       "domain": "infrastructure",
@@ -43830,6 +43909,7 @@
         "bootstrap"
       ],
       "mustCheck": [
+        "bootstrap/boot-guard.js",
         "doctrine:resolve_before_behavior_change",
         "impact:bootstrap",
         "server.js",

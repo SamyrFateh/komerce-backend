@@ -12,18 +12,26 @@
  * @used-by       server.js
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  bootstrap
- * @version       2026-06
+ * @version       2026-07
  */
 
 'use strict';
 
 const log = require('../utils/logger').child({ module: 'server-lifecycle' });
+const { runSequential } = require('./boot-guard');
 
 /**
  * H2 — Server lifecycle bootstrap.
  *
  * Centralise server startup, graceful shutdown and crash guards.
- * Keeps the same operational behavior as the previous inline server.js block.
+ *
+ * FIX 2026-07-09 : ensureWalletTables / ensureRoutingColumns / ensureSecurityTables
+ * tournaient en fire-and-forget PARALLÈLE avant app.listen, sans logging de durée
+ * ni timeout — point faible identifié lors du diagnostic de la fuite de pool
+ * catalogue (cf. commit 9c90b42). Ils s'exécutent maintenant en SÉQUENCE, APRÈS
+ * app.listen (le serveur répond déjà), avec logging de durée par étape et un
+ * timeout individuel (boot-guard.js) pour rendre tout blocage diagnosticable.
+ * Chaque échec reste non-fatal (comportement inchangé), juste attribuable.
  */
 
 function startServerLifecycle({
@@ -38,16 +46,26 @@ function startServerLifecycle({
   runAllSeeds,
   port = process.env.PORT || 3000,
 }) {
-  walletService.ensureWalletTables().catch(e => log.error({ err: e }, 'Wallet init error:'));
-  routingService.ensureRoutingColumns(db).catch(e => log.error({ err: e }, 'Routing init error:'));
-  parcelSecurity.ensureSecurityTables(db).catch(e => log.error({ err: e }, 'Security init error:'));
-
   const server = app.listen(port, () => {
-    log.info(`KOMERCE API v12.4 — port ${port} — démarrage immédiat — migrations en background`);
+    log.info(`KOMERCE API v12.4 — port ${port} — démarrage immédiat — init tables + migrations en background`);
 
-    setImmediate(() => {
-      runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAllSeeds })
-        .catch(err => log.error({ err }, '❌ Migration error (non-fatal, serveur opérationnel)'));
+    setImmediate(async () => {
+      await runSequential([
+        { label: 'ensureWalletTables', run: () => walletService.ensureWalletTables() },
+        { label: 'ensureRoutingColumns', run: () => routingService.ensureRoutingColumns(db) },
+        { label: 'ensureSecurityTables', run: () => parcelSecurity.ensureSecurityTables(db) },
+      ], { log });
+
+      if (process.env.KOMERCE_SKIP_STARTUP_MIGRATIONS === 'true') {
+        log.info('[boot-guard] runStartupMigrations ignoré (KOMERCE_SKIP_STARTUP_MIGRATIONS=true)');
+        return;
+      }
+
+      try {
+        await runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAllSeeds });
+      } catch (err) {
+        log.error({ err }, '❌ Migration error (non-fatal, serveur opérationnel)');
+      }
     });
   });
 
