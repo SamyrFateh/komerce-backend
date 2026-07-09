@@ -20,12 +20,12 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 717,
-    "edges": 4128,
+    "graphNodes": 716,
+    "edges": 4131,
     "dbTables": 109,
     "doctrines": 133,
-    "impactAreas": 117,
-    "unresolvedCodeEdges": 394,
+    "impactAreas": 116,
+    "unresolvedCodeEdges": 393,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -86,8 +86,8 @@
   },
   "byCriticality": {
     "critical": 76,
-    "medium": 100,
-    "high": 148,
+    "medium": 99,
+    "high": 149,
     "low": 34
   },
   "nodes": [
@@ -15825,22 +15825,21 @@
       "file": "utils/alerts-compat.js",
       "type": "file",
       "headerType": "full",
-      "role": "alerts-compat",
+      "role": "alerts-schema-compat",
       "domain": "infrastructure",
       "layer": "util",
-      "criticality": "medium",
+      "criticality": "high",
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "sql_query",
+        "sql_params"
       ],
       "outputs": [
-        "side_effects"
+        "rewritten_sql_query",
+        "rewritten_sql_params"
       ],
-      "depends": [
-        "db.js"
-      ],
+      "depends": [],
       "usedBy": [
         "db.js"
       ],
@@ -15849,14 +15848,20 @@
         "alerts"
       ],
       "dbWriteVia": [],
-      "dbTxn": [],
+      "dbTxn": [
+        "compatible_with_caller"
+      ],
       "doctrine": [
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "alerts"
+        "operations",
+        "payment",
+        "logistics",
+        "catalog",
+        "refunds"
       ],
-      "version": "2026-07"
+      "version": "2026-07-09"
     },
     {
       "id": "utils/categories-cache.js",
@@ -18667,11 +18672,6 @@
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
-    },
-    {
-      "id": "impact:alerts",
-      "type": "impact-area",
-      "area": "alerts"
     },
     {
       "id": "impact:api",
@@ -41590,12 +41590,6 @@
       "label": "checkout"
     },
     {
-      "from": "utils/alerts-compat.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
-    },
-    {
       "from": "db.js",
       "to": "utils/alerts-compat.js",
       "type": "uses",
@@ -41615,9 +41609,33 @@
     },
     {
       "from": "utils/alerts-compat.js",
-      "to": "impact:alerts",
+      "to": "impact:operations",
       "type": "impact",
-      "label": "alerts"
+      "label": "operations"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "impact:payment",
+      "type": "impact",
+      "label": "payment"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "utils/alerts-compat.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
     },
     {
       "from": "utils/categories-cache.js",
@@ -58817,15 +58835,13 @@
       ]
     },
     "utils/alerts-compat.js": {
-      "role": "alerts-compat",
+      "role": "alerts-schema-compat",
       "domain": "infrastructure",
-      "criticality": "medium",
+      "criticality": "high",
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [
-        "db.js"
-      ],
+      "directDependsOn": [],
       "directUsedBy": [
         "db.js"
       ],
@@ -58839,12 +58855,20 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "alerts"
+        "operations",
+        "payment",
+        "logistics",
+        "catalog",
+        "refunds"
       ],
       "mustCheck": [
         "db:alerts",
         "doctrine:resolve_before_behavior_change",
-        "impact:alerts"
+        "impact:catalog",
+        "impact:logistics",
+        "impact:operations",
+        "impact:payment",
+        "impact:refunds"
       ]
     },
     "utils/categories-cache.js": {
@@ -62915,12 +62939,6 @@
       "to": "services/whatsapp-meta.js",
       "type": "uses",
       "label": "notification-service.js"
-    },
-    {
-      "from": "utils/alerts-compat.js",
-      "to": "db.js",
-      "type": "depends",
-      "label": "db.js"
     },
     {
       "from": "db.js",

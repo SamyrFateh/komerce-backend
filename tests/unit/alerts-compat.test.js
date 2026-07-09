@@ -188,6 +188,66 @@ describe('rewrite — cas réels métier', () => {
   });
 });
 
+// ── 8bis. Non-régression audit PR563 (ordre colonnes / split naïf / RETURNING)
+
+describe('rewrite — non-régression audit PR563', () => {
+  it('réécrit correctement même avec les colonnes dans un ordre différent', () => {
+    const sql = `INSERT INTO alerts (payload, message, source, level) VALUES ($1, $2, $3, $4)`;
+    const { sql: newSql, params } = rewrite(sql, [
+      JSON.stringify({ user_id: 'aabbccdd-0000-4000-8000-000000000009' }),
+      'Message reordonne',
+      'auth-service',
+      'low',
+    ]);
+    expect(newSql).toMatch(/INSERT INTO alerts\s*\(type, entity_type, entity_id, severity, title, description\)/i);
+    expect(params[0]).toBe('auth-service');  // type (source)
+    expect(params[1]).toBe('user');          // entity_type déduit du payload
+    expect(params[3]).toBe('low');           // severity
+    expect(params[4]).toBe('Message reordonne'); // title
+  });
+
+  it('ne casse pas sur une valeur contenant des virgules (payload JSON avec plusieurs clés)', () => {
+    // Le payload JSON contient des virgules internes : un split(',') naïf sur
+    // la chaîne VALUES casserait le découpage des arguments positionnels.
+    const payload = JSON.stringify({ order_id: 'aabbccdd-0000-4000-8000-000000000010', amount: 1200, note: 'a, b, c' });
+    const { params } = rewrite(BASE_SQL, ['high', 'src', 'msg', payload]);
+    expect(params[1]).toBe('order');
+    expect(params[2]).toBe('aabbccdd-0000-4000-8000-000000000010');
+    expect(JSON.parse(params[5]).note).toBe('a, b, c');
+  });
+
+  it('ne casse pas sur une valeur littérale SQL contenant une virgule entre quotes', () => {
+    const sql = `INSERT INTO alerts (level, source, message, payload) VALUES ('low', 'scan', 'Colis, retard, verifier', $1)`;
+    const { params } = rewrite(sql, ['{}']);
+    expect(params[4]).toBe('Colis, retard, verifier');
+  });
+
+  it('préserve un suffixe RETURNING id', () => {
+    const sql = `INSERT INTO alerts (level, source, message, payload) VALUES ($1, $2, $3, $4) RETURNING id`;
+    const { sql: newSql } = rewrite(sql, ['medium', 'src', 'msg', '{}']);
+    expect(newSql).toMatch(/RETURNING id/i);
+  });
+
+  it('préserve RETURNING id, created_at (suffixe multi-colonnes)', () => {
+    const sql = `INSERT INTO alerts (level, source, message, payload) VALUES ($1, $2, $3, $4) RETURNING id, created_at`;
+    const { sql: newSql } = rewrite(sql, ['medium', 'src', 'msg', '{}']);
+    expect(newSql).toMatch(/RETURNING id, created_at/i);
+  });
+
+  it('refuse de préserver un suffixe qui référence une colonne legacy (sécurité)', () => {
+    const sql = `INSERT INTO alerts (level, source, message, payload) VALUES ($1, $2, $3, $4) RETURNING source`;
+    const { rewritten } = rewrite(sql, ['medium', 'src', 'msg', '{}']);
+    expect(rewritten).toBe(false);
+  });
+
+  it('LEGACY_ALERTS_RE (ordre exact) ne détecte pas les colonnes réordonnées, mais rewriteLegacyAlertInsert si', () => {
+    const sql = `INSERT INTO alerts (payload, message, source, level) VALUES ($1, $2, $3, $4)`;
+    expect(LEGACY_ALERTS_RE.test(sql)).toBe(false); // regex figée, comportement documenté
+    const { rewritten } = rewrite(sql, ['{}', 'msg', 'src', 'low']);
+    expect(rewritten).toBe(true); // mais la réécriture réelle fonctionne quand même
+  });
+});
+
 // ── 8. Idempotence — nouveau schéma non touché ─────────────────────────────
 
 describe('non-interférence avec le nouveau schéma', () => {

@@ -1,7 +1,15 @@
 /**
- * KOMERCE — Connexion PostgreSQL (pool) — V2.8 Optimized
+ * KOMERCE — Connexion PostgreSQL (pool) — V2.9
  *
- * CHANGEMENTS V2.8:
+ * CHANGEMENTS V2.9 (PR563 — fix récursion + connect manquant) :
+ *   - Les références originales pool.query/pool.connect sont capturées
+ *     AVANT toute surcharge. Les versions patchées ne s'appellent jamais
+ *     elles-mêmes, quel que soit le chemin d'appel (db.query, db.connect,
+ *     db.getClient, db.pool.query, db.pool.connect).
+ *   - db.connect() est ré-exporté (alias de getClient) — services/
+ *     confirm-pickup-cash-payment.js en dépend directement.
+ *
+ * CHANGEMENTS V2.8 (inchangés) :
  *   - max: 10 → 20 (supporte plus de connexions concurrentes)
  *   - idleTimeoutMillis: 30s → 20s (libère plus vite les connexions idle)
  *   - connectionTimeoutMillis: 5s (inchangé)
@@ -16,7 +24,7 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 const log = require('./utils/logger').forModule('db');
-const { rewriteLegacyAlertInsert, LEGACY_ALERTS_RE } = require('./utils/alerts-compat');
+const { rewriteLegacyAlertInsert } = require('./utils/alerts-compat');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -36,6 +44,73 @@ const pool = new Pool({
 pool.on('error', (err) => {
   log.error({ err }, 'PostgreSQL pool error');
 });
+
+// ── PR563: alerts-compat interceptor ────────────────────────────────────────
+// Réécrit silencieusement les INSERT INTO alerts legacy (level, source,
+// message, payload) vers le schéma réel (type, entity_type, entity_id,
+// severity, title, description). Couvre db.query(...), db.pool.query(...),
+// db.getClient(), db.connect() et db.pool.connect(), sans masquer les
+// autres erreurs SQL ni altérer les signatures pg non concernées.
+//
+// IMPORTANT : les références originales sont capturées ICI, avant toute
+// surcharge de pool.query / pool.connect plus bas. Les fonctions patchées
+// n'appellent jamais pool.query/pool.connect (qui seraient elles-mêmes à
+// ce stade) — elles appellent originalPoolQuery/originalPoolConnect.
+const originalPoolQuery = pool.query.bind(pool);
+const originalPoolConnect = pool.connect.bind(pool);
+
+function rewriteArgs(args) {
+  const [text, ...rest] = args;
+  if (typeof text !== 'string') return null;
+
+  const maybeParams = rest[0];
+  const params = Array.isArray(maybeParams) ? maybeParams : [];
+
+  const rewritten = rewriteLegacyAlertInsert(text, params);
+  if (!rewritten.rewritten) return null;
+
+  if (typeof maybeParams === 'function') {
+    // Forme pool.query(text, callback) — pas de params utilisateur.
+    return [rewritten.sql, rewritten.params, maybeParams];
+  }
+
+  const cb = rest.find((a) => typeof a === 'function');
+  return cb ? [rewritten.sql, rewritten.params, cb] : [rewritten.sql, rewritten.params];
+}
+
+function patchedQuery(...args) {
+  const rewritten = rewriteArgs(args);
+  return rewritten ? originalPoolQuery(...rewritten) : originalPoolQuery(...args);
+}
+
+function wrapClient(client) {
+  if (!client || client.__komerceAlertsCompatWrapped) return client;
+
+  const originalClientQuery = client.query.bind(client);
+  client.query = (...args) => {
+    const rewritten = rewriteArgs(args);
+    return rewritten ? originalClientQuery(...rewritten) : originalClientQuery(...args);
+  };
+
+  Object.defineProperty(client, '__komerceAlertsCompatWrapped', {
+    value: true,
+    enumerable: false,
+  });
+
+  return client;
+}
+
+async function patchedConnect() {
+  const client = await originalPoolConnect();
+  return wrapClient(client);
+}
+
+// pool.query / pool.connect sont surchargés pour couvrir les appels directs
+// db.pool.query() / db.pool.connect(), mais s'appuient toujours sur les
+// références originales ci-dessus — jamais sur pool.query/pool.connect
+// eux-mêmes (source de la récursion infinie corrigée par ce patch).
+pool.query = patchedQuery;
+pool.connect = patchedConnect;
 
 // ── V2.8: Pool health monitoring ────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
@@ -75,50 +150,10 @@ async function healthcheck() {
   }
 }
 
-// ── PR563: alerts-compat interceptor ────────────────────────────────────────
-// Réécrit silencieusement les INSERT INTO alerts legacy (level, source, message, payload)
-// vers le schéma réel (type, entity_type, entity_id, severity, title, description).
-
-function patchClient(client) {
-  const originalQuery = client.query.bind(client);
-  client.query = (...args) => {
-    const [text, ...rest] = args;
-    if (typeof text === 'string' && LEGACY_ALERTS_RE.test(text)) {
-      const params = rest[0] instanceof Array ? rest[0] : (typeof rest[0] !== 'function' ? rest[0] : []);
-      const rewritten = rewriteLegacyAlertInsert(text, params || []);
-      // Préserver le callback si présent
-      const cb = rest.find(a => typeof a === 'function');
-      return cb ? originalQuery(rewritten.sql, rewritten.params, cb) : originalQuery(rewritten.sql, rewritten.params);
-    }
-    return originalQuery(...args);
-  };
-  return client;
-}
-
-function patchedQuery(...args) {
-  const [text, ...rest] = args;
-  if (typeof text === 'string' && LEGACY_ALERTS_RE.test(text)) {
-    const params = rest[0] instanceof Array ? rest[0] : (typeof rest[0] !== 'function' ? rest[0] : []);
-    const rewritten = rewriteLegacyAlertInsert(text, params || []);
-    const cb = rest.find(a => typeof a === 'function');
-    return cb ? pool.query(rewritten.sql, rewritten.params, cb) : pool.query(rewritten.sql, rewritten.params);
-  }
-  return pool.query(...args);
-}
-
-// Point 4 + 6 : patcher pool.connect() pour couvrir db.pool.connect(), db.getClient() et db.connect()
-async function patchedConnect() {
-  const client = await pool.connect();
-  return patchClient(client);
-}
-
-// Surcharger pool.connect pour couvrir les appels directs db.pool.connect()
-pool.connect = patchedConnect;
-
 module.exports = {
   query: patchedQuery,
-  getClient: patchedConnect,  // alias — même fonction patchée
-  connect:   patchedConnect,  // point 4 : exposer db.connect()
+  getClient: patchedConnect,
+  connect: patchedConnect, // ré-exporté : services/confirm-pickup-cash-payment.js en dépend
   pool,
   healthcheck,
 };
