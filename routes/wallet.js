@@ -99,7 +99,10 @@ router.post('/apply', async (req, res, next) => {
   try {
     await client.query('BEGIN');
     const { order_id, amount_kmf } = req.body;
-    if (!order_id) return res.status(400).json({ error: 'order_id requis' });
+    if (!order_id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'order_id requis' });
+    }
 
     // NEW-01 — Guard IDOR : vérifier que la commande appartient à l'utilisateur connecté
     const { rows: [orderCheck] } = await client.query(
@@ -149,7 +152,10 @@ router.post('/remove', async (req, res, next) => {
   try {
     await client.query('BEGIN');
     const { order_id } = req.body;
-    if (!order_id) return res.status(400).json({ error: 'order_id requis' });
+    if (!order_id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'order_id requis' });
+    }
 
     // NEW-02 — Guard IDOR : vérifier que la commande appartient à l'utilisateur connecté
     const { rows: [orderCheck] } = await client.query(
@@ -210,6 +216,7 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
     const { user_id, amount_kmf, reason, note, expires_days } = req.body;
 
     if (!user_id || !amount_kmf || amount_kmf <= 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'user_id et amount_kmf (> 0) requis' });
     }
 
@@ -295,7 +302,10 @@ router.post('/admin/reverse-lot', requireAdmin, async (req, res, next) => {
   try {
     await client.query('BEGIN');
     const { lot_id, note } = req.body;
-    if (!lot_id) return res.status(400).json({ error: 'lot_id requis' });
+    if (!lot_id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'lot_id requis' });
+    }
 
     const result = await walletService.reverseLot(client, {
       lotId:   lot_id,

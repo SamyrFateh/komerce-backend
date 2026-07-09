@@ -71,7 +71,10 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
        WHERE o.id = $1`,
       [req.params.id]
     );
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+    if (!order) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
 
     // GOV-02 (volet 2) — IDOR cross-relais : agent_relais est multi-tenant
     // (plusieurs points relais physiques). Un agent_relais ne peut agir que

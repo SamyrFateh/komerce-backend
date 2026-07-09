@@ -369,6 +369,7 @@ async function verifyQr(body, user) {
     const { rows: [order] } = await client.query(queryText, queryParams);
 
     if (!order) {
+      await client.query('ROLLBACK');
       return { status: 404, body: { error: 'Commande introuvable' } };
     }
 

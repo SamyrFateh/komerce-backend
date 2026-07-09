@@ -66,7 +66,10 @@ async function reconcileOrder(orderId) {
     const { rows: [order] } = await client.query(
       `SELECT * FROM orders WHERE id = $1`, [orderId]
     );
-    if (!order) return { ok: false, error: 'Commande introuvable', issues: [] };
+    if (!order) {
+      await client.query('ROLLBACK');
+      return { ok: false, error: 'Commande introuvable', issues: [] };
+    }
 
     // 2. Charger les order_items
     const { rows: orderItems } = await client.query(
