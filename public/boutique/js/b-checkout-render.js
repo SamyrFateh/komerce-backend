@@ -358,10 +358,12 @@ export function applyIdentityToCard(card, identity) {
     if (!pv) {
       pv = document.createElement('span');
       pv.className = 'k-ck-id-num';
-      // Insérer avant .k-ck-id-verified si elle est dans .k-ck-id-ident, sinon en fin.
-      const ident    = card.querySelector('.k-ck-id-ident');
-      const verified = ident?.querySelector('.k-ck-id-verified');
-      if (verified) { ident.insertBefore(pv, verified); } else { ident?.appendChild(pv); }
+      // .k-ck-id-num est toujours le dernier enfant direct de .k-ck-id-ident
+      // dans le gabarit d'origine (juste après .k-ck-id-value) — appendChild
+      // reproduit cet ordre sans supposer une position de .k-ck-id-verified
+      // qui n'est en réalité pas un enfant direct de .k-ck-id-ident (il est
+      // imbriqué dans .k-ck-id-value), ce qui faisait planter insertBefore.
+      card.querySelector('.k-ck-id-ident')?.appendChild(pv);
     }
     pv.textContent = p;
   } else if (pv) {
