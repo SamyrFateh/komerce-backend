@@ -72,7 +72,6 @@ module.exports = {
       'tests/integration/isweep-transactional-flows.test.js',
       'tests/integration/relais-idor-probe.test.js',
       'tests/integration/security-grid.test.js',
-      'tests/unit/b-checkout-pure.test.js',
       'tests/unit/relais-idor-probe.test.js',
       'tests/unit/validators.test.js',
       // Rapatriés depuis features/operations.feature.js (doublon supprimé,

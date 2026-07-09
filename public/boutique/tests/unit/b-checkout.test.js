@@ -114,6 +114,7 @@ const {
   checkoutCart, closeOrderModal, updateWalletDisplay, checkWalletBalance,
   submitOrder, renderOrderSuccess, renderCheckout,
   makeInput, makePhoneInput, makeIntlPhoneInput,
+  getDefaultPhoneCodeForZone,
 } = require('../../js/b-checkout.js');
 
 function resetDom() {
@@ -180,6 +181,20 @@ describe('b-checkout', () => {
     it('buildE164 délègue à b-phone.js', () => {
       buildE164('+269', '123456');
       expect(_buildE164).toHaveBeenCalledWith('+269', '123456');
+    });
+  });
+
+  describe('getDefaultPhoneCodeForZone (fonction pure interne)', () => {
+    it('retourne +33 pour la zone france', () => {
+      expect(getDefaultPhoneCodeForZone('france')).toBe('+33');
+    });
+    it('retourne +269 pour la zone comoros', () => {
+      expect(getDefaultPhoneCodeForZone('comoros')).toBe('+269');
+    });
+    it('retourne +269 par défaut pour toute autre zone/valeur absente', () => {
+      expect(getDefaultPhoneCodeForZone('mayotte')).toBe('+269');
+      expect(getDefaultPhoneCodeForZone(undefined)).toBe('+269');
+      expect(getDefaultPhoneCodeForZone('')).toBe('+269');
     });
   });
 

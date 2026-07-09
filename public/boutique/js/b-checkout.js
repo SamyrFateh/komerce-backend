@@ -361,7 +361,7 @@ function renderFulfillmentSelector(container, od, onChange) {
   _renderFulfillmentSelector(container, od, onChange);
 }
 
-function getDefaultPhoneCodeForZone(zone) {
+export function getDefaultPhoneCodeForZone(zone) {
   return zone === 'france' ? '+33' : '+269';
 }
 

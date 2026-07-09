@@ -111,7 +111,6 @@ wallet.feature.js → files.tests:
 **Tests restants a mapper manuellement** (noms ambigus — ouvrir le describe() pour decider) :
 
 ```
-tests/unit/b-checkout-pure.test.js          → probablement orders ou un manifest boutique
 tests/unit/collective-payment-orchestrator.test.js → probablement shared-cart
 tests/unit/shared-cart-edit-mode.test.js     → deja dans shared-cart ? verifier
 tests/unit/pricing-*.test.js (8 fichiers)   → verifier : economic-engine ou recommendations ?

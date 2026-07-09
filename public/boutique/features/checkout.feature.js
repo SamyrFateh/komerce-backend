@@ -39,9 +39,10 @@ module.exports = {
       '../tests/unit/b-checkout.test.js',
       // teste b-checkout.js directement (require réel) ; mocke b-checkout-render.js
       // en tant que collaborateur (normal), ne teste donc pas ce fichier en direct.
-      '../../../tests/unit/b-checkout-pure.test.js',
-      // fonctions pures de b-checkout.js portées en CJS (Jest backend ne supporte
-      // pas l'ESM natif ici) — logique testée, pas le fichier importé directement.
+      // (décoy ../../../tests/unit/b-checkout-pure.test.js supprimé 2026-07-09 :
+      // 0 import réel, logique recopiée. Couverture réelle des fonctions
+      // pures désormais dans b-checkout.test.js — cf. describe('getDefaultPhoneCodeForZone')
+      // et describe('délégation téléphone (b-phone.js)') — et dans b-phone.test.js.)
     ],
   },
 
