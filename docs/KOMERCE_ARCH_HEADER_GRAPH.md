@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 359
-- Files with full headers: 332
+- Scanned code files: 360
+- Files with full headers: 333
 - Files with lite headers: 27
-- Files with any headers: 359
+- Files with any headers: 360
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 717
-- Edges: 4130
+- Graph nodes: 720
+- Edges: 4137
 - DB tables: 109
-- Doctrines: 133
-- Impact areas: 116
+- Doctrines: 134
+- Impact areas: 117
 - Unresolved code edges: 393
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
@@ -27,7 +27,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 5
 - bootstrap: 1
-- boutique: 36
+- boutique: 37
 - catalog: 36
 - checkout: 2
 - customs: 6
@@ -66,7 +66,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - service: 144
 - state: 1
 - state-store: 1
-- ui-component: 37
+- ui-component: 38
 - ui-enhancer: 3
 - ui-experiment: 1
 - ui-infrastructure: 1
@@ -162,6 +162,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - middleware/soft-auth.js — auth-soft-auth (auth, high, full)
 - middleware/upload-hub.js — middleware-upload-hub (logistics, high, full)
 - middleware/verify-authkey-webhook.js — auth-verify-authkey-webhook (auth, high, full)
+- public/boutique/js/b-cart-stepper-guard.js — boutique-cart-stepper-event-guard (boutique, high, full)
 - public/boutique/js/b-catalog-desktop-enhancers.js — desktop-catalog-enhancer (catalog, high, full)
 - public/boutique/js/b-catalog.js — boutique-catalog-renderer (catalog, high, full)
 - public/boutique/js/b-checkout-render.js — checkout-dom-renderer (checkout, high, full)

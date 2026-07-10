@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 359,
-    "filesWithFullHeaders": 332,
+    "scannedCodeFiles": 360,
+    "filesWithFullHeaders": 333,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 359,
+    "filesWithAnyHeaders": 360,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 717,
-    "edges": 4130,
+    "graphNodes": 720,
+    "edges": 4137,
     "dbTables": 109,
-    "doctrines": 133,
-    "impactAreas": 116,
+    "doctrines": 134,
+    "impactAreas": 117,
     "unresolvedCodeEdges": 393,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
@@ -34,7 +34,7 @@
     "notification": 15,
     "auth": 8,
     "logistics": 35,
-    "boutique": 36,
+    "boutique": 37,
     "catalog": 36,
     "checkout": 2,
     "shared-cart": 42,
@@ -59,7 +59,7 @@
     "cron": 1,
     "manual-test": 1,
     "middleware": 11,
-    "ui-component": 37,
+    "ui-component": 38,
     "ui-enhancer": 3,
     "ui-renderer": 6,
     "ui-page": 4,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 100,
-    "high": 149,
+    "high": 150,
     "low": 34
   },
   "nodes": [
@@ -1199,6 +1199,45 @@
         "product-discovery"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/b-cart-stepper-guard.js",
+      "file": "public/boutique/js/b-cart-stepper-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "boutique-cart-stepper-event-guard",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "stepper_clicks",
+        "cart_state"
+      ],
+      "outputs": [
+        "unblocked_stepper_controls"
+      ],
+      "depends": [
+        "b-store.js"
+      ],
+      "usedBy": [
+        "boutique.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "panier_ouvert_ferme",
+        "interaction_sans_double_action"
+      ],
+      "impactAreas": [
+        "cart",
+        "product-grid",
+        "mobile-interactions"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-cart.js",
@@ -17526,6 +17565,11 @@
       "doctrine": "panier_ouvert_ferme"
     },
     {
+      "id": "doctrine:interaction_sans_double_action",
+      "type": "doctrine",
+      "doctrine": "interaction_sans_double_action"
+    },
+    {
       "id": "doctrine:participant_lecture_seule",
       "type": "doctrine",
       "doctrine": "participant_lecture_seule"
@@ -18246,6 +18290,16 @@
       "area": "product-discovery"
     },
     {
+      "id": "impact:product-grid",
+      "type": "impact-area",
+      "area": "product-grid"
+    },
+    {
+      "id": "impact:mobile-interactions",
+      "type": "impact-area",
+      "area": "mobile-interactions"
+    },
+    {
       "id": "impact:side-cart",
       "type": "impact-area",
       "area": "side-cart"
@@ -18419,11 +18473,6 @@
       "id": "impact:scroll-ownership",
       "type": "impact-area",
       "area": "scroll-ownership"
-    },
-    {
-      "id": "impact:product-grid",
-      "type": "impact-area",
-      "area": "product-grid"
     },
     {
       "id": "impact:recommendations",
@@ -20517,6 +20566,48 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "public/boutique/js/b-store.js",
+      "type": "depends",
+      "label": "b-store.js"
+    },
+    {
+      "from": "public/boutique/js/boutique.js",
+      "to": "public/boutique/js/b-cart-stepper-guard.js",
+      "type": "uses",
+      "label": "boutique.js"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "doctrine:panier_ouvert_ferme",
+      "type": "doctrine",
+      "label": "panier_ouvert_ferme"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "doctrine:interaction_sans_double_action",
+      "type": "doctrine",
+      "label": "interaction_sans_double_action"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "impact:cart",
+      "type": "impact",
+      "label": "cart"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "impact:product-grid",
+      "type": "impact",
+      "label": "product-grid"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "impact:mobile-interactions",
+      "type": "impact",
+      "label": "mobile-interactions"
     },
     {
       "from": "public/boutique/js/b-cart.js",
@@ -44768,6 +44859,42 @@
         "public/boutique/js/b-modal-core.js"
       ]
     },
+    "public/boutique/js/b-cart-stepper-guard.js": {
+      "role": "boutique-cart-stepper-event-guard",
+      "domain": "boutique",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-store.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/boutique.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "panier_ouvert_ferme",
+        "interaction_sans_double_action"
+      ],
+      "impactAreas": [
+        "cart",
+        "product-grid",
+        "mobile-interactions"
+      ],
+      "mustCheck": [
+        "doctrine:interaction_sans_double_action",
+        "doctrine:panier_ouvert_ferme",
+        "impact:cart",
+        "impact:mobile-interactions",
+        "impact:product-grid",
+        "public/boutique/js/b-store.js",
+        "public/boutique/js/boutique.js"
+      ]
+    },
     "public/boutique/js/b-cart.js": {
       "role": "boutique-cart-and-side-cart",
       "domain": "boutique",
@@ -46339,6 +46466,7 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-cart-pill.js",
+        "public/boutique/js/b-cart-stepper-guard.js",
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
@@ -46617,6 +46745,7 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-cart-pill.js",
+        "public/boutique/js/b-cart-stepper-guard.js",
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
