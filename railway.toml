@@ -4,8 +4,13 @@
 # sur commits docs-only ou auto-cartography
 # ============================================================
 
+[build]
+installCommand = "npm ci --omit=dev"
+
 [deploy]
 releaseCommand = "node scripts/migrate.js"
+startCommand = "node index.js"
+
 # Railway ne déploiera QUE si un fichier matchant ces patterns change.
 # Les commits qui ne touchent que docs/, .github/, scripts/ seront ignorés.
 watchPatterns = [
