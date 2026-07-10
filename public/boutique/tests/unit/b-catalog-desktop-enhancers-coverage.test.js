@@ -15,6 +15,13 @@ function mount(markup) {
   document.body.insertAdjacentHTML('beforeend', markup);
 }
 
+function installSynchronousAnimationFrame() {
+  global.requestAnimationFrame = callback => {
+    callback();
+    return 1;
+  };
+}
+
 function setHeight(element, height) {
   element.getBoundingClientRect = () => ({
     top: 0,
@@ -45,10 +52,7 @@ describe('b-catalog-desktop-enhancers — flux desktop actifs', () => {
     document.body.replaceChildren();
     document.documentElement.style.removeProperty('--nav-stack-h');
 
-    global.requestAnimationFrame = callback => {
-      callback();
-      return 1;
-    };
+    installSynchronousAnimationFrame();
     resizeObserver = { observe: jest.fn() };
     global.ResizeObserver = jest.fn(() => resizeObserver);
 
@@ -151,6 +155,7 @@ describe('b-catalog-desktop-enhancers — flux desktop actifs', () => {
 
   it('mesure header + barre, observe leurs tailles et recalcule au resize', () => {
     jest.useRealTimers();
+    installSynchronousAnimationFrame();
     mount('<header class="k-header"></header><div id="k-sticky-bar"></div>');
     const header = document.querySelector('.k-header');
     const bar = document.getElementById('k-sticky-bar');
@@ -170,6 +175,7 @@ describe('b-catalog-desktop-enhancers — flux desktop actifs', () => {
 
   it('utilise 72 px sans header et tolère l’absence de barre ou de ResizeObserver', () => {
     jest.useRealTimers();
+    installSynchronousAnimationFrame();
     delete global.ResizeObserver;
     mount('<div id="k-sticky-bar"></div>');
     setHeight(document.getElementById('k-sticky-bar'), 40);
@@ -185,6 +191,7 @@ describe('b-catalog-desktop-enhancers — flux desktop actifs', () => {
 
   it('synchronise les éléments desktop lorsque la vue change', () => {
     jest.useRealTimers();
+    installSynchronousAnimationFrame();
     getScrollY.mockReturnValue(650);
     mount(`
       <div class="k-cats"></div>
@@ -207,6 +214,7 @@ describe('b-catalog-desktop-enhancers — flux desktop actifs', () => {
 
   it('tolère l’absence de tous les éléments optionnels lors du changement de vue', () => {
     jest.useRealTimers();
+    installSynchronousAnimationFrame();
     mount('<div class="k-cats"></div>');
     setupCatalogDesktopEnhancers();
     expect(() => bus.emit('view:changed', 'shop')).not.toThrow();
