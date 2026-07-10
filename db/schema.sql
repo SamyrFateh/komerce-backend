@@ -2963,6 +2963,7 @@ CREATE TABLE public.product_variants (
     display_order integer DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    images jsonb DEFAULT '[]'::jsonb NOT NULL,
     CONSTRAINT product_variants_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= 0))),
     CONSTRAINT product_variants_stock_non_negatif CHECK (((stock IS NULL) OR (stock >= 0)))
 );
@@ -2983,7 +2984,8 @@ CREATE VIEW public.product_variants_ordered AS
     image_url,
     display_order,
     created_at,
-    updated_at
+    updated_at,
+    images
    FROM public.product_variants
   ORDER BY product_id, variant_type, display_order, created_at;
 

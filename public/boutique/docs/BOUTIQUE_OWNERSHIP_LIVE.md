@@ -38,11 +38,10 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-desktop-enhancers.js` | 44 | 6 | 4/2 | Modal produit |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
 | `b-modal-approche-c-hybrid.js` | 29 | 0 | 2/0 | Modal produit |
-| `b-catalog-desktop-enhancers.js` | 23 | 3 | 1/0 | Carte produit, Grille produits, Header, Hero, Chips catégories, Section catalogue |
 | `b-share-cart.js` | 25 | 1 | 0/0 | Panier, Header, Bottom-nav mobile |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |
+| `b-wallet.js` | 24 | 0 | 0/0 | Section catalogue |
 | `b-mini-cart.js` | 4 | 19 | 2/0 | Panier |
-| `b-wallet.js` | 22 | 0 | 0/0 | Section catalogue |
 | `b-modal-nav.js` | 10 | 9 | 1/4 | Modal produit |
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
 | `b-identity.js` | 11 | 5 | 0/0 | — |
@@ -64,8 +63,8 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-mobile-premium-v1.js` | 2 | 2 | 1/0 | — |
 | `b-scroll-owner.js` | 0 | 4 | 0/0 | Modal produit, Side-cart desktop, Panier, Grille produits |
 | `komerce-api.js` | 4 | 0 | 0/0 | — |
+| `b-catalog-desktop-enhancers.js` | 0 | 3 | 1/0 | Header, Chips catégories |
 | `b-greeting.js` | 2 | 0 | 0/0 | — |
-| `b-group-banner.js` | 2 | 0 | 0/0 | Header, Panier groupe, Bottom-nav mobile |
 | `b-modal-cart.js` | 2 | 0 | 0/0 | — |
 | `b-utils.js` | 2 | 0 | 0/0 | Carte produit |
 | `b-cart-core.js` | 1 | 0 | 1/2 | Modal produit, Panier, Bottom-nav mobile |
@@ -133,7 +132,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Indicateur | Valeur | Cible |
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
-| Modules JS écrivant le DOM | 38 | ≤ 5 |
+| Modules JS écrivant le DOM | 36 | ≤ 5 |
 | Breakpoints distincts | 7 | ≤ 2 |
 | Violations breakpoint | 12 | 0 |
 | `!important` | 23 | < 5 |
