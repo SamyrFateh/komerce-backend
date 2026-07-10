@@ -12,8 +12,9 @@ function createBanner() {
 }
 
 async function flushPromises() {
-  await Promise.resolve();
-  await Promise.resolve();
+  await new Promise(process.nextTick);
+  await new Promise(process.nextTick);
+  await new Promise(process.nextTick);
 }
 
 beforeEach(() => {
