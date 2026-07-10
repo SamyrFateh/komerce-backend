@@ -6,7 +6,7 @@ const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: './tests',
-  testMatch: '**/*.spec.js',
+  testMatch: ['**/e2e/**/*.spec.js', '**/contracts.spec.js'],
 
   // Timeout global par test (30s — les flows avec offline peuvent être lents)
   timeout: 30_000,

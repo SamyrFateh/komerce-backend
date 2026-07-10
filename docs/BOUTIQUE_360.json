@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-10T01:13:27.677Z",
+  "generatedAt": "2026-07-10T16:37:39.272Z",
   "summary": {
-    "modules": 65,
-    "withHeader": 65,
+    "modules": 66,
+    "withHeader": 66,
     "events": 17,
     "declaredActive": 11,
     "declaredDead": 5,
@@ -181,6 +181,31 @@
       "bodyClasses": []
     },
     {
+      "file": "public/boutique/js/b-cart-stepper-guard.js",
+      "id": "b-cart-stepper-guard",
+      "hasHeader": true,
+      "role": "boutique-cart-stepper-event-guard",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "high",
+      "doctrine": [
+        "panier_ouvert_ferme",
+        "interaction_sans_double_action"
+      ],
+      "depends": [
+        "b-store.js"
+      ],
+      "usedBy": [
+        "boutique.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store"
+      ],
+      "bodyClasses": []
+    },
+    {
       "file": "public/boutique/js/b-cart.js",
       "id": "b-cart",
       "hasHeader": true,
@@ -248,10 +273,9 @@
       ],
       "depends": [
         "b-bus.js",
-        "b-catalog.js",
+        "b-store.js",
         "b-scroll-owner.js",
-        "controllers/home-controller.js",
-        "shop-schema.js"
+        "controllers/home-controller.js"
       ],
       "usedBy": [
         "boutique.js"
@@ -263,8 +287,6 @@
       "imports": [
         "b-bus",
         "b-store",
-        "shop-schema",
-        "b-catalog",
         "home-controller",
         "b-scroll-owner"
       ],
@@ -538,13 +560,11 @@
       "layer": "ui-component",
       "criticality": "medium",
       "doctrine": [
-        "suivi_panier_visible",
-        "panier_ouvert_ferme",
-        "participant_peut_verifier"
+        "cockpit_groupe_source_unique",
+        "panier_ouvert_ferme"
       ],
       "depends": [
-        "b-store.js",
-        "b-utils.js"
+        "b-store.js"
       ],
       "usedBy": [
         "b-share-cart.js",
@@ -554,8 +574,7 @@
       "emits": [],
       "listens": [],
       "imports": [
-        "b-store",
-        "b-utils"
+        "b-store"
       ],
       "bodyClasses": []
     },

@@ -1,12 +1,12 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-10T01:13:27.677Z.
+> Régénéré le 2026-07-10T16:37:39.272Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **65** (65 headés) · Événements bus : **17** · Bundles CSS : **3**
+- Modules JS : **66** (66 headés) · Événements bus : **17** · Bundles CSS : **3**
 - Endpoints appelés : **51** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
 - Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
 
