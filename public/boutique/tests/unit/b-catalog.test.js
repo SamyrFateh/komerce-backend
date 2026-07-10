@@ -3,23 +3,20 @@
 /**
  * Couverture du contrat public de b-catalog.js.
  *
- * Le module orchestre beaucoup de dépendances déjà testées séparément. Elles
- * sont mockées ici pour concentrer les assertions sur les transitions d'état,
- * le choix des modes desktop/mobile, la pagination, la recherche et les
- * délégations DOM du catalogue.
+ * Les dépendances de rendu, panier, pager et stockage sont testées dans leurs
+ * modules respectifs. Ici, on vérifie l'orchestration catalogue : état,
+ * desktop/mobile, pagination, recherche, délégation des clics et chargement.
  */
 
-const mockBusHandlers = {};
-const mockBus = {
-  on: jest.fn((event, handler) => { mockBusHandlers[event] = handler; }),
-  emit: jest.fn(),
-};
+const mockBus = { on: jest.fn(), emit: jest.fn() };
 const mockState = {};
 const mockDom = {};
 const mockScroll = {};
 
-const mockRenderProductCard = jest.fn((product) =>
-  `<article class="k-card" data-id="${product.id}"><button class="k-card-add" data-add="${product.id}">+</button></article>`
+const mockRenderProductCard = jest.fn((item) =>
+  `<article class="k-card" data-id="${item.id}">` +
+    `<button class="k-card-add" data-add="${item.id}">+</button>` +
+  '</article>'
 );
 const mockRenderHomeSections = jest.fn(() =>
   '<section class="k-cat-section"><article class="k-card" data-id="home"></article></section>'
@@ -53,7 +50,7 @@ const mockBindFlatSubcatControls = jest.fn();
 const mockRecalcPagerHeight = jest.fn();
 const mockSetupFlatSubcatPager = jest.fn();
 const mockWriteCache = jest.fn();
-const mockSetProducts = jest.fn((products) => products);
+const mockSetProducts = jest.fn((items) => items);
 const mockGetAllProducts = jest.fn(() => mockState.products || []);
 
 jest.mock('../../js/b-bus.js', () => ({ bus: mockBus }));
@@ -69,7 +66,7 @@ jest.mock('../../js/b-utils.js', () => ({
   optimizeImgUrl: jest.fn((url, width) => `${url}?w=${width}`),
   sanitize: jest.fn((value) => String(value == null ? '' : value)),
   promoImgUrl: jest.fn((url, width) => `${url}?promo=${width}`),
-  fmt: jest.fn((value) => String(value)),
+  fmt: jest.fn(String),
   fmtPrice: jest.fn((value) => `${value} KMF`),
   productEmoji: jest.fn(() => '📦'),
   _currency: 'KMF',
@@ -154,7 +151,7 @@ function product(id, category = 'Tech', overrides = {}) {
     subcategory: 'Téléphones',
     description: `Description ${id}`,
     image_url: `/p${id}.jpg`,
-    price_kmf: 1000 * id,
+    price_kmf: id * 1000,
     promo_pct: 0,
     is_available: true,
     ...overrides,
@@ -184,7 +181,7 @@ function mountCatalogDom() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  jest.useFakeTimers();
+  jest.clearAllTimers();
   mountCatalogDom();
   Object.keys(mockState).forEach((key) => delete mockState[key]);
   Object.assign(mockState, {
@@ -202,7 +199,7 @@ beforeEach(() => {
   mockScroll.scrollingToSection = false;
   mockIsDesktop.mockReturnValue(true);
   mockGetAllProducts.mockImplementation(() => mockState.products);
-  mockSetProducts.mockImplementation((products) => products);
+  mockSetProducts.mockImplementation((items) => items);
   mockPruneObsoleteCart.mockImplementation(() => {});
   global.requestAnimationFrame = (callback) => { callback(); return 1; };
   global.K = { products: { list: jest.fn() } };
@@ -210,14 +207,14 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  jest.runOnlyPendingTimers();
+  jest.clearAllTimers();
   jest.useRealTimers();
   delete global.K;
   delete window.K;
 });
 
 describe('b-catalog — rendu et pagination', () => {
-  it('rend les promotions, duplique le rail et ouvre le produit au clic', () => {
+  test('rend les promotions, duplique le rail et ouvre le produit', () => {
     mockState.products = [product(1, 'Tech', { promo_pct: 20 })];
 
     catalog.renderPromos();
@@ -227,13 +224,13 @@ describe('b-catalog — rendu et pagination', () => {
     expect(mockOpenModal).toHaveBeenCalledWith('1');
   });
 
-  it('marque la section promotions vide quand aucun produit est en promo', () => {
+  test('marque la section promotions vide', () => {
     mockState.products = [product(1)];
     catalog.renderPromos();
     expect(document.getElementById('k-promos-section').dataset.empty).toBe('1');
   });
 
-  it('rend une catégorie desktop, synchronise le rail et réserve la hauteur si une page reste', () => {
+  test('rend une catégorie desktop et réserve la hauteur si une page reste', () => {
     mockState.activeCat = 'Tech';
     mockState.filtered = [product(1), product(2), product(3, 'Mode')];
     mockState.pageSize = 1;
@@ -243,11 +240,10 @@ describe('b-catalog — rendu et pagination', () => {
     expect(mockDestroyMobilePager).toHaveBeenCalled();
     expect(mockRenderSubcatRail).toHaveBeenCalledWith('Tech', { count: 2 });
     expect(mockDom.grid.querySelectorAll('.k-card')).toHaveLength(1);
-    expect(document.getElementById('k-catalog-section')).toHaveClass('k-cat-has-more');
+    expect(document.getElementById('k-catalog-section').classList.contains('k-cat-has-more')).toBe(true);
   });
 
-  it('rend la home desktop en sections et nettoie le pager mobile', () => {
-    mockState.activeCat = 'all';
+  test('rend la home desktop en sections et nettoie le pager mobile', () => {
     mockState.filtered = [
       product(1), product(2), product(3), product(4),
       product(5, 'Mode'), product(6, 'Mode'), product(7, 'Mode'), product(8, 'Mode'),
@@ -261,10 +257,10 @@ describe('b-catalog — rendu et pagination', () => {
     }));
     expect(mockRenderSubcatRail).toHaveBeenCalledWith(null);
     expect(mockEnsureDesktopScrollOwner).toHaveBeenCalled();
-    expect(mockDom.grid).toHaveClass('k-grid-has-sections');
+    expect(mockDom.grid.classList.contains('k-grid-has-sections')).toBe(true);
   });
 
-  it('monte le flat-subcat mobile et ses contrôles', () => {
+  test('monte le mode flat-subcat mobile', () => {
     mockIsDesktop.mockReturnValue(false);
     mockState.flatSubcat = 'Téléphones';
     mockState.filtered = [product(1)];
@@ -276,10 +272,10 @@ describe('b-catalog — rendu et pagination', () => {
     expect(mockBindFlatSubcatControls).toHaveBeenCalled();
     expect(mockRecalcPagerHeight).toHaveBeenCalled();
     expect(mockSetupFlatSubcatPager).toHaveBeenCalled();
-    expect(mockDom.pageScroll).toHaveClass('k-pager-active');
+    expect(mockDom.pageScroll.classList.contains('k-pager-active')).toBe(true);
   });
 
-  it('ajoute la page suivante et libère le spinner', () => {
+  test('ajoute la page suivante et libère le spinner', () => {
     mockState.activeCat = 'Tech';
     mockState.filtered = [product(1), product(2), product(3)];
     mockState.pageSize = 1;
@@ -288,29 +284,26 @@ describe('b-catalog — rendu et pagination', () => {
 
     expect(mockState.page).toBe(1);
     expect(mockDom.grid.querySelector('[data-id="2"]')).not.toBeNull();
-    expect(document.getElementById('k-load-more-spinner')).not.toHaveClass('show');
-    expect(document.getElementById('k-catalog-section')).toHaveClass('k-cat-has-more');
+    expect(document.getElementById('k-load-more-spinner').classList.contains('show')).toBe(false);
+    expect(document.getElementById('k-catalog-section').classList.contains('k-cat-has-more')).toBe(true);
   });
 
-  it('setActiveCat remet les filtres de navigation à zéro et émet le changement', () => {
-    mockState.filtered = [];
+  test('setActiveCat remet la navigation à zéro et émet le changement', () => {
     mockState.flatSubcat = 'Ancien';
     mockState.page = 4;
 
     catalog.setActiveCat('Maison', 'Cuisine');
 
-    expect(mockState).toMatchObject({
-      activeCat: 'Maison',
-      activeSubcat: 'Cuisine',
-      flatSubcat: null,
-      page: 0,
-    });
+    expect(mockState.activeCat).toBe('Maison');
+    expect(mockState.activeSubcat).toBe('Cuisine');
+    expect(mockState.flatSubcat).toBeNull();
+    expect(mockState.page).toBe(0);
     expect(mockBus.emit).toHaveBeenCalledWith('catalog:cat-changed', 'Maison');
   });
 });
 
-describe('b-catalog — navigation, délégation et recherche', () => {
-  it('délègue les interactions carte : favori, ajout, retrait et modal', () => {
+describe('b-catalog — navigation et recherche', () => {
+  test('délègue favori, ajout, retrait et ouverture de modal', () => {
     mockState.activeCat = 'Tech';
     mockState.filtered = [product(1)];
     catalog.renderGrid();
@@ -332,14 +325,13 @@ describe('b-catalog — navigation, délégation et recherche', () => {
     expect(mockOpenModal).toHaveBeenCalledWith('1');
   });
 
-  it('route le scroll vers le pager mobile ou la section desktop', () => {
+  test('route le scroll vers le pager mobile puis une section desktop', () => {
     mockIsDesktop.mockReturnValue(false);
     mockDom.pageScroll.classList.add('k-pager-active');
     mockDom.grid.scrollTo = jest.fn();
 
     catalog.scrollToCategorySection('all');
     expect(mockDom.grid.scrollTo).toHaveBeenCalledWith({ left: 0, behavior: 'smooth' });
-
     catalog.scrollToCategorySection('Tech');
     expect(mockScrollPagerToCat).toHaveBeenCalledWith('Tech');
 
@@ -347,6 +339,7 @@ describe('b-catalog — navigation, délégation et recherche', () => {
     const section = document.createElement('section');
     section.id = 'k-sec-Mode---Beaut-';
     document.body.appendChild(section);
+    jest.useFakeTimers();
     catalog.scrollToCategorySection('Mode & Beauté');
     expect(mockScrollPageToElement).toHaveBeenCalledWith(section, -8, 'smooth');
     expect(mockScroll.scrollingToSection).toBe(true);
@@ -354,7 +347,7 @@ describe('b-catalog — navigation, délégation et recherche', () => {
     expect(mockScroll.scrollingToSection).toBe(false);
   });
 
-  it('branche le contrôleur catégories et centralise le centrage de chip', () => {
+  test('branche le contrôleur catégories et centralise le centrage', () => {
     const chip = document.createElement('button');
     catalog.setupCats();
     expect(mockSetupHomeController).toHaveBeenCalledWith(expect.objectContaining({
@@ -362,12 +355,12 @@ describe('b-catalog — navigation, délégation et recherche', () => {
       scrollPagerToCat: mockScrollPagerToCat,
       scrollToCategorySection: catalog.scrollToCategorySection,
     }));
-
     catalog.centerActiveChip(chip);
     expect(mockCenterRailChip).toHaveBeenCalledWith(chip);
   });
 
-  it('recherche dans la catégorie desktop, affiche les résultats et ouvre la sélection', () => {
+  test('recherche dans la catégorie desktop et ouvre le résultat', () => {
+    jest.useFakeTimers();
     mockState.activeCat = 'Tech';
     mockState.products = [
       product(1, 'Tech', { name: 'Téléphone Alpha' }),
@@ -381,28 +374,24 @@ describe('b-catalog — navigation, délégation et recherche', () => {
     jest.advanceTimersByTime(250);
 
     expect(mockState.filtered.map((item) => item.id)).toEqual([1]);
-    expect(mockDom.searchDrop).toHaveClass('open');
+    expect(mockDom.searchDrop.classList.contains('open')).toBe(true);
     expect(mockDom.searchDrop.querySelectorAll('.k-search-item')).toHaveLength(1);
-
     mockDom.searchDrop.querySelector('.k-search-item').click();
     expect(mockOpenModal).toHaveBeenCalledWith('1');
     expect(mockDom.searchInput.value).toBe('');
-    expect(mockDom.searchDrop).not.toHaveClass('open');
+    expect(mockDom.searchDrop.classList.contains('open')).toBe(false);
   });
 });
 
 describe('b-catalog — chargement produits', () => {
-  it('charge, normalise, rend et nettoie le panier obsolète', async () => {
-    const raw = [
-      product(1, 'Tech'),
-      product(2, 'Mode', { is_available: false }),
-    ];
+  test('charge, normalise, rend et nettoie le panier obsolète', async () => {
+    const raw = [product(1), product(2, 'Mode', { is_available: false })];
     global.K.products.list.mockResolvedValue({ products: raw });
     mockState.cart = [{ id: 'obsolete' }];
     mockPruneObsoleteCart.mockImplementation(() => { mockState.cart = []; });
-    mockSetProducts.mockImplementation((products) => {
-      mockState.products = products;
-      return products;
+    mockSetProducts.mockImplementation((items) => {
+      mockState.products = items;
+      return items;
     });
     mockGetAllProducts.mockImplementation(() => mockState.products);
 
