@@ -98,7 +98,7 @@ jest.mock('../../js/b-scroll-owner.js', () => ({
 jest.mock('../../js/b-share-cart.js', () => ({ install: mockInstallShareCart }));
 jest.mock('../../js/b-group-banner.js', () => ({}));
 
-beforeEach(() => {
+test('boutique câble le boot, les événements globaux et le reset desktop', () => {
   jest.clearAllMocks();
   document.body.innerHTML = `
     <div id="k-page-scroll" style="top:10px;position:fixed;height:20px;overflow:hidden"></div>
@@ -113,9 +113,7 @@ beforeEach(() => {
   `;
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
   Object.defineProperty(document, 'readyState', { configurable: true, value: 'loading' });
-});
 
-test('boutique initialise tous les propriétaires au DOMContentLoaded', () => {
   jest.isolateModules(() => {
     require('../../js/boutique.js');
   });
@@ -125,6 +123,8 @@ test('boutique initialise tous les propriétaires au DOMContentLoaded', () => {
   expect(pageScroll.style.top).toBe('');
   expect(pageScroll.style.position).toBe('');
 
+  const chip = document.querySelector('.k-chip[data-cat="Mode"]');
+  chip.click = jest.fn();
   document.dispatchEvent(new Event('DOMContentLoaded'));
 
   expect(document.body.classList.contains('k-view-shop')).toBe(true);
@@ -143,21 +143,12 @@ test('boutique initialise tous les propriétaires au DOMContentLoaded', () => {
   expect(mockInstallShareCart).toHaveBeenCalledTimes(1);
   expect(mockLoadProducts).toHaveBeenCalledTimes(1);
   expect(mockLoadRelais).toHaveBeenCalledTimes(1);
-});
-
-test('boutique route le stepper global, le footer et les points du carousel', () => {
-  jest.isolateModules(() => {
-    require('../../js/boutique.js');
-  });
 
   document.dispatchEvent(new CustomEvent('cart:setqty', {
     detail: { pid: 'p-1', qty: 3 },
   }));
   expect(mockSetQty).toHaveBeenCalledWith('p-1', 3);
 
-  const chip = document.querySelector('.k-chip[data-cat="Mode"]');
-  chip.click = jest.fn();
-  document.dispatchEvent(new Event('DOMContentLoaded'));
   document.querySelector('[data-footer-cat="Mode"]').click();
   expect(chip.click).toHaveBeenCalledTimes(1);
 
