@@ -7,16 +7,37 @@ const {
 } = require('../../js/b-cart-stepper-guard.js');
 
 function mountStepper(qty = 2) {
-  document.body.innerHTML = `
-    <button class="k-card-add in-cart stepper-open" data-add="42">
-      <div class="k-card-add-stepper">
-        <button class="k-stepper-minus" type="button">−</button>
-        <span class="k-stepper-qty">${qty}</span>
-        <button class="k-stepper-plus" type="button">+</button>
-      </div>
-    </button>`;
+  const host = document.createElement('button');
+  host.type = 'button';
+  host.className = 'k-card-add in-cart stepper-open';
+  host.dataset.add = '42';
+
+  const stepper = document.createElement('div');
+  stepper.className = 'k-card-add-stepper';
+
+  const minus = document.createElement('button');
+  minus.type = 'button';
+  minus.className = 'k-stepper-minus';
+  minus.textContent = '−';
+
+  const value = document.createElement('span');
+  value.className = 'k-stepper-qty';
+  value.textContent = String(qty);
+
+  const plus = document.createElement('button');
+  plus.type = 'button';
+  plus.className = 'k-stepper-plus';
+  plus.textContent = '+';
+
+  // Le runtime b-cart.js construit le stepper via createElement/appendChild.
+  // On reproduit ce DOM directement : le parser innerHTML réécrit sinon les
+  // boutons imbriqués, ce qui ne correspond pas au chemin applicatif réel.
+  stepper.append(minus, value, plus);
+  host.appendChild(stepper);
+  document.body.appendChild(host);
+
   state.cart = [{ id: 42, product: { id: 42 }, qty }];
-  return document.querySelector('.k-card-add');
+  return host;
 }
 
 describe('b-cart-stepper-guard', () => {
