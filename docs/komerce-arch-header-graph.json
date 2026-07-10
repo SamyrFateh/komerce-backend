@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 717,
-    "edges": 4134,
+    "edges": 4132,
     "dbTables": 109,
     "doctrines": 133,
     "impactAreas": 116,
@@ -1653,13 +1653,10 @@
         "contribution_state"
       ],
       "outputs": [
-        "banner_visibility",
-        "banner_content",
-        "group_shortcut"
+        "shared_cart_state_refresh"
       ],
       "depends": [
-        "b-store.js",
-        "b-utils.js"
+        "b-store.js"
       ],
       "usedBy": [
         "b-share-cart.js",
@@ -1671,9 +1668,8 @@
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "suivi_panier_visible",
-        "panier_ouvert_ferme",
-        "participant_peut_verifier"
+        "cockpit_groupe_source_unique",
+        "panier_ouvert_ferme"
       ],
       "impactAreas": [
         "shared-cart",
@@ -1681,7 +1677,7 @@
         "creator-flow",
         "navigation"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-group-cart-flow.js",
@@ -17588,19 +17584,19 @@
       "doctrine": "favoris_locaux_simples"
     },
     {
-      "id": "doctrine:suivi_panier_visible",
+      "id": "doctrine:cockpit_groupe_source_unique",
       "type": "doctrine",
-      "doctrine": "suivi_panier_visible"
-    },
-    {
-      "id": "doctrine:participant_peut_verifier",
-      "type": "doctrine",
-      "doctrine": "participant_peut_verifier"
+      "doctrine": "cockpit_groupe_source_unique"
     },
     {
       "id": "doctrine:estimations_indicatives",
       "type": "doctrine",
       "doctrine": "estimations_indicatives"
+    },
+    {
+      "id": "doctrine:participant_peut_verifier",
+      "type": "doctrine",
+      "doctrine": "participant_peut_verifier"
     },
     {
       "id": "doctrine:createur_decide_gap",
@@ -21156,12 +21152,6 @@
       "label": "b-store.js"
     },
     {
-      "from": "public/boutique/js/b-group-banner.js",
-      "to": "public/boutique/js/b-utils.js",
-      "type": "depends",
-      "label": "b-utils.js"
-    },
-    {
       "from": "public/boutique/js/b-share-cart.js",
       "to": "public/boutique/js/b-group-banner.js",
       "type": "uses",
@@ -21181,21 +21171,15 @@
     },
     {
       "from": "public/boutique/js/b-group-banner.js",
-      "to": "doctrine:suivi_panier_visible",
+      "to": "doctrine:cockpit_groupe_source_unique",
       "type": "doctrine",
-      "label": "suivi_panier_visible"
+      "label": "cockpit_groupe_source_unique"
     },
     {
       "from": "public/boutique/js/b-group-banner.js",
       "to": "doctrine:panier_ouvert_ferme",
       "type": "doctrine",
       "label": "panier_ouvert_ferme"
-    },
-    {
-      "from": "public/boutique/js/b-group-banner.js",
-      "to": "doctrine:participant_peut_verifier",
-      "type": "doctrine",
-      "label": "participant_peut_verifier"
     },
     {
       "from": "public/boutique/js/b-group-banner.js",
@@ -45281,8 +45265,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "public/boutique/js/b-store.js",
-        "public/boutique/js/b-utils.js"
+        "public/boutique/js/b-store.js"
       ],
       "directUsedBy": [
         "public/boutique/js/b-share-cart.js",
@@ -45294,9 +45277,8 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "suivi_panier_visible",
-        "panier_ouvert_ferme",
-        "participant_peut_verifier"
+        "cockpit_groupe_source_unique",
+        "panier_ouvert_ferme"
       ],
       "impactAreas": [
         "shared-cart",
@@ -45305,9 +45287,8 @@
         "navigation"
       ],
       "mustCheck": [
+        "doctrine:cockpit_groupe_source_unique",
         "doctrine:panier_ouvert_ferme",
-        "doctrine:participant_peut_verifier",
-        "doctrine:suivi_panier_visible",
         "impact:creator-flow",
         "impact:navigation",
         "impact:participant-flow",
@@ -45315,7 +45296,6 @@
         "public/boutique/js/b-group-view.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-store.js",
-        "public/boutique/js/b-utils.js",
         "public/boutique/js/boutique.js"
       ]
     },
@@ -46548,7 +46528,6 @@
         "impact:tracking",
         "public/boutique/js/b-cart-pill.js",
         "public/boutique/js/b-checkout-render.js",
-        "public/boutique/js/b-group-banner.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-mini-cart.js",
         "public/boutique/js/b-modal-product.js",
