@@ -84,7 +84,12 @@ module.exports = {
       '../apply-komerce-cleanup.js',
     ],
     tests: [
-      '../tests/boutique.spec.js',
+      '../tests/e2e/modal.spec.js',
+      '../tests/e2e/cart.spec.js',
+      '../tests/e2e/checkout.spec.js',
+      '../tests/e2e/group.spec.js',
+      '../tests/e2e/catalog.spec.js',
+      '../tests/e2e/resilience.spec.js',
       '../tests/contracts.spec.js',
       '../tests/unit/b-friendly-group-redirect.test.js',
       '../tests/unit/b-mobile-modal-v1.test.js',
