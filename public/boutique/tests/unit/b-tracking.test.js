@@ -302,9 +302,21 @@ describe('renderTrackView', () => {
     expect(document.querySelector('.k-myorder-card')).not.toBeNull();
   });
 
-  it('bascule en mode recherche si l\'appel API échoue', async () => {
+  // FIX 2026-07-10 : une panne technique n'est PLUS déguisée en mode recherche —
+  // elle affiche un état erreur + Réessayer (avec fallback recherche proposé).
+  // La bascule directe en mode recherche reste le comportement du 401 (pas de session).
+  it('panne technique de l\'appel API → état erreur + Réessayer (fallback recherche proposé)', async () => {
     document.body.innerHTML = '<div id="k-catalog-section"></div>';
     apiGet.mockRejectedValue(new Error('down'));
+    renderTrackView();
+    await flush();
+    expect(document.getElementById('k-track-retry-btn')).not.toBeNull();
+    expect(document.getElementById('k-track-search-fallback-btn')).not.toBeNull();
+  });
+
+  it('401 (pas de session) → bascule en mode recherche', async () => {
+    document.body.innerHTML = '<div id="k-catalog-section"></div>';
+    apiGet.mockRejectedValue(Object.assign(new Error('HTTP 401'), { status: 401 }));
     renderTrackView();
     await flush();
     expect(document.getElementById('k-track-quick')).not.toBeNull();

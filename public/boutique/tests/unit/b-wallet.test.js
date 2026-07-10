@@ -257,8 +257,21 @@ describe('renderWalletView — solde', () => {
 });
 
 describe('renderWalletView — résilience réseau', () => {
-  it('affiche la gate si les deux appels API rejettent et qu\'il n\'y a pas d\'identité', async () => {
+  // FIX 2026-07-10 : une panne technique (réseau/timeout/5xx) n'est PLUS
+  // déguisée en gate d'identification — elle affiche un état erreur +
+  // Réessayer. La gate reste réservée aux 401/403 (route privée, normal).
+  it('panne réseau sans identité → état erreur + Réessayer (pas la gate)', async () => {
     apiGet.mockRejectedValue(new Error('network down'));
+    getCurrentIdentity.mockReturnValue(null);
+    renderWalletView();
+    await flush();
+    expect(document.getElementById('k-wlt-retry-btn')).not.toBeNull();
+    expect(document.getElementById('k-wlt-auth-btn')).toBeNull();
+  });
+
+  it('401 sans identité → gate d\'identification', async () => {
+    const err401 = Object.assign(new Error('HTTP 401'), { status: 401 });
+    apiGet.mockRejectedValue(err401);
     getCurrentIdentity.mockReturnValue(null);
     renderWalletView();
     await flush();

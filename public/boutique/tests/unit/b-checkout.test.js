@@ -313,7 +313,8 @@ describe('b-checkout', () => {
       relaisSection.id = 'ck-relais-section';
       relaisSection.scrollIntoView = jest.fn();
       document.body.appendChild(relaisSection);
-      state.orderData = {};
+      // relais chargés (ready) mais AUCUN sélectionné → guard historique
+      state.orderData = { relayStatus: 'ready' };
       const btn = document.createElement('button');
 
       return submitOrder(btn).then(() => {
@@ -326,7 +327,7 @@ describe('b-checkout', () => {
     });
 
     it('"quelqu\'un d\'autre récupère" sans nom → toast erreur', () => {
-      state.orderData = { selectedRelaisId: 1 };
+      state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
       setBeneficiaryFields('', '');
       const btn = document.createElement('button');
 
@@ -339,7 +340,7 @@ describe('b-checkout', () => {
     });
 
     it('"quelqu\'un d\'autre récupère" sans téléphone valide → toast erreur', () => {
-      state.orderData = { selectedRelaisId: 1 };
+      state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
       setBeneficiaryFields('Fatima', ''); // pas de select pays → readIntlPhoneValue = ''
       const btn = document.createElement('button');
 
@@ -352,7 +353,7 @@ describe('b-checkout', () => {
     });
 
     it('garde anti double-clic : busy=1 posé après résolution OTP → aucun apiPost déclenché', async () => {
-      state.orderData = { selectedRelaisId: 1 };
+      state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
       const cbIsMe = document.createElement('input');
       cbIsMe.id = 'cb-benf-is-me';
       cbIsMe.checked = true;
@@ -368,7 +369,7 @@ describe('b-checkout', () => {
     });
 
     it('OTP annulé (requireIdentity résout null) → aucune commande créée, panier intact', async () => {
-      state.orderData = { selectedRelaisId: 1 };
+      state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
       const cbIsMe = document.createElement('input');
       cbIsMe.id = 'cb-benf-is-me';
       cbIsMe.checked = true;
@@ -385,7 +386,7 @@ describe('b-checkout', () => {
     });
 
     it('doublon téléphone bénéficiaire = téléphone payeur OTP → bloque avec toast, réactive le bouton', async () => {
-      state.orderData = { selectedRelaisId: 1 };
+      state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
       setBeneficiaryFields('Fatima', '123456', '+269');
       requireIdentity.mockResolvedValue({ phone: '+269123456', full_name: 'Amina' });
       const btn = document.createElement('button');
@@ -404,7 +405,7 @@ describe('b-checkout', () => {
 
   describe('submitOrder — chemin succès cash_relais', () => {
     it('crée la commande, vide le panier, affiche la confirmation', async () => {
-      state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais' };
+      state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais', relayStatus: 'ready' };
       state.cart = [{ product: { id: 1 }, qty: 2 }];
       const cbIsMe = document.createElement('input');
       cbIsMe.id = 'cb-benf-is-me';
@@ -433,7 +434,7 @@ describe('b-checkout', () => {
     });
 
     it('erreur API → toast erreur, bouton réactivé, busy remis à 0', async () => {
-      state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais' };
+      state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais', relayStatus: 'ready' };
       state.cart = [{ product: { id: 1 }, qty: 1 }];
       const cbIsMe = document.createElement('input');
       cbIsMe.id = 'cb-benf-is-me';
@@ -456,7 +457,7 @@ describe('b-checkout', () => {
 
   describe('submitOrder — chemin Stripe', () => {
     it('Stripe non chargé après ensureStripe → erreur explicite, commande créée mais paiement bloqué', async () => {
-      state.orderData = { selectedRelaisId: 7, payment_mode: 'stripe_eur' };
+      state.orderData = { selectedRelaisId: 7, payment_mode: 'stripe_eur', relayStatus: 'ready' };
       state.cart = [{ product: { id: 1 }, qty: 1 }];
       const cbIsMe = document.createElement('input');
       cbIsMe.id = 'cb-benf-is-me';
@@ -843,11 +844,19 @@ describe('b-checkout', () => {
     it('clic sur "Confirmer" → délègue à submitOrder (requireIdentity sollicité)', async () => {
       state.cart = [{ product: { id: 1 }, qty: 1 }];
       state.orderData.selectedRelaisId = 1;
+      // FIX 2026-07-10 : le bouton n'est activable que si relayStatus === 'ready'
+      // → on fait résoudre /api/relais pour passer par la vraie state machine.
+      apiGet.mockImplementation((path) => {
+        if (path === '/api/relais') return Promise.resolve([{ id: 1, name: 'Relais Moroni', island: 'Grande Comore' }]);
+        return Promise.resolve({});
+      });
       requireIdentity.mockResolvedValue(null); // on ne pousse pas jusqu'à l'appel API ici
       renderCheckout();
       await flush();
 
-      document.getElementById('btn-confirm-order').click();
+      const btn = document.getElementById('btn-confirm-order');
+      expect(btn.disabled).toBe(false); // relais ready + sélectionné
+      btn.click();
       await flush();
 
       expect(requireIdentity).toHaveBeenCalled();

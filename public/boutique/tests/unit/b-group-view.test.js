@@ -342,8 +342,21 @@ describe('b-group-view', () => {
       expect(document.getElementById('k-group-view').textContent).toContain('Aucun panier groupe actif');
     });
 
-    test('/mine échoue et la restauration backend échoue aussi → état vide', async () => {
+    // FIX 2026-07-10 : une panne technique sur /mine n'est PLUS masquée en
+    // "Aucun panier actif" — elle affiche un état erreur + Réessayer.
+    // L'état vide reste réservé au 401 (pas de session) et à la vraie liste vide.
+    test('/mine échoue (panne technique) et la restauration échoue aussi → état erreur + Réessayer', async () => {
       mockGroupApi.getOwnerSharedCarts.mockRejectedValue(new Error('network'));
+      mockShareCart.restoreSharedCartFromBackend.mockResolvedValue(null);
+      await renderGroupView({});
+      const el = document.getElementById('k-group-view');
+      expect(el.textContent).toContain('Chargement impossible');
+      expect(el.querySelector('#k-group-retry-btn')).not.toBeNull();
+    });
+
+    test('/mine échoue en 401 (pas de session) et la restauration échoue aussi → état vide', async () => {
+      const err401 = Object.assign(new Error('HTTP 401'), { status: 401 });
+      mockGroupApi.getOwnerSharedCarts.mockRejectedValue(err401);
       mockShareCart.restoreSharedCartFromBackend.mockResolvedValue(null);
       await renderGroupView({});
       expect(document.getElementById('k-group-view').textContent).toContain('Aucun panier groupe actif');

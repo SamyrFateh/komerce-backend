@@ -54,17 +54,17 @@ describe('group-api — endpoints créateur (window.K.request)', () => {
 
   test('getOwnerSharedCarts() -> GET /api/shared-carts/mine', async () => {
     await getOwnerSharedCarts();
-    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/mine', 'GET');
+    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/mine', 'GET', null, 2, {});
   });
 
   test('getSharedCartOwner(cartId) -> GET /api/shared-carts/:id', async () => {
     await getSharedCartOwner(42);
-    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/42', 'GET');
+    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/42', 'GET', null, 2, {});
   });
 
   test('getSharedCartItems(cartId) -> GET /api/shared-carts/:id/as-cart-items', async () => {
     await getSharedCartItems(42);
-    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/42/as-cart-items', 'GET');
+    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/42/as-cart-items', 'GET', null, 2, {});
   });
 
   test('closeCart(cartId) -> POST /api/shared-carts/:id/close avec body vide', async () => {
@@ -111,7 +111,8 @@ describe('group-api — endpoints publics (fetch direct)', () => {
     );
     const result = await getSharedCartPublic('tok-1');
     expect(global.fetch).toHaveBeenCalledWith(
-      '/api/shared-carts/public/tok-1', { credentials: 'include' }
+      '/api/shared-carts/public/tok-1',
+      expect.objectContaining({ credentials: 'include' })
     );
     expect(result).toEqual({ cart: { id: 1 }, items: [] });
   });
@@ -148,12 +149,12 @@ describe('group-api — endpoints publics (fetch direct)', () => {
     );
     const payload = { amount_kmf: 1000, participant_phone: '+269123' };
     const result = await upsertEstimation('tok-1', payload);
-    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/estimations', {
+    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/estimations', expect.objectContaining({
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    });
+    }));
     expect(result).toEqual({ id: 5 });
   });
 
@@ -214,7 +215,7 @@ describe('group-api — endpoints publics (fetch direct)', () => {
     const result = await getEstimationByPhone('tok-1', '+269123');
     expect(global.fetch).toHaveBeenCalledWith(
       '/api/shared-carts/public/tok-1/estimations/by-phone?phone=%2B269123',
-      { credentials: 'include' }
+      expect.objectContaining({ credentials: 'include' })
     );
     expect(result).toEqual({ amount_kmf: 500 });
   });
@@ -237,12 +238,12 @@ describe('group-api — endpoints publics (fetch direct)', () => {
     );
     const payload = { amount_kmf: 2000, contributor_name: 'Ali', contributor_email: 'a@b.com', contributor_phone: '+269' };
     const result = await createContribution('tok-1', payload);
-    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/contributions', {
+    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/contributions', expect.objectContaining({
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    });
+    }));
     expect(result).toEqual({ checkout_url: 'https://stripe/x' });
   });
 

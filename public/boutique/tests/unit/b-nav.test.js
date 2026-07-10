@@ -365,7 +365,7 @@ describe('loadRelais', () => {
   test('succès -> state.relais reçoit data.relais', async () => {
     K.request.mockResolvedValueOnce({ relais: [{ id: 1 }, { id: 2 }] });
     await loadRelais();
-    expect(K.request).toHaveBeenCalledWith('/api/relais/public', 'GET');
+    expect(K.request).toHaveBeenCalledWith('/api/relais/public', 'GET', null, 2, {});
     expect(state.relais).toEqual([{ id: 1 }, { id: 2 }]);
   });
 

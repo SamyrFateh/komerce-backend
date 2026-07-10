@@ -898,19 +898,48 @@ function renderEmpty(el) {
       <span>Créez-en un depuis votre panier avec "Partager".</span>
     </div>`;
 }
-function renderError(el, msg = 'Ce lien est peut-être expiré ou invalide.') {
+function renderError(el, msg = 'Ce lien est peut-être expiré ou invalide.', opts = {}) {
+  // opts.retry : callback → affiche un bouton Réessayer (pannes techniques :
+  // timeout, réseau, 5xx). Sans retry : erreur "métier" (lien invalide, annulé…).
+  const title = opts.title || 'Panier introuvable';
   el.innerHTML = `
     <div class="k-group-empty">
-      <div class="k-group-empty-icon">❌</div>
-      <strong>Panier introuvable</strong>
+      <div class="k-group-empty-icon">${opts.retry ? '⚠️' : '❌'}</div>
+      <strong>${title}</strong>
       <span>${msg}</span>
+      ${opts.retry ? '<button class="k-group-retry-btn" id="k-group-retry-btn">🔄 Réessayer</button>' : ''}
     </div>`;
+  if (opts.retry) el.querySelector('#k-group-retry-btn')?.addEventListener('click', opts.retry);
 }
 
 /* ══════════════════════════════════════════════════════════════════
  * POINT D'ENTRÉE
  * ══════════════════════════════════════════════════════════════════ */
 export async function renderGroupView(opts = {}) {
+  // FIX 2026-07-10 : try/catch GLOBAL. Avant, tout rejet (fetch public pendu,
+  // /mine en timeout, exception de rendu) laissait la vue sur "Chargement…"
+  // pour toujours (rejet de promesse non géré). Désormais : état erreur
+  // lisible + bouton Réessayer, quel que soit le point de défaillance.
+  // Les timeouts eux-mêmes sont garantis par fetchWithTimeout (endpoints
+  // publics) et par la couche K.request (endpoints créateur).
+  try {
+    await _renderGroupViewImpl(opts);
+  } catch (err) {
+    console.warn('[group] renderGroupView:', err);
+    stopPolling();
+    const el = getOrCreateEl();
+    const isTimeout = !!(err && (err.isTimeout || err.name === 'TimeoutError'));
+    renderError(
+      el,
+      isTimeout
+        ? 'Le serveur met trop de temps à répondre. Vérifiez votre connexion puis réessayez.'
+        : 'Une erreur est survenue lors du chargement du panier groupe.',
+      { title: 'Chargement impossible', retry: () => renderGroupView(opts) }
+    );
+  }
+}
+
+async function _renderGroupViewImpl(opts = {}) {
   injectStyles();
   stopPolling();
   const el = getOrCreateEl();
@@ -1092,12 +1121,14 @@ export async function renderGroupView(opts = {}) {
   /* ─────────────────────────────────────────────────────────────── */
   let ownerCarts = [];
   let ownerFetchOk = false;
+  let ownerFetchErr = null;
   try {
     const mine = await getOwnerSharedCarts();
     ownerCarts = Array.isArray(mine?.carts) ? mine.carts : [];
     ownerFetchOk = true;
-  } catch (_) {
+  } catch (err) {
     ownerCarts = [];
+    ownerFetchErr = err;
   }
 
   // pickOwnerCart exclut déjà cancelled / expired / finalized / converted_to_order.
@@ -1115,7 +1146,17 @@ export async function renderGroupView(opts = {}) {
   } else {
     // /mine a échoué (réseau/auth) : dernier recours, restauration sessionStorage.
     const restored = await ensureCreatorCartState();
-    if (!restored) { renderEmpty(el); return; }
+    if (!restored) {
+      // FIX 2026-07-10 : distinguer la nature de l'échec.
+      //   401/403 (pas de session) → "Aucun panier actif" (comportement voulu).
+      //   timeout / 5xx / réseau  → PANNE : ne pas la masquer en état vide —
+      //   on propage vers le try/catch global de renderGroupView qui affiche
+      //   un état erreur lisible + bouton Réessayer.
+      const isAuthErr = ownerFetchErr && (ownerFetchErr.status === 401 || ownerFetchErr.status === 403);
+      if (ownerFetchErr && !isAuthErr) throw ownerFetchErr;
+      renderEmpty(el);
+      return;
+    }
   }
 
   let data;

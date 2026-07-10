@@ -195,8 +195,18 @@ export function renderTrackView() {
   el.innerHTML = '<div class="k-track-loading"><div class="k-track-loading-spin"></div><p>Chargement de vos commandes…</p></div>';
 
   (async () => {
-    // Charger commandes + paniers partagés en parallèle
-    const ordersResult = await apiGet('/api/orders?limit=20').catch(() => null);
+    // FIX 2026-07-10 : distinguer les échecs.
+    //   401/403 (pas de session) → mode recherche par référence (comportement voulu)
+    //   timeout / 5xx / réseau   → état erreur + Réessayer (avant : loader infini
+    //                              possible si la requête pendait, ou bascule
+    //                              trompeuse en mode recherche sur panne backend)
+    let ordersErr = null;
+    const ordersResult = await apiGet('/api/orders?limit=20').catch((e) => { ordersErr = e; return null; });
+
+    if (ordersErr && ordersErr.status !== 401 && ordersErr.status !== 403) {
+      renderTrackError(el, ordersErr);
+      return;
+    }
 
     const orders = Array.isArray(ordersResult)
       ? ordersResult
@@ -209,7 +219,27 @@ export function renderTrackView() {
 
     el.innerHTML = '';
     renderMyOrdersList(el, orders);
-  })();
+  })().catch((e) => {
+    // Filet ultime : jamais de "Chargement…" résiduel.
+    console.warn('[tracking] render:', e);
+    renderTrackError(el, e);
+  });
+}
+
+// ── État erreur + Réessayer (FIX 2026-07-10) ────────────────────────────────
+
+function renderTrackError(el, err) {
+  const isTimeout = !!(err && (err.isTimeout || err.name === 'TimeoutError'));
+  el.innerHTML =
+    '<div class="k-track-error">' +
+      '<div class="k-track-error-icon">⚠️</div>' +
+      '<div class="k-track-error-title">' + (isTimeout ? 'Le suivi met trop de temps à répondre' : 'Impossible de charger vos commandes') + '</div>' +
+      '<div class="k-track-error-sub">Vérifiez votre connexion puis réessayez, ou recherchez une commande par sa référence.</div>' +
+      '<button class="k-track-retry-btn" id="k-track-retry-btn">🔄 Réessayer</button>' +
+      '<button class="k-track-search-fallback-btn" id="k-track-search-fallback-btn">🔎 Rechercher par référence</button>' +
+    '</div>';
+  el.querySelector('#k-track-retry-btn')?.addEventListener('click', () => renderTrackView());
+  el.querySelector('#k-track-search-fallback-btn')?.addEventListener('click', () => renderTrackViewSearchMode(el));
 }
 
 export function renderTrackViewSearchMode(el) {

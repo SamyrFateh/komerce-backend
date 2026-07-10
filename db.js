@@ -39,6 +39,21 @@ const pool = new Pool({
 
   // Prevent runaway queries (30s max per statement)
   statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000', 10),
+
+  // ── FIX 2026-07-10 (incident pool mort après crash Postgres) ────────
+  // statement_timeout est appliqué CÔTÉ SERVEUR : si Postgres crashe/redémarre
+  // (incident 2026-07-09 16:13 UTC), il ne peut plus tuer les requêtes en vol.
+  // Les 20 clients du pool sont restés suspendus sur des sockets morts
+  // (totalCount=20, idleCount=0 en permanence, "timeout exceeded when trying
+  // to connect" en boucle). query_timeout est appliqué CÔTÉ CLIENT (node-pg) :
+  // la promesse de query rejette même si le serveur ne répond plus jamais,
+  // le client est rendu au pool, le pool se régénère seul.
+  // Marge vs statement_timeout (+5s) pour laisser le serveur tuer d'abord.
+  query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || '35000', 10),
+  // keepAlive TCP : détecte les connexions mortes (restart DB, NAT Railway)
+  // au lieu d'attendre indéfiniment sur un socket fantôme.
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10_000,
 });
 
 pool.on('error', (err) => {

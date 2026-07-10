@@ -88,21 +88,36 @@ export function renderWalletView() {
   el.innerHTML = '<div class="k-wlt-loading"><div class="k-wlt-spin"></div><p>Chargement…</p></div>';
 
   (async () => {
-    // Même pattern que b-tracking : tenter l'appel, catch silencieux
+    // FIX 2026-07-10 : plus de catch silencieux uniforme. On distingue :
+    //   401 (route privée, pas de session) → gate d'identification (normal)
+    //   timeout / réseau / 5xx           → état erreur + bouton Réessayer
+    // Le timeout est garanti par apiGet (couche centrale K.request, 10s).
+    let balErr = null, txErr = null;
     const [balData, txData] = await Promise.all([
-      apiGet('/api/wallet').catch(() => null),
-      apiGet('/api/wallet/transactions?limit=50').catch(() => null),
+      apiGet('/api/wallet').catch((e) => { balErr = e; return null; }),
+      apiGet('/api/wallet/transactions?limit=50').catch((e) => { txErr = e; return null; }),
     ]);
 
-    // Pas de données ET pas d'identité → gate OTP (même logique que renderTrackViewSearchMode)
-    if (!balData && !getCurrentIdentity()) {
+    const isAuthErr = (e) => e && (e.status === 401 || e.status === 403);
+
+    // Pas de données ET pas d'identité → gate OTP (comportement historique),
+    // mais UNIQUEMENT si l'échec est bien un refus d'auth (ou ambigu sans identité).
+    if (!balData && !getCurrentIdentity() && (isAuthErr(balErr) || !balErr)) {
       renderAuthGate(el);
+      return;
+    }
+
+    // Échec technique (timeout, 5xx, réseau) → état erreur lisible + Réessayer.
+    // Jamais de loader résiduel.
+    if (!balData && balErr && !isAuthErr(balErr)) {
+      renderWalletError(el, balErr);
       return;
     }
 
     const balance    = balData?.balance_kmf  ?? 0;
     const expiresAt  = balData?.expires_at   ?? null;
     const transactions = txData?.transactions ?? [];
+    if (txErr && !isAuthErr(txErr)) console.warn('[wallet] transactions:', txErr);
 
     el.innerHTML = '';
     if (balance > 0) {
@@ -113,7 +128,25 @@ export function renderWalletView() {
     if (balance > 0 && transactions.length > 0) {
       el.appendChild(buildTransactionList(transactions));
     }
-  })();
+  })().catch((e) => {
+    // Filet ultime : aucune exception ne doit laisser "Chargement…" à l'écran.
+    console.warn('[wallet] render:', e);
+    renderWalletError(el, e);
+  });
+}
+
+// ── État erreur + Réessayer ──────────────────────────────────────────────────
+
+function renderWalletError(el, err) {
+  const isTimeout = !!(err && (err.isTimeout || err.name === 'TimeoutError'));
+  el.innerHTML =
+    '<div class="k-wlt-empty">' +
+      '<div class="k-wlt-empty-icon">⚠️</div>' +
+      '<div class="k-wlt-empty-title">' + (isTimeout ? 'Le porte-monnaie met trop de temps à répondre' : 'Impossible de charger le porte-monnaie') + '</div>' +
+      '<div class="k-wlt-empty-sub">Vérifiez votre connexion puis réessayez.</div>' +
+      '<button class="k-wlt-auth-btn" id="k-wlt-retry-btn">🔄 Réessayer</button>' +
+    '</div>';
+  el.querySelector('#k-wlt-retry-btn')?.addEventListener('click', () => renderWalletView());
 }
 
 // ── Gate d'authentification ─────────────────────────────────────────────────

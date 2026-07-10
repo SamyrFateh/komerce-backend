@@ -90,8 +90,40 @@ window.K = (() => {
     }, wait);
   }
 
+  // ── TIMEOUT CENTRAL (FIX 2026-07-10 — chargement infini boutique) ──
+  // Deadline GLOBALE par requête (retries + backoffs inclus). Garanties :
+  //   1. Aucune requête ne peut rester pendue > timeoutMs → la queue
+  //      (_rl, MAX_CONC=2) est TOUJOURS libérée : deux requêtes pendues
+  //      ne peuvent plus geler toute la boutique.
+  //   2. Les retries sont bornés par la même deadline — ils ne peuvent
+  //      pas masquer une erreur au-delà du timeout global.
+  //   3. Erreur explicite et lisible : e.isTimeout=true, e.name='TimeoutError'.
+  const DEFAULT_TIMEOUT_MS = 10_000;
+
+  function _timeoutError(path, ms) {
+    const e = new Error(`Délai dépassé (timeout ${ms}ms) — ${path}`);
+    e.name = 'TimeoutError';
+    e.isTimeout = true;
+    return e;
+  }
+
   async function _doFetch(path, method, body, maxRetries, options) {
     options = options || {};
+    const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : DEFAULT_TIMEOUT_MS;
+    const deadline = Date.now() + timeoutMs;
+
+    // AbortController interne + relais du signal externe éventuel (options.signal)
+    const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    let timedOut = false;
+    let timer = null;
+    if (controller) {
+      timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
+      if (options.signal) {
+        if (options.signal.aborted) controller.abort();
+        else options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+      }
+    }
+
     const opts = {
       method,
       credentials: 'include',           // Envoie le cookie httpOnly kmrc_jwt
@@ -100,32 +132,68 @@ window.K = (() => {
         options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}
       ),
       ...(body ? { body: JSON.stringify(body) } : {}),
+      ...(controller ? { signal: controller.signal } : {}),
     };
 
-    let lastErr;
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const res = await fetch(_state.api + path, opts);
+    // Course explicite contre la deadline : garantit que la promesse SE RÈGLE
+    // même si l'implémentation fetch ignore le signal d'abort. Sans ça, une
+    // requête pendue occuperait un slot de la queue pour toujours.
+    function _raceDeadline(promise) {
+      const remaining = Math.max(0, deadline - Date.now());
+      let raceTimer;
+      const timeout = new Promise((_, reject) => {
+        raceTimer = setTimeout(() => { timedOut = true; if (controller) controller.abort(); reject(_timeoutError(path, timeoutMs)); }, remaining);
+      });
+      return Promise.race([promise, timeout]).finally(() => clearTimeout(raceTimer));
+    }
 
-        // Retry on rate limit / transient errors
-        if ((res.status === 429 || res.status === 503 || res.status === 502) && attempt < maxRetries) {
-          const backoff = Math.pow(2, attempt) * 800;
-          await _sleep(backoff);
-          continue;
-        }
+    try {
+      let lastErr;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        if (Date.now() >= deadline) throw lastErr || _timeoutError(path, timeoutMs);
+        try {
+          const res = await _raceDeadline(fetch(_state.api + path, opts));
 
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-        return json;
+          // Retry on rate limit / transient errors — seulement si la deadline le permet
+          if ((res.status === 429 || res.status === 503 || res.status === 502) && attempt < maxRetries) {
+            const backoff = Math.pow(2, attempt) * 800;
+            if (Date.now() + backoff >= deadline) {
+              const json = await _raceDeadline(res.json().catch(() => ({})));
+              const err = new Error(json.error || `HTTP ${res.status}`);
+              err.status = res.status;
+              throw err;
+            }
+            await _sleep(backoff);
+            continue;
+          }
 
-      } catch (e) {
-        lastErr = e;
-        if (attempt < maxRetries) {
-          await _sleep(400 * (attempt + 1));
+          const json = await _raceDeadline(res.json().catch(() => ({})));
+          if (!res.ok) {
+            const err = new Error(json.error || `HTTP ${res.status}`);
+            err.status = res.status;   // permet aux vues de distinguer 401 vs 5xx
+            throw err;
+          }
+          return json;
+
+        } catch (e) {
+          // Abort déclenché par notre timer → erreur timeout lisible, pas de retry
+          if (timedOut || (e && e.name === 'AbortError' && Date.now() >= deadline)) {
+            throw _timeoutError(path, timeoutMs);
+          }
+          // Abort externe (options.signal) → propager tel quel, pas de retry
+          if (e && e.name === 'AbortError') throw e;
+          lastErr = e;
+          if (attempt < maxRetries && Date.now() + 400 * (attempt + 1) < deadline) {
+            await _sleep(400 * (attempt + 1));
+          } else if (attempt < maxRetries) {
+            break; // plus de budget temps pour un retry
+          }
         }
       }
+      throw lastErr || _timeoutError(path, timeoutMs);
+    } finally {
+      if (timer) clearTimeout(timer);
     }
-    throw lastErr;
   }
 
   function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

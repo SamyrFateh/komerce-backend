@@ -150,11 +150,25 @@ export function closeOrderModal() {
    */
 let _relaisAbortController = null;
 
+/* ── State machine relais (FIX 2026-07-10) ──────────────────────────
+ * relayStatus : 'idle' | 'loading' | 'ready' | 'error' | 'empty'
+ * Règles métier verrouillées par refreshCheckoutComputedUI + submitOrder :
+ *   - cash_relais exige un relais → Confirmer désactivé tant que
+ *     relayStatus !== 'ready' OU selectedRelaisId absent.
+ *   - erreur/vide : message lisible + bouton Réessayer (ne touche PAS au panier).
+ */
+function setRelayStatus(od, status) {
+  od.relayStatus = status;
+  refreshCheckoutComputedUI();
+}
+
 async function _loadRelaisSection(container, od) {
   // Abort toute requête relais précédente encore en cours
   if (_relaisAbortController) _relaisAbortController.abort();
   _relaisAbortController = new AbortController();
   const signal = _relaisAbortController.signal;
+  setRelayStatus(od, 'loading');
+  container.innerHTML = '<div class="ck-relais-loading">Chargement du relais…</div>';
   try {
     const data = await apiGet('/api/relais', { signal });
     let list = Array.isArray(data) ? data : (data.relais || data.data || []);
@@ -165,7 +179,11 @@ async function _loadRelaisSection(container, od) {
       const hay = ((r.name || '') + ' ' + (r.address || '')).toLowerCase();
       return !/\b(e2e|staging|test)\b/.test(hay);
     });
-    if (!list.length) { container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>'; return; }
+    if (!list.length) {
+      container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>';
+      setRelayStatus(od, 'empty');
+      return;
+    }
 
     // 1 relais par île : on retient le premier visible de chaque groupe.
     const byIle = {};
@@ -176,14 +194,26 @@ async function _loadRelaisSection(container, od) {
       if (!byIle[ile]) byIle[ile] = r;             // 1 seul relais / île
     });
     const allIles = getRelayGroupOrder(Object.keys(byIle));
-    if (!allIles.length) { container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>'; return; }
+    if (!allIles.length) {
+      container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>';
+      setRelayStatus(od, 'empty');
+      return;
+    }
 
     _ensureRelaisSelection(od, byIle, allIles);
     _renderRelaisSummary(container, od, byIle, allIles);
-    refreshCheckoutComputedUI();
+    setRelayStatus(od, 'ready');
   } catch(e) {
     if (e && e.name === 'AbortError') return;
-    container.innerHTML = '<div class="ck-relais-error">Erreur chargement relais — réessayez</div>';
+    // Erreur / timeout : état erreur lisible + Réessayer.
+    // Le retry recharge UNIQUEMENT la section relais — le panier est intact.
+    container.innerHTML =
+      '<div class="ck-relais-error">Impossible de charger les relais'
+      + '<button type="button" class="ck-relais-retry" id="ck-relais-retry">Réessayer</button></div>';
+    container.querySelector('#ck-relais-retry')?.addEventListener('click', () => {
+      _loadRelaisSection(container, od);
+    });
+    setRelayStatus(od, 'error');
     console.warn('[checkout] relais:', e);
   }
 }
@@ -410,11 +440,28 @@ function refreshCheckoutComputedUI() {
   const mainText = mode === 'stripe_eur'
     ? '💳 Payer ' + fmt(total, 'KMF')
     : '✅ Confirmer — ' + fmt(netAmount, 'KMF') + (walletApplied > 0 ? ' (net wallet)' : '');
-  const subText = mode === 'stripe_eur'
+  let subText = mode === 'stripe_eur'
     ? (where ? 'Carte via Stripe • ' + where : 'Carte via Stripe')
     : (where ? 'Cash au relais • ' + where : 'Cash au relais');
+
+  // ── Verrou métier relais (FIX 2026-07-10) ────────────────────────
+  // Un ordre (cash au relais OU stripe — le relais est toujours requis,
+  // cf. submitOrder) ne doit JAMAIS être confirmable si les relais ne
+  // sont pas chargés (ready) et qu'aucun relais n'est sélectionné.
+  const relayStatus = od.relayStatus || 'idle';
+  const relayOk = relayStatus === 'ready' && !!od.selectedRelaisId;
+  if (!relayOk && btn_busy(confirmBtn) === false) {
+    if (relayStatus === 'loading' || relayStatus === 'idle') subText = 'Chargement du relais…';
+    else if (relayStatus === 'error') subText = 'Impossible de charger les relais';
+    else if (relayStatus === 'empty') subText = 'Aucun relais disponible';
+    else subText = 'Choisissez un point relais';
+  }
+  confirmBtn.disabled = !relayOk || btn_busy(confirmBtn);
+  confirmBtn.classList.toggle('is-disabled', confirmBtn.disabled);
   setCheckoutConfirmButton(confirmBtn, mainText, subText);
 }
+
+function btn_busy(btn) { return btn?.dataset?.busy === '1'; }
 
 // renderCheckoutCompact supprimée — doublon de renderCheckout(), jamais activée (07/05/2026)
 export function renderCheckout() {
@@ -866,8 +913,12 @@ export function renderCheckout() {
     document.querySelectorAll('#btn-confirm-order').forEach(el => el.remove());
     const confirmBtn = document.createElement('button');
     confirmBtn.id = 'btn-confirm-order';
-    confirmBtn.className = 'ck-confirm-btn';
-    setCheckoutConfirmButton(confirmBtn, '✅ Confirmer — ' + fmt(cartTotal(), 'KMF'), 'Cash au relais');
+    confirmBtn.className = 'ck-confirm-btn is-disabled';
+    // FIX 2026-07-10 : le bouton naît DÉSACTIVÉ. Il n'est activable que
+    // lorsque relayStatus === 'ready' + relais sélectionné (refreshCheckoutComputedUI).
+    // Avant : rendu actif immédiatement, même si /api/relais était en erreur.
+    confirmBtn.disabled = true;
+    setCheckoutConfirmButton(confirmBtn, '✅ Confirmer — ' + fmt(cartTotal(), 'KMF'), 'Chargement du relais…');
     // Bouton confirm HORS du scroll area → toujours visible en bas du modal
     body.parentElement.appendChild(confirmBtn);
 
@@ -1034,6 +1085,23 @@ export function updateWalletDisplay() {
 export async function submitOrder(btn) {
   const od = state.orderData;
   const benfIsMe = !!(document.getElementById('cb-benf-is-me')?.checked);
+
+  // ── Verrou state machine (FIX 2026-07-10) ────────────────────────────────
+  // Même si le DOM est manipulé / le bouton forcé, aucune commande ne part
+  // tant que les relais ne sont pas chargés (ready). Règle absolue :
+  // cash au relais sans relais chargé+sélectionné = impossible.
+  if ((od.relayStatus || 'idle') !== 'ready') {
+    markRelaySelectionError();
+    showToast(
+      od.relayStatus === 'error'
+        ? 'Impossible de charger les relais — réessayez avant de confirmer.'
+        : od.relayStatus === 'empty'
+          ? 'Aucun relais disponible pour le moment.'
+          : 'Chargement du point relais en cours…',
+      'error'
+    );
+    return;
+  }
 
   // ── Relais toujours requis ────────────────────────────────────────────────
   if (!od.selectedRelaisId) {

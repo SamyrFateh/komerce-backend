@@ -32,6 +32,33 @@
 
 import { apiGet, apiPost } from '../b-utils.js';
 
+/* ── fetchWithTimeout (FIX 2026-07-10) ────────────────────────────
+ * Les endpoints publics du panier partagé passaient par fetch() nu :
+ * si l'API pend (pool DB saturé), la promesse ne se réglait JAMAIS et
+ * la vue groupe restait sur "Chargement…" indéfiniment.
+ * Garanties : la promesse SE RÈGLE toujours en ≤ timeoutMs (abort +
+ * Promise.race, indépendant du support du signal), erreur lisible
+ * (e.isTimeout=true, name='TimeoutError').
+ */
+export const FETCH_TIMEOUT_MS = 10_000;
+
+export function fetchWithTimeout(url, opts = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+  const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      if (controller) controller.abort();
+      const e = new Error(`Délai dépassé (timeout ${timeoutMs}ms) — ${url}`);
+      e.name = 'TimeoutError';
+      e.isTimeout = true;
+      reject(e);
+    }, timeoutMs);
+  });
+  const fetchOpts = controller ? { ...opts, signal: controller.signal } : opts;
+  return Promise.race([fetch(url, fetchOpts), timeout])
+    .finally(() => clearTimeout(timer));
+}
+
 /* ── Endpoints créateur (authentifiés via window.K.request) ──────── */
 
 /**
@@ -107,7 +134,7 @@ export function cancelSharedCart(cartId, payload) {
  * @returns {Promise<{cart, items}|null>}  null si la réponse n'est pas ok
  */
 export async function getSharedCartPublic(token) {
-  const rsp = await fetch(`/api/shared-carts/public/${token}`, { credentials: 'include' });
+  const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}`, { credentials: 'include' });
   return rsp.ok ? rsp.json() : null;
 }
 
@@ -115,7 +142,7 @@ export async function getSharedCartPublic(token) {
  * V4.1 — Agrégat public des estimations.
  */
 export async function getEstimationAggregate(token) {
-  const rsp = await fetch(`/api/shared-carts/public/${token}/estimations`, { credentials: 'include' });
+  const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}/estimations`, { credentials: 'include' });
   if (!rsp.ok) return { total_estimated_kmf: 0, count: 0 };
   const data = await rsp.json();
   return {
@@ -128,7 +155,7 @@ export async function getEstimationAggregate(token) {
  * V4.1 — Crée ou met à jour une estimation (sans OTP).
  */
 export async function upsertEstimation(token, payload) {
-  const rsp = await fetch(`/api/shared-carts/public/${token}/estimations`, {
+  const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}/estimations`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -146,7 +173,7 @@ export async function upsertEstimation(token, payload) {
  * V4.1 — Retire une estimation.
  */
 export async function deleteEstimation(token, estimationId, phone = null) {
-  const rsp = await fetch(`/api/shared-carts/public/${token}/estimations/${estimationId}`, {
+  const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}/estimations/${estimationId}`, {
     method: 'DELETE',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -165,7 +192,7 @@ export async function deleteEstimation(token, estimationId, phone = null) {
  */
 export async function getEstimationByPhone(token, phone) {
   try {
-    const rsp = await fetch(
+    const rsp = await fetchWithTimeout(
       `/api/shared-carts/public/${token}/estimations/by-phone?phone=${encodeURIComponent(phone)}`,
       { credentials: 'include' }
     );
@@ -184,7 +211,7 @@ export async function getEstimationByPhone(token, phone) {
  * FIX-COMMIT-03 : endpoint public — fetch direct.
  */
 export async function createContribution(token, payload) {
-  const rsp = await fetch(`/api/shared-carts/public/${token}/contributions`, {
+  const rsp = await fetchWithTimeout(`/api/shared-carts/public/${token}/contributions`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
