@@ -1,13 +1,21 @@
 /**
- * KOMERCE — Connexion PostgreSQL (pool) — V2.9
+ * KOMERCE — Connexion PostgreSQL (pool) — V2.10
  *
- * CHANGEMENTS V2.9 (PR563 — fix récursion + connect manquant) :
- *   - Les références originales pool.query/pool.connect sont capturées
- *     AVANT toute surcharge. Les versions patchées ne s'appellent jamais
- *     elles-mêmes, quel que soit le chemin d'appel (db.query, db.connect,
- *     db.getClient, db.pool.query, db.pool.connect).
- *   - db.connect() est ré-exporté (alias de getClient) — services/
- *     confirm-pickup-cash-payment.js en dépend directement.
+ * HOTFIX V2.10 (2026-07-10 — rollback ciblé PR563) :
+ *   - Retrait de l'interception alerts-compat (rewriteLegacyAlertInsert /
+ *     rewriteArgs / wrapClient / patchedQuery / patchedConnect) introduite
+ *     par PR563 au niveau db.js. Cause suspecte de la saturation du pool
+ *     (20 connexions idle, aucun lock SQL) : pool.connect et client.query
+ *     étaient monkey-patchés pour TOUS les appelants, y compris les chemins
+ *     chauds (routes health/relais/categories/products) qui n'ont jamais eu
+ *     besoin de réécriture alerts.
+ *   - pool.query / pool.connect ne sont plus réassignés : db.query et
+ *     db.getClient/db.connect exposent directement les méthodes natives
+ *     de node-pg, sans wrapper.
+ *   - utils/alerts-compat.js n'est PAS supprimé (16 services alerts en
+ *     dépendent encore) : seul le branchement dans db.js est retiré. La
+ *     vraie correction (helper métier createAlert()) viendra dans un
+ *     correctif séparé.
  *
  * CHANGEMENTS V2.8 (inchangés) :
  *   - max: 10 → 20 (supporte plus de connexions concurrentes)
@@ -24,7 +32,6 @@
 require('dotenv').config();
 const { Pool } = require('pg');
 const log = require('./utils/logger').forModule('db');
-const { rewriteLegacyAlertInsert } = require('./utils/alerts-compat');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -80,73 +87,6 @@ pool.on('connect', (client) => {
     .catch((err) => log.error({ err }, 'Échec configuration idle_in_transaction_session_timeout'));
 });
 
-// ── PR563: alerts-compat interceptor ────────────────────────────────────────
-// Réécrit silencieusement les INSERT INTO alerts legacy (level, source,
-// message, payload) vers le schéma réel (type, entity_type, entity_id,
-// severity, title, description). Couvre db.query(...), db.pool.query(...),
-// db.getClient(), db.connect() et db.pool.connect(), sans masquer les
-// autres erreurs SQL ni altérer les signatures pg non concernées.
-//
-// IMPORTANT : les références originales sont capturées ICI, avant toute
-// surcharge de pool.query / pool.connect plus bas. Les fonctions patchées
-// n'appellent jamais pool.query/pool.connect (qui seraient elles-mêmes à
-// ce stade) — elles appellent originalPoolQuery/originalPoolConnect.
-const originalPoolQuery = pool.query.bind(pool);
-const originalPoolConnect = pool.connect.bind(pool);
-
-function rewriteArgs(args) {
-  const [text, ...rest] = args;
-  if (typeof text !== 'string') return null;
-
-  const maybeParams = rest[0];
-  const params = Array.isArray(maybeParams) ? maybeParams : [];
-
-  const rewritten = rewriteLegacyAlertInsert(text, params);
-  if (!rewritten.rewritten) return null;
-
-  if (typeof maybeParams === 'function') {
-    // Forme pool.query(text, callback) — pas de params utilisateur.
-    return [rewritten.sql, rewritten.params, maybeParams];
-  }
-
-  const cb = rest.find((a) => typeof a === 'function');
-  return cb ? [rewritten.sql, rewritten.params, cb] : [rewritten.sql, rewritten.params];
-}
-
-function patchedQuery(...args) {
-  const rewritten = rewriteArgs(args);
-  return rewritten ? originalPoolQuery(...rewritten) : originalPoolQuery(...args);
-}
-
-function wrapClient(client) {
-  if (!client || client.__komerceAlertsCompatWrapped) return client;
-
-  const originalClientQuery = client.query.bind(client);
-  client.query = (...args) => {
-    const rewritten = rewriteArgs(args);
-    return rewritten ? originalClientQuery(...rewritten) : originalClientQuery(...args);
-  };
-
-  Object.defineProperty(client, '__komerceAlertsCompatWrapped', {
-    value: true,
-    enumerable: false,
-  });
-
-  return client;
-}
-
-async function patchedConnect() {
-  const client = await originalPoolConnect();
-  return wrapClient(client);
-}
-
-// pool.query / pool.connect sont surchargés pour couvrir les appels directs
-// db.pool.query() / db.pool.connect(), mais s'appuient toujours sur les
-// références originales ci-dessus — jamais sur pool.query/pool.connect
-// eux-mêmes (source de la récursion infinie corrigée par ce patch).
-pool.query = patchedQuery;
-pool.connect = patchedConnect;
-
 // ── V2.8: Pool health monitoring ────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
   const MONITOR_INTERVAL = 5 * 60 * 1000; // 5 min
@@ -186,9 +126,9 @@ async function healthcheck() {
 }
 
 module.exports = {
-  query: patchedQuery,
-  getClient: patchedConnect,
-  connect: patchedConnect, // ré-exporté : services/confirm-pickup-cash-payment.js en dépend
+  query: pool.query.bind(pool),
+  getClient: pool.connect.bind(pool),
+  connect: pool.connect.bind(pool), // alias : services/confirm-pickup-cash-payment.js en dépend
   pool,
   healthcheck,
 };

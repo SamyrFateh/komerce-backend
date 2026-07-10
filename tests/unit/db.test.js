@@ -3,41 +3,62 @@
 /**
  * tests/unit/db.test.js
  *
- * Test de non-régression PR563 : exécute le VRAI db.js (pas mocké), en
- * mockant uniquement 'pg' au niveau module. Contrairement à
- * confirm-pickup-cash-payment.test.js (qui mocke ../../db entièrement et
- * ne peut donc jamais détecter un bug interne à db.js), ce test charge le
- * vrai fichier et prouve empiriquement :
+ * Test de non-régression HOTFIX V2.10 (rollback ciblé PR563) : exécute le
+ * VRAI db.js (pas mocké), en mockant uniquement 'pg' au niveau module.
+ * Contrairement à confirm-pickup-cash-payment.test.js (qui mocke ../../db
+ * entièrement et ne peut donc jamais détecter un bug interne à db.js), ce
+ * test charge le vrai fichier et prouve empiriquement :
  *
  *   1. db.connect() / db.getClient() / db.pool.connect() résolvent sans
- *      récursion infinie (bug historique : pool.connect réassigné à une
- *      fonction qui rappelle pool.connect()).
+ *      récursion infinie (bug historique PR563 : pool.connect réassigné à
+ *      une fonction qui rappelle pool.connect()).
  *   2. db.connect existe et est bien une fonction (régression observée sur
  *      une version intermédiaire du fix qui l'avait supprimé des exports —
  *      services/confirm-pickup-cash-payment.js en dépend).
- *   3. Les 3 chemins d'accès (query, getClient, pool.connect direct)
- *      appliquent bien la réécriture alerts-compat.
+ *   3. db.pool.connect n'est plus remplacé par une couche custom
+ *      (alerts-compat) : c'est la méthode native de node-pg (Pool.prototype
+ *      .connect), directement — c'est précisément ce que ce hotfix retire.
+ *   4. Le pool ne se sature pas sur des cycles getClient/release répétés,
+ *      et BEGIN/ROLLBACK/release rendent bien le client au pool.
+ *
+ * Les tests de réécriture alerts (INSERT legacy → schéma réel) ont été
+ * retirés d'ici : ce mécanisme est retiré de db.js par ce hotfix. La
+ * couverture de rewriteLegacyAlertInsert() reste dans
+ * tests/unit/verify-rewrite.test.js et tests/unit/alerts-compat.test.js,
+ * qui testent utils/alerts-compat.js directement (fichier non supprimé).
  */
 
 jest.mock('pg', () => {
-  function makeFakeClient() {
-    return {
-      query: jest.fn(async (sql, params) => ({ rows: [], _sql: sql, _params: params })),
-      release: jest.fn(),
-    };
-  }
+  const MAX_CLIENTS = 20;
 
   class FakePool {
     constructor() {
-      this.totalCount = 0;
+      this.totalCount = 0; // clients actuellement prêtés (non release())
       this.idleCount = 0;
       this.waitingCount = 0;
+      this._inTransaction = new WeakSet();
     }
     on() {}
     connect(cb) {
-      const client = makeFakeClient();
+      if (this.totalCount >= MAX_CLIENTS) {
+        const err = new Error('pool saturé (simulation) : trop de clients non release()');
+        if (typeof cb === 'function') return cb(err);
+        return Promise.reject(err);
+      }
+      this.totalCount += 1;
+      const pool = this;
+      const client = {
+        query: jest.fn(async (sql, params) => {
+          if (sql === 'BEGIN') pool._inTransaction.add(client);
+          if (sql === 'ROLLBACK' || sql === 'COMMIT') pool._inTransaction.delete(client);
+          return { rows: [], _sql: sql, _params: params };
+        }),
+        release: jest.fn(() => {
+          pool.totalCount -= 1;
+        }),
+      };
       if (typeof cb === 'function') {
-        cb(null, client, () => {});
+        cb(null, client, client.release);
         return undefined;
       }
       return Promise.resolve(client);
@@ -115,13 +136,11 @@ describe('db.js — vrai module (non mocké), pg mocké uniquement', () => {
     const client = await withTimeout(db.connect(), 2000, 'db.connect()');
     const begin = await client.query('BEGIN');
     const commit = await client.query('COMMIT');
-    // BEGIN/COMMIT ne sont pas des INSERT alerts legacy : ils doivent
-    // traverser la couche alerts-compat strictement inchangés.
     expect(begin._sql).toBe('BEGIN');
     expect(commit._sql).toBe('COMMIT');
   });
 
-  it('db.query() réécrit un INSERT alerts legacy avant de toucher pg', async () => {
+  it('db.query() laisse toute requête strictement inchangée (plus de réécriture alerts)', async () => {
     const result = await withTimeout(
       db.query(
         'INSERT INTO alerts (level, source, message, payload) VALUES ($1, $2, $3, $4)',
@@ -130,27 +149,43 @@ describe('db.js — vrai module (non mocké), pg mocké uniquement', () => {
       2000,
       'db.query()'
     );
-    expect(result._sql).toMatch(/INSERT INTO alerts \(type, entity_type/);
-    expect(result._params[3]).toBe('high'); // severity mappée depuis 'critical'
+    // HOTFIX V2.10 : db.js ne réécrit plus rien — la requête legacy part
+    // telle quelle vers pg (la vraie correction passera par un helper
+    // métier createAlert(), pas par un monkey-patch dans db.js).
+    expect(result._sql).toBe('INSERT INTO alerts (level, source, message, payload) VALUES ($1, $2, $3, $4)');
+    expect(result._params).toEqual(['critical', 'payment-service', 'Paiement échoué', '{}']);
   });
 
-  it('db.getClient() puis client.query() réécrit aussi un INSERT alerts legacy', async () => {
-    const client = await withTimeout(db.getClient(), 2000, 'db.getClient()');
-    const result = await client.query(
-      'INSERT INTO alerts (level, source, message, payload) VALUES ($1, $2, $3, $4)',
-      ['low', 'scan-service', 'Colis introuvable', '{}']
-    );
-    expect(result._sql).toMatch(/INSERT INTO alerts \(type, entity_type/);
-    expect(result._params[3]).toBe('low');
+  it("db.pool.connect n'est pas remplacé par une couche custom (alerts-compat retirée)", () => {
+    // Avant le hotfix, pool.connect était réassigné à patchedConnect (une
+    // closure définie dans db.js). On vérifie ici qu'il s'agit bien de la
+    // méthode native du prototype FakePool (donc, en production, du
+    // prototype pg.Pool), et non d'une fonction wrapper créée par db.js.
+    const Client = require('pg').Pool;
+    expect(db.pool.connect).toBe(Client.prototype.connect);
   });
 
-  it('db.query() laisse une requête non-legacy strictement inchangée', async () => {
-    const result = await withTimeout(
-      db.query('SELECT * FROM orders WHERE id = $1', ['abc']),
-      2000,
-      'db.query() non-legacy'
-    );
-    expect(result._sql).toBe('SELECT * FROM orders WHERE id = $1');
-    expect(result._params).toEqual(['abc']);
+  it('20 cycles getClient()/release() successifs ne saturent pas le pool', async () => {
+    for (let i = 0; i < 20; i += 1) {
+      const client = await withTimeout(db.getClient(), 2000, `getClient() #${i}`);
+      expect(typeof client.query).toBe('function');
+      client.release();
+    }
+    expect(db.pool.totalCount).toBe(0);
+  });
+
+  it('BEGIN/ROLLBACK puis release() remet bien le client au pool', async () => {
+    const client = await withTimeout(db.getClient(), 2000, 'getClient()');
+    expect(db.pool.totalCount).toBe(1);
+    await client.query('BEGIN');
+    await client.query('ROLLBACK');
+    client.release();
+    expect(db.pool.totalCount).toBe(0);
+
+    // Le client suivant doit pouvoir être obtenu sans blocage : preuve que
+    // le pool n'est pas resté marqué occupé après le ROLLBACK.
+    const next = await withTimeout(db.getClient(), 2000, 'getClient() après rollback');
+    expect(typeof next.query).toBe('function');
+    next.release();
   });
 });
