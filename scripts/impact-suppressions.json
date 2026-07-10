@@ -16,5 +16,47 @@
     "category": "sqlInjection",
     "contains": "${where}",
     "reason": "AUD-07: where is built from parameterized $N condition templates"
+  },
+  {
+    "file": "public/boutique/tests/unit/b-cart-active-flows.test.js",
+    "category": "xss",
+    "contains": "innerHTML",
+    "reason": "Fixture DOM Jest statique : aucune donnée utilisateur ni exécution en production"
+  },
+  {
+    "file": "public/boutique/tests/unit/b-cart-stepper-guard.test.js",
+    "category": "xss",
+    "contains": "innerHTML",
+    "reason": "Fixture DOM Jest statique : aucune donnée utilisateur ni exécution en production"
+  },
+  {
+    "file": "public/boutique/tests/unit/b-catalog.test.js",
+    "category": "xss",
+    "contains": "innerHTML",
+    "reason": "Fixture DOM Jest statique : aucune donnée utilisateur ni exécution en production"
+  },
+  {
+    "file": "public/boutique/tests/unit/b-modal-core-active-flows.test.js",
+    "category": "xss",
+    "contains": "innerHTML",
+    "reason": "Fixture DOM Jest statique : aucune donnée utilisateur ni exécution en production"
+  },
+  {
+    "file": "public/boutique/tests/unit/b-share-cart-active-flows.test.js",
+    "category": "xss",
+    "contains": "innerHTML",
+    "reason": "Fixture DOM Jest statique : aucune donnée utilisateur ni exécution en production"
+  },
+  {
+    "file": "public/boutique/tests/unit/b-subcat-active-flows.test.js",
+    "category": "xss",
+    "contains": "innerHTML",
+    "reason": "Fixture DOM Jest statique : aucune donnée utilisateur ni exécution en production"
+  },
+  {
+    "file": "public/boutique/tests/unit/boutique-bootstrap.test.js",
+    "category": "xss",
+    "contains": "innerHTML",
+    "reason": "Fixture DOM Jest statique : aucune donnée utilisateur ni exécution en production"
   }
 ]
