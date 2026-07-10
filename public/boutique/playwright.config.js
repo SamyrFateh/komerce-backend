@@ -4,6 +4,21 @@
 
 const { defineConfig, devices } = require('@playwright/test');
 
+// ── Mode remote vs local ──────────────────────────────────────────────────
+// Le simple fait de fournir BASE_URL bascule en mode DISTANT (tests fonctionnels
+// réels contre un environnement qui expose catalogue/API — ex. https://komerce.co/boutique/).
+// Sans BASE_URL, mode LOCAL : `npx serve ..` sert des fichiers statiques
+// (public/), SANS aucune API backend — utile pour le rendu/CSS, pas pour les
+// flows catalogue/checkout/wallet/tracking/groupe qui dépendent du backend réel.
+const remoteBaseURL = process.env.BASE_URL;
+const isRemote = Boolean(remoteBaseURL);
+const baseURL = remoteBaseURL || 'http://localhost:3000/boutique/';
+
+// eslint-disable-next-line no-console
+console.log(
+  `[playwright.config] mode=${isRemote ? 'DISTANT' : 'LOCAL (statique, sans backend)'} baseURL=${baseURL}`
+);
+
 module.exports = defineConfig({
   testDir: './tests',
   testMatch: ['**/e2e/**/*.spec.js', '**/contracts.spec.js'],
@@ -19,32 +34,27 @@ module.exports = defineConfig({
     ? [['junit', { outputFile: 'test-results/results.xml' }], ['list']]
     : [['html', { open: 'never' }], ['list']],
 
-  // ── Serveur de développement intégré ──────────────────────────────────────
-  // Lance `npx serve . -p 3000` avant les tests et l'arrête après.
-  // En CI, réutilise un serveur déjà démarré si PORT 3000 est occupé.
-  // Pour pointer vers staging : BASE_URL=https://staging.example.com npx playwright test
-  // (webServer est ignoré si BASE_URL est défini sur une URL distante — voir condition ci-dessous)
-  ...(
-    !process.env.BASE_URL || process.env.BASE_URL.startsWith('http://localhost')
-      ? {
-          webServer: {
-            // Racine HTTP = `public` (parent de public/boutique), car
-            // index.html référence des chemins absolus type /boutique/css/...
-            // Servir depuis `.` ferait chercher public/boutique/boutique/css/...
-            command: 'npx serve .. --listen 3000 --no-clipboard',
-            url: 'http://localhost:3000/boutique/',
-            reuseExistingServer: !process.env.CI,
-            timeout: 15_000,
-            stdout: 'ignore',
-            stderr: 'pipe',
-          },
-        }
-      : {}
-  ),
+  // ── Serveur de développement intégré (mode LOCAL uniquement) ──────────────
+  // Lance `npx serve ..` (racine = public/, car index.html référence des
+  // chemins absolus /boutique/css/..., /images/...) avant les tests et
+  // l'arrête après. Jamais lancé en mode DISTANT (BASE_URL fourni) : dans ce
+  // cas Playwright ne fait QUE naviguer vers baseURL, aucun serveur local.
+  ...(!isRemote
+    ? {
+        webServer: {
+          command: 'npx serve .. --listen 3000 --no-clipboard',
+          url: 'http://localhost:3000/boutique/',
+          reuseExistingServer: !process.env.CI,
+          timeout: 15_000,
+          stdout: 'ignore',
+          stderr: 'pipe',
+        },
+      }
+    : {}),
 
   use: {
-    // URL de base — surcharger via BASE_URL=https://staging.railway.app
-    baseURL: process.env.BASE_URL || 'http://localhost:3000/boutique/',
+    // URL de base — surcharger via BASE_URL=https://komerce.co/boutique/
+    baseURL,
 
     // Screenshot uniquement en cas d'échec
     screenshot: 'only-on-failure',
@@ -60,7 +70,33 @@ module.exports = defineConfig({
   },
 
   projects: [
-    // ── Desktop ────────────────────────────────────────────────────────────
+    // ── Setup (auth) ──────────────────────────────────────────────────────
+    // Génère playwright/.auth/user.json une fois, avant le projet "authenticated".
+    // Ignoré silencieusement si TEST_ACCOUNT_PHONE/TEST_ACCOUNT_OTP absents
+    // (voir tests/e2e/auth.setup.js) — n'affecte pas les projets publics.
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.js/,
+      use: { ...devices['Desktop Chrome'], locale: 'fr-FR' },
+    },
+
+    // ── Authentifié ─────────────────────────────────────────────────────────
+    // Réservé aux specs dans tests/e2e/authenticated/ (voir README associé).
+    // Compte de test dédié uniquement — jamais un compte réel/production.
+    {
+      name: 'authenticated',
+      testDir: './tests/e2e/authenticated',
+      testMatch: ['**/*.spec.js'],
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+        locale: 'fr-FR',
+        storageState: 'playwright/.auth/user.json',
+      },
+    },
+
+    // ── Desktop (public, sans session) ─────────────────────────────────────
     {
       name: 'Desktop Chrome',
       use: {

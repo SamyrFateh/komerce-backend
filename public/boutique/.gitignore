@@ -1,3 +1,7 @@
 # Artefacts Playwright — générés à chaque run, ne doivent pas être versionnés.
 playwright-report/
 test-results/
+
+# Session E2E sauvegardée par tests/e2e/auth.setup.js (storageState) — contient
+# un cookie de session, ne doit jamais être committée.
+playwright/.auth/

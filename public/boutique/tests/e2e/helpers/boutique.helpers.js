@@ -9,6 +9,79 @@ const { expect } = require('@playwright/test');
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000/boutique/';
 
+// Mode DISTANT dès que BASE_URL est fourni (voir playwright.config.js) : tests
+// fonctionnels réels contre un environnement qui expose catalogue/API.
+// Mode LOCAL (sans BASE_URL) : fichiers statiques servis via `npx serve ..`,
+// SANS backend — le catalogue/API réels ne sont PAS disponibles dans ce mode.
+const IS_REMOTE = Boolean(process.env.BASE_URL);
+
+// Domaines/chemins externes facultatifs : jamais bloquants même en échec
+// (indisponibles en environnement local/CI, non nécessaires au rendu).
+const OPTIONAL_EXTERNAL_PATTERNS = [
+  /fonts\.googleapis\.com/,
+  /fonts\.gstatic\.com/,
+  /js\.stripe\.com/,
+  /api\.stripe\.com/,
+  /cloudinary\.com/,
+];
+
+// Ressources locales critiques : toute 404/échec réseau dessus est bloquant.
+const CRITICAL_LOCAL_PATTERNS = [
+  /\/boutique\/css\//,
+  /\/boutique\/js\//,
+  /\/images\//,
+];
+
+function isOptionalExternal(url) {
+  return OPTIONAL_EXTERNAL_PATTERNS.some((re) => re.test(url));
+}
+
+function isCriticalLocal(url) {
+  return CRITICAL_LOCAL_PATTERNS.some((re) => re.test(url));
+}
+
+/**
+ * Contrôle de cible à lancer en tête d'un test nominal (catalogue notamment) :
+ * - logue BASE_URL effective + mode (LOCAL/DISTANT) ;
+ * - navigue vers BASE_URL et logue l'URL finale (détecte une redirection
+ *   accidentelle, ex. vers localhost) ;
+ * - exige un document principal 200 ;
+ * - exige que l'origine finale corresponde à celle de BASE_URL ;
+ * - collecte les échecs sur les ressources locales critiques (CSS/JS/images),
+ *   en ignorant les ressources externes facultatives (Fonts, Stripe, Cloudinary).
+ *
+ * Retourne { response, failedCriticalResources } pour assertions dans l'appelant.
+ */
+async function gotoAndVerifyTarget(page) {
+  const failedCriticalResources = [];
+
+  page.on('response', (response) => {
+    const url = response.url();
+    if (isOptionalExternal(url) || !isCriticalLocal(url)) return;
+    if (response.status() >= 400) failedCriticalResources.push(`${response.status()} ${url}`);
+  });
+  page.on('requestfailed', (request) => {
+    const url = request.url();
+    if (isOptionalExternal(url) || !isCriticalLocal(url)) return;
+    failedCriticalResources.push(`REQUESTFAILED ${request.failure()?.errorText || ''} ${url}`);
+  });
+
+  // eslint-disable-next-line no-console
+  console.log(`[e2e] BASE_URL effective = ${BASE_URL} (mode ${IS_REMOTE ? 'DISTANT' : 'LOCAL'})`);
+  const response = await page.goto(BASE_URL);
+  // eslint-disable-next-line no-console
+  console.log(`[e2e] URL finale après navigation = ${page.url()}`);
+
+  expect(response, 'la navigation doit produire une réponse HTTP').not.toBeNull();
+  expect(response.status(), 'le document principal doit répondre 200').toBe(200);
+  expect(
+    new URL(page.url()).origin,
+    "l'URL finale doit rester sur l'origine de BASE_URL (pas de redirection accidentelle, ex. vers localhost)"
+  ).toBe(new URL(BASE_URL).origin);
+
+  return { response, failedCriticalResources };
+}
+
 // ─── Catalogue ──────────────────────────────────────────────────────────────
 
 /** Attend que la grille catalogue soit hydratée (≥1 carte visible). */
@@ -176,6 +249,8 @@ async function unblockApi(page) {
 
 module.exports = {
   BASE_URL,
+  IS_REMOTE,
+  gotoAndVerifyTarget,
   waitForGrid,
   cardCount,
   clickCategory,

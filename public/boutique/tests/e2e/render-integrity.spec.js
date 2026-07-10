@@ -9,58 +9,18 @@
  *        Ne fait PAS échouer le test sur des ressources externes facultatives
  *        (Google Fonts, Stripe, Cloudinary) : seules les ressources locales
  *        critiques /boutique/css/, /boutique/js/ et /images/ sont surveillées.
+ *
+ *        Tourne en mode LOCAL comme en mode DISTANT (BASE_URL) — le rendu/CSS
+ *        doit être correct dans les deux cas.
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
-const { BASE_URL, waitForGrid } = require('./helpers/boutique.helpers');
-
-// Domaines/chemins externes facultatifs à ignorer même s'ils échouent
-// (indisponibles en environnement local, non bloquants pour le rendu).
-const OPTIONAL_EXTERNAL_PATTERNS = [
-  /fonts\.googleapis\.com/,
-  /fonts\.gstatic\.com/,
-  /js\.stripe\.com/,
-  /api\.stripe\.com/,
-  /cloudinary\.com/,
-];
-
-// Chemins locaux critiques : toute 404/échec réseau dessus est bloquant.
-const CRITICAL_LOCAL_PATTERNS = [
-  /\/boutique\/css\//,
-  /\/boutique\/js\//,
-  /\/images\//,
-];
-
-function isOptionalExternal(url) {
-  return OPTIONAL_EXTERNAL_PATTERNS.some((re) => re.test(url));
-}
-
-function isCriticalLocal(url) {
-  return CRITICAL_LOCAL_PATTERNS.some((re) => re.test(url));
-}
+const { waitForGrid, gotoAndVerifyTarget } = require('./helpers/boutique.helpers');
 
 test.describe('Régression — boutique servie depuis la mauvaise racine HTTP', () => {
 
   test('aucune ressource CSS/JS/image locale critique ne répond en 404, et le rendu est stylé', async ({ page }) => {
-    const failedCriticalResources = [];
-
-    page.on('response', (response) => {
-      const url = response.url();
-      if (isOptionalExternal(url)) return;
-      if (!isCriticalLocal(url)) return;
-      if (response.status() >= 400) {
-        failedCriticalResources.push(`${response.status()} ${url}`);
-      }
-    });
-
-    page.on('requestfailed', (request) => {
-      const url = request.url();
-      if (isOptionalExternal(url)) return;
-      if (!isCriticalLocal(url)) return;
-      failedCriticalResources.push(`REQUESTFAILED ${request.failure()?.errorText || ''} ${url}`);
-    });
-
-    await page.goto(BASE_URL);
+    const { failedCriticalResources } = await gotoAndVerifyTarget(page);
     await waitForGrid(page);
 
     // ── 1. Aucune 404 / échec réseau sur une ressource locale critique ──────

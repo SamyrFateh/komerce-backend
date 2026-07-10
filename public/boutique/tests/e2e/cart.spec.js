@@ -8,9 +8,14 @@ const { test, expect } = require('@playwright/test');
 const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   closeModal, openCartDrawer, cardCount,
+  IS_REMOTE,
 } = require('./helpers/boutique.helpers');
 
 test.describe('E-CART — Panier', () => {
+  // Ces flows nécessitent un catalogue réel (données produit du backend) :
+  // indisponibles en mode LOCAL (npx serve, sans API). Lancer avec BASE_URL distant.
+  test.skip(!IS_REMOTE, 'Nécessite un catalogue réel (backend) — lancer avec BASE_URL distant');
+
 
   test('E3 — Ajout au panier → badge incrémenté + bouton in-cart', async ({ page }) => {
     await page.goto(BASE_URL);

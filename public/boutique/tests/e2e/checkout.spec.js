@@ -9,9 +9,14 @@ const { test, expect } = require('@playwright/test');
 const {
   BASE_URL, addFirstProductToCart, openCheckout, selectRecipientOther,
   hangAllApi, unblockApi,
+  IS_REMOTE,
 } = require('./helpers/boutique.helpers');
 
 test.describe('E-CHECKOUT — Checkout complet', () => {
+  // Ces flows nécessitent un catalogue réel (données produit du backend) :
+  // indisponibles en mode LOCAL (npx serve, sans API). Lancer avec BASE_URL distant.
+  test.skip(!IS_REMOTE, 'Nécessite un catalogue réel (backend) — lancer avec BASE_URL distant');
+
 
   test.beforeEach(async ({ page }) => {
     await addFirstProductToCart(page);

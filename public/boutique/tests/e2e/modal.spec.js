@@ -7,9 +7,14 @@
 const { test, expect } = require('@playwright/test');
 const {
   BASE_URL, waitForGrid, openFirstCard, waitForModalOpen, closeModal,
+  IS_REMOTE,
 } = require('./helpers/boutique.helpers');
 
 test.describe('E-MODAL — Modale produit', () => {
+  // Ces flows nécessitent un catalogue réel (données produit du backend) :
+  // indisponibles en mode LOCAL (npx serve, sans API). Lancer avec BASE_URL distant.
+  test.skip(!IS_REMOTE, 'Nécessite un catalogue réel (backend) — lancer avec BASE_URL distant');
+
 
   test('E2 — Ouverture modale : nom, prix, image, bouton fermer', async ({ page }) => {
     await page.goto(BASE_URL);
