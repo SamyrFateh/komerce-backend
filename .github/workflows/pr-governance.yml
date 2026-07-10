@@ -24,7 +24,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm --prefix public/boutique ci
 
       # ── Gate 1 : body PR contient un plan d'attaque structuré ──────────────
       - name: Plan d'attaque PR (body)
@@ -40,9 +42,8 @@ jobs:
       # --strict active la règle de complétion au contact (QUALITY_PYRAMID_DOCTRINE.md
       # Niveau 3.1) : si un fichier ET son test sont touchés, la couverture doit
       # atteindre le seuil cible (governance/coverage-thresholds.json), pas juste
-      # "un test existe". Canonique ici — carte-first.yml garde l'appel non-strict
-      # (présence seule) pour éviter de dupliquer le coût du check de complétion
-      # deux fois par PR.
+      # "un test existe". Le gate sélectionne désormais le Jest du workspace
+      # concerné (backend racine ou public/boutique).
       - name: Code touché ↔ signal test (touched-tests)
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
