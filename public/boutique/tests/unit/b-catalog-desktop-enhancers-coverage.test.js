@@ -18,7 +18,7 @@ function mount(markup) {
 function installSynchronousAnimationFrame() {
   global.requestAnimationFrame = callback => {
     callback();
-    return 1;
+    return 0;
   };
 }
 
