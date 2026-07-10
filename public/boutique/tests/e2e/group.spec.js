@@ -56,20 +56,45 @@ test.describe('E-GROUP — Panier groupe', () => {
     // Accès direct à la page publique avec un token bidon
     // BASE_URL se termine désormais par un slash (ex: http://localhost:3000/boutique/) :
     // ne pas préfixer le chemin relatif par un second slash.
+    //
+    // FIX 2026-07-10-c — shared-cart-public.html n'est plus une page autonome
+    // depuis le commit 5af5f7a8 ("turn public page into boutique redirect
+    // shim") : c'est un simple <script> qui fait location.replace() vers
+    // /boutique/?tab=group&p=<token>. resp.status() ci-dessous est donc celui
+    // du shim (200, HTML statique quasi vide), pas de la page finale.
+    // L'ancien check `body.length > 30` passait quasi instantanément une fois
+    // sur la SPA boutique (shell statique déjà >30 chars : header, nav, hero…)
+    // bien avant que le rendu async du mode participant (getSharedCartPublic
+    // → renderError) ait eu le temps de s'exécuter — d'où le message attendu
+    // absent. On attend le redirect effectif, puis #k-group-view spécifiquement
+    // (même pattern que E13), et on vérifie SON texte, pas celui du body entier.
     const resp = await page.goto(BASE_URL + 'shared-cart-public.html?token=test-invalid-token');
-    // La page HTML elle-même doit charger (200)
     expect(resp.status()).toBeLessThan(400);
 
-    // Attendre que le JS traite le token invalide → message d'erreur (pas un crash)
+    // Le shim redirige via location.replace — attendre qu'on ait bien quitté
+    // shared-cart-public.html. On ne peut PAS attendre "?p=test-invalid-token"
+    // dans l'URL : handleParticipantUrl() (b-nav.js) le lit puis le nettoie
+    // aussitôt via history.replaceState() (URL propre, sans token, dans la
+    // barre d'adresse) — attendre cette chaîne précise, c'est faire la course
+    // contre le nettoyage de l'app elle-même (flaky, cf. échec Mobile Chrome).
+    // Seul signal stable : avoir quitté la page shim.
+    await page.waitForURL((url) => !url.toString().includes('shared-cart-public'), { timeout: 8_000 });
+
+    const groupView = page.locator('#k-group-view');
+    await expect(groupView).toBeAttached({ timeout: 5_000 });
+
+    // Attendre l'état terminal (pas "Chargement…") avant de lire le texte,
+    // comme E13 — getSharedCartPublic() est garanti ≤10s par fetchWithTimeout.
     await page.waitForFunction(
       () => {
-        const body = document.body.textContent || '';
-        return body.length > 30;
+        const el = document.getElementById('k-group-view');
+        if (!el) return false;
+        return !el.textContent.includes('Chargement…') && el.textContent.length > 5;
       },
-      { timeout: 10_000 }
+      { timeout: 12_000 }
     );
 
-    const text = await page.locator('body').textContent();
+    const text = await groupView.textContent();
     // Avec un token invalide, on attend un message d'erreur lisible
     const validResponse =
       text.includes('introuvable') ||
