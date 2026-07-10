@@ -1,7 +1,7 @@
 # Cartographie 360 Komerce
 
 > **Statut** : cartographie documentaire canonique  
-> **Dernière consolidation** : 28 juin 2026  
+> **Dernière consolidation** : 10 juillet 2026  
 > **Méthode** : version maintenable, vérifiée contre `server.js`, `bootstrap/api-routes.js`, `bootstrap/html-routes.js`, `bootstrap/env.js` et les services critiques.  
 > **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes. Pour le schéma DB complet, voir `SCHEMA.md`.
 
@@ -37,8 +37,20 @@ Le point d'entrée applicatif est `server.js`.
 | Sécurité pickup/collecte | `routes/pickup-secret.js`, `services/parcel-security.js` |
 | Boutique canonique | `public/boutique/index.html` |
 | Ownership Boutique / modal produit | `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` + `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` + `features/catalog.feature.js` + `npm run gate:boutique-ownership` |
+| Couverture unitaire Boutique | `public/boutique/jest.config.js` + `public/boutique/scripts/report-coverage.js` + job `Boutique Quality Gates` de `.github/workflows/ci.yml` |
 | Admin moderne | `public/dashboards/admin/index.html` |
 | Panier partagé Boutique First | `docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md` + `docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md` |
+
+### 2 bis. Delta Boutique — préparation Playwright du 10 juillet 2026
+
+La couverture Jest de la Boutique porte sur `public/boutique/js/**/*.js`, hors bundles générés `js/dist/**`, fichiers `*.test.js` et dossiers `__tests__/**`. Le rapport `coverage/COVERAGE_MISSING.md` est produit par `npm run test:coverage` et publié comme artefact de CI.
+
+Le lot de stabilisation précédant les tests Playwright a :
+
+- couvert les flux actifs du catalogue, du panier, de la modale, du partage, de la taxonomie et du store produits ;
+- retiré le code définitivement inaccessible de `b-group-banner.js` et les enrichissements neutralisés de `b-catalog-desktop-enhancers.js` ;
+- ajouté `b-cart-stepper-guard.js`, chargé par `boutique.js`, pour laisser les boutons `+`/`−` du stepper longue pression traverser le listener document en capture de `b-cart.js` sans dupliquer la logique de quantité ;
+- déclaré ce module dans `public/boutique/features/boutique.feature.js`.
 
 ---
 

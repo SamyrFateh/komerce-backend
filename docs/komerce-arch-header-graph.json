@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 359,
-    "filesWithFullHeaders": 332,
+    "scannedCodeFiles": 360,
+    "filesWithFullHeaders": 333,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 359,
+    "filesWithAnyHeaders": 360,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 717,
-    "edges": 4134,
+    "graphNodes": 720,
+    "edges": 4137,
     "dbTables": 109,
-    "doctrines": 133,
-    "impactAreas": 116,
+    "doctrines": 134,
+    "impactAreas": 117,
     "unresolvedCodeEdges": 393,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
@@ -34,7 +34,7 @@
     "notification": 15,
     "auth": 8,
     "logistics": 35,
-    "boutique": 36,
+    "boutique": 37,
     "catalog": 36,
     "checkout": 2,
     "shared-cart": 42,
@@ -59,7 +59,7 @@
     "cron": 1,
     "manual-test": 1,
     "middleware": 11,
-    "ui-component": 37,
+    "ui-component": 38,
     "ui-enhancer": 3,
     "ui-renderer": 6,
     "ui-page": 4,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 100,
-    "high": 149,
+    "high": 150,
     "low": 34
   },
   "nodes": [
@@ -1201,6 +1201,45 @@
       "version": "2026-06"
     },
     {
+      "id": "public/boutique/js/b-cart-stepper-guard.js",
+      "file": "public/boutique/js/b-cart-stepper-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "boutique-cart-stepper-event-guard",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "stepper_clicks",
+        "cart_state"
+      ],
+      "outputs": [
+        "unblocked_stepper_controls"
+      ],
+      "depends": [
+        "b-store.js"
+      ],
+      "usedBy": [
+        "boutique.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "panier_ouvert_ferme",
+        "interaction_sans_double_action"
+      ],
+      "impactAreas": [
+        "cart",
+        "product-grid",
+        "mobile-interactions"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "public/boutique/js/b-cart.js",
       "file": "public/boutique/js/b-cart.js",
       "type": "file",
@@ -1275,16 +1314,14 @@
       ],
       "outputs": [
         "desktop_sidebar_sync",
-        "merch_cards",
-        "promo_strip",
-        "category_focus"
+        "category_focus",
+        "nav_stack_height"
       ],
       "depends": [
         "b-bus.js",
-        "b-catalog.js",
+        "b-store.js",
         "b-scroll-owner.js",
-        "controllers/home-controller.js",
-        "shop-schema.js"
+        "controllers/home-controller.js"
       ],
       "usedBy": [
         "boutique.js"
@@ -1301,10 +1338,9 @@
       "impactAreas": [
         "desktop-catalog",
         "category-navigation",
-        "home-layout",
-        "side-cart-layout"
+        "home-layout"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-catalog.js",
@@ -1653,13 +1689,10 @@
         "contribution_state"
       ],
       "outputs": [
-        "banner_visibility",
-        "banner_content",
-        "group_shortcut"
+        "shared_cart_state_refresh"
       ],
       "depends": [
-        "b-store.js",
-        "b-utils.js"
+        "b-store.js"
       ],
       "usedBy": [
         "b-share-cart.js",
@@ -1671,9 +1704,8 @@
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "suivi_panier_visible",
-        "panier_ouvert_ferme",
-        "participant_peut_verifier"
+        "cockpit_groupe_source_unique",
+        "panier_ouvert_ferme"
       ],
       "impactAreas": [
         "shared-cart",
@@ -1681,7 +1713,7 @@
         "creator-flow",
         "navigation"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-group-cart-flow.js",
@@ -2983,7 +3015,7 @@
         "shared-cart",
         "responsive-layout"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/card-config.js",
@@ -17533,6 +17565,11 @@
       "doctrine": "panier_ouvert_ferme"
     },
     {
+      "id": "doctrine:interaction_sans_double_action",
+      "type": "doctrine",
+      "doctrine": "interaction_sans_double_action"
+    },
+    {
       "id": "doctrine:participant_lecture_seule",
       "type": "doctrine",
       "doctrine": "participant_lecture_seule"
@@ -17588,19 +17625,19 @@
       "doctrine": "favoris_locaux_simples"
     },
     {
-      "id": "doctrine:suivi_panier_visible",
+      "id": "doctrine:cockpit_groupe_source_unique",
       "type": "doctrine",
-      "doctrine": "suivi_panier_visible"
-    },
-    {
-      "id": "doctrine:participant_peut_verifier",
-      "type": "doctrine",
-      "doctrine": "participant_peut_verifier"
+      "doctrine": "cockpit_groupe_source_unique"
     },
     {
       "id": "doctrine:estimations_indicatives",
       "type": "doctrine",
       "doctrine": "estimations_indicatives"
+    },
+    {
+      "id": "doctrine:participant_peut_verifier",
+      "type": "doctrine",
+      "doctrine": "participant_peut_verifier"
     },
     {
       "id": "doctrine:createur_decide_gap",
@@ -18253,6 +18290,16 @@
       "area": "product-discovery"
     },
     {
+      "id": "impact:product-grid",
+      "type": "impact-area",
+      "area": "product-grid"
+    },
+    {
+      "id": "impact:mobile-interactions",
+      "type": "impact-area",
+      "area": "mobile-interactions"
+    },
+    {
       "id": "impact:side-cart",
       "type": "impact-area",
       "area": "side-cart"
@@ -18288,14 +18335,14 @@
       "area": "home-layout"
     },
     {
-      "id": "impact:side-cart-layout",
-      "type": "impact-area",
-      "area": "side-cart-layout"
-    },
-    {
       "id": "impact:modal-entry",
       "type": "impact-area",
       "area": "modal-entry"
+    },
+    {
+      "id": "impact:side-cart-layout",
+      "type": "impact-area",
+      "area": "side-cart-layout"
     },
     {
       "id": "impact:relais",
@@ -18426,11 +18473,6 @@
       "id": "impact:scroll-ownership",
       "type": "impact-area",
       "area": "scroll-ownership"
-    },
-    {
-      "id": "impact:product-grid",
-      "type": "impact-area",
-      "area": "product-grid"
     },
     {
       "id": "impact:recommendations",
@@ -20526,6 +20568,48 @@
       "label": "product-discovery"
     },
     {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "public/boutique/js/b-store.js",
+      "type": "depends",
+      "label": "b-store.js"
+    },
+    {
+      "from": "public/boutique/js/boutique.js",
+      "to": "public/boutique/js/b-cart-stepper-guard.js",
+      "type": "uses",
+      "label": "boutique.js"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "doctrine:panier_ouvert_ferme",
+      "type": "doctrine",
+      "label": "panier_ouvert_ferme"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "doctrine:interaction_sans_double_action",
+      "type": "doctrine",
+      "label": "interaction_sans_double_action"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "impact:cart",
+      "type": "impact",
+      "label": "cart"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "impact:product-grid",
+      "type": "impact",
+      "label": "product-grid"
+    },
+    {
+      "from": "public/boutique/js/b-cart-stepper-guard.js",
+      "to": "impact:mobile-interactions",
+      "type": "impact",
+      "label": "mobile-interactions"
+    },
+    {
       "from": "public/boutique/js/b-cart.js",
       "to": "public/boutique/js/b-store.js",
       "type": "depends",
@@ -20653,9 +20737,9 @@
     },
     {
       "from": "public/boutique/js/b-catalog-desktop-enhancers.js",
-      "to": "public/boutique/js/b-catalog.js",
+      "to": "public/boutique/js/b-store.js",
       "type": "depends",
-      "label": "b-catalog.js"
+      "label": "b-store.js"
     },
     {
       "from": "public/boutique/js/b-catalog-desktop-enhancers.js",
@@ -20668,12 +20752,6 @@
       "to": "public/boutique/js/controllers/home-controller.js",
       "type": "depends",
       "label": "controllers/home-controller.js"
-    },
-    {
-      "from": "public/boutique/js/b-catalog-desktop-enhancers.js",
-      "to": "public/boutique/js/shop-schema.js",
-      "type": "depends",
-      "label": "shop-schema.js"
     },
     {
       "from": "public/boutique/js/boutique.js",
@@ -20716,12 +20794,6 @@
       "to": "impact:home-layout",
       "type": "impact",
       "label": "home-layout"
-    },
-    {
-      "from": "public/boutique/js/b-catalog-desktop-enhancers.js",
-      "to": "impact:side-cart-layout",
-      "type": "impact",
-      "label": "side-cart-layout"
     },
     {
       "from": "public/boutique/js/b-catalog.js",
@@ -21156,12 +21228,6 @@
       "label": "b-store.js"
     },
     {
-      "from": "public/boutique/js/b-group-banner.js",
-      "to": "public/boutique/js/b-utils.js",
-      "type": "depends",
-      "label": "b-utils.js"
-    },
-    {
       "from": "public/boutique/js/b-share-cart.js",
       "to": "public/boutique/js/b-group-banner.js",
       "type": "uses",
@@ -21181,21 +21247,15 @@
     },
     {
       "from": "public/boutique/js/b-group-banner.js",
-      "to": "doctrine:suivi_panier_visible",
+      "to": "doctrine:cockpit_groupe_source_unique",
       "type": "doctrine",
-      "label": "suivi_panier_visible"
+      "label": "cockpit_groupe_source_unique"
     },
     {
       "from": "public/boutique/js/b-group-banner.js",
       "to": "doctrine:panier_ouvert_ferme",
       "type": "doctrine",
       "label": "panier_ouvert_ferme"
-    },
-    {
-      "from": "public/boutique/js/b-group-banner.js",
-      "to": "doctrine:participant_peut_verifier",
-      "type": "doctrine",
-      "label": "participant_peut_verifier"
     },
     {
       "from": "public/boutique/js/b-group-banner.js",
@@ -44799,6 +44859,42 @@
         "public/boutique/js/b-modal-core.js"
       ]
     },
+    "public/boutique/js/b-cart-stepper-guard.js": {
+      "role": "boutique-cart-stepper-event-guard",
+      "domain": "boutique",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-store.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/boutique.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "panier_ouvert_ferme",
+        "interaction_sans_double_action"
+      ],
+      "impactAreas": [
+        "cart",
+        "product-grid",
+        "mobile-interactions"
+      ],
+      "mustCheck": [
+        "doctrine:interaction_sans_double_action",
+        "doctrine:panier_ouvert_ferme",
+        "impact:cart",
+        "impact:mobile-interactions",
+        "impact:product-grid",
+        "public/boutique/js/b-store.js",
+        "public/boutique/js/boutique.js"
+      ]
+    },
     "public/boutique/js/b-cart.js": {
       "role": "boutique-cart-and-side-cart",
       "domain": "boutique",
@@ -44877,10 +44973,9 @@
       "purpose": null,
       "directDependsOn": [
         "public/boutique/js/b-bus.js",
-        "public/boutique/js/b-catalog.js",
+        "public/boutique/js/b-store.js",
         "public/boutique/js/b-scroll-owner.js",
-        "public/boutique/js/controllers/home-controller.js",
-        "public/boutique/js/shop-schema.js"
+        "public/boutique/js/controllers/home-controller.js"
       ],
       "directUsedBy": [
         "public/boutique/js/boutique.js"
@@ -44897,8 +44992,7 @@
       "impactAreas": [
         "desktop-catalog",
         "category-navigation",
-        "home-layout",
-        "side-cart-layout"
+        "home-layout"
       ],
       "mustCheck": [
         "doctrine:boutique_canal_decouverte",
@@ -44907,13 +45001,11 @@
         "impact:category-navigation",
         "impact:desktop-catalog",
         "impact:home-layout",
-        "impact:side-cart-layout",
         "public/boutique/js/b-bus.js",
-        "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-scroll-owner.js",
+        "public/boutique/js/b-store.js",
         "public/boutique/js/boutique.js",
-        "public/boutique/js/controllers/home-controller.js",
-        "public/boutique/js/shop-schema.js"
+        "public/boutique/js/controllers/home-controller.js"
       ]
     },
     "public/boutique/js/b-catalog.js": {
@@ -44977,7 +45069,6 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-desktop-global-cart-access.js",
         "public/boutique/js/b-desktop-sidebar.js",
         "public/boutique/js/b-desktop-upgrade.js",
@@ -45281,8 +45372,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "public/boutique/js/b-store.js",
-        "public/boutique/js/b-utils.js"
+        "public/boutique/js/b-store.js"
       ],
       "directUsedBy": [
         "public/boutique/js/b-share-cart.js",
@@ -45294,9 +45384,8 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "suivi_panier_visible",
-        "panier_ouvert_ferme",
-        "participant_peut_verifier"
+        "cockpit_groupe_source_unique",
+        "panier_ouvert_ferme"
       ],
       "impactAreas": [
         "shared-cart",
@@ -45305,9 +45394,8 @@
         "navigation"
       ],
       "mustCheck": [
+        "doctrine:cockpit_groupe_source_unique",
         "doctrine:panier_ouvert_ferme",
-        "doctrine:participant_peut_verifier",
-        "doctrine:suivi_panier_visible",
         "impact:creator-flow",
         "impact:navigation",
         "impact:participant-flow",
@@ -45315,7 +45403,6 @@
         "public/boutique/js/b-group-view.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-store.js",
-        "public/boutique/js/b-utils.js",
         "public/boutique/js/boutique.js"
       ]
     },
@@ -46379,7 +46466,9 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-cart-pill.js",
+        "public/boutique/js/b-cart-stepper-guard.js",
         "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-favs.js",
@@ -46548,7 +46637,6 @@
         "impact:tracking",
         "public/boutique/js/b-cart-pill.js",
         "public/boutique/js/b-checkout-render.js",
-        "public/boutique/js/b-group-banner.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-mini-cart.js",
         "public/boutique/js/b-modal-product.js",
@@ -46657,6 +46745,7 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-cart-pill.js",
+        "public/boutique/js/b-cart-stepper-guard.js",
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
@@ -47139,7 +47228,6 @@
         "impact:category-navigation",
         "impact:product-grid",
         "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-desktop-sidebar.js",
         "public/boutique/js/b-modal-suggestions.js",

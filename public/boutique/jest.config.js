@@ -8,7 +8,17 @@ module.exports = {
   },
   transformIgnorePatterns: ['/node_modules/'],
   setupFiles: ['./tests/unit/setup.js'],
-  collectCoverageFrom: ['js/**/*.js'],
+  collectCoverageFrom: [
+    'js/**/*.js',
+    '!js/dist/**',
+    '!js/**/*.test.js',
+    '!js/**/__tests__/**',
+  ],
+  coveragePathIgnorePatterns: [
+    '/js/dist/',
+    '\\.test\\.js$',
+  ],
+  coverageReporters: ['text-summary', 'json-summary', 'lcov'],
   clearMocks: true,
   restoreMocks: true,
 };
