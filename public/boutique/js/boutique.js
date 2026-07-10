@@ -10,7 +10,7 @@
  * @used-by       public/boutique/index.html
  * @doctrine      boutique_canal_decouverte, navigation_sans_friction, side_cart_non_intrusif
  * @impact-areas  boutique-home, product-discovery, side-cart, checkout, shared-cart, responsive-layout
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
@@ -94,10 +94,11 @@ import {
 import { installScrollOwner, scrollPageToElement } from './b-scroll-owner.js';
 import { install as installShareCart } from './b-share-cart.js';
 import './b-group-banner.js'; // chargé pour init auto si token actif
+import './b-cart-stepper-guard.js'; // correctif capture document vs boutons +/-
 
 'use strict';
 
-// â”€â”€ Desktop scroll fix : neutraliser style.top posé par setupMobile() â”€â”€
+// ── Desktop scroll fix : neutraliser style.top posé par setupMobile() ──
 (function resetDesktopScroll() {
   function applyDesktopReset() {
     if (window.innerWidth >= 900) {
@@ -114,8 +115,7 @@ import './b-group-banner.js'; // chargé pour init auto si token actif
   window.addEventListener('resize', applyDesktopReset);
 })();
 
-
-// â”€â”€ CONSTANTES KOMERCE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CONSTANTES KOMERCE ──────────────────────────────────────────────
 const KOMERCE_WA = '33699272526';
 const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
 
@@ -123,9 +123,9 @@ const PAVILION_CATEGORY_ALIASES = {
   'Créations personnelles': 'Sur-mesure',
 };
 
-// â•”══════════════════════════════════════════════════════════════════â•—
-// â•‘  §13 · INIT — Boot sequence, bnav, seeAll, global listeners      â•‘
-// â•š══════════════════════════════════════════════════════════════════â•
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  §13 · INIT — Boot sequence, bnav, seeAll, global listeners      ║
+// ╚══════════════════════════════════════════════════════════════════╝
 
 /**
  * Point d'entrée principal — initialise l'application Komerce boutique.
@@ -174,7 +174,7 @@ function setupFooterLinks() {
   });
 }
 
-// â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Boot ─────────────────────────────────────────────────────────────
 // ARCH-1 : remplace window.__kmrcCheckout par un listener bus.
 // Assigné AVANT init() pour que renderSideCart trouve le handler dès le premier rendu.
 bus.on('checkout:open', checkoutCart);
@@ -192,9 +192,9 @@ if (document.readyState === 'loading') {
   init();
 }
 
-// â”€â”€ Side cart checkout : pont window pour éviter la dépendance circulaire b-cartâ†”b-checkout â”€â”€
+// ── Side cart checkout : pont window pour éviter la dépendance circulaire b-cart↔b-checkout ──
 // ARCH-1 : checkout désormais via bus.on('checkout:open') — voir plus haut.
-// â”€â”€ Listener global délégué : modal carousel dots â”€â”€
+// ── Listener global délégué : modal carousel dots ──
 document.addEventListener('click', function(e) {
   let dot = e.target.closest('.k-modal-dot');
   if (!dot) return;
@@ -210,7 +210,3 @@ document.addEventListener('click', function(e) {
     d.classList.toggle('active', i === idx);
   });
 });
-
-
-
-
