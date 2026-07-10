@@ -57,8 +57,8 @@ jest.mock('../../js/b-bus.js', () => ({ bus: mockBus }));
 jest.mock('../../js/b-store.js', () => ({
   state: mockState,
   dom: mockDom,
-  $: jest.fn((selector) => document.querySelector(selector)),
-  $$: jest.fn((selector) => Array.from(document.querySelectorAll(selector))),
+  $: jest.fn((selector) => global.document.querySelector(selector)),
+  $$: jest.fn((selector) => Array.from(global.document.querySelectorAll(selector))),
   PAGE_SIZE: 24,
   scroll: mockScroll,
 }));
