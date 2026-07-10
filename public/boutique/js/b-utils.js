@@ -222,25 +222,15 @@ export function getAPI() {
   return K;
 }
 
-/**
- * GET via la couche centrale K.request.
- * @param {string} path
- * @param {{signal?: AbortSignal, timeoutMs?: number, retries?: number}} [options]
- *   FIX 2026-07-10 : les options (signal, timeoutMs) sont désormais TRANSMISES
- *   à K.request — avant, apiGet(path) les ignorait silencieusement et les
- *   AbortController posés côté checkout n'avaient aucun effet.
- */
 export function apiGet(path, options) {
   _assertApi();
   const opts = options || {};
-  const retries = Number.isFinite(opts.retries) ? opts.retries : 2;
+  const retries = opts.retries !== undefined ? opts.retries : 2;
   return window.K.request(path, 'GET', null, retries, opts);
 }
 export function apiPost(path, body, options) {
   _assertApi();
-  const opts = options || {};
-  const retries = Number.isFinite(opts.retries) ? opts.retries : 2;
-  return window.K.request(path, 'POST', body || null, retries, opts);
+  return window.K.request(path, 'POST', body || null, 2, options || {});
 }
 
 /* ── COMPAT LEGACY window.KUtils ─────────────────────────── */

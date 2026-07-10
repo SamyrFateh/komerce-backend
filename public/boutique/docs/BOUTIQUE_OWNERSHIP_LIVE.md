@@ -41,8 +41,8 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-catalog-desktop-enhancers.js` | 23 | 3 | 1/0 | Carte produit, Grille produits, Header, Hero, Chips catégories, Section catalogue |
 | `b-share-cart.js` | 25 | 1 | 0/0 | Panier, Header, Bottom-nav mobile |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |
+| `b-wallet.js` | 24 | 0 | 0/0 | Section catalogue |
 | `b-mini-cart.js` | 4 | 19 | 2/0 | Panier |
-| `b-wallet.js` | 22 | 0 | 0/0 | Section catalogue |
 | `b-modal-nav.js` | 10 | 9 | 1/4 | Modal produit |
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
 | `b-identity.js` | 11 | 5 | 0/0 | — |

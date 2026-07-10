@@ -112,7 +112,7 @@ describe('group-api — endpoints publics (fetch direct)', () => {
     const result = await getSharedCartPublic('tok-1');
     expect(global.fetch).toHaveBeenCalledWith(
       '/api/shared-carts/public/tok-1',
-      expect.objectContaining({ credentials: 'include' })
+      { credentials: 'include', signal: expect.any(AbortSignal) }
     );
     expect(result).toEqual({ cart: { id: 1 }, items: [] });
   });
@@ -149,12 +149,13 @@ describe('group-api — endpoints publics (fetch direct)', () => {
     );
     const payload = { amount_kmf: 1000, participant_phone: '+269123' };
     const result = await upsertEstimation('tok-1', payload);
-    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/estimations', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/estimations', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    }));
+      signal: expect.any(AbortSignal),
+    });
     expect(result).toEqual({ id: 5 });
   });
 
@@ -215,7 +216,7 @@ describe('group-api — endpoints publics (fetch direct)', () => {
     const result = await getEstimationByPhone('tok-1', '+269123');
     expect(global.fetch).toHaveBeenCalledWith(
       '/api/shared-carts/public/tok-1/estimations/by-phone?phone=%2B269123',
-      expect.objectContaining({ credentials: 'include' })
+      { credentials: 'include', signal: expect.any(AbortSignal) }
     );
     expect(result).toEqual({ amount_kmf: 500 });
   });
@@ -238,12 +239,13 @@ describe('group-api — endpoints publics (fetch direct)', () => {
     );
     const payload = { amount_kmf: 2000, contributor_name: 'Ali', contributor_email: 'a@b.com', contributor_phone: '+269' };
     const result = await createContribution('tok-1', payload);
-    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/contributions', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith('/api/shared-carts/public/tok-1/contributions', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    }));
+      signal: expect.any(AbortSignal),
+    });
     expect(result).toEqual({ checkout_url: 'https://stripe/x' });
   });
 
