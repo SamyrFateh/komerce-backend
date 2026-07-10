@@ -36,6 +36,7 @@ module.exports = {
       '../js/b-bus.js',
       '../js/b-cart-core.js',
       '../js/b-cart-pill.js',
+      '../js/b-cart-stepper-guard.js',
       '../js/b-cart.js',
       '../js/b-desktop-global-cart-access.js',
       '../js/b-desktop-sidebar.js',
@@ -140,6 +141,7 @@ module.exports = {
       'scroll-owner / isDesktop (b-scroll-owner.js)',
       'cart-core / showToast / cartTotal / cartQty (b-cart-core.js)',
       'cart / openCart / closeCart / renderCart / clearCart (b-cart.js)',
+      'cart-stepper-guard / installCartStepperGuard (b-cart-stepper-guard.js)',
       'modal / openModal (b-modal.js)',
     ],
     consumes: [
@@ -160,5 +162,4 @@ module.exports = {
     'tout CSS transversal (tokens/reset/layout) ou générique boutique (cart/desktop/interactions) doit être listé dans files.css',
     'tout test unitaire/spec couvrant un fichier files.js de ce manifeste doit être listé dans files.tests',
   ],
-
 };
