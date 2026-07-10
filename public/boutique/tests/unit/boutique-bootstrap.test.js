@@ -108,8 +108,8 @@ test('boutique câble le boot, les événements globaux et le reset desktop', ()
     <div class="k-modal-carousel-track">
       <div class="k-modal-slide"></div><div class="k-modal-slide"></div>
     </div>
+    <button class="k-modal-dot" data-index="0"></button>
     <button class="k-modal-dot" data-index="1"></button>
-    <button class="k-modal-dot"></button>
   `;
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
   Object.defineProperty(document, 'readyState', { configurable: true, value: 'loading' });
