@@ -3,26 +3,13 @@
 /**
  * tests/unit/b-wallet.test.js
  *
- * Module js/b-wallet.js (329L) — vue "Mon porte-monnaie" (solde + historique).
- * 0% de couverture réelle avant cette session.
- *
- * Seule renderWalletView() est exportée ; le reste (gate OTP, carte de solde,
- * état vide, liste de transactions, groupement par commande) est testé au
- * travers du DOM qu'elle produit — même approche que b-tracking.js.
+ * Module js/b-wallet.js — vue "Mon porte-monnaie".
  *
  * Couverture visée :
- *   renderWalletView() : montage initial (#k-wallet-view créé + ancré),
- *     réutilisation si déjà présent, gate OTP si pas de solde ET pas
- *     d'identité, affichage solde>0 / solde=0, avec/sans transactions.
- *   renderAuthGate()   : clic -> requireIdentity() -> succès (re-render) /
- *     annulation (réactive le bouton).
- *   buildBalanceCard() : urgence d'expiration (0j, 1j, <=7j, >7j), CTA
- *     "Faire mes achats" clique sur l'onglet shop.
- *   buildEmptyState()  : rendu si balance = 0.
- *   groupTransactions() (via buildTransactionList) : masque reversal/reason
- *     inconnu, regroupe par order_reference, cache le net=0, garde les
- *     orphelines (sans order_reference), tri anti-chronologique, en-têtes
- *     de mois.
+ *   renderWalletView() : montage initial, réutilisation DOM, gate OTP,
+ *     auth expirée, état erreur/retry, solde disponible, échéance et historique.
+ *   buildBalanceCard() : urgence d'expiration, CTA boutique.
+ *   groupTransactions() : filtre les écritures techniques et affiche l'impact net.
  */
 
 jest.mock('../../js/b-utils.js', () => ({
@@ -42,6 +29,7 @@ const { flush } = require('./helpers/boutiqueTestKit');
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  jest.clearAllMocks();
   getCurrentIdentity.mockReturnValue(null);
 });
 
@@ -83,7 +71,7 @@ describe('renderWalletView — montage', () => {
   });
 });
 
-describe('renderWalletView — gate OTP', () => {
+describe('renderWalletView — gate OTP / session', () => {
   it('affiche la gate si aucune donnée ET aucune identité', async () => {
     apiGet.mockResolvedValue(null);
     getCurrentIdentity.mockReturnValue(null);
@@ -94,13 +82,37 @@ describe('renderWalletView — gate OTP', () => {
     expect(el.textContent).toContain('Identifiez-vous');
   });
 
-  it('n\'affiche pas la gate si une identité existe déjà, même sans solde', async () => {
+  it('n\'affiche pas la gate si une identité existe déjà et qu\'il n\'y a pas d\'erreur API', async () => {
     apiGet.mockResolvedValue(null);
     getCurrentIdentity.mockReturnValue({ name: 'Fatima' });
     renderWalletView();
     await flush();
     const el = document.getElementById('k-wallet-view');
     expect(el.querySelector('#k-wlt-auth-btn')).toBeNull();
+    expect(el.querySelector('.k-wlt-zero')).not.toBeNull();
+  });
+
+  it('401 sans identité → gate d\'identification', async () => {
+    const err401 = Object.assign(new Error('HTTP 401'), { status: 401 });
+    apiGet.mockRejectedValue(err401);
+    getCurrentIdentity.mockReturnValue(null);
+    renderWalletView();
+    await flush();
+    const el = document.getElementById('k-wallet-view');
+    expect(el.querySelector('#k-wlt-auth-btn')).not.toBeNull();
+    expect(el.textContent).toContain('Identifiez-vous');
+  });
+
+  it('401 avec identité locale → gate session expirée, pas état vide trompeur', async () => {
+    const err401 = Object.assign(new Error('HTTP 401'), { status: 401 });
+    apiGet.mockRejectedValue(err401);
+    getCurrentIdentity.mockReturnValue({ name: 'Fatima' });
+    renderWalletView();
+    await flush();
+    const el = document.getElementById('k-wallet-view');
+    expect(el.querySelector('#k-wlt-auth-btn')).not.toBeNull();
+    expect(el.textContent).toContain('Session expirée');
+    expect(el.querySelector('.k-wlt-zero')).toBeNull();
   });
 
   it('clic sur le bouton gate : succès identité -> recharge la vue wallet', async () => {
@@ -110,7 +122,6 @@ describe('renderWalletView — gate OTP', () => {
     renderWalletView();
     await flush();
 
-    // Après identification réussie, le second renderWalletView() doit voir une identité.
     getCurrentIdentity.mockReturnValue({ name: 'Fatima' });
     apiGet.mockResolvedValue({ balance_kmf: 0 });
 
@@ -148,6 +159,7 @@ describe('renderWalletView — solde', () => {
     const el = document.getElementById('k-wallet-view');
     expect(el.querySelector('.k-wlt-zero')).not.toBeNull();
     expect(el.querySelector('.k-wlt-card')).toBeNull();
+    expect(el.textContent).toContain('Aucun crédit disponible');
   });
 
   it('affiche la carte de solde si balance > 0', async () => {
@@ -162,6 +174,7 @@ describe('renderWalletView — solde', () => {
     const card = el.querySelector('.k-wlt-card');
     expect(card).not.toBeNull();
     expect(card.textContent).toContain('5000 KMF');
+    expect(card.textContent).toContain('Disponible');
   });
 
   it('n\'affiche pas la liste de transactions si vide même avec solde > 0', async () => {
@@ -190,6 +203,23 @@ describe('renderWalletView — solde', () => {
     await flush();
     const el = document.getElementById('k-wallet-view');
     expect(el.querySelector('.k-wlt-tx-wrap')).not.toBeNull();
+    expect(el.querySelector('.k-wlt-tx-row')).not.toBeNull();
+  });
+
+  it('affiche aussi les mouvements si le solde est revenu à 0', async () => {
+    apiGet.mockImplementation((path) =>
+      path === '/api/wallet'
+        ? Promise.resolve({ balance_kmf: 0 })
+        : Promise.resolve({
+            transactions: [
+              { type: 'debit', reason: 'checkout', amount_kmf: 2000, created_at: '2026-06-01T00:00:00Z' },
+            ],
+          })
+    );
+    renderWalletView();
+    await flush();
+    const el = document.getElementById('k-wallet-view');
+    expect(el.querySelector('.k-wlt-zero')).not.toBeNull();
     expect(el.querySelector('.k-wlt-tx-row')).not.toBeNull();
   });
 
@@ -252,14 +282,11 @@ describe('renderWalletView — solde', () => {
     const shopBtn = document.querySelector('[data-tab="shop"]');
     const spy = jest.spyOn(shopBtn, 'click');
     document.getElementById('k-wlt-cta-btn').click();
-    expect(spy).not.toThrow;
+    expect(spy).toHaveBeenCalled();
   });
 });
 
 describe('renderWalletView — résilience réseau', () => {
-  // FIX 2026-07-10 : une panne technique (réseau/timeout/5xx) n'est PLUS
-  // déguisée en gate d'identification — elle affiche un état erreur +
-  // Réessayer. La gate reste réservée aux 401/403 (route privée, normal).
   it('panne réseau sans identité → état erreur + Réessayer (pas la gate)', async () => {
     apiGet.mockRejectedValue(new Error('network down'));
     getCurrentIdentity.mockReturnValue(null);
@@ -269,13 +296,28 @@ describe('renderWalletView — résilience réseau', () => {
     expect(document.getElementById('k-wlt-auth-btn')).toBeNull();
   });
 
-  it('401 sans identité → gate d\'identification', async () => {
-    const err401 = Object.assign(new Error('HTTP 401'), { status: 401 });
-    apiGet.mockRejectedValue(err401);
-    getCurrentIdentity.mockReturnValue(null);
+  it('timeout → état erreur + Réessayer, jamais loader résiduel', async () => {
+    const err = Object.assign(new Error('timeout'), { name: 'TimeoutError', isTimeout: true });
+    apiGet.mockRejectedValue(err);
     renderWalletView();
     await flush();
-    expect(document.getElementById('k-wlt-auth-btn')).not.toBeNull();
+    const el = document.getElementById('k-wallet-view');
+    expect(el.textContent).toContain('porte-monnaie met trop de temps');
+    expect(el.querySelector('.k-wlt-loading')).toBeNull();
+    expect(el.querySelector('#k-wlt-retry-btn')).not.toBeNull();
+  });
+
+  it('échec transactions seul → solde affiché + avertissement historique', async () => {
+    apiGet.mockImplementation((path) =>
+      path === '/api/wallet'
+        ? Promise.resolve({ balance_kmf: 4000 })
+        : Promise.reject(new Error('tx down'))
+    );
+    renderWalletView();
+    await flush();
+    const el = document.getElementById('k-wallet-view');
+    expect(el.querySelector('.k-wlt-card')).not.toBeNull();
+    expect(el.textContent).toContain('Historique momentanément indisponible');
   });
 });
 
@@ -293,9 +335,6 @@ describe('groupTransactions (via buildTransactionList)', () => {
     const el = await renderWithTx([
       { type: 'reversal', reason: 'reversal', amount_kmf: 100, created_at: '2026-06-01T00:00:00Z' },
     ]);
-    // La transaction reversal est filtrée par groupTransactions ; la liste
-    // reçoit un tableau non vide (donc pas l'état "Aucun mouvement", qui ne
-    // s'affiche que si transactions.length === 0 en amont) mais 0 ligne rendue.
     expect(el.querySelectorAll('.k-wlt-tx-row').length).toBe(0);
   });
 
@@ -324,12 +363,6 @@ describe('groupTransactions (via buildTransactionList)', () => {
     ]);
     expect(el.querySelectorAll('.k-wlt-tx-row').length).toBe(0);
   });
-
-  // Note : la branche "transactions.length === 0" à l'intérieur de
-  // buildTransactionList() est du code mort depuis renderWalletView(), qui
-  // n'appelle buildTransactionList() que si transactions.length > 0 (cf.
-  // garde ligne ~113). Non testée ici en conséquence — signalé pour audit
-  // plutôt que simulé artificiellement.
 
   it('garde les transactions orphelines (sans order_reference)', async () => {
     const el = await renderWithTx([
@@ -363,7 +396,6 @@ describe('groupTransactions (via buildTransactionList)', () => {
     ]);
     const months = el.querySelectorAll('.k-wlt-month');
     expect(months.length).toBe(2);
-    // Le plus récent (juin) doit apparaître en premier.
     expect(months[0].textContent.toLowerCase()).toContain('juin');
   });
 });
