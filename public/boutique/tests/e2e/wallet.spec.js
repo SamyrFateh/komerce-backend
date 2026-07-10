@@ -1,79 +1,84 @@
 /**
- * @e2e   wallet.spec.js
- * @feature wallet-loyalty
- * @brief Porte-monnaie : chargement, erreur + retry, gate auth, solde
+ * @e2e   authenticated/wallet.spec.js
+ * @feature wallet
+ * @brief Porte-monnaie avec une VRAIE session (storageState posé par
+ *        auth.setup.js — compte de test dédié, jamais un compte réel).
+ *
+ * Complète wallet.spec.js (public) qui couvre volontairement les états
+ * SANS session (E10 — 401 → gate d'identification). Ici, la session existe
+ * déjà : on vérifie qu'on n'atterrit JAMAIS sur le gate d'auth, et qu'un
+ * état de solde réel (carte solde ou solde à zéro) s'affiche.
+ *
+ * N'exécute aucune action destructive/financière (pas de débit, pas de
+ * commande) — lecture seule (GET /api/wallet, GET /api/wallet/transactions).
+ *
+ * Ignoré si TEST_ACCOUNT_PHONE/TEST_ACCOUNT_OTP absents (voir auth.setup.js) :
+ * dans ce cas, storageState n'existe pas et ce projet ne tourne pas du tout.
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
-const { BASE_URL, navigateToTab } = require('./helpers/boutique.helpers');
+const { BASE_URL } = require('../helpers/boutique.helpers');
 
-test.describe('E-WALLET — Porte-monnaie', () => {
-
-  test('E8 — L\'onglet wallet finit de charger (pas de spinner infini)', async ({ page }) => {
+test.describe('E-WALLET-AUTH — Porte-monnaie (session réelle)', () => {
+  test('EA1 — Session authentifiée → jamais le gate d\'identification', async ({ page }) => {
     await page.goto(BASE_URL);
-    await navigateToTab(page, 'wallet');
+    await page.locator('[data-tab="wallet"]').first().click();
 
-    // L'élément wallet-view doit exister
     const walletView = page.locator('#k-wallet-view');
     await expect(walletView).toBeAttached({ timeout: 5_000 });
 
-    // Attendre que "Chargement" disparaisse (remplacé par contenu, erreur ou gate)
+    // Attend un état terminal (jamais de loader résiduel — même contrat que
+    // les tests publics E8/E9/E10).
     await page.waitForFunction(
       () => {
         const el = document.getElementById('k-wallet-view');
-        if (!el) return false;
-        const text = el.textContent || '';
-        return !text.includes('Chargement…') && text.length > 10;
+        return !!el && !el.textContent.includes('Chargement…') && el.textContent.length > 5;
       },
       { timeout: 15_000 }
     );
 
-    // On doit être dans un des 3 états terminaux : données, erreur, ou gate auth
-    const content = await walletView.textContent();
-    const terminal =
-      content.includes('Identifiez-vous') ||   // gate auth (401, normal sans session)
-      content.includes('KMF') ||               // solde affiché
-      content.includes('Aucune opération') ||  // wallet vide
-      content.includes('Réessayer') ||          // erreur + retry
-      content.includes('Impossible');           // erreur
-    expect(terminal).toBe(true);
-  });
+    // Le point qui distingue ce test des specs publics : avec une session
+    // valide, on ne doit JAMAIS retomber sur le gate d'auth (#k-wlt-auth-btn),
+    // ni sur "Identifiez-vous" / "Session expirée".
+    const authGate = page.locator('#k-wlt-auth-btn');
+    await expect(authGate).toHaveCount(0);
 
-  test('E9 — Wallet timeout API → état erreur + bouton Réessayer (jamais de loader infini)', async ({ page }) => {
-    // Bloquer l'API wallet
-    await page.route('**/api/wallet**', () => { /* pend — ne jamais répondre */ });
-    await page.goto(BASE_URL);
-    await navigateToTab(page, 'wallet');
-
-    // Le timeout central (10s) doit déclencher l'état erreur
-    await page.waitForSelector('#k-wlt-retry-btn', { timeout: 15_000 });
-
-    const walletView = page.locator('#k-wallet-view');
     const text = await walletView.textContent();
-    expect(text).not.toContain('Chargement…');
-    expect(text).toMatch(/Réessayer/);
+    expect(text).not.toContain('Session expirée');
+    expect(text).not.toContain('Identifiez-vous');
   });
 
-  test('E10 — Wallet 401 sans session → gate d\'identification (pas une erreur)', async ({ page }) => {
+  test('EA2 — Solde affiché : carte solde ou état zéro, jamais une erreur', async ({ page }) => {
     await page.goto(BASE_URL);
-    await navigateToTab(page, 'wallet');
+    await page.locator('[data-tab="wallet"]').first().click();
 
-    // Sans session active, /api/wallet retourne 401
     const walletView = page.locator('#k-wallet-view');
     await page.waitForFunction(
       () => {
         const el = document.getElementById('k-wallet-view');
-        return el && !el.textContent.includes('Chargement…') && el.textContent.length > 10;
+        return !!el && !el.textContent.includes('Chargement…') && el.textContent.length > 5;
       },
       { timeout: 15_000 }
     );
 
-    const text = await walletView.textContent();
-    // Sans session → gate auth ou erreur (les deux sont des états terminaux valides)
-    const isAuthGate = text.includes('Identifiez-vous');
-    const isError = text.includes('Réessayer') || text.includes('Impossible');
-    expect(isAuthGate || isError).toBe(true);
-    // Jamais un loader résiduel
-    expect(text).not.toContain('Chargement…');
+    // Un des deux états de solde réel doit être présent (jamais les deux,
+    // jamais aucun — cf. renderWalletView : balance > 0 → k-wlt-card,
+    // sinon k-wlt-zero).
+    const balanceCard = page.locator('.k-wlt-card');
+    const zeroState = page.locator('.k-wlt-zero');
+    const hasBalanceCard = (await balanceCard.count()) > 0;
+    const hasZeroState = (await zeroState.count()) > 0;
+    expect(hasBalanceCard || hasZeroState).toBe(true);
+    expect(hasBalanceCard && hasZeroState).toBe(false);
+
+    // Si un historique est rendu, les montants doivent être au format KMF
+    // (pas de "NaN" / valeur brute non formatée — régression déjà vue côté
+    // Jest sur toLocaleString('fr-FR')).
+    const txWrap = page.locator('.k-wlt-tx-wrap');
+    if ((await txWrap.count()) > 0) {
+      const firstAmount = await txWrap.locator('.k-wlt-tx-amt').first().textContent();
+      expect(firstAmount).not.toContain('NaN');
+      expect(firstAmount).toMatch(/KMF/);
+    }
   });
 });

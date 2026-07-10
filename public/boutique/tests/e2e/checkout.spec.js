@@ -88,8 +88,11 @@ test.describe('E-CHECKOUT — Checkout complet', () => {
 
     const isDisabled = await confirmBtn.isDisabled();
     if (!isDisabled) {
-      // Le bouton est activé → un relais est affiché
-      await expect(page.locator('text=Relais')).toBeAttached();
+      // Le bouton est activé → un relais est réellement sélectionné/chargé.
+      // #ck-relais-summary n'est créé que dans ce cas précis (cf. b-checkout.js) ;
+      // un simple text=Relais matche aussi le footer, le hero, les badges de
+      // réassurance modale, etc. → strict mode violation (11 éléments).
+      await expect(page.locator('#ck-relais-summary')).toBeAttached();
     } else {
       // Le bouton reste disabled → on doit être en erreur ou loading, JAMAIS en état incohérent
       const text = await confirmBtn.textContent();

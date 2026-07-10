@@ -1145,7 +1145,14 @@ async function _renderGroupViewImpl(opts = {}) {
     return;
   } else {
     // /mine a échoué (réseau/auth) : dernier recours, restauration sessionStorage.
-    const restored = await ensureCreatorCartState();
+    // FIX 2026-07-10-b — ensureCreatorCartState() retombe sur restoreSharedCartFromBackend(),
+    // qui retape le MÊME /mine si l'état n'est pas déjà en mémoire (cf. son early-return
+    // state.shareToken/state.shareId). Si /mine a déjà timeout ci-dessus, relancer le même
+    // appel ne peut que reproduire le même délai — ça double le budget global (2×10s = 20s,
+    // au-delà de ce que la doctrine "timeout central" est censée garantir, cf. E13b) sans
+    // aucune chance de réussir. On ne retente pas dans ce cas précis.
+    const ownerTimedOut = !!(ownerFetchErr && (ownerFetchErr.isTimeout || ownerFetchErr.name === 'TimeoutError'));
+    const restored = ownerTimedOut ? false : await ensureCreatorCartState();
     if (!restored) {
       // FIX 2026-07-10 : distinguer la nature de l'échec.
       //   401/403 (pas de session) → "Aucun panier actif" (comportement voulu).

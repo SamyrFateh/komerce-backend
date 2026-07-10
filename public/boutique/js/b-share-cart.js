@@ -42,6 +42,12 @@ import {
 import { makeInput, makeIntlPhoneInput } from './b-checkout.js';
 import { requireIdentity } from './b-identity.js';
 import { sanitize } from './b-utils.js'; // GOV-10-B2
+// FIX 2026-07-10-b — restoreSharedCartFromBackend() utilisait un fetch() nu
+// (cf. E13b) : sur /mine pendu (pool DB saturé, panne), la promesse ne se
+// réglait jamais → même symptôme que le bug d'origine (chargement infini),
+// simplement déplacé du chemin direct getOwnerSharedCarts() vers ce fallback
+// de restauration. On réutilise le même wrapper garanti (Promise.race, ≤10s).
+import { fetchWithTimeout } from './group/group-api.js';
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
 const API_MINE = '/api/shared-carts/mine';
@@ -158,7 +164,7 @@ export function clearShareState() {
 /* ── Restauration backend : source de vérité P0 ─────────────────── */
 export async function restoreSharedCartFromBackend({ silent = true } = {}) {
   try {
-    const res = await fetch(API_MINE, { credentials: 'include' });
+    const res = await fetchWithTimeout(API_MINE, { credentials: 'include' });
     if (!res.ok) {
       // FIX S2-05 — utilisateur non connecté : ne pas effacer l'état local chargé
       // depuis sessionStorage. Le shareToken restera valide pour startShareFlow().

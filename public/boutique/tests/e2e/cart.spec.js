@@ -7,7 +7,7 @@
 const { test, expect } = require('@playwright/test');
 const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
-  closeModal, openCartDrawer, cardCount,
+  closeModal, openCartDrawer, getCartItems, cardCount,
   IS_REMOTE,
 } = require('./helpers/boutique.helpers');
 
@@ -41,9 +41,9 @@ test.describe('E-CART — Panier', () => {
     await addToCartFromModal(page);
     await openCartDrawer(page);
 
-    // Au moins un article dans le drawer
-    const items = page.locator('.k-cart-item, .k-sc-item, #k-cart-items .k-cart-row');
-    await expect(items.first()).toBeAttached({ timeout: 5_000 });
+    // Au moins un article dans le drawer (scopé desktop/mobile — cf. getCartItems)
+    const items = await getCartItems(page);
+    await expect(items.first()).toBeVisible({ timeout: 5_000 });
     const count = await items.count();
     expect(count).toBeGreaterThan(0);
   });
@@ -69,21 +69,22 @@ test.describe('E-CART — Panier', () => {
     await addToCartFromModal(page);
     await openCartDrawer(page);
 
-    const firstItem = page.locator('.k-cart-item, .k-sc-item, #k-cart-items .k-cart-row').first();
-    await expect(firstItem).toBeAttached({ timeout: 5_000 });
+    const firstItem = (await getCartItems(page)).first();
+    await expect(firstItem).toBeVisible({ timeout: 5_000 });
 
-    // Chercher un bouton + dans l'item
-    const plusBtn = firstItem.locator('button:has-text("+"), .k-qty-plus, [data-action="qty-plus"]').first();
-    if ((await plusBtn.count()) > 0) {
-      await plusBtn.click();
-      await page.waitForTimeout(300);
-      // Le badge global doit avoir augmenté
-      const badge = parseInt(
-        (await page.locator('#k-modal-cart-badge, #k-cart-badge, [data-cart-count]').first()
-          .textContent().catch(() => '0')) || '0', 10
-      );
-      expect(badge).toBeGreaterThanOrEqual(2);
-    }
+    // Bouton + : desktop = .k-sc-step-plus, mobile = .k-qty-btn (distingué par le texte "+")
+    const plusBtn = firstItem.locator(
+      '.k-sc-step-plus, button:has-text("+"), .k-qty-plus, [data-action="qty-plus"]'
+    ).first();
+    await expect(plusBtn).toBeVisible({ timeout: 5_000 });
+    await plusBtn.click();
+    await page.waitForTimeout(300);
+    // Le badge global doit avoir augmenté
+    const badge = parseInt(
+      (await page.locator('#k-modal-cart-badge, #k-cart-badge, [data-cart-count]').first()
+        .textContent().catch(() => '0')) || '0', 10
+    );
+    expect(badge).toBeGreaterThanOrEqual(2);
   });
 
   test('E3e — Suppression d\'un article du panier', async ({ page }) => {
@@ -92,20 +93,20 @@ test.describe('E-CART — Panier', () => {
     await addToCartFromModal(page);
     await openCartDrawer(page);
 
-    const items = page.locator('.k-cart-item, .k-sc-item, #k-cart-items .k-cart-row');
-    await expect(items.first()).toBeAttached({ timeout: 5_000 });
+    const items = await getCartItems(page);
+    await expect(items.first()).toBeVisible({ timeout: 5_000 });
     const countBefore = await items.count();
 
-    // Bouton supprimer sur le premier item
+    // Bouton supprimer : desktop = .k-sc-item-remove, mobile = .k-cart-item-remove
+    // (texte réel "✕", pas "×" — cf. b-cart.js)
     const removeBtn = items.first().locator(
-      'button:has-text("×"), .k-cart-remove, [data-action="remove"], .k-sc-remove'
+      'button:has-text("✕"), button:has-text("×"), .k-cart-item-remove, .k-sc-item-remove, [data-action="remove"]'
     ).first();
-    if ((await removeBtn.count()) > 0) {
-      await removeBtn.click();
-      await page.waitForTimeout(500);
-      const countAfter = await items.count();
-      expect(countAfter).toBeLessThan(countBefore);
-    }
+    await expect(removeBtn).toBeVisible({ timeout: 5_000 });
+    await removeBtn.click();
+    await page.waitForTimeout(500);
+    const countAfter = await items.count();
+    expect(countAfter).toBeLessThan(countBefore);
   });
 
   test('E3f — Le bouton Commander est présent dans le drawer', async ({ page }) => {

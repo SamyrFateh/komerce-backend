@@ -5,7 +5,9 @@
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
-const { BASE_URL, navigateToTab } = require('./helpers/boutique.helpers');
+const {
+  BASE_URL, navigateToTab, addFirstProductToCart, openCartDrawer, IS_REMOTE,
+} = require('./helpers/boutique.helpers');
 
 test.describe('E-GROUP — Panier groupe', () => {
 
@@ -77,5 +79,29 @@ test.describe('E-GROUP — Panier groupe', () => {
       text.includes('Impossible') ||
       text.includes('Erreur');
     expect(validResponse).toBe(true);
+  });
+
+  test('E14b — \"Partager\" ouvre le formulaire de panier groupe (sans créer réellement)', async ({ page }) => {
+    test.skip(!IS_REMOTE, 'Nécessite un catalogue réel (backend) — lancer avec BASE_URL distant');
+
+    // Volontairement pas de vraie création de shared-cart contre la prod :
+    // startShareFlow() n'appelle createSharedCart() qu'après confirmation du
+    // formulaire (promptInit) — on s'arrête juste avant, en fermant via ✕.
+    // Ça vérifie l'UI (b-share-cart.js) sans polluer la base de données réelle.
+    await addFirstProductToCart(page);
+    await openCartDrawer(page);
+
+    const isDesktopViewport = await page.evaluate(() => window.innerWidth >= 900);
+    const shareBtn = page.locator(isDesktopViewport ? '#k-sc-share' : '#k-cart-share');
+    await expect(shareBtn).toBeVisible({ timeout: 5_000 });
+    await shareBtn.click();
+
+    const modal = page.locator('.k-share-modal-overlay');
+    await expect(modal).toBeVisible({ timeout: 5_000 });
+    await expect(modal.locator('.k-sm-title')).toContainText('Partager');
+
+    // Fermeture sans soumettre — aucun appel réseau de création déclenché.
+    await modal.locator('.k-sm-close').click();
+    await expect(modal).toHaveCount(0, { timeout: 3_000 });
   });
 });

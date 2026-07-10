@@ -156,29 +156,69 @@ async function addToCartFromModal(page) {
   );
 }
 
-/** Ouvre le drawer/tiroir panier (depuis le header ou la barre de nav). */
+/**
+ * Ouvre le drawer/tiroir panier (depuis le header ou la barre de nav).
+ *
+ * PIÈGE (cf. b-cart.js `openCart()`) : sur desktop, #k-cart-btn (la « dame »)
+ * n'ouvre PAS un tiroir — il émet directement `checkout:open` et bascule sur
+ * le flow de commande (`if (isDesktop()) { bus.emit('checkout:open'); return; }`).
+ * Le side-cart desktop (#k-side-cart) est un panneau PERMANENT, déjà visible
+ * dès que le panier a des articles (classe .has-items posée par
+ * renderSideCart()) — cliquer #k-cart-btn ici serait donc contre-productif :
+ * ça ouvrirait le checkout par-dessus et rendrait les steppers +/- inatteignables.
+ * On ne clique le trigger qu'en mobile, où il ouvre réellement #k-cart-drawer.
+ */
 async function openCartDrawer(page) {
   // Fermer la modale si elle est encore ouverte
   const modalOpen = await page.locator('#k-modal-overlay.open').count();
   if (modalOpen) await closeModal(page);
 
-  // Sur mobile : le bouton « Panier » est dans la barre de nav (#k-bnav)
-  // Sur desktop : bouton #k-cart-btn ou header
+  const isDesktopViewport = await page.evaluate(() => window.innerWidth >= 900);
+
+  if (isDesktopViewport) {
+    // Desktop : le side-cart est déjà affiché (permanent) dès que le panier
+    // a des articles. On attend juste sa vraie visibilité (pas seulement
+    // "attached" — #k-sc-items reste attaché même quand le panneau est en
+    // display:none via .k-side-cart:not(.has-items)).
+    const sideCart = page.locator('#k-side-cart.has-items');
+    await expect(sideCart).toBeVisible({ timeout: 5_000 });
+    return;
+  }
+
+  // Mobile : le bouton panier est dans la barre de nav (#k-bnav) et ouvre
+  // réellement #k-cart-drawer / #k-cart-overlay (classe .open).
   const trigger = page.locator(
     '[data-view="cart"], #k-cart-btn, #k-header-cart-btn, [data-action="open-cart"], button:has-text("Panier")'
   ).first();
   if ((await trigger.count()) > 0) {
     await trigger.click();
-    // Attendre que le side-cart soit visible (animation)
-    await page.waitForSelector('.k-side-cart.open, #k-side-cart.open, #k-sc-items', {
-      state: 'attached',
+    await page.waitForSelector('#k-cart-drawer.open, #k-cart-overlay.open', {
+      state: 'visible',
       timeout: 5_000,
     }).catch(() => {});
     await page.waitForTimeout(400);
   }
 }
 
-/** Ajoute un produit au panier depuis la page d'accueil (flow complet). */
+/**
+ * Retourne le locator des articles du panier, scopé au bon conteneur selon
+ * le viewport.
+ *
+ * PIÈGE : desktop (#k-side-cart .k-sc-item) et mobile (#k-cart-body
+ * .k-cart-item) sont deux DOM distincts qui coexistent dans la page — le
+ * side-cart desktop reste présent (juste masqué en CSS) même sur mobile.
+ * Un sélecteur non scopé (`.k-cart-item, .k-sc-item, ...`) matche les deux ;
+ * `.first()` retombe alors sur le premier en ordre DOM, qui peut être
+ * l'élément caché → faux « hidden » sur toBeVisible().
+ */
+async function getCartItems(page) {
+  const isDesktopViewport = await page.evaluate(() => window.innerWidth >= 900);
+  return isDesktopViewport
+    ? page.locator('#k-side-cart .k-sc-item')
+    : page.locator('#k-cart-body .k-cart-item');
+}
+
+
 async function addFirstProductToCart(page) {
   await page.goto(BASE_URL);
   await openFirstCard(page);
@@ -219,9 +259,23 @@ async function selectRecipientOther(page) {
 
 // ─── Navigation onglets ─────────────────────────────────────────────────────
 
-/** Navigue vers un onglet de la barre de navigation (boutique, suivi, groupe, portefeuille). */
+/**
+ * Navigue vers un onglet de la barre de navigation (boutique, suivi, groupe, portefeuille).
+ *
+ * Même bug que getCartItems (cf. fix cart mobile/desktop) : header (desktop,
+ * .k-header-nav-btn) et bnav (mobile, .k-bnav-item) partagent le MÊME
+ * data-tab="${tabId}" — les deux existent dans le DOM sur les deux viewports,
+ * seul le CSS les cache (.k-header-nav-btn{display:none} mobile-first,
+ * .k-bnav{display:none} desktop). Le sélecteur générique + .first() tombait
+ * en ordre DOM sur le bouton header (toujours avant le bnav dans le HTML),
+ * caché en mobile → click() boucle indéfiniment sur "not visible".
+ * On scope explicitement selon le viewport, comme getCartItems.
+ */
 async function navigateToTab(page, tabId) {
-  const tab = page.locator(`#${tabId}, [data-tab="${tabId}"], .k-bnav-item[data-view="${tabId}"]`).first();
+  const isDesktopViewport = await page.evaluate(() => window.innerWidth >= 900);
+  const tab = isDesktopViewport
+    ? page.locator(`.k-header-nav-btn[data-tab="${tabId}"]`).first()
+    : page.locator(`.k-bnav-item[data-tab="${tabId}"]`).first();
   if ((await tab.count()) > 0) {
     await tab.click();
     await page.waitForTimeout(300);
@@ -259,6 +313,7 @@ module.exports = {
   closeModal,
   addToCartFromModal,
   openCartDrawer,
+  getCartItems,
   addFirstProductToCart,
   openCheckout,
   selectRecipientOther,
