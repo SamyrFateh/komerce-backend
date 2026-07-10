@@ -52,7 +52,9 @@ test.describe('E-GROUP — Panier groupe', () => {
 
   test('E14 — Page publique panier partagé : charge sans crash', async ({ page }) => {
     // Accès direct à la page publique avec un token bidon
-    const resp = await page.goto(BASE_URL + '/shared-cart-public.html?token=test-invalid-token');
+    // BASE_URL se termine désormais par un slash (ex: http://localhost:3000/boutique/) :
+    // ne pas préfixer le chemin relatif par un second slash.
+    const resp = await page.goto(BASE_URL + 'shared-cart-public.html?token=test-invalid-token');
     // La page HTML elle-même doit charger (200)
     expect(resp.status()).toBeLessThan(400);
 

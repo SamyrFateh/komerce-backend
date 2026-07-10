@@ -1,0 +1,3 @@
+# Artefacts Playwright — générés à chaque run, ne doivent pas être versionnés.
+playwright-report/
+test-results/

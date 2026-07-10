@@ -28,8 +28,11 @@ module.exports = defineConfig({
     !process.env.BASE_URL || process.env.BASE_URL.startsWith('http://localhost')
       ? {
           webServer: {
-            command: 'npx serve . --listen 3000 --no-clipboard',
-            url: 'http://localhost:3000',
+            // Racine HTTP = `public` (parent de public/boutique), car
+            // index.html référence des chemins absolus type /boutique/css/...
+            // Servir depuis `.` ferait chercher public/boutique/boutique/css/...
+            command: 'npx serve .. --listen 3000 --no-clipboard',
+            url: 'http://localhost:3000/boutique/',
             reuseExistingServer: !process.env.CI,
             timeout: 15_000,
             stdout: 'ignore',
@@ -41,7 +44,7 @@ module.exports = defineConfig({
 
   use: {
     // URL de base — surcharger via BASE_URL=https://staging.railway.app
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL || 'http://localhost:3000/boutique/',
 
     // Screenshot uniquement en cas d'échec
     screenshot: 'only-on-failure',

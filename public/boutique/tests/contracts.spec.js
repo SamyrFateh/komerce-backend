@@ -13,8 +13,7 @@
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:8080';
+const { BASE_URL } = require('./e2e/helpers/boutique.helpers');
 
 async function openFirstProduct(page) {
   await page.goto(BASE_URL);
@@ -24,6 +23,14 @@ async function openFirstProduct(page) {
 }
 
 test.describe('Contrat de rendu — modal-product', () => {
+  // Ces contrats forcent un viewport desktop (setViewportSize 1280×900) et
+  // vérifient une mise en page à 2 colonnes qui n'existe qu'en desktop.
+  // Ils n'ont pas de sens sur les projets Mobile Chrome / Mobile Safari
+  // (couverture mobile générale assurée ailleurs, dans tests/e2e/*.spec.js).
+  test.skip(
+    ({}, testInfo) => testInfo.project.name.startsWith('Mobile'),
+    'Contrat desktop uniquement (layout 2 colonnes ≥900px) — non applicable aux projets mobiles'
+  );
 
   test('CONTRAT desktop : .k-modal-product-zone est en display:grid', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });   // ≥900px = desktop
