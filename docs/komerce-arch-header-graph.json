@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 717,
-    "edges": 4132,
+    "edges": 4130,
     "dbTables": 109,
     "doctrines": 133,
     "impactAreas": 116,
@@ -1275,16 +1275,14 @@
       ],
       "outputs": [
         "desktop_sidebar_sync",
-        "merch_cards",
-        "promo_strip",
-        "category_focus"
+        "category_focus",
+        "nav_stack_height"
       ],
       "depends": [
         "b-bus.js",
-        "b-catalog.js",
+        "b-store.js",
         "b-scroll-owner.js",
-        "controllers/home-controller.js",
-        "shop-schema.js"
+        "controllers/home-controller.js"
       ],
       "usedBy": [
         "boutique.js"
@@ -1301,10 +1299,9 @@
       "impactAreas": [
         "desktop-catalog",
         "category-navigation",
-        "home-layout",
-        "side-cart-layout"
+        "home-layout"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-catalog.js",
@@ -18284,14 +18281,14 @@
       "area": "home-layout"
     },
     {
-      "id": "impact:side-cart-layout",
-      "type": "impact-area",
-      "area": "side-cart-layout"
-    },
-    {
       "id": "impact:modal-entry",
       "type": "impact-area",
       "area": "modal-entry"
+    },
+    {
+      "id": "impact:side-cart-layout",
+      "type": "impact-area",
+      "area": "side-cart-layout"
     },
     {
       "id": "impact:relais",
@@ -20649,9 +20646,9 @@
     },
     {
       "from": "public/boutique/js/b-catalog-desktop-enhancers.js",
-      "to": "public/boutique/js/b-catalog.js",
+      "to": "public/boutique/js/b-store.js",
       "type": "depends",
-      "label": "b-catalog.js"
+      "label": "b-store.js"
     },
     {
       "from": "public/boutique/js/b-catalog-desktop-enhancers.js",
@@ -20664,12 +20661,6 @@
       "to": "public/boutique/js/controllers/home-controller.js",
       "type": "depends",
       "label": "controllers/home-controller.js"
-    },
-    {
-      "from": "public/boutique/js/b-catalog-desktop-enhancers.js",
-      "to": "public/boutique/js/shop-schema.js",
-      "type": "depends",
-      "label": "shop-schema.js"
     },
     {
       "from": "public/boutique/js/boutique.js",
@@ -20712,12 +20703,6 @@
       "to": "impact:home-layout",
       "type": "impact",
       "label": "home-layout"
-    },
-    {
-      "from": "public/boutique/js/b-catalog-desktop-enhancers.js",
-      "to": "impact:side-cart-layout",
-      "type": "impact",
-      "label": "side-cart-layout"
     },
     {
       "from": "public/boutique/js/b-catalog.js",
@@ -44861,10 +44846,9 @@
       "purpose": null,
       "directDependsOn": [
         "public/boutique/js/b-bus.js",
-        "public/boutique/js/b-catalog.js",
+        "public/boutique/js/b-store.js",
         "public/boutique/js/b-scroll-owner.js",
-        "public/boutique/js/controllers/home-controller.js",
-        "public/boutique/js/shop-schema.js"
+        "public/boutique/js/controllers/home-controller.js"
       ],
       "directUsedBy": [
         "public/boutique/js/boutique.js"
@@ -44881,8 +44865,7 @@
       "impactAreas": [
         "desktop-catalog",
         "category-navigation",
-        "home-layout",
-        "side-cart-layout"
+        "home-layout"
       ],
       "mustCheck": [
         "doctrine:boutique_canal_decouverte",
@@ -44891,13 +44874,11 @@
         "impact:category-navigation",
         "impact:desktop-catalog",
         "impact:home-layout",
-        "impact:side-cart-layout",
         "public/boutique/js/b-bus.js",
-        "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-scroll-owner.js",
+        "public/boutique/js/b-store.js",
         "public/boutique/js/boutique.js",
-        "public/boutique/js/controllers/home-controller.js",
-        "public/boutique/js/shop-schema.js"
+        "public/boutique/js/controllers/home-controller.js"
       ]
     },
     "public/boutique/js/b-catalog.js": {
@@ -44961,7 +44942,6 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-desktop-global-cart-access.js",
         "public/boutique/js/b-desktop-sidebar.js",
         "public/boutique/js/b-desktop-upgrade.js",
@@ -46360,6 +46340,7 @@
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-cart-pill.js",
         "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-favs.js",
@@ -47118,7 +47099,6 @@
         "impact:category-navigation",
         "impact:product-grid",
         "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-desktop-sidebar.js",
         "public/boutique/js/b-modal-suggestions.js",
