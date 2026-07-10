@@ -17,7 +17,7 @@
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
-const { BASE_URL } = require('../helpers/boutique.helpers');
+const { BASE_URL } = require('./helpers/boutique.helpers');
 
 test.describe('E-WALLET-AUTH — Porte-monnaie (session réelle)', () => {
   test('EA1 — Session authentifiée → jamais le gate d\'identification', async ({ page }) => {
