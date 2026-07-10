@@ -10,18 +10,23 @@
  * @used-by       b-nav.js, boutique.js
  * @doctrine      wallet_visible_client, navigation_sans_friction, otp_une_fois
  * @impact-areas  wallet, boutique-navigation
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
 /**
  * @module b-wallet
- * @brief Mon porte-monnaie — solde + historique mouvements.
+ * @brief Mon porte-monnaie — solde utilisable + échéance + mouvements lisibles.
  *
- * Même pattern que b-tracking.js :
+ * Règle UX : le wallet doit répondre à la question client simple :
+ *   “Combien puis-je utiliser, et jusqu’à quand ?”
+ *
+ * Flux :
  *   1. Tente GET /api/wallet (cookie kmrc_jwt)
- *   2. Si 401 → écran gate avec requireIdentity()
- *   3. Après OTP → charge et affiche les données wallet
+ *   2. 401/403 → gate d'identification, même si une identité locale existe
+ *      déjà : l'identité locale ne prouve pas que la session API est valide.
+ *   3. timeout / réseau / 5xx → état erreur + Réessayer.
+ *   4. solde OK → carte solde ou état vide ; historique visible si présent.
  *
  * Consomme GET /api/wallet et GET /api/wallet/transactions.
  */
@@ -29,7 +34,7 @@
 import { sanitize, fmt, apiGet } from './b-utils.js';
 import { requireIdentity, getCurrentIdentity } from './b-identity.js';
 
-'use strict';
+let walletRenderSeq = 0;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -70,9 +75,14 @@ function txLabel(reason) {
   return map[reason] || sanitize(reason) || 'Mouvement';
 }
 
+function isAuthErr(e) {
+  return e && (e.status === 401 || e.status === 403);
+}
+
 // ── Render : point d'entrée ─────────────────────────────────────────────────
 
 export function renderWalletView() {
+  const seq = ++walletRenderSeq;
   let el = document.getElementById('k-wallet-view');
   if (!el) {
     el = document.createElement('div');
@@ -88,21 +98,26 @@ export function renderWalletView() {
   el.innerHTML = '<div class="k-wlt-loading"><div class="k-wlt-spin"></div><p>Chargement…</p></div>';
 
   (async () => {
-    // FIX 2026-07-10 : plus de catch silencieux uniforme. On distingue :
-    //   401 (route privée, pas de session) → gate d'identification (normal)
-    //   timeout / réseau / 5xx           → état erreur + bouton Réessayer
-    // Le timeout est garanti par apiGet (couche centrale K.request, 10s).
     let balErr = null, txErr = null;
     const [balData, txData] = await Promise.all([
       apiGet('/api/wallet').catch((e) => { balErr = e; return null; }),
       apiGet('/api/wallet/transactions?limit=50').catch((e) => { txErr = e; return null; }),
     ]);
 
-    const isAuthErr = (e) => e && (e.status === 401 || e.status === 403);
+    // Un retry ou une navigation peut avoir relancé un rendu plus récent.
+    // Dans ce cas, on n'écrase jamais le DOM avec une réponse obsolète.
+    if (seq !== walletRenderSeq) return;
 
-    // Pas de données ET pas d'identité → gate OTP (comportement historique),
-    // mais UNIQUEMENT si l'échec est bien un refus d'auth (ou ambigu sans identité).
-    if (!balData && !getCurrentIdentity() && (isAuthErr(balErr) || !balErr)) {
+    // 401/403 = session API absente/expirée. Même si getCurrentIdentity()
+    // retourne une identité locale, on repasse par requireIdentity() pour
+    // restaurer une session exploitable côté API.
+    if (!balData && isAuthErr(balErr)) {
+      renderAuthGate(el, { sessionExpired: !!getCurrentIdentity() });
+      return;
+    }
+
+    // Compat historique/test : aucune donnée, aucune erreur, aucune identité.
+    if (!balData && !balErr && !getCurrentIdentity()) {
       renderAuthGate(el);
       return;
     }
@@ -114,9 +129,10 @@ export function renderWalletView() {
       return;
     }
 
-    const balance    = balData?.balance_kmf  ?? 0;
-    const expiresAt  = balData?.expires_at   ?? null;
-    const transactions = txData?.transactions ?? [];
+    const balance      = Number(balData?.balance_kmf ?? 0);
+    const expiresAt    = balData?.expires_at ?? null;
+    const transactions = Array.isArray(txData?.transactions) ? txData.transactions : [];
+
     if (txErr && !isAuthErr(txErr)) console.warn('[wallet] transactions:', txErr);
 
     el.innerHTML = '';
@@ -125,10 +141,17 @@ export function renderWalletView() {
     } else {
       el.appendChild(buildEmptyState());
     }
-    if (balance > 0 && transactions.length > 0) {
+
+    // L'historique ne doit pas disparaître uniquement parce que le solde est
+    // revenu à 0 : un client peut avoir utilisé ou perdu un avoir et vouloir
+    // comprendre le dernier mouvement sans que l'écran ressemble à un bug.
+    if (transactions.length > 0) {
       el.appendChild(buildTransactionList(transactions));
+    } else if (txErr && !isAuthErr(txErr)) {
+      el.appendChild(buildTransactionWarning());
     }
   })().catch((e) => {
+    if (seq !== walletRenderSeq) return;
     // Filet ultime : aucune exception ne doit laisser "Chargement…" à l'écran.
     console.warn('[wallet] render:', e);
     renderWalletError(el, e);
@@ -149,14 +172,31 @@ function renderWalletError(el, err) {
   el.querySelector('#k-wlt-retry-btn')?.addEventListener('click', () => renderWalletView());
 }
 
+function buildTransactionWarning() {
+  const wrap = document.createElement('div');
+  wrap.className = 'k-wlt-empty k-wlt-empty--soft';
+  wrap.innerHTML =
+    '<div class="k-wlt-empty-icon">⚠️</div>' +
+    '<div class="k-wlt-empty-title">Historique momentanément indisponible</div>' +
+    '<div class="k-wlt-empty-sub">Votre solde est affiché, mais les mouvements n’ont pas pu être chargés.</div>';
+  return wrap;
+}
+
 // ── Gate d'authentification ─────────────────────────────────────────────────
 
-function renderAuthGate(el) {
+function renderAuthGate(el, opts = {}) {
+  const title = opts.sessionExpired
+    ? 'Session expirée — confirmez votre numéro'
+    : 'Identifiez-vous pour accéder à votre porte-monnaie';
+  const sub = opts.sessionExpired
+    ? 'Votre identité locale est connue, mais la session API doit être renouvelée pour consulter votre solde.'
+    : 'Confirmez votre numéro WhatsApp pour consulter votre solde et l\'historique de vos crédits.';
+
   el.innerHTML =
     '<div class="k-wlt-empty">' +
       '<div class="k-wlt-empty-icon">🔐</div>' +
-      '<div class="k-wlt-empty-title">Identifiez-vous pour accéder à votre porte-monnaie</div>' +
-      '<div class="k-wlt-empty-sub">Confirmez votre numéro WhatsApp pour consulter votre solde et l\'historique de vos crédits.</div>' +
+      '<div class="k-wlt-empty-title">' + sanitize(title) + '</div>' +
+      '<div class="k-wlt-empty-sub">' + sanitize(sub) + '</div>' +
       '<button class="k-wlt-auth-btn" id="k-wlt-auth-btn">📲 M\'identifier</button>' +
     '</div>';
 
@@ -225,7 +265,7 @@ function buildBalanceCard(balance, expiresAt) {
   }
 
   card.innerHTML =
-    '<div class="k-wlt-eyebrow">On vous rembourse</div>' +
+    '<div class="k-wlt-eyebrow">Disponible</div>' +
     '<div class="k-wlt-amount">' + sanitize(fmt(balance, 'KMF')) + '</div>' +
     '<p class="k-wlt-sub">à utiliser dès maintenant sur la boutique</p>' +
     expiryHtml +
@@ -251,8 +291,8 @@ function buildEmptyState() {
     '<div class="k-wlt-zero-icon">' +
       '<svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="3" y="5" width="26" height="22" rx="4" stroke="currentColor" stroke-width="1.8"/><path d="M3 12H29" stroke="currentColor" stroke-width="1.8"/><path d="M10 18H22M10 22H18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
     '</div>' +
-    '<p class="k-wlt-zero-title">Aucun crédit pour l\'instant</p>' +
-    '<p class="k-wlt-zero-sub">En cas de remboursement ou d\'avoir, le montant apparaîtra ici et sera utilisable immédiatement.</p>';
+    '<p class="k-wlt-zero-title">Aucun crédit disponible</p>' +
+    '<p class="k-wlt-zero-sub">En cas de remboursement ou d’avoir, le montant utilisable apparaîtra ici avec sa date limite.</p>';
   return wrap;
 }
 
@@ -313,24 +353,19 @@ function buildTransactionList(transactions) {
   const wrap = document.createElement('div');
   wrap.className = 'k-wlt-tx-wrap';
 
-  if (!transactions.length) {
-    wrap.innerHTML =
-      '<div class="k-wlt-empty">' +
-        '<div class="k-wlt-empty-icon">📋</div>' +
-        '<div class="k-wlt-empty-title">Aucun mouvement</div>' +
-        '<div class="k-wlt-empty-sub">Vos crédits et utilisations apparaîtront ici.</div>' +
-      '</div>';
+  const grouped = groupTransactions(transactions);
+  if (!grouped.length) {
     return wrap;
   }
 
   const title = document.createElement('h3');
   title.className = 'k-wlt-section-title';
-  title.textContent = 'Historique des mouvements';
+  title.textContent = 'Derniers mouvements';
   wrap.appendChild(title);
 
   let currentMonth = '';
 
-  groupTransactions(transactions).forEach(tx => {
+  grouped.forEach(tx => {
     const month = fmtMonth(tx.created_at);
     if (month !== currentMonth) {
       currentMonth = month;
