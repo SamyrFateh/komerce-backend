@@ -57,6 +57,33 @@ module.exports = defineConfig({
   },
 
   projects: [
+    // ── Desktop ────────────────────────────────────────────────────────────
+    {
+      name: 'Desktop Chrome',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+        locale: 'fr-FR',
+      },
+    },
+    {
+      name: 'Desktop Firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: { width: 1280, height: 800 },
+        locale: 'fr-FR',
+      },
+    },
+    {
+      name: 'Desktop Safari',
+      use: {
+        ...devices['Desktop Safari'],
+        viewport: { width: 1280, height: 800 },
+        locale: 'fr-FR',
+      },
+    },
+
+    // ── Mobile (la boutique est mobile-first — diaspora comorienne) ─────────
     {
       name: 'Mobile Chrome',
       use: {
@@ -65,10 +92,9 @@ module.exports = defineConfig({
       },
     },
     {
-      name: 'Desktop Chrome',
+      name: 'Mobile Safari',
       use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1280, height: 800 },
+        ...devices['iPhone 14'],
         locale: 'fr-FR',
       },
     },
