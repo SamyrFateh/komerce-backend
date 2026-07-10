@@ -177,7 +177,10 @@ jobs:
         run: npm run audit:gate
 
       - name: "Garde-fous boutique (= check:fast : N2 quality + invariants + carte 360, statique)"
-        run: npm run check:fast
+        run: |
+          mkdir -p coverage
+          set -o pipefail
+          npm run check:fast 2>&1 | tee coverage/check-fast.log
 
       - name: "Couverture boutique réelle — hors bundles et fichiers de test"
         run: npm run test:coverage
@@ -188,6 +191,7 @@ jobs:
         with:
           name: boutique-coverage-${{ github.sha }}
           path: |
+            public/boutique/coverage/check-fast.log
             public/boutique/coverage/coverage-summary.json
             public/boutique/coverage/lcov.info
             public/boutique/coverage/COVERAGE_MISSING.md
