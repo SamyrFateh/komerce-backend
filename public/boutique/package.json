@@ -6,10 +6,12 @@
   "scripts": {
     "test": "jest",
     "test:unit": "jest tests/unit --runInBand",
+    "test:coverage": "jest tests/unit --runInBand --coverage && node scripts/report-coverage.js",
+    "coverage:report": "node scripts/report-coverage.js",
     "test:unit:watch": "jest tests/unit --watch",
     "check:tests": "npm run test:unit",
     "bundle:css": "node scripts/deploy-css.js",
-    "bundle:css:watch": "node scripts/deploy-css.js && echo \"deploy-css OK \u2014 relancez apr\u00e8s chaque modif CSS\"",
+    "bundle:css:watch": "node scripts/deploy-css.js && echo \"deploy-css OK — relancez après chaque modif CSS\"",
     "lint:css": "stylelint \"css/*.css\" --ignore-path .stylelintignore",
     "lint:css:fix": "stylelint \"css/*.css\" --fix",
     "lint:css:report": "stylelint \"css/*.css\" --formatter json > stylelint-report.json || true",
