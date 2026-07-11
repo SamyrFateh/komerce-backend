@@ -1,10 +1,10 @@
 # Feature-First — Concept `transport rail`
 
-**Objet :** utiliser `AIR_EXPRESS / DXB → ADD → HAH` comme test de robustesse de la gouvernance feature-first avant implémentation métier.
+**Objet :** utiliser `AIR_EXPRESS / DXB → ADD → HAH` comme test de robustesse de la gouvernance feature-first avant exposition commerciale.
 
 ## Méthode
 
-Le concept est introduit d'abord dans `DOCTRINE_TRANSPORT_RAILS.md`, sans créer de checkout Express, sans pricing fictif et sans migration DB.
+Le concept est introduit d'abord dans `DOCTRINE_TRANSPORT_RAILS.md`, puis matérialisé dans un registre runtime sans créer de checkout Express, sans pricing fictif et sans migration DB.
 
 Le test compare le blast radius métier attendu, les relations visibles dans les cartes actuelles et la capacité réelle des gates à bloquer une évolution transverse non reconnue par ses consommateurs.
 
@@ -29,38 +29,32 @@ Le test compare le blast radius métier attendu, les relations visibles dans les
 
 Le service se présente comme module central de routage logistique, mais sa décision porte sur la destination insulaire et le transit via Anjouan : `DIRECT`, `INTER_ISLAND`, `SPECIAL_ROUTE`.
 
-Deux concepts doivent être séparés :
+Deux concepts doivent rester séparés :
 
 - **destination routing** : relais → île → transit inter-îles ;
 - **transport routing** : hub source → rail → corridor → hub d'arrivée.
 
 `AIR_EXPRESS DXB → ADD → HAH` prouve que ces deux décisions ne peuvent plus être confondues.
 
-### `parcelOptimizationService.js` possède des contraintes universelles implicites
+### Le packing portait une contrainte universelle implicite
 
-Le moteur fixe notamment `maxParcelWeightKg: 25`, `maxParcelVolumeCm3: 100_000`, `targetParcelValueKmf: 300_000` et une fonction de score unique indépendante du rail.
+`parcelOptimizationService.js` possède un profil historique unique : 25 kg, 100 000 cm3 et 300 000 KMF de valeur cible.
 
-La doctrine AIR/SEA interdit désormais de considérer ces paramètres comme universels sans qualification. Le moteur devra recevoir un profil de contraintes dérivé du rail ou travailler explicitement en `UNASSIGNED`.
+Le runtime `transport-rails.js` porte maintenant un registre de profils de packing par rail :
+
+- `SEA_STANDARD` reprend explicitement le profil historique ;
+- `AIR_EXPRESS` a un profil `PENDING` sans valeurs inventées ;
+- `UNASSIGNED` reste possible pour le legacy sans être converti silencieusement en `SEA_STANDARD`.
+
+L'adaptateur `buildParcelsForTransportRail()` résout d'abord le profil du rail puis délègue au moteur de packing existant. `AIR_EXPRESS` échoue fermé avec `TRANSPORT_RAIL_PACKING_PROFILE_PENDING` tant que ses contraintes opérationnelles ne sont pas stabilisées.
 
 ### Ownership sain entre logistics et economic-engine
 
-`logistics.feature.js` place le coût du transport hors périmètre et l'attribue à `economic-engine`. La séparation doctrinale est correcte : `logistics` possède le rail ; `economic-engine` le valorise.
+`logistics.feature.js` place le coût du transport hors périmètre et l'attribue à `economic-engine`. La séparation doctrinale reste correcte : `logistics` possède le rail et ses contraintes de packing ; `economic-engine` le valorise.
 
-`orders` consomme déjà `logistics` et `economic-engine`, mais aucun contrat positif n'affirmait qu'une décision de rail exécutée devait être persistée sans défaut maritime implicite.
+`orders` consomme déjà `logistics` et `economic-engine`, mais la persistance du rail exécuté reste le prochain contrat à matérialiser.
 
-## Angle mort constaté
-
-La gouvernance était robuste pour l'ownership des fichiers applicatifs, l'absence d'orphelins, la cohérence interne des manifests, les contrats positifs déjà connus et la remontée routes/tables depuis un fichier modifié.
-
-Elle ne détectait pas l'introduction ou l'évolution d'un concept métier transverse avant matérialisation dans du code déjà cartographié.
-
-`gate:touched-files` exclut volontairement `docs/**`, `*.md` et `*.feature.js`. Il répond correctement à « le code applicatif touché a-t-il un propriétaire ? », mais pas à « une capacité doctrinale transverse a-t-elle été reconnue par tous ses consommateurs ? ».
-
-`feature-audit` orchestre des contrats positifs par feature, mais un concept nouveau reste invisible tant qu'aucun contrat ne sait l'exprimer.
-
-`impact-check` construit un graphe technique fichier → feature → routes/tables. Il ne porte pas de blast radius sémantique.
-
-## Renforcement livré
+## Premier angle mort constaté : concepts transverses
 
 Le mécanisme de **concept contracts** ajoute deux sources canoniques :
 
@@ -77,18 +71,42 @@ Le gate `gate:concept-impact` impose désormais :
 
 Pour `transport-rail@1`, le propriétaire est `logistics`. Les consommateurs enregistrés sont `economic-engine`, `orders`, `catalog`, `customs`, `notifications` et `dashboard`.
 
-## Preuve de non-régression
+La matérialisation du packing a bumpé le contrat vers `2026-07-11-air-express-packing-v1` et forcé un nouveau cycle complet d'ACKs.
 
-`tests/unit/concept-impact-gate.test.js` rejoue trois scénarios :
+## Deuxième angle mort constaté : faux blast radius manifest-wide
+
+Le moteur historique `impact-check` résout un service vers son manifest de feature puis attribue au service toutes les routes et toutes les tables du manifest.
+
+Pour `services/transport-rails.js`, qui déclare `@db-read none`, `@db-write none` et aucune route `@used-by`, le résultat est artificiellement projeté sur l'ensemble de `logistics` : 100 routes et 26 tables dans le replay observé.
+
+La correction générique attendue est **header-first** :
+
+1. `@db-read`, `@db-write`, `@used-by` du fichier priment lorsqu'ils existent ;
+2. le manifest feature complet reste un fallback legacy pour les fichiers sans métadonnées fines ;
+3. aucune suppression spécialisée AIR/SEA ne doit masquer le problème.
+
+Ce point reste volontairement visible comme dette du moteur d'impact tant que sa correction générique n'est pas intégrée.
+
+## Preuves de non-régression
+
+`tests/unit/concept-impact-gate.test.js` rejoue :
 
 - contrat modifié sans bump de révision → **BLOCK** ;
 - nouvelle révision sans ACK consommateur exact → **BLOCK** ;
 - bump de révision et ACK de tous les consommateurs → **PASS**.
 
-Le cas `AIR_EXPRESS` a donc servi de sonde architecturale et a produit un gate générique. Aucun grep spécialisé AIR/SEA n'a été ajouté.
+`tests/unit/transport-rails.test.js` vérifie :
+
+- le corridor `AIR_EXPRESS = DXB → ADD → HAH` ;
+- l'absence de défaut implicite vers `SEA_STANDARD` ;
+- le fail-closed des rails inconnus ;
+- l'interdiction d'exposition commerciale d'AIR tant que pricing est `PENDING` ;
+- le profil historique explicite de `SEA_STANDARD` ;
+- le blocage du packing AIR tant que son profil est `PENDING` ;
+- le chemin de packing `UNASSIGNED` et `SEA_STANDARD`.
 
 ## Suite
 
-La prochaine étape est la matérialisation technique minimale du concept `transport rail` en statut interne : identité de rail, corridor, statut de pricing et exposition commerciale. Elle devra passer par le nouveau gate et provoquer des ACKs adaptés dès qu'un contrat de concept évolue.
+Le prochain lot métier est la persistance du rail exécuté dans `orders` ou l'objet logistique approprié, sans défaut maritime implicite. Ensuite seulement viennent l'éligibilité AIR et la calibration opérationnelle du profil aérien.
 
 Aucun checkout Express ni prix aérien ne doit être exposé avant stabilisation de la valorisation.
