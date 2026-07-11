@@ -23,7 +23,7 @@ const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
-const { spyOnApi, getClientCart } = require('../helpers/api.helpers');
+const { getClientCart } = require('../helpers/api.helpers');
 
 test.describe('FLOW — Commande complète (browse → checkout)', () => {
 
@@ -32,16 +32,23 @@ test.describe('FLOW — Commande complète (browse → checkout)', () => {
     await page.goto(BASE_URL);
     await waitForGrid(page);
 
-    // ── 2. Ouvrir un produit et ajuster la quantité ──
+    // ── 2. Ouvrir un produit ──
     await openFirstCard(page);
+
+    // ── 3. Ajouter au panier ──
+    // Le bouton #k-add-cart-btn ET le stepper #k-qty-plus font tous les deux
+    // addToCart(product, 1, ...) directement (voir b-modal-cart.js::setupModalCart)
+    // — il n'y a PAS de compteur local avant commit. "Ajouter au panier" pose
+    // donc qty=1 dans le panier ; le "+" qui suit incrémente ce qty=1 déjà
+    // committé à 2. Cliquer "+" avant d'ajouter (ordre initial du test) fait
+    // la même chose que "Ajouter au panier" (qty=1) — l'assertion "2" échouait
+    // systématiquement pour cette raison, pas un souci de timing/race.
+    await addToCartFromModal(page);
 
     const plusBtn = page.locator('#k-qty-plus');
     await plusBtn.click();
     const qtyVal = page.locator('#k-qty-val');
     await expect(qtyVal).toHaveText('2');
-
-    // ── 3. Ajouter au panier ──
-    await addToCartFromModal(page);
 
     const cart = await getClientCart(page);
     expect(cart.length).toBeGreaterThanOrEqual(1);
@@ -55,13 +62,25 @@ test.describe('FLOW — Commande complète (browse → checkout)', () => {
     // id posé directement sur l'<input>, PAS #k-ck-name/#k-ck-phone.
     await selectRecipientOther(page);
 
+    // submitOrder() bloque explicitement si le téléphone bénéficiaire == celui
+    // du payeur OTP (anti-fraude, voir b-checkout.js — "doit être différent du
+    // vôtre"). Constante dédiée, jamais égale à TEST_ACCOUNT_PHONE (le numéro
+    // utilisé pour authentifier le payeur dans auth.setup.js).
+    const TEST_BENEFICIARY_PHONE = '7001234';
+    if (TEST_BENEFICIARY_PHONE === process.env.TEST_ACCOUNT_PHONE) {
+      throw new Error(
+        'TEST_BENEFICIARY_PHONE ne doit pas être égal à TEST_ACCOUNT_PHONE ' +
+          '(submitOrder() rejette un bénéficiaire avec le même numéro que le payeur).'
+      );
+    }
+
     const nameInput = page.locator('#of-beneficiary-name');
     const phoneInput = page.locator('#of-beneficiary-phone');
     if ((await nameInput.count()) > 0) {
       await nameInput.fill('Test Playwright');
     }
     if ((await phoneInput.count()) > 0) {
-      await phoneInput.fill('3211234');
+      await phoneInput.fill(TEST_BENEFICIARY_PHONE);
     }
 
     // ── 6. Relais : PAS de carte à cliquer ──
@@ -80,7 +99,37 @@ test.describe('FLOW — Commande complète (browse → checkout)', () => {
     }
 
     // ── 8. Intercepter la requête de commande (ne PAS soumettre en prod) ──
-    const orderSpy = await spyOnApi(page, '/api/orders', 'POST');
+    // UN SEUL handler pour /api/orders, pas spyOnApi + un route.fulfill() séparé.
+    // Raison : route.continue() envoie la requête directement au réseau, il ne
+    // redonne PAS la main à un handler enregistré précédemment (c'est justement
+    // pour ça que route.fallback() existe, distinct de route.continue()).
+    // spyOnApi() (voir api.helpers.js) appelle route.continue() en interne — le
+    // combiner avec un route.fulfill() séparé est ambigu et risqué ici :
+    //   - fulfill enregistré après spy → spy jamais exécuté ("no call intercepted",
+    //     ce qu'on vient d'observer) ;
+    //   - fulfill enregistré avant spy → spy enregistre puis continue() part
+    //     directement vers le vrai backend prod, exactement ce qu'on veut éviter.
+    // Un seul handler qui fait les deux choses explicitement élimine l'ambiguïté.
+    const orderCalls = [];
+    await page.route('**/api/orders*', async (route, request) => {
+      if (request.method() === 'POST') {
+        let body = null;
+        try { body = request.postDataJSON(); } catch { body = request.postData(); }
+        orderCalls.push({ url: request.url(), method: request.method(), body, timestamp: Date.now() });
+      }
+      if (process.env.ALLOW_ORDER_SUBMIT) {
+        // Staging avec soumission réelle autorisée : laisser passer.
+        await route.continue();
+      } else {
+        // Prod (ou staging sans opt-in explicite) : ne jamais laisser partir la
+        // vraie requête, répondre avec un fake succès.
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, order: { ref: 'TEST-E2E', id: 9999 } }),
+        });
+      }
+    });
 
     // Bouton réel : #btn-confirm-order (classe .ck-confirm-btn), désactivé
     // (.is-disabled) tant que le relais n'est pas "ready".
@@ -89,19 +138,28 @@ test.describe('FLOW — Commande complète (browse → checkout)', () => {
     await expect(confirmBtn).toBeEnabled({ timeout: 15_000 }).catch(() => {});
 
     if ((await confirmBtn.count()) > 0 && await confirmBtn.isEnabled()) {
-      // En staging : laisser passer. En prod : bloquer.
-      if (!process.env.ALLOW_ORDER_SUBMIT) {
-        await page.route('**/api/orders', route => {
-          route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({ success: true, order: { ref: 'TEST-E2E', id: 9999 } }),
-          });
-        });
-      }
       await confirmBtn.click();
 
-      const call = await orderSpy.waitForCall(5_000);
+      // submitOrder() a plusieurs retours silencieux (relais non prêt, bénéficiaire
+      // invalide, numéro dupliqué...) qui affichent un toast (#k-toast) sans jamais
+      // toucher le réseau. Si aucun appel n'arrive, on remonte le texte du toast
+      // réel plutôt qu'un message générique — pour diagnostiquer la vraie cause
+      // au lieu de deviner laquelle des guards de submitOrder() a bloqué.
+      try {
+        await expect
+          .poll(() => orderCalls.length, {
+            message: 'aucun appel POST /api/orders intercepté après le clic',
+            timeout: 5_000,
+          })
+          .toBeGreaterThan(0);
+      } catch (e) {
+        const toastText = await page.locator('#k-toast').textContent().catch(() => null);
+        throw new Error(
+          `Aucun appel /api/orders après le clic sur #btn-confirm-order. ` +
+            `Toast affiché : "${(toastText || '').trim()}"`
+        );
+      }
+      const call = orderCalls[orderCalls.length - 1];
       expect(call).not.toBeNull();
       expect(call.body).toBeTruthy();
 
