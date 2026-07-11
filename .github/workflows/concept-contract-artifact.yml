@@ -1,0 +1,47 @@
+name: Concept gate contract drift capture
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  capture-contract:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://dummy:dummy@localhost:5432/dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run contract:generate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generated-contract
+          path: |
+            docs/contract/openapi.json
+            docs/contract/DEBT.md
+          if-no-files-found: error
