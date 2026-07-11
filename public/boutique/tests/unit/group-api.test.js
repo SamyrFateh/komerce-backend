@@ -52,9 +52,11 @@ describe('group-api — endpoints créateur (window.K.request)', () => {
     K = mockWindowK();
   });
 
-  test('getOwnerSharedCarts() -> GET /api/shared-carts/mine', async () => {
+  test('getOwnerSharedCarts() -> GET /api/shared-carts/mine (FIX 2026-07-11 : timeoutMs transmis)', async () => {
     await getOwnerSharedCarts();
-    expect(K.request).toHaveBeenCalledWith('/api/shared-carts/mine', 'GET', null, 2, {});
+    expect(K.request).toHaveBeenCalledWith(
+      '/api/shared-carts/mine', 'GET', null, 2, { timeoutMs: 10_000 }
+    );
   });
 
   test('getSharedCartOwner(cartId) -> GET /api/shared-carts/:id', async () => {

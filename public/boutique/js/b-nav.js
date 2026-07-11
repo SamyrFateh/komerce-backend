@@ -243,7 +243,12 @@ export function setupBnav() {
  */
 export function handleParticipantUrl() {
   const token = detectParticipantToken();
-  if (!token) return;
+  if (!token) {
+    // ── Deep-link ?tab= (hors participant) ──────────────────────────
+    // Permet d'ouvrir directement un onglet via l'URL, ex: /boutique/?tab=group
+    handleTabDeepLink();
+    return;
+  }
   // Nettoyer l'URL sans recharger la page
   try {
     const clean = window.location.origin + window.location.pathname;
@@ -255,6 +260,39 @@ export function handleParticipantUrl() {
   });
   renderGroupView({ participantToken: token });
   switchView('group');
+}
+
+/**
+ * Deep-link ?tab= : ouvre un onglet depuis l'URL au chargement initial.
+ * Ex: /boutique/?tab=group, /boutique/?tab=track, /boutique/?tab=fav
+ * Nettoie le paramètre après traitement pour éviter les re-triggers
+ * sur back/forward.
+ */
+function handleTabDeepLink() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (!tab || tab === 'shop') return;
+
+    const validTabs = ['track', 'group', 'fav', 'wallet'];
+    if (!validTabs.includes(tab)) return;
+
+    // Nettoyer ?tab= de l'URL
+    params.delete('tab');
+    const qs = params.toString();
+    const clean = window.location.pathname + (qs ? '?' + qs : '');
+    window.history.replaceState({}, '', clean);
+
+    // Activer l'onglet
+    document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
+      i.classList.toggle('active', i.dataset.tab === tab);
+    });
+
+    if (tab === 'fav')    { renderFavView(); switchView('fav'); }
+    if (tab === 'track')  { renderTrackView(); switchView('track'); }
+    if (tab === 'group')  { renderGroupView(); switchView('group'); }
+    if (tab === 'wallet') { renderWalletView(); switchView('wallet'); }
+  } catch (_) {}
 }
 
 /**

@@ -63,10 +63,14 @@ export function fetchWithTimeout(url, opts = {}, timeoutMs = FETCH_TIMEOUT_MS) {
 
 /**
  * Récupère tous les paniers partagés créés par l'utilisateur connecté.
+ * FIX 2026-07-11 : ajout d'un timeout pour éviter que la promesse pende
+ * indéfiniment si l'API ne répond pas (bug spinner infini sur l'onglet groupe
+ * quand le backend est HS). Le timeout aligne le comportement sur les endpoints
+ * publics qui utilisent fetchWithTimeout.
  * @returns {Promise<{carts: Array}>}
  */
 export function getOwnerSharedCarts() {
-  return apiGet('/api/shared-carts/mine');
+  return apiGet('/api/shared-carts/mine', { timeoutMs: FETCH_TIMEOUT_MS });
 }
 
 /**
