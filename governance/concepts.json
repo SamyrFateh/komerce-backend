@@ -4,7 +4,7 @@
     {
       "id": "transport-rail",
       "version": 1,
-      "revision": "2026-07-11-air-express-runtime-v1",
+      "revision": "2026-07-11-air-express-packing-v1",
       "owner": "logistics",
       "contractPaths": [
         "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
