@@ -1,0 +1,256 @@
+name: Agent wire transport cost allocation
+
+on:
+  push:
+    branches: [agent/transport-rail-doctrine-audit]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/transport-rail-doctrine-audit
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Wire real shipment allocation to transport contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('services/cost-allocation/allocate.js')
+          s = p.read_text()
+          s = s.replace(
+            "const { shareByWeight } = require('./_helpers');",
+            "const { shareByWeight } = require('./_helpers');\nconst { allocateTransportCost } = require('../transport-cost-allocation');"
+          )
+          s = s.replace(
+            "async function allocateShipmentRealCosts(shipmentId, dbClient = null) {",
+            "async function allocateShipmentRealCosts(shipmentId, dbClient = null, options = {}) {"
+          )
+
+          old = '''    // Pour freight : le poids ne fait PAS partie de l'équation en maritime
+    // (doctrine — le fret LCL est acheté au m³, jamais au kg). Donc :
+    //   - sea + volume snapshoté        → ventilation par volume (réel)
+    //   - sea + volume absent (legacy)  → répartition égale entre colis,
+    //                                      PAS par poids (le poids n'a aucun
+    //                                      sens économique ici ; mieux vaut
+    //                                      un signal neutre "pas de donnée"
+    //                                      qu'un signal faux). Marqué
+    //                                      estimated_fallback / confidence low.
+    //   - air / land / non renseigné    → ventilation par poids (inchangé)
+    const isMaritime = ship.transport_mode === 'sea';
+    const totalParcelVolume = parcels.reduce((s, p) => s + (Number(p.parcel_volume_cm3) || 0), 0);
+    const useVolumeForFreight = isMaritime && totalParcelVolume > 0;
+    const useEqualSplitForFreight = isMaritime && !useVolumeForFreight;
+
+    const freightAllocationMethod = useVolumeForFreight
+      ? 'by_volume'
+      : useEqualSplitForFreight
+        ? 'estimated_fallback'
+        : 'by_weight';
+    const freightConfidence = useEqualSplitForFreight ? 'low' : 'high';
+
+    const freightWeights = parcels.map(p => ({
+      id: p.parcel_id,
+      order_id: p.order_id,
+      weight: useVolumeForFreight
+        ? Number(p.parcel_volume_cm3) || 0
+        : useEqualSplitForFreight
+          ? 1                                   // répartition égale, pas de poids
+          : Number(p.parcel_weight_kg) || 0,
+    }));
+    const freightSharesArr = shareByWeight(totalFreight, freightWeights);
+    const freightShares = freightSharesArr.map((s, i) => ({
+      parcel_id: s.id,
+      order_id: freightWeights[i].order_id,
+      freight_share: s.share,
+    }));'''
+
+          new = '''    // Freight : les rails explicites consomment le contrat transverse
+    // transport-cost-allocation. Un shipment sans rail explicite reste en mode
+    // legacy identifié jusqu'à la migration de persistance ; il n'est jamais
+    // converti silencieusement en SEA_STANDARD.
+    const transportMode = String(ship.transport_mode || '').trim().toLowerCase();
+    const transportRail = transportMode === 'sea'
+      ? 'SEA_STANDARD'
+      : transportMode === 'air'
+        ? 'AIR_EXPRESS'
+        : null;
+
+    const parcelFreightEntries = parcels.map(p => ({
+      id: p.parcel_id,
+      actual_weight_kg: Number(p.parcel_weight_kg) || 0,
+      volume_m3: (Number(p.parcel_volume_cm3) || 0) / 1_000_000,
+    }));
+
+    let freightSharesArr;
+    let freightAllocationMethod;
+    let freightConfidence;
+
+    if (transportRail) {
+      freightSharesArr = allocateTransportCost({
+        total: totalFreight,
+        transport_rail: transportRail,
+        component: 'FREIGHT',
+        entries: parcelFreightEntries,
+        options: options.transport_cost_allocation || {},
+      });
+
+      const hasVolumeSignal = parcelFreightEntries.some(entry => entry.volume_m3 > 0);
+      freightAllocationMethod = transportRail === 'AIR_EXPRESS'
+        ? 'by_taxable_weight'
+        : hasVolumeSignal
+          ? 'by_volume'
+          : 'estimated_fallback';
+      freightConfidence = freightAllocationMethod === 'estimated_fallback' ? 'low' : 'high';
+    } else {
+      // Compatibilité legacy stricte : ancien comportement non-maritime/non-renseigné.
+      const freightWeights = parcels.map(p => ({
+        id: p.parcel_id,
+        weight: Number(p.parcel_weight_kg) || 0,
+      }));
+      freightSharesArr = shareByWeight(totalFreight, freightWeights);
+      freightAllocationMethod = 'by_weight';
+      freightConfidence = 'high';
+    }
+
+    const freightShares = freightSharesArr.map(s => ({
+      parcel_id: s.id,
+      freight_share: s.share,
+    }));'''
+
+          if old not in s:
+            raise SystemExit('freight block not found')
+          s = s.replace(old, new)
+
+          old2 = '''      // Eclater freight par volume si dispo (maritime), sinon répartition égale
+      // par quantité pour le maritime (jamais par poids), poids sinon (non-maritime).
+      const itemsVolumeTotal = items.reduce(
+        (s, it) => s + (Number(it.volume_cm3) || 0) * (Number(it.parcel_qty) || 1), 0
+      );
+      const useVolumeForItems = useVolumeForFreight && itemsVolumeTotal > 0;
+      const useEqualSplitForItems = isMaritime && !useVolumeForItems;
+      const freightWeightsItems = items.map(it => ({
+        id: it.order_item_id,
+        weight: useVolumeForItems
+          ? (Number(it.volume_cm3) || 0) * (Number(it.parcel_qty) || 1)
+          : useEqualSplitForItems
+            ? (Number(it.parcel_qty) || 1)      // pas de poids, quantité comme neutre
+            : (Number(it.weight_kg) || 0) * (Number(it.parcel_qty) || 1),
+      }));
+      const freightSplit = shareByWeight(freightShare, freightWeightsItems);'''
+
+          new2 = '''      // Même contrat rail-aware pour la projection parcel → order_items.
+      // Le coût source reste la quote-part du parcel ; seule la clé économique
+      // change selon le rail explicite.
+      let freightSplit;
+      if (transportRail) {
+        const itemFreightEntries = items.map(it => ({
+          id: it.order_item_id,
+          actual_weight_kg: (Number(it.weight_kg) || 0) * (Number(it.parcel_qty) || 1),
+          volume_m3: ((Number(it.volume_cm3) || 0) * (Number(it.parcel_qty) || 1)) / 1_000_000,
+        }));
+        freightSplit = allocateTransportCost({
+          total: freightShare,
+          transport_rail: transportRail,
+          component: 'FREIGHT',
+          entries: itemFreightEntries,
+          options: options.transport_cost_allocation || {},
+        });
+      } else {
+        const freightWeightsItems = items.map(it => ({
+          id: it.order_item_id,
+          weight: (Number(it.weight_kg) || 0) * (Number(it.parcel_qty) || 1),
+        }));
+        freightSplit = shareByWeight(freightShare, freightWeightsItems);
+      }'''
+
+          if old2 not in s:
+            raise SystemExit('item freight block not found')
+          s = s.replace(old2, new2)
+          p.write_text(s)
+
+          tp = Path('tests/unit/cost-allocation-allocate.test.js')
+          t = tp.read_text()
+          marker = "  it('maritime sans volume snapshoté (legacy) → répartition égale, PAS par poids', async () => {"
+          if marker not in t:
+            raise SystemExit('test insertion marker not found')
+
+          air_tests = '''  it('AIR explicite sans calibration → bloque avant toute allocation persistée', async () => {
+    const shipment = {
+      id: 'ship-air', customs_paid_kmf: '0', freight_kmf: '1000',
+      allocation_method: 'by_cif_value', transport_mode: 'air',
+    };
+    const parcel = {
+      parcel_id: 'parcel-air', order_id: 'order-air', parcel_cif_kmf: '1000',
+      parcel_weight_kg: '2', parcel_volume_cm3: '12000', customs_share_kmf: null,
+    };
+    const client = makeClient([
+      { rows: [shipment] },
+      { rows: [parcel] },
+      { rows: [], rowCount: 0 },
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+
+    await expect(allocateShipmentRealCosts('ship-air')).rejects.toMatchObject({
+      code: 'TRANSPORT_COST_ALLOCATION_CALIBRATION_PENDING',
+    });
+    expectTransactionRolledBack(client);
+    expect(client.query.mock.calls.some(c => c[0].includes("'freight'"))).toBe(false);
+  });
+
+  it('AIR explicite calibré → fret ventilé par poids taxable', async () => {
+    const shipment = {
+      id: 'ship-air', customs_paid_kmf: '0', freight_kmf: '1000',
+      allocation_method: 'by_cif_value', transport_mode: 'air',
+    };
+    const parcelA = { parcel_id: 'parcel-A', order_id: 'order-A', parcel_cif_kmf: '1000', parcel_weight_kg: '10', parcel_volume_cm3: '10000', customs_share_kmf: null };
+    const parcelB = { parcel_id: 'parcel-B', order_id: 'order-B', parcel_cif_kmf: '1000', parcel_weight_kg: '2', parcel_volume_cm3: '300000', customs_share_kmf: null };
+    const itemA = { order_item_id: 'oi-A', parcel_qty: '1', product_id: 'prod-A', weight_kg: '10', volume_cm3: '10000', cost_kmf: '1000' };
+    const itemB = { order_item_id: 'oi-B', parcel_qty: '1', product_id: 'prod-B', weight_kg: '2', volume_cm3: '300000', cost_kmf: '1000' };
+    const client = makeClient([
+      { rows: [shipment] },
+      { rows: [parcelA, parcelB] },
+      { rows: [], rowCount: 0 },
+      { rows: [itemA] },
+      { rows: [], rowCount: 1 },
+      { rows: [itemB] },
+      { rows: [], rowCount: 1 },
+    ]);
+    db.pool.connect.mockResolvedValue(client);
+
+    const result = await allocateShipmentRealCosts('ship-air', null, {
+      transport_cost_allocation: { volumetric_factor_kg_per_m3: 100 },
+    });
+
+    expect(result.freight_allocation_method).toBe('by_taxable_weight');
+    const freightInsertA = client.query.mock.calls.find(c => c[0].includes("'freight'") && c[1][2] === 'parcel-A');
+    const freightInsertB = client.query.mock.calls.find(c => c[0].includes("'freight'") && c[1][2] === 'parcel-B');
+    expect(freightInsertA[1][4]).toBe(250);
+    expect(freightInsertB[1][4]).toBe(750);
+    expect(freightInsertA[1][5]).toBe('by_taxable_weight');
+    expectTransactionCommitted(client);
+  });
+
+'''
+          t = t.replace(marker, air_tests + marker)
+          tp.write_text(t)
+          PY
+      - name: Run focused tests
+        run: npx jest tests/unit/transport-cost-allocation.test.js tests/unit/cost-allocation-allocate.test.js --runInBand --no-coverage
+      - name: Commit wiring
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add services/cost-allocation/allocate.js tests/unit/cost-allocation-allocate.test.js
+          git commit -m "feat(economic-engine): route shipment freight through transport allocation contract"
+          git push origin HEAD:agent/transport-rail-doctrine-audit
