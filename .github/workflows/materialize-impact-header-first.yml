@@ -1,8 +1,8 @@
 name: Materialize header first impact engine
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  push:
+    branches: [agent/transport-rail-doctrine-audit]
 
 permissions:
   contents: write
