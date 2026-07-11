@@ -23,11 +23,27 @@
 const { test, expect } = require('@playwright/test');
 const { BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
         openCartDrawer } = require('../helpers/boutique.helpers');
-const { verifySharedCart, getClientShareToken, spyOnApi } = require('../helpers/api.helpers');
+const { verifySharedCart, getClientShareToken, cancelAnyActiveSharedCart, spyOnApi } = require('../helpers/api.helpers');
 
 test.describe('FLOW — Panier partagé (créateur)', () => {
 
   test.skip(!process.env.ALLOW_GROUP_FLOW, 'Flux groupe désactivé (ALLOW_GROUP_FLOW non défini) — staging uniquement');
+
+  // ⚠️ F20 n'est PAS idempotent par nature : il crée un panier 'open' que
+  // rien ne ferme. Au run suivant, b-share-cart.js::install() restaure cet
+  // état depuis le backend (GET /mine) et startShareFlow() bifurque vers
+  // promptActiveCartChoice() au lieu de promptInit() — même sélecteur
+  // d'overlay (.k-share-modal-overlay) donc le test passe l'assertion de
+  // visibilité puis timeout 5s plus tard sur #k-sm-submit, absent. On
+  // nettoie donc avant (run précédent interrompu) ET après (run nominal).
+  test.beforeEach(async ({ page }) => {
+    await page.goto(BASE_URL);
+    await cancelAnyActiveSharedCart(page);
+  });
+
+  test.afterEach(async ({ page }) => {
+    await cancelAnyActiveSharedCart(page);
+  });
 
   test('F20 — Créer un panier partagé → vérifier son existence côté API', async ({ page }) => {
     // ── 1. Ajouter un produit au panier ──
@@ -56,6 +72,18 @@ test.describe('FLOW — Panier partagé (créateur)', () => {
     const titleInput = page.locator('#k-sm-title-f');
     if ((await titleInput.count()) > 0) {
       await titleInput.fill('Test Panier Groupe E2E');
+    }
+
+    // Nature du panier : le défaut UI est 'ready_to_pay' (bouton is-active au
+    // chargement, voir b-share-cart.js::promptInit) → statut backend 'closed'
+    // ("prêt à payer", pas "annulé" — nommage doctrine V4.1). Ce test vérifie
+    // juste l'existence du panier, pas le flux paiement : on sélectionne donc
+    // explicitement "Non, partager d'abord" pour obtenir un statut 'open'
+    // prévisible et éviter la fenêtre de paiement (payment_window_ends_at)
+    // inutile ici.
+    const needsValidationOpt = page.locator('.k-sm-nature-opt[data-mode="needs_validation"]');
+    if ((await needsValidationOpt.count()) > 0) {
+      await needsValidationOpt.click();
     }
 
     const submitBtn = page.locator('#k-sm-submit');
