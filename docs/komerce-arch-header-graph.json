@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 361,
-    "filesWithFullHeaders": 334,
+    "scannedCodeFiles": 362,
+    "filesWithFullHeaders": 335,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 361,
+    "filesWithAnyHeaders": 362,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 723,
-    "edges": 4147,
+    "graphNodes": 725,
+    "edges": 4153,
     "dbTables": 109,
-    "doctrines": 135,
+    "doctrines": 136,
     "impactAreas": 118,
-    "unresolvedCodeEdges": 394,
+    "unresolvedCodeEdges": 396,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -42,7 +42,7 @@
     "payment": 16,
     "tracking": 1,
     "wallet": 6,
-    "economic-engine": 36,
+    "economic-engine": 37,
     "customs": 6,
     "dashboard": 30,
     "orders": 29,
@@ -77,7 +77,7 @@
     "view-model": 3,
     "route": 99,
     "entrypoint": 1,
-    "service": 145,
+    "service": 146,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 100,
-    "high": 151,
+    "high": 152,
     "low": 34
   },
   "nodes": [
@@ -15725,6 +15725,47 @@
       "version": "2026-06"
     },
     {
+      "id": "services/transport-cost-allocation.js",
+      "file": "services/transport-cost-allocation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "transport-cost-allocation-contract",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "transport_rail",
+        "cost_component",
+        "allocation_key",
+        "entries"
+      ],
+      "outputs": [
+        "allocation_contract",
+        "allocated_shares"
+      ],
+      "depends": [
+        "cost-allocation/_helpers"
+      ],
+      "usedBy": [
+        "future shipment real cost allocation"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "logistics",
+        "orders"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/transport-rails.js",
       "file": "services/transport-rails.js",
       "type": "file",
@@ -18196,6 +18237,11 @@
       "id": "doctrine:ING-I3)",
       "type": "doctrine",
       "doctrine": "ING-I3)"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
@@ -41473,6 +41519,42 @@
       "label": "product-discovery"
     },
     {
+      "from": "services/transport-cost-allocation.js",
+      "to": "cost-allocation/_helpers",
+      "type": "depends",
+      "label": "cost-allocation/_helpers"
+    },
+    {
+      "from": "future shipment real cost allocation",
+      "to": "services/transport-cost-allocation.js",
+      "type": "uses",
+      "label": "future shipment real cost allocation"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
       "from": "services/transport-rails.js",
       "to": "services/parcelOptimizationService.js",
       "type": "depends",
@@ -58955,6 +59037,38 @@
         "services/suppliers/connectors/manual-connector.js"
       ]
     },
+    "services/transport-cost-allocation.js": {
+      "role": "transport-cost-allocation-contract",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "cost-allocation/_helpers"
+      ],
+      "directUsedBy": [
+        "future shipment real cost allocation"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "logistics",
+        "orders"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
+        "impact:economic-engine",
+        "impact:logistics",
+        "impact:orders"
+      ]
+    },
     "services/transport-rails.js": {
       "role": "transport-rail-registry",
       "domain": "logistics",
@@ -63232,6 +63346,18 @@
       "to": "schemas/catalog/normalized-supplier-product.v1.schema.json",
       "type": "depends",
       "label": "schemas/catalog/normalized-supplier-product.v1.schema.json"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "cost-allocation/_helpers",
+      "type": "depends",
+      "label": "cost-allocation/_helpers"
+    },
+    {
+      "from": "future shipment real cost allocation",
+      "to": "services/transport-cost-allocation.js",
+      "type": "uses",
+      "label": "future shipment real cost allocation"
     },
     {
       "from": "future transport routing and packing orchestration",

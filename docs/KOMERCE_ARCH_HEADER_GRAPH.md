@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 361
-- Files with full headers: 334
+- Scanned code files: 362
+- Files with full headers: 335
 - Files with lite headers: 27
-- Files with any headers: 361
+- Files with any headers: 362
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 723
-- Edges: 4147
+- Graph nodes: 725
+- Edges: 4153
 - DB tables: 109
-- Doctrines: 135
+- Doctrines: 136
 - Impact areas: 118
-- Unresolved code edges: 394
+- Unresolved code edges: 396
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -33,7 +33,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - customs: 6
 - dashboard: 30
 - documents: 11
-- economic-engine: 36
+- economic-engine: 37
 - infrastructure: 20
 - inventory: 3
 - logistics: 36
@@ -63,7 +63,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 99
 - route-manifest: 1
 - schema: 1
-- service: 145
+- service: 146
 - state: 1
 - state-store: 1
 - ui-component: 38
@@ -299,6 +299,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
 - services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
+- services/transport-cost-allocation.js — transport-cost-allocation-contract (economic-engine, high, full)
 - services/transport-rails.js — transport-rail-registry (logistics, high, full)
 - services/wallet-service.js — wallet-wallet-service (wallet, high, full)
 - services/whatsapp-meta.js — meta-whatsapp-adapter (notification, high, full)
@@ -590,6 +591,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: db.js -> utils/alerts-compat.js (db.js)
 - uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
+- uses: future shipment real cost allocation -> services/transport-cost-allocation.js (future shipment real cost allocation)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
@@ -688,7 +690,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/client-tracking.js -> db.js (db.js)
 - depends: routes/client-tracking.js -> services/* (services/*)
 - depends: routes/collective-workspaces.js -> db.js (db.js)
-- depends: routes/collective-workspaces.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 
