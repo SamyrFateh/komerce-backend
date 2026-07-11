@@ -42,6 +42,34 @@
       "feature": "dashboard",
       "status": "not-applicable",
       "reason": "Aucun rail execute n'est encore persiste ou segmente dans les projections dashboard."
+    },
+    {
+      "concept": "transport-cost-allocation@1",
+      "revision": "2026-07-11-air-cost-allocation-v1",
+      "feature": "logistics",
+      "status": "adapted",
+      "reason": "Logistics fournit le contexte de rail et les mesures physiques; aucune clé de coût n'est dérivée implicitement du rail."
+    },
+    {
+      "concept": "transport-cost-allocation@1",
+      "revision": "2026-07-11-air-cost-allocation-v1",
+      "feature": "orders",
+      "status": "compatible",
+      "reason": "Les quotes-parts peuvent viser les colis puis les order items; la persistance du rail exécuté reste un lot séparé."
+    },
+    {
+      "concept": "transport-cost-allocation@1",
+      "revision": "2026-07-11-air-cost-allocation-v1",
+      "feature": "customs",
+      "status": "compatible",
+      "reason": "CUSTOMS reste une composante distincte et les règles douanières existantes ne sont pas remplacées par le contrat transport."
+    },
+    {
+      "concept": "transport-cost-allocation@1",
+      "revision": "2026-07-11-air-cost-allocation-v1",
+      "feature": "dashboard",
+      "status": "not-applicable",
+      "reason": "Le contrat d'allocation est pur et non persistant dans ce lot; aucune nouvelle projection dashboard n'est encore disponible."
     }
   ]
 }
