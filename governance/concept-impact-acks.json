@@ -3,45 +3,45 @@
   "acks": [
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-runtime-v1",
+      "revision": "2026-07-11-air-express-packing-v1",
       "feature": "economic-engine",
-      "status": "compatible",
-      "reason": "Le registre runtime materialise AIR_EXPRESS mais le maintient pricing PENDING et DISABLED; aucun prix air ni surcharge express n'est invente."
+      "status": "adapted",
+      "reason": "Le packing consomme maintenant un profil par rail; AIR_EXPRESS reste sans profil actif et aucun prix air n'est invente."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-runtime-v1",
+      "revision": "2026-07-11-air-express-packing-v1",
       "feature": "orders",
       "status": "compatible",
-      "reason": "Le runtime reconnait explicitement l'etat UNASSIGNED et n'introduit aucun defaut SEA_STANDARD; aucune persistance de rail execute n'est ajoutee dans ce lot."
+      "reason": "Le rail execute n'est toujours pas persiste; le packing accepte un contexte de rail explicite sans introduire de defaut maritime."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-runtime-v1",
+      "revision": "2026-07-11-air-express-packing-v1",
       "feature": "catalog",
       "status": "compatible",
-      "reason": "AIR_EXPRESS existe en registre interne mais la garde commerciale exclut tout rail dont pricing et exposition ne sont pas actifs; aucune projection boutique n'est ajoutee."
+      "reason": "Aucune eligibilite AIR n'est exposee en catalogue; le profil de packing AIR reste PENDING et ferme."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-runtime-v1",
+      "revision": "2026-07-11-air-express-packing-v1",
       "feature": "customs",
       "status": "compatible",
-      "reason": "Le registre runtime n'encode encore aucune eligibilite marchandise ni contournement douanier; les futures contraintes resteront fournisseuses de la decision logistics."
+      "reason": "Aucune regle de transportabilite n'est encore branchee; AIR_EXPRESS echoue ferme avant packing tant que son profil est absent."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-runtime-v1",
+      "revision": "2026-07-11-air-express-packing-v1",
       "feature": "notifications",
       "status": "not-applicable",
-      "reason": "Aucun message, ETA ou wording AIR n'est genere; AIR_EXPRESS reste non commercialisable et invisible aux notifications client."
+      "reason": "Aucune promesse AIR ni ETA AIR n'est produite par le raccord rail vers packing."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-runtime-v1",
+      "revision": "2026-07-11-air-express-packing-v1",
       "feature": "dashboard",
       "status": "not-applicable",
-      "reason": "Le registre runtime ne cree aucun flux execute ni donnees SEA/AIR a segmenter; la projection dashboard sera adaptee lors de la persistance du rail."
+      "reason": "Aucun rail execute n'est encore persiste ou segmente dans les projections dashboard."
     }
   ]
 }
