@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   blob:
@@ -115,6 +116,10 @@ jobs:
           print(json.dumps({'content': base64.b64encode(raw).decode(), 'encoding': 'base64'}))
           PY
           gh api --method POST "repos/${GITHUB_REPOSITORY}/git/blobs" --input blob-payload.json --jq .sha > impact-blob-sha.txt
+          BASE=$(cat base-tree-sha.txt)
+          BLOB=$(cat impact-blob-sha.txt)
+          SCORE=$(node -e "const fs=require('fs');const s=fs.readFileSync('impact-smoke.json','utf8');const m=s.match(/\{[\s\S]*\"score\"[\s\S]*\}/);console.log(m?JSON.parse(m[0]).score:'?')")
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/570/comments" -f body="IMPACT_HEADER_FIRST_BLOB base=${BASE} blob=${BLOB} smoke_score=${SCORE}"
       - uses: actions/upload-artifact@v4
         with:
           name: impact-header-first-blob
