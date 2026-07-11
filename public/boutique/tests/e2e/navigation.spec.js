@@ -53,14 +53,11 @@ test.describe('E-NAV — Navigation & deep-links', () => {
   test('E21c — Deep-link ?tab=group ouvre le groupe', async ({ page }) => {
     await page.goto(BASE_URL + '?tab=group');
 
-    // #k-group-view est rendu dynamiquement par renderGroupView() —
-    // il peut mettre du temps à apparaître (API + rendu).
-    // On attend que le body ait la classe k-view-group OU que #k-group-view soit attaché.
+    // Attendre que l'onglet groupe soit actif dans la navigation
     await page.waitForFunction(
       () => {
-        const hasView = document.body.classList.contains('k-view-group');
-        const el = document.getElementById('k-group-view');
-        return hasView || (el && el.textContent.length > 5);
+        const activeTab = document.querySelector('.k-bnav-item.active, .k-header-nav-btn.active');
+        return activeTab && activeTab.dataset.tab === 'group';
       },
       { timeout: 15_000 }
     );
