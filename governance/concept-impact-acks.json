@@ -3,45 +3,45 @@
   "acks": [
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-doctrine",
+      "revision": "2026-07-11-air-express-runtime-v1",
       "feature": "economic-engine",
       "status": "compatible",
-      "reason": "Le rail est connu mais AIR_EXPRESS reste pricing PENDING et non expose commercialement; aucun prix air n'est invente dans cette PR."
+      "reason": "Le registre runtime materialise AIR_EXPRESS mais le maintient pricing PENDING et DISABLED; aucun prix air ni surcharge express n'est invente."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-doctrine",
+      "revision": "2026-07-11-air-express-runtime-v1",
       "feature": "orders",
       "status": "compatible",
-      "reason": "Aucun rail execute n'est encore assigne ni persiste; la future materialisation devra supprimer tout defaut maritime implicite."
+      "reason": "Le runtime reconnait explicitement l'etat UNASSIGNED et n'introduit aucun defaut SEA_STANDARD; aucune persistance de rail execute n'est ajoutee dans ce lot."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-doctrine",
+      "revision": "2026-07-11-air-express-runtime-v1",
       "feature": "catalog",
       "status": "compatible",
-      "reason": "L'eligibilite AIR n'est pas encore projetee en boutique; commercial_exposure reste DISABLED."
+      "reason": "AIR_EXPRESS existe en registre interne mais la garde commerciale exclut tout rail dont pricing et exposition ne sont pas actifs; aucune projection boutique n'est ajoutee."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-doctrine",
+      "revision": "2026-07-11-air-express-runtime-v1",
       "feature": "customs",
       "status": "compatible",
-      "reason": "La doctrine reconnait que les contraintes douanieres et de transportabilite alimenteront l'eligibilite; aucun moteur d'eligibilite n'est modifie ici."
+      "reason": "Le registre runtime n'encode encore aucune eligibilite marchandise ni contournement douanier; les futures contraintes resteront fournisseuses de la decision logistics."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-doctrine",
+      "revision": "2026-07-11-air-express-runtime-v1",
       "feature": "notifications",
       "status": "not-applicable",
-      "reason": "Aucune promesse AIR ni ETA AIR n'est exposee au client dans cette PR."
+      "reason": "Aucun message, ETA ou wording AIR n'est genere; AIR_EXPRESS reste non commercialisable et invisible aux notifications client."
     },
     {
       "concept": "transport-rail@1",
-      "revision": "2026-07-11-air-express-doctrine",
+      "revision": "2026-07-11-air-express-runtime-v1",
       "feature": "dashboard",
       "status": "not-applicable",
-      "reason": "Aucune donnee runtime SEA/AIR n'existe encore a segmenter; la projection sera requise lors de la materialisation du rail."
+      "reason": "Le registre runtime ne cree aucun flux execute ni donnees SEA/AIR a segmenter; la projection dashboard sera adaptee lors de la persistance du rail."
     }
   ]
 }
