@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 723,
-    "edges": 4146,
+    "edges": 4147,
     "dbTables": 109,
     "doctrines": 135,
     "impactAreas": 118,
@@ -15736,12 +15736,16 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "transport_rail_code"
+        "transport_rail_code",
+        "packing_items"
       ],
       "outputs": [
-        "canonical_transport_rail"
+        "canonical_transport_rail",
+        "rail_aware_packing_result"
       ],
-      "depends": [],
+      "depends": [
+        "services/parcelOptimizationService.js"
+      ],
       "usedBy": [
         "future transport routing and packing orchestration"
       ],
@@ -41469,6 +41473,12 @@
       "label": "product-discovery"
     },
     {
+      "from": "services/transport-rails.js",
+      "to": "services/parcelOptimizationService.js",
+      "type": "depends",
+      "label": "services/parcelOptimizationService.js"
+    },
+    {
       "from": "future transport routing and packing orchestration",
       "to": "services/transport-rails.js",
       "type": "uses",
@@ -55921,6 +55931,7 @@
         "db:products",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
+        "services/transport-rails.js",
         "utils/parcelSync.js",
         "utils/parcels.js",
         "utils/reference.js"
@@ -58951,7 +58962,9 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
+      "directDependsOn": [
+        "services/parcelOptimizationService.js"
+      ],
       "directUsedBy": [
         "future transport routing and packing orchestration"
       ],
@@ -58979,7 +58992,8 @@
         "impact:economic-engine",
         "impact:logistics",
         "impact:notifications",
-        "impact:orders"
+        "impact:orders",
+        "services/parcelOptimizationService.js"
       ]
     },
     "services/verify-qr-collection.js": {
