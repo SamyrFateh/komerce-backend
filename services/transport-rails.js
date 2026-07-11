@@ -4,9 +4,9 @@
  * @domain        logistics
  * @layer         service
  * @criticality   high
- * @inputs        transport_rail_code
- * @outputs       canonical_transport_rail
- * @depends       none
+ * @inputs        transport_rail_code, packing_items
+ * @outputs       canonical_transport_rail, rail_aware_packing_result
+ * @depends       services/parcelOptimizationService.js
  * @used-by       future transport routing and packing orchestration
  * @db-read       none
  * @db-write      none
@@ -30,6 +30,26 @@ const PRICING_STATUS = Object.freeze({
 const COMMERCIAL_EXPOSURE = Object.freeze({
   PUBLIC: 'PUBLIC',
   DISABLED: 'DISABLED',
+});
+
+const PACKING_PROFILE_STATUS = Object.freeze({
+  ACTIVE: 'ACTIVE',
+  PENDING: 'PENDING',
+});
+
+const PACKING_PROFILES = Object.freeze({
+  SEA_STANDARD: Object.freeze({
+    status: PACKING_PROFILE_STATUS.ACTIVE,
+    config: Object.freeze({
+      maxParcelWeightKg: 25,
+      maxParcelVolumeCm3: 100_000,
+      targetParcelValueKmf: 300_000,
+    }),
+  }),
+  AIR_EXPRESS: Object.freeze({
+    status: PACKING_PROFILE_STATUS.PENDING,
+    config: null,
+  }),
 });
 
 const TRANSPORT_RAILS = Object.freeze({
@@ -77,6 +97,31 @@ function getTransportRail(rawCode) {
   return rail;
 }
 
+function getTransportRailPackingProfile(rawCode) {
+  const rail = getTransportRail(rawCode);
+  if (!rail) return null;
+
+  const profile = PACKING_PROFILES[rail.code];
+  if (!profile || profile.status !== PACKING_PROFILE_STATUS.ACTIVE || !profile.config) {
+    throw new TransportRailError(
+      `Profil de packing non stabilise pour ${rail.code}`,
+      'TRANSPORT_RAIL_PACKING_PROFILE_PENDING'
+    );
+  }
+
+  return profile.config;
+}
+
+function buildParcelsForTransportRail({ transportRailCode = null, config = {}, ...packingParams } = {}) {
+  const railConfig = transportRailCode ? getTransportRailPackingProfile(transportRailCode) : {};
+  const { buildParcelsFromAvailableItems } = require('./parcelOptimizationService');
+
+  return buildParcelsFromAvailableItems({
+    ...packingParams,
+    config: { ...railConfig, ...config },
+  });
+}
+
 function isTransportRailCommerciallyExposed(rawCode) {
   const rail = getTransportRail(rawCode);
   if (!rail) return false;
@@ -114,10 +159,14 @@ module.exports = {
   CAPACITY_STATUS,
   PRICING_STATUS,
   COMMERCIAL_EXPOSURE,
+  PACKING_PROFILE_STATUS,
+  PACKING_PROFILES,
   TRANSPORT_RAILS,
   TransportRailError,
   normalizeTransportRailCode,
   getTransportRail,
+  getTransportRailPackingProfile,
+  buildParcelsForTransportRail,
   isTransportRailCommerciallyExposed,
   assertTransportRailCommerciallyExposed,
   listCommercialTransportRails,
