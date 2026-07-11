@@ -1,0 +1,22 @@
+{
+  "$schema": "komerce-concepts-v1",
+  "concepts": [
+    {
+      "id": "transport-rail",
+      "version": 1,
+      "revision": "2026-07-11-air-express-doctrine",
+      "owner": "logistics",
+      "contractPaths": [
+        "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+      ],
+      "consumers": [
+        { "feature": "economic-engine", "critical": true },
+        { "feature": "orders", "critical": true },
+        { "feature": "catalog", "critical": false },
+        { "feature": "customs", "critical": true },
+        { "feature": "notifications", "critical": false },
+        { "feature": "dashboard", "critical": false }
+      ]
+    }
+  ]
+}
