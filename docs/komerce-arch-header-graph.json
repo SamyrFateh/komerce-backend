@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 725,
-    "edges": 4164,
+    "edges": 4169,
     "dbTables": 109,
     "doctrines": 136,
     "impactAreas": 118,
-    "unresolvedCodeEdges": 397,
+    "unresolvedCodeEdges": 398,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -9832,7 +9832,8 @@
       "depends": [
         "_helpers",
         "allocate",
-        "variance"
+        "variance",
+        "../transport-cost-allocation"
       ],
       "usedBy": [
         "routes/admin-costing.js",
@@ -9858,12 +9859,16 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
       ],
       "impactAreas": [
-        "economic-engine"
+        "economic-engine",
+        "logistics",
+        "orders",
+        "customs",
+        "dashboard"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "services/cost-allocation/variance.js",
@@ -18061,6 +18066,11 @@
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
+    },
+    {
       "id": "doctrine:douane_declaration_pivot",
       "type": "doctrine",
       "doctrine": "douane_declaration_pivot"
@@ -18254,11 +18264,6 @@
       "id": "doctrine:ING-I3)",
       "type": "doctrine",
       "doctrine": "ING-I3)"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
@@ -18796,6 +18801,11 @@
       "area": "crons"
     },
     {
+      "id": "impact:customs",
+      "type": "impact-area",
+      "area": "customs"
+    },
+    {
       "id": "impact:admin-costing",
       "type": "impact-area",
       "area": "admin-costing"
@@ -18859,11 +18869,6 @@
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
-    },
-    {
-      "id": "impact:customs",
-      "type": "impact-area",
-      "area": "customs"
     },
     {
       "id": "impact:api",
@@ -32495,6 +32500,12 @@
       "label": "variance"
     },
     {
+      "from": "services/cost-allocation/index.js",
+      "to": "../transport-cost-allocation",
+      "type": "depends",
+      "label": "../transport-cost-allocation"
+    },
+    {
       "from": "routes/admin-costing.js",
       "to": "services/cost-allocation/index.js",
       "type": "uses",
@@ -32574,15 +32585,39 @@
     },
     {
       "from": "services/cost-allocation/index.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
     },
     {
       "from": "services/cost-allocation/index.js",
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "impact:customs",
+      "type": "impact",
+      "label": "customs"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
     },
     {
       "from": "services/cost-allocation/variance.js",
@@ -53433,7 +53468,8 @@
       "directDependsOn": [
         "_helpers",
         "allocate",
-        "variance"
+        "variance",
+        "../transport-cost-allocation"
       ],
       "directUsedBy": [
         "routes/admin-costing.js",
@@ -53457,10 +53493,14 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
       ],
       "impactAreas": [
-        "economic-engine"
+        "economic-engine",
+        "logistics",
+        "orders",
+        "customs",
+        "dashboard"
       ],
       "mustCheck": [
         "db:customs_shipment_parcels",
@@ -53473,8 +53513,12 @@
         "db:parcel_items",
         "db:parcels",
         "db:products",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
+        "impact:customs",
+        "impact:dashboard",
         "impact:economic-engine",
+        "impact:logistics",
+        "impact:orders",
         "routes/admin-costing.js",
         "services/cost-allocation/allocate.js",
         "services/cost-allocation/variance.js",
@@ -62704,6 +62748,12 @@
       "to": "variance",
       "type": "depends",
       "label": "variance"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
+      "to": "../transport-cost-allocation",
+      "type": "depends",
+      "label": "../transport-cost-allocation"
     },
     {
       "from": "services/cost-allocation/variance.js",
