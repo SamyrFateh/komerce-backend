@@ -45,31 +45,31 @@
     },
     {
       "concept": "transport-cost-allocation@1",
-      "revision": "2026-07-11-air-cost-allocation-v1",
+      "revision": "2026-07-11-shipment-cost-wiring-v1",
       "feature": "logistics",
       "status": "adapted",
-      "reason": "Logistics fournit le contexte de rail et les mesures physiques; aucune clé de coût n'est dérivée implicitement du rail."
+      "reason": "Le shipment explicite SEA ou AIR fournit maintenant le rail et les mesures physiques au moteur reel; un mode absent reste legacy sans defaut SEA implicite."
     },
     {
       "concept": "transport-cost-allocation@1",
-      "revision": "2026-07-11-air-cost-allocation-v1",
+      "revision": "2026-07-11-shipment-cost-wiring-v1",
       "feature": "orders",
-      "status": "compatible",
-      "reason": "Les quotes-parts peuvent viser les colis puis les order items; la persistance du rail exécuté reste un lot séparé."
+      "status": "adapted",
+      "reason": "Les quotes-parts freight rail-aware sont maintenant persistees vers order_item_real_cost_allocations; la persistance du rail execute reste un lot distinct."
     },
     {
       "concept": "transport-cost-allocation@1",
-      "revision": "2026-07-11-air-cost-allocation-v1",
+      "revision": "2026-07-11-shipment-cost-wiring-v1",
       "feature": "customs",
       "status": "compatible",
-      "reason": "CUSTOMS reste une composante distincte et les règles douanières existantes ne sont pas remplacées par le contrat transport."
+      "reason": "La ventilation customs existante reste distincte et intacte; seul le freight du shipment delegue sa cle au contrat transport."
     },
     {
       "concept": "transport-cost-allocation@1",
-      "revision": "2026-07-11-air-cost-allocation-v1",
+      "revision": "2026-07-11-shipment-cost-wiring-v1",
       "feature": "dashboard",
-      "status": "not-applicable",
-      "reason": "Le contrat d'allocation est pur et non persistant dans ce lot; aucune nouvelle projection dashboard n'est encore disponible."
+      "status": "compatible",
+      "reason": "Les allocations reelles restent dans la table existante et conservent allocation_method et confidence; aucun segment rail dashboard n'est encore ajoute."
     }
   ]
 }
