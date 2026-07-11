@@ -87,6 +87,7 @@
     "gate:docs-lint:save": "node scripts/docs-history-lint.js --save",
     "gate:boutique-ownership": "node scripts/boutique-ownership-check.js",
     "gate:boutique-ownership:full": "node scripts/boutique-ownership-full-check.js",
+    "gate:concept-impact": "node scripts/concept-impact-gate.js",
     "map:check": "node scripts/map-check.js",
     "map:check:verbose": "node scripts/map-check.js --verbose",
     "map:check:bail": "node scripts/map-check.js --bail",
