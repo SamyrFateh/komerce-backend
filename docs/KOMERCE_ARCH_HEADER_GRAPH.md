@@ -14,11 +14,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 725
-- Edges: 4153
+- Edges: 4164
 - DB tables: 109
 - Doctrines: 136
 - Impact areas: 118
-- Unresolved code edges: 396
+- Unresolved code edges: 397
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -461,7 +461,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-customs-shipments.js -> order_item_real_cost_allocations
 - WRITE services/cost-allocation/allocate.js -> order_item_real_cost_allocations
 - WRITE services/cost-allocation/index.js -> order_item_real_cost_allocations
-- WRITE routes/admin/delete-order-cascade.js -> order_items
+- WRITE services/transport-cost-allocation.js -> order_item_real_cost_allocations
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -524,6 +524,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - purchase_orders: 5 écrivains directs — services/cancel-order-purchase-orders.js, services/purchasing-admin-service.js, services/purchasing-receive-service.js, services/purchasing-trigger-service.js, services/receive-purchase-order.js
 - transaction_documents: 5 écrivains directs — services/documents/customs-invoice.js, services/documents/document-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js, services/documents/wallet-receipt.js
 - finance_config: 4 écrivains directs — bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/pricing-rates.js
+- order_item_real_cost_allocations: 4 écrivains directs — routes/admin-customs-shipments.js, services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/transport-cost-allocation.js
 - recipients: 4 écrivains directs — routes/admin/users.js, routes/orders/create.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js
 - shared_cart_items: 4 écrivains directs — routes/shared-cart-from-order.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-items-service.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
@@ -533,7 +534,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - collective_workspaces: 3 écrivains directs — services/collective-workspace-creation.js, services/collective-workspace-engine.js, services/collective-workspace-lifecycle.js
 - invoices: 3 écrivains directs — routes/admin/system.js, routes/invoices.js, services/invoice-service.js
 - order_comments: 3 écrivains directs — routes/hub-dashboard.js, routes/hub-mark-ordered.js, routes/relay-dashboard.js
-- order_item_real_cost_allocations: 3 écrivains directs — routes/admin-customs-shipments.js, services/cost-allocation/allocate.js, services/cost-allocation/index.js
 - pickup_print_tokens: 3 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-secret-service.js
 - pickup_reveal_codes: 3 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-secret-service.js
 - price_history: 3 écrivains directs — services/pricing-apply.js, services/pricing-strategy-service.js, services/product-price-audit.js
@@ -591,7 +591,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: db.js -> utils/alerts-compat.js (db.js)
 - uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
-- uses: future shipment real cost allocation -> services/transport-cost-allocation.js (future shipment real cost allocation)
+- uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)

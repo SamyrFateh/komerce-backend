@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 725,
-    "edges": 4153,
+    "edges": 4164,
     "dbTables": 109,
     "doctrines": 136,
     "impactAreas": 118,
-    "unresolvedCodeEdges": 396,
+    "unresolvedCodeEdges": 397,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -15739,29 +15739,46 @@
         "transport_rail",
         "cost_component",
         "allocation_key",
-        "entries"
+        "entries",
+        "shipment_id"
       ],
       "outputs": [
         "allocation_contract",
-        "allocated_shares"
+        "allocated_shares",
+        "persisted_real_cost_allocations"
       ],
       "depends": [
-        "cost-allocation/_helpers"
+        "cost-allocation/_helpers",
+        "db (lazy for shipment persistence)"
       ],
       "usedBy": [
-        "future shipment real cost allocation"
+        "services/cost-allocation/index.js",
+        "future shipment cost ingestion"
       ],
-      "dbRead": [],
-      "dbWrite": [],
+      "dbRead": [
+        "customs_shipment_parcels",
+        "customs_shipments",
+        "order_items",
+        "parcel_items",
+        "parcels",
+        "products"
+      ],
+      "dbWrite": [
+        "order_item_real_cost_allocations"
+      ],
       "dbWriteVia": [],
-      "dbTxn": [],
+      "dbTxn": [
+        "allocateShipmentRealCosts"
+      ],
       "doctrine": [
         "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
       ],
       "impactAreas": [
         "economic-engine",
         "logistics",
-        "orders"
+        "orders",
+        "customs",
+        "dashboard"
       ],
       "version": "2026-07"
     },
@@ -41525,10 +41542,64 @@
       "label": "cost-allocation/_helpers"
     },
     {
-      "from": "future shipment real cost allocation",
+      "from": "services/transport-cost-allocation.js",
+      "to": "db (lazy for shipment persistence)",
+      "type": "depends",
+      "label": "db (lazy for shipment persistence)"
+    },
+    {
+      "from": "services/cost-allocation/index.js",
       "to": "services/transport-cost-allocation.js",
       "type": "uses",
-      "label": "future shipment real cost allocation"
+      "label": "services/cost-allocation/index.js"
+    },
+    {
+      "from": "future shipment cost ingestion",
+      "to": "services/transport-cost-allocation.js",
+      "type": "uses",
+      "label": "future shipment cost ingestion"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-write",
+      "label": "order_item_real_cost_allocations"
     },
     {
       "from": "services/transport-cost-allocation.js",
@@ -41553,6 +41624,18 @@
       "to": "impact:orders",
       "type": "impact",
       "label": "orders"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "impact:customs",
+      "type": "impact",
+      "label": "customs"
+    },
+    {
+      "from": "services/transport-cost-allocation.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
     },
     {
       "from": "services/transport-rails.js",
@@ -53395,7 +53478,8 @@
         "routes/admin-costing.js",
         "services/cost-allocation/allocate.js",
         "services/cost-allocation/variance.js",
-        "services/customs-shipment-service.js"
+        "services/customs-shipment-service.js",
+        "services/transport-cost-allocation.js"
       ]
     },
     "services/cost-allocation/variance.js": {
@@ -59045,14 +59129,25 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "cost-allocation/_helpers"
+        "cost-allocation/_helpers",
+        "db (lazy for shipment persistence)"
       ],
       "directUsedBy": [
-        "future shipment real cost allocation"
+        "services/cost-allocation/index.js",
+        "future shipment cost ingestion"
       ],
       "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
+      "dbRead": [
+        "customs_shipment_parcels",
+        "customs_shipments",
+        "order_items",
+        "parcel_items",
+        "parcels",
+        "products"
+      ],
+      "dbWrite": [
+        "order_item_real_cost_allocations"
+      ],
       "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
@@ -59060,13 +59155,25 @@
       "impactAreas": [
         "economic-engine",
         "logistics",
-        "orders"
+        "orders",
+        "customs",
+        "dashboard"
       ],
       "mustCheck": [
+        "db:customs_shipment_parcels",
+        "db:customs_shipments",
+        "db:order_item_real_cost_allocations",
+        "db:order_items",
+        "db:parcel_items",
+        "db:parcels",
+        "db:products",
         "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
+        "impact:customs",
+        "impact:dashboard",
         "impact:economic-engine",
         "impact:logistics",
-        "impact:orders"
+        "impact:orders",
+        "services/cost-allocation/index.js"
       ]
     },
     "services/transport-rails.js": {
@@ -60744,6 +60851,16 @@
       ]
     },
     {
+      "table": "order_item_real_cost_allocations",
+      "writerCount": 4,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "services/cost-allocation/allocate.js",
+        "services/cost-allocation/index.js",
+        "services/transport-cost-allocation.js"
+      ]
+    },
+    {
       "table": "recipients",
       "writerCount": 4,
       "writers": [
@@ -60826,15 +60943,6 @@
         "routes/hub-dashboard.js",
         "routes/hub-mark-ordered.js",
         "routes/relay-dashboard.js"
-      ]
-    },
-    {
-      "table": "order_item_real_cost_allocations",
-      "writerCount": 3,
-      "writers": [
-        "routes/admin-customs-shipments.js",
-        "services/cost-allocation/allocate.js",
-        "services/cost-allocation/index.js"
       ]
     },
     {
@@ -63354,10 +63462,16 @@
       "label": "cost-allocation/_helpers"
     },
     {
-      "from": "future shipment real cost allocation",
+      "from": "services/transport-cost-allocation.js",
+      "to": "db (lazy for shipment persistence)",
+      "type": "depends",
+      "label": "db (lazy for shipment persistence)"
+    },
+    {
+      "from": "future shipment cost ingestion",
       "to": "services/transport-cost-allocation.js",
       "type": "uses",
-      "label": "future shipment real cost allocation"
+      "label": "future shipment cost ingestion"
     },
     {
       "from": "future transport routing and packing orchestration",
