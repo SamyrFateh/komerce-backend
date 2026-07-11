@@ -421,7 +421,6 @@ module.exports = {
       'jest.config.js',
       'package-lock.json',
       'package.json',
-      'railway.json',
       'railway.toml',
     ],
     tests: [
