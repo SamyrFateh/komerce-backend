@@ -132,9 +132,24 @@ test.describe('FLOW — Fidélité : palier et cohérence (F12 partiel)', () => 
       expect(myLoyalty.orders_count).toBeGreaterThanOrEqual(0);
       expect(Number.isNaN(myLoyalty.orders_count)).toBe(false);
     }
-    if (myLoyalty.discount_pct !== undefined) {
+
+    // discount_pct est null quand aucun palier n'est atteint (comportement attendu
+    // de l'API) — on ne borne 0-100 que lorsque la valeur est un nombre.
+    if (myLoyalty.discount_pct !== undefined && myLoyalty.discount_pct !== null) {
       expect(myLoyalty.discount_pct).toBeGreaterThanOrEqual(0);
       expect(myLoyalty.discount_pct).toBeLessThanOrEqual(100);
+    } else if (myLoyalty.discount_pct === null) {
+      // null est valide seulement si aucun palier n'est atteint (orders_count < min_orders du 1er tier)
+      const orderCount = myLoyalty.orders_count || 0;
+      const firstTier = tiers[0];
+      if (firstTier) {
+        expect(
+          orderCount,
+          `discount_pct=null n'est valide que si aucun palier n'est atteint (orders_count < ${firstTier.min_orders})`
+        ).toBeLessThan(firstTier.min_orders);
+      }
+      // eslint-disable-next-line no-console
+      console.log('[F12b] discount_pct=null cohérent : aucun palier atteint');
     }
   });
 });

@@ -10,10 +10,14 @@
  *      - Cliquer "Partager" → POST /api/shared-carts/from-cart-items
  *      - Récupérer le token depuis sessionStorage['kmrc_share']
  *   2. Contexte PARTICIPANT (nouveau browser context, ANONYME) :
- *      - Charger la page publique /?shared=<token>
- *      - Vérifier que la vue groupe s'affiche
- *      - Vérifier côté API que le panier est visible publiquement
+ *      - Charger la page publique /?p=<token> (b-group-view.js:89 lit `p`,
+ *        PAS `shared` — un ancien draft de ce test utilisait `?shared=`,
+ *        ce qui ne charge jamais la vue groupe)
+ *      - Soumettre une vraie estimation via POST /public/:token/estimations
+ *        (endpoint public, aucune auth) — c'est l'action métier réelle du
+ *        participant, pas juste un chargement de page
  *   3. Vérification backend :
+ *      - GET /public/:token/estimations → le compte a bien augmenté
  *      - GET /api/shared-carts/public/:token → panier existe, status 'open'
  *   4. Cleanup : annuler le panier partagé
  *
@@ -29,7 +33,7 @@ const {
   verifySharedCart, getClientShareToken, getClientShareState,
   cancelAnyActiveSharedCart, spyOnApi,
 } = require('../helpers/api.helpers');
-const { getSharePageUrl } = require('../helpers/business.helpers');
+const { getSharePageUrl, submitEstimation, getPublicEstimations } = require('../helpers/business.helpers');
 
 test.describe('FLOW — Panier partagé cycle complet (F21)', () => {
 
@@ -129,75 +133,61 @@ test.describe('FLOW — Panier partagé cycle complet (F21)', () => {
     const participantPage = await participantContext.newPage();
 
     try {
-      const shareUrl = getSharePageUrl(token);
+      // ── Agrégat AVANT — pour comparer après l'action participant, plutôt
+      // que de se fier à un texte affiché (une page boutique normale contient
+      // déjà le mot "groupe" via l'onglet nav — un match texte peut passer
+      // sans que la vraie vue groupe se soit jamais chargée). ──
+      const estimationsBefore = await getPublicEstimations(page, token);
+      const countBefore = estimationsBefore?.count ?? estimationsBefore?.estimations?.length ?? 0;
+
+      const shareUrl = getSharePageUrl(token); // ?p=<token> — voir b-group-view.js:89
       // eslint-disable-next-line no-console
       console.log(`[F21] Participant charge : ${shareUrl}`);
 
       await participantPage.goto(shareUrl);
 
-      // Attendre que la page charge et que la vue groupe s'affiche
-      // b-group-view.js détecte ?shared= et bascule automatiquement
-      await participantPage.waitForFunction(
-        () => {
-          // La vue groupe est montée quand le panier partagé est chargé
-          const groupView = document.getElementById('k-group-view');
-          const bodyText = document.body.textContent || '';
-          return (
-            (groupView && groupView.textContent.length > 10) ||
-            bodyText.includes('Panier groupe') ||
-            bodyText.includes('Test F21') ||
-            bodyText.includes('Rejoindre') ||
-            bodyText.includes('Contribuer') ||
-            bodyText.includes('partag')
-          );
-        },
-        { timeout: 15_000 }
-      ).catch(() => {});
-
-      const participantText = await participantPage.locator('body').textContent();
-
-      // Le participant doit voir au moins le titre ou une référence au panier
-      const seesGroup =
-        participantText.includes('Test F21') ||
-        participantText.includes('Panier groupe') ||
-        participantText.includes('partag') ||
-        participantText.includes('Rejoindre') ||
-        participantText.includes('Contribuer') ||
-        participantText.includes('groupe');
-
+      // Vérification souple de la vue (informative, pas la preuve du test) :
+      // la vraie preuve est l'action métier ci-dessous.
+      const groupView = participantPage.locator('#k-group-view');
+      const groupViewVisible = await groupView.isVisible({ timeout: 8_000 }).catch(() => false);
       // eslint-disable-next-line no-console
-      console.log(`[F21] Participant voit la page groupe : ${seesGroup}`);
+      console.log(`[F21] #k-group-view visible côté participant : ${groupViewVisible}`);
 
-      // Si la page groupe ne s'affiche pas, vérifier que le token est quand
-      // même reconnu par l'API (la page publique peut nécessiter une auth
-      // pour contribuer, mais l'affichage doit fonctionner)
-      if (!seesGroup) {
-        // Vérification directe via l'API publique depuis le contexte participant
-        const publicCheck = await participantPage.evaluate(async (args) => {
-          try {
-            const resp = await fetch(
-              new URL(`/api/shared-carts/public/${args.token}`, args.base).href
-            );
-            return { status: resp.status, ok: resp.ok };
-          } catch { return { status: 0, ok: false }; }
-        }, { token, base: BASE_URL.replace('/boutique/', '') });
+      // ── PARTICIPANT : soumettre une vraie estimation via l'endpoint public
+      // (POST /public/:token/estimations — aucune auth requise, c'est le vrai
+      // point d'entrée participant). C'est la preuve que le cycle créateur→
+      // participant fonctionne réellement de bout en bout, indépendamment de
+      // ce que le DOM affiche. ──
+      const submission = await submitEstimation(participantPage, token, {
+        name: 'Participant Test F21',
+        amountKmf: 5000,
+        phone: '7005555',
+      });
+      // eslint-disable-next-line no-console
+      console.log(`[F21] submitEstimation → status ${submission.status}, ok=${submission.ok}`);
 
-        expect(
-          publicCheck.ok,
-          `L'API publique doit retourner le panier (status: ${publicCheck.status})`
-        ).toBe(true);
+      expect(
+        submission.ok,
+        `L'estimation participant doit être acceptée (status: ${submission.status}, error: ${submission.error})`
+      ).toBe(true);
 
-        // eslint-disable-next-line no-console
-        console.log(`[F21] API publique participant OK (status ${publicCheck.status})`);
-      }
+      // ── Vérifier côté API que l'agrégat a bien augmenté ──
+      const estimationsAfter = await getPublicEstimations(page, token);
+      const countAfter = estimationsAfter?.count ?? estimationsAfter?.estimations?.length ?? 0;
 
-      // ═════════════════════════════════════════════════════════════════════
+      expect(
+        countAfter,
+        `Le nombre d'estimations doit avoir augmenté (avant: ${countBefore}, après: ${countAfter})`
+      ).toBeGreaterThan(countBefore);
+      // eslint-disable-next-line no-console
+      console.log(`[F21] Estimations : ${countBefore} → ${countAfter} ✓`);
+
+      // ═══════════════════════════════════════════════════════════════════════
       //  PHASE 4 — Retour créateur : vérifier que le panier est toujours là
-      // ═════════════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════════════════
 
-      // Recharger côté créateur pour voir l'état après « visite » du participant
       const finalCheck = await verifySharedCart(page, token);
-      expect(finalCheck.exists, 'Le panier doit toujours exister après la visite du participant').toBe(true);
+      expect(finalCheck.exists, 'Le panier doit toujours exister après l\'action du participant').toBe(true);
 
       // eslint-disable-next-line no-console
       console.log('[F21] Cycle complet validé ✓');

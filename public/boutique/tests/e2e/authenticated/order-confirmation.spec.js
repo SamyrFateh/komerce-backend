@@ -22,6 +22,7 @@ const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
+const { cancelOrder } = require('../helpers/api.helpers');
 
 test.describe('FLOW — Écran de confirmation post-commande (F04 partiel)', () => {
 
@@ -29,6 +30,17 @@ test.describe('FLOW — Écran de confirmation post-commande (F04 partiel)', () 
     !process.env.ALLOW_ORDER_SUBMIT,
     'Nécessite ALLOW_ORDER_SUBMIT=true — staging uniquement'
   );
+
+  // Ce test soumet réellement une commande cash 'pending' — sans cleanup elle
+  // reste orpheline sur le compte de test à chaque run. Même pattern que F01.
+  let createdOrderId = null;
+
+  test.afterEach(async ({ page }) => {
+    if (createdOrderId) {
+      await cancelOrder(page, createdOrderId, 'e2e-cleanup-F04p');
+      createdOrderId = null;
+    }
+  });
 
   test('F04p — Confirmation : référence + code cash + boutons suivi/continuer', async ({ page }) => {
     // ── 1. Commande complète (même flux que F01 mais sans intercepter) ──
@@ -49,7 +61,22 @@ test.describe('FLOW — Écran de confirmation post-commande (F04 partiel)', () 
 
     const confirmBtn = page.locator('#btn-confirm-order');
     await expect(confirmBtn).toBeEnabled({ timeout: 15_000 });
+
+    // Capturé pour le cleanup uniquement (cancelOrder a besoin de order.id,
+    // pas de la référence KM-... affichée à l'écran — voir routes/orders/cancel.js
+    // qui ne lookup que par o.id).
+    const orderResponsePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/api/orders') && resp.request().method() === 'POST',
+      { timeout: 20_000 }
+    ).catch(() => null);
+
     await confirmBtn.click();
+
+    const orderResp = await orderResponsePromise;
+    const orderBody = await orderResp?.json().catch(() => null);
+    if (orderBody?.order?.id) {
+      createdOrderId = orderBody.order.id;
+    }
 
     // ── 2. Attendre l'écran de confirmation ──
     // renderOrderSuccess() remplace le contenu du checkout par .k-confirm-wrap

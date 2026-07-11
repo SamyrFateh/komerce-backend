@@ -22,6 +22,7 @@ const {
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
 const { getProductStock } = require('../helpers/business.helpers');
+const { cancelOrder } = require('../helpers/api.helpers');
 
 test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
 
@@ -29,6 +30,19 @@ test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
     !process.env.ALLOW_ORDER_SUBMIT,
     'F07 nécessite ALLOW_ORDER_SUBMIT=true — staging uniquement, commande réelle soumise'
   );
+
+  // Sans cleanup, la commande cash 'pending' reste orpheline ET le stock
+  // décrémenté n'est jamais restauré (transitionOrderStatus vers 'cancelled'
+  // restaure le stock — voir routes/orders/cancel.js). Sans ça, chaque run
+  // de ce test épuise un peu plus le stock du produit de test en staging.
+  let createdOrderId = null;
+
+  test.afterEach(async ({ page }) => {
+    if (createdOrderId) {
+      await cancelOrder(page, createdOrderId, 'e2e-cleanup-F07');
+      createdOrderId = null;
+    }
+  });
 
   test('F07 — Stock décrémenté d\'exactement la quantité commandée', async ({ page }) => {
     // ── 1. Charger le catalogue et ouvrir un produit ──
@@ -82,6 +96,9 @@ test.describe('FLOW — Stock décrémenté après commande (F07)', () => {
     const orderBody = await orderResp.json().catch(() => null);
     expect(orderResp.status(), 'La commande doit être créée (201)').toBe(201);
     expect(orderBody?.order?.reference, 'La réponse doit contenir une référence').toBeTruthy();
+    if (orderBody?.order?.id) {
+      createdOrderId = orderBody.order.id; // pour le cleanup en afterEach
+    }
 
     // eslint-disable-next-line no-console
     console.log(`[F07] Commande créée : ${orderBody.order.reference}`);

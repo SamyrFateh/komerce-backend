@@ -120,39 +120,61 @@ async function fetchPublicTracking(page, token) {
 // ─── F21 — Panier partagé participant ────────────────────────────────────────
 
 /**
- * Rejoint un panier partagé en tant que participant via la page publique.
- * Le participant charge /boutique/?shared=:token (ou l'URL de partage)
- * et le code frontal (b-group-view.js) affiche la vue participant.
- * Retourne l'URL de la page de partage telle que le frontend la construit.
+ * Construit l'URL de la page publique du panier partagé telle que le
+ * frontend la reconnaît réellement — voir js/b-group-view.js:89
+ * (`url.searchParams.get('p')`). PAS `?shared=` : ce paramètre n'est lu
+ * nulle part côté frontend, une page avec `?shared=` charge la boutique
+ * normale sans jamais monter la vue groupe.
  */
 function getSharePageUrl(token) {
-  return `${BASE_URL}?shared=${token}`;
+  return `${BASE_URL}?p=${token}`;
 }
 
 /**
- * Contribue un article au panier partagé via POST /api/shared-carts/:id/items
- * (authentifié). [DESTRUCTIF — staging uniquement]
+ * Soumet une estimation participant via POST /public/:token/estimations
+ * (public, PAS d'auth — c'est le vrai endpoint participant, voir
+ * routes/shared-cart.js:122 + services/shared-cart-estimation-service.js
+ * ::validatePayload). Body réel : { participant_name, amount_kmf,
+ * participant_phone? }. [DESTRUCTIF léger — staging uniquement]
+ * Retourne { ok, status, estimation? , error? }.
  */
-async function contributeToSharedCart(page, cartId, item) {
+async function submitEstimation(page, token, { name, amountKmf, phone }) {
   return page.evaluate(async (args) => {
     try {
       const resp = await fetch(
-        new URL(`/api/shared-carts/${args.cartId}/items`, args.base).href,
+        new URL(`/api/shared-carts/public/${args.token}/estimations`, args.base).href,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(args.item),
+          body: JSON.stringify({
+            participant_name: args.name,
+            amount_kmf: args.amountKmf,
+            participant_phone: args.phone || undefined,
+          }),
         }
       );
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        return { ok: false, status: resp.status, error: err.error || err.message };
-      }
-      const data = await resp.json();
-      return { ok: true, data };
-    } catch (e) { return { ok: false, error: e.message }; }
-  }, { cartId, item, base: API_BASE });
+      const body = await resp.json().catch(() => ({}));
+      return { ok: resp.ok, status: resp.status, estimation: body.estimation, error: body.error };
+    } catch (e) { return { ok: false, status: 0, error: e.message }; }
+  }, { token, name, amountKmf, phone, base: API_BASE });
+}
+
+/**
+ * Lit l'agrégat public des estimations d'un panier partagé via
+ * GET /public/:token/estimations (public, ne révèle ni nom ni téléphone —
+ * doctrine de la route). Utile pour vérifier qu'une estimation participant
+ * a bien été comptabilisée, sans dépendre du texte affiché à l'écran.
+ */
+async function getPublicEstimations(page, token) {
+  return page.evaluate(async (args) => {
+    try {
+      const resp = await fetch(
+        new URL(`/api/shared-carts/public/${args.token}/estimations`, args.base).href
+      );
+      if (!resp.ok) return null;
+      return await resp.json();
+    } catch { return null; }
+  }, { token, base: API_BASE });
 }
 
 module.exports = {
@@ -162,5 +184,6 @@ module.exports = {
   getOrderByRef,
   fetchPublicTracking,
   getSharePageUrl,
-  contributeToSharedCart,
+  submitEstimation,
+  getPublicEstimations,
 };

@@ -1052,17 +1052,35 @@ export function makePhoneInput(id, label, dataObj, key) {
 export async function checkWalletBalance() {
     try {
       const res = await fetch('/api/wallet', { credentials: 'same-origin' });
+      // FIX 2026-07-11 (R3) : requêter le DOM APRÈS l'attente réseau, pas avant.
+      // #wallet-section / #wallet-balance-text sont créés et attachés juste après
+      // l'appel à checkWalletBalance() (encore absents du DOM au moment du call) ;
+      // les capturer avant l'await figeait des références null.
+      const section = document.getElementById('wallet-section');
+      const balText = document.getElementById('wallet-balance-text');
       if (res.ok) {
         const data = await res.json();
         state.walletBalance = data.balance_kmf || 0;
-        const section = document.getElementById('wallet-section');
-        if (section && state.walletBalance > 0) {
-          section.classList.add('is-visible');
-          const balText = document.getElementById('wallet-balance-text');
-          if (balText) balText.textContent = 'Solde disponible : ' + fmt(state.walletBalance, 'KMF');
+        // Afficher la section + le texte dans TOUS les cas, pas seulement quand
+        // balance > 0. Avant : à solde 0, le texte restait bloqué sur
+        // "Chargement…" et la section restait display:none pour toujours
+        // (classe is-visible jamais posée) → l'utilisateur ne savait jamais si
+        // son solde avait bien été chargé (0 réel) ou si l'appel avait échoué/pendait.
+        if (section) section.classList.add('is-visible');
+        if (balText) {
+          balText.textContent = state.walletBalance > 0
+            ? 'Solde disponible : ' + fmt(state.walletBalance, 'KMF')
+            : 'Aucun crédit disponible';
         }
+      } else {
+        // Réponse non-ok (401/403/5xx) : ne pas laisser "Chargement…" indéfiniment.
+        if (balText) balText.textContent = 'Crédit indisponible';
       }
-    } catch(e) { /* wallet balance non disponible */ }
+    } catch(e) {
+      // Réseau/parsing : idem, sortir explicitement de l'état "Chargement…".
+      const balText = document.getElementById('wallet-balance-text');
+      if (balText) balText.textContent = 'Crédit indisponible';
+    }
   }
 
 export function updateWalletDisplay() {

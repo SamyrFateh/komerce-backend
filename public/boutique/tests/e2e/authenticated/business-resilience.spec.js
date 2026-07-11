@@ -27,6 +27,11 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
   // ─── R1 — Double clic "Confirmer" ──────────────────────────────────────────
 
   test('R1 — Double clic rapide sur confirmer ne crée pas de doublon', async ({ page }) => {
+    // Flux multi-étapes (carte → panier → checkout → relais → double clic) en
+    // mode DISTANT : aligné sur le précédent établi dans wallet-lifecycle.spec.js
+    // pour les flux qui dépassent le budget par défaut de 60s.
+    test.setTimeout(90_000);
+
     await page.goto(BASE_URL);
     await waitForGrid(page);
     await openFirstCard(page);
@@ -41,12 +46,15 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
 
     await page.locator('#ck-relais-summary').waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
 
-    // Intercepter TOUTES les requêtes POST /api/orders
+    // Intercepter UNIQUEMENT les POST /api/orders (ne pas toucher les GET,
+    // ex. listing/tracking, qui matchent aussi le glob '**/api/orders*')
     const orderCalls = [];
     await page.route('**/api/orders*', async (route, request) => {
-      if (request.method() === 'POST') {
-        orderCalls.push({ timestamp: Date.now() });
+      if (request.method() !== 'POST') {
+        await route.continue();
+        return;
       }
+      orderCalls.push({ timestamp: Date.now() });
       // Répondre un faux succès (ne pas toucher le vrai backend)
       await route.fulfill({
         status: 201,
@@ -139,6 +147,9 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
   // ─── R3 — Wallet solde = 0 ────────────────────────────────────────────────
 
   test('R3 — Wallet section visible même avec solde 0 (pas de crash)', async ({ page }) => {
+    // Idem R1 : flux multi-étapes en mode DISTANT, budget par défaut trop juste.
+    test.setTimeout(90_000);
+
     await page.goto(BASE_URL);
 
     const session = await verifySession(page);

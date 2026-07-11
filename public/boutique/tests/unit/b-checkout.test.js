@@ -828,6 +828,42 @@ describe('b-checkout', () => {
       expect(document.getElementById('ck-chip-paypal').style.display).toBe('');
     });
 
+    it('checkWalletBalance : solde 0 → sort de "Chargement…" et affiche la section (R3, non-régression)', async () => {
+      // FIX 2026-07-11 : avant, le texte restait bloqué sur "Chargement…" et
+      // #wallet-section restait display:none à jamais quand balance_kmf=0,
+      // car l'ancienne implémentation ne mettait à jour l'UI que si balance > 0.
+      global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 0 }) });
+      renderCheckout();
+      await flush();
+
+      const section = document.getElementById('wallet-section');
+      const balText = document.getElementById('wallet-balance-text');
+      expect(section.classList.contains('is-visible')).toBe(true);
+      expect(balText.textContent).not.toContain('Chargement');
+      expect(balText.textContent).not.toContain('NaN');
+      expect(balText.textContent).not.toContain('undefined');
+    });
+
+    it('checkWalletBalance : solde positif → affiche le montant et rend la section visible', async () => {
+      global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 1500 }) });
+      renderCheckout();
+      await flush();
+
+      const section = document.getElementById('wallet-section');
+      const balText = document.getElementById('wallet-balance-text');
+      expect(section.classList.contains('is-visible')).toBe(true);
+      expect(balText.textContent).toContain('1500');
+    });
+
+    it('checkWalletBalance : échec réseau → sort de "Chargement…" sans crasher', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('network down'));
+      renderCheckout();
+      await flush();
+
+      const balText = document.getElementById('wallet-balance-text');
+      expect(balText.textContent).not.toContain('Chargement');
+    });
+
     it('case "utiliser mon crédit" → délègue à updateWalletDisplay (câblage confirmé par effet)', async () => {
       global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ balance_kmf: 1000 }) });
       renderCheckout();
