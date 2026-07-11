@@ -41,9 +41,18 @@ test.describe('Régression — boutique servie depuis la mauvaise racine HTTP', 
     ).toBe(true);
     expect(headerStyles.height, 'k-header ne doit pas avoir une hauteur nulle').toBeGreaterThan(0);
 
-    // ── 3. Le logo SVG n'a pas une dimension aberrante (symptôme connu du bug) ─
-    const logoBox = await page.locator('.k-logo-svg').first().boundingBox();
-    expect(logoBox, 'le logo doit être visible').not.toBeNull();
+    // ── 3. Le logo n'a pas une dimension aberrante (symptôme connu du bug) ─
+    // En desktop le logo est .k-logo-svg, en mobile il peut être .k-logo-mini ou .k-logo
+    const logoSelectors = ['.k-logo-svg', '.k-logo-mini', '.k-logo'];
+    let logoBox = null;
+    for (const sel of logoSelectors) {
+      const loc = page.locator(sel).first();
+      if ((await loc.count()) > 0) {
+        logoBox = await loc.boundingBox();
+        if (logoBox) break;
+      }
+    }
+    expect(logoBox, 'le logo doit être visible (aucun sélecteur trouvé parmi .k-logo-svg, .k-logo-mini, .k-logo)').not.toBeNull();
     expect(logoBox.width, 'logo anormalement géant (CSS manquant ?)').toBeLessThan(400);
     expect(logoBox.height, 'logo anormalement géant (CSS manquant ?)').toBeLessThan(200);
 

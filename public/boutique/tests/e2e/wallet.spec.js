@@ -20,6 +20,14 @@ const { test, expect } = require('@playwright/test');
 const { BASE_URL } = require('./helpers/boutique.helpers');
 
 test.describe('E-WALLET-AUTH — Porte-monnaie (session réelle)', () => {
+  test.beforeEach(async ({}, testInfo) => {
+    // Ces tests nécessitent une session authentifiée (projet "authenticated").
+    // En mode anonyme, le gate d'auth est affiché — c'est le comportement attendu.
+    if (testInfo.project.name !== 'authenticated') {
+      testInfo.skip(true, 'Nécessite le projet "authenticated" avec storageState (TEST_ACCOUNT_PHONE/OTP)');
+    }
+  });
+
   test('EA1 — Session authentifiée → jamais le gate d\'identification', async ({ page }) => {
     await page.goto(BASE_URL);
     await page.locator('[data-tab="wallet"]').first().click();
