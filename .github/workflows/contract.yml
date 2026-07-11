@@ -10,6 +10,17 @@ name: Contract & Security (app-booting gates)
 on:
   pull_request:
     branches: [main]
+    # L'introspection du contrat ne doit bloquer que les PR capables de changer
+    # la surface HTTP ou le générateur. Les gates/docs/scripts de gouvernance
+    # n'altèrent pas le contrat runtime et ne doivent pas réveiller une dette de
+    # génération préexistante sans rapport avec leur blast radius.
+    paths:
+      - 'routes/**'
+      - 'validators/**'
+      - 'bootstrap/**'
+      - 'server.js'
+      - 'scripts/contract-generate.js'
+      - 'docs/contract/**'
   push:
     branches: [main]
 
