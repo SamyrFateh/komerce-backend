@@ -22,7 +22,7 @@
     {
       "id": "transport-cost-allocation",
       "version": 1,
-      "revision": "2026-07-11-air-cost-allocation-v1",
+      "revision": "2026-07-11-shipment-cost-wiring-v1",
       "owner": "economic-engine",
       "contractPaths": [
         "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
