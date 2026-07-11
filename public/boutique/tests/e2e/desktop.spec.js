@@ -18,9 +18,9 @@ test.describe('E-DESK — Layout desktop', () => {
 
   test.beforeEach(async ({ page }) => {
     test.skip(!IS_REMOTE, 'Nécessite le catalogue réel');
-    const isDesktop = await page.evaluate(() => window.innerWidth >= 900);
-    test.skip(!isDesktop, 'Tests desktop uniquement (viewport ≥ 900px)');
     await page.goto(BASE_URL);
+    const isDesktop = await page.evaluate(() => window.innerWidth >= 900);
+    if (!isDesktop) { test.skip(); return; }
     await waitForGrid(page);
   });
 

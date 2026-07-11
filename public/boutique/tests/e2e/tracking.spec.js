@@ -32,7 +32,10 @@ test.describe('E-TRACKING — Suivi commandes', () => {
       text.includes('KM-') ||                 // référence de commande visible
       text.includes('Réessayer') ||            // erreur + retry
       text.includes('Impossible') ||           // erreur
-      text.includes('Suivre une commande');    // search mode
+      text.includes('Suivre une commande') ||  // search mode (ancien)
+      text.includes('Suivi de commande') ||    // search-first mode (actuel)
+      text.includes('référence') ||            // formulaire recherche par référence
+      text.includes('historique');              // bouton "Voir tout mon historique"
     expect(terminal).toBe(true);
   });
 

@@ -164,14 +164,22 @@ const COLUMN_OWNERSHIP = [
     ops:     ['UPDATE'],
     table:   'parcels',
     column:  'status',
-    owners:  new Set(['utils/parcelSync.js']),
+    // ── Deux owners légitimes, pas un seul ──────────────────────────────
+    // utils/parcelSync.js       : chemin scan (routes/scans.js, routes/hub.js)
+    // services/parcel-operations.js::transitionParcelStatus() : chemin générique
+    //   (parcel-operations.js, cancelBackorder, admin) — SSOT déclaré dans son
+    //   propre header. Découvert manquant de la matrice le 2026-07-11 : ne passait
+    //   le gate que par trou de détection (SET dynamique, cf. commentaire plus bas),
+    //   pas parce qu'il était autorisé. Vérifié le 2026-07-11 : aucune autre écriture
+    //   directe de parcels.status en dehors de ces deux fichiers.
+    owners:  new Set(['utils/parcelSync.js', 'services/parcel-operations.js']),
     allowlist: new Set([
       'scripts/fix-schema.js',
       'scripts/seed.js',
       // ── Chaos-testing — même raison que orders.payment_status ci-dessus ──
       'services/simulator/state-advancer.js',
     ]),
-    remedy: 'Passer par utils/parcelSync.js pour alimenter parcel_events en même temps',
+    remedy: 'Passer par utils/parcelSync.js (flux scan) ou services/parcel-operations.js::transitionParcelStatus() (flux générique)',
   },
   {
     id:      'wallet_transactions',
@@ -382,6 +390,8 @@ function checkColumnOwnership() {
 
       const content = readFile(file);
       const lines   = content.split('\n');
+
+      // Pass 1 — écriture littérale sur une seule ligne : `UPDATE table SET column =`
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].trim().startsWith('//')) continue;
         if (patterns.some(p => p.test(lines[i]))) {
@@ -389,6 +399,36 @@ function checkColumnOwnership() {
             `${relPath}:${i + 1} — écriture non autorisée sur ${entry.table}${entry.column ? '.' + entry.column : ''} (${entry.ops.join('/')})`,
             entry.remedy
           );
+        }
+      }
+
+      // Pass 2 — SET dynamique ou SQL multi-lignes (durcissement 2026-07-11, I-BACK-3/14)
+      // `UPDATE table SET ${arr.join(', ')}` ou un SQL étalé sur plusieurs lignes ne
+      // contiennent jamais littéralement "SET column =" sur une même ligne → invisibles
+      // à la Pass 1. On repère toute ligne `UPDATE table` hors owner/allowlist, puis on
+      // cherche dans une fenêtre autour un fragment `"column ="` / `` `column =` `` —
+      // signature d'une chaîne SQL poussée dans un tableau `updates`/`setParts`, ou
+      // d'un SET multi-lignes littéral. Le lookbehind sur guillemet/backtick (et pas
+      // simple espace) évite de confondre avec des comparaisons JS (`status === ...`).
+      if (entry.column && entry.ops.includes('UPDATE')) {
+        const updateLineRe   = new RegExp(`UPDATE\\s+${entry.table}\\b`, 'i');
+        const columnAssignRe = new RegExp('[`\'"]\\s*' + entry.column + '\\s*=(?!=)', 'i');
+
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].trim().startsWith('//')) continue;
+          if (!updateLineRe.test(lines[i])) continue;
+          if (patterns.some(p => p.test(lines[i]))) continue; // déjà remonté en Pass 1
+
+          const windowStart = Math.max(0, i - 60);
+          const windowEnd   = Math.min(lines.length, i + 20);
+          const windowText  = lines.slice(windowStart, windowEnd).join('\n');
+
+          if (columnAssignRe.test(windowText)) {
+            violate(entry.rule,
+              `${relPath}:${i + 1} — UPDATE ${entry.table} avec SET dynamique/multi-lignes ; fragment "${entry.column} =" détecté à proximité (vérification manuelle requise)`,
+              entry.remedy
+            );
+          }
         }
       }
     }
