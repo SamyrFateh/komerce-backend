@@ -36,6 +36,16 @@ module.exports = defineConfig({
   // Relance automatique en cas d'échec flaky (CI uniquement)
   retries: process.env.CI ? 2 : 0,
 
+  // En mode DISTANT, tous les specs `authenticated/` partagent le même
+  // storageState (playwright/.auth/user.json) ET le même compte réel de
+  // staging. Le paralléliser entre plusieurs specs (workers > 1) fait muter
+  // panier/wallet/session en concurrence par plusieurs workers à la fois —
+  // observé concrètement : contexte navigateur fermé en plein test (R1),
+  // sans rapport avec un vrai bug métier. 1 worker = specs authenticated
+  // strictement séquentiels, quel que soit le nombre de fichiers passés en
+  // ligne de commande.
+  workers: isRemote ? 1 : undefined,
+
   // Rapport lisible en local, JUnit en CI
   reporter: process.env.CI
     ? [['junit', { outputFile: 'test-results/results.xml' }], ['list']]

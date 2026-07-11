@@ -32,19 +32,33 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
     // pour les flux qui dépassent le budget par défaut de 60s.
     test.setTimeout(90_000);
 
+    // ⏱ DIAGNOSTIC TEMPORAIRE — checkpoints pour localiser un blocage.
+    // À retirer une fois le hang localisé.
+    const t0 = Date.now();
+    const cp = (label) => console.log(`[R1][+${((Date.now() - t0) / 1000).toFixed(1)}s] ${label}`);
+
+    cp('avant goto');
     await page.goto(BASE_URL);
+    cp('après goto, avant waitForGrid');
     await waitForGrid(page);
+    cp('après waitForGrid, avant openFirstCard');
     await openFirstCard(page);
+    cp('après openFirstCard, avant addToCartFromModal');
     await addToCartFromModal(page);
+    cp('après addToCartFromModal, avant openCheckout');
     await openCheckout(page);
+    cp('après openCheckout, avant selectRecipientOther');
     await selectRecipientOther(page);
+    cp('après selectRecipientOther');
 
     const nameInput = page.locator('#of-beneficiary-name');
     const phoneInput = page.locator('#of-beneficiary-phone');
     if ((await nameInput.count()) > 0) await nameInput.fill('Test Double Clic');
     if ((await phoneInput.count()) > 0) await phoneInput.fill('7004444');
+    cp('après remplissage bénéficiaire, avant wait relais-summary');
 
     await page.locator('#ck-relais-summary').waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+    cp('après wait relais-summary');
 
     // Intercepter UNIQUEMENT les POST /api/orders (ne pas toucher les GET,
     // ex. listing/tracking, qui matchent aussi le glob '**/api/orders*')
@@ -68,13 +82,17 @@ test.describe('ROBUSTESSE — Flux business edge cases', () => {
 
     const confirmBtn = page.locator('#btn-confirm-order');
     await expect(confirmBtn).toBeEnabled({ timeout: 15_000 });
+    cp('confirmBtn enabled, avant double clic');
 
     // Double clic rapide (simule un doigt nerveux sur mobile)
     await confirmBtn.click();
+    cp('après 1er clic');
     await confirmBtn.click({ force: true }).catch(() => {});
+    cp('après 2e clic');
 
     // Attendre un peu pour laisser les éventuels doubles passer
     await page.waitForTimeout(2_000);
+    cp('après wait 2s final');
 
     // Le frontend doit avoir envoyé AU PLUS 1 requête
     // (btn.dataset.busy = '1' empêche le double submit)

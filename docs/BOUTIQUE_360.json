@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-11T14:39:06.295Z",
+  "generatedAt": "2026-07-11T20:47:47.100Z",
   "summary": {
     "modules": 66,
     "withHeader": 66,
-    "events": 17,
-    "declaredActive": 11,
+    "events": 18,
+    "declaredActive": 12,
     "declaredDead": 5,
     "cssBundles": 3,
     "endpoints": 51,
@@ -403,7 +403,8 @@
         "b-share-cart.js"
       ],
       "emits": [
-        "modal:close"
+        "modal:close",
+        "nav:goto-track"
       ],
       "listens": [],
       "imports": [
@@ -1132,7 +1133,10 @@
       "emits": [
         "view:changed"
       ],
-      "listens": [],
+      "listens": [
+        "cart:update",
+        "nav:goto-track"
+      ],
       "imports": [
         "b-bus",
         "b-store",
@@ -2000,7 +2004,8 @@
       "listeners": [
         "b-cart-core",
         "b-cart-pill",
-        "b-mini-cart"
+        "b-mini-cart",
+        "b-nav"
       ]
     },
     "modal:close": {
@@ -2067,6 +2072,14 @@
       ],
       "listeners": [
         "b-catalog"
+      ]
+    },
+    "nav:goto-track": {
+      "emitters": [
+        "b-checkout"
+      ],
+      "listeners": [
+        "b-nav"
       ]
     },
     "sidebar:built": {
@@ -2738,7 +2751,8 @@
       "cat:select",
       "chip:center",
       "catalog:cat-changed",
-      "modal:suggestions-rendered"
+      "modal:suggestions-rendered",
+      "nav:goto-track"
     ],
     "dead": [
       "cart:add",

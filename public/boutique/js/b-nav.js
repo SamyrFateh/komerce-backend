@@ -217,6 +217,15 @@ export function switchView(tab) {
   }
 }
 
+// FIX 2026-07-11 : point d'entrée unique vers l'onglet Suivi, exposé via le
+// bus plutôt qu'un import direct — b-checkout.js émettait déjà des appels
+// bruts à renderTrackView()/switchView() sans les importer (donc no-op
+// silencieux, cf. REX F04p). Un import direct depuis b-checkout.js créerait
+// un cycle (b-nav.js importe déjà checkoutCart/closeOrderModal depuis
+// b-checkout.js) ; le bus découple proprement les deux sens, dans le même
+// esprit qu'ARCH-1 (pill/mini-cart via bus.on('cart:update')).
+bus.on('nav:goto-track', () => { renderTrackView(); switchView('track'); });
+
 /**
  * Branche la bottom nav mobile + les boutons nav desktop.
  */

@@ -28,7 +28,13 @@ async function getProductStock(page, productId) {
       );
       if (!resp.ok) return null;
       const data = await resp.json();
-      return { stock: data.stock ?? null, name: data.name || '' };
+      // price_kmf est le champ public réel (voir catalog-public-view.js::
+      // PUBLIC_PRODUCT_FIELDS) — il n'existe pas de champ `price` brut.
+      return {
+        stock: data.stock ?? null,
+        name: data.name || '',
+        price_kmf: data.price_kmf ?? null,
+      };
     } catch { return null; }
   }, { pid: productId, base: API_BASE });
 }

@@ -1275,15 +1275,25 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
     if (trackBtn) {
       trackBtn.addEventListener('click', () => {
         closeOrderModal();
-        if (typeof renderTrackView === 'function') renderTrackView();
-        if (typeof switchView === 'function') switchView('track');
+        // FIX 2026-07-11 : renderTrackView()/switchView() étaient référencés
+        // ici en identifiants nus, jamais importés dans ce module — le garde
+        // `typeof x === 'function'` avalait silencieusement l'absence (pas de
+        // ReferenceError), donc rien ne s'exécutait jamais après le clic
+        // (0 appel réseau constaté, #k-track-view jamais peuplé). On réutilise
+        // le contrat unique déjà en place pour l'onglet bas "Suivre"
+        // (b-nav.js) via le bus, pour éviter tout cycle d'import direct
+        // b-checkout.js ↔ b-nav.js.
+        bus.emit('nav:goto-track');
         document.querySelectorAll('.k-bnav-item').forEach(i => i.classList.remove('active'));
         const trackNav = document.querySelector('.k-bnav-item[data-tab="track"]');
         if (trackNav) trackNav.classList.add('active');
-        setTimeout(() => {
-          const refInput = document.getElementById('k-otp-ref');
-          if (refInput) { refInput.value = order.reference || ''; document.getElementById('k-otp-ref-btn')?.click(); }
-        }, 350);
+        // Suppression du bloc #k-otp-ref/#k-otp-ref-btn (2026-07-11) : ces IDs
+        // n'existent plus dans le DOM réel généré par b-tracking.js (qui
+        // utilise #k-track-digits/#k-track-quick-btn) — code mort qui ne
+        // s'exécutait jamais. Aucune pré-saisie n'est nécessaire : la
+        // commande qu'on vient de créer apparaît naturellement en tête de
+        // renderMyOrdersList() (tri created_at DESC), identifiable via
+        // l'attribut déjà présent `data-ref` sur `.k-myorder-card`.
       });
     }
   }, 0);

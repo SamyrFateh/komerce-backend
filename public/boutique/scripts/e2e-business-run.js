@@ -41,6 +41,12 @@ const flagVal = (name) => {
 const specFilter = flagVal('spec');
 const headed = args.includes('--headed');
 
+// Timeout execSync par défaut, appliqué à toute spec sans `timeoutMs` propre.
+// Certaines phases (ex: resilience, qui enchaîne plusieurs tests en série
+// --workers=1) ont besoin de plus de marge — voir `timeoutMs` par entrée
+// dans ALL_SPECS ci-dessous plutôt que d'augmenter ce défaut globalement.
+const DEFAULT_TIMEOUT_MS = 120_000;
+
 // ── Couleurs terminal ────────────────────────────────────────────────────
 const c = {
   reset: '\x1b[0m', bold: '\x1b[1m',
@@ -86,7 +92,12 @@ const ALL_SPECS = [
   { id: 'F12p', file: 'loyalty-tier.spec.js',          label: 'Fidélité paliers + cohérence',  requires: ['auth'], phase: 'contracts' },
 
   // Phase 7 — Robustesse
-  { id: 'R*',  file: 'business-resilience.spec.js',   label: 'Robustesse business',        requires: ['auth'], phase: 'resilience' },
+  // 5 tests (R1-R5) enchaînés en série (--workers=1) : mesuré à ~78s en
+  // exécution directe (hors orchestrateur) — 120s par défaut ne laisse
+  // quasi aucune marge et produit un faux FAIL par timeout execSync, pas
+  // un vrai échec de test. 240s donne une marge confortable même si un
+  // futur R6/R7 s'ajoute à la suite.
+  { id: 'R*',  file: 'business-resilience.spec.js',   label: 'Robustesse business',        requires: ['auth'], phase: 'resilience', timeoutMs: 240_000 },
 ];
 
 // ── Filtre selon les features activées ───────────────────────────────────
@@ -161,18 +172,28 @@ for (const spec of runnable) {
       stdio: 'pipe',
       env: { ...process.env, BASE_URL },
       cwd: ROOT,
-      timeout: 120_000,
+      timeout: spec.timeoutMs || DEFAULT_TIMEOUT_MS,
     });
     const dur = ((Date.now() - start) / 1000).toFixed(1);
     results.push({ ...spec, status: 'pass', duration: dur });
     console.log(`${label} ${c.green}✓ OK${c.reset} ${c.dim}(${dur}s)${c.reset}`);
   } catch (err) {
     const dur = ((Date.now() - start) / 1000).toFixed(1);
+    // err.signal === 'SIGTERM' + err.killed === true → execSync a tué le
+    // process car timeoutMs était dépassé. Ce n'est PAS un échec Playwright
+    // (aucun test n'a forcément échoué) — le distinguer évite de rechercher
+    // un bug fonctionnel là où il s'agit d'un budget de temps trop court.
+    const wasTimeout = err.signal === 'SIGTERM' && err.killed;
     // Extraire la dernière ligne d'erreur
     const stderr = (err.stderr || '').toString().trim().split('\n').pop();
-    results.push({ ...spec, status: 'fail', duration: dur, error: stderr });
+    results.push({ ...spec, status: 'fail', duration: dur, error: wasTimeout ? 'TIMEOUT execSync' : stderr, wasTimeout });
     console.log(`${label} ${c.red}✗ FAIL${c.reset} ${c.dim}(${dur}s)${c.reset}`);
-    if (stderr) console.log(`         ${c.red}${stderr}${c.reset}`);
+    if (wasTimeout) {
+      const limit = ((spec.timeoutMs || DEFAULT_TIMEOUT_MS) / 1000).toFixed(0);
+      console.log(`         ${c.yellow}⏱ Timeout execSync dépassé (limite: ${limit}s) — pas forcément un vrai échec de test, augmenter timeoutMs pour ${spec.id}${c.reset}`);
+    } else if (stderr) {
+      console.log(`         ${c.red}${stderr}${c.reset}`);
+    }
   }
 }
 
