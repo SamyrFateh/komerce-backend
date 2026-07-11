@@ -21,14 +21,16 @@ jobs:
       - run: npm ci
       - name: Capture governance outputs
         run: |
-          npm run gate:docs-lint > docs-lint.txt 2>&1 || true
+          npm run gate:feature-audit > feature-audit.txt 2>&1 || true
+          npm run map:check > map-check.txt 2>&1 || true
           npm run gate:concept-impact > concept-impact.txt 2>&1 || true
           npm test -- --runTestsByPath tests/unit/concept-impact-gate.test.js --no-coverage > concept-test.txt 2>&1 || true
       - uses: actions/upload-artifact@v4
         with:
           name: concept-gate-diagnostics
           path: |
-            docs-lint.txt
+            feature-audit.txt
+            map-check.txt
             concept-impact.txt
             concept-test.txt
           if-no-files-found: error
