@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 360,
-    "filesWithFullHeaders": 333,
+    "scannedCodeFiles": 361,
+    "filesWithFullHeaders": 334,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 360,
+    "filesWithAnyHeaders": 361,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 720,
-    "edges": 4137,
+    "graphNodes": 723,
+    "edges": 4146,
     "dbTables": 109,
-    "doctrines": 134,
-    "impactAreas": 117,
-    "unresolvedCodeEdges": 393,
+    "doctrines": 135,
+    "impactAreas": 118,
+    "unresolvedCodeEdges": 394,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -33,7 +33,7 @@
     "infrastructure": 20,
     "notification": 15,
     "auth": 8,
-    "logistics": 35,
+    "logistics": 36,
     "boutique": 37,
     "catalog": 36,
     "checkout": 2,
@@ -77,7 +77,7 @@
     "view-model": 3,
     "route": 99,
     "entrypoint": 1,
-    "service": 144,
+    "service": 145,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 100,
-    "high": 150,
+    "high": 151,
     "low": 34
   },
   "nodes": [
@@ -15725,6 +15725,45 @@
       "version": "2026-06"
     },
     {
+      "id": "services/transport-rails.js",
+      "file": "services/transport-rails.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "transport-rail-registry",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "transport_rail_code"
+      ],
+      "outputs": [
+        "canonical_transport_rail"
+      ],
+      "depends": [],
+      "usedBy": [
+        "future transport routing and packing orchestration"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+      ],
+      "impactAreas": [
+        "logistics",
+        "orders",
+        "economic-engine",
+        "catalog",
+        "customs",
+        "notifications",
+        "dashboard"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/verify-qr-collection.js",
       "file": "services/verify-qr-collection.js",
       "type": "file",
@@ -18155,6 +18194,11 @@
       "doctrine": "ING-I3)"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+    },
+    {
       "id": "doctrine:whatsapp_template_trace",
       "type": "doctrine",
       "doctrine": "whatsapp_template_trace"
@@ -18748,6 +18792,11 @@
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
+    },
+    {
+      "id": "impact:customs",
+      "type": "impact-area",
+      "area": "customs"
     },
     {
       "id": "impact:api",
@@ -41420,6 +41469,60 @@
       "label": "product-discovery"
     },
     {
+      "from": "future transport routing and packing orchestration",
+      "to": "services/transport-rails.js",
+      "type": "uses",
+      "label": "future transport routing and packing orchestration"
+    },
+    {
+      "from": "services/transport-rails.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+    },
+    {
+      "from": "services/transport-rails.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/transport-rails.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/transport-rails.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/transport-rails.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/transport-rails.js",
+      "to": "impact:customs",
+      "type": "impact",
+      "label": "customs"
+    },
+    {
+      "from": "services/transport-rails.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
+    },
+    {
+      "from": "services/transport-rails.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
       "from": "services/verify-qr-collection.js",
       "to": "db.js",
       "type": "depends",
@@ -58841,6 +58944,44 @@
         "services/suppliers/connectors/manual-connector.js"
       ]
     },
+    "services/transport-rails.js": {
+      "role": "transport-rail-registry",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "future transport routing and packing orchestration"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+      ],
+      "impactAreas": [
+        "logistics",
+        "orders",
+        "economic-engine",
+        "catalog",
+        "customs",
+        "notifications",
+        "dashboard"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
+        "impact:catalog",
+        "impact:customs",
+        "impact:dashboard",
+        "impact:economic-engine",
+        "impact:logistics",
+        "impact:notifications",
+        "impact:orders"
+      ]
+    },
     "services/verify-qr-collection.js": {
       "role": "verify-qr-collection",
       "domain": "orders",
@@ -63077,6 +63218,12 @@
       "to": "schemas/catalog/normalized-supplier-product.v1.schema.json",
       "type": "depends",
       "label": "schemas/catalog/normalized-supplier-product.v1.schema.json"
+    },
+    {
+      "from": "future transport routing and packing orchestration",
+      "to": "services/transport-rails.js",
+      "type": "uses",
+      "label": "future transport routing and packing orchestration"
     },
     {
       "from": "services/verify-qr-collection.js",
