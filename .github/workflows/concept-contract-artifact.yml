@@ -38,10 +38,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run contract:generate
-      - name: Capture drift patch
-        run: git diff -- docs/contract/openapi.json docs/contract/DEBT.md > contract.patch
+      - name: Capture diagnostics
+        run: |
+          git diff -- docs/contract/openapi.json docs/contract/DEBT.md > contract.patch
+          find .github/workflows -maxdepth 1 -type f -printf '%f\n' | sort > workflows.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: generated-contract-patch
-          path: contract.patch
+          name: concept-gate-diagnostics
+          path: |
+            contract.patch
+            workflows.txt
           if-no-files-found: error
