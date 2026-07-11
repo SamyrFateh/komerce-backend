@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       ./_helpers, ./allocate, ./variance
+ * @depends       ./_helpers, ./allocate, ./variance, ../transport-cost-allocation
  * @used-by       routes/admin-costing.js, services/customs-shipment-service.js
  * @db-read       customs_shipment_parcels, customs_shipments, finance_config, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
  * @db-write      order_item_real_cost_allocations
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  economic-engine
- * @version       2026-06
+ * @doctrine      docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md
+ * @impact-areas  economic-engine, logistics, orders, customs, dashboard
+ * @version       2026-07
  */
 
 /**
@@ -45,24 +45,9 @@
  *   Le dashboard utilise ces flags pour ne JAMAIS afficher une marge
  *   reelle si elle est partielle, sans le signaler explicitement.
  *
- * ── Lot C5 (Lot B/C Refacto) ─────────────────────────────────────────────
- * Ce fichier était un monolithe de 914 lignes, 0 test (calcul financier —
- * le plus sensible du Lot C, cf. LOT_B_C_REFACTO.md). Découpé en 3 modules
- * + un barrel, après pose de tests de caractérisation :
- *   - tests/unit/cost-allocation.test.js (helpers purs + variance/lecture)
- *   - tests/unit/cost-allocation-allocate.test.js (12 cas, les 4 allocate*)
- *
- *   _helpers.js  — constantes doctrine, shareByWeight, taxableWeight,
- *                  lockEstimatedCostsForOrder (délègue à order-cost-snapshot)
- *   allocate.js  — allocateShipmentRealCosts, allocateParcelRealCosts,
- *                  allocateMonthlyFixedCosts, allocateProductPurchaseCosts
- *   variance.js  — computeOrderCostVariance, computeProductCostVariance,
- *                  getOrderCostTruth
- *
- * Ce barrel ré-exporte exactement la même interface publique qu'avant —
- * `require('../services/cost-allocation')` reste valide à l'identique
- * pour les deux appelants (routes/admin-costing.js,
- * services/customs-shipment-service.js).
+ * Le freight shipment est désormais délégué au contrat transverse
+ * transport-cost-allocation. Les trois autres allocations réelles restent
+ * dans allocate.js.
  */
 
 'use strict';
@@ -70,6 +55,7 @@
 const helpers = require('./_helpers');
 const allocate = require('./allocate');
 const variance = require('./variance');
+const transportCostAllocation = require('../transport-cost-allocation');
 
 module.exports = {
   // Constantes doctrine
@@ -87,7 +73,7 @@ module.exports = {
   lockEstimatedCostsForOrder: helpers.lockEstimatedCostsForOrder,
 
   // Allocations reelles
-  allocateShipmentRealCosts: allocate.allocateShipmentRealCosts,
+  allocateShipmentRealCosts: transportCostAllocation.allocateShipmentRealCosts,
   allocateParcelRealCosts: allocate.allocateParcelRealCosts,
   allocateProductPurchaseCosts: allocate.allocateProductPurchaseCosts,
   allocateMonthlyFixedCosts: allocate.allocateMonthlyFixedCosts,
