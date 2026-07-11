@@ -5,11 +5,10 @@ on:
     types: [opened, synchronize]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   capture-contract:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
@@ -33,23 +32,16 @@ jobs:
       META_WA_APP_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
       - run: npm ci
       - run: npm run contract:generate
-      - name: Commit generated contract drift
-        run: |
-          if git diff --quiet -- docs/contract/openapi.json docs/contract/DEBT.md; then
-            echo "Contract already current"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/contract/openapi.json docs/contract/DEBT.md
-          git commit -m "chore(contract): refresh generated API contract"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+      - name: Capture drift patch
+        run: git diff -- docs/contract/openapi.json docs/contract/DEBT.md > contract.patch
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generated-contract-patch
+          path: contract.patch
+          if-no-files-found: error
