@@ -1,0 +1,47 @@
+{
+  "$schema": "komerce-concept-impact-acks-v1",
+  "acks": [
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-doctrine",
+      "feature": "economic-engine",
+      "status": "compatible",
+      "reason": "Le rail est connu mais AIR_EXPRESS reste pricing PENDING et non expose commercialement; aucun prix air n'est invente dans cette PR."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-doctrine",
+      "feature": "orders",
+      "status": "compatible",
+      "reason": "Aucun rail execute n'est encore assigne ni persiste; la future materialisation devra supprimer tout defaut maritime implicite."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-doctrine",
+      "feature": "catalog",
+      "status": "compatible",
+      "reason": "L'eligibilite AIR n'est pas encore projetee en boutique; commercial_exposure reste DISABLED."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-doctrine",
+      "feature": "customs",
+      "status": "compatible",
+      "reason": "La doctrine reconnait que les contraintes douanieres et de transportabilite alimenteront l'eligibilite; aucun moteur d'eligibilite n'est modifie ici."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-doctrine",
+      "feature": "notifications",
+      "status": "not-applicable",
+      "reason": "Aucune promesse AIR ni ETA AIR n'est exposee au client dans cette PR."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-doctrine",
+      "feature": "dashboard",
+      "status": "not-applicable",
+      "reason": "Aucune donnee runtime SEA/AIR n'existe encore a segmenter; la projection sera requise lors de la materialisation du rail."
+    }
+  ]
+}
