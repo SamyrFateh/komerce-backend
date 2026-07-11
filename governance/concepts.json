@@ -18,6 +18,22 @@
         { "feature": "notifications", "critical": false },
         { "feature": "dashboard", "critical": false }
       ]
+    },
+    {
+      "id": "transport-cost-allocation",
+      "version": 1,
+      "revision": "2026-07-11-air-cost-allocation-v1",
+      "owner": "economic-engine",
+      "contractPaths": [
+        "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
+        "services/transport-cost-allocation.js"
+      ],
+      "consumers": [
+        { "feature": "logistics", "critical": true },
+        { "feature": "orders", "critical": true },
+        { "feature": "customs", "critical": true },
+        { "feature": "dashboard", "critical": false }
+      ]
     }
   ]
 }
