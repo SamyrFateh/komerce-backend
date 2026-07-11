@@ -162,6 +162,47 @@ async function cancelSharedCart(page, id) {
 }
 
 /**
+ * Vérifie qu'une commande existe bien côté backend (GET /api/orders/:ref).
+ * :ref accepte l'UUID (order.id) ou la référence humaine (order.reference) —
+ * voir routes/orders/detail.js, softAuthenticate donc safe avec la session
+ * du compte de test.
+ * Retourne { exists: boolean, order?: {...}, items?: [...] }
+ */
+async function verifyOrder(page, ref) {
+  return page.evaluate(async (args) => {
+    try {
+      const resp = await fetch(new URL(`/api/orders/${args.ref}`, args.base).href, { credentials: 'include' });
+      if (!resp.ok) return { exists: false };
+      const data = await resp.json();
+      return { exists: true, order: data.order || data, items: data.items || [] };
+    } catch { return { exists: false }; }
+  }, { ref, base: BASE_URL.replace('/boutique/', '') });
+}
+
+/**
+ * [DESTRUCTIF, mais no-op financier pour une commande cash 'pending' —
+ * voir routes/orders/cancel.js : le remboursement ne s'exécute que si
+ * payment_status === 'paid'] Annule une commande via POST /api/orders/:id/cancel.
+ * À utiliser en cleanup après un F01 réel (ALLOW_ORDER_SUBMIT=true).
+ * Retourne true si l'annulation a réussi (ou si la commande n'existait déjà
+ * plus / était déjà dans un état terminal — traité comme un succès de nettoyage).
+ */
+async function cancelOrder(page, id, reason = 'e2e-cleanup') {
+  if (!id) return false;
+  return page.evaluate(async (args) => {
+    try {
+      const resp = await fetch(new URL(`/api/orders/${args.id}/cancel`, args.base).href, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason: args.reason }),
+      });
+      return resp.ok || resp.status === 422 || resp.status === 404;
+    } catch { return false; }
+  }, { id, reason, base: BASE_URL.replace('/boutique/', '') });
+}
+
+/**
  * Vérifie côté backend si le compte de test a déjà un panier groupe actif
  * (GET /api/shared-carts/mine) et l'annule le cas échéant. À appeler en
  * beforeEach ET en afterEach de tout test F20 : beforeEach couvre le cas
@@ -240,6 +281,8 @@ module.exports = {
   verifySession,
   verifyWalletBalance,
   getRecentOrders,
+  verifyOrder,
+  cancelOrder,
   verifySharedCart,
   getClientShareToken,
   getClientShareState,

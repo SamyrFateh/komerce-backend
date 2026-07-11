@@ -12,10 +12,15 @@
  *      relais par île, choisi automatiquement par _openRelaisPicker/pick())
  *   6. Laisser Cash comme mode de paiement (coché par défaut dans le DOM)
  *   7. Vérifier que le payload envoyé au backend est correct
+ *   8. Si ALLOW_ORDER_SUBMIT=true : laisser la requête partir réellement,
+ *      vérifier la commande créée côté backend (GET /api/orders/:ref —
+ *      statut, payment_mode, items persistés), puis l'annuler en cleanup.
  *
- * ⚠️ Ce test NE SOUMET PAS la commande en prod — il intercepte la requête
- * API et vérifie le payload sans laisser passer. Pour un test de soumission
- * réel, utiliser staging avec `ALLOW_ORDER_SUBMIT=true`.
+ * ⚠️ Sans `ALLOW_ORDER_SUBMIT=true`, ce test intercepte la requête API et
+ * répond avec un fake succès — il vérifie alors seulement le payload envoyé
+ * par le frontend, jamais ce que le backend persiste. C'est le comportement
+ * par défaut (CI/PR, prod). Pour le flux bout-en-bout réel, tourner contre
+ * staging avec `ALLOW_ORDER_SUBMIT=true` (comme pour ALLOW_GROUP_FLOW).
  */
 'use strict';
 const { test, expect } = require('@playwright/test');
@@ -23,11 +28,23 @@ const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
-const { getClientCart } = require('../helpers/api.helpers');
+const { getClientCart, verifyOrder, cancelOrder } = require('../helpers/api.helpers');
 
 test.describe('FLOW — Commande complète (browse → checkout)', () => {
 
-  test('F01 — Parcours complet : catalogue → panier → checkout → payload vérifié', async ({ page }) => {
+  // Rempli si ALLOW_ORDER_SUBMIT=true fait vraiment passer une commande —
+  // nettoyé après le test même si les assertions plus bas échouent, pour ne
+  // jamais laisser traîner une commande cash 'pending' sur le compte de test.
+  let createdOrderId = null;
+
+  test.afterEach(async ({ page }) => {
+    if (createdOrderId) {
+      await cancelOrder(page, createdOrderId, 'e2e-cleanup-F01');
+      createdOrderId = null;
+    }
+  });
+
+  test('F01 — Parcours complet : catalogue → panier → checkout → commande vérifiée côté backend', async ({ page }) => {
     // ── 1. Charger le catalogue ──
     await page.goto(BASE_URL);
     await waitForGrid(page);
@@ -138,6 +155,15 @@ test.describe('FLOW — Commande complète (browse → checkout)', () => {
     await expect(confirmBtn).toBeEnabled({ timeout: 15_000 }).catch(() => {});
 
     if ((await confirmBtn.count()) > 0 && await confirmBtn.isEnabled()) {
+      // Posé AVANT le clic : capture la vraie réponse serveur quand
+      // ALLOW_ORDER_SUBMIT=true laisse la requête partir en staging (le
+      // fake fulfill() du handler ci-dessus répond aussi à ce waitForResponse,
+      // donc ça marche dans les deux cas — on distingue via l'env plus bas).
+      const responsePromise = page.waitForResponse(
+        (resp) => resp.url().includes('/api/orders') && resp.request().method() === 'POST',
+        { timeout: 20_000 }
+      ).catch(() => null);
+
       await confirmBtn.click();
 
       // submitOrder() a plusieurs retours silencieux (relais non prêt, bénéficiaire
@@ -166,6 +192,27 @@ test.describe('FLOW — Commande complète (browse → checkout)', () => {
       if (call.body) {
         const items = call.body.items || call.body.cart || [];
         expect(items.length).toBeGreaterThanOrEqual(1);
+      }
+
+      // ── 9. ALLOW_ORDER_SUBMIT=true : la commande est réellement créée en
+      // staging — on vérifie sa persistance côté backend (pas seulement le
+      // payload envoyé), puis on la nettoie via afterEach. Sans cette étape,
+      // F01 ne teste que ce que le frontend ENVOIE, jamais ce que le backend
+      // ENREGISTRE (schéma DB, calcul du total, statut initial...).
+      if (process.env.ALLOW_ORDER_SUBMIT) {
+        const response = await responsePromise;
+        expect(response, 'Pas de réponse serveur reçue pour POST /api/orders').not.toBeNull();
+
+        const respBody = await response.json().catch(() => null);
+        const order = respBody?.order;
+        expect(order?.id, 'La réponse doit contenir order.id').toBeTruthy();
+        createdOrderId = order.id; // pour le cleanup en afterEach, même si une assertion échoue plus bas
+
+        const verified = await verifyOrder(page, order.reference || order.id);
+        expect(verified.exists, 'La commande doit exister côté backend (GET /api/orders/:ref)').toBe(true);
+        expect(verified.order.payment_mode).toBe('cash_relais');
+        expect(['pending', 'confirmed']).toContain(verified.order.status);
+        expect(verified.items.length).toBeGreaterThanOrEqual(1);
       }
     }
   });
