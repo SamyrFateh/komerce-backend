@@ -23,8 +23,14 @@ module.exports = defineConfig({
   testDir: './tests',
   testMatch: ['**/e2e/**/*.spec.js', '**/contracts.spec.js'],
 
-  // Timeout global par test (30s — les flows avec offline peuvent être lents)
-  timeout: 30_000,
+  // Timeout global par test (30s en LOCAL). En DISTANT, certains specs
+  // enchaînent plusieurs cycles de timeout API (ex. E15 : wallet → track →
+  // group, ~10s chacun via K.request DEFAULT_TIMEOUT_MS) + latence réseau
+  // réelle vers komerce.co — 30s est trop juste et casse au 2e/3e cycle
+  // sans qu'il y ait de bug fonctionnel. 45s en DISTANT laisse la marge
+  // que le mécanisme de timeout (qui fonctionne correctement) a besoin
+  // pour s'exécuter jusqu'au bout sur les 3 onglets séquentiels.
+  timeout: isRemote ? 45_000 : 30_000,
 
   // Relance automatique en cas d'échec flaky (CI uniquement)
   retries: process.env.CI ? 2 : 0,
