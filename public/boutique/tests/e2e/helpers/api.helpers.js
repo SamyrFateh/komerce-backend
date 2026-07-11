@@ -1,0 +1,171 @@
+/**
+ * helpers/api.helpers.js — Vérification backend pour flux E2E complets
+ *
+ * Ces helpers permettent aux tests de VÉRIFIER l'état côté serveur après
+ * une action côté UI. Ils utilisent page.evaluate() pour faire des appels
+ * API depuis le contexte du navigateur (avec les cookies de session).
+ *
+ * Convention :
+ *   - Les helpers READ-ONLY (GET) sont toujours safe.
+ *   - Les helpers WRITE (POST/DELETE) sont marqués [DESTRUCTIF] et ne doivent
+ *     tourner que contre staging, jamais contre la production.
+ */
+'use strict';
+
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000/boutique/';
+
+/**
+ * Vérifie qu'un produit a bien été ajouté au panier côté client (localStorage).
+ */
+async function verifyCartContains(page, productId) {
+  return page.evaluate((pid) => {
+    try {
+      const raw = localStorage.getItem('kmrc_cart') || '[]';
+      const cart = JSON.parse(raw);
+      return cart.some(item => String(item.id) === String(pid) || String(item.pid) === String(pid));
+    } catch { return false; }
+  }, productId);
+}
+
+/**
+ * Récupère le panier côté client.
+ */
+async function getClientCart(page) {
+  return page.evaluate(() => {
+    try {
+      return JSON.parse(localStorage.getItem('kmrc_cart') || '[]');
+    } catch { return []; }
+  });
+}
+
+/**
+ * Vérifie la session utilisateur côté backend (GET /api/auth/me).
+ * Retourne { authenticated: boolean, user?: {...} }
+ *
+ * Note : l'endpoint est /api/auth/me, pas /api/me (voir js/komerce-api.js,
+ * ligne ~235 : `const user = await request('/api/auth/me')`). La réponse est
+ * l'objet user directement, pas { user: {...} }.
+ */
+async function verifySession(page) {
+  return page.evaluate(async (base) => {
+    try {
+      const resp = await fetch(new URL('/api/auth/me', base).href, { credentials: 'include' });
+      if (resp.status === 401) return { authenticated: false };
+      const data = await resp.json();
+      return { authenticated: true, user: data.user || data };
+    } catch { return { authenticated: false }; }
+  }, BASE_URL.replace('/boutique/', ''));
+}
+
+/**
+ * Vérifie le solde wallet côté backend (GET /api/wallet).
+ * Retourne { balance: number } ou null si non authentifié.
+ */
+async function verifyWalletBalance(page) {
+  return page.evaluate(async (base) => {
+    try {
+      const resp = await fetch(new URL('/api/wallet', base).href, { credentials: 'include' });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      return { balance: data.balance ?? data.balance_kmf ?? 0 };
+    } catch { return null; }
+  }, BASE_URL.replace('/boutique/', ''));
+}
+
+/**
+ * Récupère les commandes récentes côté backend (GET /api/orders).
+ * Retourne un tableau de commandes ou [] si non authentifié.
+ */
+async function getRecentOrders(page) {
+  return page.evaluate(async (base) => {
+    try {
+      const resp = await fetch(new URL('/api/orders', base).href, { credentials: 'include' });
+      if (!resp.ok) return [];
+      const data = await resp.json();
+      return data.orders || data || [];
+    } catch { return []; }
+  }, BASE_URL.replace('/boutique/', ''));
+}
+
+/**
+ * Vérifie qu'un panier partagé existe côté backend (GET /api/shared-carts/public/:token).
+ * Retourne { exists: boolean, cart?: {...} }
+ */
+async function verifySharedCart(page, token) {
+  return page.evaluate(async (args) => {
+    try {
+      const resp = await fetch(
+        new URL(`/api/shared-carts/public/${args.token}`, args.base).href,
+        { credentials: 'include' }
+      );
+      if (!resp.ok) return { exists: false };
+      const data = await resp.json();
+      return { exists: true, cart: data.cart };
+    } catch { return { exists: false }; }
+  }, { token, base: BASE_URL.replace('/boutique/', '') });
+}
+
+/**
+ * Lit le token du panier groupe créé côté client, posé en sessionStorage
+ * par b-share-cart.js::applyCartToState() (clé 'kmrc_share'). C'est la
+ * seule trace fiable du token côté client — il n'y a aucun élément DOM
+ * affichant le lien de partage (celui-ci part directement en clipboard/WhatsApp).
+ */
+async function getClientShareToken(page) {
+  return page.evaluate(() => {
+    try {
+      const raw = sessionStorage.getItem('kmrc_share');
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      return s.token || null;
+    } catch { return null; }
+  });
+}
+
+/**
+ * Intercepte les requêtes API sortantes et capture les payloads.
+ * Utile pour vérifier ce que le frontend envoie au backend.
+ *
+ * Usage :
+ *   const spy = await spyOnApi(page, '/api/orders', 'POST');
+ *   // ... actions UI ...
+ *   const calls = spy.calls();
+ */
+async function spyOnApi(page, pathPattern, method = 'POST') {
+  const calls = [];
+  await page.route(`**${pathPattern}*`, async (route, request) => {
+    if (request.method() === method) {
+      let body = null;
+      try { body = request.postDataJSON(); } catch { body = request.postData(); }
+      calls.push({
+        url: request.url(),
+        method: request.method(),
+        body,
+        timestamp: Date.now(),
+      });
+    }
+    await route.continue();
+  });
+  return {
+    calls: () => [...calls],
+    lastCall: () => calls[calls.length - 1] || null,
+    waitForCall: (timeout = 10_000) => new Promise((resolve, reject) => {
+      if (calls.length > 0) { resolve(calls[calls.length - 1]); return; }
+      const interval = setInterval(() => {
+        if (calls.length > 0) { clearInterval(interval); resolve(calls[calls.length - 1]); }
+      }, 200);
+      setTimeout(() => { clearInterval(interval); reject(new Error('spyOnApi: no call intercepted')); }, timeout);
+    }),
+  };
+}
+
+module.exports = {
+  verifyCartContains,
+  getClientCart,
+  verifySession,
+  verifyWalletBalance,
+  getRecentOrders,
+  verifySharedCart,
+  getClientShareToken,
+  spyOnApi,
+};
