@@ -33,9 +33,12 @@ import {
   setCartSelectionQty,
 } from './b-cart-selection.js';
 
+function isSkuDetailPath() {
+  return state.modalProductDetail?.inventory_model === 'SKU';
+}
+
 function currentSkuSelection() {
-  if (state.modalProductDetail?.inventory_model !== 'SKU') return null;
-  return state.modalSelection;
+  return isSkuDetailPath() ? state.modalSelection : null;
 }
 
 function setButtonDisabled(button, disabled) {
@@ -102,9 +105,8 @@ function syncSkuSelectionUI(selection) {
 function _syncModalQtyUI() {
   if (!state.modalProduct) return;
 
-  const selection = currentSkuSelection();
-  if (state.modalProductDetail?.inventory_model === 'SKU') {
-    syncSkuSelectionUI(selection);
+  if (isSkuDetailPath()) {
+    syncSkuSelectionUI(currentSkuSelection());
     return;
   }
 
@@ -150,30 +152,32 @@ function setupModalCart() {
   dom.qtyMinus.addEventListener('click', () => {
     if (!state.modalProduct) return;
 
-    if (currentSkuSelection()) {
+    if (isSkuDetailPath()) {
       changeSelectedSkuQty(-1, dom.qtyMinus);
-    } else {
-      quickRemove(String(state.modalProduct.id), dom.qtyMinus);
-      _syncModalQtyUI();
+      return;
     }
+
+    quickRemove(String(state.modalProduct.id), dom.qtyMinus);
+    _syncModalQtyUI();
   });
 
   dom.qtyPlus.addEventListener('click', () => {
     if (!state.modalProduct) return;
 
-    if (currentSkuSelection()) {
+    if (isSkuDetailPath()) {
       changeSelectedSkuQty(1, dom.qtyPlus);
-    } else {
-      quickAdd(String(state.modalProduct.id), dom.qtyPlus);
-      _syncModalQtyUI();
+      return;
     }
+
+    quickAdd(String(state.modalProduct.id), dom.qtyPlus);
+    _syncModalQtyUI();
   });
 
   dom.addCartBtn.addEventListener('click', () => {
     if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
 
     const selection = currentSkuSelection();
-    if (state.modalProductDetail?.inventory_model === 'SKU' && !selection?.selected_sku_id) return;
+    if (isSkuDetailPath() && !selection?.selected_sku_id) return;
 
     addToCart(state.modalProduct, 1, dom.addCartBtn);
     _syncModalQtyUI();
