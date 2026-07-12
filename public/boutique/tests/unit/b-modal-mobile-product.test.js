@@ -192,6 +192,16 @@ describe('mobile product detail renderer', () => {
     expect(document.body.textContent).not.toContain('Gratuit');
   });
 
+  test('delivery_options absent reste honnête sans crash', () => {
+    const detail = productDetail({ delivery_options: null });
+    renderMobileProductDetail(detail, createModalSelection(detail), { forceMedia: true });
+
+    expect(document.querySelector('[data-product-delivery-options]').textContent)
+      .toContain('communiquée à la commande');
+    expect(document.body.textContent).not.toContain('3 à 5 semaines');
+    expect(document.body.textContent).not.toContain('Gratuit');
+  });
+
   test('Marron recalcule L en rupture et affiche la galerie associée', () => {
     const detail = productDetail();
     renderMobileProductDetail(detail, createModalSelection(detail), { forceMedia: true });

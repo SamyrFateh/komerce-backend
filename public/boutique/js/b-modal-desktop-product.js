@@ -1,25 +1,26 @@
 /**
  * @komerce-arch
- * @role          mobile-product-modal-renderer
+ * @role          desktop-product-modal-renderer
  * @domain        catalog
  * @layer         ui-renderer
  * @criticality   high
  * @inputs        product_detail_v1, modal_selection_state
- * @outputs       mobile_product_modal_dom
- * @depends       b-store.js, b-utils.js, b-modal-product.js, b-modal-image-ux.js, view-models/modal-selection-model.js
- * @used-by       b-modal-mobile-product-bootstrap.js
+ * @outputs       desktop_product_modal_dom
+ * @depends       b-store.js, b-utils.js, b-scroll-owner.js, b-modal-product.js, b-modal-image-ux.js, view-models/modal-selection-model.js
+ * @used-by       b-modal-product-detail-bootstrap.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
- * @impact-areas  product-modal, mobile, sku-selection, delivery-options, media-carousel
+ * @impact-areas  product-modal, desktop, sku-selection, delivery-options, media-carousel
  * @version       2026-07
  */
 
 'use strict';
 
-import { state, dom } from './b-store.js';
+import { state, dom, modalZone } from './b-store.js';
 import { fmtPrice, optimizeImgUrl } from './b-utils.js';
+import { isDesktop } from './b-scroll-owner.js';
 import {
   OPTION_STATE,
   selectModalOption,
@@ -27,9 +28,8 @@ import {
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 
-function isMobileViewport() {
-  return window.matchMedia('(max-width: 899px)').matches;
-}
+let _qtyObserver = null;
+let _qtyObservedEl = null;
 
 function isPhotoAxis(axis) {
   return /couleur|color|coloris|teinte/i.test(axis.key || axis.display_name || '');
@@ -37,6 +37,11 @@ function isPhotoAxis(axis) {
 
 function activeUnit(detail, selection) {
   return (detail.sellable_units || []).find((unit) => unit.sku_id === selection.selected_sku_id) || null;
+}
+
+function currentPrice(detail, selection) {
+  const unit = activeUnit(detail, selection);
+  return unit?.price_kmf ?? detail?.pricing?.price_kmf ?? null;
 }
 
 function mediaSignature(selection) {
@@ -58,9 +63,6 @@ function renderMedia(detail, selection, force = false) {
     image_url: media[0]?.url || '',
   });
   goToSlide(0);
-
-  // b-modal-image-ux relit les slides réels à chaque appel. Après un changement
-  // couleur, le fullscreen et le compteur suivent donc la nouvelle galerie.
   setupImageUX();
 }
 
@@ -70,39 +72,34 @@ function renderIdentity(detail) {
     dom.modalDesc.textContent = detail.product.description || '';
     dom.modalDesc.classList.remove('is-expanded');
   }
-  if (dom.modalCat) {
-    dom.modalCat.textContent = detail.product.category || '';
-  }
+  if (dom.modalCat) dom.modalCat.textContent = detail.product.category || '';
 
   const promo = Number(detail.pricing.promo_pct || 0);
   if (dom.modalPromoBadge) {
-    if (promo > 0) {
-      dom.modalPromoBadge.textContent = `-${promo}%`;
-      dom.modalPromoBadge.classList.add('show');
-      dom.modal?.classList.add('k-modal--has-promo');
-    } else {
-      dom.modalPromoBadge.textContent = '';
-      dom.modalPromoBadge.classList.remove('show');
-      dom.modal?.classList.remove('k-modal--has-promo');
-    }
+    dom.modalPromoBadge.textContent = promo > 0 ? `-${promo}%` : '';
+    dom.modalPromoBadge.classList.toggle('show', promo > 0);
   }
+  dom.modal?.classList.toggle('k-modal--has-promo', promo > 0);
+
+  // Les anciennes zones reconstruisaient prix EUR, économie et faux stock depuis
+  // le produit brut. PDC-5 les neutralise ; PDC-6 supprimera leur code legacy.
+  const aed = document.getElementById('k-modal-aed-price');
+  const flash = document.getElementById('k-modal-flash-bar');
+  const stockBar = document.getElementById('k-modal-stock-bar');
+  if (aed) aed.innerHTML = '';
+  if (flash) flash.innerHTML = '';
+  if (stockBar) stockBar.innerHTML = '';
 }
 
 function renderPriceAndReference(detail, selection) {
   const unit = activeUnit(detail, selection);
-  const price = unit?.price_kmf ?? detail.pricing.price_kmf;
-  if (dom.modalPrice) dom.modalPrice.textContent = fmtPrice(price);
+  const price = currentPrice(detail, selection);
+  if (dom.modalPrice) dom.modalPrice.textContent = price != null ? fmtPrice(price) : '';
 
-  // PDC-4 : l'ancien prix vient du contrat ou reste absent. La modal ne le
-  // reconstruit jamais depuis promo_pct.
   if (dom.modalOldPrice) {
-    if (detail.pricing.old_price_kmf != null) {
-      dom.modalOldPrice.textContent = fmtPrice(detail.pricing.old_price_kmf);
-      dom.modalOldPrice.classList.remove('u-hidden');
-    } else {
-      dom.modalOldPrice.textContent = '';
-      dom.modalOldPrice.classList.add('u-hidden');
-    }
+    const oldPrice = detail.pricing.old_price_kmf;
+    dom.modalOldPrice.textContent = oldPrice != null ? fmtPrice(oldPrice) : '';
+    dom.modalOldPrice.classList.toggle('u-hidden', oldPrice == null);
   }
 
   if (dom.modalSku) {
@@ -117,7 +114,6 @@ function renderStock(selection) {
 
   if (!selection.selection_supported) {
     dom.modalStock.textContent = '';
-    dom.modalStock.className = 'k-modal-stock';
     dom.modalStock.hidden = true;
     return;
   }
@@ -145,27 +141,21 @@ function renderActions(detail, selection) {
   });
 }
 
-function optionMessage(optionState) {
+function optionReason(optionState) {
   if (optionState === OPTION_STATE.OUT_OF_STOCK) return 'Rupture';
   if (optionState === OPTION_STATE.INCOMPATIBLE) return 'Non proposé';
   return '';
 }
 
 function renderSelectionMessage(root, selection) {
-  const wrap = document.createElement('div');
-  wrap.className = 'k-modal-reassurance';
-  wrap.dataset.selectionMessage = '1';
-
-  const message = document.createElement('div');
+  const message = document.createElement('p');
   message.id = 'k-modal-selection-message';
-  message.className = 'k-modal-reassurance-toggle';
+  message.className = 'k-modal-selection-message';
   message.setAttribute('role', 'status');
   message.setAttribute('aria-live', 'polite');
   message.textContent = selection.selection_message || '';
   message.hidden = !selection.selection_message;
-
-  wrap.appendChild(message);
-  root.appendChild(wrap);
+  root.appendChild(message);
 }
 
 function renderAxis(detail, selection, axis, onSelectionChanged) {
@@ -175,26 +165,28 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
 
   const label = document.createElement('div');
   label.className = 'k-vg-label';
-  const selected = selection.selected_options[axis.key] || '';
-  label.innerHTML =
-    '<span class="k-vg-label-type"></span>' +
-    '<span class="k-vg-label-sep">·</span>' +
-    '<span class="k-vg-label-val"></span>';
-  label.querySelector('.k-vg-label-type').textContent = axis.display_name;
-  label.querySelector('.k-vg-label-val').textContent = selected || 'Choisir';
+  const type = document.createElement('span');
+  type.className = 'k-vg-label-type';
+  type.textContent = axis.display_name;
+  const sep = document.createElement('span');
+  sep.className = 'k-vg-label-sep';
+  sep.textContent = '·';
+  const value = document.createElement('span');
+  value.className = 'k-vg-label-val';
+  value.textContent = selection.selected_options[axis.key] || 'Choisir';
+  label.append(type, sep, value);
   group.appendChild(label);
 
   const photo = isPhotoAxis(axis);
   const wrap = document.createElement('div');
   wrap.className = photo ? 'k-vg-skus' : 'k-vg-sizes';
-
   const states = new Map(
     (selection.option_states[axis.key] || []).map((entry) => [entry.value, entry.state])
   );
 
   axis.values.forEach((option) => {
     const stateValue = states.get(option.value) || OPTION_STATE.INCOMPATIBLE;
-    const active = selected === option.value;
+    const active = selection.selected_options[axis.key] === option.value;
     const unavailable = stateValue !== OPTION_STATE.AVAILABLE;
     const button = document.createElement('button');
     button.type = 'button';
@@ -203,12 +195,10 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
     button.setAttribute('aria-pressed', active ? 'true' : 'false');
     button.setAttribute(
       'aria-label',
-      `${axis.display_name} ${option.value}${unavailable ? ` — ${optionMessage(stateValue)}` : ''}`
+      `${axis.display_name} ${option.value}${unavailable ? ` — ${optionReason(stateValue)}` : ''}`
     );
 
     if (photo && option.thumbnail_url) {
-      // k-vp--out rend l'indisponibilité sans pointer-events:none : contrairement
-      // à l'ancien k-sku--out, le clic reste possible pour expliquer la raison.
       button.className = `k-sku${active ? ' k-sku--active' : ''}${unavailable ? ' k-vp--out' : ''}`;
       const image = document.createElement('img');
       image.src = optimizeImgUrl(option.thumbnail_url, 140);
@@ -217,8 +207,7 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
       const name = document.createElement('span');
       name.className = 'k-sku-name';
       name.textContent = option.value;
-      button.appendChild(image);
-      button.appendChild(name);
+      button.append(image, name);
     } else {
       button.className = `k-vp${active ? ' k-vp--active' : ''}${unavailable ? ' k-vp--out' : ''}`;
       button.textContent = option.value;
@@ -249,98 +238,143 @@ function deliveryMeta(option) {
   return parts.join(' · ');
 }
 
-function renderDeliveryOptions(detail, root) {
-  const delivery = document.createElement('section');
-  delivery.className = 'k-modal-reassurance';
-  delivery.dataset.productDeliveryOptions = '1';
+function renderDeliveryOptions(detail) {
+  const el = document.getElementById('k-modal-delivery');
+  if (!el) return;
+  el.innerHTML = '';
+
+  const title = document.createElement('div');
+  title.className = 'k-modal-section-title';
+  title.textContent = 'Livraison';
+  el.appendChild(title);
+
   const options = detail?.delivery_options || [];
-
   if (!options.length) {
-    const row = document.createElement('div');
-    row.className = 'k-modal-reassurance-toggle';
-    row.innerHTML =
-      '<span class="k-modal-reassurance-main">' +
-        '<span class="k-modal-reassurance-icon">📦</span>' +
-        '<span class="k-modal-reassurance-label">Livraison</span>' +
-        '<span class="k-modal-reassurance-delay">· communiquée à la commande</span>' +
-      '</span>';
-    delivery.appendChild(row);
-  } else {
-    options.forEach((option) => {
-      const row = document.createElement('div');
-      row.className = 'k-modal-reassurance-toggle';
-      const main = document.createElement('span');
-      main.className = 'k-modal-reassurance-main';
-      main.innerHTML = '<span class="k-modal-reassurance-icon">📦</span>';
-
-      const label = document.createElement('span');
-      label.className = 'k-modal-reassurance-label';
-      label.textContent = option.label;
-      main.appendChild(label);
-
-      const metaText = deliveryMeta(option);
-      if (metaText) {
-        const meta = document.createElement('span');
-        meta.className = 'k-modal-reassurance-delay';
-        meta.textContent = `· ${metaText}`;
-        main.appendChild(meta);
-      }
-
-      row.appendChild(main);
-      delivery.appendChild(row);
-    });
+    const empty = document.createElement('div');
+    empty.className = 'k-modal-delivery-opt';
+    empty.textContent = 'Option de livraison communiquée à la commande.';
+    el.appendChild(empty);
+    return;
   }
 
-  root.appendChild(delivery);
+  options.forEach((option) => {
+    const row = document.createElement('div');
+    row.className = 'k-modal-delivery-opt';
+    row.dataset.deliveryCode = option.code;
+
+    const body = document.createElement('div');
+    body.className = 'k-modal-opt-body';
+    const row1 = document.createElement('div');
+    row1.className = 'k-modal-opt-row1';
+    const icon = document.createElement('span');
+    icon.className = 'k-modal-opt-icon';
+    icon.textContent = '📦';
+    const label = document.createElement('span');
+    label.textContent = option.label;
+    row1.append(icon, label);
+
+    const metaText = deliveryMeta(option);
+    body.appendChild(row1);
+    if (metaText) {
+      const row2 = document.createElement('div');
+      row2.className = 'k-modal-opt-row2';
+      row2.textContent = metaText;
+      body.appendChild(row2);
+    }
+
+    row.appendChild(body);
+    el.appendChild(row);
+  });
+}
+
+function renderSubtotal(detail, selection) {
+  const actions = modalZone('.k-modal-actions');
+  if (!actions) return;
+  let subtotal = actions.querySelector('.k-modal-subtotal');
+  if (!subtotal) {
+    subtotal = document.createElement('div');
+    subtotal.className = 'k-modal-subtotal';
+    actions.appendChild(subtotal);
+  }
+
+  const price = currentPrice(detail, selection);
+  const qty = Math.max(1, Number(state.modalQty) || 1);
+  if (price == null) {
+    subtotal.textContent = '';
+    return;
+  }
+
+  subtotal.textContent = 'Sous-total : ';
+  const strong = document.createElement('strong');
+  strong.textContent = fmtPrice(price * qty);
+  subtotal.appendChild(strong);
+}
+
+function ensureQtyObserver() {
+  const qtyEl = dom.modalQtyVal;
+  if (!qtyEl || typeof MutationObserver === 'undefined') return;
+  if (_qtyObserver && _qtyObservedEl === qtyEl) return;
+
+  if (_qtyObserver) _qtyObserver.disconnect();
+  _qtyObservedEl = qtyEl;
+  _qtyObserver = new MutationObserver(() => {
+    if (!isDesktop() || !state.modalProductDetail || !state.modalSelection) return;
+    renderSubtotal(state.modalProductDetail, state.modalSelection);
+  });
+  _qtyObserver.observe(qtyEl, {
+    childList: true,
+    characterData: true,
+    subtree: true,
+  });
 }
 
 /**
- * Rend la composition mobile PDC-4 depuis le contrat détail et l'état de
- * sélection unique. Cette fonction peut être rappelée après chaque sélection.
+ * Composition desktop : galerie à gauche et Buy Box à droite. Toute disponibilité
+ * provient de `selection`; ce renderer ne lit jamais product_variants.stock.
  */
-export function renderMobileProductDetail(detail, selection, { forceMedia = false } = {}) {
+export function renderDesktopProductDetail(detail, selection, { forceMedia = false } = {}) {
   const container = dom.modalVariants || document.getElementById('k-modal-variants');
-  if (!container || !isMobileViewport()) return;
+  if (!container || !isDesktop()) return;
 
   state.modalProductDetail = detail;
   state.modalSelection = selection;
-  // Compatibilité transactionnelle de transition : le backend SKU résout encore
-  // autoritairement depuis variant_combo. Le snapshot lisible suit donc exactement
-  // l'état PDC-3 ; il n'est plus construit par le renderer legacy à deux axes.
   state.modalVariantCombo = selection.selection_supported
     ? { ...selection.selected_options }
     : {};
 
   function rerender() {
-    renderMobileProductDetail(detail, state.modalSelection);
+    renderDesktopProductDetail(detail, state.modalSelection);
   }
-
-  // Le legacy core injecte encore temporairement sa reassurance hardcodée.
-  // PDC-4 la retire dès que le vrai contrat détail est disponible.
-  dom.modal?.querySelector('[data-mobile-reassurance]')?.remove();
 
   container.innerHTML = '';
   const root = document.createElement('div');
-  root.dataset.pdc4Root = '1';
+  root.dataset.pdc5Root = '1';
   container.appendChild(root);
 
   if (selection.selection_supported) {
-    detail.option_axes.forEach((axis) => {
+    (detail.option_axes || []).forEach((axis) => {
       root.appendChild(renderAxis(detail, selection, axis, rerender));
     });
   }
-
   renderSelectionMessage(root, selection);
-  renderDeliveryOptions(detail, root);
+
   renderIdentity(detail);
   renderPriceAndReference(detail, selection);
   renderStock(selection);
   renderActions(detail, selection);
+  renderDeliveryOptions(detail);
+  renderSubtotal(detail, selection);
   renderMedia(detail, selection, forceMedia);
+  ensureQtyObserver();
 }
 
-export function clearMobileProductDetailState() {
-  state.modalProductDetail = null;
-  state.modalSelection = null;
-  state.modalMediaSignature = '';
+export function refreshDesktopProductSubtotal() {
+  if (!state.modalProductDetail || !state.modalSelection) return;
+  renderSubtotal(state.modalProductDetail, state.modalSelection);
+}
+
+export function clearDesktopProductDetailState() {
+  if (_qtyObserver) _qtyObserver.disconnect();
+  _qtyObserver = null;
+  _qtyObservedEl = null;
 }
