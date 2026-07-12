@@ -96,7 +96,7 @@ jobs:
           echo "$code" > feature-registry.exit-code
           exit 0
 
-      - name: Capture schema freshness
+      - name: Capture schema freshness before snapshot
         run: |
           set +e
           npm run schema:check > schema-check.log 2>&1
@@ -104,6 +104,15 @@ jobs:
           cat schema-check.log
           echo "$code" > schema-check.exit-code
           exit 0
+
+      - name: Snapshot Railway prod schema for PDC migrations
+        env:
+          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+        run: |
+          node scripts/db-snapshot.js > schema-snapshot.log 2>&1
+          cat schema-snapshot.log
+          node scripts/check-schema-freshness.js > schema-after-snapshot.log 2>&1
+          cat schema-after-snapshot.log
 
       - name: Upload PDC-5 diagnostic
         if: always()
@@ -121,5 +130,8 @@ jobs:
             feature-registry.exit-code
             schema-check.log
             schema-check.exit-code
+            schema-snapshot.log
+            schema-after-snapshot.log
+            docs/db/railway-live-schema.sql
             public/boutique/.pdc5-coverage/coverage-final.json
           retention-days: 1
