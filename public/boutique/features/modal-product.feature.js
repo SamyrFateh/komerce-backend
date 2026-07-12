@@ -25,25 +25,28 @@ module.exports = {
   perimeter: {
     in: [
       'état de sélection unique dérivé du Product Detail Contract v1',
+      'adaptateur mobile SKU : fetch détail, rendu axes, médias, prix, stock sélectionné et delivery_options',
       'dépendance ordonnée des axes : changer un axe efface les choix aval',
       'états AVAILABLE / OUT_OF_STOCK / INCOMPATIBLE dérivés des sellable_units',
       'sélection transactionnelle par sku_id',
       'médias courants dérivés des associations option_values / media_ids explicites',
+      'verrou CTA mobile tant que le contrat détail charge ou que le SKU est incomplet',
       'layout et cascade de #k-modal et .k-modal-product-zone',
       'placement grille image/détails/actions desktop',
     ],
     out: [
       'données produit et vérité stock (feature catalog)',
       'routing et choix de rail (feature logistics)',
-      'ajout panier et checkout (features orders/shared-cart)',
+      'mutation panier générique et checkout (feature boutique/orders)',
       'fiche snapshot lecture seule du panier partagé',
+      'composition desktop Product Detail Contract — PDC-5',
     ],
   },
 
   files: {
-    // Le registre Boutique ne reconnaît que le groupe `js` pour le rattachement
-    // fichier↔feature. Le reducer appartient donc explicitement à ce slice.
+    // Le registre Boutique rattache les sources JS depuis `files.js`.
     js: [
+      '../js/b-modal-product-detail-mobile.js',
       '../js/view-models/modal-selection-model.js',
     ],
     boutique: [
@@ -55,6 +58,7 @@ module.exports = {
       '../css/dist/components.css',
     ],
     tests: [
+      '../tests/unit/b-modal-product-detail-mobile.test.js',
       '../tests/unit/modal-selection-model.test.js',
       '../tests/unit/modal-selection-model-axis-order.test.js',
     ],
@@ -77,25 +81,29 @@ module.exports = {
     internalApi: [
       'modal-selection-model.js / createModalSelection(productDetail)',
       'modal-selection-model.js / selectModalOption(productDetail, state, axisKey, value)',
+      'b-modal-product-detail-mobile.js / adaptateur modal:opened vers Product Detail Contract v1',
       'b-modal-suggestions.js / suggestions produit dans la modal',
       'b-pdp-curation-suggestions.js / suggestions curatées PDP',
     ],
     consumes: [
       'catalog — Product Detail Contract v1 / GET /api/products/:id/detail',
+      'boutique — b-modal-cart.js verrouille les CTA et cible la ligne product+selected_options',
       'boutique — b-modal-suggestions.js importe b-bus.js, b-cart.js, b-scroll-owner.js, b-store.js, b-utils.js',
       'boutique — b-pdp-curation-suggestions.js importe b-bus.js, b-scroll-owner.js, b-store.js',
     ],
   },
 
-  authority: 'boutique — modal-selection-model.js est l unique owner de l état de sélection SKU ; tout changement de layout doit préserver les contrats render-static.',
+  authority: 'boutique — modal-selection-model.js est l unique owner de l état de sélection SKU ; b-modal-product-detail-mobile.js est l adaptateur mobile du contrat public ; le lifecycle reste à b-modal-core.js.',
 
   invariants: [
     'un seul état de sélection produit est partagé par mobile et desktop',
     'une option est AVAILABLE, OUT_OF_STOCK ou INCOMPATIBLE uniquement depuis les sellable_units du contrat détail',
-    'aucun stock couleur ou taille indépendant n est recalculé dans le reducer cible',
+    'aucun stock couleur ou taille indépendant n est recalculé dans le reducer ou l adaptateur mobile SKU',
     'changer un axe efface les sélections des axes suivants dans l ordre du contrat',
     'selected_sku_id n est posé que pour une unité vendable AVAILABLE résolue',
-    'un produit LEGACY_VARIANTS est explicitement selection_supported=false : aucun faux SKU n est fabriqué',
+    'le chemin mobile SKU verrouille Ajouter et Acheter pendant le fetch détail et tant que selected_sku_id est null',
+    'le chemin mobile SKU rend exactement delivery_options et n invente ni Gratuit ni délai 3 à 5 semaines',
+    'un produit LEGACY_VARIANTS reste explicitement sur le renderer historique pendant la convergence',
     'le product-zone desktop reste en display:grid avec grid-template-columns',
   ],
 
