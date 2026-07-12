@@ -40,21 +40,22 @@ module.exports = {
   files: {
     services: [
       'services/boutique-ranking-engine.js',
-    
-      'services/radar-queries.js',
-      'services/signal-service.js',],
+    ],
     routes: [
       'routes/boutique-suggestions.js',
-    
-      'routes/signals.js',],
+    ],
     tests: [
       'tests/unit/boutique-ranking-engine.test.js',
-      'tests/unit/radar-queries.test.js',
-      'tests/unit/signals.test.js',
-      'tests/unit/signal-service.test.js',
       'tests/unit/boutique-suggestions.test.js',
     ],
   },
+  // ── decision-signals (Lot O1, 2026-07-12) ───────────────────────────────
+  // services/radar-queries.js, services/signal-service.js, routes/signals.js
+  // et leurs tests ont quitté ce manifest : ils ne rendent pas le service de
+  // classement boutique (recommendations), mais un mécanisme de détection de
+  // signaux opérationnels cross-feature, gouverné désormais comme piloting
+  // capability — voir capabilities/decision-signals.capability.js et
+  // docs/doctrine/PILOTING_CAPABILITY_DOCTRINE.md.
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
   docs: [
@@ -69,34 +70,23 @@ module.exports = {
   // documenter explicitement si volontaire, ou à re-scoper sinon.
   // Champ auto-généré : à corriger à la main si une requête dynamique
   // (nom de table construit par variable) a échappé au scan.
+  // db.tables réduit au périmètre réel du moteur de ranking (Lot O1,
+  // 2026-07-12) : cash_collections, cash_deposits, finance_config,
+  // incidents, signals, users, wallets appartenaient au périmètre
+  // decision-signals (radar-queries.js / signal-service.js), pas au
+  // ranking boutique — voir capabilities/decision-signals.capability.js.
   db: {
     tables: [
-      'cash_collections: R',
-      'cash_deposits: R',
-      'finance_config: R',
-      'incidents: R',
       'order_items: R',
       'orders: R',
       'parcels: R',
       'products: R',
-      'signals: RW',
-      'users: R',
-      'wallets: R',
     ],
   },
 
   contract: {
     exposes: [
       'GET /api/boutique/suggestions',
-      // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
-      // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
-      'GET /api/admin/signals',
-      'DELETE /api/admin/signals/:id',
-      'POST /api/admin/signals/:id/acknowledge',
-      'POST /api/admin/signals/:id/resolve',
-      'POST /api/admin/signals/:id/snooze',
-      'POST /api/admin/signals/generate',
-      'GET /api/admin/signals/stats',
     ],
     consumes: ['catalog (lecture produit)',
       'auth',
@@ -104,23 +94,28 @@ module.exports = {
     ],
   },
 
+  // ── decision-signals (piloting capability, Lot O1) ──────────────────────
+  // Les routes /api/admin/signals/* (GET/DELETE/POST acknowledge/resolve/
+  // snooze/generate/stats) ont quitté ce contrat : elles sont exposées par
+  // routes/signals.js, désormais dans le périmètre de la capability
+  // decision-signals, pas dans le contrat public de recommendations.
+  // Voir capabilities/decision-signals.capability.js.
+
   // ── Autorite ─────────────────────────────────────────────────────────────
-  // ── Sécurité (constat factuel, audit 2026-07-06, §axe3) ─────────────────
-  // AUCUN middleware d'authentification détecté sur les 8 routes de cette
-  // feature. Surface probablement moins sensible que customs/documents
-  // (recommandations produit), mais à faire confirmer explicitement plutôt
-  // que de le supposer.
+  // ── Sécurité (constat factuel, audit 2026-07-06 §axe3 ; corrigé Lot O1
+  //    2026-07-12 après extraction de decision-signals — les 7 routes
+  //    admin protégées de routes/signals.js quittent ce périmètre, voir
+  //    capabilities/decision-signals.capability.js) ────────────────────────
   security: {
-    status: 'CONFIRMED_MIXED_BY_DESIGN',
-    authedRoutesDetected: 7,
-    totalRoutes: 8,
-    note: "Corrigé le 2026-07-06 (suite d'audit) : le constat initial (0/8) "
-        + "était un faux négatif pour signals.js (`router.use(authenticate, "
-        + "requireAdmin)` non reconnu par le premier détecteur). Reconfirmé "
-        + "via scripts/gen-security-360.js : 7/8 routes PROTECTED "
-        + "(routes/signals.js, admin). La 8e, GET /api/boutique/suggestions, "
-        + "est classée PUBLIC et volontairement sans garde — ranking produit "
-        + "pour visiteurs anonymes non connectés (routes/boutique-suggestions.js).",
+    status: 'CONFIRMED_PUBLIC_BY_DESIGN',
+    authedRoutesDetected: 0,
+    totalRoutes: 1,
+    note: "Seule route restante après extraction de decision-signals : "
+        + "GET /api/boutique/suggestions, classée PUBLIC et volontairement "
+        + "sans garde — ranking produit pour visiteurs anonymes non "
+        + "connectés (routes/boutique-suggestions.js). La sécurité des "
+        + "routes /api/admin/signals/* (7/8 protégées) est désormais suivie "
+        + "dans capabilities/decision-signals.capability.js.",
   },
 
   authority: 'backend-core — tout changement de formule de classement doit etre valide par le proprietaire de boutique-ranking-engine.js',
@@ -129,5 +124,25 @@ module.exports = {
   invariants: [
     'le ranking ne modifie jamais les donnees produit, lecture seule sur catalog',
   ],
+
+  // ── Classification (ajoutée Lot O1, manifest modifié dans cette PR) ─────
+  classification: {
+    kind:     'business-feature',
+    decision: 'feature-autonome',
+    signals: {
+      ownsTables:          false, // pas de table propre — pur calcul sur données catalog/orders en lecture
+      ownsLifecycle:       false,
+      activeService:       true,  // calcule un classement à la demande
+      multiConsumer:       false,
+      ownsMigrations:      false,
+      externalSideEffect:  'none',
+      surface:             'api',
+    },
+    rationale: [
+      'service actif identifiable (classer/suggérer), pas une projection d\'une autre feature',
+      'moteur de ranking dédié (boutique-ranking-engine.js) avec sa propre formule, invariant lecture-seule sur catalog',
+      'perimetre resserre au Lot O1 : le sous-ensemble decision-signals (radar/signals) en a ete extrait car il ne partage ni service ni cycle de vie avec le ranking',
+    ],
+  },
 
 };

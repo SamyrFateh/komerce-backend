@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          signal-service
- * @domain        recommendations
+ * @domain        decision-signals
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

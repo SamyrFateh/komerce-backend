@@ -32,6 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - checkout: 2
 - customs: 6
 - dashboard: 30
+- decision-signals: 3
 - documents: 11
 - economic-engine: 37
 - infrastructure: 20
@@ -41,7 +42,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - operations: 12
 - orders: 29
 - payment: 16
-- recommendations: 7
+- recommendations: 4
 - refunds: 2
 - shared-cart: 42
 - tracking: 1

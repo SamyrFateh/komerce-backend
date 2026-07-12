@@ -23,7 +23,11 @@
 const fs   = require('fs');
 const path = require('path');
 
-const FEATURES_DIR = path.join(__dirname, '..', 'features');
+const FEATURES_DIR     = path.join(__dirname, '..', 'features');
+// Piloting capabilities (docs/doctrine/PILOTING_CAPABILITY_DOCTRINE.md) —
+// jamais des features, mais leurs fichiers doivent compter comme couverts
+// pour la détection d'orphelins ci-dessous (Lot O1, 2026-07-12).
+const CAPABILITIES_DIR = path.join(__dirname, '..', 'capabilities');
 const ROOT          = path.join(__dirname, '..');
 const STRICT        = process.argv.includes('--strict');
 const ORPHANS_ONLY  = process.argv.includes('--orphans');
@@ -68,6 +72,25 @@ function loadManifests() {
         const m = require(path.join(FEATURES_DIR, f));
         m._file = f;
         return m;
+      } catch (e) {
+        return { _file: f, _loadError: e.message };
+      }
+    });
+}
+
+// Piloting capabilities : même mécanique de chargement, mais jamais mélangées
+// aux `validManifests` de features (pas de REQUIRED_FIELDS, pas de kind, pas
+// de classification — voir PILOTING_CAPABILITY_DOCTRINE.md §4). Utilisées
+// uniquement pour que leurs fichiers comptent comme couverts ci-dessous.
+function loadCapabilities() {
+  if (!fs.existsSync(CAPABILITIES_DIR)) return [];
+  return fs.readdirSync(CAPABILITIES_DIR)
+    .filter(f => f.endsWith('.capability.js') && !f.startsWith('_'))
+    .map(f => {
+      try {
+        const c = require(path.join(CAPABILITIES_DIR, f));
+        c._file = f;
+        return c;
       } catch (e) {
         return { _file: f, _loadError: e.message };
       }
@@ -163,8 +186,28 @@ function run() {
     }
   }
 
+  // 2b. Piloting capabilities (capabilities/*.capability.js) — chargées à part,
+  // jamais soumises à REQUIRED_FIELDS (schéma feature), voir §4 de
+  // PILOTING_CAPABILITY_DOCTRINE.md. Erreurs de chargement quand même
+  // remontées : un manifest capability cassé doit être visible.
+  const capabilities = loadCapabilities();
+  for (const c of capabilities) {
+    if (c._loadError) {
+      errors.push({ type: 'MANIFEST-LOAD-ERROR', feature: c._file, msg: c._loadError });
+      summary.load_errors++;
+    }
+  }
+  const validCapabilities = capabilities.filter(c => !c._loadError);
+
   // 3. Fichiers déclarés manquants sur disque + unicité d'autorité (un fichier = une feature)
   const declared = declaredFiles(validManifests);
+  // Fichiers couverts par une piloting capability : comptent pour l'unicité
+  // d'autorité et pour la détection d'orphelins, au même titre qu'une feature
+  // (Lot O1) — sans que la capability elle-même devienne un "owner" feature.
+  for (const [file, owners] of declaredFiles(validCapabilities).entries()) {
+    if (!declared.has(file)) declared.set(file, []);
+    declared.get(file).push(...owners);
+  }
   summary.declared = declared.size;
 
   for (const [file, owners] of declared.entries()) {
