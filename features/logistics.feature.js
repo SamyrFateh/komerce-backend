@@ -87,7 +87,6 @@ module.exports = {
       'routes/transitaire-api.js',
       'routes/client-tracking.js',
       'routes/tracking.js',
-      'routes/sourcing-scanner.js',
       'routes/scans.js',
       'routes/carriers.js',
       'routes/pickup-secret.js',
@@ -138,12 +137,9 @@ module.exports = {
       'tests/unit/routing.test.js',
       'tests/unit/transport-rails.test.js',
       'tests/unit/scans.test.js',
-      'tests/unit/sourcing-scanner.test.js',
       'tests/unit/tracking.test.js',
       'tests/unit/transit-dashboard.test.js',
       'tests/unit/transitaire-api.test.js',
-      'tests/integration/sourcing-engine-routes.test.js',
-      'tests/integration/sourcing-flow-g5.test.js',
     ],
 
 },
@@ -194,9 +190,9 @@ module.exports = {
       'scan_events: RW',
       'scans: RW',
       'shipments: RW',
-      'sourcing_candidate_events: RW',
-      'sourcing_candidates: RW',
-      'supplier_catalog_imports: R',  // W-via:catalog-import-orchestrator (service catalog)
+      // sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports :
+      // retirées d'ici (Lot O1.3, 2026-07-12) — n'étaient lues/écrites que par
+      // routes/sourcing-scanner.js, extrait vers features/sourcing.feature.js.
       'users: R',
     ],
   },
@@ -212,19 +208,8 @@ module.exports = {
       'GET/POST /api/parcels',
       'POST /api/v2/parcels/:ref/scan',
       'GET /api/tracking/:token',
-      // Rapatriées depuis le route-registry (audit 2026-07-06 §3) — routes
-      // réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
-      'GET /api/admin/sourcing/candidates',
-      'GET /api/admin/sourcing/candidates/:id',
-      'PUT /api/admin/sourcing/candidates/:id',
-      'POST /api/admin/sourcing/candidates/:id/import-product',
-      'POST /api/admin/sourcing/candidates/:id/reject',
-      'POST /api/admin/sourcing/candidates/:id/scan',
-      'POST /api/admin/sourcing/candidates/:id/watchlist',
-      'POST /api/admin/sourcing/candidates/scan-batch',
-      'GET /api/admin/sourcing/catalogs',
-      'POST /api/admin/sourcing/catalogs/import',
-      'GET /api/admin/sourcing/connectors',
+      // Les 11 routes /api/admin/sourcing/* (audit 2026-07-06 §3) ont quitté ce
+      // contrat — extraites vers features/sourcing.feature.js (Lot O1.3, 2026-07-12).
       'GET /api/carriers',
       'POST /api/carriers',
       'DELETE /api/carriers/:id',

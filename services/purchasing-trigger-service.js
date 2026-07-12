@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          purchasing-trigger-service
- * @domain        orders
+ * @domain        purchasing
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

@@ -20,11 +20,11 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 726,
+    "graphNodes": 727,
     "edges": 4174,
     "dbTables": 110,
     "doctrines": 136,
-    "impactAreas": 118,
+    "impactAreas": 119,
     "unresolvedCodeEdges": 398,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
@@ -33,7 +33,7 @@
     "infrastructure": 20,
     "notification": 15,
     "auth": 8,
-    "logistics": 36,
+    "logistics": 35,
     "boutique": 37,
     "catalog": 36,
     "checkout": 2,
@@ -45,13 +45,15 @@
     "economic-engine": 37,
     "customs": 6,
     "dashboard": 30,
-    "orders": 29,
+    "orders": 23,
     "documents": 11,
     "auth-identity": 5,
     "operations": 12,
     "inventory": 3,
     "loyalty": 2,
+    "purchasing": 6,
     "decision-signals": 3,
+    "sourcing": 1,
     "bootstrap": 1,
     "refunds": 2
   },
@@ -7521,7 +7523,7 @@
       "type": "file",
       "headerType": "full",
       "role": "purchasing",
-      "domain": "orders",
+      "domain": "purchasing",
       "layer": "route",
       "criticality": "medium",
       "owner": null,
@@ -8058,8 +8060,8 @@
       "file": "routes/sourcing-scanner.js",
       "type": "file",
       "headerType": "full",
-      "role": "logistics-sourcing-scanner",
-      "domain": "logistics",
+      "role": "sourcing-candidate-scanner",
+      "domain": "sourcing",
       "layer": "route",
       "criticality": "medium",
       "owner": null,
@@ -8106,9 +8108,9 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "logistics"
+        "sourcing"
       ],
-      "version": "2026-06"
+      "version": "2026-07 (Lot O1.3 — @domain corrigé logistics → sourcing, @role précisé)"
     },
     {
       "id": "routes/sourcing.js",
@@ -13572,7 +13574,7 @@
       "type": "file",
       "headerType": "full",
       "role": "purchasing-receive-service",
-      "domain": "orders",
+      "domain": "purchasing",
       "layer": "service",
       "criticality": "medium",
       "owner": null,
@@ -13618,7 +13620,7 @@
       "type": "file",
       "headerType": "full",
       "role": "purchasing-trigger-service",
-      "domain": "orders",
+      "domain": "purchasing",
       "layer": "service",
       "criticality": "medium",
       "owner": null,
@@ -13723,7 +13725,7 @@
       "type": "file",
       "headerType": "full",
       "role": "orders-receive-purchase-order",
-      "domain": "orders",
+      "domain": "purchasing",
       "layer": "service",
       "criticality": "critical",
       "owner": null,
@@ -13756,7 +13758,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "orders",
+        "purchasing",
         "checkout"
       ],
       "version": "2026-06"
@@ -14016,7 +14018,7 @@
       "type": "file",
       "headerType": "full",
       "role": "orders-repair-ordered-purchasing",
-      "domain": "orders",
+      "domain": "purchasing",
       "layer": "service",
       "criticality": "critical",
       "owner": null,
@@ -14047,7 +14049,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "orders",
+        "purchasing",
         "checkout"
       ],
       "version": "2026-06"
@@ -14058,7 +14060,7 @@
       "type": "file",
       "headerType": "full",
       "role": "orders-repair-ordered-without-purchase-orders",
-      "domain": "orders",
+      "domain": "purchasing",
       "layer": "service",
       "criticality": "critical",
       "owner": null,
@@ -14093,7 +14095,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "orders",
+        "purchasing",
         "checkout"
       ],
       "version": "2026-06"
@@ -18871,6 +18873,11 @@
       "id": "impact:pickup",
       "type": "impact-area",
       "area": "pickup"
+    },
+    {
+      "id": "impact:purchasing",
+      "type": "impact-area",
+      "area": "purchasing"
     },
     {
       "id": "impact:shared-cart-progress",
@@ -30237,9 +30244,9 @@
     },
     {
       "from": "routes/sourcing-scanner.js",
-      "to": "impact:logistics",
+      "to": "impact:sourcing",
       "type": "impact",
-      "label": "logistics"
+      "label": "sourcing"
     },
     {
       "from": "routes/sourcing.js",
@@ -38577,9 +38584,9 @@
     },
     {
       "from": "services/receive-purchase-order.js",
-      "to": "impact:orders",
+      "to": "impact:purchasing",
       "type": "impact",
-      "label": "orders"
+      "label": "purchasing"
     },
     {
       "from": "services/receive-purchase-order.js",
@@ -38985,9 +38992,9 @@
     },
     {
       "from": "services/repair-ordered-purchasing.js",
-      "to": "impact:orders",
+      "to": "impact:purchasing",
       "type": "impact",
-      "label": "orders"
+      "label": "purchasing"
     },
     {
       "from": "services/repair-ordered-purchasing.js",
@@ -39039,9 +39046,9 @@
     },
     {
       "from": "services/repair-ordered-without-purchase-orders.js",
-      "to": "impact:orders",
+      "to": "impact:purchasing",
       "type": "impact",
-      "label": "orders"
+      "label": "purchasing"
     },
     {
       "from": "services/repair-ordered-without-purchase-orders.js",
@@ -51360,7 +51367,7 @@
     },
     "routes/purchasing.js": {
       "role": "purchasing",
-      "domain": "orders",
+      "domain": "purchasing",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
@@ -51873,8 +51880,8 @@
       ]
     },
     "routes/sourcing-scanner.js": {
-      "role": "logistics-sourcing-scanner",
-      "domain": "logistics",
+      "role": "sourcing-candidate-scanner",
+      "domain": "sourcing",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
@@ -51911,7 +51918,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "logistics"
+        "sourcing"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
@@ -51920,7 +51927,7 @@
         "db:sourcing_candidates",
         "db:supplier_catalog_imports",
         "doctrine:resolve_before_behavior_change",
-        "impact:logistics",
+        "impact:sourcing",
         "middleware/auth.js",
         "services/catalog-enrichment.js",
         "services/pricing-engine.js",
@@ -57165,7 +57172,7 @@
     },
     "services/purchasing-receive-service.js": {
       "role": "purchasing-receive-service",
-      "domain": "orders",
+      "domain": "purchasing",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
@@ -57205,7 +57212,7 @@
     },
     "services/purchasing-trigger-service.js": {
       "role": "purchasing-trigger-service",
-      "domain": "orders",
+      "domain": "purchasing",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
@@ -57313,7 +57320,7 @@
     },
     "services/receive-purchase-order.js": {
       "role": "orders-receive-purchase-order",
-      "domain": "orders",
+      "domain": "purchasing",
       "criticality": "critical",
       "headerType": "full",
       "owner": null,
@@ -57336,14 +57343,14 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "orders",
+        "purchasing",
         "checkout"
       ],
       "mustCheck": [
         "db:purchase_orders",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
-        "impact:orders",
+        "impact:purchasing",
         "services/order-status-machine.js",
         "utils/logger.js"
       ]
@@ -57585,7 +57592,7 @@
     },
     "services/repair-ordered-purchasing.js": {
       "role": "orders-repair-ordered-purchasing",
-      "domain": "orders",
+      "domain": "purchasing",
       "criticality": "critical",
       "headerType": "full",
       "owner": null,
@@ -57606,7 +57613,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "orders",
+        "purchasing",
         "checkout"
       ],
       "mustCheck": [
@@ -57615,12 +57622,12 @@
         "db:purchase_orders",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
-        "impact:orders"
+        "impact:purchasing"
       ]
     },
     "services/repair-ordered-without-purchase-orders.js": {
       "role": "orders-repair-ordered-without-purchase-orders",
-      "domain": "orders",
+      "domain": "purchasing",
       "criticality": "critical",
       "headerType": "full",
       "owner": null,
@@ -57645,7 +57652,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "orders",
+        "purchasing",
         "checkout"
       ],
       "mustCheck": [
@@ -57654,7 +57661,7 @@
         "db:purchase_orders",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
-        "impact:orders",
+        "impact:purchasing",
         "routes/admin/system.js",
         "routes/purchasing.js"
       ]

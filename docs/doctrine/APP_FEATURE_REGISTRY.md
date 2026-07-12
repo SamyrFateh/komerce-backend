@@ -1,6 +1,6 @@
 # Registre Canonique des Features — Application complète Komerce
 
-> **Version** : 1.3 — 2026-07 (Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty` ; Lot O1.5 : `dashboard` confirmé non-business-feature, dette dash-repo documentée)
+> **Version** : 1.4 — 2026-07 (Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty` ; Lot O1.4 : scission `purchasing` d'`orders` ; Lot O1.5 : `dashboard` confirmé non-business-feature, dette dash-repo documentée)
 > **Statut** : registre actif — gouverné par `docs/doctrine/FEATURE_DOCTRINE.md`
 > **Construit à partir de** : headers `@komerce-arch` réels (`@domain`) du dépôt
 > **backend**, croisés avec les fichiers réels des dépôts **bout** (boutique frontend)
@@ -27,6 +27,7 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 |---:|---|---|---|---|---|---|
 | 1 | `shared-cart` | feature | backend + boutique | [`shared-cart.feature.js`](../../features/shared-cart.feature.js) | production | Panier partagé multi-participants, de la création au règlement |
 | 2 | `orders` | feature | backend | [`orders.feature.js`](../../features/orders.feature.js) | production | Commande : création, statut, coût, rattachement colis/achats |
+| 2b | `purchasing` | feature | backend | [`purchasing.feature.js`](../../features/purchasing.feature.js) | production | Engagement fournisseur : bon de commande déclenché par une commande, confirmation, réception — scindé d'`orders` au Lot O1.4 (2026-07-12) |
 | 3 | `payments` | feature | backend + boutique | [`payments.feature.js`](../../features/payments.feature.js) | production | Encaissement (Stripe, PayPal, cash) et confirmation de paiement |
 | 4a | `wallet` | feature | backend + boutique | [`wallet.feature.js`](../../features/wallet.feature.js) | production | Solde client : historique de crédit/débit, application exactement une fois |
 | 4b | `loyalty` | feature | backend | [`loyalty.feature.js`](../../features/loyalty.feature.js) | production | Statut de fidélité (paliers, compteur gros panier) et récompenses associées |
@@ -64,6 +65,24 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 > Si la duplication est confirmée accidentelle : supprimer `dashboards/dashboards/`
 > (dépôt dashboards) ou `public/dashboards/` (déployé), puis retirer les lignes
 > #19/#20 (ou #22/#23) ci-dessus en conséquence.
+
+> ℹ️ **Note sur les lignes #2/#2b** : `purchasing` a été scindé d'`orders` au Lot O1.4
+> (2026-07-12, `docs/chantier/LOT_O1_4_LIVRABLE.md`). `orders` fait exister la commande
+> cliente et garantit son cycle d'état exclusivement via `order-status-machine.js` ;
+> `purchasing` transforme un besoin d'approvisionnement issu d'une commande en engagement
+> fournisseur traçable (bon de commande), puis constate sa réception — deux services
+> métier distincts vérifiés par grep `.query()` réel : `orders` ne conserve qu'une seule
+> responsabilité résiduelle sur `purchase_orders` (`cancel-order-purchase-orders.js`,
+> appelé exclusivement par `order-status-machine.js`, qui libère les bons de commande liés
+> à l'annulation), tandis que `purchasing` possède la création, la confirmation et la
+> réception. `product_suppliers` et `suppliers` ont quitté `orders` en totalité. Fichiers
+> retaggés `@domain orders` → `purchasing` : `services/purchasing-trigger-service.js`,
+> `services/purchasing-receive-service.js`, `services/receive-purchase-order.js`,
+> `services/repair-ordered-purchasing.js`, `services/repair-ordered-without-purchase-orders.js`,
+> `routes/purchasing.js`. Un `ONTOLOGY_GAP` reste ouvert : `services/purchasing-admin-service.js`
+> écrit dans les mêmes tables (`purchase_orders`, `suppliers`, `product_suppliers`, `orders`)
+> mais reste `@domain dashboard` — non déplacé dans ce lot (hors périmètre O1.4, qui liste
+> explicitement les 6 fichiers ci-dessus comme seul ownership candidat vérifié).
 
 > ℹ️ **Note sur les lignes #4a/#4b/#4c** : `wallet-loyalty` regroupait initialement dans un
 > seul manifest le solde client (wallet) et le programme de fidélité (loyalty). Scindé au
@@ -137,8 +156,10 @@ de vérité qui divergeraient à la première PR boutique non répercutée ici.
    ▼                 ▼                                      ▼
 catalog ──► shared-cart ──► orders ──► payment       economic-engine
               │                │           │           (pricing pour
-              │                │           ▼            catalog, orders,
-              ▼                ▼       refunds          shared-cart)
+              │                ▼           ▼            catalog, orders,
+              │           purchasing   refunds          shared-cart)
+              │        (scindé au Lot O1.4)  │
+              ▼                │           ▼
    wallet / loyalty      logistics       │
    (scindés au Lot O1.2)      │           ▼
               │                │           ▼
@@ -171,10 +192,14 @@ corriger au fil de l'eau plutôt qu'en bloquant ce registre) :
 - fichiers historiques sans header `@komerce-arch` du tout (`@domain unknown`, 35 fichiers
   au moment de la rédaction) — chacun doit recevoir un header daté avant ou pendant son
   prochain changement, puis rejoindre le manifest de la feature correspondante ;
-- sous-domaines `purchasing` / `sourcing` mentionnés dans les doctrines produit mais pas
-  encore portés par un `@domain` dédié — actuellement répartis entre `orders` et
-  `dashboard` (ex. `purchasing-admin-service.js`). À scinder en feature `purchasing`
-  propre dès que son périmètre métier sera tranché ;
+- sous-domaine `sourcing` mentionné dans les doctrines produit mais pas encore porté par
+  un `@domain` dédié — actuellement réparti entre `economic-engine`, `catalog`, `orders` et
+  `dashboard`. À scinder en feature `sourcing` propre dès que son périmètre métier sera
+  tranché (Lot O1.3, non traité dans cette session). `purchasing` (bon de commande
+  fournisseur) a lui été scindé d'`orders` au Lot O1.4 (2026-07-12, voir note ⚠ lignes
+  #2/#2b) — mais `services/purchasing-admin-service.js` reste `@domain dashboard` et écrit
+  dans les mêmes tables que `purchasing` (`purchase_orders`, `suppliers`,
+  `product_suppliers`) : `ONTOLOGY_GAP` documenté dans `purchasing.feature.js`, non résolu ;
 - **le dépôt `dash`** (dashboards admin, hub, relais) n'a aucune doctrine d'ownership
   équivalente à `BOUTIQUE_OWNERSHIP_LIVE.md` côté boutique. Le manifest `dashboard.feature.js`
   liste les fichiers connus (`dashboards/admin/*`, `hub/index.html`, `relais/index.html`,

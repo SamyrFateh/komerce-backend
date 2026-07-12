@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          orders-receive-purchase-order
- * @domain        orders
+ * @domain        purchasing
  * @layer         service
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
@@ -12,7 +12,7 @@
  * @db-write      purchase_orders
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  orders, checkout
+ * @impact-areas  purchasing, checkout
  * @version       2026-06
  */
 

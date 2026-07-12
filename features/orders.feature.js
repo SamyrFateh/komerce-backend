@@ -38,6 +38,11 @@ module.exports = {
       'logique panier partage (feature shared-cart, consommatrice d\'orders)',
       'remboursement (feature refunds, lecture seule sur orders)',
       'tarification (feature economic-engine, orders ne fait que la consommer)',
+      'engagement fournisseur : création, confirmation et réception d\'un bon de commande ' +
+        '(feature purchasing, scindée d\'orders au Lot O1.4, 2026-07-12) — orders ne fait que ' +
+        'consommer purchasing (lecture) et libérer les bons de commande liés à l\'annulation ' +
+        '(cancel-order-purchase-orders.js, reste dans orders car appelé exclusivement par ' +
+        'order-status-machine.js)',
     ],
   },
 
@@ -53,19 +58,14 @@ module.exports = {
     services: [
       'services/order-service.js',
       'services/verify-qr-collection.js',
-      'services/repair-ordered-without-purchase-orders.js',
       'services/invoice-service.js',
       'services/order-cost-snapshot.js',
       'services/invoice-public-token.js',
-      'services/receive-purchase-order.js',
       'services/order-status-machine.js',
-      'services/repair-ordered-purchasing.js',
       'services/admin-order-refund.js',
       'services/cancel-order-purchase-orders.js',
-    
       'services/order-payment-confirmation.js',
-      'services/purchasing-receive-service.js',
-      'services/purchasing-trigger-service.js',],
+    ],
     routes: [
       'routes/admin/orders.js',
       'routes/admin/delete-order-cascade.js',
@@ -80,8 +80,7 @@ module.exports = {
       'routes/hub-mark-ordered.js',
       'routes/invoices.js',
       'routes/order-api-v2.js',
-    
-      'routes/purchasing.js',],
+    ],
       tests: [
       'tests/unit/admin-order-refund.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',
@@ -97,14 +96,11 @@ module.exports = {
       'tests/unit/orders-parcels-route.test.js',
       'tests/unit/parcels.test.js',
       'tests/unit/qr.test.js',
-      'tests/unit/receive-purchase-order.test.js',
-      'tests/unit/repair-ordered-purchasing.test.js',
       'tests/unit/verify-qr-collection.test.js',
       'tests/integration/admin-order-refund-payment-service.test.js',
       'tests/unit/cash-operations.test.js',
       'tests/unit/confirm-payment-cycle.test.js',
       'tests/unit/order-status-machine.test.js',
-      'tests/unit/repair-ordered-without-purchase-orders.test.js',
       // Rapatriés depuis features/notification.feature.js (doublon singulier
       // supprimé, audit 2026-07-06 §2d) — mal rangés là-bas : ils testent en
       // réalité routes/orders.js et ses sous-routers (déjà possédés ci-dessus
@@ -115,15 +111,12 @@ module.exports = {
       'tests/unit/orders-detail.test.js',
       'tests/unit/orders-list.test.js',
       'tests/unit/orders-status-route.test.js',
-      "tests/unit/purchasing-trigger-service.test.js",
-      "tests/unit/purchasing-receive-service.test.js",
-      "tests/unit/invoice-service.test.js",
-      'tests/unit/purchasing.test.js',
+      'tests/unit/invoice-service.test.js',
     ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────
-  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
+  // ── Tables DB (inféré, audit 2026-07-06, §axe2 ; revérifié Lot O1.4 2026-07-12) ─
   // Généré par parsing réel des appels .query() (pas un grep de mots) :
   // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
   // Une table listée ici pour PLUSIEURS features est une vraie propriété
@@ -131,6 +124,14 @@ module.exports = {
   // documenter explicitement si volontaire, ou à re-scoper sinon.
   // Champ auto-généré : à corriger à la main si une requête dynamique
   // (nom de table construit par variable) a échappé au scan.
+  //
+  // purchase_orders reste ici en RW mais désormais réduit à une seule
+  // responsabilité : cancel-order-purchase-orders.js (appelé exclusivement par
+  // order-status-machine.js) libère les bons de commande liés à l'annulation
+  // d'une commande. La création, confirmation et réception d'un bon de commande
+  // appartiennent désormais à la feature purchasing (scindée d'orders au Lot
+  // O1.4). product_suppliers et suppliers ont quitté orders — plus aucun
+  // fichier resté dans orders ne les touche (vérifié par grep, 2026-07-12).
   db: {
     tables: [
       'alerts: W',
@@ -145,25 +146,23 @@ module.exports = {
       'orders: RW',
       'parcel_items: R',
       'parcels: R',
-      'product_suppliers: RW',
       'product_variants: R',  // W-via:product-admin-service (adjustStock variantes)
       'products: R',          // W-via:product-admin-service (adjustStock — order-payment-confirmation.js, order-status-machine.js)
-      'purchase_orders: RW',
+      'purchase_orders: RW',  // désormais restreint à la libération à l'annulation (cancel-order-purchase-orders.js) — voir note ci-dessus
       'recipients: RW',
       'refunds: R',
       'relais: R',
       'scans: W',
       'sms_log: W',
-      'suppliers: RW',
       'users: R',
     ],
   },
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 41,
-    totalRoutes: 43,
-    note: "41/43 routes protégées. 2 routes publiques par design : GET /api/invoices/public/:token (token de facture partageable, lecture seule) ; GET /api/orders/retrait/:token (capability token QR de retrait, validé côté service par verify-qr-collection.js).",
+    authedRoutesDetected: 31,
+    totalRoutes: 33,
+    note: "31/33 routes protégées. 2 routes publiques par design : GET /api/invoices/public/:token (token de facture partageable, lecture seule) ; GET /api/orders/retrait/:token (capability token QR de retrait, validé côté service par verify-qr-collection.js). (Recompté après scission de la feature purchasing, Lot O1.4, 2026-07-12 : 10 routes /api/purchasing/** retirées, toutes authentifiées.)",
   },
   contract: {
     exposes: [
@@ -197,16 +196,6 @@ module.exports = {
       'GET /api/orders/relais',
       'GET /api/orders/retrait/:token',
       'PATCH /api/orders/sub-orders/:subId/status',
-      'GET /api/purchasing',
-      'POST /api/purchasing/:id/receive',
-      'GET /api/purchasing/:order_id',
-      'POST /api/purchasing/:order_id/confirm',
-      'GET /api/purchasing/order/:order_id/completeness',
-      'DELETE /api/purchasing/po/:po_id',
-      'GET /api/purchasing/suppliers',
-      'POST /api/purchasing/suppliers',
-      'DELETE /api/purchasing/suppliers/:id',
-      'POST /api/purchasing/suppliers/:id/map',
       'GET /api/v2/orders',
       'GET /api/v2/orders/:ref',
       'POST /api/v2/orders/:ref/confirm-cash',
@@ -218,6 +207,7 @@ module.exports = {
       'economic-engine (cout figure a la commande)',
       'logistics (rattachement colis)',
       'catalog (lecture produit)',
+      'purchasing (lecture — engagement fournisseur déclenché par une commande ; scindée d\'orders au Lot O1.4)',
       'auth',
       'customs',
       'dashboard',

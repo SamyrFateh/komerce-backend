@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
- * @role          logistics-sourcing-scanner
- * @domain        logistics
+ * @role          sourcing-candidate-scanner
+ * @domain        sourcing
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
@@ -13,8 +13,8 @@
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  logistics
- * @version       2026-06
+ * @impact-areas  sourcing
+ * @version       2026-07 (Lot O1.3 — @domain corrigé logistics → sourcing, @role précisé)
  */
 
 /**

@@ -13,11 +13,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 726
+- Graph nodes: 727
 - Edges: 4174
 - DB tables: 110
 - Doctrines: 136
-- Impact areas: 118
+- Impact areas: 119
 - Unresolved code edges: 398
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
@@ -37,15 +37,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - economic-engine: 37
 - infrastructure: 20
 - inventory: 3
-- logistics: 36
+- logistics: 35
 - loyalty: 2
 - notification: 15
 - operations: 12
-- orders: 29
+- orders: 23
 - payment: 16
+- purchasing: 6
 - recommendations: 4
 - refunds: 2
 - shared-cart: 42
+- sourcing: 1
 - tracking: 1
 - wallet: 4
 
@@ -143,11 +145,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/payment-service.js — payment-status-owner (payment, critical, full)
 - services/payment-stripe.js — stripe-payment-service (payment, critical, full)
 - services/paypal-client.js — payment-paypal-client (payment, critical, full)
-- services/receive-purchase-order.js — orders-receive-purchase-order (orders, critical, full)
+- services/receive-purchase-order.js — orders-receive-purchase-order (purchasing, critical, full)
 - services/repair-collective-ready-to-capture.js — shared-cart-repair-collective-ready-to-capture (shared-cart, critical, full)
 - services/repair-collective-stock-reservations.js — shared-cart-repair-collective-stock-reservations (shared-cart, critical, full)
-- services/repair-ordered-purchasing.js — orders-repair-ordered-purchasing (orders, critical, full)
-- services/repair-ordered-without-purchase-orders.js — orders-repair-ordered-without-purchase-orders (orders, critical, full)
+- services/repair-ordered-purchasing.js — orders-repair-ordered-purchasing (purchasing, critical, full)
+- services/repair-ordered-without-purchase-orders.js — orders-repair-ordered-without-purchase-orders (purchasing, critical, full)
 - services/shared-cart-cash-service.js — shared-cart-shared-cart-cash-service (shared-cart, critical, full)
 - services/shared-cart-contributions.js — shared-cart-contributions (shared-cart, critical, full)
 - services/shared-cart-creation.js — shared-cart-creation (shared-cart, critical, full)

@@ -92,7 +92,10 @@ module.exports = {
       'migrations/038_price_history.sql',
       'migrations/039_pricing_benchmarks.sql',
       'migrations/040_pricing_strategies.sql',
-      'migrations/041_sourcing_candidates.sql',
+      // 041 et 076 (sourcing_candidates) : retirées d'ici (Lot O1.3, 2026-07-12).
+      // Mal déclarées — elles créent sourcing_candidates/sourcing_candidate_events,
+      // tables sans rapport avec le moteur margin/rail d'economic-engine. Déplacées
+      // vers features/sourcing.feature.js. Voir docs/chantier/ pour le détail.
       'migrations/043_cost_components.sql',
       'migrations/045_allocation_averages.sql',
       'migrations/046_price_history_scenarios.sql',
@@ -100,7 +103,6 @@ module.exports = {
       'migrations/050_order_item_cost_imputations.sql',
       'migrations/051_order_item_real_cost_allocations.sql',
       'migrations/067_finance_config_provision_risque.sql',
-      'migrations/076_sourcing_candidates_unique.sql',
       'migrations/090_cost_benchmarks.sql',
       'migrations/103_cost_benchmarks.sql',
     ],
@@ -159,6 +161,12 @@ module.exports = {
       // 2026-07-06 §2c) : teste services/finance-metrics/payments.js
       // (déjà possédé par economic-engine ci-dessus), pas le domaine payment.
       'tests/unit/finance-payments.test.js',
+      // Rapatriés depuis logistics.feature.js (Lot O1.3, 2026-07-12) : ces deux
+      // fichiers testent routes/sourcing.js (moteur margin/rail admin), pas
+      // routes/sourcing-scanner.js (feature sourcing) — mauvaise déclaration
+      // pré-existante, corrigée par homonymie détectée pendant l'audit O1.3.
+      'tests/integration/sourcing-engine-routes.test.js',
+      'tests/integration/sourcing-flow-g5.test.js',
     ],
   },
 
