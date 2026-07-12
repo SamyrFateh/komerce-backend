@@ -41,8 +41,12 @@ module.exports = {
   },
 
   files: {
-    boutique: [
+    // Le registre Boutique ne reconnaît que le groupe `js` pour le rattachement
+    // fichier↔feature. Le reducer appartient donc explicitement à ce slice.
+    js: [
       '../js/view-models/modal-selection-model.js',
+    ],
+    boutique: [
       '../css/modal-shell.css',
       '../css/modal-product.css',
       '../css/modal-product-lot4-hybrid.css',
@@ -52,6 +56,7 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/modal-selection-model.test.js',
+      '../tests/unit/modal-selection-model-axis-order.test.js',
     ],
   },
 
