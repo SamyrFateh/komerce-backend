@@ -20,12 +20,12 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 726,
-    "edges": 4174,
+    "graphNodes": 729,
+    "edges": 4178,
     "dbTables": 110,
-    "doctrines": 136,
-    "impactAreas": 118,
-    "unresolvedCodeEdges": 398,
+    "doctrines": 138,
+    "impactAreas": 119,
+    "unresolvedCodeEdges": 399,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -15704,35 +15704,36 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "supplier_connector_output"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "validated_normalized_supplier_product",
+        "normalized_source_contract_snapshot"
       ],
       "depends": [
-        "schemas/catalog/normalized-supplier-product.v1.schema.json"
+        "schemas/catalog/normalized-supplier-product.v1.schema.json",
+        "schemas/catalog/normalized-supplier-product.v2.schema.json"
       ],
       "usedBy": [
         "services/suppliers/connectors/api-connector.base.js",
         "services/suppliers/connectors/csv-connector.js",
-        "services/suppliers/connectors/manual-connector.js"
+        "services/suppliers/connectors/manual-connector.js",
+        "services/suppliers/catalog-import-orchestrator.js"
       ],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
+      "dbTxn": [],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
       ],
       "impactAreas": [
         "catalog",
-        "product-discovery"
+        "product-discovery",
+        "product-detail"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "services/transport-cost-allocation.js",
@@ -18276,6 +18277,16 @@
       "doctrine": "ING-I3)"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
@@ -18879,6 +18890,11 @@
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
+    },
+    {
+      "id": "impact:product-detail",
+      "type": "impact-area",
+      "area": "product-detail"
     },
     {
       "id": "impact:api",
@@ -41575,6 +41591,12 @@
       "label": "schemas/catalog/normalized-supplier-product.v1.schema.json"
     },
     {
+      "from": "services/suppliers/normalized-product.js",
+      "to": "schemas/catalog/normalized-supplier-product.v2.schema.json",
+      "type": "depends",
+      "label": "schemas/catalog/normalized-supplier-product.v2.schema.json"
+    },
+    {
       "from": "services/suppliers/connectors/api-connector.base.js",
       "to": "services/suppliers/normalized-product.js",
       "type": "uses",
@@ -41593,10 +41615,22 @@
       "label": "services/suppliers/connectors/manual-connector.js"
     },
     {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "services/suppliers/normalized-product.js",
+      "type": "uses",
+      "label": "services/suppliers/catalog-import-orchestrator.js"
+    },
+    {
       "from": "services/suppliers/normalized-product.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/normalized-product.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
     },
     {
       "from": "services/suppliers/normalized-product.js",
@@ -41609,6 +41643,12 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "services/suppliers/normalized-product.js",
+      "to": "impact:product-detail",
+      "type": "impact",
+      "label": "product-detail"
     },
     {
       "from": "services/transport-cost-allocation.js",
@@ -59009,6 +59049,7 @@
         "services/catalog-eligibility.js",
         "services/pricing-engine.js",
         "services/supplier-catalog-scanner.js",
+        "services/suppliers/normalized-product.js",
         "utils/rules.js"
       ]
     },
@@ -59188,28 +59229,35 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "schemas/catalog/normalized-supplier-product.v1.schema.json"
+        "schemas/catalog/normalized-supplier-product.v1.schema.json",
+        "schemas/catalog/normalized-supplier-product.v2.schema.json"
       ],
       "directUsedBy": [
         "services/suppliers/connectors/api-connector.base.js",
         "services/suppliers/connectors/csv-connector.js",
-        "services/suppliers/connectors/manual-connector.js"
+        "services/suppliers/connectors/manual-connector.js",
+        "services/suppliers/catalog-import-orchestrator.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
       ],
       "impactAreas": [
         "catalog",
-        "product-discovery"
+        "product-discovery",
+        "product-detail"
       ],
       "mustCheck": [
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
         "impact:catalog",
+        "impact:product-detail",
         "impact:product-discovery",
+        "services/suppliers/catalog-import-orchestrator.js",
         "services/suppliers/connectors/api-connector.base.js",
         "services/suppliers/connectors/csv-connector.js",
         "services/suppliers/connectors/manual-connector.js"
@@ -63554,6 +63602,12 @@
       "to": "schemas/catalog/normalized-supplier-product.v1.schema.json",
       "type": "depends",
       "label": "schemas/catalog/normalized-supplier-product.v1.schema.json"
+    },
+    {
+      "from": "services/suppliers/normalized-product.js",
+      "to": "schemas/catalog/normalized-supplier-product.v2.schema.json",
+      "type": "depends",
+      "label": "schemas/catalog/normalized-supplier-product.v2.schema.json"
     },
     {
       "from": "services/transport-cost-allocation.js",
