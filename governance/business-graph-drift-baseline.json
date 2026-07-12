@@ -1,12 +1,19 @@
 {
-  "_comment": "Lot O4 Phase F — baseline typée du drift ratchet (mission O4 §10). Une entrée par TYPE de warning, jamais un total global (le total masque les déplacements de dette entre catégories). Règle appliquée par scripts/business-graph-ratchet-check.js : count > baseline pour un type connu -> FAIL ; type absent de cette baseline et présent dans le graphe -> FAIL (nouvelle catégorie de dette, doit être ajoutée ici explicitement, jamais silencieusement) ; count <= baseline -> PASS (une réduction n'échoue jamais, y compris à zéro : le type peut alors être retiré de cette baseline lors d'un lot dédié).",
-  "generatedFrom": "docs/BUSINESS_FEATURE_GRAPH.json — Lot O4, capture Phase F (post cross-repo coverage : 116 -> 96 warnings après rattachement des 10 manifests boutique et résolution des 20 orphelins techniques)",
+  "_comment": "Lot O4-2 (point 2) — baseline typée par TYPE + CATÉGORIE SÉMANTIQUE (Phase E), pas seulement par TYPE (limite d'O4 Phase F initiale : un déplacement de dette d'EXPECTED_TOPOLOGY vers ACTIONABLE_DRIFT au sein d'un même type, ex. WRITER-NOT-OWNER, passait inaperçu tant que le TOTAL du type restait stable). Clé = \"TYPE::CATEGORY\". Règle appliquée par scripts/business-graph-ratchet-check.js : count > baseline pour une clé connue -> FAIL ; clé absente de cette baseline et présente dans le graphe -> FAIL (nouvelle catégorie de dette, doit être ajoutée ici explicitement, jamais silencieusement) ; count <= baseline -> PASS (une réduction n'échoue jamais, y compris à zéro : la clé peut alors être retirée de cette baseline lors d'un lot dédié).",
+  "generatedFrom": "docs/BUSINESS_FEATURE_GRAPH.json — Lot O4-2, capture après durcissement gouvernance boutique stricte (point 6), vérification fs.existsSync des fichiers boutique (point 7), et edges boutique-manifest->file vérifiées (points 3/4). 96 warnings au total, répartition identique à la baseline O4 Phase F (aucun mouvement de dette entre catégories détecté à cette capture) + 0 BOUTIQUE-FILE-MULTIPLE-OWNERS (aucun conflit constaté).",
   "baseline": {
-    "WRITER-NOT-OWNER": 36,
-    "EXPOSED-ROUTE-OWNER-MISMATCH": 34,
-    "CONSUMES-REFERENCE-UNRESOLVED": 14,
-    "EXPOSED-ROUTE-UNRESOLVED": 8,
-    "DASH-MANIFEST-DUPLICATE-COPY": 2,
-    "EXPOSE-ENTRY-UNPARSED": 2
+    "CONSUMES-REFERENCE-UNRESOLVED::INVALID_DECLARATION": 12,
+    "CONSUMES-REFERENCE-UNRESOLVED::GENERATOR_LIMITATION": 2,
+    "DASH-MANIFEST-DUPLICATE-COPY::EXPECTED_TOPOLOGY": 2,
+    "EXPOSE-ENTRY-UNPARSED::GENERATOR_LIMITATION": 2,
+    "EXPOSED-ROUTE-OWNER-MISMATCH::GENERATOR_LIMITATION": 13,
+    "EXPOSED-ROUTE-OWNER-MISMATCH::ACTIONABLE_DRIFT": 13,
+    "EXPOSED-ROUTE-OWNER-MISMATCH::KNOWN_DEBT": 8,
+    "EXPOSED-ROUTE-UNRESOLVED::ACTIONABLE_DRIFT": 4,
+    "EXPOSED-ROUTE-UNRESOLVED::GENERATOR_LIMITATION": 4,
+    "WRITER-NOT-OWNER::KNOWN_DEBT": 30,
+    "WRITER-NOT-OWNER::EXPECTED_TOPOLOGY": 5,
+    "WRITER-NOT-OWNER::ACTIONABLE_DRIFT": 1,
+    "BOUTIQUE-FILE-MULTIPLE-OWNERS::ACTIONABLE_DRIFT": 0
   }
 }

@@ -39,6 +39,12 @@ const DEFAULT_BY_TYPE = {
   'DASH-MANIFEST-DUPLICATE-COPY':   'KNOWN_DEBT',
   'EXPOSE-ENTRY-UNPARSED':          'GENERATOR_LIMITATION',
   'BOUTIQUE-MANIFEST-UNGOVERNED':   'ACTIONABLE_DRIFT',
+  // Lot O4-2 (point 5) : deux manifests boutique revendiquant le même fichier
+  // est une contradiction de gouvernance active, pas juste de la dette de
+  // déclaration — classé ACTIONABLE_DRIFT par défaut (jamais EXPECTED_TOPOLOGY,
+  // même principe que le reste de ce fichier : un nouveau cas doit attirer
+  // l'attention, pas être noyé).
+  'BOUTIQUE-FILE-MULTIPLE-OWNERS':  'ACTIONABLE_DRIFT',
 };
 
 // ── Noms de features réellement connus (pour distinguer INVALID_DECLARATION

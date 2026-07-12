@@ -19,7 +19,7 @@
  * Usage :
  *   node scripts/business-graph-gen.js              (re)génère
  *   node scripts/business-graph-gen.js --check      cliquet — stale ou référence invalide -> exit 1
- *   node scripts/business-graph-gen.js --boutique-root DIR   racine du dépôt boutique (défaut ../boutique)
+ *   node scripts/business-graph-gen.js --boutique-root DIR   racine du SCOPE boutique (répertoire ; défaut ../boutique — voir model.scopeTopology pour la relation Git réelle, souvent une sous-arborescence du même dépôt, pas un checkout séparé)
  *   node scripts/business-graph-gen.js --root DIR
  */
 
@@ -59,6 +59,40 @@ const DASH_KNOWN_COPY_DIVERGENCES = {
     "    '../admin/js/ClientsView.js',",
   ],
 };
+// ─────────────────────────────────────────────────────────────────────────
+// Lot O4-2 (point 9) : "cross-repo" dans les livrables O4 précédents
+// désignait en réalité un franchissement de SCOPE (frontière de gouvernance
+// déclarée : manifests/registre/autorité propres à backend, dash, boutique),
+// pas nécessairement un franchissement de dépôt Git séparé. Dans CETTE
+// topologie (vérifié : aucun .git ni sous ROOT ni sous public/boutique ni
+// sous public/dashboards — cf. AGENTS.md/mémoire produit qui décrivent
+// Komerce comme un monorepo backend + boutique + dashboards), boutique et
+// dash sont des SOUS-RÉPERTOIRES du même arbre que le backend, pas des
+// checkouts Git distincts. Les flags --dash-root/--boutique-root et les
+// variables KOMERCE_DASH_ROOT/KOMERCE_BOUTIQUE_ROOT existent pour permettre
+// à ce générateur de fonctionner AUSSI si un jour ces scopes vivent dans des
+// dépôts Git réellement séparés (topologie historique visée par O1.5/O3) —
+// mais ce n'est PAS la topologie observée ici, et le prétendre serait
+// factuellement faux. detectScopeRelation() constate, ne suppose jamais.
+function detectScopeRelation(mountPath) {
+  if (!fs.existsSync(mountPath)) return { mounted: false, relation: 'not-mounted' };
+  const rel = path.relative(ROOT, mountPath);
+  const isNestedUnderRoot = rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+  const hasOwnGitDir = fs.existsSync(path.join(mountPath, '.git'));
+  const rootHasGitDir = fs.existsSync(path.join(ROOT, '.git'));
+  let relation;
+  if (isNestedUnderRoot && !hasOwnGitDir) {
+    relation = 'same-repository-subdirectory'; // constat direct : pas de .git propre, imbriqué sous ROOT
+  } else if (isNestedUnderRoot && hasOwnGitDir) {
+    relation = 'nested-but-has-own-git-dir'; // cas nested git (submodule-like) — rare, signalé tel quel
+  } else if (!isNestedUnderRoot && hasOwnGitDir) {
+    relation = 'separate-git-checkout'; // chemin externe avec son propre .git — vraiment "cross-repo"
+  } else {
+    relation = 'externally-mounted-path-git-relationship-unverified'; // chemin externe sans .git détecté ici
+  }
+  return { mounted: true, relation, hasOwnGitDir, rootHasGitDir, isNestedUnderRoot };
+}
+
 const DOCS = path.join(ROOT, 'docs');
 const FEATURES_DIR = path.join(ROOT, 'features');
 const ARCH_GRAPH_FILE = path.join(DOCS, 'komerce-arch-header-graph.json');
@@ -213,8 +247,10 @@ function loadDashFeatureManifests(warns) {
   return out;
 }
 
-// Charge les manifests du dépôt `boutique` (Lot O4). Contrairement à `dash`,
-// pas de duplication connue backend-side — un seul dossier `features/`.
+// Charge les manifests du SCOPE `boutique` (Lot O4 — voir model.scopeTopology
+// pour la relation Git réelle avec ROOT ; ce n'est pas nécessairement un
+// dépôt Git séparé). Contrairement à `dash`, pas de duplication connue
+// backend-side — un seul dossier `features/`.
 // Chaque manifest boutique porte (depuis O4) `canonicalFeature` (nom d'une
 // feature backend/dash existante, ou null) et `sliceKind` ('frontend-slice' |
 // 'frontend-transversal' | 'ui-orchestration'). Ces manifests ne deviennent
@@ -495,7 +531,6 @@ function build() {
   const ALLOWED_SLICE_KINDS = new Set(['frontend-slice', 'frontend-transversal', 'ui-orchestration']);
   const boutiqueManifestNodes = [];
   const implementedInEdges = []; // { canonicalFeature, boutiqueManifest, sliceKind }
-  const boutiqueOwnedRepoPaths = new Set(); // 'public/boutique/...' couverts via manifest boutique
   for (const bm of boutiqueManifests) {
     if (bm.__broken) {
       errors.push({ type: 'MANIFEST-LOAD-ERROR', ref: bm.__file, msg: `manifest boutique illisible : ${bm.__broken}` });
@@ -504,33 +539,60 @@ function build() {
     const name = bm.name;
     const hasCanonical = Object.prototype.hasOwnProperty.call(bm, 'canonicalFeature');
     const sliceKind = bm.sliceKind || null;
+    let governed = false;
 
+    // ── Gouvernance stricte (Lot O4-2 point 6) ──────────────────────────
+    // Exactement DEUX formes valides, aucune autre :
+    //   (a) canonicalFeature = "<nom>" (non-null), résolu contre une feature
+    //       réelle du graphe, ET sliceKind renseigné (les deux ensemble)
+    //   (b) canonicalFeature === null (clé présente, valeur explicite) ET
+    //       sliceKind === 'frontend-transversal'
+    // Toute combinaison partielle (sliceKind seul sans clé canonicalFeature,
+    // canonicalFeature sans sliceKind, canonicalFeature=null avec un autre
+    // sliceKind...) est une déclaration invalide -> ERROR explicite. La
+    // version précédente de ce bloc laissait passer silencieusement
+    // sliceKind seul (governed=true sans jamais vérifier canonicalFeature) :
+    // c'était exactement le trou que ce point corrige.
     if (!hasCanonical && !sliceKind) {
       warns.push({
         type: 'BOUTIQUE-MANIFEST-UNGOVERNED', ref: name,
-        msg: `boutique/features/${name}.feature.js ne déclare ni "canonicalFeature" ni "sliceKind" — manifest hors graphe de couverture cross-repo (O4)`,
+        msg: `boutique/features/${name}.feature.js ne déclare ni "canonicalFeature" ni "sliceKind" — manifest hors graphe de couverture cross-scope (O4)`,
       });
     } else if (sliceKind && !ALLOWED_SLICE_KINDS.has(sliceKind)) {
       errors.push({
         type: 'BOUTIQUE-SLICE-KIND-INVALID', ref: name,
         msg: `sliceKind="${sliceKind}" invalide pour boutique:${name} — valeurs autorisées : ${[...ALLOWED_SLICE_KINDS].join(' | ')}`,
       });
-    } else if (bm.canonicalFeature) {
-      if (!featureNodeByName.has(bm.canonicalFeature)) {
+    } else if (hasCanonical && bm.canonicalFeature === null) {
+      if (sliceKind === 'frontend-transversal') {
+        governed = true; // forme (b)
+      } else {
+        errors.push({
+          type: 'CANONICAL-FEATURE-GOVERNANCE-INVALID', ref: name,
+          msg: `boutique:${name} déclare canonicalFeature=null avec sliceKind="${sliceKind || '(absent)'}" — la seule combinaison valide pour canonicalFeature=null est sliceKind="frontend-transversal"`,
+        });
+      }
+    } else if (hasCanonical && bm.canonicalFeature) {
+      if (!sliceKind) {
+        errors.push({
+          type: 'CANONICAL-FEATURE-GOVERNANCE-INVALID', ref: name,
+          msg: `boutique:${name} déclare canonicalFeature="${bm.canonicalFeature}" sans sliceKind — les deux champs sont requis ensemble (forme (a) exacte)`,
+        });
+      } else if (!featureNodeByName.has(bm.canonicalFeature)) {
         errors.push({
           type: 'CANONICAL-FEATURE-UNRESOLVED', ref: name,
           msg: `boutique:${name} déclare canonicalFeature="${bm.canonicalFeature}", aucune feature backend/dash de ce nom n'existe dans le graphe`,
         });
       } else {
-        implementedInEdges.push({ canonicalFeature: bm.canonicalFeature, boutiqueManifest: name, sliceKind: sliceKind || 'frontend-slice' });
+        implementedInEdges.push({ canonicalFeature: bm.canonicalFeature, boutiqueManifest: name, sliceKind });
+        governed = true; // forme (a)
       }
-    } else if (sliceKind === 'frontend-transversal' && bm.canonicalFeature === null) {
-      // Topologie attendue — pas de canonicalFeature unique, cf. équivalent
-      // dash-repo (manifest `platform`, type frontend-transversal).
-    } else if (hasCanonical && bm.canonicalFeature == null && sliceKind !== 'frontend-transversal') {
+    } else if (!hasCanonical && sliceKind) {
+      // sliceKind déclaré seul, sans la clé canonicalFeature du tout (ni
+      // valeur ni null explicite) -> ni forme (a) ni forme (b).
       errors.push({
-        type: 'CANONICAL-FEATURE-UNRESOLVED', ref: name,
-        msg: `boutique:${name} déclare canonicalFeature=null sans sliceKind="frontend-transversal" — décision de rattachement manquante`,
+        type: 'CANONICAL-FEATURE-GOVERNANCE-INVALID', ref: name,
+        msg: `boutique:${name} déclare sliceKind="${sliceKind}" sans la clé "canonicalFeature" (ni valeur, ni null explicite) — déclaration incomplète, aucune des deux formes valides`,
       });
     }
 
@@ -539,26 +601,64 @@ function build() {
       name,
       file: bm.__file,
       repo: 'boutique',
-      canonicalFeature: bm.canonicalFeature || null,
+      canonicalFeature: hasCanonical ? bm.canonicalFeature : null,
       sliceKind: sliceKind || null,
-      governed: Boolean(hasCanonical || sliceKind),
+      governed,
     });
+  }
 
-    // Fichiers déclarés par CE manifest boutique -> chemin repo-relatif
-    // 'public/boutique/...', pour compter comme "possédés" côté orphelins
-    // techniques (5.3), que le manifest backend correspondant les liste ou non
-    // dans son propre files.boutique (source d'autorité complémentaire, pas
-    // une duplication — cf. mission O4 §6, priorité 1 "info déjà présente
-    // dans les manifests").
-    for (const [, files] of Object.entries(bm.files || {})) {
+  // ── 5.2b Bridge BOUTIQUE-MANIFEST -> IMPLEMENTED_BY -> FILE (Lot O4-2 §3/4/5/7) ─
+  //   Edge EXPLICITE et VÉRIFIÉE SUR DISQUE, distincte de feature:*->file
+  //   ci-dessus (5.2/implementedByEdges) : celle-ci part d'un boutique-manifest,
+  //   pas d'une feature canonique (un manifest peut être gouverné en (b) —
+  //   frontend-transversal — sans jamais pointer vers une feature).
+  //   Un fichier ne sort de l'orphelinat technique QUE si CETTE edge existe
+  //   avec exists=true (point 4) — la version précédente ajoutait le chemin
+  //   déclaré à l'ensemble "possédé" sans jamais vérifier fs.existsSync
+  //   (point 7 corrige ce trou, qui aurait laissé un chemin fantôme masquer
+  //   silencieusement un vrai orphelin ou une faute de frappe de chemin).
+  const boutiqueImplementedByEdges = [];
+  const boutiqueFileOwnerIndex = new Map(); // repoRelPath -> Set(manifestName) — détection multi-owner (point 5)
+  for (const bm of boutiqueManifests) {
+    if (bm.__broken) continue;
+    const name = bm.name;
+    for (const [category, files] of Object.entries(bm.files || {})) {
       for (const rel of (files || [])) {
         const clean = String(rel || '').replace(/\\/g, '/');
         if (!clean) continue;
         const abs = path.resolve(bm.__manifestDir, clean);
         const relToBoutiqueRoot = path.relative(BOUTIQUE_ROOT, abs).replace(/\\/g, '/');
-        if (relToBoutiqueRoot.startsWith('..')) continue; // hors dépôt boutique, ignore
-        boutiqueOwnedRepoPaths.add(`public/boutique/${relToBoutiqueRoot}`);
+        if (relToBoutiqueRoot.startsWith('..')) continue; // hors scope boutique, ignore — pas une edge de ce namespace
+        const repoRelPath = `public/boutique/${relToBoutiqueRoot}`;
+        const exists = fs.existsSync(abs); // point 7 — vérification réelle sur disque, plus de confiance aveugle
+        const status = exists ? 'resolved-on-disk' : 'missing-on-disk';
+
+        boutiqueImplementedByEdges.push({ boutiqueManifest: name, category, declared: rel, resolvedPath: repoRelPath, exists, status });
+
+        if (!exists) {
+          errors.push({
+            type: 'BOUTIQUE-FILE-DECLARED-INEXISTANT', ref: `${name} / ${repoRelPath}`,
+            msg: `boutique:${name}.files.${category} déclare "${rel}" -> "${repoRelPath}", introuvable sur disque`,
+          });
+        } else {
+          if (!boutiqueFileOwnerIndex.has(repoRelPath)) boutiqueFileOwnerIndex.set(repoRelPath, new Set());
+          boutiqueFileOwnerIndex.get(repoRelPath).add(name);
+        }
       }
+    }
+  }
+
+  // 'public/boutique/...' couverts via une edge boutique-manifest->file
+  // VÉRIFIÉE (exists=true) — seule source d'exclusion de l'orphelinat 5.3.
+  const boutiqueOwnedRepoPaths = new Set(boutiqueFileOwnerIndex.keys());
+
+  // ── Détection BOUTIQUE-FILE-MULTIPLE-OWNERS (point 5) ───────────────────
+  for (const [repoRelPath, owners] of boutiqueFileOwnerIndex.entries()) {
+    if (owners.size > 1) {
+      warns.push({
+        type: 'BOUTIQUE-FILE-MULTIPLE-OWNERS', ref: repoRelPath,
+        msg: `"${repoRelPath}" est revendiqué par ${owners.size} manifests boutique (${[...owners].sort().join(', ')}) — ownership ambigu entre manifests boutique, à trancher explicitement`,
+      });
     }
   }
 
@@ -873,7 +973,12 @@ function build() {
   };
 
   const model = {
-    version: 'O3-1.0',
+    // Lot O4-2 (point 8) : le format a changé depuis O3-1.0 — nouveaux nœuds
+    // (boutique-manifest), nouvel edge type (BOUTIQUE_MANIFEST_IMPLEMENTED_BY),
+    // gouvernance boutique désormais stricte (CANONICAL-FEATURE-GOVERNANCE-INVALID),
+    // ratchet typé par type+catégorie sémantique, model.scopeTopology. Un
+    // consommateur qui lisait O3-1.0 doit être revérifié avant de lire O4-1.0.
+    version: 'O4-1.0',
     generatedFrom: {
       featureManifests: manifests.map(m => m.__file).filter(Boolean),
       technicalArchitectureGraph: path.relative(ROOT, ARCH_GRAPH_FILE),
@@ -889,7 +994,7 @@ function build() {
       boutiqueRepoMounted: fs.existsSync(BOUTIQUE_ROOT),
     },
     nodeTypes: ['business-feature', 'business-transversal', 'technical-transversal', 'piloting-capability', 'projection', 'frontend-transversal', 'deprecated'],
-    edgeTypes: ['IMPLEMENTED_BY', 'OWNS_TABLE_LIFECYCLE', 'WRITES_TABLE', 'READS_TABLE', 'EXPOSES_INTERFACE', 'PROVIDES_INTERNAL_API', 'CONSUMES_FEATURE', 'IMPLEMENTED_IN'],
+    edgeTypes: ['IMPLEMENTED_BY', 'OWNS_TABLE_LIFECYCLE', 'WRITES_TABLE', 'READS_TABLE', 'EXPOSES_INTERFACE', 'PROVIDES_INTERNAL_API', 'CONSUMES_FEATURE', 'IMPLEMENTED_IN', 'BOUTIQUE_MANIFEST_IMPLEMENTED_BY'],
     nodes: { features: featureNodes, boutiqueManifests: boutiqueManifestNodes },
     edges: {
       implementedBy: implementedByEdges,
@@ -897,10 +1002,28 @@ function build() {
       providesInternalApi: internalApiEdges,
       consumesFeature: consumesEdges,
       implementedIn: implementedInEdges,
+      // Lot O4-2 (point 3) : boutique-manifest -> IMPLEMENTED_BY -> file,
+      // edge explicite et vérifiée sur disque (exists:bool par entrée) —
+      // c'est CETTE liste qui fait foi pour la résolution des orphelins
+      // techniques boutique (5.3), pas une simple présence dans files.*.
+      boutiqueManifestImplementedBy: boutiqueImplementedByEdges,
     },
     tableOwnership,
     orphanTechnicalNodes,
     bigMap,
+    // Lot O4-2 (point 9) : constat factuel, pas une doctrine — distingue
+    // franchissement de SCOPE (backend/dash/boutique, toujours vrai — chacun
+    // a ses propres manifests/registre/autorité) de franchissement de DÉPÔT
+    // GIT séparé (vrai seulement si relation==='separate-git-checkout').
+    // "cross-repo" dans bigMap.canonical.crossRepoFeatures et dans les
+    // livrables O4 précédents doit se lire "cross-scope" tant que la
+    // relation ci-dessous n'est pas 'separate-git-checkout'.
+    scopeTopology: {
+      backend: { mountPath: '.', relation: 'self', note: 'scope de référence — ce générateur tourne depuis ce dépôt' },
+      dash: { mountPath: path.relative(ROOT, DASH_ROOT) || '.', ...detectScopeRelation(DASH_ROOT) },
+      boutique: { mountPath: path.relative(ROOT, BOUTIQUE_ROOT) || '.', ...detectScopeRelation(BOUTIQUE_ROOT) },
+      note: '"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="separate-git-checkout" ci-dessus pour le scope concerné.',
+    },
     drifts: {
       error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
       warn: warns.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
@@ -953,10 +1076,25 @@ function renderMd(model) {
     L.push('');
   }
 
-  L.push('## Big Map — couverture cross-repo (Lot O4)');
+  L.push('## Big Map — couverture cross-scope (Lot O4)');
   L.push('');
-  L.push('Synthèse de couverture par dépôt et identités métier cross-repo. Voir mission O4 §13.');
+  L.push('Synthèse de couverture par scope et identités métier cross-scope. Voir mission O4 §13.');
   L.push('');
+  L.push('> **Note de terminologie (Lot O4-2, point 9)** — "cross-repo" dans les livrables O4 précédents désignait en réalité un franchissement de **scope** (frontière de gouvernance : manifests/registre/autorité propres à backend, dash, boutique), pas nécessairement un franchissement de **dépôt Git séparé**. Le tableau ci-dessous constate la relation réelle par scope. Tant qu\'une ligne n\'affiche pas `separate-git-checkout`, "cross-repo" doit se lire "cross-scope" — un franchissement de frontière de gouvernance à l\'intérieur du même arbre versionné.');
+  L.push('');
+  if (model.scopeTopology) {
+    L.push('### Topologie des scopes (relation Git réelle)');
+    L.push('');
+    L.push('| Scope | Chemin monté | Relation constatée | Sous ROOT ? | .git propre ? |');
+    L.push('|---|---|---|---|---|');
+    for (const [scope, t] of Object.entries(model.scopeTopology)) {
+      if (scope === 'note') continue;
+      L.push(`| ${scope} | \`${t.mountPath}\` | \`${t.relation}\` | ${t.isNestedUnderRoot === undefined ? '—' : (t.isNestedUnderRoot ? 'oui' : 'non')} | ${t.hasOwnGitDir === undefined ? '—' : (t.hasOwnGitDir ? 'oui' : 'non')} |`);
+    }
+    L.push('');
+    L.push(`_${model.scopeTopology.note}_`);
+    L.push('');
+  }
   if (model.bigMap) {
     L.push('### Par dépôt');
     L.push('');

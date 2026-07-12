@@ -1,5 +1,5 @@
 {
-  "version": "O3-1.0",
+  "version": "O4-1.0",
   "generatedFrom": {
     "featureManifests": [
       "features/auth.feature.js",
@@ -60,7 +60,8 @@
     "EXPOSES_INTERFACE",
     "PROVIDES_INTERNAL_API",
     "CONSUMES_FEATURE",
-    "IMPLEMENTED_IN"
+    "IMPLEMENTED_IN",
+    "BOUTIQUE_MANIFEST_IMPLEMENTED_BY"
   ],
   "nodes": {
     "features": [
@@ -14129,6 +14130,840 @@
         "boutiqueManifest": "wallet",
         "sliceKind": "frontend-slice"
       }
+    ],
+    "boutiqueManifestImplementedBy": [
+      {
+        "boutiqueManifest": "auth",
+        "category": "js",
+        "declared": "../js/b-identity.js",
+        "resolvedPath": "public/boutique/js/b-identity.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth",
+        "category": "js",
+        "declared": "../js/b-phone.js",
+        "resolvedPath": "public/boutique/js/b-phone.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth",
+        "category": "tests",
+        "declared": "../tests/unit/b-identity.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-identity.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "auth",
+        "category": "tests",
+        "declared": "../tests/unit/b-phone.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-phone.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-boutique-wow-style.js",
+        "resolvedPath": "public/boutique/js/b-boutique-wow-style.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-bus.js",
+        "resolvedPath": "public/boutique/js/b-bus.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-cart-core.js",
+        "resolvedPath": "public/boutique/js/b-cart-core.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-cart-pill.js",
+        "resolvedPath": "public/boutique/js/b-cart-pill.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-cart-stepper-guard.js",
+        "resolvedPath": "public/boutique/js/b-cart-stepper-guard.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-cart.js",
+        "resolvedPath": "public/boutique/js/b-cart.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-desktop-global-cart-access.js",
+        "resolvedPath": "public/boutique/js/b-desktop-global-cart-access.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-desktop-sidebar.js",
+        "resolvedPath": "public/boutique/js/b-desktop-sidebar.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-desktop-upgrade.js",
+        "resolvedPath": "public/boutique/js/b-desktop-upgrade.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-favs.js",
+        "resolvedPath": "public/boutique/js/b-favs.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-friendly-group-redirect.js",
+        "resolvedPath": "public/boutique/js/b-friendly-group-redirect.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-greeting.js",
+        "resolvedPath": "public/boutique/js/b-greeting.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-group-cart-flow.js",
+        "resolvedPath": "public/boutique/js/b-group-cart-flow.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-home-premium-v1.js",
+        "resolvedPath": "public/boutique/js/b-home-premium-v1.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-mini-cart.js",
+        "resolvedPath": "public/boutique/js/b-mini-cart.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-mobile-modal-v1.js",
+        "resolvedPath": "public/boutique/js/b-mobile-modal-v1.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-mobile-premium-v1.js",
+        "resolvedPath": "public/boutique/js/b-mobile-premium-v1.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-modal-approche-c-hybrid.js",
+        "resolvedPath": "public/boutique/js/b-modal-approche-c-hybrid.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-modal-cart.js",
+        "resolvedPath": "public/boutique/js/b-modal-cart.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-modal-core.js",
+        "resolvedPath": "public/boutique/js/b-modal-core.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-modal-desktop-enhancers.js",
+        "resolvedPath": "public/boutique/js/b-modal-desktop-enhancers.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-modal-image-ux.js",
+        "resolvedPath": "public/boutique/js/b-modal-image-ux.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-modal-nav.js",
+        "resolvedPath": "public/boutique/js/b-modal-nav.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-modal-product.js",
+        "resolvedPath": "public/boutique/js/b-modal-product.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-modal-social-proof.js",
+        "resolvedPath": "public/boutique/js/b-modal-social-proof.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-modal.js",
+        "resolvedPath": "public/boutique/js/b-modal.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-nav.js",
+        "resolvedPath": "public/boutique/js/b-nav.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-scroll-owner.js",
+        "resolvedPath": "public/boutique/js/b-scroll-owner.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-share-phone-guard.js",
+        "resolvedPath": "public/boutique/js/b-share-phone-guard.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-store.js",
+        "resolvedPath": "public/boutique/js/b-store.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/b-utils.js",
+        "resolvedPath": "public/boutique/js/b-utils.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/boutique.js",
+        "resolvedPath": "public/boutique/js/boutique.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/card-config.js",
+        "resolvedPath": "public/boutique/js/card-config.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/komerce-api.js",
+        "resolvedPath": "public/boutique/js/komerce-api.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/main.js",
+        "resolvedPath": "public/boutique/js/main.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/render/render-categories.js",
+        "resolvedPath": "public/boutique/js/render/render-categories.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/view-models/modal-view-model.js",
+        "resolvedPath": "public/boutique/js/view-models/modal-view-model.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "css",
+        "declared": "../css/tokens.css",
+        "resolvedPath": "public/boutique/css/tokens.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "css",
+        "declared": "../css/reset.css",
+        "resolvedPath": "public/boutique/css/reset.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "css",
+        "declared": "../css/layout.css",
+        "resolvedPath": "public/boutique/css/layout.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "css",
+        "declared": "../css/boutique-desktop.css",
+        "resolvedPath": "public/boutique/css/boutique-desktop.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "css",
+        "declared": "../css/cart.css",
+        "resolvedPath": "public/boutique/css/cart.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "css",
+        "declared": "../css/interactions.css",
+        "resolvedPath": "public/boutique/css/interactions.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "css",
+        "declared": "../css/dist/base.css",
+        "resolvedPath": "public/boutique/css/dist/base.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "css",
+        "declared": "../css/dist/desktop.css",
+        "resolvedPath": "public/boutique/css/dist/desktop.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "scripts",
+        "declared": "../apply-komerce-cleanup.js",
+        "resolvedPath": "public/boutique/apply-komerce-cleanup.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/e2e/modal.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/modal.spec.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/e2e/cart.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/cart.spec.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/e2e/checkout.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/checkout.spec.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/e2e/group.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/group.spec.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/e2e/catalog.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/catalog.spec.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/e2e/resilience.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/resilience.spec.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/e2e/render-integrity.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/render-integrity.spec.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/contracts.spec.js",
+        "resolvedPath": "public/boutique/tests/contracts.spec.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/unit/b-friendly-group-redirect.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-friendly-group-redirect.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/unit/b-mobile-modal-v1.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-mobile-modal-v1.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/unit/b-modal-cart.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-modal-cart.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/unit/b-share-phone-guard.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-share-phone-guard.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/unit/boutique-core.unit.test.js",
+        "resolvedPath": "public/boutique/tests/unit/boutique-core.unit.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/unit/render-categories.test.js",
+        "resolvedPath": "public/boutique/tests/unit/render-categories.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/unit/setup.js",
+        "resolvedPath": "public/boutique/tests/unit/setup.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-cart-product-open-style.js",
+        "resolvedPath": "public/boutique/js/b-cart-product-open-style.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-catalog-desktop-enhancers.js",
+        "resolvedPath": "public/boutique/js/b-catalog-desktop-enhancers.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-catalog.js",
+        "resolvedPath": "public/boutique/js/b-catalog.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-pager.js",
+        "resolvedPath": "public/boutique/js/b-pager.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-product-open-contract.js",
+        "resolvedPath": "public/boutique/js/b-product-open-contract.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-subcat.js",
+        "resolvedPath": "public/boutique/js/b-subcat.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/controllers/home-controller.js",
+        "resolvedPath": "public/boutique/js/controllers/home-controller.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/product-store.js",
+        "resolvedPath": "public/boutique/js/product-store.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/render/render-home-sections.js",
+        "resolvedPath": "public/boutique/js/render/render-home-sections.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/render/render-product-card.js",
+        "resolvedPath": "public/boutique/js/render/render-product-card.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/shop-schema.js",
+        "resolvedPath": "public/boutique/js/shop-schema.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/taxonomy-no-hardcode.test.js",
+        "resolvedPath": "public/boutique/js/taxonomy-no-hardcode.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/view-models/product-card-model.js",
+        "resolvedPath": "public/boutique/js/view-models/product-card-model.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/view-models/product-card-view-model.js",
+        "resolvedPath": "public/boutique/js/view-models/product-card-view-model.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "css",
+        "declared": "../css/hero.css",
+        "resolvedPath": "public/boutique/css/hero.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/unit/render-home-sections.test.js",
+        "resolvedPath": "public/boutique/tests/unit/render-home-sections.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
+        "category": "js",
+        "declared": "../js/b-checkout-render.js",
+        "resolvedPath": "public/boutique/js/b-checkout-render.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
+        "category": "js",
+        "declared": "../js/b-checkout.js",
+        "resolvedPath": "public/boutique/js/b-checkout.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
+        "category": "tests",
+        "declared": "../tests/unit/b-checkout.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-checkout.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
+        "declared": "../css/modal-shell.css",
+        "resolvedPath": "public/boutique/css/modal-shell.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
+        "declared": "../css/modal-product.css",
+        "resolvedPath": "public/boutique/css/modal-product.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
+        "declared": "../css/modal-product-lot4-hybrid.css",
+        "resolvedPath": "public/boutique/css/modal-product-lot4-hybrid.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "dist",
+        "declared": "../css/dist/components.css",
+        "resolvedPath": "public/boutique/css/dist/components.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "payment",
+        "category": "js",
+        "declared": "../js/b-paypal.js",
+        "resolvedPath": "public/boutique/js/b-paypal.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "payment",
+        "category": "tests",
+        "declared": "../tests/unit/b-paypal.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-paypal.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "recommendations",
+        "category": "js",
+        "declared": "../js/b-modal-suggestions.js",
+        "resolvedPath": "public/boutique/js/b-modal-suggestions.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "recommendations",
+        "category": "js",
+        "declared": "../js/b-pdp-curation-suggestions.js",
+        "resolvedPath": "public/boutique/js/b-pdp-curation-suggestions.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
+        "declared": "../js/b-group-banner.js",
+        "resolvedPath": "public/boutique/js/b-group-banner.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
+        "declared": "../js/b-group-view.js",
+        "resolvedPath": "public/boutique/js/b-group-view.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
+        "declared": "../js/b-share-cart.js",
+        "resolvedPath": "public/boutique/js/b-share-cart.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
+        "declared": "../js/group/group-api.js",
+        "resolvedPath": "public/boutique/js/group/group-api.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
+        "declared": "../js/group/group-helpers.js",
+        "resolvedPath": "public/boutique/js/group/group-helpers.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
+        "declared": "../js/group/group-render-creator.js",
+        "resolvedPath": "public/boutique/js/group/group-render-creator.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "js",
+        "declared": "../js/group/group-state.js",
+        "resolvedPath": "public/boutique/js/group/group-state.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "shared-cart",
+        "category": "tests",
+        "declared": "../tests/unit/group-render-creator.test.js",
+        "resolvedPath": "public/boutique/tests/unit/group-render-creator.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "tracking",
+        "category": "js",
+        "declared": "../js/b-tracking.js",
+        "resolvedPath": "public/boutique/js/b-tracking.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "tracking",
+        "category": "tests",
+        "declared": "../tests/unit/b-tracking.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-tracking.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "wallet",
+        "category": "js",
+        "declared": "../js/b-wallet.js",
+        "resolvedPath": "public/boutique/js/b-wallet.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "wallet",
+        "category": "tests",
+        "declared": "../tests/unit/b-wallet.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-wallet.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      }
     ]
   },
   "tableOwnership": {
@@ -15785,6 +16620,30 @@
       ],
       "technicalOrphansRemaining": 0
     }
+  },
+  "scopeTopology": {
+    "backend": {
+      "mountPath": ".",
+      "relation": "self",
+      "note": "scope de référence — ce générateur tourne depuis ce dépôt"
+    },
+    "dash": {
+      "mountPath": "public",
+      "mounted": true,
+      "relation": "same-repository-subdirectory",
+      "hasOwnGitDir": false,
+      "rootHasGitDir": false,
+      "isNestedUnderRoot": true
+    },
+    "boutique": {
+      "mountPath": "public/boutique",
+      "mounted": true,
+      "relation": "same-repository-subdirectory",
+      "hasOwnGitDir": false,
+      "rootHasGitDir": false,
+      "isNestedUnderRoot": true
+    },
+    "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation=\"separate-git-checkout\" ci-dessus pour le scope concerné."
   },
   "drifts": {
     "error": [],

@@ -117,19 +117,23 @@ const STEPS = [
     cmd:       'npm run business-graph:check',
   },
 
-  // ── Drift ratchet typé du Business Feature Graph (Lot O4) ───────────────
-  // Compare le nombre de warnings PAR TYPE à governance/business-graph-drift-baseline.json.
-  // warn:true pour l'instant (adoption progressive, même pattern que
-  // feature-classification ci-dessus) : la classification sémantique (Phase E)
-  // vient d'être posée sur une baseline capturée en une seule session — passer
-  // en bloquant après une revue humaine des 13 ACTIONABLE_DRIFT identifiés
-  // (voir governance/business-graph-warning-semantics.js).
+  // ── Drift ratchet typé du Business Feature Graph (Lot O4 / O4-2) ────────
+  // Compare le nombre de warnings PAR CLÉ TYPE::CATÉGORIE SÉMANTIQUE à
+  // governance/business-graph-drift-baseline.json (Lot O4-2 point 2 : la
+  // granularité type-seul de Phase F laissait passer un déplacement de dette
+  // entre catégories au sein d'un même type — corrigé).
+  // BLOQUANT (Lot O4-2 point 1) : la revue humaine des ACTIONABLE_DRIFT
+  // identifiés (voir governance/business-graph-warning-semantics.js) a eu
+  // lieu, la baseline typée est stable et vérifiée déterministe sur deux
+  // générations successives — plus de raison de rester en adoption
+  // progressive. Toute augmentation d'une clé type::catégorie, ou toute
+  // nouvelle clé non budgétisée, bloque désormais le gate au même titre que
+  // le Business Feature Graph lui-même.
   {
-    label:     'Business Feature Graph — drift ratchet typé (Lot O4)',
+    label:     'Business Feature Graph — drift ratchet typé (Lot O4-2, bloquant)',
     category:  'gate',
     npmScript: 'business-graph:ratchet-check',
     cmd:       'npm run business-graph:ratchet-check',
-    warn:      true,
   },
 
   // ── Reconstructions 360 ────────────────────────────────────────────────

@@ -2,21 +2,31 @@
 'use strict';
 
 /**
- * business-graph-ratchet-check.js — Lot O4 Phase F : drift ratchet typé.
+ * business-graph-ratchet-check.js — Lot O4 / O4-2 : drift ratchet typé.
  *
  *   Régénère le Business Feature Graph (mêmes racines --dash-root public
  *   --boutique-root public/boutique que business-graph:check, cf. package.json)
- *   puis compare le nombre de warnings PAR TYPE à governance/business-graph-drift-baseline.json.
+ *   puis compare le nombre de warnings PAR CLÉ "TYPE::CATÉGORIE SÉMANTIQUE"
+ *   à governance/business-graph-drift-baseline.json.
  *
- *   Règle (mission O4 §10) :
- *     - count(type) > baseline(type)         -> FAIL (nouvelle dette silencieuse)
- *     - type présent dans le graphe, absent
- *       de la baseline                        -> FAIL (nouvelle catégorie de warning,
- *                                                doit être ajoutée explicitement)
- *     - count(type) <= baseline(type)        -> PASS (une réduction n'échoue jamais)
- *     - type dans la baseline, absent du
- *       graphe actuel (dette résorbée)        -> PASS + note (baseline peut être
- *                                                resserrée dans un lot dédié)
+ *   Lot O4-2 (point 2) : la granularité initiale (Phase F) ratchetait par
+ *   TYPE seul. Trou constaté : un déplacement de dette D'UNE CATÉGORIE À UNE
+ *   AUTRE au sein du même type (ex. un WRITER-NOT-OWNER qui glisse
+ *   d'EXPECTED_TOPOLOGY vers ACTIONABLE_DRIFT) ne changeait pas le total du
+ *   type -> passait inaperçu. Ratcheter par "TYPE::CATEGORY" ferme ce trou :
+ *   chaque paire (type, catégorie) a sa propre limite indépendante.
+ *
+ *   Règle (mission O4 §10, étendue au point 2) :
+ *     - count(type::cat) > baseline(type::cat)  -> FAIL (nouvelle dette silencieuse,
+ *                                                   y compris un simple déplacement
+ *                                                   de catégorie à total de type stable)
+ *     - clé présente dans le graphe, absente
+ *       de la baseline                          -> FAIL (nouvelle catégorie de dette,
+ *                                                   doit être ajoutée explicitement)
+ *     - count(type::cat) <= baseline(type::cat) -> PASS (une réduction n'échoue jamais)
+ *     - clé dans la baseline, absente du
+ *       graphe actuel (dette résorbée)          -> PASS + note (baseline peut être
+ *                                                   resserrée dans un lot dédié)
  *
  *   Ce script n'écrit JAMAIS la baseline lui-même : la resserrer après une
  *   vraie réduction de dette est une décision explicite (édition manuelle de
@@ -70,33 +80,37 @@ if ((graph.drifts.error || []).length > 0) {
   process.exit(1);
 }
 
-// ── 2. Compte par type + classification sémantique (Phase E) ──────────────
+// ── 2. Compte par clé "TYPE::CATEGORY" (Lot O4-2 point 2) ─────────────────
 const warns = graph.drifts.warn || [];
-const countByType = {};
-const classifiedByType = {};
+const countByKey = {};   // "TYPE::CATEGORY" -> count
+const typeOf = {};       // "TYPE::CATEGORY" -> TYPE (pour affichage groupé)
+const categoryOf = {};   // "TYPE::CATEGORY" -> CATEGORY
 for (const w of warns) {
-  countByType[w.type] = (countByType[w.type] || 0) + 1;
   const { category } = semantics.classify(w, { ROOT });
-  classifiedByType[w.type] = classifiedByType[w.type] || {};
-  classifiedByType[w.type][category] = (classifiedByType[w.type][category] || 0) + 1;
+  const key = `${w.type}::${category}`;
+  countByKey[key] = (countByKey[key] || 0) + 1;
+  typeOf[key] = w.type;
+  categoryOf[key] = category;
 }
 
-const allTypes = new Set([...Object.keys(countByType), ...Object.keys(baseline)]);
+const allKeys = new Set([...Object.keys(countByKey), ...Object.keys(baseline)]);
 const rows = [];
 let hasFailure = false;
 
-for (const type of [...allTypes].sort()) {
-  const current = countByType[type] || 0;
-  const base    = Object.prototype.hasOwnProperty.call(baseline, type) ? baseline[type] : null;
+for (const key of [...allKeys].sort()) {
+  const current = countByKey[key] || 0;
+  const base    = Object.prototype.hasOwnProperty.call(baseline, key) ? baseline[key] : null;
+  const type     = typeOf[key] || key.split('::')[0];
+  const category = categoryOf[key] || key.split('::')[1];
 
   let status, note;
   if (base === null) {
     status = 'FAIL';
-    note = 'nouvelle catégorie de warning, absente de governance/business-graph-drift-baseline.json — ajoute-la explicitement après revue, ne laisse jamais une nouvelle catégorie passer silencieusement';
+    note = 'nouvelle clé type::catégorie, absente de governance/business-graph-drift-baseline.json — ajoute-la explicitement après revue, ne laisse jamais une nouvelle catégorie passer silencieusement';
     hasFailure = true;
   } else if (current > base) {
     status = 'FAIL';
-    note = `augmentation (${base} -> ${current}) — nouveau drift non budgétisé`;
+    note = `augmentation (${base} -> ${current}) — nouveau drift non budgétisé, y compris un simple déplacement de catégorie au sein du même type`;
     hasFailure = true;
   } else if (current < base) {
     status = 'PASS';
@@ -105,26 +119,29 @@ for (const type of [...allTypes].sort()) {
     status = 'PASS';
     note = 'stable';
   }
-  rows.push({ type, base, current, status, note, classification: classifiedByType[type] || {} });
+  rows.push({ key, type, category, base, current, status, note });
 }
 
-// ── 3. Rapport ──────────────────────────────────────────────────────────
-console.log(`\n${C.bld}business-graph:ratchet-check — Lot O4 Phase F${C.r}\n`);
-for (const r of rows) {
-  const col = r.status === 'FAIL' ? C.red : C.grn;
-  const baseTxt = r.base === null ? C.ylw + 'absent de la baseline' + C.r : `baseline ${r.base}`;
-  console.log(`  ${col}${r.status === 'FAIL' ? '✖' : '✔'}${C.r} ${C.bld}${r.type}${C.r} — actuel ${r.current} (${baseTxt})`);
-  console.log(`      ${C.dim}${r.note}${C.r}`);
-  const catParts = Object.entries(r.classification).map(([c, n]) => `${c}=${n}`).join(', ');
-  if (catParts) console.log(`      ${C.dim}sémantique (Phase E) : ${catParts}${C.r}`);
+// ── 3. Rapport (groupé par TYPE pour lisibilité, détail par CATEGORY) ────
+console.log(`\n${C.bld}business-graph:ratchet-check — Lot O4-2 (ratchet type::catégorie)${C.r}\n`);
+const rowsByType = {};
+for (const r of rows) (rowsByType[r.type] = rowsByType[r.type] || []).push(r);
+for (const type of Object.keys(rowsByType).sort()) {
+  console.log(`  ${C.bld}${type}${C.r}`);
+  for (const r of rowsByType[type]) {
+    const col = r.status === 'FAIL' ? C.red : C.grn;
+    const baseTxt = r.base === null ? C.ylw + 'absent de la baseline' + C.r : `baseline ${r.base}`;
+    console.log(`    ${col}${r.status === 'FAIL' ? '✖' : '✔'}${C.r} ${C.dim}::${C.r}${r.category} — actuel ${r.current} (${baseTxt})`);
+    console.log(`        ${C.dim}${r.note}${C.r}`);
+  }
 }
 
 const totalCurrent = warns.length;
 const totalBase    = Object.values(baseline).reduce((a, b) => a + b, 0);
-console.log(`\n${C.dim}Total warnings : ${totalCurrent} (baseline totale ${totalBase} — indicatif seulement, le ratchet raisonne par type, jamais sur ce total)${C.r}`);
+console.log(`\n${C.dim}Total warnings : ${totalCurrent} (baseline totale ${totalBase} — indicatif seulement, le ratchet raisonne par clé type::catégorie, jamais sur ce total)${C.r}`);
 
 if (hasFailure) {
-  console.log(`\n${C.red}${C.bld}✖ business-graph:ratchet-check ÉCHEC — nouveau drift au-dessus de la baseline typée.${C.r}`);
+  console.log(`\n${C.red}${C.bld}✖ business-graph:ratchet-check ÉCHEC — nouveau drift au-dessus de la baseline type::catégorie.${C.r}`);
   process.exit(1);
 }
-console.log(`\n${C.grn}${C.bld}✔ business-graph:ratchet-check OK — aucune dette nouvelle au-dessus de la baseline typée.${C.r}`);
+console.log(`\n${C.grn}${C.bld}✔ business-graph:ratchet-check OK — aucune dette nouvelle au-dessus de la baseline type::catégorie.${C.r}`);
