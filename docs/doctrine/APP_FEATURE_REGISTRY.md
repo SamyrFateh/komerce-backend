@@ -1,6 +1,6 @@
 # Registre Canonique des Features — Application complète Komerce
 
-> **Version** : 1.2 — 2026-07 (Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty`)
+> **Version** : 1.3 — 2026-07 (Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty` ; Lot O1.5 : `dashboard` confirmé non-business-feature, dette dash-repo documentée)
 > **Statut** : registre actif — gouverné par `docs/doctrine/FEATURE_DOCTRINE.md`
 > **Construit à partir de** : headers `@komerce-arch` réels (`@domain`) du dépôt
 > **backend**, croisés avec les fichiers réels des dépôts **bout** (boutique frontend)
@@ -78,6 +78,26 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 > domaine `dashboard`, ce qui en fait un multi-writer réel avec `services/loyalty-service.js`
 > sur cette même table — non résolu dans ce lot (déplacement de fichier hybride hors périmètre
 > O1.2 sans audit de flux dédié).
+
+> ℹ️ **Note sur la ligne #14 (`dashboard`) et Lot O1.5** : revu au Lot O1.5 (2026-07-12,
+> Business Feature Ontology Refactor). Confirmé : `dashboard` n'est **pas** un
+> business-feature — `classification.kind` reste `business-transversal` (`decision:
+> aggregation-lecture`), jamais `business-feature`. `FEATURE_DOCTRINE.md` §Schéma de
+> classification cite pourtant `dashboard` comme exemple canonique du kind
+> `aggregation-readonly` (lecture pure) — écart documenté en `ONTOLOGY_GAP` plutôt que
+> corrigé sans audit : ce manifest écrit réellement dans ~15 tables via ses routes
+> hub/relay/admin opérationnelles (`db.tables`, entrées W/RW), ce qui rend
+> `aggregation-readonly` inassignable sans mentir sur le header (le gate
+> `feature-classification-check.js` le bloquerait explicitement). Tant que ces mutations
+> n'ont pas été auditées et redistribuées vers leurs features propriétaires (hors
+> périmètre O1, qui est un ontology refactor et non un product refactor),
+> `business-transversal` reste le verdict le plus honnête disponible.
+>
+> Les manifests dash (`admin-dashboard` #19/#22, `legacy-control-tower` #20/#23,
+> `platform` #21) n'ont **pas** pu être revus dans ce lot : le dépôt `dash` n'était pas
+> présent dans les archives fournies pour cette session (seuls `backend` et `boutique`
+> l'étaient). Leur reclassification business-feature → projection/aggregation reste donc
+> une dette ouverte, à traiter dès que le dépôt `dash` sera disponible.
 
 > ℹ️ **Note sur les lignes #15/#16** : `auth` et `auth-identity` étaient initialement deux
 > manifests distincts déclarant le même `domain: 'auth'`, ce qui produisait 5 faux

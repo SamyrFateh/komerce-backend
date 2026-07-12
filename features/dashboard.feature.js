@@ -428,6 +428,19 @@ module.exports = {
   },
 
   // ── Classification ────────────────────────────────────────────────────────
+  // Revu au Lot O1.5 (2026-07-12, Business Feature Ontology Refactor) : confirmé
+  // que ce manifest n'est PAS un business-feature (kind reste 'business-transversal',
+  // jamais 'business-feature'). ONTOLOGY_GAP documenté plutôt que corrigé sans audit :
+  // FEATURE_DOCTRINE.md §Schéma de classification cite 'dashboard' comme exemple
+  // canonique du kind 'aggregation-readonly' (lecture pure), mais ce manifest écrit
+  // réellement dans ~15 tables via ses routes hub/relay/admin opérationnelles
+  // (voir db.tables ci-dessus, entrées W/RW). Le classer 'aggregation-readonly' serait
+  // un mensonge de header — le gate feature-classification-check.js le bloquerait
+  // d'ailleurs explicitement (règle : aggregation-readonly + @db-write ≠ none).
+  // 'business-transversal' + decision 'aggregation-lecture' reste donc le verdict le
+  // plus honnête disponible dans le schéma actuel tant que ces mutations n'ont pas
+  // été auditées et redistribuées vers leurs features propriétaires (hors périmètre
+  // O1, qui est un ontology refactor et non un product refactor).
   classification: {
     kind:     'business-transversal',
     decision: 'aggregation-lecture',
@@ -445,6 +458,9 @@ module.exports = {
       'lifecycle UI indépendant (SPA admin/hub/relais) justifie un manifest propre vs rattachement',
       'certaines routes admin opérationnelles (hub, relay) écrivent des données — pas strictement lecture seule',
       'cas particulier : agrégation + opérations admin — business-transversal reflète mieux la réalité',
+      'Lot O1.5 (2026-07-12) : classification business-feature explicitement écartée — dashboard ne possède ' +
+        'jamais la vérité métier ni les runtime evidence des features qu\'il agrège ; voir ONTOLOGY_GAP ci-dessus ' +
+        'pour l\'écart entre ce verdict et l\'exemple \'aggregation-readonly\' cité par la doctrine',
     ],
   },
 };
