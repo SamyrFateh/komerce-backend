@@ -303,6 +303,12 @@ export function renderMobileProductDetail(detail, selection, { forceMedia = fals
 
   state.modalProductDetail = detail;
   state.modalSelection = selection;
+  // Compatibilité transactionnelle de transition : le backend SKU résout encore
+  // autoritairement depuis variant_combo. Le snapshot lisible suit donc exactement
+  // l'état PDC-3 ; il n'est plus construit par le renderer legacy à deux axes.
+  state.modalVariantCombo = selection.selection_supported
+    ? { ...selection.selected_options }
+    : {};
 
   function rerender() {
     renderMobileProductDetail(detail, state.modalSelection);
