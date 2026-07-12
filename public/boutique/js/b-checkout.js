@@ -1052,17 +1052,35 @@ export function makePhoneInput(id, label, dataObj, key) {
 export async function checkWalletBalance() {
     try {
       const res = await fetch('/api/wallet', { credentials: 'same-origin' });
+      // FIX 2026-07-11 (R3) : requêter le DOM APRÈS l'attente réseau, pas avant.
+      // #wallet-section / #wallet-balance-text sont créés et attachés juste après
+      // l'appel à checkWalletBalance() (encore absents du DOM au moment du call) ;
+      // les capturer avant l'await figeait des références null.
+      const section = document.getElementById('wallet-section');
+      const balText = document.getElementById('wallet-balance-text');
       if (res.ok) {
         const data = await res.json();
         state.walletBalance = data.balance_kmf || 0;
-        const section = document.getElementById('wallet-section');
-        if (section && state.walletBalance > 0) {
-          section.classList.add('is-visible');
-          const balText = document.getElementById('wallet-balance-text');
-          if (balText) balText.textContent = 'Solde disponible : ' + fmt(state.walletBalance, 'KMF');
+        // Afficher la section + le texte dans TOUS les cas, pas seulement quand
+        // balance > 0. Avant : à solde 0, le texte restait bloqué sur
+        // "Chargement…" et la section restait display:none pour toujours
+        // (classe is-visible jamais posée) → l'utilisateur ne savait jamais si
+        // son solde avait bien été chargé (0 réel) ou si l'appel avait échoué/pendait.
+        if (section) section.classList.add('is-visible');
+        if (balText) {
+          balText.textContent = state.walletBalance > 0
+            ? 'Solde disponible : ' + fmt(state.walletBalance, 'KMF')
+            : 'Aucun crédit disponible';
         }
+      } else {
+        // Réponse non-ok (401/403/5xx) : ne pas laisser "Chargement…" indéfiniment.
+        if (balText) balText.textContent = 'Crédit indisponible';
       }
-    } catch(e) { /* wallet balance non disponible */ }
+    } catch(e) {
+      // Réseau/parsing : idem, sortir explicitement de l'état "Chargement…".
+      const balText = document.getElementById('wallet-balance-text');
+      if (balText) balText.textContent = 'Crédit indisponible';
+    }
   }
 
 export function updateWalletDisplay() {
@@ -1257,15 +1275,25 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
     if (trackBtn) {
       trackBtn.addEventListener('click', () => {
         closeOrderModal();
-        if (typeof renderTrackView === 'function') renderTrackView();
-        if (typeof switchView === 'function') switchView('track');
+        // FIX 2026-07-11 : renderTrackView()/switchView() étaient référencés
+        // ici en identifiants nus, jamais importés dans ce module — le garde
+        // `typeof x === 'function'` avalait silencieusement l'absence (pas de
+        // ReferenceError), donc rien ne s'exécutait jamais après le clic
+        // (0 appel réseau constaté, #k-track-view jamais peuplé). On réutilise
+        // le contrat unique déjà en place pour l'onglet bas "Suivre"
+        // (b-nav.js) via le bus, pour éviter tout cycle d'import direct
+        // b-checkout.js ↔ b-nav.js.
+        bus.emit('nav:goto-track');
         document.querySelectorAll('.k-bnav-item').forEach(i => i.classList.remove('active'));
         const trackNav = document.querySelector('.k-bnav-item[data-tab="track"]');
         if (trackNav) trackNav.classList.add('active');
-        setTimeout(() => {
-          const refInput = document.getElementById('k-otp-ref');
-          if (refInput) { refInput.value = order.reference || ''; document.getElementById('k-otp-ref-btn')?.click(); }
-        }, 350);
+        // Suppression du bloc #k-otp-ref/#k-otp-ref-btn (2026-07-11) : ces IDs
+        // n'existent plus dans le DOM réel généré par b-tracking.js (qui
+        // utilise #k-track-digits/#k-track-quick-btn) — code mort qui ne
+        // s'exécutait jamais. Aucune pré-saisie n'est nécessaire : la
+        // commande qu'on vient de créer apparaît naturellement en tête de
+        // renderMyOrdersList() (tri created_at DESC), identifiable via
+        // l'attribut déjà présent `data-ref` sur `.k-myorder-card`.
       });
     }
   }, 0);

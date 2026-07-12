@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 362,
-    "filesWithFullHeaders": 335,
+    "scannedCodeFiles": 360,
+    "filesWithFullHeaders": 333,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 362,
+    "filesWithAnyHeaders": 360,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 725,
-    "edges": 4169,
-    "dbTables": 109,
-    "doctrines": 136,
-    "impactAreas": 118,
-    "unresolvedCodeEdges": 398,
+    "graphNodes": 721,
+    "edges": 4142,
+    "dbTables": 110,
+    "doctrines": 134,
+    "impactAreas": 117,
+    "unresolvedCodeEdges": 393,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -33,7 +33,7 @@
     "infrastructure": 20,
     "notification": 15,
     "auth": 8,
-    "logistics": 36,
+    "logistics": 35,
     "boutique": 37,
     "catalog": 36,
     "checkout": 2,
@@ -42,7 +42,7 @@
     "payment": 16,
     "tracking": 1,
     "wallet": 6,
-    "economic-engine": 37,
+    "economic-engine": 36,
     "customs": 6,
     "dashboard": 30,
     "orders": 29,
@@ -77,7 +77,7 @@
     "view-model": 3,
     "route": 99,
     "entrypoint": 1,
-    "service": 146,
+    "service": 144,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 100,
-    "high": 152,
+    "high": 150,
     "low": 34
   },
   "nodes": [
@@ -6503,13 +6503,15 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/*",
+        "services/product-admin-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
         "orders",
+        "product_skus",
         "product_variants",
         "products",
         "recipients",
@@ -7487,6 +7489,7 @@
         "komerce-api.js"
       ],
       "dbRead": [
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -9832,8 +9835,7 @@
       "depends": [
         "_helpers",
         "allocate",
-        "variance",
-        "../transport-cost-allocation"
+        "variance"
       ],
       "usedBy": [
         "routes/admin-costing.js",
@@ -9859,16 +9861,12 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
+        "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "economic-engine",
-        "logistics",
-        "orders",
-        "customs",
-        "dashboard"
+        "economic-engine"
       ],
-      "version": "2026-07"
+      "version": "2026-06"
     },
     {
       "id": "services/cost-allocation/variance.js",
@@ -13364,11 +13362,13 @@
         "catalog_field_overrides",
         "order_items",
         "orders",
+        "product_skus",
         "product_variants",
         "products"
       ],
       "dbWrite": [
         "catalog_field_overrides",
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -15730,107 +15730,6 @@
       "version": "2026-06"
     },
     {
-      "id": "services/transport-cost-allocation.js",
-      "file": "services/transport-cost-allocation.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "transport-cost-allocation-contract",
-      "domain": "economic-engine",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "transport_rail",
-        "cost_component",
-        "allocation_key",
-        "entries",
-        "shipment_id"
-      ],
-      "outputs": [
-        "allocation_contract",
-        "allocated_shares",
-        "persisted_real_cost_allocations"
-      ],
-      "depends": [
-        "cost-allocation/_helpers",
-        "db (lazy for shipment persistence)"
-      ],
-      "usedBy": [
-        "services/cost-allocation/index.js",
-        "future shipment cost ingestion"
-      ],
-      "dbRead": [
-        "customs_shipment_parcels",
-        "customs_shipments",
-        "order_items",
-        "parcel_items",
-        "parcels",
-        "products"
-      ],
-      "dbWrite": [
-        "order_item_real_cost_allocations"
-      ],
-      "dbWriteVia": [],
-      "dbTxn": [
-        "allocateShipmentRealCosts"
-      ],
-      "doctrine": [
-        "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
-      ],
-      "impactAreas": [
-        "economic-engine",
-        "logistics",
-        "orders",
-        "customs",
-        "dashboard"
-      ],
-      "version": "2026-07"
-    },
-    {
-      "id": "services/transport-rails.js",
-      "file": "services/transport-rails.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "transport-rail-registry",
-      "domain": "logistics",
-      "layer": "service",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "transport_rail_code",
-        "packing_items"
-      ],
-      "outputs": [
-        "canonical_transport_rail",
-        "rail_aware_packing_result"
-      ],
-      "depends": [
-        "services/parcelOptimizationService.js"
-      ],
-      "usedBy": [
-        "future transport routing and packing orchestration"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [
-        "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
-      ],
-      "impactAreas": [
-        "logistics",
-        "orders",
-        "economic-engine",
-        "catalog",
-        "customs",
-        "notifications",
-        "dashboard"
-      ],
-      "version": "2026-07"
-    },
-    {
       "id": "services/verify-qr-collection.js",
       "file": "services/verify-qr-collection.js",
       "type": "file",
@@ -17386,6 +17285,11 @@
       "table": "refunds"
     },
     {
+      "id": "db:product_skus",
+      "type": "db-table",
+      "table": "product_skus"
+    },
+    {
       "id": "db:product_variants",
       "type": "db-table",
       "table": "product_variants"
@@ -18066,11 +17970,6 @@
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md"
     },
     {
-      "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
-    },
-    {
       "id": "doctrine:douane_declaration_pivot",
       "type": "doctrine",
       "doctrine": "douane_declaration_pivot"
@@ -18264,11 +18163,6 @@
       "id": "doctrine:ING-I3)",
       "type": "doctrine",
       "doctrine": "ING-I3)"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
     },
     {
       "id": "doctrine:whatsapp_template_trace",
@@ -18799,11 +18693,6 @@
       "id": "impact:crons",
       "type": "impact-area",
       "area": "crons"
-    },
-    {
-      "id": "impact:customs",
-      "type": "impact-area",
-      "area": "customs"
     },
     {
       "id": "impact:admin-costing",
@@ -27844,6 +27733,12 @@
       "label": "services/*"
     },
     {
+      "from": "routes/orders/create.js",
+      "to": "services/product-admin-service.js",
+      "type": "depends",
+      "label": "services/product-admin-service.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/orders/create.js",
       "type": "uses",
@@ -27854,6 +27749,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "routes/orders/create.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
     },
     {
       "from": "routes/orders/create.js",
@@ -29330,6 +29231,12 @@
       "to": "routes/products.js",
       "type": "uses",
       "label": "komerce-api.js"
+    },
+    {
+      "from": "routes/products.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
     },
     {
       "from": "routes/products.js",
@@ -32500,12 +32407,6 @@
       "label": "variance"
     },
     {
-      "from": "services/cost-allocation/index.js",
-      "to": "../transport-cost-allocation",
-      "type": "depends",
-      "label": "../transport-cost-allocation"
-    },
-    {
       "from": "routes/admin-costing.js",
       "to": "services/cost-allocation/index.js",
       "type": "uses",
@@ -32585,39 +32486,15 @@
     },
     {
       "from": "services/cost-allocation/index.js",
-      "to": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
+      "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
-      "label": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
+      "label": "resolve_before_behavior_change"
     },
     {
       "from": "services/cost-allocation/index.js",
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
-    },
-    {
-      "from": "services/cost-allocation/index.js",
-      "to": "impact:logistics",
-      "type": "impact",
-      "label": "logistics"
-    },
-    {
-      "from": "services/cost-allocation/index.js",
-      "to": "impact:orders",
-      "type": "impact",
-      "label": "orders"
-    },
-    {
-      "from": "services/cost-allocation/index.js",
-      "to": "impact:customs",
-      "type": "impact",
-      "label": "customs"
-    },
-    {
-      "from": "services/cost-allocation/index.js",
-      "to": "impact:dashboard",
-      "type": "impact",
-      "label": "dashboard"
     },
     {
       "from": "services/cost-allocation/variance.js",
@@ -38013,6 +37890,12 @@
     },
     {
       "from": "services/product-admin-service.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/product-admin-service.js",
       "to": "db:product_variants",
       "type": "db-read",
       "label": "product_variants"
@@ -38028,6 +37911,12 @@
       "to": "db:catalog_field_overrides",
       "type": "db-write",
       "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/product-admin-service.js",
+      "to": "db:product_skus",
+      "type": "db-write",
+      "label": "product_skus"
     },
     {
       "from": "services/product-admin-service.js",
@@ -41569,168 +41458,6 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "cost-allocation/_helpers",
-      "type": "depends",
-      "label": "cost-allocation/_helpers"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "db (lazy for shipment persistence)",
-      "type": "depends",
-      "label": "db (lazy for shipment persistence)"
-    },
-    {
-      "from": "services/cost-allocation/index.js",
-      "to": "services/transport-cost-allocation.js",
-      "type": "uses",
-      "label": "services/cost-allocation/index.js"
-    },
-    {
-      "from": "future shipment cost ingestion",
-      "to": "services/transport-cost-allocation.js",
-      "type": "uses",
-      "label": "future shipment cost ingestion"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "db:customs_shipment_parcels",
-      "type": "db-read",
-      "label": "customs_shipment_parcels"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "db:customs_shipments",
-      "type": "db-read",
-      "label": "customs_shipments"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "db:order_items",
-      "type": "db-read",
-      "label": "order_items"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "db:parcel_items",
-      "type": "db-read",
-      "label": "parcel_items"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "db:parcels",
-      "type": "db-read",
-      "label": "parcels"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "db:products",
-      "type": "db-read",
-      "label": "products"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "db:order_item_real_cost_allocations",
-      "type": "db-write",
-      "label": "order_item_real_cost_allocations"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
-      "type": "doctrine",
-      "label": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "impact:economic-engine",
-      "type": "impact",
-      "label": "economic-engine"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "impact:logistics",
-      "type": "impact",
-      "label": "logistics"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "impact:orders",
-      "type": "impact",
-      "label": "orders"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "impact:customs",
-      "type": "impact",
-      "label": "customs"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "impact:dashboard",
-      "type": "impact",
-      "label": "dashboard"
-    },
-    {
-      "from": "services/transport-rails.js",
-      "to": "services/parcelOptimizationService.js",
-      "type": "depends",
-      "label": "services/parcelOptimizationService.js"
-    },
-    {
-      "from": "future transport routing and packing orchestration",
-      "to": "services/transport-rails.js",
-      "type": "uses",
-      "label": "future transport routing and packing orchestration"
-    },
-    {
-      "from": "services/transport-rails.js",
-      "to": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
-      "type": "doctrine",
-      "label": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
-    },
-    {
-      "from": "services/transport-rails.js",
-      "to": "impact:logistics",
-      "type": "impact",
-      "label": "logistics"
-    },
-    {
-      "from": "services/transport-rails.js",
-      "to": "impact:orders",
-      "type": "impact",
-      "label": "orders"
-    },
-    {
-      "from": "services/transport-rails.js",
-      "to": "impact:economic-engine",
-      "type": "impact",
-      "label": "economic-engine"
-    },
-    {
-      "from": "services/transport-rails.js",
-      "to": "impact:catalog",
-      "type": "impact",
-      "label": "catalog"
-    },
-    {
-      "from": "services/transport-rails.js",
-      "to": "impact:customs",
-      "type": "impact",
-      "label": "customs"
-    },
-    {
-      "from": "services/transport-rails.js",
-      "to": "impact:notifications",
-      "type": "impact",
-      "label": "notifications"
-    },
-    {
-      "from": "services/transport-rails.js",
-      "to": "impact:dashboard",
-      "type": "impact",
-      "label": "dashboard"
     },
     {
       "from": "services/verify-qr-collection.js",
@@ -50308,7 +50035,8 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/*",
+        "services/product-admin-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -50316,6 +50044,7 @@
       "ownedFiles": [],
       "dbRead": [
         "orders",
+        "product_skus",
         "product_variants",
         "products",
         "recipients",
@@ -50342,6 +50071,7 @@
         "db:order_items",
         "db:order_status_history",
         "db:orders",
+        "db:product_skus",
         "db:product_variants",
         "db:products",
         "db:recipients",
@@ -50355,6 +50085,7 @@
         "services/customs-classification.js",
         "services/loyalty-service.js",
         "services/order-cost-snapshot.js",
+        "services/product-admin-service.js",
         "services/routing.js",
         "utils/logger.js",
         "utils/rates.js",
@@ -51270,6 +51001,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -51289,6 +51021,7 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:product_skus",
         "db:product_variants",
         "db:products",
         "doctrine:catalogue_source_db",
@@ -53468,8 +53201,7 @@
       "directDependsOn": [
         "_helpers",
         "allocate",
-        "variance",
-        "../transport-cost-allocation"
+        "variance"
       ],
       "directUsedBy": [
         "routes/admin-costing.js",
@@ -53493,14 +53225,10 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
+        "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "economic-engine",
-        "logistics",
-        "orders",
-        "customs",
-        "dashboard"
+        "economic-engine"
       ],
       "mustCheck": [
         "db:customs_shipment_parcels",
@@ -53513,17 +53241,12 @@
         "db:parcel_items",
         "db:parcels",
         "db:products",
-        "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
-        "impact:customs",
-        "impact:dashboard",
+        "doctrine:resolve_before_behavior_change",
         "impact:economic-engine",
-        "impact:logistics",
-        "impact:orders",
         "routes/admin-costing.js",
         "services/cost-allocation/allocate.js",
         "services/cost-allocation/variance.js",
-        "services/customs-shipment-service.js",
-        "services/transport-cost-allocation.js"
+        "services/customs-shipment-service.js"
       ]
     },
     "services/cost-allocation/variance.js": {
@@ -56141,7 +55864,6 @@
         "db:products",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
-        "services/transport-rails.js",
         "utils/parcelSync.js",
         "utils/parcels.js",
         "utils/reference.js"
@@ -56926,11 +56648,13 @@
         "catalog_field_overrides",
         "order_items",
         "orders",
+        "product_skus",
         "product_variants",
         "products"
       ],
       "dbWrite": [
         "catalog_field_overrides",
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -56950,6 +56674,7 @@
         "db:catalog_field_overrides",
         "db:order_items",
         "db:orders",
+        "db:product_skus",
         "db:product_variants",
         "db:products",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
@@ -56957,6 +56682,7 @@
         "impact:admin-dashboard",
         "impact:catalog",
         "impact:product-discovery",
+        "routes/orders/create.js",
         "routes/products.js",
         "services/catalog-overrides.js",
         "services/product-price-audit.js",
@@ -59165,102 +58891,6 @@
         "services/suppliers/connectors/manual-connector.js"
       ]
     },
-    "services/transport-cost-allocation.js": {
-      "role": "transport-cost-allocation-contract",
-      "domain": "economic-engine",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "cost-allocation/_helpers",
-        "db (lazy for shipment persistence)"
-      ],
-      "directUsedBy": [
-        "services/cost-allocation/index.js",
-        "future shipment cost ingestion"
-      ],
-      "ownedFiles": [],
-      "dbRead": [
-        "customs_shipment_parcels",
-        "customs_shipments",
-        "order_items",
-        "parcel_items",
-        "parcels",
-        "products"
-      ],
-      "dbWrite": [
-        "order_item_real_cost_allocations"
-      ],
-      "dbWriteVia": [],
-      "doctrines": [
-        "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
-      ],
-      "impactAreas": [
-        "economic-engine",
-        "logistics",
-        "orders",
-        "customs",
-        "dashboard"
-      ],
-      "mustCheck": [
-        "db:customs_shipment_parcels",
-        "db:customs_shipments",
-        "db:order_item_real_cost_allocations",
-        "db:order_items",
-        "db:parcel_items",
-        "db:parcels",
-        "db:products",
-        "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
-        "impact:customs",
-        "impact:dashboard",
-        "impact:economic-engine",
-        "impact:logistics",
-        "impact:orders",
-        "services/cost-allocation/index.js"
-      ]
-    },
-    "services/transport-rails.js": {
-      "role": "transport-rail-registry",
-      "domain": "logistics",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "services/parcelOptimizationService.js"
-      ],
-      "directUsedBy": [
-        "future transport routing and packing orchestration"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [
-        "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
-      ],
-      "impactAreas": [
-        "logistics",
-        "orders",
-        "economic-engine",
-        "catalog",
-        "customs",
-        "notifications",
-        "dashboard"
-      ],
-      "mustCheck": [
-        "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
-        "impact:catalog",
-        "impact:customs",
-        "impact:dashboard",
-        "impact:economic-engine",
-        "impact:logistics",
-        "impact:notifications",
-        "impact:orders",
-        "services/parcelOptimizationService.js"
-      ]
-    },
     "services/verify-qr-collection.js": {
       "role": "verify-qr-collection",
       "domain": "orders",
@@ -60895,16 +60525,6 @@
       ]
     },
     {
-      "table": "order_item_real_cost_allocations",
-      "writerCount": 4,
-      "writers": [
-        "routes/admin-customs-shipments.js",
-        "services/cost-allocation/allocate.js",
-        "services/cost-allocation/index.js",
-        "services/transport-cost-allocation.js"
-      ]
-    },
-    {
       "table": "recipients",
       "writerCount": 4,
       "writers": [
@@ -60987,6 +60607,15 @@
         "routes/hub-dashboard.js",
         "routes/hub-mark-ordered.js",
         "routes/relay-dashboard.js"
+      ]
+    },
+    {
+      "table": "order_item_real_cost_allocations",
+      "writerCount": 3,
+      "writers": [
+        "routes/admin-customs-shipments.js",
+        "services/cost-allocation/allocate.js",
+        "services/cost-allocation/index.js"
       ]
     },
     {
@@ -62750,12 +62379,6 @@
       "label": "variance"
     },
     {
-      "from": "services/cost-allocation/index.js",
-      "to": "../transport-cost-allocation",
-      "type": "depends",
-      "label": "../transport-cost-allocation"
-    },
-    {
       "from": "services/cost-allocation/variance.js",
       "to": "db",
       "type": "depends",
@@ -63504,30 +63127,6 @@
       "to": "schemas/catalog/normalized-supplier-product.v1.schema.json",
       "type": "depends",
       "label": "schemas/catalog/normalized-supplier-product.v1.schema.json"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "cost-allocation/_helpers",
-      "type": "depends",
-      "label": "cost-allocation/_helpers"
-    },
-    {
-      "from": "services/transport-cost-allocation.js",
-      "to": "db (lazy for shipment persistence)",
-      "type": "depends",
-      "label": "db (lazy for shipment persistence)"
-    },
-    {
-      "from": "future shipment cost ingestion",
-      "to": "services/transport-cost-allocation.js",
-      "type": "uses",
-      "label": "future shipment cost ingestion"
-    },
-    {
-      "from": "future transport routing and packing orchestration",
-      "to": "services/transport-rails.js",
-      "type": "uses",
-      "label": "future transport routing and packing orchestration"
     },
     {
       "from": "services/verify-qr-collection.js",

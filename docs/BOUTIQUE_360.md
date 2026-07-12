@@ -1,12 +1,12 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-11T07:37:25.721Z.
+> Régénéré le 2026-07-12T11:59:14.540Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **66** (66 headés) · Événements bus : **17** · Bundles CSS : **3**
+- Modules JS : **66** (66 headés) · Événements bus : **18** · Bundles CSS : **3**
 - Endpoints appelés : **51** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
 - Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
 
@@ -71,7 +71,7 @@
 | Événement | Émetteurs | Écouteurs | Statut |
 |---|---|---|---|
 | `carousel:changed` | b-modal-product | b-modal-image-ux | 🟡 non déclaré |
-| `cart:update` | b-cart-core | b-cart-core, b-cart-pill, b-mini-cart | 🟢 sain |
+| `cart:update` | b-cart-core | b-cart-core, b-cart-pill, b-mini-cart, b-nav | 🟢 sain |
 | `cat:select` | b-modal-core | b-catalog | 🟢 sain |
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
 | `checkout:open` | b-cart | boutique | 🟢 sain |
@@ -82,6 +82,7 @@
 | `modal:opened` | b-modal-core | b-mobile-modal-v1, b-mobile-premium-v1, b-modal-approche-c-hybrid, b-modal-desktop-enhancers, b-pager, b-pdp-curation-suggestions | 🟡 non déclaré |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
+| `nav:goto-track` | b-checkout | b-nav | 🟢 sain |
 | `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
 | `side-cart:render` | b-cart, b-cart-core, b-group-view | b-cart | 🟢 sain |
 | `sidebar:built` | b-desktop-sidebar | — | 🔴 émission orpheline |
@@ -96,6 +97,7 @@ graph LR
   b_group_view["b-group-view"] -->|side-cart:render| b_cart["b-cart"]
   b_cart_core["b-cart-core"] -->|cart:update| b_cart_pill["b-cart-pill"]
   b_cart_core["b-cart-core"] -->|cart:update| b_mini_cart["b-mini-cart"]
+  b_cart_core["b-cart-core"] -->|cart:update| b_nav["b-nav"]
   b_cart["b-cart"] -->|modal:close| b_modal_core["b-modal-core"]
   b_cart["b-cart"] -->|modal:close| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
   b_checkout["b-checkout"] -->|modal:close| b_modal_core["b-modal-core"]
@@ -117,6 +119,7 @@ graph LR
   b_store["b-store"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]
   b_pager["b-pager"] -->|chip:center| b_catalog["b-catalog"]
   b_modal_core["b-modal-core"] -->|cat:select| b_catalog["b-catalog"]
+  b_checkout["b-checkout"] -->|nav:goto-track| b_nav["b-nav"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_mobile_modal_v1["b-mobile-modal-v1"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_mobile_premium_v1["b-mobile-premium-v1"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_approche_c_hybrid["b-modal-approche-c-hybrid"]

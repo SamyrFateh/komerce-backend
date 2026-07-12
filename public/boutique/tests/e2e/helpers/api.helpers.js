@@ -123,6 +123,122 @@ async function getClientShareToken(page) {
 }
 
 /**
+ * Lit id + token du panier groupe côté client (même source que
+ * getClientShareToken, mais avec l'id nécessaire pour l'annulation
+ * backend — POST /:id/cancel prend l'id, pas le token public).
+ */
+async function getClientShareState(page) {
+  return page.evaluate(() => {
+    try {
+      const raw = sessionStorage.getItem('kmrc_share');
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      return { id: s.id || null, token: s.token || null };
+    } catch { return null; }
+  });
+}
+
+/**
+ * [DESTRUCTIF, mais no-op financier tant qu'aucune contribution 'paid'
+ * n'existe] Annule un panier groupe via POST /api/shared-carts/:id/cancel.
+ * Autorisé depuis open/closed/awaiting_choice (voir
+ * services/cancel-shared-cart-with-refunds.js côté backend).
+ * Retourne true si l'annulation a réussi (ou si le panier n'existait déjà
+ * plus — 400 "introuvable" traité comme un succès de nettoyage).
+ */
+async function cancelSharedCart(page, id) {
+  if (!id) return false;
+  return page.evaluate(async (args) => {
+    try {
+      const resp = await fetch(new URL(`/api/shared-carts/${args.id}/cancel`, args.base).href, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason: 'e2e-cleanup' }),
+      });
+      return resp.ok || resp.status === 400;
+    } catch { return false; }
+  }, { id, base: BASE_URL.replace('/boutique/', '') });
+}
+
+/**
+ * Vérifie qu'une commande existe bien côté backend (GET /api/orders/:ref).
+ * :ref accepte l'UUID (order.id) ou la référence humaine (order.reference) —
+ * voir routes/orders/detail.js, softAuthenticate donc safe avec la session
+ * du compte de test.
+ * Retourne { exists: boolean, order?: {...}, items?: [...] }
+ */
+async function verifyOrder(page, ref) {
+  return page.evaluate(async (args) => {
+    try {
+      const resp = await fetch(new URL(`/api/orders/${args.ref}`, args.base).href, { credentials: 'include' });
+      if (!resp.ok) return { exists: false };
+      const data = await resp.json();
+      return { exists: true, order: data.order || data, items: data.items || [] };
+    } catch { return { exists: false }; }
+  }, { ref, base: BASE_URL.replace('/boutique/', '') });
+}
+
+/**
+ * [DESTRUCTIF, mais no-op financier pour une commande cash 'pending' —
+ * voir routes/orders/cancel.js : le remboursement ne s'exécute que si
+ * payment_status === 'paid'] Annule une commande via POST /api/orders/:id/cancel.
+ * À utiliser en cleanup après un F01 réel (ALLOW_ORDER_SUBMIT=true).
+ * Retourne true si l'annulation a réussi (ou si la commande n'existait déjà
+ * plus / était déjà dans un état terminal — traité comme un succès de nettoyage).
+ */
+async function cancelOrder(page, id, reason = 'e2e-cleanup') {
+  if (!id) return false;
+  return page.evaluate(async (args) => {
+    try {
+      const resp = await fetch(new URL(`/api/orders/${args.id}/cancel`, args.base).href, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason: args.reason }),
+      });
+      return resp.ok || resp.status === 422 || resp.status === 404;
+    } catch { return false; }
+  }, { id, reason, base: BASE_URL.replace('/boutique/', '') });
+}
+
+/**
+ * Vérifie côté backend si le compte de test a déjà un panier groupe actif
+ * (GET /api/shared-carts/mine) et l'annule le cas échéant. À appeler en
+ * beforeEach ET en afterEach de tout test F20 : beforeEach couvre le cas
+ * d'un run précédent interrompu avant son propre cleanup (crash, Ctrl+C),
+ * afterEach couvre le cas nominal. Sans ça, F20 n'est PAS idempotent —
+ * voir b-share-cart.js::install() qui restaure l'état actif au chargement
+ * de page et fait bifurquer startShareFlow() vers promptActiveCartChoice()
+ * au lieu de promptInit() dès qu'un panier 'open' traîne côté backend.
+ */
+async function cancelAnyActiveSharedCart(page) {
+  return page.evaluate(async (base) => {
+    try {
+      const resp = await fetch(new URL('/api/shared-carts/mine', base).href, { credentials: 'include' });
+      if (!resp.ok) return false;
+      const data = await resp.json().catch(() => ({}));
+      const carts = data.carts || [];
+      const ACTIVE = new Set(['open', 'closed', 'awaiting_choice']);
+      const active = carts.filter(c => ACTIVE.has(c.status));
+      let allOk = true;
+      for (const cart of active) {
+        try {
+          const r = await fetch(new URL(`/api/shared-carts/${cart.id}/cancel`, base).href, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ reason: 'e2e-cleanup-preexisting' }),
+          });
+          if (!r.ok && r.status !== 400) allOk = false;
+        } catch { allOk = false; }
+      }
+      return allOk;
+    } catch { return false; }
+  }, BASE_URL.replace('/boutique/', ''));
+}
+
+/**
  * Intercepte les requêtes API sortantes et capture les payloads.
  * Utile pour vérifier ce que le frontend envoie au backend.
  *
@@ -165,7 +281,12 @@ module.exports = {
   verifySession,
   verifyWalletBalance,
   getRecentOrders,
+  verifyOrder,
+  cancelOrder,
   verifySharedCart,
   getClientShareToken,
+  getClientShareState,
+  cancelSharedCart,
+  cancelAnyActiveSharedCart,
   spyOnApi,
 };

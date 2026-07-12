@@ -27,13 +27,24 @@ module.exports = defineConfig({
   // enchaînent plusieurs cycles de timeout API (ex. E15 : wallet → track →
   // group, ~10s chacun via K.request DEFAULT_TIMEOUT_MS) + latence réseau
   // réelle vers komerce.co — 30s est trop juste et casse au 2e/3e cycle
-  // sans qu'il y ait de bug fonctionnel. 45s en DISTANT laisse la marge
-  // que le mécanisme de timeout (qui fonctionne correctement) a besoin
-  // pour s'exécuter jusqu'au bout sur les 3 onglets séquentiels.
-  timeout: isRemote ? 45_000 : 30_000,
+  // sans qu'il y ait de bug fonctionnel. Mesuré à 45s : Desktop Chrome
+  // dépasse tout juste (45.1s) sur le 3e cycle (onglet group), Mobile
+  // Chrome passe avec seulement ~4s de marge (40.8s). 60s en DISTANT
+  // laisse une marge réelle aux deux navigateurs.
+  timeout: isRemote ? 60_000 : 30_000,
 
   // Relance automatique en cas d'échec flaky (CI uniquement)
   retries: process.env.CI ? 2 : 0,
+
+  // En mode DISTANT, tous les specs `authenticated/` partagent le même
+  // storageState (playwright/.auth/user.json) ET le même compte réel de
+  // staging. Le paralléliser entre plusieurs specs (workers > 1) fait muter
+  // panier/wallet/session en concurrence par plusieurs workers à la fois —
+  // observé concrètement : contexte navigateur fermé en plein test (R1),
+  // sans rapport avec un vrai bug métier. 1 worker = specs authenticated
+  // strictement séquentiels, quel que soit le nombre de fichiers passés en
+  // ligne de commande.
+  workers: isRemote ? 1 : undefined,
 
   // Rapport lisible en local, JUnit en CI
   reporter: process.env.CI
@@ -103,8 +114,14 @@ module.exports = defineConfig({
     },
 
     // ── Desktop (public, sans session) ─────────────────────────────────────
+    // testIgnore : les specs authenticated/ ont besoin du storageState posé
+    // par le projet "authenticated" (dépendance sur "setup") — sans lui, un
+    // fetch/UI authentifié échoue systématiquement (ex. F10 : /api/auth/me
+    // → 401). Le testMatch global les matche quand même ; on les exclut
+    // explicitement ici pour ne pas les rejouer en double, sans session.
     {
       name: 'Desktop Chrome',
+      testIgnore: '**/authenticated/**',
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
@@ -113,6 +130,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Desktop Firefox',
+      testIgnore: '**/authenticated/**',
       use: {
         ...devices['Desktop Firefox'],
         viewport: { width: 1280, height: 800 },
@@ -121,6 +139,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Desktop Safari',
+      testIgnore: '**/authenticated/**',
       use: {
         ...devices['Desktop Safari'],
         viewport: { width: 1280, height: 800 },
@@ -131,6 +150,7 @@ module.exports = defineConfig({
     // ── Mobile (la boutique est mobile-first — diaspora comorienne) ─────────
     {
       name: 'Mobile Chrome',
+      testIgnore: '**/authenticated/**',
       use: {
         ...devices['Pixel 7'],
         locale: 'fr-FR',
@@ -138,6 +158,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Mobile Safari',
+      testIgnore: '**/authenticated/**',
       use: {
         ...devices['iPhone 14'],
         locale: 'fr-FR',

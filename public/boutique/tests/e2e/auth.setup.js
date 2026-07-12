@@ -5,7 +5,14 @@
  *        de refaire un flow OTP complet dans chaque test.
  *
  * Prérequis (à fournir via variables d'environnement, JAMAIS en dur) :
- *   TEST_ACCOUNT_PHONE  — numéro d'un compte de test dédié (PAS un compte réel)
+ *   TEST_ACCOUNT_PHONE  — chiffres LOCAUX uniquement, SANS indicatif pays
+ *                         (le sélecteur pays est +269/Comores par défaut,
+ *                         qui exige exactement 7 chiffres — voir b-phone.js
+ *                         PHONE_COUNTRIES). Ex. valide : "3211234".
+ *                         ⚠️ Ne PAS mettre "+269..." ni un numéro à 9 chiffres :
+ *                         sync() dans makeIntlPhoneInput() tronque silencieusement
+ *                         à 7 chiffres au lieu de rejeter, ce qui produit un E.164
+ *                         corrompu (indicatif dupliqué) sans erreur visible.
  *   TEST_ACCOUNT_OTP    — code OTP pour ce compte de test
  *
  * ⚠️ Le compte de test doit être un compte réservé aux tests (staging ou
@@ -43,36 +50,99 @@ setup('authentifie le compte de test et sauvegarde la session', async ({ page, b
       'Voir la doc en tête de ce fichier pour configurer un compte de test dédié.'
   );
 
+  // Garde-fou : le pays par défaut de la modale identité est +269 (Comores,
+  // 7 chiffres locaux exacts — voir PHONE_COUNTRIES dans b-phone.js). sync()
+  // y tronque silencieusement tout excédent au lieu de rejeter, donc un
+  // TEST_ACCOUNT_PHONE mal formé produit un E.164 corrompu sans erreur visible.
+  // On échoue ici, tout de suite, avec un message clair.
+  if (/^\+/.test(TEST_ACCOUNT_PHONE) || !/^\d{7}$/.test(TEST_ACCOUNT_PHONE)) {
+    throw new Error(
+      `TEST_ACCOUNT_PHONE="${TEST_ACCOUNT_PHONE}" invalide : attendu 7 chiffres locaux ` +
+        'SANS indicatif pays (ex. "3211234"), le sélecteur pays étant fixé à +269 par défaut.'
+    );
+  }
+
   await page.goto(baseURL);
 
-  // Ouvre le gate d'identité (déclenché par une action nécessitant une session,
-  // ex. onglet wallet — adapter le trigger réel si l'UI a changé).
+  // Ouvre le gate d'identité : l'onglet wallet seul n'ouvre PAS la modale — il
+  // affiche la vue wallet avec un bouton "📲 M'identifier" (#k-wlt-auth-btn,
+  // voir js/b-wallet.js::renderAuthGate) qui déclenche requireIdentity() au
+  // clic. C'est ce bouton qu'il faut cliquer, pas l'onglet lui-même.
   await page.locator('[data-tab="wallet"]').first().click();
+  await page.waitForSelector('#k-wlt-auth-btn', { state: 'visible', timeout: 10_000 });
+  await page.locator('#k-wlt-auth-btn').click();
 
   // ── Étape téléphone ──────────────────────────────────────────────────────
+  // Le formulaire a 3 champs distincts (voir b-identity.js:437-452, ordre DOM
+  // exact) : prénom (#k-id-name) → nom (#k-id-lastname) → WhatsApp (#k-id-phone,
+  // dans son groupe avec le select pays #k-id-phone-country). requestCode()
+  // bloque avec une erreur si prénom/nom sont vides — les 3 doivent être remplis,
+  // pas seulement le téléphone. Ciblage par id exact, jamais de sélecteur combiné
+  // "A, B" + .first() : un tel sélecteur retourne l'union dans l'ordre du DOM et
+  // peut silencieusement matcher le mauvais champ (vécu : ça remplissait le
+  // prénom avec le numéro de téléphone).
   await page.waitForSelector('#k-id-step-phone', { state: 'visible', timeout: 10_000 });
-  await page.locator('#k-id-step-phone input[type="tel"], #k-id-step-phone input').first().fill(TEST_ACCOUNT_PHONE);
-  await page.locator('#k-id-step-phone button[type="submit"], #k-id-step-phone .k-id-btn').first().click();
+  await page.locator('#k-id-name').fill(process.env.TEST_ACCOUNT_FIRSTNAME || 'Test');
+  await page.locator('#k-id-lastname').fill(process.env.TEST_ACCOUNT_LASTNAME || 'E2E');
+  await page.locator('#k-id-phone').fill(TEST_ACCOUNT_PHONE);
+  await page.locator('#k-id-phone-cta').click();
+
+  // Course entre succès (étape OTP visible) et échec (message d'erreur affiché
+  // dans #k-id-err-phone par requestCode()) — pour remonter la vraie cause
+  // plutôt qu'un TimeoutError générique si la requête échoue côté backend.
+  const otpStep = page.locator('#k-id-step-otp');
+  const errWatch = page
+    .waitForFunction(
+      () => (document.getElementById('k-id-err-phone')?.textContent || '').trim().length > 0,
+      { timeout: 10_000 }
+    )
+    .then(async () => {
+      const msg = await page.locator('#k-id-err-phone').textContent();
+      throw new Error(`requestCode() a échoué : "${msg}"`);
+    });
+  errWatch.catch(() => {}); // évite un unhandled rejection si c'est otpStep qui gagne la course
+  await Promise.race([otpStep.waitFor({ state: 'visible', timeout: 10_000 }), errWatch]);
 
   // ── Étape OTP ─────────────────────────────────────────────────────────────
-  await page.waitForSelector('#k-id-step-otp', { state: 'visible', timeout: 10_000 });
   const otpBoxes = page.locator('.k-id-otp-box');
   const digits = TEST_ACCOUNT_OTP.split('');
   for (let i = 0; i < digits.length; i += 1) {
     await otpBoxes.nth(i).fill(digits[i]);
   }
-  await page.locator('#k-id-otp-cta').click();
+  // La 6e case déclenche verifyCode() automatiquement via son handler 'input'
+  // (voir b-identity.js:292,313 — otpCta.click() interne dès que les 6 chiffres
+  // sont saisis). NE PAS recliquer #k-id-otp-cta ici : à ce stade il est déjà
+  // disabled ("Vérification…") et, en cas de succès, détaché du DOM à la
+  // fermeture de la modale — un second .click() reste bloqué en retry jusqu'au
+  // timeout du test (vécu : 60s, "element was detached from the DOM").
 
   // ── Vérifie que la session est bien posée avant de sauvegarder ──────────
-  await expect
-    .poll(
-      async () => {
-        const cookies = await page.context().cookies();
-        return cookies.some((c) => c.name === 'kmrc_jwt');
-      },
-      { message: 'le cookie de session kmrc_jwt doit être posé après OTP', timeout: 10_000 }
+  // Si verifyCode() échoue (code refusé côté backend), la modale reste ouverte
+  // avec #k-id-err-otp rempli au lieu de poser le cookie — on le détecte pour
+  // remonter le vrai message plutôt qu'un timeout générique sur le cookie.
+  const otpErrWatch = page
+    .waitForFunction(
+      () => (document.getElementById('k-id-err-otp')?.textContent || '').trim().length > 0,
+      { timeout: 10_000 }
     )
-    .toBe(true);
+    .then(async () => {
+      const msg = await page.locator('#k-id-err-otp').textContent();
+      throw new Error(`verifyCode() a échoué : "${msg}"`);
+    });
+  otpErrWatch.catch(() => {}); // évite un unhandled rejection si le cookie arrive avant
+
+  await Promise.race([
+    expect
+      .poll(
+        async () => {
+          const cookies = await page.context().cookies();
+          return cookies.some((c) => c.name === 'kmrc_jwt');
+        },
+        { message: 'le cookie de session kmrc_jwt doit être posé après OTP', timeout: 10_000 }
+      )
+      .toBe(true),
+    otpErrWatch,
+  ]);
 
   await page.context().storageState({ path: authFile });
 });

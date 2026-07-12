@@ -176,4 +176,250 @@ describe('product-admin-service', () => {
     await expect(svc.deleteVariant(db, 'prod-001', 'var-001')).resolves.toMatchObject({ status: 409 });
     await expect(svc.deleteVariant(db, 'prod-001', 'var-001')).resolves.toMatchObject({ status: 200, body: { deleted: { id: 'var-001', variant_type: 'Taille', variant_value: 'M' } } });
   });
+
+  // ── SKU (Lot 1) ──────────────────────────────────────────────────────────
+
+  describe('getSkuCandidates', () => {
+    it('rejette si produit introuvable', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+      await expect(svc.getSkuCandidates(db, 'missing')).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('produit sans variantes : un seul candidat combo=null', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Riz', has_variants: false, inventory_model: 'LEGACY_VARIANTS' }] })
+        .mockResolvedValueOnce({ rows: [] }) };
+
+      await expect(svc.getSkuCandidates(db, 'prod-001')).resolves.toMatchObject({
+        has_variants: false,
+        candidates: [{ variant_combo: null, declared: false, sku: null }],
+      });
+    });
+
+    it('produit a variantes : produit cartesien des axes croise avec les SKU declares', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Robe', has_variants: true, inventory_model: 'LEGACY_VARIANTS' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'sku-001', sku: 'ROBE-N-M', variant_combo: { couleur: 'Noir', taille: 'M' }, stock: 5, price_kmf: null, is_active: true }] })
+        .mockResolvedValueOnce({ rows: [
+          { variant_type: 'couleur', variant_value: 'Noir' },
+          { variant_type: 'couleur', variant_value: 'Blanc' },
+          { variant_type: 'taille', variant_value: 'M' },
+        ] }) };
+
+      const result = await svc.getSkuCandidates(db, 'prod-001');
+
+      expect(result.candidate_count).toBe(2);
+      expect(result.candidates).toEqual(expect.arrayContaining([
+        { variant_combo: { couleur: 'Noir', taille: 'M' }, declared: true, sku: expect.objectContaining({ id: 'sku-001' }) },
+        { variant_combo: { couleur: 'Blanc', taille: 'M' }, declared: false, sku: null },
+      ]));
+    });
+
+    it('refuse au-dela de 500 combinaisons possibles (garde-fou anti-explosion)', async () => {
+      const values = Array.from({ length: 30 }, (_, i) => `v${i}`);
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'X', has_variants: true, inventory_model: 'LEGACY_VARIANTS' }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [
+          ...values.map(v => ({ variant_type: 'a', variant_value: v })),
+          ...values.map(v => ({ variant_type: 'b', variant_value: v })),
+        ] }) };
+
+      await expect(svc.getSkuCandidates(db, 'prod-001')).rejects.toMatchObject({ status: 409 });
+    });
+  });
+
+  describe('upsertProductSku', () => {
+    it('rejette si produit introuvable', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+      await expect(svc.upsertProductSku(db, 'missing', { stock: 1 })).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('exige variant_combo si le produit a des variantes', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Robe', has_variants: true }] }) };
+      await expect(svc.upsertProductSku(db, 'prod-001', { stock: 1 })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('refuse variant_combo si le produit n a pas de variantes', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Riz', has_variants: false }] }) };
+      await expect(svc.upsertProductSku(db, 'prod-001', { stock: 1, variant_combo: { couleur: 'Noir' } })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('exige un stock entier positif', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Riz', has_variants: false }] }) };
+      await expect(svc.upsertProductSku(db, 'prod-001', { stock: -1 })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('rejette un combo qui ne correspond a aucun axe declare', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Robe', has_variants: true }] })
+        .mockResolvedValueOnce({ rows: [] }) };
+      await expect(svc.upsertProductSku(db, 'prod-001', { stock: 1, variant_combo: { couleur: 'Rose' } }))
+        .rejects.toMatchObject({ status: 400 });
+    });
+
+    it('declare le SKU par defaut pour un produit sans variantes', async () => {
+      const row = { id: 'sku-001', product_id: 'prod-001', sku: null, variant_combo: null, stock: 10, is_active: true };
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Riz', has_variants: false }] })
+        .mockResolvedValueOnce({ rows: [row] }) };
+
+      await expect(svc.upsertProductSku(db, 'prod-001', { stock: 10 })).resolves.toMatchObject({ sku: row });
+    });
+
+    it('declare un SKU pour une combinaison valide', async () => {
+      const row = { id: 'sku-002', product_id: 'prod-001', sku: 'ROBE-N-M', variant_combo: { couleur: 'Noir', taille: 'M' }, stock: 3, is_active: true };
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Robe', has_variants: true }] })
+        .mockResolvedValueOnce({ rows: [{ 1: 1 }] }) // couleur=Noir existe
+        .mockResolvedValueOnce({ rows: [{ 1: 1 }] }) // taille=M existe
+        .mockResolvedValueOnce({ rows: [row] }) };
+
+      await expect(svc.upsertProductSku(db, 'prod-001', { stock: 3, variant_combo: { taille: 'M', couleur: 'Noir' }, sku: 'ROBE-N-M' }))
+        .resolves.toMatchObject({ sku: row });
+    });
+  });
+
+  describe('deactivateProductSku', () => {
+    it('retourne 404 si le SKU n existe pas pour ce produit', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+      await expect(svc.deactivateProductSku(db, 'prod-001', 'sku-404')).resolves.toEqual({ status: 404, body: { error: 'SKU introuvable pour ce produit' } });
+    });
+
+    it('desactive le SKU (soft, jamais de DELETE)', async () => {
+      const row = { id: 'sku-001', sku: 'ROBE-N-M', variant_combo: { couleur: 'Noir' }, is_active: false };
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [row] }) };
+      await expect(svc.deactivateProductSku(db, 'prod-001', 'sku-001')).resolves.toEqual({ status: 200, body: { message: 'SKU désactivé', sku: row } });
+    });
+  });
+
+  describe('auditProductSkuReadiness', () => {
+    it('rejette si produit introuvable', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+      await expect(svc.auditProductSkuReadiness(db, 'missing')).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('deja en mode SKU : ready=true sans autre verification', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Riz', has_variants: false, inventory_model: 'SKU' }] }) };
+      await expect(svc.auditProductSkuReadiness(db, 'prod-001')).resolves.toEqual({ product_id: 'prod-001', ready: true, already_sku: true, reasons: ['Déjà en mode SKU'] });
+    });
+
+    it('produit sans variantes sans SKU par defaut : not ready', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Riz', has_variants: false, inventory_model: 'LEGACY_VARIANTS' }] })
+        .mockResolvedValueOnce({ rows: [] }) };
+      const result = await svc.auditProductSkuReadiness(db, 'prod-001');
+      expect(result.ready).toBe(false);
+      expect(result.reasons).toContain('Aucun SKU par défaut déclaré pour ce produit sans variantes');
+    });
+
+    it('produit a variantes sans SKU actif : not ready', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Robe', has_variants: true, inventory_model: 'LEGACY_VARIANTS' }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] }) };
+      const result = await svc.auditProductSkuReadiness(db, 'prod-001');
+      expect(result.ready).toBe(false);
+      expect(result.reasons).toContain('Aucun SKU actif déclaré pour ce produit à variantes');
+    });
+
+    it('detecte les SKU actifs orphelins (axe modifie apres declaration)', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-001', name: 'Robe', has_variants: true, inventory_model: 'LEGACY_VARIANTS' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'sku-001', variant_combo: { couleur: 'Rouge' } }] })
+        .mockResolvedValueOnce({ rows: [{ variant_type: 'couleur', variant_value: 'Noir' }] }) };
+      const result = await svc.auditProductSkuReadiness(db, 'prod-001');
+      expect(result.ready).toBe(false);
+      expect(result.orphaned).toEqual([{ sku_id: 'sku-001', type: 'couleur', value: 'Rouge' }]);
+    });
+  });
+
+  describe('adjustStock (Lot 2)', () => {
+    it('chemin sku_id : un seul UPDATE sur product_skus, aucune touche a products/product_variants', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [{ product_id: 'prod-001', sku_id: 'sku-001', quantity: 2 }], 'decrement');
+
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE product_skus SET stock = stock - $1'),
+        [2, 'sku-001', 'prod-001']
+      );
+    });
+
+    it('chemin sku_id : increment utilise le signe +', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [{ product_id: 'prod-001', sku_id: 'sku-001', quantity: 1 }], 'increment');
+
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE product_skus SET stock = stock + $1'),
+        [1, 'sku-001', 'prod-001']
+      );
+    });
+
+    it('chemin legacy : sans sku_id, decremente products.stock puis chaque axe de variant_combo', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [{
+        product_id: 'prod-001', quantity: 1, has_variants: true,
+        variant_combo: { couleur: 'Noir', taille: 'M' },
+      }], 'decrement');
+
+      expect(db.query).toHaveBeenCalledTimes(3);
+      expect(db.query.mock.calls[0][0]).toContain('UPDATE products SET stock = stock - $1');
+      expect(db.query.mock.calls[0][1]).toEqual([1, 'prod-001']);
+      expect(db.query.mock.calls[1][1]).toEqual([1, 'prod-001', 'couleur', 'Noir']);
+      expect(db.query.mock.calls[2][1]).toEqual([1, 'prod-001', 'taille', 'M']);
+    });
+
+    it('chemin legacy : produit sans variantes ne touche que products.stock', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [{ product_id: 'prod-001', quantity: 3, has_variants: false }], 'increment');
+
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE products SET stock = stock + $1'), [3, 'prod-001']);
+    });
+
+    it('items mixtes : certains avec sku_id (chemin SKU), d autres sans (chemin legacy), dans le meme appel', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [
+        { product_id: 'prod-sku', sku_id: 'sku-001', quantity: 1 },
+        { product_id: 'prod-legacy', quantity: 2, has_variants: false },
+      ], 'decrement');
+
+      expect(db.query).toHaveBeenCalledTimes(2);
+      expect(db.query.mock.calls[0][0]).toContain('product_skus');
+      expect(db.query.mock.calls[1][0]).toContain('UPDATE products SET stock');
+    });
+  });
+
+  describe('resolveActiveSku (Lot 3)', () => {
+    it('resout le SKU par defaut (combo null)', async () => {
+      const row = { id: 'sku-default', sku: null, stock: 10, price_kmf: 5000 };
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [row] }) };
+
+      await expect(svc.resolveActiveSku(db, 'prod-001', null)).resolves.toEqual(row);
+      expect(db.query.mock.calls[0][0]).toMatch(/variant_combo IS NULL/);
+      expect(db.query.mock.calls[0][1]).toEqual(['prod-001']);
+    });
+
+    it('resout un SKU par combo (jsonb) et retourne null si aucune ligne active', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+
+      await expect(svc.resolveActiveSku(db, 'prod-001', { couleur: 'Noir', taille: 'M' })).resolves.toBeNull();
+      expect(db.query.mock.calls[0][0]).toMatch(/variant_combo = \$2::jsonb/);
+      expect(db.query.mock.calls[0][1]).toEqual(['prod-001', JSON.stringify({ couleur: 'Noir', taille: 'M' })]);
+    });
+
+    it('canonicalise le combo (cles triees) avant la requete', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+
+      await svc.resolveActiveSku(db, 'prod-001', { taille: 'M', couleur: 'Noir' });
+      expect(db.query.mock.calls[0][1][1]).toBe(JSON.stringify({ couleur: 'Noir', taille: 'M' }));
+    });
+
+    it('rejette un combo malforme (valeur non-string)', async () => {
+      const db = { query: jest.fn() };
+      await expect(svc.resolveActiveSku(db, 'prod-001', { couleur: 42 })).rejects.toMatchObject({ status: 400 });
+      expect(db.query).not.toHaveBeenCalled();
+    });
+  });
 });

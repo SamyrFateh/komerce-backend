@@ -353,7 +353,9 @@ describe('applyToOrder()', () => {
       .mockResolvedValueOnce({ rows: [{}] })
       // debit(): INSERT consumption
       .mockResolvedValueOnce({ rows: [{ id: 'cons-1', amount_kmf: 3000 }] })
-      // applyToOrder(): UPDATE orders
+      // applyToOrder(): UPDATE orders (wallet_applied_kmf)
+      .mockResolvedValueOnce({ rows: [{}] })
+      // markPaid(): UPDATE orders (payment_status via payment-service.js)
       .mockResolvedValueOnce({ rows: [{}] });
 
     const result = await walletService.applyToOrder(mockClient, {

@@ -87,11 +87,17 @@ echo ""
 echo "🛡️  Coffre-fort Komerce — Analyse d'impact pré-push..."
 echo ""
 
-# Déterminer la base de comparaison
-BASE_REF="origin/main"
-CURRENT_BRANCH=$(git branch --show-current)
-
-if [ "$CURRENT_BRANCH" = "main" ]; then
+# Déterminer la base de comparaison : toujours l'ancêtre commun réel
+# avec origin/main, jamais un simple HEAD~1 codé en dur (faux dès
+# qu'on pousse plus d'un commit, ex. après un merge). Fonctionne
+# identiquement qu'on soit sur main ou sur une branche.
+# FIX 2026-07-11 : l'ancienne version forçait HEAD~1 sur main, ce qui
+# cassait le calcul (diff vide -> fallback interactif -> push refusé
+# par defaut) dès qu'on poussait plus d'un commit d'un coup (ex. après
+# un git pull/merge).
+git fetch origin main --quiet 2>/dev/null || true
+BASE_REF=$(git merge-base HEAD origin/main 2>/dev/null)
+if [ -z "$BASE_REF" ]; then
   BASE_REF="HEAD~1"
 fi
 

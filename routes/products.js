@@ -8,7 +8,7 @@
  * @outputs       product_list, product_detail, product_mutation_result
  * @depends       db.js, validators.js, middleware/auth.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-catalog.js, public/boutique/js/b-modal-core.js, komerce-api.js
- * @db-read       product_variants, products
+ * @db-read       product_skus, product_variants, products
  * @db-write      none
  * @db-txn        product_reference_stable, deactivate_not_delete
  * @doctrine      catalogue_source_db, produit_reference_stable, produit_desactive_non_supprime
@@ -357,6 +357,64 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
 router.delete('/:id/variants/:variantId', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
   try {
     const result = await productAdminService.deleteVariant(db, req.params.id, req.params.variantId);
+    return res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
+// ─── SKU (Lot 1 — préparation/déclaration, cf. DECISION_MODELE_STOCK_SKU.md) ──
+// Ne pilote jamais products.stock ni product_variants.stock. Ne suppose
+// jamais inventory_model — la bascule est un acte séparé (Lot 5).
+
+router.get('/:id/skus', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
+  try {
+    if (req.query.candidates === '1') {
+      const result = await productAdminService.getSkuCandidates(db, req.params.id);
+      return res.json(result);
+    }
+    const { rows: [product] } = await db.query(
+      'SELECT id, name, has_variants, inventory_model FROM products WHERE id = $1',
+      [req.params.id]
+    );
+    if (!product) return res.status(404).json({ error: 'Produit introuvable' });
+
+    const { rows: skus } = await db.query(
+      `SELECT id, sku, variant_combo, stock, price_kmf, is_active, created_at, updated_at
+         FROM product_skus WHERE product_id = $1
+         ORDER BY variant_combo NULLS FIRST, created_at`,
+      [req.params.id]
+    );
+    res.json({
+      product_id: product.id, product_name: product.name,
+      inventory_model: product.inventory_model, skus, count: skus.length,
+    });
+  } catch (err) { next(err); }
+});
+
+router.get('/:id/skus/readiness', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
+  try {
+    const result = await productAdminService.auditProductSkuReadiness(db, req.params.id);
+    res.json(result);
+  } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: err.message });
+    next(err);
+  }
+});
+
+router.post('/:id/skus', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
+  try {
+    const result = await productAdminService.upsertProductSku(db, req.params.id, req.body);
+    res.status(201).json(result);
+  } catch (err) {
+    if (err.status === 400) return res.status(400).json({ error: err.message });
+    if (err.status === 404) return res.status(404).json({ error: err.message });
+    if (err.status === 409) return res.status(409).json({ error: err.message });
+    next(err);
+  }
+});
+
+router.delete('/:id/skus/:skuId', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
+  try {
+    const result = await productAdminService.deactivateProductSku(db, req.params.id, req.params.skuId);
     return res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });

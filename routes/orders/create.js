@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/*, services/product-admin-service.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       orders, product_variants, products, recipients, relais
+ * @db-read       orders, product_skus, product_variants, products, recipients, relais
  * @db-write      cart_shares, order_items, order_status_history, orders, recipients
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -40,6 +40,7 @@ const { getUniqueRef, generateCashCode, generatePickupCode } = require('../../se
 const walletService = require('../../services/wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('../../services/routing');
 const { notifyOrderCreated }             = require('../../services/notification-service');
+const productAdminService                = require('../../services/product-admin-service');
 const log = require('../../utils/logger').child({ module: 'create' });
 
 // MODULE_TYPES — sous-types pour le module couture uniquement
@@ -194,48 +195,89 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
         return res.status(400).json({ error: `Quantité invalide pour ${item.product_id}: min 1, max ${maxQty}` });
       }
 
-      if (product.stock !== null && product.stock < qty) {
-        await client.query('ROLLBACK');
-        return res.status(409).json({
-          error: `Stock insuffisant pour ${product.name} — disponible : ${product.stock}`,
-          available_stock: product.stock,
-        });
-      }
+      if (product.inventory_model === 'SKU') {
+        // ── Lot 3 — chemin SKU exclusif ────────────────────────────────
+        // Doctrine migration 104 : un produit en mode SKU ne lit/écrit
+        // JAMAIS products.stock ni product_variants.stock. Le stock et la
+        // disponibilité viennent uniquement de product_skus, résolu via
+        // resolveActiveSku (services/product-admin-service.js).
+        const comboRaw = (item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo))
+          ? item.variant_combo
+          : null;
 
-      // ── VAGUE 3 — Validation stock par variante ────────────────────────
-      // Si l'item porte un variant_combo, on vérifie le stock de chaque
-      // variante constituante. Le frontend ne devrait pas envoyer une combo
-      // si le produit n'a pas has_variants=true, mais on protège quand même.
-      if (item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo)) {
-        if (!product.has_variants) {
-          // Combo envoyée mais le produit n'a pas de variantes → on ignore
-          // silencieusement (rétrocompat) plutôt que de planter une commande.
-          item.variant_combo = null;
-        } else {
-          for (const [vType, vValue] of Object.entries(item.variant_combo)) {
-            if (typeof vType !== 'string' || typeof vValue !== 'string') {
-              await client.query('ROLLBACK');
-              return res.status(400).json({
-                error: `variant_combo invalide pour ${item.product_id} : ${vType}=${vValue}`,
-              });
-            }
-            const { rows: [variant] } = await client.query(
-              `SELECT stock FROM product_variants
-                WHERE product_id = $1 AND variant_type = $2 AND variant_value = $3`,
-              [item.product_id, vType, vValue]
-            );
-            if (!variant) {
-              await client.query('ROLLBACK');
-              return res.status(400).json({
-                error: `Variante inconnue pour ${product.name} : ${vType}=${vValue}`,
-              });
-            }
-            if (variant.stock !== null && variant.stock < qty) {
-              await client.query('ROLLBACK');
-              return res.status(409).json({
-                error: `Stock insuffisant pour ${product.name} — ${vType}: ${vValue} — disponible : ${variant.stock}`,
-                available_stock: variant.stock,
-              });
+        let resolvedSku;
+        try {
+          resolvedSku = await productAdminService.resolveActiveSku(client, item.product_id, comboRaw);
+        } catch (e) {
+          await client.query('ROLLBACK');
+          return res.status(e.status || 400).json({ error: e.message });
+        }
+
+        if (!resolvedSku) {
+          await client.query('ROLLBACK');
+          const comboLabel = comboRaw
+            ? ' : ' + Object.entries(comboRaw).map(([k, v]) => `${k}=${v}`).join(', ')
+            : '';
+          return res.status(409).json({
+            error: `Combinaison indisponible pour ${product.name}${comboLabel}`,
+          });
+        }
+
+        if (resolvedSku.stock < qty) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: `Stock insuffisant pour ${product.name} — disponible : ${resolvedSku.stock}`,
+            available_stock: resolvedSku.stock,
+          });
+        }
+
+        item.variant_combo = comboRaw;
+        item._resolved_sku_id = resolvedSku.id;
+      } else {
+        // ── Chemin legacy (LEGACY_VARIANTS, défaut) — inchangé ──────────
+        if (product.stock !== null && product.stock < qty) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            error: `Stock insuffisant pour ${product.name} — disponible : ${product.stock}`,
+            available_stock: product.stock,
+          });
+        }
+
+        // ── VAGUE 3 — Validation stock par variante ────────────────────────
+        // Si l'item porte un variant_combo, on vérifie le stock de chaque
+        // variante constituante. Le frontend ne devrait pas envoyer une combo
+        // si le produit n'a pas has_variants=true, mais on protège quand même.
+        if (item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo)) {
+          if (!product.has_variants) {
+            // Combo envoyée mais le produit n'a pas de variantes → on ignore
+            // silencieusement (rétrocompat) plutôt que de planter une commande.
+            item.variant_combo = null;
+          } else {
+            for (const [vType, vValue] of Object.entries(item.variant_combo)) {
+              if (typeof vType !== 'string' || typeof vValue !== 'string') {
+                await client.query('ROLLBACK');
+                return res.status(400).json({
+                  error: `variant_combo invalide pour ${item.product_id} : ${vType}=${vValue}`,
+                });
+              }
+              const { rows: [variant] } = await client.query(
+                `SELECT stock FROM product_variants
+                  WHERE product_id = $1 AND variant_type = $2 AND variant_value = $3`,
+                [item.product_id, vType, vValue]
+              );
+              if (!variant) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({
+                  error: `Variante inconnue pour ${product.name} : ${vType}=${vValue}`,
+                });
+              }
+              if (variant.stock !== null && variant.stock < qty) {
+                await client.query('ROLLBACK');
+                return res.status(409).json({
+                  error: `Stock insuffisant pour ${product.name} — ${vType}: ${vValue} — disponible : ${variant.stock}`,
+                  available_stock: variant.stock,
+                });
+              }
             }
           }
         }
@@ -383,10 +425,10 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
            order_id, product_id, quantity, price_kmf,
            module_type, module_fabric_id, module_fabric_type,
            module_size, module_retouche, module_qty_meters, module_accessories,
-           variant_combo,
+           variant_combo, sku_id,
            customs_category_key, sh_code, douane_pct, tva_pct, taxe_add_pct,
            classification_defaulted
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
         [
           order.id,
           item.product_id,
@@ -405,6 +447,11 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo)
             ? JSON.stringify(item.variant_combo)
             : null,
+          // Lot 3 : FK vers product_skus, posée uniquement pour les produits
+          // en inventory_model = 'SKU' (resolveActiveSku plus haut). NULL pour
+          // tout produit LEGACY_VARIANTS — variant_combo reste la référence
+          // d'affichage/historique dans ce cas, comme avant.
+          item._resolved_sku_id || null,
           clf.customs_category_key,
           clf.sh_code,
           clf.douane_pct,

@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 362
-- Files with full headers: 335
+- Scanned code files: 360
+- Files with full headers: 333
 - Files with lite headers: 27
-- Files with any headers: 362
+- Files with any headers: 360
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 725
-- Edges: 4169
-- DB tables: 109
-- Doctrines: 136
-- Impact areas: 118
-- Unresolved code edges: 398
+- Graph nodes: 721
+- Edges: 4142
+- DB tables: 110
+- Doctrines: 134
+- Impact areas: 117
+- Unresolved code edges: 393
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -33,10 +33,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - customs: 6
 - dashboard: 30
 - documents: 11
-- economic-engine: 37
+- economic-engine: 36
 - infrastructure: 20
 - inventory: 3
-- logistics: 36
+- logistics: 35
 - notification: 15
 - operations: 12
 - orders: 29
@@ -63,7 +63,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 99
 - route-manifest: 1
 - schema: 1
-- service: 146
+- service: 144
 - state: 1
 - state-store: 1
 - ui-component: 38
@@ -299,8 +299,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
 - services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
-- services/transport-cost-allocation.js — transport-cost-allocation-contract (economic-engine, high, full)
-- services/transport-rails.js — transport-rail-registry (logistics, high, full)
 - services/wallet-service.js — wallet-wallet-service (wallet, high, full)
 - services/whatsapp-meta.js — meta-whatsapp-adapter (notification, high, full)
 - utils/alerts-compat.js — alerts-schema-compat (infrastructure, high, full)
@@ -461,7 +459,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-customs-shipments.js -> order_item_real_cost_allocations
 - WRITE services/cost-allocation/allocate.js -> order_item_real_cost_allocations
 - WRITE services/cost-allocation/index.js -> order_item_real_cost_allocations
-- WRITE services/transport-cost-allocation.js -> order_item_real_cost_allocations
+- WRITE routes/admin/delete-order-cascade.js -> order_items
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -524,7 +522,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - purchase_orders: 5 écrivains directs — services/cancel-order-purchase-orders.js, services/purchasing-admin-service.js, services/purchasing-receive-service.js, services/purchasing-trigger-service.js, services/receive-purchase-order.js
 - transaction_documents: 5 écrivains directs — services/documents/customs-invoice.js, services/documents/document-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js, services/documents/wallet-receipt.js
 - finance_config: 4 écrivains directs — bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/pricing-rates.js
-- order_item_real_cost_allocations: 4 écrivains directs — routes/admin-customs-shipments.js, services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/transport-cost-allocation.js
 - recipients: 4 écrivains directs — routes/admin/users.js, routes/orders/create.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js
 - shared_cart_items: 4 écrivains directs — routes/shared-cart-from-order.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-items-service.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
@@ -534,6 +531,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - collective_workspaces: 3 écrivains directs — services/collective-workspace-creation.js, services/collective-workspace-engine.js, services/collective-workspace-lifecycle.js
 - invoices: 3 écrivains directs — routes/admin/system.js, routes/invoices.js, services/invoice-service.js
 - order_comments: 3 écrivains directs — routes/hub-dashboard.js, routes/hub-mark-ordered.js, routes/relay-dashboard.js
+- order_item_real_cost_allocations: 3 écrivains directs — routes/admin-customs-shipments.js, services/cost-allocation/allocate.js, services/cost-allocation/index.js
 - pickup_print_tokens: 3 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-secret-service.js
 - pickup_reveal_codes: 3 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-secret-service.js
 - price_history: 3 écrivains directs — services/pricing-apply.js, services/pricing-strategy-service.js, services/product-price-audit.js
@@ -591,8 +589,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: db.js -> utils/alerts-compat.js (db.js)
 - uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
-- uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
-- uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
 - depends: middleware/auth-guest.js -> db (db)
@@ -690,6 +686,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/client-tracking.js -> db.js (db.js)
 - depends: routes/client-tracking.js -> services/* (services/*)
 - depends: routes/collective-workspaces.js -> db.js (db.js)
+- depends: routes/collective-workspaces.js -> services/* (services/*)
+- depends: routes/config.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 

@@ -432,6 +432,114 @@ describe('orders/create — variant_combo', () => {
   });
 });
 
+describe('orders/create — SKU (Lot 3, inventory_model="SKU")', () => {
+  const PRODUCT_SKU = { ...PRODUCT, has_variants: true, inventory_model: 'SKU' };
+
+  it('nominal : résout le SKU actif, l\'insère dans order_items, ne touche jamais product_variants', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT_SKU] },
+      { rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 5, price_kmf: 10000 }] }, // resolveActiveSku
+      { rows: [orderRow()] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 'Noir' } }] })
+    );
+
+    expect(res.status).toBe(201);
+    const skuLookup = client.calls.find(c => /product_skus/.test(c.sql));
+    expect(skuLookup).toBeDefined();
+    expect(skuLookup.params).toEqual(['prod-1', JSON.stringify({ couleur: 'Noir' })]);
+
+    const variantLookup = client.calls.find(c => /product_variants/.test(c.sql));
+    expect(variantLookup).toBeUndefined();
+
+    const itemInsert = client.calls.find(c => /INSERT INTO order_items/.test(c.sql));
+    expect(itemInsert.params).toContain('sku-1');
+  });
+
+  it('409 si aucune combinaison active ne correspond', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT_SKU] },
+      { rows: [] }, // resolveActiveSku → rien trouvé
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 'Rose' } }] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/Combinaison indisponible/);
+    expectTransactionRolledBack(client);
+  });
+
+  it('409 si le stock du SKU résolu est insuffisant', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT_SKU] },
+      { rows: [{ id: 'sku-1', sku: 'ROBE-N', stock: 0, price_kmf: 10000 }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 'Noir' } }] })
+    );
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/Stock insuffisant/);
+    expect(res.body.available_stock).toBe(0);
+    expectTransactionRolledBack(client);
+  });
+
+  it('400 si variant_combo malformé (avant toute requête product_skus)', async () => {
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [PRODUCT_SKU] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1, variant_combo: { couleur: 42 } }] })
+    );
+
+    expect(res.status).toBe(400);
+    expectTransactionRolledBack(client);
+  });
+
+  it('SKU par défaut (sans variant_combo) : lookup avec variant_combo IS NULL', async () => {
+    const productSkuNoVariant = { ...PRODUCT, has_variants: false, inventory_model: 'SKU' };
+    const client = makeClient([
+      { rows: [RELAIS] },
+      { rows: [{ id: 'recip-1' }] },
+      { rows: [productSkuNoVariant] },
+      { rows: [{ id: 'sku-default', sku: null, stock: 10, price_kmf: 10000 }] },
+      { rows: [orderRow()] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const res = await request(app).post('/api/orders').send(
+      validBody({ items: [{ product_id: 'prod-1', quantity: 1 }] })
+    );
+
+    expect(res.status).toBe(201);
+    const skuLookup = client.calls.find(c => /product_skus/.test(c.sql));
+    expect(skuLookup.sql).toMatch(/variant_combo IS NULL/);
+    expect(skuLookup.params).toEqual(['prod-1']);
+  });
+});
+
 describe('orders/create — loyalty discount', () => {
   it('applique le discountPct sur total_kmf', async () => {
     getLoyaltyDiscount.mockResolvedValue({ discountPct: 10, discountLabel: 'Fidèle' });

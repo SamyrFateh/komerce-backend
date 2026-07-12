@@ -32,7 +32,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 |-----------|:---:|:-------:|:-----------:|-------------------|
 | `b-cart.js` | 58 | 31 | 1/6 | Modal produit, Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
 | `b-modal-core.js` | 33 | 54 | 2/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
-| `b-checkout.js` | 60 | 4 | 0/1 | Bottom-nav mobile |
+| `b-checkout.js` | 60 | 4 | 0/2 | Bottom-nav mobile |
 | `b-modal-product.js` | 57 | 6 | 0/1 | Modal produit |
 | `b-checkout-render.js` | 56 | 0 | 0/0 | — |
 | `b-modal-desktop-enhancers.js` | 44 | 6 | 4/2 | Modal produit |
@@ -54,7 +54,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
 | `b-modal-suggestions.js` | 6 | 0 | 2/4 | Modal produit |
-| `b-nav.js` | 5 | 1 | 0/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
+| `b-nav.js` | 5 | 1 | 2/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
 | `b-favs.js` | 5 | 0 | 0/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `b-paypal.js` | 5 | 0 | 0/0 | — |
 | `boutique.js` | 0 | 5 | 2/0 | Modal produit, Grille produits, Chips catégories |

@@ -33,6 +33,22 @@ require('dotenv').config();
 const { Pool } = require('pg');
 const log = require('./utils/logger').forModule('db');
 
+// ── FIX 2026-07-09 : filet de sécurité idle_in_transaction ─────────────────
+// `statement_timeout` (30s) ne protège que les requêtes SQL actives. Si un
+// client fait BEGIN puis reste bloqué côté JS avant COMMIT/ROLLBACK (ex. un
+// appel externe — SMS/WhatsApp/paiement — qui ne timeout jamais), la
+// transaction reste ouverte indéfiniment et le client ne revient JAMAIS au
+// pool, même avec release() appelé correctement en amont dans le code
+// applicatif. Incident 2026-07-09 : pool saturé à 20/20 (max), idleCount=0,
+// sans qu'aucune fuite classique (getClient sans release) n'ait été trouvée
+// après audit des ~44 call-sites — cohérent avec ce scénario.
+// idle_in_transaction_session_timeout tue côté Postgres toute session restée
+// en transaction sans requête active au-delà du délai — indépendamment
+// d'OÙ dans le code la transaction a été abandonnée. Filet de sécurité, pas
+// un remplacement de la vraie correction (qui reste à identifier via les
+// logs [unhandledRejection] maintenant lisibles).
+const IDLE_IN_TX_TIMEOUT_MS = parseInt(process.env.DB_IDLE_IN_TX_TIMEOUT || '20000', 10);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL?.includes('sslmode=require')
@@ -61,30 +77,22 @@ const pool = new Pool({
   // au lieu d'attendre indéfiniment sur un socket fantôme.
   keepAlive: true,
   keepAliveInitialDelayMillis: 10_000,
+
+  // FIX 2026-07-11 : remplace l'ancien pool.on('connect', client => client.query(...))
+  // fire-and-forget, qui déclenchait le DeprecationWarning pg "Calling client.query()
+  // when the client is already executing a query is deprecated" dès qu'un appelant
+  // (ex. fix-schema.js au boot) envoyait sa propre requête sur ce même client tout
+  // juste connecté. onConnect (natif depuis pg@8.20.0, version exacte installée ici —
+  // voir package-lock.json) garantit que le SET est terminé AVANT que le client soit
+  // rendu disponible au pool : plus de chevauchement possible, et compatible avec la
+  // dépréciation de la file interne pg (8.19.0) qui a motivé ce mécanisme.
+  onConnect: async (client) => {
+    await client.query(`SET idle_in_transaction_session_timeout = ${IDLE_IN_TX_TIMEOUT_MS}`);
+  },
 });
 
 pool.on('error', (err) => {
   log.error({ err }, 'PostgreSQL pool error');
-});
-
-// ── FIX 2026-07-09 : filet de sécurité idle_in_transaction ─────────────────
-// `statement_timeout` (30s) ne protège que les requêtes SQL actives. Si un
-// client fait BEGIN puis reste bloqué côté JS avant COMMIT/ROLLBACK (ex. un
-// appel externe — SMS/WhatsApp/paiement — qui ne timeout jamais), la
-// transaction reste ouverte indéfiniment et le client ne revient JAMAIS au
-// pool, même avec release() appelé correctement en amont dans le code
-// applicatif. Incident 2026-07-09 : pool saturé à 20/20 (max), idleCount=0,
-// sans qu'aucune fuite classique (getClient sans release) n'ait été trouvée
-// après audit des ~44 call-sites — cohérent avec ce scénario.
-// idle_in_transaction_session_timeout tue côté Postgres toute session restée
-// en transaction sans requête active au-delà du délai — indépendamment
-// d'OÙ dans le code la transaction a été abandonnée. Filet de sécurité, pas
-// un remplacement de la vraie correction (qui reste à identifier via les
-// logs [unhandledRejection] maintenant lisibles).
-const IDLE_IN_TX_TIMEOUT_MS = parseInt(process.env.DB_IDLE_IN_TX_TIMEOUT || '20000', 10);
-pool.on('connect', (client) => {
-  client.query(`SET idle_in_transaction_session_timeout = ${IDLE_IN_TX_TIMEOUT_MS}`)
-    .catch((err) => log.error({ err }, 'Échec configuration idle_in_transaction_session_timeout'));
 });
 
 // ── V2.8: Pool health monitoring ────────────────────────────────────────────
