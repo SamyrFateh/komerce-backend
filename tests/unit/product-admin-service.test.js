@@ -333,4 +333,61 @@ describe('product-admin-service', () => {
       expect(result.orphaned).toEqual([{ sku_id: 'sku-001', type: 'couleur', value: 'Rouge' }]);
     });
   });
+
+  describe('adjustStock (Lot 2)', () => {
+    it('chemin sku_id : un seul UPDATE sur product_skus, aucune touche a products/product_variants', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [{ product_id: 'prod-001', sku_id: 'sku-001', quantity: 2 }], 'decrement');
+
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE product_skus SET stock = stock - $1'),
+        [2, 'sku-001', 'prod-001']
+      );
+    });
+
+    it('chemin sku_id : increment utilise le signe +', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [{ product_id: 'prod-001', sku_id: 'sku-001', quantity: 1 }], 'increment');
+
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE product_skus SET stock = stock + $1'),
+        [1, 'sku-001', 'prod-001']
+      );
+    });
+
+    it('chemin legacy : sans sku_id, decremente products.stock puis chaque axe de variant_combo', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [{
+        product_id: 'prod-001', quantity: 1, has_variants: true,
+        variant_combo: { couleur: 'Noir', taille: 'M' },
+      }], 'decrement');
+
+      expect(db.query).toHaveBeenCalledTimes(3);
+      expect(db.query.mock.calls[0][0]).toContain('UPDATE products SET stock = stock - $1');
+      expect(db.query.mock.calls[0][1]).toEqual([1, 'prod-001']);
+      expect(db.query.mock.calls[1][1]).toEqual([1, 'prod-001', 'couleur', 'Noir']);
+      expect(db.query.mock.calls[2][1]).toEqual([1, 'prod-001', 'taille', 'M']);
+    });
+
+    it('chemin legacy : produit sans variantes ne touche que products.stock', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [{ product_id: 'prod-001', quantity: 3, has_variants: false }], 'increment');
+
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE products SET stock = stock + $1'), [3, 'prod-001']);
+    });
+
+    it('items mixtes : certains avec sku_id (chemin SKU), d autres sans (chemin legacy), dans le meme appel', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await svc.adjustStock(db, [
+        { product_id: 'prod-sku', sku_id: 'sku-001', quantity: 1 },
+        { product_id: 'prod-legacy', quantity: 2, has_variants: false },
+      ], 'decrement');
+
+      expect(db.query).toHaveBeenCalledTimes(2);
+      expect(db.query.mock.calls[0][0]).toContain('product_skus');
+      expect(db.query.mock.calls[1][0]).toContain('UPDATE products SET stock');
+    });
+  });
 });

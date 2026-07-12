@@ -839,12 +839,23 @@ async function auditProductSkuReadiness(dbPool, productId) {
 
 /**
  * Ajuste le stock de produits (et de leurs variantes) en une seule opération.
- * SEUL chemin d'écriture autorisé sur `products.stock` et `product_variants.stock`
- * pour les features externes (orders, logistics). Feature catalog = owner.
+ * SEUL chemin d'écriture autorisé sur `products.stock`, `product_variants.stock`
+ * et `product_skus.stock` pour les features externes (orders, logistics).
+ * Feature catalog = owner.
+ *
+ * Lot 2 (cf. docs/specs/DECISION_MODELE_STOCK_SKU.md) : deux chemins coexistent,
+ * choisis PAR ITEM selon la présence explicite de `item.sku_id` — jamais déduit
+ * de l'existence de lignes dans product_skus, jamais déduit de inventory_model
+ * ici (la résolution combo → sku_id est un acte de l'appelant, Lot 3 pour la
+ * création de commande). Un item sans sku_id retombe sur l'ancien chemin à
+ * deux axes : aucun appelant existant n'est cassé tant qu'il ne peuple pas
+ * ce champ lui-même.
  *
  * @param {object}  dbClient    Client de transaction actif
  * @param {Array}   items       Articles à ajuster :
- *   [{ product_id, quantity, has_variants?, variant_combo? }]
+ *   [{ product_id, quantity, sku_id?, has_variants?, variant_combo? }]
+ *   sku_id présent → chemin SKU (UPDATE product_skus uniquement).
+ *   sku_id absent  → chemin legacy (products.stock + product_variants.stock).
  * @param {'increment'|'decrement'} direction
  *   'decrement' → stock - quantity  (paiement confirmé)
  *   'increment' → stock + quantity  (annulation, restauration backorder)
@@ -853,6 +864,18 @@ async function adjustStock(dbClient, items, direction) {
   const op = direction === 'decrement' ? '-' : '+';
 
   for (const item of items) {
+    if (item.sku_id) {
+      // Chemin SKU (Lot 2) : un seul UPDATE, une seule table. Le CHECK
+      // stock >= 0 (migration 104) transforme tout dépassement en erreur
+      // bloquante plutôt qu'un silence — comportement voulu (§6 decision doc).
+      await dbClient.query(
+        `UPDATE product_skus SET stock = stock ${op} $1 WHERE id = $2 AND product_id = $3`,
+        [item.quantity, item.sku_id, item.product_id]
+      );
+      continue;
+    }
+
+    // Chemin legacy (deux axes indépendants — cf. DECISION_MODELE_STOCK_SKU.md §A).
     await dbClient.query(
       `UPDATE products SET stock = stock ${op} $1 WHERE id = $2`,
       [item.quantity, item.product_id]
