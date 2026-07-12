@@ -10,7 +10,7 @@
  * @used-by       all-boutique-js-modules
  * @doctrine      state_partage_explicite, panier_local_source_unique, dom_refs_centralisees
  * @impact-areas  all-boutique, cart, checkout, catalog, modal, shared-cart, tracking
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
@@ -20,12 +20,8 @@
  *
  * Contient :
  *   - state       → état mutable partagé (panier, catalogue, modal…)
-
  *   - dom         → cache des refs DOM (peuplé par initDom() au boot)
  *   - $, $$       → aliases querySelector / querySelectorAll
- *
- * Usage :
-
  */
 
 import { bus } from './b-bus.js';
@@ -88,16 +84,21 @@ export const state = {
   /** Mode pager Temu — { cat: 'Mode', sub: 'Femme' } | null */
   flatSubcat: null,
   /** Modal ouvert (vrai entre openModal et closeModal). Lu par b-pager.js
-   *  pour bloquer l'auto-advance pendant l'affichage d'une fiche produit.
-   *  AVANT le fix : déclaré nulle part, lu 3 fois → garde inerte → scroll
-   *  horizontal automatique parasite après fermeture de modal. */
+   *  pour bloquer l'auto-advance pendant l'affichage d'une fiche produit. */
   modalOpen: false,
   modalProduct: null,
+  /** Product Detail Contract v1 du produit modal courant. PDC-4 : rempli sur
+   *  le chemin mobile SKU, null pendant le fallback legacy ou à la fermeture. */
+  modalProductDetail: null,
+  /** État pur dérivé par modal-selection-model.js. Jamais reconstruit dans un
+   *  renderer ; mobile et desktop doivent consommer cette même shape. */
+  modalSelection: null,
   modalSubcatFilter: null,
   modalQty: 1,
   modalHistory: [],
-  /** Variantes sélectionnées par l'utilisateur : { "Couleur": "Bleu", "Taille": "M" }.
-      Transmis comme variant_combo à submitOrder. Réinitialisé à chaque ouverture de modal. */
+  /** Snapshot de sélection transmis comme variant_combo au backend. Pendant la
+   *  convergence PDC, le chemin SKU le synchronise depuis modalSelection.selected_options ;
+   *  le chemin LEGACY_VARIANTS continue à le remplir depuis _renderVariants. */
   modalVariantCombo: {},
   /** Historique des produits vus (IDs), persisté en localStorage.
       Utilisé pour la section "Vu récemment" en desktop. */
@@ -123,10 +124,10 @@ export const state = {
    * Supprimé après PUT réussi ou annulation explicite.
    *
    * Shape : {
-   *   shared_cart_id : string,   // cartId numérique
-   *   token          : string,   // shareToken (pour notif / rafraîchi)
-   *   return_tab     : 'group',  // onglet de retour après édition
-   *   started_at     : number,   // Date.now() — pour debug
+   *   shared_cart_id : string,
+   *   token          : string,
+   *   return_tab     : 'group',
+   *   started_at     : number,
    * } | null
    */
   editSharedCart: null,
@@ -154,14 +155,12 @@ export const scroll = {
   scrollingToSection: false,
 };
 
-
 /* ── SUBCATEGORIES MAP — LOT 10 ─────────────────────────── */
 /*
  * SUBCATS supprimé — source de vérité déplacée vers la DB.
  * Utiliser getSubcategories(catKey) depuis ./shop-schema.js
  * (fetche GET /api/categories au boot, fallback hardcodé si API indispo).
  */
-
 
 /* ── DOM REFS ────────────────────────────────────────────── */
 
@@ -258,48 +257,10 @@ export function initDom() {
     cartContinue:       $('#k-cart-continue'),
     cartClear:          $('#k-cart-clear'),
     cartWhatsapp:       $('#k-cart-whatsapp'),
-    cartCheckout:       $('#k-cart-checkout'),
     // Order Modal
     orderModal:         $('#k-order-modal'),
     orderTitle:         $('#k-order-title'),
     orderBody:          $('#k-order-body'),
     orderClose:         $('#k-order-close'),
-    // Toast
-    toast:              $('#k-toast'),
-    // Scroll container mobile (pager Temu + scroll infini)
-    pageScroll:         $('#k-page-scroll'),
   });
 }
-
-/**
- * Recalcule le scroll top mobile après resize/orientation change.
- * (Style inline légitime : mesure de hauteur runtime impossible en CSS)
- */
-export function updateMobileScrollTop() {
-  if (window.innerWidth > 899) return;
-  const doUpdate = () => {
-    // Mesure cohérente avec _recalcPagerVars() dans b-pager.js :
-    // on prend le bas réel du dernier élément fixe (hero + chips).
-    let top = 0;
-    [
-      document.getElementById('k-hero-fixed-wrap'),
-      document.getElementById('k-sticky-bar'),
-      document.querySelector('.k-cats-shell'),
-    ].forEach(function(el) {
-      if (!el) return;
-      const b = el.getBoundingClientRect().bottom;
-      if (b > top) top = b;
-    });
-    // Fallback si éléments non encore rendus
-    if (top < 10) {
-      const w = document.getElementById('k-hero-fixed-wrap');
-      const headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 44;
-      top = (w ? w.offsetHeight : 140) + headerH;
-    }
-    const s = dom.pageScroll;
-    if (s) s.style.top = top + 'px';
-  };
-  requestAnimationFrame(doUpdate);
-  setTimeout(doUpdate, 400);
-}
-
