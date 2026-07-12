@@ -95,6 +95,7 @@ function restoreActionsHome() {
   if (!actions || !_actionsHome || !_actionsHome.parent) return;
   actions.classList.remove('k-buybox-actions-inline');
   _actionsHome.parent.insertBefore(actions, _actionsHome.next || null);
+  _actionsHome = null;
 }
 
 const PAYMENT_MODES = {
