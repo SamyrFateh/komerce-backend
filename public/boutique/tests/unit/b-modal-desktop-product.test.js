@@ -33,6 +33,7 @@ const { buildCarouselSlides, goToSlide } = require('../../js/b-modal-product.js'
 const { setupImageUX } = require('../../js/b-modal-image-ux.js');
 const { createModalSelection } = require('../../js/view-models/modal-selection-model.js');
 const {
+  clearDesktopProductDetailState,
   renderDesktopProductDetail,
   refreshDesktopProductSubtotal,
 } = require('../../js/b-modal-desktop-product.js');
@@ -163,11 +164,16 @@ function installDom() {
 
 describe('desktop product detail renderer', () => {
   beforeEach(() => {
+    clearDesktopProductDetailState();
     jest.clearAllMocks();
     installDom();
     Object.keys(state).forEach((key) => delete state[key]);
     state.modalQty = 1;
     isDesktop.mockReturnValue(true);
+  });
+
+  afterAll(() => {
+    clearDesktopProductDetailState();
   });
 
   test('compose galerie gauche / Buy Box depuis le contrat sans vérité legacy', () => {
@@ -269,6 +275,31 @@ describe('desktop product detail renderer', () => {
     expect(option.textContent).toContain('Livraison express');
     expect(option.textContent).toContain('2500 KMF · Sous 5 jours');
     expect(document.querySelector('[data-delivery-code="SEA_STANDARD"]')).toBeNull();
+  });
+
+  test('delivery_options absent reste honnête et ne crashe pas', () => {
+    const product = detail({ delivery_options: null });
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(document.getElementById('k-modal-delivery').textContent)
+      .toContain('Option de livraison communiquée à la commande.');
+    expect(document.body.textContent).not.toContain('Gratuit');
+    expect(document.body.textContent).not.toContain('3 à 5 semaines');
+  });
+
+  test('le cleanup observer permet de rattacher le sous-total à un nouveau DOM quantité', async () => {
+    const product = detail();
+    renderDesktopProductDetail(product, createModalSelection(product));
+    clearDesktopProductDetailState();
+
+    installDom();
+    state.modalQty = 2;
+    renderDesktopProductDetail(product, createModalSelection(product));
+    state.modalQty = 3;
+    dom.modalQtyVal.textContent = '3';
+    await Promise.resolve();
+
+    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('37500 KMF');
   });
 
   test('hors desktop le renderer ne modifie pas la modal', () => {
