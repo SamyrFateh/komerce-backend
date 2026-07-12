@@ -51,10 +51,12 @@ jobs:
           DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
         run: node scripts/db-snapshot.js
 
-      # Vérifie que le dump fraîchement généré contient bien toutes les colonnes
-      # déclarées dans migrations/*.sql — protection contre dump partiel ou connexion coupée.
-      - name: Verify dump freshness
-        run: node scripts/check-schema-freshness.js
+      # Après un dump fraîchement extrait, le mode --all est volontairement plus
+      # strict que le gate PR : TOUTES les migrations courantes doivent être
+      # visibles. Cela détecte une mauvaise DB, une migration non déployée ou un
+      # dump partiel avant de créer le PR automatique.
+      - name: Verify fresh dump against all current migrations
+        run: node scripts/check-schema-freshness.js --all
 
       - name: Check for changes
         id: diff
@@ -77,6 +79,9 @@ jobs:
 
             Généré par `node scripts/db-snapshot.js` (pg_dump --schema-only sur Railway prod,
             artefacts PG18 neutralisés — `\restrict`, `transaction_timeout`).
+
+            Vérifié en mode strict `node scripts/check-schema-freshness.js --all` :
+            toutes les migrations courantes doivent être présentes dans le dump.
 
             **À merger sans délai** — la CI d'intégration peut échouer tant que ce PR est ouvert.
           labels: schema,automated
