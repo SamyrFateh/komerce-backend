@@ -22,7 +22,7 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Publier un produit fournisseur dans la boutique, avec ses connecteurs d\'import, son audit de prix et sa consultation catalogue.',
+  service: 'Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
@@ -31,15 +31,18 @@ module.exports = {
       'publication et audit prix produit',
       'categories boutique admin',
       'catalogue vivant Boutique : grille, cartes produit, ouverture fiche produit',
-      'modal produit catalogue : rendu produit, media, lightbox mobile, suggestions et actions panier personnel',
+      'catalogue canonique : produit, medias publics, axes d options descriptifs et unites vendables SKU',
+      'contrat detail produit public : identity, pricing, media, option_axes, sellable_units et delivery_options deja resolues par leurs autorites',
+      'modal produit catalogue : contrat d affichage, etat de selection SKU unique, rendu produit, media, lightbox mobile et suggestions',
       // ── Tranche raffinerie (DOCTRINE_CATALOGUE, 2026-07) ──
       'raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique',
       'glossaire metier EN->FR (catalog_glossary)',
       // ── K-4 (DOCTRINE_CATALOGUE §6, 2026-07) ──
-      'file d\'approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=\'active\'',
+      'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
     ],
     out: [
-      'calcul du prix final (feature economic-engine)',
+      'calcul du prix final et valorisation transport (feature economic-engine)',
+      'decision de rail, routing et eligibilite logistique dynamique (feature logistics)',
       'mise en avant / classement (feature recommendations)',
       'fiche snapshot lecture seule du panier partage (feature shared-cart)',
       'checkout final et paiement (features orders/payments)',
@@ -74,9 +77,12 @@ module.exports = {
       'migrations/098_catalog_refinery_foundation.sql',
       'migrations/100_catalog_enrichment_runs.sql',
       'migrations/101_variant_images.sql',
+      'migrations/104_product_skus.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_CATALOGUE.md',
+      'docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md',
+      'docs/specs/DECISION_MODELE_STOCK_SKU.md',
     ],
     routes: [
       'routes/products.js',
@@ -106,9 +112,9 @@ module.exports = {
       'js/b-modal-desktop-enhancers.js',
       'js/b-pdp-curation-suggestions.js',
       'js/view-models/modal-view-model.js',
-      // Backfill gouvernance globale : header @komerce-arch domain=catalog confirmé
-      // (docs/BOUTIQUE_360.json) — schéma/navigation catégories, périmètre "catégories"
-      // déjà déclaré ci-dessus en perimeter.in.
+      // Backfill gouvernance globale : header @komerce-arch domain=catalog confirme
+      // (docs/BOUTIQUE_360.json) — schema/navigation categories, perimetre categories
+      // deja declare ci-dessus en perimeter.in.
       'js/shop-schema.js',
       'js/b-pager.js',
       'js/b-subcat.js',
@@ -119,12 +125,12 @@ module.exports = {
       'css/modal-product.css',
       'css/modal-product-lot4-hybrid.css',
     ],
-      dash: [
+    dash: [
       // dashboards/admin views — Lot 4
       'dashboards/admin/js/views/SuppliersView.js',
       'dashboards/admin/js/views/SourcingView.js',
       'dashboards/admin/js/views/SourcingScannerView.js',
-      // K-4 — file d'approbation (etage 6)
+      // K-4 — file d approbation (etage 6)
       'dashboards/admin/js/views/CatalogApprovalView.js',
     ],
     tests: [
@@ -153,24 +159,15 @@ module.exports = {
       'tests/unit/catalog-overrides.test.js',
       'tests/unit/catalog-approval.test.js',
     ],
-
-},
-
-  // ── Dépôts ───────────────────────────────────────────────────────────────
-  repos: {
-    backend: 'services/ + routes/ ci-dessus',
-    boutique: 'catalogue vivant, cartes produit et modal produit catalogue — gouvernés en détail par docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md',
   },
 
-  // ── Contrat d'interface ──────────────────────────────────────────────────
-  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
-  // Généré par parsing réel des appels .query() (pas un grep de mots) :
-  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
-  // Une table listée ici pour PLUSIEURS features est une vraie propriété
-  // partagée détectée dans le code, pas un artefact de méthode — à
-  // documenter explicitement si volontaire, ou à re-scoper sinon.
-  // Champ auto-généré : à corriger à la main si une requête dynamique
-  // (nom de table construit par variable) a échappé au scan.
+  // ── Depots ───────────────────────────────────────────────────────────────
+  repos: {
+    backend: 'services/ + routes/ ci-dessus',
+    boutique: 'catalogue vivant, cartes produit et modal produit catalogue — gouvernes en detail par docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md',
+  },
+
+  // ── Tables DB ────────────────────────────────────────────────────────────
   db: {
     tables: [
       'alerts: W',
@@ -183,6 +180,7 @@ module.exports = {
       'order_items: R',
       'orders: R',
       'price_history: W',
+      'product_skus: RW',
       'product_variants: RW',
       'products: RW',
       'sourcing_candidate_events: W',
@@ -195,17 +193,17 @@ module.exports = {
     status: 'CONFIRMED_MIXED',
     authedRoutesDetected: 21,
     totalRoutes: 26,
-    note: "21/26 routes protégées (admin catalog, overrides, approbation). 5 routes publiques par design : GET /api/products, /products/:id, /products/categories, /products/subcategories, /api/categories — catalogue public en lecture pour la boutique.",
+    note: 'Catalogue public en lecture ; mutations produit, SKU, overrides et approbation restent protegees admin. La projection publique detail est whitelistée par catalog-public-view / contrat detail.',
   },
+
   contract: {
     exposes: [
       'GET /api/products',
+      'GET /api/products/:id',
       'GET /api/admin/catalog/approval-queue',
       'POST /api/admin/catalog/approval-queue/:id/approve',
       'POST /api/admin/catalog/approval-queue/:id/reject',
       'POST /api/admin/catalog/approval-queue/:id/override',
-      // Rapatriées depuis le route-registry (audit 2026-07-06, lot interface-inverse)
-      // — routes réelles câblées via bootstrap/api-routes.js, jamais déclarées jusqu'ici.
       'GET /api/admin/boutique-categories',
       'POST /api/admin/boutique-categories',
       'DELETE /api/admin/boutique-categories/:key',
@@ -218,55 +216,62 @@ module.exports = {
       'GET /api/categories',
       'POST /api/products',
       'DELETE /api/products/:id',
-      'GET /api/products/:id',
       'PUT /api/products/:id',
       'POST /api/products/:id/image',
       'POST /api/products/:id/images',
       'GET /api/products/:id/variants',
       'PUT /api/products/:id/variants',
       'DELETE /api/products/:id/variants/:variantId',
+      'GET /api/products/:id/skus',
+      'GET /api/products/:id/skus/readiness',
+      'POST /api/products/:id/skus',
+      'DELETE /api/products/:id/skus/:skuId',
       'GET /api/products/categories',
       'GET /api/products/subcategories',
     ],
-    consumes: ['economic-engine (prix calcule)',
+    consumes: [
+      'economic-engine (prix produit et valorisation commerciale transport)',
+      'logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',
       'auth',
     ],
   },
 
-  // ── Dette assumée / documentée ────────────────────────────────────────────
-  // (audit 2026-07-06, §2a/§2b — reclassé après vérification empirique : ce
-  // n'est pas un simple "jamais construit", c'est un contrat rendu obsolète
-  // par la refonte K-4, ce qui change la décision à prendre.)
+  // ── Dette assumee / documentee ──────────────────────────────────────────
   debt: {
     knownGaps: [
-      { gap: 'contrat historique "POST /api/admin/products/:id/publish" : aucune route ne ' +
-             'le sert. Depuis la refonte K-4 (file d\'approbation, services/catalog-approval.js), ' +
-             'la publication (lifecycle_status → \'active\') se fait exclusivement via ' +
-             'POST /api/admin/catalog/approval-queue/:id/approve (ou :id/override), jamais ' +
-             'par un endpoint /publish dédié.',
-        risk: 'aucun — le mécanisme de publication existe et est couvert par le contrat ' +
-              'ci-dessus ; la ligne obsolète documentait une intention pré-K-4 abandonnée. ' +
-              'À retirer définitivement du manifeste dès confirmation par le propriétaire ' +
-              'de la feature qu\'aucun appelant n\'attend encore /publish.',
+      {
+        gap: 'contrat historique POST /api/admin/products/:id/publish : aucune route ne le sert. Depuis K-4, la publication se fait par la file d approbation.',
+        risk: 'aucun — mecanisme remplace et couvert ; retirer toute reference historique restante lorsqu elle est rencontree.',
+      },
+      {
+        gap: 'le contrat fournisseur normalise v1 est encore plat et ne preserve pas explicitement media[], option_axes[] et sellable_units[] de sources riches.',
+        risk: 'perte structurelle en amont puis reconstruction UI heuristique ; chantier PDC-1 gouverne par DOCTRINE_PRODUCT_DETAIL_CONTRACT.md.',
+      },
+      {
+        gap: 'la modal lit encore le produit brut dans plusieurs modules et modal-view-model.js ne possede pas encore seul l etat derive de selection.',
+        risk: 'double intelligence mobile/desktop et logique combo dispersee ; chantiers PDC-3 a PDC-6.',
       },
     ],
   },
 
   // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout nouveau connecteur fournisseur doit etre valide par le proprietaire de normalized-product.js ; toute modification modal catalogue doit suivre docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md',
+  authority: 'backend-core — normalized-product possede le contrat source ; catalog possede le catalogue canonique et le contrat detail public ; toute modification modal catalogue suit DOCTRINE_PRODUCT_DETAIL_CONTRACT.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md',
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'un produit publie a toujours passe product-publication-guard.js',
     'jamais de creation produit par formulaire vide : tout entre par un connecteur (le manuel EST un connecteur)',
-    'la donnee source (name_source, EN) ne se perd jamais : retraduction + litiges fournisseur',
+    'la donnee source ne se perd jamais : une structure riche connue ne doit pas etre aplatie puis reconstruite par heuristique',
     'toute retouche manuelle est un override trace (catalog_field_overrides), jamais une edition de la fiche generee',
-    'la boutique ne lit que les champs publies : les champs de cuisine (source, content_source...) lui sont invisibles',
-    'le prompt d\'enrichissement est du code : versionne dans le depot (PROMPT_VERSION), chaque run trace dans catalog_enrichment_runs, un echec IA ne bloque jamais un import',
+    'la boutique ne lit que les champs publies : les champs de cuisine source/content_source lui sont invisibles',
+    'une unite vendable = un SKU ; product_variants decrit les axes et ne porte pas la verite de stock cible',
+    'le contrat detail compose des faits et resultats proprietaires ; il ne recalcule ni pricing ni routing ni eligibilite rail',
+    'le frontend ne decide jamais d un rail ni d un delai universel de livraison',
+    'mobile et desktop consomment le meme etat de selection SKU ; un seul owner derive disponibilite et media courants',
+    'le prompt d enrichissement est du code : versionne dans le depot, chaque run trace, un echec IA ne bloque jamais un import',
     'la modal produit affiche le catalogue vivant et ne doit pas servir de fiche snapshot panier partage',
     'le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css',
-    'aucune fiche candidate issue du pipeline (connector_raw/ai_enriched) ne passe lifecycle_status=\'active\' sans etre passee par la file d\'approbation (etage 6, services/catalog-approval.js) — meme si needs_review est faux',
+    'aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux',
   ],
-
 };
