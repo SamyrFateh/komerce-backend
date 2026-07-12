@@ -203,6 +203,22 @@ describe('modal-selection-model', () => {
     expect(selectModalOption(product, state, 'Couleur', 'Marron')).toBe(state);
   });
 
+  test('détail legacy incomplet ou nul reste passif sans crash ni faux média', () => {
+    expect(createModalSelection(null)).toEqual({
+      inventory_model: null,
+      selection_supported: false,
+      selected_options: {},
+      selected_sku_id: null,
+      selected_media: [],
+      option_states: {},
+      selection_message: null,
+    });
+
+    const state = createModalSelection({ inventory_model: 'LEGACY_VARIANTS' });
+    expect(state.selection_supported).toBe(false);
+    expect(state.selected_media).toEqual([]);
+  });
+
   test('SKU par défaut sans axes : sélection immédiate si disponible', () => {
     const defaultSku = '66666666-6666-4666-8666-666666666666';
     const product = detail({

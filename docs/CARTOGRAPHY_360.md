@@ -1,7 +1,7 @@
 # Cartographie 360 Komerce
 
 > **Statut** : cartographie documentaire canonique  
-> **Dernière consolidation** : 10 juillet 2026  
+> **Dernière consolidation** : 12 juillet 2026  
 > **Méthode** : version maintenable, vérifiée contre `server.js`, `bootstrap/api-routes.js`, `bootstrap/html-routes.js`, `bootstrap/env.js` et les services critiques.  
 > **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes. Pour le schéma DB complet, voir `SCHEMA.md`.
 
@@ -36,7 +36,10 @@ Le point d'entrée applicatif est `server.js`.
 | Routage logistique | `services/routing.js` |
 | Sécurité pickup/collecte | `routes/pickup-secret.js`, `services/parcel-security.js` |
 | Boutique canonique | `public/boutique/index.html` |
-| Ownership Boutique / modal produit | `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` + `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` + `features/catalog.feature.js` + `npm run gate:boutique-ownership` |
+| Contrat détail produit public | `services/catalog-product-detail.js` + `schemas/catalog/product-detail.v1.schema.json` + `GET /api/products/:id/detail` |
+| Sélection SKU de la modal | `public/boutique/js/view-models/modal-selection-model.js` |
+| Composition modal mobile enrichie | `public/boutique/js/b-modal-mobile-product-bootstrap.js` + `public/boutique/js/b-modal-mobile-product.js` |
+| Ownership Boutique / modal produit | `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` + `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` + `features/catalog.feature.js` + `public/boutique/features/modal-product.feature.js` + `npm run gate:boutique-ownership` |
 | Couverture unitaire Boutique | `public/boutique/jest.config.js` + `public/boutique/scripts/report-coverage.js` + job `Boutique Quality Gates` de `.github/workflows/ci.yml` |
 | Admin moderne | `public/dashboards/admin/index.html` |
 | Panier partagé Boutique First | `docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md` + `docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md` |
@@ -51,6 +54,33 @@ Le lot de stabilisation précédant les tests Playwright a :
 - retiré le code définitivement inaccessible de `b-group-banner.js` et les enrichissements neutralisés de `b-catalog-desktop-enhancers.js` ;
 - ajouté `b-cart-stepper-guard.js`, chargé par `boutique.js`, pour laisser les boutons `+`/`−` du stepper longue pression traverser le listener document en capture de `b-cart.js` sans dupliquer la logique de quantité ;
 - déclaré ce module dans `public/boutique/features/boutique.feature.js`.
+
+### 2 ter. Delta Product Detail / modal mobile — PDC-0 à PDC-4 du 12 juillet 2026
+
+La chaîne produit enrichie est désormais cartographiée en quatre responsabilités distinctes :
+
+```text
+source fournisseur versionnée
+        ↓
+raffinerie / catalogue canonique
+        ↓
+GET /api/products/:id/detail
+        ↓
+modal-selection-model.js
+        ↓
+composition mobile / desktop
+```
+
+Invariants actifs :
+
+- une unité vendable = un SKU ; `product_variants` décrit les axes et ne porte pas la vérité de stock cible ;
+- le contrat détail public compose `product`, `pricing`, `media`, `option_axes`, `sellable_units` et `delivery_options` depuis des sources canoniques ;
+- un produit `LEGACY_VARIANTS` peut exposer ses axes mais ne reçoit aucune fausse `sellable_unit` ;
+- `modal-selection-model.js` est l'unique owner de `selected_options`, `selected_sku_id`, `selected_media` et des états `AVAILABLE / OUT_OF_STOCK / INCOMPATIBLE` ;
+- PDC-4 charge le contrat détail au `modal:opened` sur mobile et rend vignettes photo, tailles combo-aware, message contextuel, médias liés à la sélection et livraison contractuelle ;
+- le frontend n'invente ni `Gratuit`, ni délai universel `3 à 5 semaines`, ni ancienne valeur de prix depuis un pourcentage de promotion ;
+- `AIR_EXPRESS` n'apparaît dans `delivery_options` que lorsque `logistics` le rend commercialement exposable ;
+- jusqu'à PDC-6, un guard de repaint strictement transitoire rétablit le rendu PDC-4 si le fetch legacy de `b-modal-core.js` repeint tardivement les variantes. Ce guard ne dérive aucune vérité métier et doit disparaître avec le chemin legacy.
 
 ---
 
@@ -68,7 +98,7 @@ Le lot de stabilisation précédant les tests Playwright a :
 
 | Préfixe | Rôle |
 |---|---|
-| `/api/products` | Produits. Tables : `products`, `product_variants`. |
+| `/api/products` | Produits, axes descriptifs et unités SKU. `GET /api/products/:id/detail` expose le Product Detail Contract v1 validé. Tables : `products`, `product_variants`, `product_skus`. |
 | `/api/categories` | Catégories boutique. |
 | `/api/admin/boutique-categories` | Admin catégories boutique. |
 | `/api/modules` | Modules spécialisés (cérémonie : tissus + modèles, lunettes, couture). Voir §6 bis. |
@@ -394,6 +424,7 @@ Ces divergences sont connues et ne doivent pas contaminer les docs de référenc
 4. Certains noms providers email/notification varient selon les périodes ; vérifier le code avant d'affirmer un provider actif.
 5. Le code garde des noms internes V4.1 (`shared-cart-engine`, statuts DB, tests `v41`). Ce n'est pas une preuve que la doctrine V4.1 est active côté produit : la doctrine active est Boutique First.
 6. Pour la modal produit Boutique, l'ancien document local mobile n'est plus source de vérité. La source active est `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`, contrôlée par `npm run gate:boutique-ownership`.
+7. PDC-4 garde un guard de repaint autour du renderer legacy uniquement parce que `b-modal-core.js` lance encore le fetch variantes historique. Ce guard est une dette transitoire explicitement assignée à PDC-6 ; ne pas l'étendre à d'autres surfaces.
 
 ---
 

@@ -8,7 +8,8 @@
  *
  * Couche frontend de la fiche produit. Le backend catalog nourrit la fiche via
  * le Product Detail Contract ; cette feature possède son état de sélection et
- * son rendu. Mobile et desktop n'ont jamais deux vérités de sélection.
+ * ses deux compositions responsive. Mobile et desktop n'ont jamais deux vérités
+ * produit ni deux moteurs de sélection.
  */
 'use strict';
 
@@ -20,22 +21,34 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
-  service: 'Sélectionner une unité vendable SKU dans un état unique puis afficher la fiche produit en deux compositions responsive.',
+  // Lot O4 (cross-repo feature coverage) : ce manifeste possède son propre
+  // domain déclaré ('catalog') mais reste une tranche frontend de la business
+  // feature canonique catalog. Le rendu modal ne devient pas une business
+  // feature autonome : catalogue et unités vendables restent la propriété de
+  // catalog, tandis que checkout/orders/shared-cart restent hors périmètre.
+  canonicalFeature: 'catalog',
+  sliceKind: 'frontend-slice',
+
+  service: 'Sélectionner une unité vendable SKU dans un état unique puis composer la fiche produit mobile ou desktop depuis le même contrat détail.',
 
   perimeter: {
     in: [
+      'chargement unique du Product Detail Contract v1 pour la modal produit',
       'état de sélection produit unique dérivé du Product Detail Contract v1',
       'dépendance ordonnée des axes : changer un axe efface les choix aval',
       'états AVAILABLE / OUT_OF_STOCK / INCOMPATIBLE dérivés des sellable_units réelles',
       'sélection transactionnelle par sku_id',
       'médias courants dérivés des associations option_values / media_ids explicites',
+      'composition mobile PDC-4 : vignettes photo, tailles combo-aware, message contextuel, livraison contractuelle et galerie liée à la sélection',
+      'composition desktop PDC-5 : galerie à gauche, Buy Box à droite, mêmes SKU, mêmes médias, mêmes disponibilités et mêmes options de livraison',
+      'enrichissements desktop de navigation et éditoriaux sans recalcul produit',
       'layout et cascade de #k-modal et .k-modal-product-zone',
-      'placement grille image/détails/actions desktop',
     ],
     out: [
-      'données produit et vérité stock (feature catalog)',
+      'données produit et vérité stock (feature catalog backend)',
       'routing et choix de rail (feature logistics)',
-      'ajout panier et checkout (features orders/shared-cart)',
+      'création de SKU depuis la modal',
+      'checkout final (features orders/payments)',
       'fiche snapshot lecture seule du panier partagé',
     ],
   },
@@ -43,6 +56,12 @@ module.exports = {
   files: {
     boutique: [
       '../js/view-models/modal-selection-model.js',
+      '../js/b-modal-product-detail-bootstrap.js',
+      '../js/b-modal-mobile-product-bootstrap.js',
+      '../js/b-modal-mobile-product.js',
+      '../js/b-modal-desktop-product.js',
+      '../js/b-modal-desktop-enhancers.js',
+      '../js/b-modal-approche-c-hybrid.js',
       '../css/modal-shell.css',
       '../css/modal-product.css',
       '../css/modal-product-lot4-hybrid.css',
@@ -52,6 +71,12 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/modal-selection-model.test.js',
+      '../tests/unit/b-modal-mobile-product.test.js',
+      '../tests/unit/b-modal-mobile-product-bootstrap.test.js',
+      '../tests/unit/b-modal-desktop-product.test.js',
+      '../tests/unit/b-modal-product-detail-bootstrap.test.js',
+      '../tests/unit/b-modal-desktop-enhancers.test.js',
+      '../tests/unit/b-modal-approche-c-hybrid.test.js',
     ],
   },
 
@@ -65,6 +90,8 @@ module.exports = {
     'docs/MODAL_MOBILE_ARCHITECTURE.md',
     'docs/PDP_DESKTOP_APPROCHE_C_HYBRIDE.md',
     'docs/ROADMAP_MODAL_TEMU.md',
+    '../../../docs/chantier/PDC4_MOBILE_MODAL.md',
+    '../../../docs/chantier/PDC5_DESKTOP_MODAL.md',
   ],
 
   contract: {
@@ -72,25 +99,41 @@ module.exports = {
     internalApi: [
       'modal-selection-model.js / createModalSelection(productDetail)',
       'modal-selection-model.js / selectModalOption(productDetail, state, axisKey, value)',
+      'b-modal-product-detail-bootstrap.js / setupProductDetailModal()',
+      'b-modal-mobile-product.js / renderMobileProductDetail(productDetail, selection)',
+      'b-modal-desktop-product.js / renderDesktopProductDetail(productDetail, selection)',
+      'b-modal-desktop-product.js / refreshDesktopProductSubtotal()',
       'b-modal-suggestions.js / suggestions produit dans la modal',
       'b-pdp-curation-suggestions.js / suggestions curatées PDP',
     ],
     consumes: [
       'catalog — Product Detail Contract v1 / GET /api/products/:id/detail',
-      'boutique — b-modal-suggestions.js importe b-bus.js, b-cart.js, b-scroll-owner.js, b-store.js, b-utils.js',
-      'boutique — b-pdp-curation-suggestions.js importe b-bus.js, b-scroll-owner.js, b-store.js',
+      'boutique — b-modal-image-ux.js pour le compteur et fullscreen de la galerie reconstruite',
+      'boutique — panier legacy transitoire reçoit le snapshot variant_combo dérivé de selected_options ; résolution SKU autoritaire reste backend',
+      'boutique — b-modal-desktop-enhancers.js enrichit seulement navigation, partage, trust et récemment vus',
+      'boutique — b-modal-approche-c-hybrid.js compose placement actions et UI de paiement sans rendre livraison ni sous-total produit',
     ],
   },
 
-  authority: 'boutique — modal-selection-model.js est l unique owner de l état de sélection SKU ; tout changement de layout doit préserver les contrats render-static.',
+  authority: 'boutique — modal-selection-model.js possède seul l état de sélection SKU ; b-modal-product-detail-bootstrap.js possède seul le fetch du contrat détail ; les renderers responsive rendent cet état sans recalcul métier.',
 
   invariants: [
+    'un seul Product Detail Contract est chargé par ouverture produit puis partagé par mobile et desktop',
     'un seul état de sélection produit est partagé par mobile et desktop',
     'une option est AVAILABLE, OUT_OF_STOCK ou INCOMPATIBLE uniquement depuis les sellable_units du contrat détail',
     'aucun stock couleur ou taille indépendant n est recalculé dans la modal cible',
     'changer un axe efface les sélections des axes suivants dans l ordre du contrat',
     'selected_sku_id n est posé que pour une unité vendable AVAILABLE résolue',
     'un produit LEGACY_VARIANTS est explicitement selection_supported=false : aucun faux SKU n est fabriqué',
+    'sur mobile et desktop, Ajouter et Acheter restent désactivés pour un produit SKU tant que selected_sku_id est null',
+    'les vignettes photo viennent de option_axes.values.thumbnail_url ; aucune couleur ou image n est déduite par heuristique',
+    'les carousels responsive suivent selected_media et le fullscreen relit les slides après chaque reconstruction',
+    'mobile et desktop rendent delivery_options ; aucune liste Standard/Express ni délai universel n est codé dans un renderer',
+    'le sous-total desktop utilise le prix de l unité SKU sélectionnée ou le prix produit du contrat, multiplié par modalQty',
+    'b-modal-desktop-enhancers.js ne calcule ni prix, ni stock, ni livraison, ni sous-total',
+    'b-modal-approche-c-hybrid.js ne rend ni livraison produit ni sous-total produit',
+    'le snapshot modalVariantCombo de transition est une copie de selected_options, jamais une seconde intelligence de stock',
+    'le guard de repaint legacy est transitoire jusqu à PDC-6 et ne dérive aucune vérité métier',
     'le product-zone desktop reste en display:grid avec grid-template-columns',
   ],
 

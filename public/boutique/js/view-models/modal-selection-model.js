@@ -110,13 +110,14 @@ function deriveSkuState(detail, selectedOptions, selectionMessage = null) {
 }
 
 function deriveLegacyState(detail) {
-  const global = detail.media.filter((media) => Object.keys(media.option_values || {}).length === 0);
+  const mediaList = (detail && detail.media) || [];
+  const global = mediaList.filter((media) => Object.keys(media.option_values || {}).length === 0);
   return {
-    inventory_model: detail.inventory_model,
+    inventory_model: (detail && detail.inventory_model) || null,
     selection_supported: false,
     selected_options: {},
     selected_sku_id: null,
-    selected_media: global.length > 0 ? global : detail.media.slice(),
+    selected_media: global.length > 0 ? global : mediaList.slice(),
     option_states: {},
     selection_message: null,
   };
@@ -136,7 +137,7 @@ function unavailableMessage(detail, state, axisKey, value, optionState) {
 }
 
 export function createModalSelection(detail) {
-  if (detail.inventory_model !== 'SKU') return deriveLegacyState(detail);
+  if (!detail || detail.inventory_model !== 'SKU') return deriveLegacyState(detail);
   return deriveSkuState(detail, {});
 }
 
