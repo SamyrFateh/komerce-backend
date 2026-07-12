@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 732,
-    "edges": 4208,
+    "edges": 4210,
     "dbTables": 110,
     "doctrines": 139,
     "impactAreas": 119,
@@ -115,7 +115,8 @@
         "routes/shared-cart-cash.js",
         "routes/meta-whatsapp.js",
         "routes/economic-engine.js",
-        "routes/boutique-suggestions.js"
+        "routes/boutique-suggestions.js",
+        "routes/catalog-product-detail.js"
       ],
       "usedBy": [
         "server.js"
@@ -136,9 +137,10 @@
         "payment",
         "dashboard",
         "economic-engine",
-        "boutique"
+        "boutique",
+        "product-detail"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "bootstrap/boot-guard.js",
@@ -18444,6 +18446,11 @@
       "area": "boutique"
     },
     {
+      "id": "impact:product-detail",
+      "type": "impact-area",
+      "area": "product-detail"
+    },
+    {
       "id": "impact:bootstrap",
       "type": "impact-area",
       "area": "bootstrap"
@@ -18854,11 +18861,6 @@
       "area": "logistics"
     },
     {
-      "id": "impact:product-detail",
-      "type": "impact-area",
-      "area": "product-detail"
-    },
-    {
       "id": "impact:operations",
       "type": "impact-area",
       "area": "operations"
@@ -19048,6 +19050,12 @@
       "label": "routes/boutique-suggestions.js"
     },
     {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/catalog-product-detail.js",
+      "type": "depends",
+      "label": "routes/catalog-product-detail.js"
+    },
+    {
       "from": "server.js",
       "to": "bootstrap/api-routes.js",
       "type": "uses",
@@ -19112,6 +19120,12 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "impact:product-detail",
+      "type": "impact",
+      "label": "product-detail"
     },
     {
       "from": "bootstrap/server-lifecycle.js",
@@ -44304,7 +44318,8 @@
         "routes/shared-cart-cash.js",
         "routes/meta-whatsapp.js",
         "routes/economic-engine.js",
-        "routes/boutique-suggestions.js"
+        "routes/boutique-suggestions.js",
+        "routes/catalog-product-detail.js"
       ],
       "directUsedBy": [
         "server.js"
@@ -44325,7 +44340,8 @@
         "payment",
         "dashboard",
         "economic-engine",
-        "boutique"
+        "boutique",
+        "product-detail"
       ],
       "mustCheck": [
         "doctrine:alias_historiques_limites",
@@ -44337,6 +44353,7 @@
         "impact:dashboard",
         "impact:economic-engine",
         "impact:payment",
+        "impact:product-detail",
         "impact:shared-cart",
         "routes/admin-boutique-categories.js",
         "routes/admin-collective-repairs.js",
