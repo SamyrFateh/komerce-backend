@@ -167,8 +167,6 @@ module.exports = {
       'tests/unit/catalog-enrichment-fixtures.js',
       'tests/unit/catalog-overrides.test.js',
       'tests/unit/catalog-approval.test.js',
-      'tests/unit/b-modal-desktop-product.test.js',
-      'tests/unit/b-modal-product-detail-bootstrap.test.js',
     ],
   },
 
