@@ -6,11 +6,10 @@
  * @owner         boutique
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
  *
- * Couche frontend de COMPOSITION de la fiche produit.
- * La feature backend `catalog` nourrit la modal via le contrat detail produit et
- * possede l'etat derive de selection dans les modules JS catalog declares par sa
- * carte. Cette carte Boutique affirme le contrat de rendu responsive et ses
- * invariants statiques : elle ne devient pas un second moteur produit.
+ * Couche frontend de la fiche produit (la feature backend `catalog`/`orders` la
+ * nourrit en données ; ce manifeste possède son RENDU). C'est la feature qui a
+ * cassé : la normalisation a supprimé le `display:grid` du product-zone, et aucun
+ * gate ne l'a vu parce qu'aucun n'AFFIRMAIT le contrat de rendu. Il est ici.
  */
 'use strict';
 
@@ -22,28 +21,15 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
-  service: 'Composer la fiche produit en modal : plein ecran tactile sur mobile, galerie + Buy Box sur desktop, depuis une meme intelligence produit.',
+  service: 'Afficher la fiche produit en modal : image plein cadre + colonne détails/achat, en grille 2 colonnes sur desktop.',
 
   perimeter: {
-    in: [
-      'layout et cascade de #k-modal et .k-modal-product-zone',
-      'composition responsive de la zone media, details, selection et actions',
-      'placement grille image/details/actions desktop',
-      'visibilite et stabilite des actions sticky mobile',
-    ],
-    out: [
-      'contrat detail produit et projection publique (feature catalog)',
-      'etat derive de selection SKU et disponibilite combo-aware (feature catalog, owner ViewModel/reducer unique)',
-      'decision de rail et delai de livraison (feature logistics)',
-      'valorisation transport et prix commercial (feature economic-engine)',
-      'ajout panier et checkout (features orders/shared-cart)',
-      'fiche snapshot lecture seule du panier partage',
-    ],
+    in:  ['layout et cascade de #k-modal et .k-modal-product-zone', 'placement grille image/détails/actions desktop'],
+    out: ['données produit (feature catalog)', 'ajout panier (feature orders/shared-cart)'],
   },
 
-  // Cette carte possede les artefacts de composition CSS. Les modules JS modal
-  // restent declares par features/catalog.feature.js tant que le chantier PDC
-  // n'a pas change explicitement leur ownership feature-first.
+  // Périmètre fichiers (relatif à ce manifeste). La carte gen-ownership.js dit :
+  // modal-shell.css (14), modal-product.css (4), interactions.css (2), boutique-desktop.css (1).
   files: {
     boutique: [
       '../css/modal-shell.css',
@@ -69,33 +55,38 @@ module.exports = {
 
   contract: {
     exposes: [],
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : exports JS
+    // internes, pas des routes HTTP.
     internalApi: [
       'b-modal-suggestions.js / suggestions produit dans la modal',
-      'b-pdp-curation-suggestions.js / suggestions curatees PDP',
+      'b-pdp-curation-suggestions.js / suggestions curatées PDP',
     ],
     consumes: [
-      'catalog — contrat detail produit public et etat de selection SKU unique',
       'boutique — b-modal-suggestions.js importe b-bus.js, b-cart.js, b-scroll-owner.js, b-store.js, b-utils.js',
       'boutique — b-pdp-curation-suggestions.js importe b-bus.js, b-scroll-owner.js, b-store.js',
     ],
   },
 
-  authority: 'boutique — tout changement de composition responsive de la modal doit preserver les contrats render-static et la frontiere DOCTRINE_PRODUCT_DETAIL_CONTRACT.md.',
+  // ── Autorité / invariants (niveau 0) ────────────────────────────────────
+  authority: 'boutique — tout changement de layout de la modal produit doit préserver les contrats render-static ci-dessous.',
 
   invariants: [
     'le product-zone desktop reste en display:grid avec grid-template-columns',
-    'mobile et desktop composent le meme contrat detail et le meme etat de selection ; le CSS ne porte aucune verite stock/prix/livraison',
-    'les actions produit mobile restent visibles et le media ne peut pas etre compresse par le flex scroll',
-    'la fiche snapshot shared-cart reste hors de la modal catalogue',
   ],
 
+  // ── Contrats positifs exécutables ────────────────────────────────────────
   contracts: {
+
+    // LE contrat qui manquait. Affirme que le layout grid est présent dans le
+    // bundle livré. Une suppression de la règle = FAIL au commit (étage statique).
     'render-static': [
       {
         artifact: '../css/dist/components.css',
         label:    'product-zone desktop = grid',
         mustContain: [
+          // Le conteneur produit DOIT établir une grille (≠ display:contents seul).
           /#k-modal\s+\.k-modal-product-zone\s*\{[^}]*display:\s*grid/m,
+          // Et au moins une répartition de colonnes desktop.
           /#k-modal\s+\.k-modal-product-zone[^{]*\{[^}]*grid-template-columns/m,
         ],
       },
@@ -103,6 +94,8 @@ module.exports = {
         artifact: '../css/modal-media.css',
         label:    'mobile image overlays anchored to image wrap',
         mustContain: [
+          // Le bouton "Voir en grand" est injecté dans .k-modal-img-wrap.
+          // Sans position:relative sur le wrap, son absolute tombe sur le CTA Acheter.
           /\.k-modal-img-wrap\s*\{[^}]*position:\s*relative[^}]*\}/m,
           /\.k-modal-view-full\s*\{[^}]*position:\s*absolute[^}]*bottom:\s*12px[^}]*left:\s*10px/m,
         ],
@@ -111,6 +104,8 @@ module.exports = {
         artifact: '../css/modal-media.css',
         label:    'mobile product image cannot collapse in modal flex scroll',
         mustContain: [
+          // .k-modal-img-wrap est enfant flex de .k-modal-scroll sur mobile.
+          // Sans flex:0 0 auto, Android peut compresser l'image derrière les détails.
           /\.k-modal-img-wrap\s*\{[^}]*flex:\s*0\s+0\s+auto[^}]*\}/m,
           /\.k-modal-img-wrap\s*\{[^}]*min-height:\s*260px[^}]*\}/m,
         ],
@@ -141,6 +136,10 @@ module.exports = {
       },
     ],
 
+    // Dette de doctrine token scopée à la modal — RÉSORBÉE (session 6) : les 21
+    // rgba(...) ont été retokenisés (20 vers des tokens tokens.css existants,
+    // 1 nouveau — --overlay-black-15). Cliquet redescendu à 0 : toute
+    // réintroduction de rgba(...) brut dans ces fichiers bloque désormais.
     doctrine: { scope: 'boutique', max: 0 },
   },
 };
