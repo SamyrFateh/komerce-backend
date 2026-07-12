@@ -1,6 +1,6 @@
 'use strict';
 module.exports = {
-  name: 'admin-dashboard', type: 'feature', domain: 'admin-dashboard',
+  name: 'admin-dashboard', type: 'projection', domain: 'admin-dashboard',
   status: 'production', owner: 'dashboards', doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
   service: "Tableau de bord admin SPA multi-vues.",
   perimeter: { in: ['admin/**'], out: ['API backend'] },

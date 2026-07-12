@@ -31,24 +31,26 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - catalog: 36
 - checkout: 2
 - customs: 6
-- dashboard: 30
+- dashboard: 28
 - decision-signals: 3
 - documents: 11
-- economic-engine: 37
+- economic-engine: 38
+- incident-management: 1
 - infrastructure: 20
-- inventory: 3
+- inventory: 2
 - logistics: 35
 - loyalty: 2
 - notification: 15
-- operations: 12
+- operations: 11
 - orders: 23
 - payment: 16
-- purchasing: 6
+- purchasing: 7
 - recommendations: 4
 - refunds: 2
 - shared-cart: 42
 - sourcing: 1
 - tracking: 1
+- unsold-resolution: 1
 - wallet: 4
 
 ## Layers
@@ -200,7 +202,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-pricing-components.js — economic-engine-admin-pricing-components (economic-engine, high, full)
 - routes/admin-pricing-matrices.js — economic-engine-admin-pricing-matrices (economic-engine, high, full)
 - routes/admin-radar.js — dashboard-admin-radar (dashboard, high, full)
-- routes/admin-risk-provisions.js — dashboard-admin-risk-provisions (dashboard, high, full)
+- routes/admin-risk-provisions.js — dashboard-admin-risk-provisions (economic-engine, high, full)
 - routes/admin-rules.js — dashboard-admin-rules (dashboard, high, full)
 - routes/admin.js — dashboard-admin (dashboard, high, full)
 - routes/admin/catalog-approval.js — catalog-approval-routes (catalog, high, full)
@@ -296,7 +298,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/product-price-audit.js — catalog-product-price-audit (catalog, high, full)
 - services/product-publication-guard.js — catalog-product-publication-guard (catalog, high, full)
 - services/prompts/catalog-enrichment.prompt.js — catalog-enrichment-prompt (catalog, high, full)
-- services/purchasing-admin-service.js — dashboard-purchasing-admin-service (dashboard, high, full)
+- services/purchasing-admin-service.js — dashboard-purchasing-admin-service (purchasing, high, full)
 - services/relay-dashboard-queries.js — dashboard-relay-dashboard-queries (dashboard, high, full)
 - services/shared-cart-estimation-service.js — shared-cart-estimation-service (shared-cart, high, full)
 - services/shared-cart-items-service.js — shared-cart-items-update-service (shared-cart, high, full)

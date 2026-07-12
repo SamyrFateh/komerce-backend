@@ -22,12 +22,15 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Authentifier un utilisateur (OTP, session, identite verifiee) pour toutes les autres features.',
+  // Corrigé au Lot O2 (2026-07-12) — était un copié-collé du texte d'auth.
+  service: 'Authentifier un utilisateur et gérer son identité active (OTP, login/register, ' +
+           'magic-link, guest-checkout, profil) via les routes exposées.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
-      'OTP, authentification client, verification d\'identite, middlewares de garde transverses',
+      'routes actives d\'identité : OTP (request/verify/test-reset), login/register, magic-link, ' +
+        'guest-checkout, admin-reset, consultation/édition du profil et des commandes client',
     ],
     out: [
       'logique metier propre a chaque feature consommatrice — auth-identity ne sait rien des commandes, paniers ou paiements',
@@ -57,7 +60,6 @@ module.exports = {
       'tests/integration/otp-no-guest.test.js',
       'tests/unit/authkey-client.test.js',
       'tests/unit/otp-test-mode.test.js',
-      'tests/unit/soft-auth.test.js',
       'tests/unit/client-auth.test.js',
     ],
   },

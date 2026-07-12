@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          dashboard-admin-risk-provisions
- * @domain        dashboard
+ * @domain        economic-engine
  * @layer         route
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload

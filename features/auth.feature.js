@@ -22,12 +22,15 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Authentifier un utilisateur (OTP, session, identite verifiee) pour toutes les autres features.',
+  // Corrigé au Lot O2 (2026-07-12) — était un copié-collé du texte d'auth-identity.
+  service: 'Fournir les gardes transverses d\'authentification et de vérification d\'identité ' +
+           '(middlewares JWT/session/rôles) consommées par toutes les autres features.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
-      'OTP, authentification client, verification d\'identite, middlewares de garde transverses',
+      'middlewares de garde transverses : authentification JWT/session, vérification de rôle, ' +
+        'identité vérifiée, révocation de token',
     ],
     out: [
       'logique metier propre a chaque feature consommatrice — auth ne sait rien des commandes, paniers ou paiements',
@@ -62,6 +65,7 @@ module.exports = {
       'tests/unit/auth-route.test.js',
       'tests/unit/otp-route.test.js',
       'tests/unit/require-verified-identity.test.js',
+      'tests/unit/soft-auth.test.js',
       'tests/unit/user-cache.test.js',
       'tests/unit/verify-authkey-webhook.test.js',
     ],

@@ -32,6 +32,9 @@ module.exports = {
       'réception (partielle ou totale) d\'un bon de commande, et rattachement au flux logistique',
       'réparation/rattrapage des commandes marquées "ordered" sans (ou avec) bon de commande cohérent (outils admin de correction)',
       'gestion des fournisseurs et de leur mapping produit (routes/purchasing.js /suppliers/*)',
+      'administration transverse des bons de commande, historiquement exposée depuis le dashboard ' +
+        '(services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, ' +
+        'écrit orders/product_suppliers/purchase_orders/suppliers)',
     ],
     out: [
       'cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js ' +
@@ -39,9 +42,6 @@ module.exports = {
       'confirmation de paiement client (order-payment-confirmation.js, reste dans orders)',
       'mouvement physique du colis une fois reçu (feature logistics, lecture seule sur purchase_orders/product_suppliers)',
       'entrée catalogue / import fournisseur en amont (feature catalog — sourcing/catalog-import, hors périmètre purchasing)',
-      'administration transverse des bons de commande exposée en lecture/écriture depuis le dashboard ' +
-        '(services/purchasing-admin-service.js — actuellement @domain dashboard, écrit orders/product_suppliers/' +
-        'purchase_orders/suppliers ; voir ONTOLOGY_GAP, non déplacé dans ce lot)',
     ],
   },
 
@@ -55,6 +55,7 @@ module.exports = {
       'services/receive-purchase-order.js',
       'services/repair-ordered-purchasing.js',
       'services/repair-ordered-without-purchase-orders.js',
+      'services/purchasing-admin-service.js',
     ],
     routes: [
       'routes/purchasing.js',
@@ -68,6 +69,7 @@ module.exports = {
       'tests/unit/receive-purchase-order.test.js',
       'tests/unit/repair-ordered-purchasing.test.js',
       'tests/unit/repair-ordered-without-purchase-orders.test.js',
+      'tests/unit/purchasing-admin-service.test.js',
     ],
   },
 
@@ -78,11 +80,13 @@ module.exports = {
   // référentiel fournisseur) mais restent lues par catalog (connecteurs
   // fournisseurs) et logistics (rattachement colis) — propriété d'écriture
   // purchasing, lecture cross-feature normale ailleurs.
+  // orders passe R → RW au Lot O2 : services/purchasing-admin-service.js
+  // (retaggé depuis dashboard) y écrit également (outils admin de correction).
   db: {
     tables: [
       'alerts: W',              // purchasing-trigger-service.js (échec déclenchement), repair-ordered-without-purchase-orders.js
       'order_items: R',
-      'orders: R',
+      'orders: RW',
       'product_suppliers: RW',
       'products: R',
       'purchase_orders: RW',

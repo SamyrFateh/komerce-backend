@@ -1,6 +1,6 @@
 'use strict';
 module.exports = {
-  name: 'legacy-control-tower', type: 'feature', domain: 'legacy-control-tower',
+  name: 'legacy-control-tower', type: 'deprecated', domain: 'legacy-control-tower',
   status: 'deprecated', owner: 'dashboards', doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
   service: "Ancien control tower — deprecated.",
   perimeter: { in: ['admin-legacy/js/**'], out: ['admin/ (remplacement)'] },

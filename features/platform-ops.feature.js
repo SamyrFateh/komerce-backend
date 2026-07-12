@@ -37,8 +37,6 @@ module.exports = {
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     services: [
-      'services/incident-service.js',
-    
       'services/monitoring.js',
       'services/simulator/cleanup.js',
       'services/simulator/engine.js',
@@ -80,7 +78,6 @@ module.exports = {
       'tests/unit/collective-cleanup-tombstones.test.js',
       'tests/unit/config-route.test.js',
       'tests/unit/health.test.js',
-      'tests/unit/incident-service.test.js',
       'tests/unit/journal.test.js',
       'tests/unit/modules.test.js',
       'tests/unit/monitoring.test.js',
@@ -108,7 +105,10 @@ module.exports = {
     tables: [
       'fabrics: RW',
       'garment_models: RW',
-      'incidents: RW',
+      // incidents: R uniquement — table possédée par incident-management (Lot O2).
+      // routes/ops-api.js continue d'y écrire directement en legacy (voir
+      // debt.knownGaps) ; documenté ici en lecture, pas en propriété d'écriture.
+      'incidents: R',
       'invoices: R',
       'notification_log: W',
       'order_items: R',
@@ -200,6 +200,17 @@ module.exports = {
               'par logistics. Les FAIL DUPLICATE_ROUTE_OWNER et PARAM_NAME_MISMATCH liés ' +
               'devraient disparaître au prochain run du gate ; à vérifier empiriquement.',
       },
+      { gap: 'SPLIT (2026-07-12, Lot O2) — services/incident-service.js et la table incidents ' +
+             'ont été scindés vers features/incident-management.feature.js (voir §A4 de ' +
+             'BUSINESS_FEATURE_ONTOLOGY_O2 : table propriétaire riche, lifecycle engageant, ' +
+             '4 consommateurs symétriques — Signal 4 transversal). routes/ops-api.js reste dans ' +
+             'platform-ops et continue d\'écrire directement dans incidents par SQL inline ' +
+             '(1 mutation sur ~15 endpoints, @db-write-via:legacy) au lieu de passer par ' +
+             'incident-service.js — dette de câblage documentée dans incident-management.feature.js, ' +
+             'refacto runtime explicitement refusé pour ce lot.',
+        risk: 'faible — la lecture est documentée ici (incidents: R), l\'écriture legacy est ' +
+              'assumée et trackée côté incident-management.feature.js.',
+      },
     ],
   },
 
@@ -207,8 +218,14 @@ module.exports = {
   authority: 'backend-core — infrastructure partagee, changement valide par l\'equipe plateforme',
 
   // ── Invariants propres ───────────────────────────────────────────────────
+  // Corrigé au Lot O2 (2026-07-12) — l'ancien invariant "aucune écriture métier
+  // ne passe par platform-ops" était mensonger vis-à-vis de la table incidents
+  // (écritures métier avec impact client et résolutions engageantes) — voir SPLIT
+  // incident-management.
   invariants: [
-    'aucune ecriture metier ne passe par platform-ops',
+    "les surfaces de santé et monitoring n'écrivent aucune donnée métier",
+    'le simulator écrit dans les tables d\'autres features par design de simulation',
+    'les modules (fabrics, garment_models) sont les seules tables possédées par platform-ops',
   ],
 
   // ── Classification ────────────────────────────────────────────────────────

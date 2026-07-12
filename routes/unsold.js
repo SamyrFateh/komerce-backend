@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          unsold
- * @domain        inventory
+ * @domain        unsold-resolution
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

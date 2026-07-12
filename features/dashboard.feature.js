@@ -90,17 +90,13 @@ module.exports = {
       'parcel_items: RW',
       'parcels: RW',
       'partners: RW',
-      'product_suppliers: W',
       'products: RW',
-      'purchase_orders: RW',
       'recipients: RW',
       'relais: RW',
-      'risk_provisions: RW',
       'scan_events: RW',
       'scans: RW',
       'signals: R',
       'sms_log: RW',
-      'suppliers: RW',
       'suppliers_stats: R',
       'users: RW',
       'wallet_transactions: W',
@@ -110,9 +106,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 76,
-    totalRoutes: 76,
-    note: "76/76 routes protégées via authenticate + requireRole(['admin']) monté au niveau du routeur parent (routes/dashboard.js et routes/admin.js) — les gardes sont appliquées une fois en tête de routeur, invisibles route-par-route mais confirmées empiriquement via gen-security-360.js (analyse hybride runtime + statique).",
+    authedRoutesDetected: 70,
+    totalRoutes: 70,
+    note: "70/70 routes protégées via authenticate + requireRole(['admin']) monté au niveau du routeur parent (routes/dashboard.js et routes/admin.js) — les gardes sont appliquées une fois en tête de routeur, invisibles route-par-route mais confirmées empiriquement via gen-security-360.js (analyse hybride runtime + statique). (les 6 routes /api/admin/risk-provisions/* ont été scindées vers economic-engine.feature.js, Lot O2)",
   },
   contract: {
     exposes: [
@@ -128,7 +124,6 @@ module.exports = {
       'GET /api/admin/radar',
       'GET /api/admin/rules',
       'GET /api/admin/loyalty/pending',
-      'GET /api/admin/risk-provisions',
       'GET /api/admin/partners',
       'GET /api/admin/users',
       'GET /api/admin/counts',
@@ -153,11 +148,6 @@ module.exports = {
       'GET /api/admin/radar/money',
       'GET /api/admin/radar/orders-by-detail/:detail',
       'GET /api/admin/radar/status-details',
-      'POST /api/admin/risk-provisions',
-      'DELETE /api/admin/risk-provisions/:id',
-      'GET /api/admin/risk-provisions/:id',
-      'PUT /api/admin/risk-provisions/:id',
-      'PUT /api/admin/risk-provisions/:id/toggle',
       'GET /api/admin/rules/:key',
       'PATCH /api/admin/rules/:key',
       'POST /api/admin/rules/:key/reset',
@@ -238,14 +228,18 @@ module.exports = {
              'via ses routes hub/relay/admin opérationnelles (voir db.tables, entrées W/RW : ' +
              'incidents, invoices, loyalty_rewards, order_comments, order_incidents, order_items, ' +
              'order_status_history, orders, parcel_items, parcels, partners, products, ' +
-             'purchase_orders, recipients, relais, risk_provisions, scan_events, scans, sms_log, ' +
-             'suppliers, users, wallet_transactions, wallets — cf. section db ci-dessus). Ces ' +
+             'recipients, relais, scan_events, scans, sms_log, ' +
+             'users, wallet_transactions, wallets — cf. section db ci-dessus). Ces ' +
              'mutations métier n\'ont pas leur propriétaire naturel ici : elles appartiennent aux ' +
              'domaines qu\'elles touchent (logistics pour parcels/scans/relais, orders pour ' +
-             'orders/order_items, purchasing pour purchase_orders, wallet pour wallets/' +
+             'orders/order_items, wallet pour wallets/' +
              'wallet_transactions, loyalty pour loyalty_rewards, etc.). Non redistribuées dans ce ' +
              'lot : O1 est un ontology refactor de la classification et du registre, pas un product ' +
-             'refactor du code runtime — aucun fichier ni route n\'a été déplacé pour ce delta.',
+             'refactor du code runtime — aucun fichier ni route n\'a été déplacé pour ce delta. ' +
+             'MISE À JOUR (Lot O2, 2026-07-12) : purchase_orders/product_suppliers/suppliers ' +
+             '(services/purchasing-admin-service.js) et risk_provisions (routes/admin-risk-' +
+             'provisions.js) sont sortis de ce périmètre — retaggés respectivement vers ' +
+             'purchasing et economic-engine, cf. leurs manifests.',
         risk: 'classification honnête mais transitoire : tant que ces mutations restent ici, ' +
               '`dashboard` est un cas hybride agrégation+opérations, pas un `aggregation-readonly` ' +
               'pur. Un futur lot (product refactor, hors O1) doit auditer chaque table W/RW et la ' +
@@ -286,7 +280,6 @@ module.exports = {
       'services/dashboard-metrics/workspaces.js',
       'services/dashboard-ops-queries.js',
       'services/hub-dashboard-queries.js',
-      'services/purchasing-admin-service.js',
       'services/relay-dashboard-queries.js',
     ],
     routes: [
@@ -298,7 +291,6 @@ module.exports = {
       'routes/admin-dashboard.js',
       'routes/admin-loyalty.js',
       'routes/admin-radar.js',
-      'routes/admin-risk-provisions.js',
       'routes/admin-rules.js',
       'routes/admin.js',
       'routes/dashboard-clients.js',
@@ -326,7 +318,6 @@ module.exports = {
       // ── Socle Lot 4 : shell, API client, utils, composants ────────
       'dashboards/admin/js/app.js',
       'dashboards/admin/js/api-client.js',
-      'dashboards/admin/js/api-client-unsold.js',
       'dashboards/admin/js/utils.js',
       'dashboards/admin/js/filters-store.js',
       'dashboards/admin/js/product-card-model.admin.js',
@@ -416,7 +407,6 @@ module.exports = {
       'tests/unit/admin-loyalty.test.js',
       'tests/unit/admin-orders-route.test.js',
       'tests/unit/admin-radar.test.js',
-      'tests/unit/admin-risk-provisions.test.js',
       'tests/unit/admin-rules.test.js',
       'tests/unit/admin-system.test.js',
       'tests/unit/dashboard-cache.test.js',
@@ -434,7 +424,6 @@ module.exports = {
       'tests/unit/hub-dashboard-route.test.js',
       'tests/unit/partners.test.js',
       'tests/unit/relay-dashboard-route.test.js',
-      'tests/unit/purchasing-admin-service.test.js',
       'tests/unit/dashboard-logistics.test.js',
       'tests/unit/dashboard-metrics-index.test.js',
       'tests/unit/system.test.js',

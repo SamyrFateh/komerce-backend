@@ -30,6 +30,8 @@ module.exports = {
       'moteur de pricing et application des regles',
       'allocation de cout',
       'strategies tarifaires et matrices admin',
+      'gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain ' +
+        'economic-engine au Lot O2, était @domain dashboard)',
     ],
     out: [
       'affichage produit cote catalogue (feature catalog, qui consomme economic-engine)',
@@ -80,6 +82,7 @@ module.exports = {
       'routes/economic.js',
       'routes/admin-finance-config.js',
       'routes/admin-pricing-components.js',
+      'routes/admin-risk-provisions.js',
     
       'routes/sourcing.js',],
     migrations: [
@@ -167,6 +170,7 @@ module.exports = {
       // pré-existante, corrigée par homonymie détectée pendant l'audit O1.3.
       'tests/integration/sourcing-engine-routes.test.js',
       'tests/integration/sourcing-flow-g5.test.js',
+      'tests/unit/admin-risk-provisions.test.js',
     ],
   },
 
@@ -229,7 +233,7 @@ module.exports = {
       'recipients: R',
       'refunds: R',
       'relais: R',
-      'risk_provisions: R',
+      'risk_provisions: RW',
       'store_credits: R',
       'users: R',
     ],
@@ -237,9 +241,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 65,
-    totalRoutes: 67,
-    note: "65/67 routes protégées. 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless).",
+    authedRoutesDetected: 71,
+    totalRoutes: 73,
+    note: "71/73 routes protégées. 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless). (+6 routes /api/admin/risk-provisions/* retaggées depuis dashboard, Lot O2)",
   },
   contract: {
     exposes: [
@@ -289,6 +293,13 @@ module.exports = {
       'GET /api/admin/sourcing/products/:id/variants',
       'PUT /api/admin/sourcing/products/:id/variants',
       'GET /api/admin/sourcing/synthesis',
+      // Retaggées depuis dashboard (Lot O2, 2026-07-12) — routes/admin-risk-provisions.js
+      'GET /api/admin/risk-provisions',
+      'POST /api/admin/risk-provisions',
+      'DELETE /api/admin/risk-provisions/:id',
+      'GET /api/admin/risk-provisions/:id',
+      'PUT /api/admin/risk-provisions/:id',
+      'PUT /api/admin/risk-provisions/:id/toggle',
       'GET /api/dashboard/annulations-parcels',
       'GET /api/dashboard/finance',
       'GET /api/dashboard/payments',

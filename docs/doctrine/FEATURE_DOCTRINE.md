@@ -134,9 +134,42 @@ Règles du registre :
 | `integration-adapter` | Adaptateur vers un système externe (Stripe, PayPal, Meta, AuthKey) | partie de `payments`, `notifications` |
 | `deprecated` | En cours de retrait — aucune nouvelle logique | (cf. workflow démontage) |
 
-> **`projection` n'est pas un `kind` assignable.** Une projection est un verdict de
-> rattachement : le fichier appartient à une feature existante, il n'a pas de manifest propre.
-> Créer un manifest pour une projection est une micro-feature — voir règle ci-dessous.
+> **`projection` n'est pas un `kind` assignable** au sens du schéma ci-dessus (manifests
+> `backend/features/`). Une projection *backend* est un verdict de rattachement : le fichier
+> appartient à une feature existante, il n'a pas de manifest propre. Créer un manifest pour
+> une projection backend est une micro-feature — voir règle ci-dessous.
+> Le dépôt `dash` a un schéma de classification distinct et plus simple — voir
+> « Cas particulier — dépôt `dash` » ci-dessous, où `projection` **est** une valeur de
+> `type` valide pour ce dépôt.
+
+---
+
+### Cas particulier — dépôt `dash` (kinds dash-repo)
+
+> Ajouté au Lot O2 (2026-07-12, `BUSINESS_FEATURE_ONTOLOGY_O2`) — comble l'`ONTOLOGY_GAP`
+> ouvert au Lot O1.5 : `feature-classification-check.js` (`ALLOWED_KINDS`/`ALLOWED_DECISIONS`
+> ci-dessus) ne scanne que `backend/features/` et son enum ne prévoit aucune valeur pour un
+> shell SPA cross-repo avec manifest propre.
+
+Le dépôt `dash` (`public/features/`, `public/dashboards/features/`) n'a pas de fichiers
+backend (`services/`, `routes/`) au sens strict : ses manifests décrivent des arbres
+frontend entiers (SPA, infra partagée, legacy). Le schéma `kind`/`decision` ci-dessus,
+conçu pour des manifests backend avec tables et cycles de vie, ne s'applique pas
+directement. Les manifests `dash` utilisent le champ `type` (historique, valeurs
+`feature` | `transversal`) étendu aux valeurs suivantes, réservées à ce dépôt :
+
+| Valeur `type` (dash-repo) | Description | Exemple |
+|---|---|---|
+| `projection` | Shell SPA en lecture, 0 table propre, 0 cycle de vie propre, 0 service actif indépendant des features qu'il affiche ; les mutations HTTP observées ciblent des routes possédées par des features backend | `admin-dashboard` |
+| `frontend-transversal` | Infrastructure frontend partagée hors `admin/` (auth-guard, service worker, composants partagés) — équivalent dash-repo de `technical-transversal` | `platform` |
+| `deprecated` | En cours de retrait, remplacé par un autre manifest — même sémantique que le `kind` backend | `legacy-control-tower` |
+
+Ces valeurs ne sont **pas** ajoutées à `ALLOWED_KINDS`/`ALLOWED_DECISIONS` de
+`feature-classification-check.js` (qui reste backend-only) : `feature-classification-check.js`
+ne couvre pas `public/**`, c'est une dette connue documentée dans
+`APP_FEATURE_REGISTRY.md` §« Fichiers actuellement sans feature déclarée ». La colonne
+« Classification cible » du registre canonique fait foi pour ces trois manifests en
+attendant qu'un gate dédié `dash` existe.
 
 ---
 

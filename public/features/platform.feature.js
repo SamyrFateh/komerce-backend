@@ -1,6 +1,6 @@
 /**
  * @feature       platform
- * @type          transversal
+ * @type          frontend-transversal
  * @domain        platform
  * @status        production
  * @owner         dashboards
@@ -12,7 +12,7 @@
 module.exports = {
 
   name:     'platform',
-  type:     'transversal',
+  type:     'frontend-transversal',
   domain:   'platform',
   status:   'production',
   owner:    'dashboards',

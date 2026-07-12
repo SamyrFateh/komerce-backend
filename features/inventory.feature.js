@@ -22,7 +22,7 @@ module.exports = {
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Suivre le niveau de stock disponible pour un produit.',
+  service: 'Réceptionner, affecter et dispatcher les articles au hub.',
 
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
@@ -41,8 +41,7 @@ module.exports = {
     ],
     routes: [
       'routes/inventory-api.js',
-    
-      'routes/unsold.js',],
+    ],
       dash: [
       // dashboards/admin views — Lot 4
       'dashboards/admin/js/views/InventoryView.js',
@@ -50,7 +49,6 @@ module.exports = {
         tests: [
       'tests/unit/inventory-api-route.test.js',
       'tests/unit/inventory-service.test.js',
-      'tests/unit/unsold.test.js',
       'tests/integration/parcel-auto-create-cash-payment.test.js',
     ],
   },
@@ -74,16 +72,15 @@ module.exports = {
       'parcel_items: RW',
       'parcels: R',
       'products: R',
-      'unsold_items: RW',
-      'v_unsold_pipeline: R',
     ],
   },
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 15,
-    totalRoutes: 15,
-    note: "15/15 routes protégées via authenticate + requireRole(['admin']) ou requireAdminOrFounder. Confirmé via gen-security-360.js.",
+    authedRoutesDetected: 8,
+    totalRoutes: 8,
+    note: "8/8 routes protégées via authenticate + requireRole(['admin']) ou requireAdminOrFounder. Confirmé via gen-security-360.js. " +
+          "(les 7 routes /api/unsold/* ont été scindées vers unsold-resolution.feature.js, Lot O2)",
   },
   contract: {
     exposes: [
@@ -97,13 +94,6 @@ module.exports = {
       'POST /api/hub/inventory/receive',
       'POST /api/hub/inventory/scan-assign',
       'GET /api/hub/inventory/stats',
-      'GET /api/unsold',
-      'GET /api/unsold/:id',
-      'PATCH /api/unsold/:id',
-      'POST /api/unsold/:id/resolve',
-      'GET /api/unsold/:id/whatsapp',
-      'POST /api/unsold/scan',
-      'GET /api/unsold/stats/summary',
     ],
     consumes: ['catalog (produit concerne)',
       'auth',
@@ -132,5 +122,12 @@ module.exports = {
   invariants: [
     'le stock ne descend jamais sous zero sans flag explicite de surventee assumee',
   ],
+
+  // ── Historique ───────────────────────────────────────────────────────────
+  // Lot O2 (2026-07-12, BUSINESS_FEATURE_ONTOLOGY_O2) : SPLIT — routes/unsold.js,
+  // tests/unit/unsold.test.js, unsold_items et v_unsold_pipeline retirés de ce
+  // manifest et déplacés vers features/unsold-resolution.feature.js. Zéro
+  // dépendance croisée constatée (grep croisé négatif dans les deux sens) entre
+  // inventory-service.js et routes/unsold.js.
 
 };
