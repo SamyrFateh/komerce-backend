@@ -97,6 +97,24 @@ describe('b-modal-cart', () => {
       state.modalProduct = { id: 42 };
     });
 
+    it('setModalTransactionPending sans produit ne touche pas les contrôles', () => {
+      state.modalProduct = null;
+      setModalTransactionPending(true);
+
+      expect(dom.qtyMinus.disabled).toBe(false);
+      expect(dom.qtyPlus.disabled).toBe(false);
+      expect(dom.addCartBtn.disabled).toBe(false);
+    });
+
+    it('pending=false repasse par la synchronisation normale', () => {
+      state.cart = [{ product: { id: 42 }, qty: 4 }];
+      setModalTransactionPending(false);
+
+      expect(state.modalQty).toBe(4);
+      expect(dom.modalQtyVal.textContent).toBe('4');
+      expect(dom.addCartBtn.textContent).toContain('Dans le panier (4)');
+    });
+
     it('verrouille stepper + Ajouter + Acheter pendant le chargement détail', () => {
       setModalTransactionPending(true);
 
@@ -105,6 +123,22 @@ describe('b-modal-cart', () => {
       expect(dom.addCartBtn.disabled).toBe(true);
       expect(document.getElementById('k-buy-now-btn').disabled).toBe(true);
       expect(dom.addCartBtn.textContent).toContain('Chargement du produit');
+    });
+
+    it('le verrou tolère le bouton Ajouter absent', () => {
+      dom.addCartBtn = null;
+      expect(() => setModalTransactionPending(true)).not.toThrow();
+      expect(dom.qtyMinus.disabled).toBe(true);
+      expect(dom.qtyPlus.disabled).toBe(true);
+    });
+
+    it('détail SKU chargé sans reducer reste verrouillé en mode chargement', () => {
+      state.modalProductDetail = { inventory_model: 'SKU' };
+      state.modalSelection = null;
+      _syncModalQtyUI();
+
+      expect(dom.addCartBtn.disabled).toBe(true);
+      expect(dom.addCartBtn.textContent).toBe('Chargement du produit…');
     });
 
     it('sélection SKU incomplète reste verrouillée et demande les options', () => {
@@ -131,6 +165,17 @@ describe('b-modal-cart', () => {
       expect(dom.addCartBtn.innerHTML).toContain('Ajouter au panier');
     });
 
+    it('sélection complète tolère les refs d’affichage optionnelles absentes', () => {
+      setSkuSelection();
+      dom.modalQtyVal = null;
+      dom.addCartBtn = null;
+
+      expect(() => _syncModalQtyUI()).not.toThrow();
+      expect(findCartItemForSelection).toHaveBeenCalledWith(42, {
+        Couleur: 'Marron', Taille: 'M',
+      });
+    });
+
     it('reflète la quantité de la combinaison exacte, pas une autre ligne du produit', () => {
       setSkuSelection();
       findCartItemForSelection.mockReturnValue({ qty: 5 });
@@ -149,6 +194,16 @@ describe('b-modal-cart', () => {
 
       expect(addToCart).toHaveBeenCalledWith(state.modalProduct, 1, dom.qtyPlus);
       expect(quickAdd).not.toHaveBeenCalled();
+    });
+
+    it('qtyMinus sans ligne exacte ne crée rien et ne retombe pas sur legacy', () => {
+      setupModalCart();
+      setSkuSelection();
+      dom.qtyMinus.dispatchEvent(new window.Event('click'));
+
+      expect(addToCart).not.toHaveBeenCalled();
+      expect(setCartSelectionQty).not.toHaveBeenCalled();
+      expect(quickRemove).not.toHaveBeenCalled();
     });
 
     it('qtyPlus sur ligne exacte incrémente seulement cette sélection', () => {
