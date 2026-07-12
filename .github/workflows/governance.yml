@@ -15,17 +15,11 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: write
-
 jobs:
   arch-db:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -34,17 +28,6 @@ jobs:
       # Regenere le graphe a partir des headers (sans dependances applicatives).
       - name: Generate architecture graph
         run: npm run arch:gen
-
-      - name: Commit reconciled graph once
-        if: github.event_name == 'pull_request'
-        run: |
-          if ! git diff --quiet -- docs/komerce-arch-header-graph.json docs/KOMERCE_ARCH_HEADER_GRAPH.md; then
-            git config user.name github-actions[bot]
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git add docs/komerce-arch-header-graph.json docs/KOMERCE_ARCH_HEADER_GRAPH.md
-            git commit -m "docs: regenerate architecture graph after main reconciliation"
-            git push origin HEAD:${{ github.event.pull_request.head.ref }}
-          fi
 
       # BLOQUANT : interdit une PR qui modifie des headers sans regenerer le graphe.
       - name: Graph regenerated in PR (drift)
