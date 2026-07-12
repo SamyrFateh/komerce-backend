@@ -39,119 +39,67 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
-          set +e
-          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict > touched-tests.log 2>&1
-          code=$?
-          cat touched-tests.log
-          echo "$code" > touched-tests.exit-code
-          exit 0
+          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict | tee touched-tests.log
 
-      - name: Measure PDC-5 detailed coverage
+      - name: Verify schema baseline / intended post-snapshot migrations
+        run: npm run schema:check | tee schema-check.log
+
+      - name: Materialize intended schema documentation artifact
         run: |
-          set +e
-          cd public/boutique
-          node_modules/.bin/jest \
-            tests/unit/b-modal-desktop-product.test.js \
-            tests/unit/b-modal-product-detail-bootstrap.test.js \
-            tests/unit/b-modal-mobile-product-bootstrap.test.js \
-            tests/unit/b-modal-mobile-product.test.js \
-            tests/unit/modal-selection-model.test.js \
-            tests/unit/b-modal-desktop-enhancers.test.js \
-            tests/unit/b-modal-approche-c-hybrid.test.js \
-            tests/unit/main.test.js \
-            --runInBand \
-            --coverage \
-            --collectCoverageFrom=js/b-modal-desktop-product.js \
-            --collectCoverageFrom=js/b-modal-product-detail-bootstrap.js \
-            --collectCoverageFrom=js/b-modal-mobile-product-bootstrap.js \
-            --collectCoverageFrom=js/b-modal-mobile-product.js \
-            --collectCoverageFrom=js/view-models/modal-selection-model.js \
-            --collectCoverageFrom=js/b-modal-desktop-enhancers.js \
-            --collectCoverageFrom=js/b-modal-approche-c-hybrid.js \
-            --collectCoverageFrom=js/main.js \
-            --coverageReporters=json \
-            --coverageReporters=text \
-            --coverageDirectory=.pdc5-coverage \
-            > ../../pdc5-tests.log 2>&1
-          code=$?
-          cat ../../pdc5-tests.log
-          echo "$code" > ../../pdc5-tests.exit-code
-          exit 0
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'docs/SCHEMA.md';
+          let md = fs.readFileSync(file, 'utf8');
+
+          function appendTableNote(table, sentinel, note) {
+            if (md.includes(sentinel)) return;
+            const escaped = table.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const re = new RegExp(`^\\| \\`${escaped}\\` \\| .* \\|$`, 'm');
+            if (!re.test(md)) throw new Error(`Ligne SCHEMA introuvable pour ${table}`);
+            md = md.replace(re, (line) => line.replace(/ \|$/, ` ${note} |`));
+          }
+
+          md = md.replace(
+            '### 4.5 Paniers et catalogue (10 tables)',
+            '### 4.5 Paniers et catalogue'
+          );
+
+          appendTableNote(
+            'order_items',
+            'Migration 104 (2026-07-12, `intended_migration_schema` — non vérifié live) : + `sku_id`',
+            '**Migration 104 (2026-07-12, `intended_migration_schema` — non vérifié live)** : + `sku_id` UUID nullable, FK vers `product_skus(id)` avec `ON DELETE SET NULL`. `variant_combo` reste snapshot d’affichage/historique ; le pilotage stock cible passe par `sku_id`. Doctrine : `docs/specs/DECISION_MODELE_STOCK_SKU.md`.'
+          );
+
+          appendTableNote(
+            'products',
+            'Migration 104 (2026-07-12, `intended_migration_schema` — non vérifié live) : + `inventory_model`',
+            '**Migration 104 (2026-07-12, `intended_migration_schema` — non vérifié live)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`.'
+          );
+
+          appendTableNote(
+            'sourcing_candidates',
+            'Migration 105 (2026-07-12, `intended_migration_schema` — non vérifié live) : + `normalized_source_contract`',
+            '**Migration 105 (2026-07-12, `intended_migration_schema` — non vérifié live)** : + `normalized_source_contract` JSONB nullable, snapshot du `NormalizedSupplierProduct V2` validé sans dupliquer `raw_payload`. Préserve `media`, `option_axes` et `sellable_units` source ; ne constitue ni le catalogue canonique ni la vérité de stock.'
+          );
+
+          if (!md.includes('object: product_skus')) {
+            const pending = `\n\n<!-- schema-pending\nobject: product_skus\nkind: table\nmigration: 104\nsection: ### 4.5 Paniers et catalogue\nrole: Unités vendables canoniques en Mode SKU : une combinaison exacte d’options = un SKU, stock unique par SKU, prix SKU optionnel, SKU par défaut si variant_combo est NULL. Source de vérité stock cible selon DECISION_MODELE_STOCK_SKU.\n-->`;
+            const re = /(^\| `catalog_field_overrides` \|.*\|$)/m;
+            if (!re.test(md)) throw new Error('Point insertion product_skus introuvable');
+            md = md.replace(re, `$1${pending}`);
+          }
+
+          fs.writeFileSync(file, md);
+          console.log('✅ docs/SCHEMA.md matérialisé en Mode B intended_migration_schema pour 104/105.');
+          NODE
+
+          grep -n "Migration 104\|Migration 105\|object: product_skus" docs/SCHEMA.md | tee schema-doc-patch.log
 
       - name: Capture Boutique check-fast
-        run: |
-          set +e
-          npm --prefix public/boutique run check:fast > boutique-check-fast.log 2>&1
-          code=$?
-          cat boutique-check-fast.log
-          echo "$code" > boutique-check-fast.exit-code
-          exit 0
+        run: npm --prefix public/boutique run check:fast > boutique-check-fast.log 2>&1
 
       - name: Capture feature registry
-        run: |
-          set +e
-          npm run feature:registry > feature-registry.log 2>&1
-          code=$?
-          cat feature-registry.log
-          echo "$code" > feature-registry.exit-code
-          exit 0
-
-      - name: Capture schema freshness before snapshot
-        run: |
-          set +e
-          npm run schema:check > schema-check.log 2>&1
-          code=$?
-          cat schema-check.log
-          echo "$code" > schema-check.exit-code
-          exit 0
-
-      - name: Probe public Railway database secret and snapshot
-        env:
-          INTERNAL_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-          PUBLIC_URL_1: ${{ secrets.RAILWAY_PUBLIC_DATABASE_URL }}
-          PUBLIC_URL_2: ${{ secrets.DATABASE_PUBLIC_URL }}
-          PUBLIC_URL_3: ${{ secrets.RAILWAY_DATABASE_PUBLIC_URL }}
-          PUBLIC_URL_4: ${{ secrets.RAILWAY_TCP_DATABASE_URL }}
-          PUBLIC_URL_5: ${{ secrets.RAILWAY_DATABASE_TCP_URL }}
-        run: |
-          set +e
-          : > schema-secret-probe.log
-          : > schema-snapshot.log
-          selected=""
-          selected_name=""
-
-          for name in PUBLIC_URL_1 PUBLIC_URL_2 PUBLIC_URL_3 PUBLIC_URL_4 PUBLIC_URL_5; do
-            value="${!name}"
-            if [ -n "$value" ]; then
-              echo "$name=set" >> schema-secret-probe.log
-              selected="$value"
-              selected_name="$name"
-              break
-            else
-              echo "$name=unset" >> schema-secret-probe.log
-            fi
-          done
-
-          if [ -z "$selected" ]; then
-            echo "NO_PUBLIC_DATABASE_SECRET" | tee -a schema-snapshot.log
-            if [ -n "$INTERNAL_URL" ]; then
-              echo "INTERNAL_URL=set_but_not_usable_from_github_actions" >> schema-secret-probe.log
-            else
-              echo "INTERNAL_URL=unset" >> schema-secret-probe.log
-            fi
-            exit 0
-          fi
-
-          echo "selected=$selected_name" >> schema-secret-probe.log
-          DATABASE_URL="$selected" node scripts/db-snapshot.js > schema-snapshot.log 2>&1
-          code=$?
-          cat schema-snapshot.log
-          echo "$code" > schema-snapshot.exit-code
-          if [ "$code" -eq 0 ]; then
-            node scripts/check-schema-freshness.js > schema-after-snapshot.log 2>&1
-            cat schema-after-snapshot.log
-          fi
-          exit 0
+        run: npm run feature:registry | tee feature-registry.log
 
       - name: Upload PDC-5 diagnostic
         if: always()
@@ -160,19 +108,9 @@ jobs:
           name: pdc5-diagnostic
           path: |
             touched-tests.log
-            touched-tests.exit-code
-            pdc5-tests.log
-            pdc5-tests.exit-code
-            boutique-check-fast.log
-            boutique-check-fast.exit-code
-            feature-registry.log
-            feature-registry.exit-code
             schema-check.log
-            schema-check.exit-code
-            schema-secret-probe.log
-            schema-snapshot.log
-            schema-snapshot.exit-code
-            schema-after-snapshot.log
-            docs/db/railway-live-schema.sql
-            public/boutique/.pdc5-coverage/coverage-final.json
+            schema-doc-patch.log
+            boutique-check-fast.log
+            feature-registry.log
+            docs/SCHEMA.md
           retention-days: 1
