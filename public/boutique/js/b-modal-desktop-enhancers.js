@@ -3,732 +3,270 @@
  * @role          desktop-product-modal-enhancer
  * @domain        boutique
  * @layer         ui-enhancer
- * @criticality   high
+ * @criticality   medium
  * @inputs        modal_state, product_view_model, desktop_viewport, bus_events
- * @outputs       desktop_modal_layout, contract_classes, enhanced_actions
+ * @outputs       desktop_navigation_and_editorial_enhancements, contract_classes
  * @depends       b-bus.js, b-catalog.js, b-modal.js, b-scroll-owner.js, view-models/modal-view-model.js
- * @used-by       boutique.js, b-modal-core.js
- * @doctrine      modal_produit_sans_chevauchement, desktop_premium, participant_peut_verifier
- * @impact-areas  modal-desktop, product-discovery, side-cart-layout, responsive-layout
- * @version       2026-06
+ * @used-by       b-desktop-upgrade.js, main.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
+ * @impact-areas  modal-desktop, product-discovery, responsive-layout
+ * @version       2026-07
  */
+
 'use strict';
 
 /**
- * @module b-modal-desktop-enhancers
- * @brief Enrichissements desktop ≥ 900px de la modal produit.
+ * PDC-5 — Enhancer desktop de COMPOSITION uniquement.
  *
- * Branchés sur bus.on('modal:opened') émis par b-modal.js, ils injectent
- * dans la modal :
- *   - breadcrumb catégorie (topbar)
- *   - boutons partage WhatsApp + copier (info)
- *   - accordéon "Détails du produit" (info)
- *   - badges de réassurance paiement/retrait/stock (info)
- *   - sous-total dynamique (actions)
- *   - section "Vu récemment" (bas de scroll)
- *   - lentille de zoom Temu-style sur l'image
+ * Ce module ne calcule plus :
+ *   - prix / ancien prix / économie ;
+ *   - stock ou rareté ;
+ *   - livraison ;
+ *   - sous-total ;
+ *   - paiement produit.
  *
- * Mobile : aucun effet (toutes les fonctions sortent sur !isDesktop()).
- *
- * Point d'entrée unique : setupModalDesktopEnhancers().
- * Extrait de b-desktop-upgrade.js (sections 2-7 + 10c + ORCHESTRATION).
+ * Ces vérités appartiennent au Product Detail Contract, au reducer SKU et au
+ * renderer `b-modal-desktop-product.js`. L'enhancer conserve seulement le
+ * contexte de navigation et les enrichissements éditoriaux desktop.
  */
 
 import { bus }                  from './b-bus.js';
-import { state, dom }           from './b-store.js';
+import { state, dom, modalZone } from './b-store.js';
 import { fmtPrice }             from './b-utils.js';
 import { showToast }            from './b-cart-core.js';
 import { openModal }            from './b-modal.js';
-import { modalZone }            from './b-store.js';           // S5 — hook DOM centralisé
 import { setActiveCat }         from './b-catalog.js';
 import { normalizeCategoryKey } from './shop-schema.js';
 import { isDesktop }            from './b-scroll-owner.js';
 import {
-  buildModalViewModel, applyModalClasses,
-} from './view-models/modal-view-model.js'; // PR-M1 — classes contractuelles modal
+  buildModalViewModel,
+  applyModalClasses,
+} from './view-models/modal-view-model.js';
 
-'use strict';
+let _enhancersInstalled = false;
+let _vmListenerInstalled = false;
 
-// ═══════════════════════════════════════════════════════════════
-//  2. ZOOM IMAGE — Loupe Temu dans la modal
-// ═══════════════════════════════════════════════════════════════
-
-let _zoomLens = null;
-let _zoomPreview = null;
-
-function setupZoom() {
-  if (!isDesktop()) return;
-
-  let imgWrap = modalZone('.k-modal-img-wrap');
-  if (!imgWrap) return;
-
-  let carousel = imgWrap.querySelector('.k-modal-carousel');
-  if (!carousel) return;
-
-  imgWrap.querySelectorAll('.k-modal-zoom-lens, .k-modal-zoom-preview').forEach(function(el) {
-    el.remove();
-  });
-
-  // Lentille : carré semi-transparent qui suit le curseur sur l'image source
-  _zoomLens = document.createElement('div');
-  _zoomLens.className = 'k-modal-zoom-lens';
-  imgWrap.appendChild(_zoomLens);
-
-  _zoomPreview = document.createElement('div');
-  _zoomPreview.className = 'k-modal-zoom-preview';
-  imgWrap.appendChild(_zoomPreview);
-
-  carousel.removeEventListener('mousemove', _onZoomMove);
-  carousel.removeEventListener('mouseleave', _onZoomLeave);
-  carousel.addEventListener('mousemove', _onZoomMove);
-  carousel.addEventListener('mouseleave', _onZoomLeave);
-}
-
-function _onZoomMove(e) {
-  if (!_zoomPreview) return;
-
-  let carousel = e.currentTarget;
-  let rect = carousel.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  let y = e.clientY - rect.top;
-
-  let track = carousel.querySelector('.k-modal-carousel-track');
-  if (!track) return;
-
-  let slides = track.querySelectorAll('.k-modal-slide');
-  let idx = state.carouselIndex || 0;
-  let img = slides[idx];
-  if (!img || !img.src) return;
-
-  // Toujours utiliser la version haute résolution pour le zoom (sinon flou)
-  // Cloudinary format : ,w_800/ → ,w_1600/
-  let zoomSrc = img.src.replace(/(,w_)\d+(\/|,)/, '$11600$2');
-  if (zoomSrc === img.src && img.dataset.zoomSrc) zoomSrc = img.dataset.zoomSrc;
-
-  let px = Math.max(0, Math.min(100, (x / rect.width) * 100));
-  let py = Math.max(0, Math.min(100, (y / rect.height) * 100));
-
-  _zoomPreview.style.backgroundImage = 'url(' + zoomSrc + ')';
-  _zoomPreview.style.backgroundPosition = px + '% ' + py + '%';
-  _zoomPreview.classList.add('is-active');
-
-  // Lentille : centrée sur le curseur, clampée dans le conteneur.
-  // Sa taille est 36% du wrap (cohérent avec --zoom-bg-size 280%).
-  if (_zoomLens) {
-    let lensW = rect.width  * 0.36;
-    let lensH = rect.height * 0.36;
-    let lx = Math.max(0, Math.min(rect.width  - lensW, x - lensW / 2));
-    let ly = Math.max(0, Math.min(rect.height - lensH, y - lensH / 2));
-    _zoomLens.style.width  = lensW + 'px';
-    _zoomLens.style.height = lensH + 'px';
-    _zoomLens.style.left   = lx + 'px';
-    _zoomLens.style.top    = ly + 'px';
-    _zoomLens.classList.add('is-active');
+function currentDisplayProduct() {
+  const detail = state.modalProductDetail;
+  if (detail?.product) {
+    return {
+      id: detail.product.id,
+      name: detail.product.name,
+      category: detail.product.category,
+      price_kmf: detail.pricing?.price_kmf ?? null,
+    };
   }
+  return state.modalProduct || null;
 }
-
-function _onZoomLeave() {
-  if (_zoomLens) _zoomLens.classList.remove('is-active');
-  if (_zoomPreview) _zoomPreview.classList.remove('is-active');
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  3. BREADCRUMB — Navigation contexte dans la topbar modal
-// ═══════════════════════════════════════════════════════════════
 
 function injectBreadcrumb() {
   if (!isDesktop()) return;
-  let topbar = modalZone('.k-modal-topbar');
-  if (!topbar) return;
-  let product = state.modalProduct;
-  if (!product) return;
+  const topbar = modalZone('.k-modal-topbar');
+  const product = currentDisplayProduct();
+  if (!topbar || !product) return;
 
-  // Remove old breadcrumb
-  let old = topbar.querySelector('.k-modal-breadcrumb');
-  if (old) old.remove();
+  topbar.querySelector('.k-modal-breadcrumb')?.remove();
 
-  let cat = product.category || '';
-  let name = product.name || '';
+  const cat = product.category || '';
+  const name = product.name || '';
+  const breadcrumb = document.createElement('div');
+  breadcrumb.className = 'k-modal-breadcrumb';
 
-  let bc = document.createElement('div');
-  bc.className = 'k-modal-breadcrumb';
-  bc.innerHTML =
-    '<span class="k-modal-breadcrumb-cat" data-cat="' + cat + '">Boutique</span>' +
-    '<span class="k-modal-breadcrumb-sep">›</span>' +
-    '<span class="k-modal-breadcrumb-cat" data-cat="' + cat + '">' + cat + '</span>' +
-    '<span class="k-modal-breadcrumb-sep">›</span>' +
-    '<span class="k-modal-breadcrumb-name">' + name + '</span>';
+  const shop = document.createElement('span');
+  shop.className = 'k-modal-breadcrumb-cat';
+  shop.dataset.cat = cat;
+  shop.textContent = 'Boutique';
 
-  // Insert after the back button
-  let backBtn = topbar.querySelector('.k-modal-back');
-  if (backBtn && backBtn.nextSibling) {
-    topbar.insertBefore(bc, backBtn.nextSibling);
-  } else {
-    topbar.appendChild(bc);
-  }
+  const sep1 = document.createElement('span');
+  sep1.className = 'k-modal-breadcrumb-sep';
+  sep1.textContent = '›';
 
-  // Click on breadcrumb cat → close modal, filter catalog
-  bc.querySelectorAll('.k-modal-breadcrumb-cat').forEach(function(el) {
-    el.addEventListener('click', function() {
-      let c = el.dataset.cat;
-      if (c) {
-        let _cat = normalizeCategoryKey(c) || c;
-        bus.emit('modal:close');
-        setActiveCat(_cat);
-      }
+  const category = document.createElement('span');
+  category.className = 'k-modal-breadcrumb-cat';
+  category.dataset.cat = cat;
+  category.textContent = cat;
+
+  const sep2 = document.createElement('span');
+  sep2.className = 'k-modal-breadcrumb-sep';
+  sep2.textContent = '›';
+
+  const productName = document.createElement('span');
+  productName.className = 'k-modal-breadcrumb-name';
+  productName.textContent = name;
+
+  breadcrumb.append(shop, sep1, category, sep2, productName);
+
+  const backBtn = topbar.querySelector('.k-modal-back');
+  if (backBtn?.nextSibling) topbar.insertBefore(breadcrumb, backBtn.nextSibling);
+  else topbar.appendChild(breadcrumb);
+
+  breadcrumb.querySelectorAll('.k-modal-breadcrumb-cat').forEach((el) => {
+    el.addEventListener('click', () => {
+      const value = el.dataset.cat;
+      if (!value) return;
+      bus.emit('modal:close');
+      setActiveCat(normalizeCategoryKey(value) || value);
     });
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  4. SHARE — Bouton partage WhatsApp dans la modal
-// ═══════════════════════════════════════════════════════════════
-
 function injectShareRow() {
   if (!isDesktop()) return;
-  let info = modalZone('.k-modal-info');
-  if (!info) return;
-  let product = state.modalProduct;
-  if (!product) return;
+  const info = modalZone('.k-modal-info');
+  const product = currentDisplayProduct();
+  if (!info || !product) return;
 
-  // Remove old
-  let old = info.querySelector('.k-modal-share-row');
-  if (old) old.remove();
+  info.querySelector('.k-modal-share-row')?.remove();
 
-  let url = window.location.origin + '/?p=' + product.id;
-  let text = encodeURIComponent(
-    '👀 Regarde ce que j\'ai trouvé sur Komerce !\n' +
-    (product.name || '') + ' — ' + fmtPrice(product.price_kmf) + '\n' + url
+  const url = `${window.location.origin}/?p=${product.id}`;
+  const price = product.price_kmf != null ? ` — ${fmtPrice(product.price_kmf)}` : '';
+  const text = encodeURIComponent(
+    `👀 Regarde ce que j'ai trouvé sur Komerce !\n${product.name || ''}${price}\n${url}`
   );
 
-  let row = document.createElement('div');
+  const row = document.createElement('div');
   row.className = 'k-modal-share-row';
-  row.innerHTML =
-    '<button class="k-modal-share-btn k-modal-share-btn--wa" data-href="https://wa.me/?text=' + text + '">' +
-      '<svg viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>' +
-      'Partager via WhatsApp' +
-    '</button>' +
-    '<button class="k-modal-share-btn" data-action="copy">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>' +
-      'Copier le lien' +
-    '</button>';
 
+  const whatsapp = document.createElement('button');
+  whatsapp.type = 'button';
+  whatsapp.className = 'k-modal-share-btn k-modal-share-btn--wa';
+  whatsapp.dataset.href = `https://wa.me/?text=${text}`;
+  whatsapp.textContent = 'Partager via WhatsApp';
+
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'k-modal-share-btn';
+  copy.dataset.action = 'copy';
+  copy.textContent = 'Copier le lien';
+
+  row.append(whatsapp, copy);
   info.appendChild(row);
 
-  row.querySelector('.k-modal-share-btn--wa').addEventListener('click', function() {
-    window.open(this.dataset.href, '_blank');
+  whatsapp.addEventListener('click', () => {
+    window.open(whatsapp.dataset.href, '_blank');
   });
-  row.querySelector('[data-action="copy"]').addEventListener('click', function() {
-    navigator.clipboard.writeText(url).then(function() {
-      // FIX Bug E — bus.emit('toast') n'avait aucun listener ; appel direct comme partout ailleurs.
+  copy.addEventListener('click', () => {
+    navigator.clipboard.writeText(url).then(() => {
       showToast('🔗 Lien copié !');
     });
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  5. SPECS ACCORDION — Détails produit dans la modal
-// ═══════════════════════════════════════════════════════════════
-
-function injectSpecs() {
-  if (!isDesktop()) return;
-  let info = modalZone('.k-modal-info');
-  if (!info) return;
-  let product = state.modalProduct;
-  if (!product) return;
-
-  let old = info.querySelector('.k-modal-specs');
-  if (old) old.remove();
-
-  let stockVal = Number(product.stock || 0);
-  let cat = product.category || 'Non catégorisé';
-  let weight = product.weight_kg ? (product.weight_kg + ' kg') : '—';
-
-  let specs = document.createElement('div');
-  specs.className = 'k-modal-specs';
-  // PR-D 2.1 : ouvert par défaut sur desktop (les specs sont la zone d'info
-  // technique, on évite à l'utilisateur de cliquer pour voir des données utiles).
-  specs.innerHTML =
-    '<button class="k-modal-spec-toggle is-open">' +
-      'Détails du produit' +
-      '<svg class="k-modal-spec-toggle-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
-    '</button>' +
-    '<div class="k-modal-spec-body is-open">' +
-      '<table class="k-modal-spec-table">' +
-        '<tr><td>Catégorie</td><td>' + cat + '</td></tr>' +
-        '<tr><td>Référence</td><td>#' + product.id + '</td></tr>' +
-        '<tr><td>Stock</td><td>' + (stockVal > 0 ? stockVal + ' unité' + (stockVal > 1 ? 's' : '') : 'Rupture') + '</td></tr>' +
-        '<tr><td>Poids estimé</td><td>' + weight + '</td></tr>' +
-        (product.promo_pct ? '<tr><td>Promotion</td><td>-' + product.promo_pct + '%</td></tr>' : '') +
-      '</table>' +
-    '</div>';
-
-  // Insert before share row if exists, otherwise append
-  let shareRow = info.querySelector('.k-modal-share-row');
-  if (shareRow) {
-    info.insertBefore(specs, shareRow);
-  } else {
-    info.appendChild(specs);
-  }
-
-  let toggle = specs.querySelector('.k-modal-spec-toggle');
-  let body = specs.querySelector('.k-modal-spec-body');
-  toggle.addEventListener('click', function() {
-    let open = toggle.classList.toggle('is-open');
-    body.classList.toggle('is-open', open);
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  6. TRUST BADGES — Réassurance dans la modal
-// ═══════════════════════════════════════════════════════════════
-
 function injectTrustBadges() {
   if (!isDesktop()) return;
-  let info = modalZone('.k-modal-info');
+  const info = modalZone('.k-modal-info');
   if (!info) return;
 
-  let old = info.querySelector('.k-modal-trust');
-  if (old) old.remove();
+  info.querySelector('.k-modal-trust')?.remove();
 
-  let trust = document.createElement('div');
+  const trust = document.createElement('div');
   trust.className = 'k-modal-trust';
-  trust.innerHTML =
-    '<span class="k-modal-trust-item">' +
-      '<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
-      'Paiement sécurisé' +
-    '</span>' +
-    '<span class="k-modal-trust-item">' +
-      '<svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8l4 2v6l-4 2"/></svg>' +
-      'Retrait en relais' +
-    '</span>' +
-    '<span class="k-modal-trust-item">' +
-      '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
-      'Stock garanti' +
-    '</span>';
-
-  // Insert before specs
-  let specsEl = info.querySelector('.k-modal-specs');
-  if (specsEl) {
-    info.insertBefore(trust, specsEl);
-  } else {
-    info.appendChild(trust);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PRIX HÉRO — KMF coral grande taille + prix barré + équivalent EUR
-// ═══════════════════════════════════════════════════════════════
-// Remplace injectAedPrice (dual-currency AED, inutile pour le marché comorien).
-// Taux KMF → EUR : 1 KMF ≈ 0.00204 EUR (approximatif, à remplacer par API de change).
-
-let _KMF_TO_EUR = 0.00204;
-
-function injectPriceHero() {
-  if (!isDesktop()) return;
-  let el = document.getElementById('k-modal-aed-price');
-  if (!el) return;
-  let product = state.modalProduct;
-  // PR-M3 : visibilité gérée par CSS via .k-modal--has-promo (ModalViewModel).
-  // Ne pas poser de style.display inline — le CSS fait le travail.
-  if (!product || !product.price_kmf) { el.innerHTML = ''; return; }
-
-  el.innerHTML = '';
-
-  // Ligne unique : "≈ 6 €" + badge promo si présent
-  // Le prix KMF est déjà affiché par k-modal-price-row — on ne le duplique pas.
-  let eurVal = Math.round(product.price_kmf * _KMF_TO_EUR);
-
-  if (eurVal > 0) {
-    let eurEl = document.createElement('span');
-    eurEl.className = 'k-modal-eur-ref';
-
-    // Prix barré EUR si promo
-    if (product.original_price_kmf && product.original_price_kmf > product.price_kmf) {
-      let oldEur = Math.round(product.original_price_kmf * _KMF_TO_EUR);
-      eurEl.innerHTML =
-        '≈ <strong>' + eurVal + ' €</strong>'
-        + '<s>' + oldEur + ' €</s>';
-    } else {
-      eurEl.innerHTML = '≈ <strong>' + eurVal + ' €</strong>';
-    }
-    el.appendChild(eurEl);
-  }
-
-  // Badge % sobre si promo_pct
-  if (product.promo_pct) {
-    let pctEl = document.createElement('span');
-    pctEl.className = 'k-modal-aed-pct';
-    pctEl.textContent = '-' + product.promo_pct + '%';
-    el.appendChild(pctEl);
-  }
-
-  // Chantier 2 — mention "· économie X KMF" en fin de ligne aed-price.
-  // L'ancien prix dérive de promo_pct via la même formule que b-modal.js
-  // openModal : Math.round(price / (1 - promo_pct / 100)). Source unique.
-  if (product.promo_pct && product.price_kmf) {
-    let oldPrice = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
-    let saving = oldPrice - product.price_kmf;
-    if (saving > 0) {
-      let saveEl = document.createElement('span');
-      saveEl.className = 'k-modal-price-saving';
-      saveEl.innerHTML = '<span class="k-modal-price-saving-sep" aria-hidden="true">·</span>'
-                       + 'économie ' + new Intl.NumberFormat('fr-FR').format(saving) + ' KMF';
-      el.appendChild(saveEl);
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  NEW — FLASH TIMER + BARRE DE STOCK
-// ═══════════════════════════════════════════════════════════════
-
-let _flashTimerInterval = null;
-let _enhancersInstalled = false;
-let _vmListenerInstalled = false; // PR-M1 — flag séparé pour le listener ModalViewModel (mobile + desktop)
-
-function _stopFlashTimer() {
-  if (_flashTimerInterval) {
-    clearInterval(_flashTimerInterval);
-    _flashTimerInterval = null;
-  }
-}
-
-function _startFlashTimer(totalSeconds) {
-  _stopFlashTimer();
-  let remaining = totalSeconds;
-  function _tick() {
-    let el = document.getElementById('k-modal-flash-timer');
-    if (!el) { _stopFlashTimer(); return; }
-    let m = Math.floor(remaining / 60);
-    let s = remaining % 60;
-    el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-    if (remaining <= 0) { _stopFlashTimer(); return; }
-    remaining--;
-  }
-  _tick();
-  _flashTimerInterval = setInterval(_tick, 1000);
-}
-
-function injectFlashAndStock() {
-  if (!isDesktop()) return;
-  let product = state.modalProduct;
-  if (!product) return;
-
-  // FIX 2026-05-20 — Bandeau promo sobre, SANS timer aléatoire.
-  // Conditionné sur product.promo_pct (donnée réelle backend).
-  // Pour un vrai compte à rebours lié à une offre datée :
-  //   conditionner sur product.flash_end_at et calculer la durée restante.
-  let flashEl = document.getElementById('k-modal-flash-bar');
-  if (flashEl) {
-    flashEl.innerHTML = '';
-    if (product.promo_pct) {
-      flashEl.innerHTML =
-        '<span class="k-modal-flash-icon" aria-hidden="true"></span>' +
-        '<span class="k-modal-flash-label">Offre promotionnelle</span>' +
-        '<span class="k-modal-flash-pct">-' + product.promo_pct + '%</span>' +
-        '<span class="k-modal-flash-suffix">sur ce produit</span>';
-    }
-  }
-
-  // FIX 2026-05-20 — Stock réel, texte sobre, PAS de barre ni de % simulé.
-  // Affiché uniquement si product.stock est connu (> 0) et faible (≤ 20).
-  // Le seuil 20 est ajustable selon les réalités du catalogue.
-  let stockBarEl = document.getElementById('k-modal-stock-bar');
-  if (stockBarEl) {
-    stockBarEl.innerHTML = '';
-    let stockVal = Number(product.stock || 0);
-    if (stockVal > 0 && stockVal <= 20) {
-      stockBarEl.innerHTML =
-        '<span class="k-modal-stock-line-icon" aria-hidden="true"></span>' +
-        stockVal + '\u202farticle' + (stockVal > 1 ? 's' : '') +
-        ' disponible' + (stockVal > 1 ? 's' : '');
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  NEW — SECTION LIVRAISON (point relais, 3-5 semaines)
-// ═══════════════════════════════════════════════════════════════
-
-function injectDelivery() {
-  if (!isDesktop()) return;
-  let el = document.getElementById('k-modal-delivery');
-  if (!el) return;
-  el.innerHTML = '';
-
-  el.innerHTML =
-    '<div class="k-modal-section-title">Livraison</div>' +
-    '<div class="k-modal-delivery-opt is-active" data-delivery="relay">' +
-      '<div class="k-modal-opt-radio"></div>' +
-      '<div class="k-modal-opt-body">' +
-        '<div class="k-modal-opt-row1">' +
-          '<span class="k-modal-opt-icon">📦</span>' +
-          '<span>Point relais</span>' +
-          '<span class="k-modal-opt-free">Gratuit</span>' +
-        '</div>' +
-        '<div class="k-modal-opt-row2">Délai estimé : 3 à 5 semaines</div>' +
-        '<div class="k-modal-islands">' +
-          '<span class="k-modal-island-chip">Grande Comore</span>' +
-          '<span class="k-modal-island-chip">Anjouan</span>' +
-          '<span class="k-modal-island-chip">Mohéli</span>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  NEW — SECTION PAIEMENT (4 options)
-// ═══════════════════════════════════════════════════════════════
-
-function injectPayment() {
-  if (!isDesktop()) return;
-  let el = document.getElementById('k-modal-payment');
-  if (!el) return;
-  el.innerHTML = '';
-
-  let opts = [
-    {
-      key: 'stripe',
-      icon: '💳',
-      label: 'Carte bancaire',
-      sub: 'Visa, Mastercard — paiement sécurisé',
-      badge: '<span class="k-modal-pay-badge k-modal-pay-badge--stripe">Stripe</span>',
-      active: true,
-    },
-    {
-      key: 'cash',
-      icon: '💵',
-      label: 'Paiement à la livraison',
-      sub: 'En espèces à la réception',
-      badge: '',
-      active: false,
-    },
-    {
-      key: 'group',
-      icon: '👥',
-      label: 'Panier partagé',
-      sub: 'Invitez des proches à contribuer',
-      badge: '<span class="k-modal-pay-badge k-modal-pay-badge--group">Partage</span>',
-      active: false,
-    },
-    {
-      key: 'pot',
-      icon: '🎁',
-      label: 'Cagnotte collective',
-      sub: 'Offrir ensemble, payer ensemble',
-      badge: '<span class="k-modal-pay-badge k-modal-pay-badge--group">Collectif</span>',
-      active: false,
-    },
-  ];
-
-  let html = '<div class="k-modal-section-title">Paiement</div><div class="k-modal-payment-opts">';
-  opts.forEach(function(o) {
-    html +=
-      '<div class="k-modal-payment-opt' + (o.active ? ' is-active' : '') + '" data-pay="' + o.key + '">' +
-        '<div class="k-modal-opt-radio"></div>' +
-        '<span class="k-modal-pay-icon">' + o.icon + '</span>' +
-        '<span class="k-modal-pay-label">' +
-          o.label +
-          '<span class="k-modal-pay-sub">' + o.sub + '</span>' +
-        '</span>' +
-        o.badge +
-      '</div>';
+  [
+    ['🔒', 'Paiement sécurisé'],
+    ['💬', 'Support Komerce'],
+  ].forEach(([icon, label]) => {
+    const item = document.createElement('span');
+    item.className = 'k-modal-trust-item';
+    item.textContent = `${icon} ${label}`;
+    trust.appendChild(item);
   });
-  html += '</div>';
-  el.innerHTML = html;
-
-  // Interaction : sélection radio
-  el.querySelectorAll('.k-modal-payment-opt').forEach(function(opt) {
-    opt.addEventListener('click', function() {
-      el.querySelectorAll('.k-modal-payment-opt').forEach(function(o) {
-        o.classList.remove('is-active');
-      });
-      opt.classList.add('is-active');
-    });
-  });
+  info.appendChild(trust);
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  7. SUBTOTAL — Prix dynamique dans les actions modal
-// ═══════════════════════════════════════════════════════════════
-
-function updateSubtotal() {
-  // Visible sur mobile ET desktop : sous-total dynamique dans les actions modal
-  let actions = modalZone('.k-modal-actions');
-  if (!actions) return;
-  let product = state.modalProduct;
-  if (!product) return;
-
-  let qty = state.modalQty || 1;
-  let sub = product.price_kmf * qty;
-
-  let el = actions.querySelector('.k-modal-subtotal');
-  if (!el) {
-    el = document.createElement('div');
-    el.className = 'k-modal-subtotal';
-    actions.appendChild(el);
-  }
-  el.innerHTML = 'Sous-total : <strong>' + fmtPrice(sub) + '</strong>';
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  10. RECENTLY VIEWED — Section "Vu récemment" en bas du modal (desktop)
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Affiche les 8 derniers produits vus (hors le courant) sous les suggestions.
- * Desktop uniquement — sur mobile, garder la modal légère.
- * Lecture depuis state.viewedHistory (alimenté dans b-modal.js openModal,
- * persisté en localStorage).
- */
 function injectRecentlyViewed() {
   if (!isDesktop()) return;
-  let scrollEl = modalZone('.k-modal-scroll');
-  if (!scrollEl) return;
-  let product = state.modalProduct;
-  if (!product) return;
+  const scrollEl = modalZone('.k-modal-scroll');
+  const product = currentDisplayProduct();
+  if (!scrollEl || !product) return;
 
-  // Reconstruit la liste : IDs récents, hors le courant, croisés avec products dispo,
-  // puis on garde les 8 derniers (les plus récents en queue de viewedHistory).
-  let history = (state.viewedHistory || []).slice();
-  let recentIds = history.filter(function(id) { return id !== product.id; });
-  // On les renverse pour avoir le plus récent en premier
-  recentIds.reverse();
-  let recents = recentIds
-    .map(function(id) { return state.products.find(function(p) { return p.id === id; }); })
+  scrollEl.querySelector('.k-modal-recent')?.remove();
+
+  const recentIds = (state.viewedHistory || [])
+    .filter((id) => String(id) !== String(product.id))
+    .reverse();
+  const recents = recentIds
+    .map((id) => state.products.find((item) => String(item.id) === String(id)))
     .filter(Boolean)
     .slice(0, 8);
+  if (!recents.length) return;
 
-  // Si rien à afficher, on retire l'éventuelle ancienne section
-  let old = scrollEl.querySelector('.k-modal-recent');
-  if (old) old.remove();
-  if (recents.length === 0) return;
-
-  let section = document.createElement('div');
+  const section = document.createElement('section');
   section.className = 'k-modal-recent';
-  section.innerHTML =
-    '<h3 class="k-modal-recent-title">Vu récemment</h3>' +
-    '<div class="k-modal-recent-grid">' +
-      recents.map(function(p) {
-        return '<button class="k-modal-recent-card" data-pid="' + p.id + '" type="button">' +
-          '<div class="k-modal-recent-img">' +
-            '<img src="' + (p.image_url || '') + '" alt="" loading="lazy">' +
-          '</div>' +
-          '<div class="k-modal-recent-name">' + (p.name || '') + '</div>' +
-          '<div class="k-modal-recent-price">' + fmtPrice(p.price_kmf) + '</div>' +
-        '</button>';
-      }).join('') +
-    '</div>';
+  const title = document.createElement('h3');
+  title.className = 'k-modal-recent-title';
+  title.textContent = 'Vu récemment';
+  const grid = document.createElement('div');
+  grid.className = 'k-modal-recent-grid';
 
-  scrollEl.appendChild(section);
+  recents.forEach((item) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'k-modal-recent-card';
+    card.dataset.pid = item.id;
 
-  // Click → ouvrir la fiche du produit
-  section.querySelectorAll('.k-modal-recent-card').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      let id = btn.getAttribute('data-pid');
-      if (id) openModal(id, true);
+    const imageWrap = document.createElement('div');
+    imageWrap.className = 'k-modal-recent-img';
+    const image = document.createElement('img');
+    image.src = item.image_url || '';
+    image.alt = '';
+    image.loading = 'lazy';
+    imageWrap.appendChild(image);
+
+    const name = document.createElement('div');
+    name.className = 'k-modal-recent-name';
+    name.textContent = item.name || '';
+    const price = document.createElement('div');
+    price.className = 'k-modal-recent-price';
+    price.textContent = fmtPrice(item.price_kmf);
+
+    card.append(imageWrap, name, price);
+    card.addEventListener('click', () => {
+      if (card.dataset.pid) openModal(card.dataset.pid, true);
     });
+    grid.appendChild(card);
   });
+
+  section.append(title, grid);
+  scrollEl.appendChild(section);
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  PR-M1 — ModalViewModel : classes contractuelles (mobile + desktop)
-// ═══════════════════════════════════════════════════════════════
-
 /**
- * Traduit le produit ouvert en ViewModel et pose les classes contractuelles
- * sur .k-modal. Idempotent : peut s'exécuter en plus du code existant qui
- * pose déjà k-modal--has-promo manuellement dans b-modal.js (pas de conflit,
- * applyModalClasses normalise tout).
- *
- * S'exécute mobile ET desktop — les classes pilotent le CSS dans les deux
- * contextes (ex: F1 prix coral mobile utilise déjà k-modal--has-promo).
- *
- * @param {Object} product - Produit brut émis par bus 'modal:opened'.
+ * Compatibilité PR-M1 jusqu'à PDC-6 : les classes structurelles historiques
+ * restent appliquées par le ViewModel legacy. Elles ne portent plus aucune
+ * vérité de stock/prix/livraison dans l'enhancer desktop.
  */
-function _applyModalContractClasses(product) {
+function applyLegacyContractClasses(product) {
   if (!product || !dom.modal) return;
   try {
     const vm = buildModalViewModel(product);
     applyModalClasses(dom.modal, vm);
-    // Exposer le ViewModel pour debug / inspection en console
     state._currentModalViewModel = vm;
-  } catch (err) {
-    // En cas d'erreur de normalisation : on ne casse rien, on log et on continue.
-    // Le code legacy de b-modal.js continue de poser ses propres classes.
-    if (typeof console !== 'undefined' && console.warn) {
-      console.warn('[modal-view-model] build failed, falling back to legacy classes:', err);
-    }
+  } catch (error) {
+    console.warn('[modal-view-model] build failed, falling back to legacy classes:', error);
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  ORCHESTRATION — Hook into modal open + qty observer
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Called after each modal open to inject desktop enhancements.
- * Listens on bus 'modal:opened' emitted by b-modal.js after classList.add('open').
- */
-function _onModalOpened() {
+function onModalOpened() {
   if (!isDesktop()) return;
-  // Small delay to let b-modal.js finish rendering
-  requestAnimationFrame(function() {
+  requestAnimationFrame(() => {
     injectBreadcrumb();
-    // ── Nouvelles zones Temu-style ──
-    injectPriceHero();
-    injectFlashAndStock();
-    injectDelivery();
-    injectPayment();
-    // ── Zones existantes ──
     injectTrustBadges();
-    injectSpecs();
     injectShareRow();
     injectRecentlyViewed();
-    updateSubtotal();
-    // DÉSACTIVÉ 2026-05-19 : zoom loupe Temu sur l'image retiré sur demande
-    // produit. Pour réactiver : décommenter la ligne ci-dessous. Les fonctions
-    // setupZoom / _onZoomMove / _onZoomLeave restent dans le fichier.
-    // setupZoom();
   });
 }
 
-// Listen for qty changes to update subtotal
-function _setupQtyObserver() {
-  if (!isDesktop()) return;
-  let qtyVal = document.getElementById('k-qty-val');
-  if (!qtyVal) return;
-  let obs = new MutationObserver(function() {
-    updateSubtotal();
-  });
-  obs.observe(qtyVal, { childList: true, characterData: true, subtree: true });
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  ENTRY POINT
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * PR-M1 — Setup du listener ModalViewModel.
- *
- * Appelé depuis main.js TOUJOURS (mobile + desktop), contrairement à
- * setupModalDesktopEnhancers() qui ne tourne qu'en desktop.
- *
- * Idempotent : flag _vmListenerInstalled empêche les doubles branchements.
- */
 export function setupModalContractClasses() {
   if (_vmListenerInstalled) return;
   _vmListenerInstalled = true;
-  bus.on('modal:opened', _applyModalContractClasses);
+  bus.on('modal:opened', applyLegacyContractClasses);
 }
 
 export function setupModalDesktopEnhancers() {
-  if (!isDesktop()) return;
-  if (_enhancersInstalled) return;
+  if (!isDesktop() || _enhancersInstalled) return;
   _enhancersInstalled = true;
-  bus.on('modal:opened', _onModalOpened);
-  // Nettoyer le timer flash quand la modal se ferme
-  bus.on('modal:close', function() { _stopFlashTimer(); });
-  _setupQtyObserver();
+  bus.on('modal:opened', onModalOpened);
 }

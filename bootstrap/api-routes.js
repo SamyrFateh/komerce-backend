@@ -6,13 +6,13 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/shared-cart-cash.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js
+ * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/shared-cart-cash.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js
  * @db-write      none
  * @db-read      none
  * @used-by       server.js
  * @doctrine      routes_canoniques, stripe_raw_body_preserve, alias_historiques_limites
- * @impact-areas  all-api, checkout, shared-cart, payment, dashboard, economic-engine, boutique
- * @version       2026-06
+ * @impact-areas  all-api, checkout, shared-cart, payment, dashboard, economic-engine, boutique, product-detail
+ * @version       2026-07
  */
 
 'use strict';
@@ -27,6 +27,7 @@
 
 function mountApiRoutesBeforeStripeOwnedBlocks(app) {
   const authRouter       = require('../routes/auth');
+  const productDetailRouter = require('../routes/catalog-product-detail');
   const productsRouter   = require('../routes/products');
   const ordersRouter     = require('../routes/orders');
   const relaisRouter     = require('../routes/relais');
@@ -43,6 +44,7 @@ function mountApiRoutesBeforeStripeOwnedBlocks(app) {
 
   app.use('/api/transit-dashboard', transitDashRouter);
   app.use('/api/auth',       authRouter);
+  app.use('/api/products',   productDetailRouter);
   app.use('/api/products',   productsRouter);
   app.use('/api/orders',     ordersRouter);
   app.use('/api/relais',     relaisRouter);
