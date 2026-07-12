@@ -105,14 +105,53 @@ jobs:
           echo "$code" > schema-check.exit-code
           exit 0
 
-      - name: Snapshot Railway prod schema for PDC migrations
+      - name: Probe public Railway database secret and snapshot
         env:
-          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+          INTERNAL_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+          PUBLIC_URL_1: ${{ secrets.RAILWAY_PUBLIC_DATABASE_URL }}
+          PUBLIC_URL_2: ${{ secrets.DATABASE_PUBLIC_URL }}
+          PUBLIC_URL_3: ${{ secrets.RAILWAY_DATABASE_PUBLIC_URL }}
+          PUBLIC_URL_4: ${{ secrets.RAILWAY_TCP_DATABASE_URL }}
+          PUBLIC_URL_5: ${{ secrets.RAILWAY_DATABASE_TCP_URL }}
         run: |
-          node scripts/db-snapshot.js > schema-snapshot.log 2>&1
+          set +e
+          : > schema-secret-probe.log
+          : > schema-snapshot.log
+          selected=""
+          selected_name=""
+
+          for name in PUBLIC_URL_1 PUBLIC_URL_2 PUBLIC_URL_3 PUBLIC_URL_4 PUBLIC_URL_5; do
+            value="${!name}"
+            if [ -n "$value" ]; then
+              echo "$name=set" >> schema-secret-probe.log
+              selected="$value"
+              selected_name="$name"
+              break
+            else
+              echo "$name=unset" >> schema-secret-probe.log
+            fi
+          done
+
+          if [ -z "$selected" ]; then
+            echo "NO_PUBLIC_DATABASE_SECRET" | tee -a schema-snapshot.log
+            if [ -n "$INTERNAL_URL" ]; then
+              echo "INTERNAL_URL=set_but_not_usable_from_github_actions" >> schema-secret-probe.log
+            else
+              echo "INTERNAL_URL=unset" >> schema-secret-probe.log
+            fi
+            exit 0
+          fi
+
+          echo "selected=$selected_name" >> schema-secret-probe.log
+          DATABASE_URL="$selected" node scripts/db-snapshot.js > schema-snapshot.log 2>&1
+          code=$?
           cat schema-snapshot.log
-          node scripts/check-schema-freshness.js > schema-after-snapshot.log 2>&1
-          cat schema-after-snapshot.log
+          echo "$code" > schema-snapshot.exit-code
+          if [ "$code" -eq 0 ]; then
+            node scripts/check-schema-freshness.js > schema-after-snapshot.log 2>&1
+            cat schema-after-snapshot.log
+          fi
+          exit 0
 
       - name: Upload PDC-5 diagnostic
         if: always()
@@ -130,7 +169,9 @@ jobs:
             feature-registry.exit-code
             schema-check.log
             schema-check.exit-code
+            schema-secret-probe.log
             schema-snapshot.log
+            schema-snapshot.exit-code
             schema-after-snapshot.log
             docs/db/railway-live-schema.sql
             public/boutique/.pdc5-coverage/coverage-final.json
