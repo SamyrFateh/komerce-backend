@@ -1,0 +1,69 @@
+name: PDC4 Boutique Diagnostic
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  pdc4-diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install root and Boutique
+        run: |
+          npm ci --silent
+          npm --prefix public/boutique ci --silent
+      - name: Diagnose Boutique check fast
+        id: boutique
+        continue-on-error: true
+        run: |
+          set +e
+          npm --prefix public/boutique run check:fast > /tmp/pdc4-check-fast.log 2>&1
+          code=$?
+          tail -n 180 /tmp/pdc4-check-fast.log > /tmp/pdc4-check-fast-tail.log
+          echo "$code" > /tmp/pdc4-check-fast-exit-code
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+      - name: Diagnose touched tests
+        id: touched
+        continue-on-error: true
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1 --quiet
+          set +e
+          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict > /tmp/pdc4-touched-tests.log 2>&1
+          code=$?
+          tail -n 180 /tmp/pdc4-touched-tests.log > /tmp/pdc4-touched-tests-tail.log
+          echo "$code" > /tmp/pdc4-touched-tests-exit-code
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+      - name: Comment diagnostics
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const boutique = fs.readFileSync('/tmp/pdc4-check-fast-tail.log', 'utf8');
+            const boutiqueCode = fs.readFileSync('/tmp/pdc4-check-fast-exit-code', 'utf8').trim();
+            const touched = fs.readFileSync('/tmp/pdc4-touched-tests-tail.log', 'utf8');
+            const touchedCode = fs.readFileSync('/tmp/pdc4-touched-tests-exit-code', 'utf8').trim();
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## PDC-4 diagnostics\n\n### check:fast — exit ${boutiqueCode}\n\n\`\`\`text\n${boutique}\n\`\`\`\n\n### touched-tests --strict — exit ${touchedCode}\n\n\`\`\`text\n${touched}\n\`\`\``
+            });
+      - name: Preserve diagnostic failures
+        if: steps.boutique.outputs.code != '0' || steps.touched.outputs.code != '0'
+        run: exit 1
