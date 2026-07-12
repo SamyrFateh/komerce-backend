@@ -10,7 +10,7 @@
  * @used-by       all-boutique-js-modules
  * @doctrine      state_partage_explicite, panier_local_source_unique, dom_refs_centralisees
  * @impact-areas  all-boutique, cart, checkout, catalog, modal, shared-cart, tracking
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
@@ -20,12 +20,12 @@
  *
  * Contient :
  *   - state       → état mutable partagé (panier, catalogue, modal…)
-
+ *
  *   - dom         → cache des refs DOM (peuplé par initDom() au boot)
  *   - $, $$       → aliases querySelector / querySelectorAll
  *
  * Usage :
-
+ *
  */
 
 import { bus } from './b-bus.js';
@@ -96,8 +96,13 @@ export const state = {
   modalSubcatFilter: null,
   modalQty: 1,
   modalHistory: [],
-  /** Variantes sélectionnées par l'utilisateur : { "Couleur": "Bleu", "Taille": "M" }.
-      Transmis comme variant_combo à submitOrder. Réinitialisé à chaque ouverture de modal. */
+  /** PDC-4 — contrat détail produit public actuellement affiché sur mobile. */
+  modalProductDetail: null,
+  /** PDC-3 — état dérivé unique de sélection SKU, partagé par les renderers. */
+  modalSelection: null,
+  /** Signature des médias déjà rendus ; évite de reconstruire le carousel à vide. */
+  modalMediaSignature: '',
+  /** Variantes legacy sélectionnées : transition jusqu'à extinction PDC-6. */
   modalVariantCombo: {},
   /** Historique des produits vus (IDs), persisté en localStorage.
       Utilisé pour la section "Vu récemment" en desktop. */
@@ -302,4 +307,3 @@ export function updateMobileScrollTop() {
   requestAnimationFrame(doUpdate);
   setTimeout(doUpdate, 400);
 }
-
