@@ -41,7 +41,7 @@ function activeUnit(detail, selection) {
 
 function currentPrice(detail, selection) {
   const unit = activeUnit(detail, selection);
-  return unit?.price_kmf ?? detail.pricing.price_kmf;
+  return unit?.price_kmf ?? detail?.pricing?.price_kmf ?? null;
 }
 
 function mediaSignature(selection) {
@@ -55,7 +55,7 @@ function renderMedia(detail, selection, force = false) {
 
   const media = selection.selected_media && selection.selected_media.length
     ? selection.selected_media
-    : detail.media;
+    : (detail.media || []);
 
   buildCarouselSlides({
     name: detail.product.name,
@@ -94,7 +94,7 @@ function renderIdentity(detail) {
 function renderPriceAndReference(detail, selection) {
   const unit = activeUnit(detail, selection);
   const price = currentPrice(detail, selection);
-  if (dom.modalPrice) dom.modalPrice.textContent = fmtPrice(price);
+  if (dom.modalPrice) dom.modalPrice.textContent = price != null ? fmtPrice(price) : '';
 
   if (dom.modalOldPrice) {
     const oldPrice = detail.pricing.old_price_kmf;
@@ -248,7 +248,8 @@ function renderDeliveryOptions(detail) {
   title.textContent = 'Livraison';
   el.appendChild(title);
 
-  if (!detail.delivery_options.length) {
+  const options = detail?.delivery_options || [];
+  if (!options.length) {
     const empty = document.createElement('div');
     empty.className = 'k-modal-delivery-opt';
     empty.textContent = 'Option de livraison communiquée à la commande.';
@@ -256,7 +257,7 @@ function renderDeliveryOptions(detail) {
     return;
   }
 
-  detail.delivery_options.forEach((option) => {
+  options.forEach((option) => {
     const row = document.createElement('div');
     row.className = 'k-modal-delivery-opt';
     row.dataset.deliveryCode = option.code;
@@ -351,7 +352,7 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
   container.appendChild(root);
 
   if (selection.selection_supported) {
-    detail.option_axes.forEach((axis) => {
+    (detail.option_axes || []).forEach((axis) => {
       root.appendChild(renderAxis(detail, selection, axis, rerender));
     });
   }
@@ -370,4 +371,10 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
 export function refreshDesktopProductSubtotal() {
   if (!state.modalProductDetail || !state.modalSelection) return;
   renderSubtotal(state.modalProductDetail, state.modalSelection);
+}
+
+export function clearDesktopProductDetailState() {
+  if (_qtyObserver) _qtyObserver.disconnect();
+  _qtyObserver = null;
+  _qtyObservedEl = null;
 }
