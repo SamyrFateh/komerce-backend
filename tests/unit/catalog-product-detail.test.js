@@ -1,9 +1,13 @@
 'use strict';
 
+jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../services/transport-rails', () => ({
   listCommercialTransportRails: jest.fn(),
 }));
 
+const express = require('express');
+const request = require('supertest');
+const sharedDb = require('../../db');
 const { listCommercialTransportRails } = require('../../services/transport-rails');
 const {
   getProductDetail,
@@ -11,6 +15,7 @@ const {
   _buildDeliveryOptions,
   _assertContract,
 } = require('../../services/catalog-product-detail');
+const productDetailRouter = require('../../routes/catalog-product-detail');
 
 const PRODUCT_ID = '11111111-1111-4111-8111-111111111111';
 const SKU_M = '22222222-2222-4222-8222-222222222222';
@@ -102,17 +107,30 @@ function dbFor({ product = skuProduct(), variants = variantRows(), skus = skuRow
   };
 }
 
+function commercialSeaOnly() {
+  listCommercialTransportRails.mockReturnValue([
+    {
+      code: 'SEA_STANDARD',
+      capacity_status: 'ACTIVE',
+      pricing_status: 'ACTIVE',
+      commercial_exposure: 'PUBLIC',
+    },
+  ]);
+}
+
+function routeApp() {
+  const app = express();
+  app.use('/api/products', productDetailRouter);
+  app.use((err, _req, res, _next) => {
+    res.status(500).json({ error: err.message, code: err.code || null });
+  });
+  return app;
+}
+
 describe('catalog product detail contract v1', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    listCommercialTransportRails.mockReturnValue([
-      {
-        code: 'SEA_STANDARD',
-        capacity_status: 'ACTIVE',
-        pricing_status: 'ACTIVE',
-        commercial_exposure: 'PUBLIC',
-      },
-    ]);
+    commercialSeaOnly();
   });
 
   test('compose un produit SKU sans reconstruire un stock par axe', async () => {
@@ -282,5 +300,56 @@ describe('catalog product detail contract v1', () => {
     expect(detail.pricing.price_kmf).toBeNull();
     expect(detail.pricing.promo_pct).toBeNull();
     expect(detail.sellable_units[0].price_kmf).toBeNull();
+  });
+});
+
+describe('GET /api/products/:id/detail', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    commercialSeaOnly();
+  });
+
+  test('renvoie le contrat détail public v1', async () => {
+    const prepared = dbFor();
+    sharedDb.query.mockImplementation((...args) => prepared.query(...args));
+
+    const response = await request(routeApp())
+      .get(`/api/products/${PRODUCT_ID}/detail`)
+      .expect(200);
+
+    expect(response.body.contract_version).toBe('1');
+    expect(response.body.product.id).toBe(PRODUCT_ID);
+    expect(response.body.sellable_units).toHaveLength(2);
+  });
+
+  test('refuse un identifiant produit invalide avant toute lecture DB', async () => {
+    const response = await request(routeApp())
+      .get('/api/products/not-a-uuid/detail')
+      .expect(400);
+
+    expect(response.body).toEqual({ error: 'ID produit invalide' });
+    expect(sharedDb.query).not.toHaveBeenCalled();
+  });
+
+  test('renvoie 404 pour un produit absent', async () => {
+    sharedDb.query.mockResolvedValueOnce({ rows: [] });
+
+    const response = await request(routeApp())
+      .get(`/api/products/${PRODUCT_ID}/detail`)
+      .expect(404);
+
+    expect(response.body).toEqual({ error: 'Produit introuvable' });
+  });
+
+  test('propage une erreur de composition au middleware d’erreur', async () => {
+    const failure = new Error('DB indisponible');
+    failure.code = 'DB_DOWN';
+    sharedDb.query.mockRejectedValueOnce(failure);
+
+    const response = await request(routeApp())
+      .get(`/api/products/${PRODUCT_ID}/detail`)
+      .expect(500);
+
+    expect(response.body).toEqual({ error: 'DB indisponible', code: 'DB_DOWN' });
   });
 });
