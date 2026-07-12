@@ -2354,7 +2354,8 @@
       "inputs": [
         "modal_lifecycle",
         "product_id",
-        "product_detail_v1"
+        "product_detail_v1",
+        "responsive_breakpoint"
       ],
       "outputs": [
         "shared_modal_selection_state",
