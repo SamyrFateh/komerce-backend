@@ -4,34 +4,29 @@
  * @domain        catalog
  * @layer         service
  * @criticality   medium
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
+ * @inputs        manual_supplier_product_payload
+ * @outputs       normalized_supplier_product_v1_or_v2
  * @depends       services/suppliers/connectors/_connector-utils.js, services/suppliers/normalized-product.js
  * @used-by       routes/sourcing-scanner.js
  * @db-read       none
  * @db-write      none
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  catalog, product-discovery
- * @version       2026-06
+ * @db-txn        none
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
+ * @impact-areas  catalog, product-discovery, product-detail
+ * @version       2026-07
  */
 
 /**
  * KOMERCE — Manual Connector
  * ═══════════════════════════════════════════════════════════════════
  *
- * Connecteur fonctionnel : transforme une saisie manuelle (formulaire admin)
- * en NormalizedSupplierProduct[].
+ * Une saisie plate continue de produire un contrat V1 compatible.
  *
- * L'admin saisit un ou plusieurs produits via le formulaire de la vue
- * Scanner. Le connecteur :
- *   - normalise les types (parsing STRICT — ING-I2, ING-2 : une valeur
- *     fournie mais illisible ne devient jamais null en silence)
- *   - regroupe et re-valide les dimensions champ par champ
- *   - valide la structure (via partitionValid, contrat v1)
- *
- * ING-2 : plus de défaut inventé (`currency || 'AED'`). Une devise absente
- * n'est plus devinée — le contrat v1 la rejette (`currency requise`).
+ * Si l'entrée porte explicitement une structure riche (`media`, `option_axes`,
+ * `sellable_units`, `source_locale`) et ne fixe pas elle-même une version, le
+ * connecteur la place en V2. Il PRÉSERVE ces faits tels quels et laisse le
+ * contrat versionné les valider : aucune matrice SKU ni association média n'est
+ * reconstruite ici.
  */
 
 'use strict';
@@ -39,16 +34,16 @@
 const { partitionValid } = require('../normalized-product');
 const { parseStrictNumber, parseStrictInteger, parsePositiveDimension } = require('./_connector-utils');
 
+const V2_FIELDS = Object.freeze(['source_locale', 'media', 'option_axes', 'sellable_units']);
+
+function cloneJsonValue(value) {
+  if (value === undefined) return undefined;
+  return JSON.parse(JSON.stringify(value));
+}
+
 /**
  * Normalise un item de formulaire en NormalizedSupplierProduct.
- * En cas de valeur illisible (ex: purchase_price:"beaucoup"), l'item porte
- * une propriété non-énumérable `_connectorErrors` — fetchProducts() la
- * détecte et route l'item directement en `invalid`, sans passer par le
- * contrat (ING-I2 : la donnée n'est même pas structurellement exploitable).
- *
- * @param {Object} item   — payload form (ex: { product_name, purchase_price, weight_kg, dim_l_cm, ... })
- * @param {string} supplierName
- * @returns {NormalizedSupplierProduct}
+ * Les erreurs de parsing scalar sont routées en invalid via `_connectorErrors`.
  */
 function normalizeFormItem(item, supplierName) {
   const errors = [];
@@ -70,10 +65,6 @@ function normalizeFormItem(item, supplierName) {
   const supplierDelayDays = intField('supplier_delay_days', 'supplier_delay_days');
   const weightKg = numField('weight_kg', 'weight_kg');
 
-  // Dimensions : re-validées champ par champ, qu'elles arrivent en dim_l_cm/
-  // dim_w_cm/dim_h_cm séparés OU déjà groupées dans un objet `dimensions`
-  // (ING-2 : plus d'objet libre accepté tel quel — chaque valeur est
-  // parsée strictement, une valeur illisible rejette la ligne).
   const dimSource = item.dimensions && typeof item.dimensions === 'object'
     ? item.dimensions
     : { l_cm: item.dim_l_cm, w_cm: item.dim_w_cm, h_cm: item.dim_h_cm };
@@ -87,6 +78,12 @@ function normalizeFormItem(item, supplierName) {
   const finalDimensions = Object.keys(dimensions).length ? dimensions : null;
 
   const currency = item.currency ? String(item.currency).toUpperCase() : null;
+  const explicitVersion = item.schema_version == null || item.schema_version === ''
+    ? null
+    : String(item.schema_version);
+  const hasRichStructure = V2_FIELDS.some((field) =>
+    Object.prototype.hasOwnProperty.call(item, field)
+  );
 
   const obj = {
     supplier_name: supplierName,
@@ -106,6 +103,21 @@ function normalizeFormItem(item, supplierName) {
     raw_payload: { ...item },
   };
 
+  // Version explicite gagnante : un payload qui annonce v1 mais contient des
+  // champs v2 doit être rejeté par le schéma v1, pas promu silencieusement.
+  if (explicitVersion) obj.schema_version = explicitVersion;
+  else if (hasRichStructure) obj.schema_version = '2';
+
+  // Préserver les structures riches sans interprétation. Le schéma V2 et les
+  // invariants référentiels de normalized-product.js sont les seuls juges.
+  if (hasRichStructure) {
+    for (const field of V2_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(item, field)) {
+        obj[field] = cloneJsonValue(item[field]);
+      }
+    }
+  }
+
   if (errors.length) {
     Object.defineProperty(obj, '_connectorErrors', {
       value: errors,
@@ -116,18 +128,8 @@ function normalizeFormItem(item, supplierName) {
   return obj;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// API CONNECTEUR
-// ═══════════════════════════════════════════════════════════════════════
-
 /**
  * Transforme une liste d'items du formulaire en NormalizedSupplierProduct[].
- *
- * @param {Object} input
- * @param {string} input.supplier_name
- * @param {Array<Object>} input.items   — items du formulaire
- *
- * @returns {{ products, invalid, total }}
  */
 function fetchProducts(input) {
   const supplierName = (input?.supplier_name || '').trim();
@@ -135,18 +137,16 @@ function fetchProducts(input) {
   if (!Array.isArray(input.items) || !input.items.length) {
     throw new Error('items requis (tableau non vide)');
   }
-  const normalized = input.items.map(it => normalizeFormItem(it, supplierName));
 
-  // ING-2 : les items structurellement illisibles (parsing strict échoué)
-  // sont écartés AVANT le contrat v1 — inutile de leur faire subir une
-  // validation de schéma sur des champs qu'on sait déjà invalides.
+  const normalized = input.items.map((item) => normalizeFormItem(item, supplierName));
   const connectorInvalid = [];
   const toValidate = [];
-  for (const n of normalized) {
-    if (n._connectorErrors && n._connectorErrors.length) {
-      connectorInvalid.push({ product: { ...n }, errors: n._connectorErrors });
+
+  for (const product of normalized) {
+    if (product._connectorErrors && product._connectorErrors.length) {
+      connectorInvalid.push({ product: { ...product }, errors: product._connectorErrors });
     } else {
-      toValidate.push(n);
+      toValidate.push(product);
     }
   }
 
