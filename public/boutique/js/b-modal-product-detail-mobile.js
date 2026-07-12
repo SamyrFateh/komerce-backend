@@ -21,23 +21,20 @@
 /**
  * PDC-4 — Adaptateur mobile Product Detail Contract v1 → modal.
  *
- * Le module est volontairement branché sur `modal:opened` plutôt que d'ajouter
- * une seconde orchestration d'ouverture. `b-modal-core.js` garde le lifecycle ;
- * ici on remplace uniquement les vérités produit du chemin mobile SKU lorsque
- * le contrat détail est disponible.
- *
- * LEGACY_VARIANTS reste sur le renderer historique jusqu'à PDC-6/PDC-7.
+ * `b-modal-core.js` garde le lifecycle. Ce module écoute `modal:opened`, charge
+ * le contrat public et remplace uniquement les vérités produit du chemin mobile
+ * SKU. LEGACY_VARIANTS conserve temporairement le renderer historique.
  */
 
 import { bus } from './b-bus.js';
 import { state, dom } from './b-store.js';
 import { fmtPrice } from './b-utils.js';
-import {
-  buildCarouselSlides,
-  openSizeGuide,
-} from './b-modal-product.js';
+import { buildCarouselSlides, openSizeGuide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { _syncModalQtyUI } from './b-modal-cart.js';
+import {
+  _syncModalQtyUI,
+  setModalTransactionPending,
+} from './b-modal-cart.js';
 import {
   OPTION_STATE,
   createModalSelection,
@@ -54,6 +51,12 @@ function isMobileViewport() {
 function disconnectVariantObserver() {
   if (_variantObserver) _variantObserver.disconnect();
   _variantObserver = null;
+}
+
+function isCurrentRequest(version, productId) {
+  return version === _requestVersion
+    && state.modalOpen
+    && String(state.modalProduct?.id) === String(productId);
 }
 
 function currentSelectedUnit(detail, selection) {
@@ -110,7 +113,7 @@ function buildOptionButton(axis, option, stateValue, selected, onSelect) {
   if (selected) button.classList.add(visual ? 'k-sku--active' : 'k-vp--active');
   if (stateValue !== OPTION_STATE.AVAILABLE) {
     button.classList.add(visual ? 'k-sku--out' : 'k-vp--out');
-    // L'option reste cliquable : le reducer produit la raison contextuelle.
+    // Reste cliquable : le reducer possède la raison contextuelle.
     button.setAttribute('aria-disabled', 'true');
   }
 
@@ -236,7 +239,6 @@ function renderDeliveryOptions(deliveryOptions) {
   if (!deliveryOptions.length) return;
 
   const scroll = dom.modal.querySelector('.k-modal-scroll');
-  const actions = dom.modal.querySelector('.k-modal-actions');
   const parent = scroll || dom.modal;
   const panel = document.createElement('div');
   panel.className = 'k-modal-reassurance';
@@ -311,8 +313,7 @@ function renderDeliveryOptions(deliveryOptions) {
     panel.classList.toggle('is-open', !open);
   });
 
-  if (actions && actions.parentElement === parent) parent.insertBefore(panel, actions);
-  else parent.appendChild(panel);
+  parent.appendChild(panel);
 }
 
 function renderTopbar(detail, selection) {
@@ -372,16 +373,20 @@ function renderIdentityAndPricing(detail, selection) {
 }
 
 function renderMedia(detail, selection) {
-  const media = selection.selected_media;
-  const urls = media.map((item) => item.url);
+  const urls = selection.selected_media.map((item) => item.url);
   buildCarouselSlides({
     id: detail.product.id,
     name: detail.product.name,
     images: urls,
     image_url: urls[0] || null,
   });
-
   requestAnimationFrame(() => setupImageUX());
+}
+
+function onSelection(detail, axisKey, value) {
+  state.modalSelection = selectModalOption(detail, state.modalSelection, axisKey, value);
+  renderCurrentSelection(detail);
+  bus.emit('modal:selection-changed', state.modalSelection);
 }
 
 function renderCurrentSelection(detail) {
@@ -391,11 +396,7 @@ function renderCurrentSelection(detail) {
   state.modalVariantCombo = { ...selection.selected_options };
   renderIdentityAndPricing(detail, selection);
   renderMedia(detail, selection);
-  renderSelectionAxes(detail, selection, (axisKey, value) => {
-    state.modalSelection = selectModalOption(detail, state.modalSelection, axisKey, value);
-    renderCurrentSelection(detail);
-    bus.emit('modal:selection-changed', state.modalSelection);
-  });
+  renderSelectionAxes(detail, selection, (axisKey, value) => onSelection(detail, axisKey, value));
   renderStockState(detail, selection);
   renderDeliveryOptions(detail.delivery_options);
   renderTopbar(detail, selection);
@@ -408,13 +409,9 @@ function guardVariantsAgainstLegacyRenderer(detail) {
 
   disconnectVariantObserver();
   _variantObserver = new MutationObserver(() => {
-    if (!state.modalProductDetail || state.modalProductDetail !== detail) return;
+    if (state.modalProductDetail !== detail) return;
     if (container.querySelector('[data-pdc-sku-selection="1"]')) return;
-    renderSelectionAxes(detail, state.modalSelection, (axisKey, value) => {
-      state.modalSelection = selectModalOption(detail, state.modalSelection, axisKey, value);
-      renderCurrentSelection(detail);
-      bus.emit('modal:selection-changed', state.modalSelection);
-    });
+    renderSelectionAxes(detail, state.modalSelection, (axisKey, value) => onSelection(detail, axisKey, value));
   });
   _variantObserver.observe(container, { childList: true });
 }
@@ -427,16 +424,26 @@ async function activateMobileProductDetail(product) {
 
   if (!isMobileViewport()) return;
 
+  // Ferme la fenêtre de course entre le rendu legacy synchrone et la réponse du
+  // contrat détail. Le CTA n'est réactivé qu'après décision SKU ou fallback legacy.
+  setModalTransactionPending(true);
+
   try {
     const response = await fetch('/api/products/' + product.id + '/detail', {
       credentials: 'include',
     });
-    if (!response.ok) return;
-    const detail = await response.json();
+    if (!isCurrentRequest(version, product.id)) return;
+    if (!response.ok) {
+      setModalTransactionPending(false);
+      return;
+    }
 
-    if (version !== _requestVersion) return;
-    if (!state.modalOpen || String(state.modalProduct?.id) !== String(product.id)) return;
-    if (detail.inventory_model !== 'SKU') return;
+    const detail = await response.json();
+    if (!isCurrentRequest(version, product.id)) return;
+    if (detail.inventory_model !== 'SKU') {
+      setModalTransactionPending(false);
+      return;
+    }
 
     state.modalProductDetail = detail;
     state.modalSelection = createModalSelection(detail);
@@ -447,7 +454,7 @@ async function activateMobileProductDetail(product) {
       selection: state.modalSelection,
     });
   } catch (_) {
-    // Le chemin legacy déjà rendu reste visible si le contrat détail est indisponible.
+    if (isCurrentRequest(version, product.id)) setModalTransactionPending(false);
   }
 }
 
