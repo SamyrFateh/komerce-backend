@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 367,
-    "filesWithFullHeaders": 341,
+    "scannedCodeFiles": 368,
+    "filesWithFullHeaders": 342,
     "filesWithLiteHeaders": 26,
-    "filesWithAnyHeaders": 367,
+    "filesWithAnyHeaders": 368,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 741,
-    "edges": 4249,
+    "graphNodes": 743,
+    "edges": 4257,
     "dbTables": 110,
     "doctrines": 140,
-    "impactAreas": 124,
-    "unresolvedCodeEdges": 405,
+    "impactAreas": 125,
+    "unresolvedCodeEdges": 406,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 36,
     "boutique": 38,
-    "catalog": 40,
+    "catalog": 41,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 7,
@@ -69,7 +69,7 @@
     "ui-state": 1,
     "util-ui": 2,
     "ui-infrastructure": 1,
-    "state": 1,
+    "state": 2,
     "util": 24,
     "controller": 1,
     "api-client": 2,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 100,
-    "high": 158,
+    "high": 159,
     "low": 33
   },
   "nodes": [
@@ -3652,6 +3652,46 @@
         "catalog"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/view-models/modal-product-session.js",
+      "file": "public/boutique/js/view-models/modal-product-session.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "product-modal-session",
+      "domain": "catalog",
+      "layer": "state",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "public_product_detail_v1",
+        "modal_selection_state"
+      ],
+      "outputs": [
+        "current_modal_product_detail",
+        "current_modal_selection"
+      ],
+      "depends": [],
+      "usedBy": [
+        "b-modal-product-detail-mobile.js",
+        "b-modal-cart.js",
+        "future desktop product detail adapter"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "sku-selection",
+        "responsive-product-detail"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/view-models/modal-selection-model.js",
@@ -18991,6 +19031,11 @@
       "area": "admin-category-config"
     },
     {
+      "id": "impact:responsive-product-detail",
+      "type": "impact-area",
+      "area": "responsive-product-detail"
+    },
+    {
       "id": "impact:product-selection",
       "type": "impact-area",
       "area": "product-selection"
@@ -24352,6 +24397,54 @@
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
+    },
+    {
+      "from": "public/boutique/js/b-modal-product-detail-mobile.js",
+      "to": "public/boutique/js/view-models/modal-product-session.js",
+      "type": "uses",
+      "label": "b-modal-product-detail-mobile.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-cart.js",
+      "to": "public/boutique/js/view-models/modal-product-session.js",
+      "type": "uses",
+      "label": "b-modal-cart.js"
+    },
+    {
+      "from": "future desktop product detail adapter",
+      "to": "public/boutique/js/view-models/modal-product-session.js",
+      "type": "uses",
+      "label": "future desktop product detail adapter"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-product-session.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-product-session.js",
+      "to": "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
+      "type": "doctrine",
+      "label": "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-product-session.js",
+      "to": "impact:product-modal",
+      "type": "impact",
+      "label": "product-modal"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-product-session.js",
+      "to": "impact:sku-selection",
+      "type": "impact",
+      "label": "sku-selection"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-product-session.js",
+      "to": "impact:responsive-product-detail",
+      "type": "impact",
+      "label": "responsive-product-detail"
     },
     {
       "from": "future b-modal-core.js",
@@ -46884,7 +46977,8 @@
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-modal-product-detail-mobile.js",
-        "public/boutique/js/b-store.js"
+        "public/boutique/js/b-store.js",
+        "public/boutique/js/view-models/modal-product-session.js"
       ]
     },
     "public/boutique/js/b-modal-core.js": {
@@ -47127,6 +47221,7 @@
         "public/boutique/js/b-modal.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
+        "public/boutique/js/view-models/modal-product-session.js",
         "public/boutique/js/view-models/modal-selection-model.js"
       ]
     },
@@ -48477,6 +48572,42 @@
       "mustCheck": [
         "impact:catalog",
         "public/boutique/js/b-catalog.js"
+      ]
+    },
+    "public/boutique/js/view-models/modal-product-session.js": {
+      "role": "product-modal-session",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "public/boutique/js/b-modal-product-detail-mobile.js",
+        "public/boutique/js/b-modal-cart.js",
+        "future desktop product detail adapter"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "sku-selection",
+        "responsive-product-detail"
+      ],
+      "mustCheck": [
+        "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "impact:product-modal",
+        "impact:responsive-product-detail",
+        "impact:sku-selection",
+        "public/boutique/js/b-modal-cart.js",
+        "public/boutique/js/b-modal-product-detail-mobile.js"
       ]
     },
     "public/boutique/js/view-models/modal-selection-model.js": {
@@ -62517,6 +62648,12 @@
       "to": "public/boutique/js/shop-schema.js",
       "type": "uses",
       "label": "renderers"
+    },
+    {
+      "from": "future desktop product detail adapter",
+      "to": "public/boutique/js/view-models/modal-product-session.js",
+      "type": "uses",
+      "label": "future desktop product detail adapter"
     },
     {
       "from": "future b-modal-core.js",
