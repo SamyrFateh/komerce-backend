@@ -1,0 +1,57 @@
+name: PDC4 Strict After Thresholds
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  strict-diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install
+        run: |
+          npm ci --silent
+          npm --prefix public/boutique ci --silent
+      - name: Run strict gate
+        id: strict
+        continue-on-error: true
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          git fetch origin feat/modal-selection-model-v1 --depth=1 --quiet
+          set +e
+          node scripts/touched-tests-gate.js --base origin/feat/modal-selection-model-v1 --strict > /tmp/strict.log 2>&1
+          code=$?
+          tail -n 100 /tmp/strict.log > /tmp/strict-tail.log
+          echo "$code" > /tmp/strict-code
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+      - name: Comment strict output
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const tail = fs.readFileSync('/tmp/strict-tail.log', 'utf8');
+            const code = fs.readFileSync('/tmp/strict-code', 'utf8').trim();
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## PDC-4 strict gate after thresholds — exit ${code}\n\n\`\`\`text\n${tail}\n\`\`\``
+            });
+      - name: Preserve failure
+        if: steps.strict.outputs.code != '0'
+        run: exit 1
