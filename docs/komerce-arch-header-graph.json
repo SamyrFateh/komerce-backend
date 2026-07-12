@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 743,
-    "edges": 4258,
+    "edges": 4259,
     "dbTables": 110,
     "doctrines": 140,
     "impactAreas": 125,
@@ -2304,7 +2304,8 @@
         "b-modal-product.js",
         "b-modal-image-ux.js",
         "b-modal-cart.js",
-        "view-models/modal-selection-model.js"
+        "view-models/modal-selection-model.js",
+        "view-models/modal-product-session.js"
       ],
       "usedBy": [
         "b-modal.js"
@@ -22556,6 +22557,12 @@
       "to": "public/boutique/js/view-models/modal-selection-model.js",
       "type": "depends",
       "label": "view-models/modal-selection-model.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-product-detail-mobile.js",
+      "to": "public/boutique/js/view-models/modal-product-session.js",
+      "type": "depends",
+      "label": "view-models/modal-product-session.js"
     },
     {
       "from": "public/boutique/js/b-modal.js",
@@ -47194,7 +47201,8 @@
         "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-cart.js",
-        "public/boutique/js/view-models/modal-selection-model.js"
+        "public/boutique/js/view-models/modal-selection-model.js",
+        "public/boutique/js/view-models/modal-product-session.js"
       ],
       "directUsedBy": [
         "public/boutique/js/b-modal.js"
