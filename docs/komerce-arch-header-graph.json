@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 743,
-    "edges": 4257,
+    "edges": 4258,
     "dbTables": 110,
     "doctrines": 140,
     "impactAreas": 125,
@@ -2068,7 +2068,7 @@
       "purpose": null,
       "inputs": [
         "modal_product",
-        "modal_selection_state",
+        "modal_product_session",
         "cart_state"
       ],
       "outputs": [
@@ -2079,7 +2079,8 @@
       "depends": [
         "b-store.js",
         "b-cart.js",
-        "b-cart-selection.js"
+        "b-cart-selection.js",
+        "view-models/modal-product-session.js"
       ],
       "usedBy": [
         "b-modal-core.js",
@@ -22195,6 +22196,12 @@
       "to": "public/boutique/js/b-cart-selection.js",
       "type": "depends",
       "label": "b-cart-selection.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-cart.js",
+      "to": "public/boutique/js/view-models/modal-product-session.js",
+      "type": "depends",
+      "label": "view-models/modal-product-session.js"
     },
     {
       "from": "public/boutique/js/b-modal-core.js",
@@ -46948,7 +46955,8 @@
       "directDependsOn": [
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-cart-selection.js"
+        "public/boutique/js/b-cart-selection.js",
+        "public/boutique/js/view-models/modal-product-session.js"
       ],
       "directUsedBy": [
         "public/boutique/js/b-modal-core.js",
