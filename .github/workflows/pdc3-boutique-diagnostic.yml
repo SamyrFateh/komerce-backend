@@ -1,0 +1,27 @@
+name: PDC3 Boutique Diagnostic
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  boutique-diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique
+        run: npm --prefix public/boutique ci
+      - name: Diagnose check fast
+        run: |
+          set +e
+          npm --prefix public/boutique run check:fast > /tmp/pdc3-check-fast.log 2>&1
+          code=$?
+          echo "=== PDC3 CHECK FAST TAIL ==="
+          tail -n 180 /tmp/pdc3-check-fast.log
+          echo "=== EXIT CODE: $code ==="
+          exit "$code"
