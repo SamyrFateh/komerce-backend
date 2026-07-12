@@ -1,7 +1,7 @@
 # Cartographie 360 Komerce
 
 > **Statut** : cartographie documentaire canonique  
-> **Dernière consolidation** : 10 juillet 2026  
+> **Dernière consolidation** : 12 juillet 2026  
 > **Méthode** : version maintenable, vérifiée contre `server.js`, `bootstrap/api-routes.js`, `bootstrap/html-routes.js`, `bootstrap/env.js` et les services critiques.  
 > **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes. Pour le schéma DB complet, voir `SCHEMA.md`.
 
@@ -36,6 +36,8 @@ Le point d'entrée applicatif est `server.js`.
 | Routage logistique | `services/routing.js` |
 | Sécurité pickup/collecte | `routes/pickup-secret.js`, `services/parcel-security.js` |
 | Boutique canonique | `public/boutique/index.html` |
+| Contrat détail produit public | `services/catalog-product-detail.js` + `schemas/catalog/product-detail.v1.schema.json` + `GET /api/products/:id/detail` |
+| Sélection SKU modal | `public/boutique/js/view-models/modal-selection-model.js` + `public/boutique/features/modal-product.feature.js` |
 | Ownership Boutique / modal produit | `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` + `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` + `features/catalog.feature.js` + `npm run gate:boutique-ownership` |
 | Couverture unitaire Boutique | `public/boutique/jest.config.js` + `public/boutique/scripts/report-coverage.js` + job `Boutique Quality Gates` de `.github/workflows/ci.yml` |
 | Admin moderne | `public/dashboards/admin/index.html` |
@@ -51,6 +53,24 @@ Le lot de stabilisation précédant les tests Playwright a :
 - retiré le code définitivement inaccessible de `b-group-banner.js` et les enrichissements neutralisés de `b-catalog-desktop-enhancers.js` ;
 - ajouté `b-cart-stepper-guard.js`, chargé par `boutique.js`, pour laisser les boutons `+`/`−` du stepper longue pression traverser le listener document en capture de `b-cart.js` sans dupliquer la logique de quantité ;
 - déclaré ce module dans `public/boutique/features/boutique.feature.js`.
+
+### 2 ter. Delta Product Detail / modal — 12 juillet 2026
+
+Le parcours produit enrichi est désormais découpé selon quatre responsabilités :
+
+```text
+source fournisseur
+→ catalogue canonique
+→ Product Detail Contract v1
+→ état de sélection SKU unique
+→ renderers mobile / desktop
+```
+
+Le backend compose le contrat public dans `services/catalog-product-detail.js`. La Boutique dérive l'interaction dans `public/boutique/js/view-models/modal-selection-model.js`.
+
+Le reducer modal ne possède aucune vérité de stock autonome. `AVAILABLE`, `OUT_OF_STOCK` et `INCOMPATIBLE` sont dérivés exclusivement des `sellable_units` reçues. Un produit `LEGACY_VARIANTS` est explicitement `selection_supported=false` ; aucune matrice couleur × taille n'est reconstruite.
+
+Mobile et desktop doivent consommer ce même état : `selected_options`, `selected_sku_id`, `selected_media`, `option_states`, `selection_message`.
 
 ---
 
@@ -68,7 +88,7 @@ Le lot de stabilisation précédant les tests Playwright a :
 
 | Préfixe | Rôle |
 |---|---|
-| `/api/products` | Produits. Tables : `products`, `product_variants`. |
+| `/api/products` | Produits et détail public versionné. Tables : `products`, `product_variants`, `product_skus`. `GET /api/products/:id/detail` compose le Product Detail Contract v1 sans reconstruire de stock legacy. |
 | `/api/categories` | Catégories boutique. |
 | `/api/admin/boutique-categories` | Admin catégories boutique. |
 | `/api/modules` | Modules spécialisés (cérémonie : tissus + modèles, lunettes, couture). Voir §6 bis. |
@@ -394,6 +414,7 @@ Ces divergences sont connues et ne doivent pas contaminer les docs de référenc
 4. Certains noms providers email/notification varient selon les périodes ; vérifier le code avant d'affirmer un provider actif.
 5. Le code garde des noms internes V4.1 (`shared-cart-engine`, statuts DB, tests `v41`). Ce n'est pas une preuve que la doctrine V4.1 est active côté produit : la doctrine active est Boutique First.
 6. Pour la modal produit Boutique, l'ancien document local mobile n'est plus source de vérité. La source active est `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`, contrôlée par `npm run gate:boutique-ownership`.
+7. `modal-view-model.js` reste un contrat d'affichage legacy pendant la convergence PDC. La sélection SKU cible appartient exclusivement à `modal-selection-model.js` ; ne pas étendre le ViewModel legacy avec une seconde logique de disponibilité.
 
 ---
 
