@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          loyalty
- * @domain        wallet
+ * @domain        loyalty
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
@@ -12,7 +12,7 @@
  * @db-write      loyalty_tiers
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  wallet
+ * @impact-areas  loyalty
  * @version       2026-06
  */
 

@@ -1,8 +1,8 @@
 /**
  * @feature       wallet-loyalty
  * @type          feature
- * @domain        wallet
- * @status        production
+ * @domain        wallet-loyalty
+ * @status        deprecated
  * @owner         backend-core
  * @since         2025-10
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
@@ -10,155 +10,82 @@
  */
 'use strict';
 
-module.exports = {
+// ── DÉPRÉCIÉ — Lot O1.2 (Business Feature Ontology Refactor), 2026-07-12 ───
+// Ce manifest est conservé comme trace historique, vide de tout fichier,
+// pour ne jamais redevenir une source de vérité concurrente. Il ne possède
+// plus aucun fichier, aucune table, aucune route : tout a été scindé et migré
+// vers deux manifests distincts, chacun couvrant exactement son périmètre
+// réel (vérifié empiriquement par lecture directe du code — grep .query(),
+// headers @komerce-arch, schema_railway.sql — gates à l'appui, voir
+// docs/chantier/LOT_O1_2_LIVRABLE.md) :
+//
+//   - features/wallet.feature.js   → solde client, credit/debit, store credits (module mort)
+//   - features/loyalty.feature.js  → statut de fidélité, paliers, récompenses
+//
+// Raison de la scission : wallet et loyalty ne partageaient ni tables (hors
+// `users`, sur des colonnes disjointes), ni cycle de vie, ni invariant commun.
+// Ils avaient été assemblés uniquement parce que la fidélité est financée par
+// le même client que le solde wallet — un rapport d'usage, pas un rapport de
+// service.
+//
+// Ne pas ajouter de fichier ici. Ne pas réutiliser ce nom pour une nouvelle
+// feature sans repasser par une décision explicite de gouvernance.
 
-  // ── Identite ─────────────────────────────────────────────────────────────
+module.exports = {
   name:     'wallet-loyalty',
-  type:     'feature',   // feature | transversal
-  domain:   'wallet',
-  status:   'production',   // draft | staging | production | deprecated
+  type:     'feature',
+  domain:   'wallet-loyalty',
+  status:   'deprecated',
   owner:    'backend-core',
   since:    '2025-10',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
-  // ── Service rendu ────────────────────────────────────────────────────────
-  service: 'Tenir le solde wallet d\'un client et son programme de fidelite, avec application exactement une fois.',
+  service: 'DÉPRÉCIÉ — scindé au Lot O1.2 (2026-07-12) en features/wallet.feature.js et features/loyalty.feature.js. Ne rend plus aucun service propre.',
 
-  // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
-    in: [
-      'solde wallet et historique de credit/debit',
-      'programme de fidelite et ses recompenses',
-      'store credits',
-    ],
+    in:  [],
     out: [
-      'paiement carte/PayPal (feature payments)',
-      'remboursement initiateur (feature refunds, qui credite le wallet)',
+      'tout — voir features/wallet.feature.js et features/loyalty.feature.js',
     ],
   },
 
-  // ── Perimetre fichiers ───────────────────────────────────────────────────
-  files: {
-    services: [
-      'services/wallet-service.js',
-      'services/loyalty-service.js',
-      'utils/store-credits.js',
-    ],
-    routes: [
-      'routes/wallet.js',
-      'routes/loyalty.js',
-    ],
-    migrations: [
-      'migrations/066_wallet_consumptions_append_only.sql',
-      'migrations/068_wallets_check_balance.sql',
-    ],
-    boutique: [
-      'js/b-wallet.js',
-      'css/wallet.css',
-    ],
-    tests: [
-      'tests/unit/wallet-service.test.js',
-      // Rapatriés depuis features/wallet.feature.js (doublon supprimé,
-      // audit 2026-07-06 §2c) — services/routes étaient déjà ici, seuls ces
-      // tests et migrations traînaient encore dans l'ancien manifeste.
-      'tests/unit/loyalty-notification.test.js',
-      'tests/unit/loyalty-route.test.js',
-      'tests/unit/loyalty-service.test.js',
-      'tests/unit/store-credits.test.js',
-      'tests/unit/wallet-route.test.js',
-    ],
-  },
+  files: {},
 
-  // ── Dépôts ───────────────────────────────────────────────────────────────
-  repos: {
-    backend: 'services/ + routes/ ci-dessus',
-    boutique: 'js/b-wallet.js + css/wallet.css — dépôt "bout", voir docs/BOUTIQUE_OWNERSHIP_LIVE.md pour le détail DOM/CSS',
-  },
+  // Preuve de non-régression (ratchet tests|verification|contracts,
+  // feature-schema-check.js) : ce manifest ne porte plus aucun fichier de
+  // test propre — toute la couverture a été redistribuée, sans perte, entre
+  // features/wallet.feature.js (files.tests) et features/loyalty.feature.js
+  // (files.tests). Ce champ documente ce transfert plutôt que de fabriquer
+  // une preuve de test locale qui n'existerait plus.
+  verification: 'Couverture intégralement redistribuée — voir files.tests dans features/wallet.feature.js et features/loyalty.feature.js.',
 
-  // ── Contrat d'interface ──────────────────────────────────────────────────
-  docs: [],
+  db: { tables: [] },
 
-  // ── Tables DB (inféré, audit 2026-07-06, §axe2) ─────────────────────────
-  // Généré par parsing réel des appels .query() (pas un grep de mots) :
-  // R = lu par cette feature, W = écrit par cette feature, RW = les deux.
-  // Une table listée ici pour PLUSIEURS features est une vraie propriété
-  // partagée détectée dans le code, pas un artefact de méthode — à
-  // documenter explicitement si volontaire, ou à re-scoper sinon.
-  // Champ auto-généré : à corriger à la main si une requête dynamique
-  // (nom de table construit par variable) a échappé au scan.
-  db: {
-    tables: [
-      'finance_config: R',
-      'loyalty_rewards: RW',
-      'loyalty_tiers: RW',
-      'orders: RW',
-      // transaction_documents retiré (2026-07-07) : délégué à
-      // services/documents/wallet-receipt.js — wallet-loyalty ne lit/écrit
-      // jamais cette table en direct (voir MULTI_WRITER_TABLES.md).
-      'users: RW',
-      'v_loyalty_summary: R',
-      'wallet_consumptions: RW',
-      'wallet_credit_lots: RW',
-      'wallet_transactions: RW',
-      'wallets: RW',
-    ],
-  },
-
-  security: {
-    status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 15,
-    totalRoutes: 16,
-    note: "15/16 routes protégées. 1 route publique par design : GET /api/loyalty/tiers (grille des paliers de fidélité, information publique vitrine).",
-  },
   contract: {
-    exposes: [
-      'GET /api/wallet',
-      'GET /api/wallet/transactions',
-      'POST /api/wallet/apply',
-      'POST /api/wallet/remove',
-      'GET /api/wallet/admin',
-      'GET /api/wallet/admin/:userId',
-      'POST /api/wallet/admin/credit',
-      'POST /api/wallet/admin/order-credit/:orderId',
-      'POST /api/wallet/admin/reverse-lot',
-      'GET /api/loyalty/tiers',
-      'GET /api/loyalty/me',
-      'GET /api/loyalty/users',
-      'GET /api/loyalty/stats',
-      'PUT /api/loyalty/tiers/:id',
-      'POST /api/loyalty/recalculate/:user_id',
-      'POST /api/loyalty/recalculate-all',
-    ],
-    consumes: [
-      'auth-identity (identification du client)',
-    ],
+    exposes:  [],
+    consumes: [],
   },
 
-  // ── Dette assumée / documentée ────────────────────────────────────────────
-  // (audit 2026-07-06, §2b — vérifié empiriquement contre routes/wallet.js et
-  // routes/loyalty.js)
-  debt: {
-    knownGaps: [
-      { gap: 'ancien contrat déclaré "GET /api/wallet/:userId", "POST /api/wallet/:userId/credit", ' +
-             '"GET /api/loyalty/:userId" (ressource dans le chemin) : aucune route ne sert ' +
-             'ce style. Le solde self-service se lit par session (GET /api/wallet, pas de ' +
-             ':userId), et le crédit admin est un sous-espace /admin/... avec :userId ou ' +
-             ':orderId selon l\'action, jamais un simple crédit générique par utilisateur.',
-        risk: 'si un consommateur externe (dashboard legacy, script) construisait encore ' +
-              'des URLs /api/wallet/<id> ou /api/wallet/<id>/credit, il reçoit un 404 — ' +
-              'confirmé sans dépendance connue au moment de cette correction, à revalider ' +
-              'si un incident apparaît.',
-      },
+  authority: 'backend-core — manifest déprécié, aucune autorité propre ; voir wallet.feature.js et loyalty.feature.js',
+
+  invariants: [],
+
+  classification: {
+    kind:     'deprecated',
+    decision: 'deprecated',
+    signals: {
+      ownsTables:          false,
+      ownsLifecycle:       false,
+      activeService:       false,
+      multiConsumer:       false,
+      ownsMigrations:      false,
+      externalSideEffect:  'none',
+      surface:             'api+boutique',
+    },
+    rationale: [
+      'scindé au Lot O1.2 (2026-07-12) en wallet + loyalty — deux services sans table, cycle de vie ni invariant partagés (hors users, colonnes disjointes)',
+      'conservé en deprecated plutôt que supprimé pour laisser une trace explicite et empêcher la réutilisation accidentelle du nom sans décision de gouvernance',
     ],
   },
-
-  // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement de calcul de solde doit etre valide par le proprietaire de wallet-service.js',
-
-  // ── Invariants propres ───────────────────────────────────────────────────
-  invariants: [
-    'application wallet une seule fois par evenement source',
-    'solde jamais negatif sans flag explicite admin',
-  ],
 
 };

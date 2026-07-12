@@ -41,7 +41,7 @@
     "recommendations": 4,
     "payment": 16,
     "tracking": 1,
-    "wallet": 6,
+    "wallet": 4,
     "economic-engine": 37,
     "customs": 6,
     "dashboard": 30,
@@ -50,6 +50,7 @@
     "auth-identity": 5,
     "operations": 12,
     "inventory": 3,
+    "loyalty": 2,
     "decision-signals": 3,
     "bootstrap": 1,
     "refunds": 2
@@ -6083,7 +6084,7 @@
       "type": "file",
       "headerType": "full",
       "role": "loyalty",
-      "domain": "wallet",
+      "domain": "loyalty",
       "layer": "route",
       "criticality": "medium",
       "owner": null,
@@ -6120,7 +6121,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "wallet"
+        "loyalty"
       ],
       "version": "2026-06"
     },
@@ -11423,7 +11424,7 @@
       "type": "file",
       "headerType": "full",
       "role": "loyalty-service",
-      "domain": "wallet",
+      "domain": "loyalty",
       "layer": "service",
       "criticality": "medium",
       "owner": null,
@@ -11468,7 +11469,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "wallet"
+        "loyalty"
       ],
       "version": "2026-06"
     },
@@ -18772,6 +18773,11 @@
       "area": "snapshots"
     },
     {
+      "id": "impact:loyalty",
+      "type": "impact-area",
+      "area": "loyalty"
+    },
+    {
       "id": "impact:stock",
       "type": "impact-area",
       "area": "stock"
@@ -18855,11 +18861,6 @@
       "id": "impact:invoices",
       "type": "impact-area",
       "area": "invoices"
-    },
-    {
-      "id": "impact:loyalty",
-      "type": "impact-area",
-      "area": "loyalty"
     },
     {
       "id": "impact:dashboards",
@@ -27302,9 +27303,9 @@
     },
     {
       "from": "routes/loyalty.js",
-      "to": "impact:wallet",
+      "to": "impact:loyalty",
       "type": "impact",
-      "label": "wallet"
+      "label": "loyalty"
     },
     {
       "from": "routes/meta-whatsapp.js",
@@ -35158,9 +35159,9 @@
     },
     {
       "from": "services/loyalty-service.js",
-      "to": "impact:wallet",
+      "to": "impact:loyalty",
       "type": "impact",
-      "label": "wallet"
+      "label": "loyalty"
     },
     {
       "from": "services/monitoring.js",
@@ -49955,7 +49956,7 @@
     },
     "routes/loyalty.js": {
       "role": "loyalty",
-      "domain": "wallet",
+      "domain": "loyalty",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
@@ -49982,7 +49983,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "wallet"
+        "loyalty"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
@@ -49990,7 +49991,7 @@
         "db:users",
         "db:v_loyalty_summary",
         "doctrine:resolve_before_behavior_change",
-        "impact:wallet",
+        "impact:loyalty",
         "middleware/auth.js",
         "services/scan-operations.js",
         "utils/logger.js"
@@ -55086,7 +55087,7 @@
     },
     "services/loyalty-service.js": {
       "role": "loyalty-service",
-      "domain": "wallet",
+      "domain": "loyalty",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
@@ -55121,7 +55122,7 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "wallet"
+        "loyalty"
       ],
       "mustCheck": [
         "db:finance_config",
@@ -55129,7 +55130,7 @@
         "db:orders",
         "db:users",
         "doctrine:resolve_before_behavior_change",
-        "impact:wallet",
+        "impact:loyalty",
         "routes/admin-finance-config.js",
         "routes/cash.js",
         "routes/orders/create.js",

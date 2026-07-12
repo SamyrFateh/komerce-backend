@@ -1,6 +1,6 @@
 # Registre Canonique des Features — Application complète Komerce
 
-> **Version** : 1.1 — 2026-06
+> **Version** : 1.2 — 2026-07 (Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty`)
 > **Statut** : registre actif — gouverné par `docs/doctrine/FEATURE_DOCTRINE.md`
 > **Construit à partir de** : headers `@komerce-arch` réels (`@domain`) du dépôt
 > **backend**, croisés avec les fichiers réels des dépôts **bout** (boutique frontend)
@@ -28,7 +28,9 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 1 | `shared-cart` | feature | backend + boutique | [`shared-cart.feature.js`](../../features/shared-cart.feature.js) | production | Panier partagé multi-participants, de la création au règlement |
 | 2 | `orders` | feature | backend | [`orders.feature.js`](../../features/orders.feature.js) | production | Commande : création, statut, coût, rattachement colis/achats |
 | 3 | `payments` | feature | backend + boutique | [`payments.feature.js`](../../features/payments.feature.js) | production | Encaissement (Stripe, PayPal, cash) et confirmation de paiement |
-| 4 | `wallet-loyalty` | feature | backend + boutique | [`wallet-loyalty.feature.js`](../../features/wallet-loyalty.feature.js) | production | Solde client (wallet) et programme de fidélité |
+| 4a | `wallet` | feature | backend + boutique | [`wallet.feature.js`](../../features/wallet.feature.js) | production | Solde client : historique de crédit/débit, application exactement une fois |
+| 4b | `loyalty` | feature | backend | [`loyalty.feature.js`](../../features/loyalty.feature.js) | production | Statut de fidélité (paliers, compteur gros panier) et récompenses associées |
+| 4c | `wallet-loyalty` | deprecated | backend + boutique | [`wallet-loyalty.feature.js`](../../features/wallet-loyalty.feature.js) | deprecated | Scindé au Lot O1.2 (2026-07-12) en `wallet` (#4a) et `loyalty` (#4b) — voir note ⚠ ci-dessous |
 | 5 | `logistics` | feature | backend + boutique | [`logistics.feature.js`](../../features/logistics.feature.js) | production | Colis : scan, transit, tracking, relais, transporteurs |
 | 6 | `economic-engine` | feature | backend | [`economic-engine.feature.js`](../../features/economic-engine.feature.js) | production | Pricing, coûts, marges, stratégies tarifaires |
 | 7 | `catalog` | feature | backend + boutique | [`catalog.feature.js`](../../features/catalog.feature.js) | production | Produits, connecteurs fournisseurs, publication boutique |
@@ -62,6 +64,20 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 > Si la duplication est confirmée accidentelle : supprimer `dashboards/dashboards/`
 > (dépôt dashboards) ou `public/dashboards/` (déployé), puis retirer les lignes
 > #19/#20 (ou #22/#23) ci-dessus en conséquence.
+
+> ℹ️ **Note sur les lignes #4a/#4b/#4c** : `wallet-loyalty` regroupait initialement dans un
+> seul manifest le solde client (wallet) et le programme de fidélité (loyalty). Scindé au
+> Lot O1.2 (2026-07-12, `docs/chantier/LOT_O1_2_LIVRABLE.md`) après vérification empirique
+> (grep `.query()` réel, headers `@komerce-arch`, `schema_railway.sql`) qu'aucune table
+> (hors `users`, sur des colonnes disjointes), aucun cycle de vie ni invariant n'était
+> réellement partagé entre les deux : l'assemblage initial reposait sur un rapport d'usage
+> (même client) et non un rapport de service. `wallet-loyalty.feature.js` (#4c) est conservé
+> en `deprecated`, vide de tout fichier, comme trace historique — ne pas y ajouter de fichier
+> ni réutiliser ce nom sans décision explicite de gouvernance. Un `ONTOLOGY_GAP` reste ouvert :
+> `routes/admin-loyalty.js` écrit `loyalty_rewards.status` mais est actuellement rattaché au
+> domaine `dashboard`, ce qui en fait un multi-writer réel avec `services/loyalty-service.js`
+> sur cette même table — non résolu dans ce lot (déplacement de fichier hybride hors périmètre
+> O1.2 sans audit de flux dédié).
 
 > ℹ️ **Note sur les lignes #15/#16** : `auth` et `auth-identity` étaient initialement deux
 > manifests distincts déclarant le même `domain: 'auth'`, ce qui produisait 5 faux
@@ -103,7 +119,8 @@ catalog ──► shared-cart ──► orders ──► payment       economic-
               │                │           │           (pricing pour
               │                │           ▼            catalog, orders,
               ▼                ▼       refunds          shared-cart)
-        wallet     logistics       │
+   wallet / loyalty      logistics       │
+   (scindés au Lot O1.2)      │           ▼
               │                │           ▼
               └──────► refunds ◄───── documents (génère les preuves
                           │                       pour orders, refunds,

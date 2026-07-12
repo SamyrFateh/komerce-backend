@@ -38,6 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 20
 - inventory: 3
 - logistics: 36
+- loyalty: 2
 - notification: 15
 - operations: 12
 - orders: 29
@@ -46,7 +47,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - refunds: 2
 - shared-cart: 42
 - tracking: 1
-- wallet: 6
+- wallet: 4
 
 ## Layers
 

@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          loyalty-service
- * @domain        wallet
+ * @domain        loyalty
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
@@ -12,7 +12,7 @@
  * @db-write      loyalty_rewards, users
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  wallet
+ * @impact-areas  loyalty
  * @version       2026-06
  */
 

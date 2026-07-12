@@ -27,7 +27,7 @@ module.exports = {
 
   perimeter: {
     in:  ['fichiers js/* annotes @domain wallet'],
-    out: ['logique backend equivalente (repo komerce-backend, feature wallet-loyalty)'],
+    out: ['logique backend equivalente (repo komerce-backend, features wallet + loyalty — scindees de wallet-loyalty au Lot O1.2, 2026-07-12)'],
   },
 
   files: {
