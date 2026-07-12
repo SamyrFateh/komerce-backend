@@ -11,33 +11,28 @@
 'use strict';
 
 module.exports = {
-
-  // ── Identite ─────────────────────────────────────────────────────────────
   name:     'catalog',
-  type:     'feature',   // feature | transversal
+  type:     'feature',
   domain:   'catalog',
-  status:   'production',   // draft | staging | production | deprecated
+  status:   'production',
   owner:    'backend-core',
   since:    '2025-09',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
-  // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.',
 
-  // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
       'connecteurs fournisseurs (CSV, API, manuel, Noon)',
+      'contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait',
       'publication et audit prix produit',
       'categories boutique admin',
       'catalogue vivant Boutique : grille, cartes produit, ouverture fiche produit',
       'catalogue canonique : produit, medias publics, axes d options descriptifs et unites vendables SKU',
       'contrat detail produit public : identity, pricing, media, option_axes, sellable_units et delivery_options deja resolues par leurs autorites',
       'modal produit catalogue : contrat d affichage, etat de selection SKU unique, rendu produit, media, lightbox mobile et suggestions',
-      // ── Tranche raffinerie (DOCTRINE_CATALOGUE, 2026-07) ──
       'raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique',
       'glossaire metier EN->FR (catalog_glossary)',
-      // ── K-4 (DOCTRINE_CATALOGUE §6, 2026-07) ──
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
     ],
     out: [
@@ -49,7 +44,6 @@ module.exports = {
     ],
   },
 
-  // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     utils: [
       'utils/categories-cache.js',
@@ -73,14 +67,20 @@ module.exports = {
       'services/catalog-overrides.js',
       'services/catalog-approval.js',
     ],
+    schemas: [
+      'schemas/catalog/normalized-supplier-product.v1.schema.json',
+      'schemas/catalog/normalized-supplier-product.v2.schema.json',
+    ],
     migrations: [
       'migrations/098_catalog_refinery_foundation.sql',
       'migrations/100_catalog_enrichment_runs.sql',
       'migrations/101_variant_images.sql',
       'migrations/104_product_skus.sql',
+      'migrations/105_catalog_source_contract_v2.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_CATALOGUE.md',
+      'docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md',
       'docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md',
       'docs/specs/DECISION_MODELE_STOCK_SKU.md',
     ],
@@ -112,9 +112,6 @@ module.exports = {
       'js/b-modal-desktop-enhancers.js',
       'js/b-pdp-curation-suggestions.js',
       'js/view-models/modal-view-model.js',
-      // Backfill gouvernance globale : header @komerce-arch domain=catalog confirme
-      // (docs/BOUTIQUE_360.json) — schema/navigation categories, perimetre categories
-      // deja declare ci-dessus en perimeter.in.
       'js/shop-schema.js',
       'js/b-pager.js',
       'js/b-subcat.js',
@@ -126,11 +123,9 @@ module.exports = {
       'css/modal-product-lot4-hybrid.css',
     ],
     dash: [
-      // dashboards/admin views — Lot 4
       'dashboards/admin/js/views/SuppliersView.js',
       'dashboards/admin/js/views/SourcingView.js',
       'dashboards/admin/js/views/SourcingScannerView.js',
-      // K-4 — file d approbation (etage 6)
       'dashboards/admin/js/views/CatalogApprovalView.js',
     ],
     tests: [
@@ -141,14 +136,17 @@ module.exports = {
       'tests/unit/connector-utils.test.js',
       'tests/unit/csv-connector.test.js',
       'tests/unit/manual-connector.test.js',
+      'tests/unit/manual-connector-v2.test.js',
       'tests/unit/noon-connector.test.js',
       'tests/unit/normalized-product.test.js',
+      'tests/unit/normalized-product-v2.test.js',
       'tests/unit/product-admin-service.test.js',
       'tests/unit/product-price-audit.test.js',
       'tests/unit/product-publication-guard.test.js',
       'tests/unit/products.test.js',
       'tests/unit/supplier-catalog-scanner.test.js',
       'tests/unit/catalog-import-orchestrator.test.js',
+      'tests/unit/catalog-import-orchestrator-source-v2.test.js',
       'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
       'tests/unit/scan-engine-extras.test.js',
@@ -161,13 +159,11 @@ module.exports = {
     ],
   },
 
-  // ── Depots ───────────────────────────────────────────────────────────────
   repos: {
     backend: 'services/ + routes/ ci-dessus',
     boutique: 'catalogue vivant, cartes produit et modal produit catalogue — gouvernes en detail par docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md',
   },
 
-  // ── Tables DB ────────────────────────────────────────────────────────────
   db: {
     tables: [
       'alerts: W',
@@ -193,7 +189,7 @@ module.exports = {
     status: 'CONFIRMED_MIXED',
     authedRoutesDetected: 21,
     totalRoutes: 26,
-    note: 'Catalogue public en lecture ; mutations produit, SKU, overrides et approbation restent protegees admin. La projection publique detail est whitelistée par catalog-public-view / contrat detail.',
+    note: 'Catalogue public en lecture ; mutations produit, SKU, overrides et approbation restent protegees admin. Les contrats source et normalized_source_contract restent internes ; la projection publique detail est whitelistée.',
   },
 
   contract: {
@@ -237,7 +233,6 @@ module.exports = {
     ],
   },
 
-  // ── Dette assumee / documentee ──────────────────────────────────────────
   debt: {
     knownGaps: [
       {
@@ -245,8 +240,8 @@ module.exports = {
         risk: 'aucun — mecanisme remplace et couvert ; retirer toute reference historique restante lorsqu elle est rencontree.',
       },
       {
-        gap: 'le contrat fournisseur normalise v1 est encore plat et ne preserve pas explicitement media[], option_axes[] et sellable_units[] de sources riches.',
-        risk: 'perte structurelle en amont puis reconstruction UI heuristique ; chantier PDC-1 gouverne par DOCTRINE_PRODUCT_DETAIL_CONTRACT.md.',
+        gap: 'le contrat fournisseur V2 preserve maintenant media[], option_axes[] et sellable_units[] dans sourcing_candidates.normalized_source_contract, mais ces faits ne sont pas encore promus vers le catalogue canonique PRODUCT/MEDIA/OPTION_AXES/SKU.',
+        risk: 'la structure source n est plus perdue, mais la fiche produit publique ne peut pas encore la consommer ; chantier PDC-2.',
       },
       {
         gap: 'la modal lit encore le produit brut dans plusieurs modules et modal-view-model.js ne possede pas encore seul l etat derive de selection.',
@@ -255,16 +250,15 @@ module.exports = {
     ],
   },
 
-  // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — normalized-product possede le contrat source ; catalog possede le catalogue canonique et le contrat detail public ; toute modification modal catalogue suit DOCTRINE_PRODUCT_DETAIL_CONTRACT.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md',
+  authority: 'backend-core — normalized-product possede le contrat source versionne ; catalog possede le catalogue canonique et le contrat detail public ; toute modification modal catalogue suit DOCTRINE_PRODUCT_DETAIL_CONTRACT.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md',
 
-  // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'un produit publie a toujours passe product-publication-guard.js',
     'jamais de creation produit par formulaire vide : tout entre par un connecteur (le manuel EST un connecteur)',
-    'la donnee source ne se perd jamais : une structure riche connue ne doit pas etre aplatie puis reconstruite par heuristique',
+    'la donnee source ne se perd jamais : raw_payload reste le brut integral et normalized_source_contract preserve separement le mapping V2 valide',
+    'une structure riche connue ne doit pas etre aplatie puis reconstruite par heuristique ; une source pauvre reste pauvre honnêtement',
     'toute retouche manuelle est un override trace (catalog_field_overrides), jamais une edition de la fiche generee',
-    'la boutique ne lit que les champs publies : les champs de cuisine source/content_source lui sont invisibles',
+    'la boutique ne lit que les champs publies : les champs de cuisine source/content_source/normalized_source_contract lui sont invisibles',
     'une unite vendable = un SKU ; product_variants decrit les axes et ne porte pas la verite de stock cible',
     'le contrat detail compose des faits et resultats proprietaires ; il ne recalcule ni pricing ni routing ni eligibilite rail',
     'le frontend ne decide jamais d un rail ni d un delai universel de livraison',
