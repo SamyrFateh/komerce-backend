@@ -128,6 +128,23 @@ describe('b-modal-approche-c-hybrid — composition only', () => {
     expect(actions.nextSibling).toBe(originalActionsNext);
   });
 
+  test('actions : fermeture puis réouverture recapture un home DOM frais', async () => {
+    bus.emit('modal:opened');
+    await flushRaf();
+    bus.emit('modal:closed');
+
+    const marker = document.createElement('div');
+    marker.dataset.actionsHomeMarker = '1';
+    info.insertBefore(marker, actions);
+
+    bus.emit('modal:opened');
+    await flushRaf();
+    bus.emit('modal:closed');
+
+    expect(marker.nextElementSibling).toBe(actions);
+    marker.remove();
+  });
+
   test('paiement : quatre onglets avec Carte actif par défaut', async () => {
     bus.emit('modal:opened');
     await flushRaf();
@@ -151,12 +168,13 @@ describe('b-modal-approche-c-hybrid — composition only', () => {
   });
 
   test('onglet Partagé conserve le parcours add → close → share', async () => {
-    jest.useFakeTimers();
     bus.emit('modal:opened');
-    await Promise.resolve();
-    requestAnimationFrame(() => {});
+    await flushRaf();
 
     const group = document.querySelector('[data-pay="group"]');
+    expect(group).not.toBeNull();
+
+    jest.useFakeTimers();
     group.click();
 
     expect(addToCart).toHaveBeenCalledWith(state.modalProduct, 1, group);
