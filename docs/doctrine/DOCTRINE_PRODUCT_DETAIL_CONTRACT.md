@@ -1,8 +1,11 @@
 # Doctrine du contrat détail produit Komerce
 
-> **Version** : 1.0 — 2026-07-12
+> **Version** : 1.1 — 2026-07-12
 > **Statut** : doctrine active — frontière canonique entre catalogue, moteurs métier et fiche produit
-> **Feature propriétaire du contrat** : `catalog`
+> **Feature propriétaire** : `catalog`
+> **Endpoint public v1** : `GET /api/products/:id/detail`
+> **Schéma** : `schemas/catalog/product-detail.v1.schema.json`
+> **Code porteur** : `services/catalog-product-detail.js`, `routes/catalog-product-detail.js`
 > **Consommateurs** : `modal-product`, `orders`, `recommendations`
 > **Contributeurs de vérité** : `catalog`, `logistics`, `economic-engine`
 > **Documents liés** : `DOCTRINE_CATALOGUE.md`, `DOCTRINE_INGESTION_CATALOGUE.md`, `DOCTRINE_TRANSPORT_RAILS.md`, `docs/specs/DECISION_MODELE_STOCK_SKU.md`, `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`
@@ -17,51 +20,53 @@ Corollaire UX :
 
 > **Une intelligence produit. Deux compositions responsive.**
 
-Mobile et desktop consomment le même contrat produit et le même état de sélection. Ils n'ont pas à reconstruire deux fois la disponibilité, le prix, les médias ou la livraison. Leur différence appartient au rendu : mobile vertical, tactile et plein écran ; desktop galerie + Buy Box premium.
+Mobile et desktop consomment le même contrat produit et, au terme de PDC-3, le même état de sélection. Leur différence appartient au rendu : mobile vertical, tactile et plein écran ; desktop galerie + Buy Box premium.
 
 ---
 
-## 2. Problème que cette doctrine interdit de recréer
+## 2. Le problème interdit
 
-Au 2026-07-12, le code porte plusieurs responsabilités au mauvais étage :
+La modal ne doit jamais redevenir l'endroit où l'on rassemble des bouts de données brutes puis où l'on « devine » le produit :
 
-- `b-modal-core.js` lit directement un produit de `state.products` et rend lui-même nom, prix, promotion et stock ;
-- `b-modal-product.js` déduit l'indisponibilité depuis `opt.stock` axe par axe et modifie carousel/prix à partir des variantes ;
-- `b-modal-desktop-enhancers.js` reconstruit encore prix, stock, livraison, paiement et trust depuis le produit brut ;
-- `modal-view-model.js` annonce un contrat d'affichage stable mais sert principalement à poser des classes CSS ;
-- le mobile et le desktop portent chacun des libellés/délais de livraison codés dans le frontend ;
-- `NormalizedSupplierProduct` v1 est plat et ne peut pas préserver explicitement médias riches, axes d'options et unités vendables fournisseur lorsqu'ils existent.
+- stock couleur puis stock taille ;
+- image supposée appartenir à une couleur ;
+- délai générique de livraison ;
+- Express déduit dans le frontend ;
+- ancien prix reconstruit localement ;
+- comportement mobile et desktop divergent parce qu'ils recalculent chacun leur état.
 
-Le résultat n'est pas un gros bug unique. C'est une **dispersion de l'intelligence produit**. Chaque nouveau besoin — SKU croisé, mises en scène, Express, média par couleur — pousse alors à ajouter une condition dans la modal.
+Le problème architectural historique n'était pas un bug isolé. C'était une **dispersion de l'intelligence produit** entre `b-modal-core.js`, `b-modal-product.js`, `b-modal-desktop-enhancers.js` et un `ModalViewModel` qui ne possédait pas réellement l'état de la fiche.
 
 Cette doctrine ferme cette voie.
 
 ---
 
-## 3. Les quatre étages et leurs responsabilités
+## 3. Les quatre étages
 
 | Étage | Possède | Ne fait jamais |
 |---|---|---|
-| **Connecteurs + contrat source normalisé** | encaisser la source fournisseur, préserver les faits connus et le brut | inventer une combinaison SKU, aplatir une structure riche connue, produire une UI |
-| **Raffinerie / catalogue canonique** | normaliser, enrichir, qualifier et persister PRODUCT + MEDIA + OPTIONS + SKU | décider d'un rail client, calculer une disponibilité Express, produire des classes CSS ou un layout modal |
-| **Moteurs métier + contrat détail** | résoudre stock SKU, prix commercial, options de livraison commercialisables ; composer une projection publique stable | réécrire les faits source, dépendre du viewport, rendre du HTML |
-| **Modal / état de sélection** | gérer la sélection utilisateur et rendre le contrat | lire les tables métier, deviner un stock, inventer un délai, décider d'un rail, connaître un fournisseur |
+| **Connecteurs + contrat source** | encaisser la source, préserver le brut et les faits connus | inventer une combinaison SKU, aplatir une structure riche, produire une UI |
+| **Raffinerie / catalogue canonique** | normaliser, enrichir, qualifier et persister PRODUCT + MEDIA + OPTION_AXES + SKU | décider d'un rail client, produire des classes CSS ou un layout modal |
+| **Moteurs métier + contrat détail** | résoudre les vérités propriétaires puis composer une projection publique stable | réécrire les faits source, dépendre du viewport, rendre du HTML |
+| **Modal / état de sélection** | sélectionner et rendre | lire les tables métier, deviner un stock, inventer un délai, décider d'un rail |
 
-### 3.1 Connecteurs : préserver avant de raffiner
+### 3.1 Préserver avant de raffiner
 
-Le contrat fournisseur normalisé doit pouvoir préserver, **si la source les fournit** :
+Le contrat fournisseur V2 préserve, lorsque la source les fournit explicitement :
 
-- `media[]` : images produit et mises en scène identifiées ;
-- `option_axes[]` : couleur, taille, pointure ou autre axe source ;
-- `sellable_units[]` : unités fournisseur réellement vendables, avec référence fournisseur, valeurs d'options, stock source et médias associés éventuels.
+```text
+media[]
+option_axes[]
+sellable_units[]
+```
 
-Règle absolue : une source riche ne doit pas être aplatie en `image_url + stock_available` puis reconstruite plus tard par heuristique.
+Une source riche ne doit pas être réduite à `image_url + stock_available` puis reconstruite plus tard.
 
-Une source pauvre reste pauvre honnêtement. La raffinerie n'invente pas une matrice couleur × taille absente de la source.
+Une source pauvre reste pauvre honnêtement. Aucun produit cartésien couleur × taille n'est inventé.
 
-### 3.2 Raffinerie : produire des faits canoniques
+### 3.2 Le catalogue canonique
 
-Le catalogue canonique distingue :
+La cible distingue :
 
 ```text
 PRODUCT
@@ -70,74 +75,81 @@ OPTION_AXES
 SKU
 ```
 
-- `products` porte l'identité commerciale commune du produit ;
+- `products` porte l'identité commerciale commune ;
 - les médias portent leur rôle et leurs associations connues ;
-- `product_variants` décrit les axes et valeurs disponibles pour guider la sélection ;
+- `product_variants` décrit les axes et valeurs de sélection ;
 - `product_skus` porte les unités vendables et, en mode `SKU`, la vérité de stock.
 
-Doctrine SKU : **une unité vendable = un SKU**. Une couleur ou une taille seule ne porte pas une vérité de stock concurrente.
+> **Une unité vendable = un SKU.**
 
-La raffinerie peut proposer et préparer ces faits. Elle ne connaît ni le bouton « Acheter », ni la grille desktop, ni le swipe mobile.
+Une couleur ou une taille seule ne porte jamais une vérité de stock concurrente dans le modèle cible.
 
-### 3.3 Moteurs métier : résoudre, pas présenter
+### 3.3 Les moteurs métier
 
 Les vérités dynamiques restent chez leur autorité :
 
-- **stock / unité vendable** : catalogue via `product_skus` et le modèle d'inventaire explicite ;
-- **prix** : `economic-engine` et les champs commerciaux publiés ;
-- **rails / éligibilité / routing** : `logistics` ;
-- **valorisation commerciale d'un rail** : `economic-engine`.
+- stock / unité vendable : `catalog` via `product_skus` et `inventory_model` ;
+- prix produit : champs commerciaux publiés et `economic-engine` ;
+- rail / éligibilité / routing : `logistics` ;
+- valorisation transport : `economic-engine`.
 
-Le catalogue peut projeter une éligibilité ou une option déjà résolue. Il ne promet jamais un rail, un prix de transport ou un délai en les déduisant lui-même.
+Le contrat détail **assemble**. Il ne devient pas un nouveau pricing engine, un routeur logistique ou un moteur de stock.
 
-### 3.4 Contrat détail : assembler sans réinventer
+---
 
-Le contrat détail produit est une **projection publique composée**, pas un nouveau moteur métier.
+## 4. Contrat public v1 matérialisé
 
-Il assemble uniquement des faits et résultats déjà possédés par les autorités ci-dessus.
-
-Cible conceptuelle :
+Le contrat public v1 est servi par :
 
 ```text
-product_detail
-├── identity
+GET /api/products/:id/detail
+```
+
+et validé avant sortie par :
+
+```text
+schemas/catalog/product-detail.v1.schema.json
+```
+
+Structure :
+
+```text
+product_detail_v1
+├── contract_version
+├── inventory_model
+├── product
 ├── pricing
 ├── media
 ├── option_axes
 ├── sellable_units
-├── delivery_options
-└── presentation_hints
+└── delivery_options
 ```
 
-`presentation_hints` reste limité aux informations éditoriales publiques utiles au rendu : labels, rôle d'un média, ordre d'affichage. Il ne contient jamais de règle CSS, breakpoint ou décision métier.
-
----
-
-## 4. Contrat public cible
-
-La forme exacte est versionnée par schéma/contrat API. La sémantique suivante est normative :
+Exemple conceptuel :
 
 ```json
 {
   "contract_version": "1",
+  "inventory_model": "SKU",
   "product": {
     "id": "uuid",
     "reference": "ROB-001",
     "name": "Robe Dubaï",
     "description": "...",
-    "category": "vetements"
+    "category": "vetements",
+    "subcategory": "robes"
   },
   "pricing": {
     "price_kmf": 12500,
-    "old_price_kmf": 15000,
+    "old_price_kmf": null,
     "promo_pct": 17
   },
   "media": [
     {
-      "id": "media-1",
+      "id": "variant-1-1",
       "url": "...",
-      "role": "SCENE",
-      "alt": "...",
+      "role": "PRODUCT",
+      "alt": "Robe Dubaï",
       "option_values": { "Couleur": "Marron" }
     }
   ],
@@ -154,30 +166,29 @@ La forme exacte est versionnée par schéma/contrat API. La sémantique suivante
       "key": "Taille",
       "display_name": "Taille",
       "values": [
-        { "value": "S" },
-        { "value": "M" },
-        { "value": "L" }
+        { "value": "M", "thumbnail_url": null },
+        { "value": "L", "thumbnail_url": null }
       ]
     }
   ],
   "sellable_units": [
     {
       "sku_id": "uuid",
-      "sku": "ROB-001-MAR-M",
+      "sku": "ROB-MAR-M",
       "option_values": { "Couleur": "Marron", "Taille": "M" },
       "stock_status": "AVAILABLE",
       "available_quantity": 4,
       "price_kmf": 12500,
-      "media_ids": ["media-1"]
+      "media_ids": ["variant-1-1"]
     },
     {
       "sku_id": "uuid",
-      "sku": "ROB-001-MAR-L",
+      "sku": "ROB-MAR-L",
       "option_values": { "Couleur": "Marron", "Taille": "L" },
       "stock_status": "OUT_OF_STOCK",
       "available_quantity": 0,
       "price_kmf": 12500,
-      "media_ids": ["media-1"]
+      "media_ids": ["variant-1-1"]
     }
   ],
   "delivery_options": [
@@ -185,54 +196,189 @@ La forme exacte est versionnée par schéma/contrat API. La sémantique suivante
       "code": "SEA_STANDARD",
       "label": "Livraison standard",
       "available": true,
-      "price_kmf": 0,
-      "eta_label": "...",
+      "price_kmf": null,
+      "eta_label": null,
       "unavailable_reason": null
     }
   ]
 }
 ```
 
-### Règles de contrat
+### Règles du contrat
 
 1. `sellable_units` contient des unités réelles, jamais un produit cartésien inventé.
 2. `sku_id` est la référence transactionnelle de l'unité vendable.
-3. `option_axes` décrit les choix ; il ne porte pas de stock autonome.
-4. Les médias peuvent être globaux ou associés à des valeurs d'options/SKU connues.
-5. `delivery_options` contient uniquement des options **commercialement exposables**.
-6. Une option indisponible peut être présente avec une raison explicite uniquement si le métier a décidé qu'il est utile de l'expliquer au client.
-7. Aucun délai générique de livraison n'est inventé dans le frontend.
-8. Aucun champ de cuisine raffinerie ne traverse cette frontière publique.
+3. `option_axes` décrit les choix et ne porte aucun stock autonome.
+4. Les médias peuvent être globaux ou associés à des valeurs d'options explicites.
+5. `delivery_options` contient uniquement des options déjà commercialement exposables.
+6. Aucun champ de cuisine raffinerie ne traverse la frontière publique.
+7. Toute réponse est validée par le schéma v1 avant sortie.
+8. Un contrat invalide échoue bruyamment avec `PRODUCT_DETAIL_CONTRACT_INVALID`.
 
 ---
 
-## 5. Livraison Standard / Express
+## 5. Sources canoniques du contrat v1
 
-La fiche produit cible sait afficher plusieurs options de livraison, notamment Standard et Express. Elle ne possède pas ces concepts en dur.
+Le contrat v1 actuel projette **uniquement les structures canoniques existantes** :
 
-La règle est :
+| Bloc public | Source actuelle |
+|---|---|
+| `product` | `products` |
+| `pricing` | champs commerciaux publiés de `products` / prix SKU explicite |
+| `media` | `products.image_url`, `products.images`, médias explicites de `product_variants` |
+| `option_axes` | `product_variants` |
+| `sellable_units` | `product_skus` uniquement si `inventory_model = 'SKU'` |
+| `delivery_options` | rails retournés par `logistics.listCommercialTransportRails()` |
+
+### 5.1 Ce que PDC-2 ne fait volontairement pas
+
+PDC-1 conserve la richesse fournisseur V2 dans `sourcing_candidates.normalized_source_contract`. PDC-2 **ne lit pas ce snapshot directement pour le servir au client**.
+
+Pourquoi :
+
+```text
+source normalisée ≠ catalogue canonique ≠ contrat public
+```
+
+Brancher la fiche produit directement sur le snapshot source recréerait précisément le couplage que nous voulons supprimer.
+
+La promotion explicite :
+
+```text
+normalized_source_contract
+        ↓
+PRODUCT / MEDIA / OPTION_AXES / SKU
+```
+
+reste un chantier catalogue distinct. Tant qu'elle n'est pas matérialisée, les rôles riches source comme `SCENE` ne sont pas inventés dans le contrat public.
+
+Les médias canoniques existants sont honnêtement projetés avec le rôle `PRODUCT`. Aucune image n'est déclarée « mise en scène » depuis son nom de fichier, son ordre ou une analyse visuelle.
+
+---
+
+## 6. Produits legacy pendant la migration SKU
+
+Pour :
+
+```text
+inventory_model = LEGACY_VARIANTS
+```
+
+le contrat v1 peut exposer les `option_axes` descriptifs, mais :
+
+```text
+sellable_units = []
+```
+
+Il est interdit de reconstruire de fausses unités vendables depuis :
+
+```text
+stock Couleur
++
+stock Taille
+```
+
+La migration vers `SKU` reste explicite et atomique conformément à `DECISION_MODELE_STOCK_SKU.md`.
+
+PDC-3 doit connaître `inventory_model` et ne jamais prétendre disposer d'une sélection SKU autoritaire pour un produit encore legacy.
+
+---
+
+## 7. Média et association aux unités
+
+Le contrat v1 ne devine pas les associations média.
+
+Aujourd'hui, lorsqu'une ligne `product_variants` porte explicitement un média pour :
+
+```text
+Couleur = Marron
+```
+
+le média public porte :
+
+```json
+{ "option_values": { "Couleur": "Marron" } }
+```
+
+Un SKU :
+
+```text
+Marron + M
+```
+
+peut alors référencer ce média parce que l'association explicite `{Couleur:Marron}` est un sous-ensemble exact de ses `option_values`.
+
+Ce filtrage est déterministe. Il ne dépend ni du filename, ni d'une couleur dominante, ni de la position du média.
+
+---
+
+## 8. Livraison Standard / Express
+
+La chaîne reste :
 
 ```text
 logistics connaît le rail
         ↓
 economic-engine le valorise
         ↓
-projection commerciale détermine ce qui est exposable
+projection commerciale décide ce qui est exposable
         ↓
 product_detail.delivery_options
         ↓
 modal rend
 ```
 
-Conséquence actuelle : `AIR_EXPRESS` est connu du système mais `INTERNAL / PENDING / DISABLED`. Il ne doit donc pas apparaître comme promesse client tant que la doctrine Transport Rails ne le rend pas commercialement exposable.
+### État réel au 2026-07-12
 
-Quand `AIR_EXPRESS` devient public et valorisé, le contrat peut exposer une seconde entrée. **La modal ne change pas de doctrine ni de structure métier pour l'afficher.**
+- `SEA_STANDARD` : commercialement exposable ;
+- `AIR_EXPRESS` : `INTERNAL / PENDING / DISABLED`.
 
-Le frontend ne transforme jamais `absence d'Express` en « Express indisponible ». Il rend exactement la projection reçue.
+Le contrat détail appelle uniquement `listCommercialTransportRails()`.
+
+Conséquence :
+
+```text
+delivery_options = [SEA_STANDARD]
+```
+
+aujourd'hui.
+
+`AIR_EXPRESS` n'est pas transformé en « Express indisponible ». Il est absent de la projection publique tant qu'il n'est pas commercialisable.
+
+### Prix et délai actuels
+
+Aucun service propriétaire ne fournit encore un devis public produit/destination stabilisé pour :
+
+```text
+price_kmf
+eta_label
+```
+
+Le contrat retourne donc honnêtement :
+
+```json
+{
+  "price_kmf": null,
+  "eta_label": null
+}
+```
+
+Il est interdit de remplacer ces `null` par :
+
+```text
+Gratuit
+3 à 5 semaines
+```
+
+codés dans le frontend.
+
+Quand `AIR_EXPRESS` devient public **et** qu'une projection commerciale fournit prix/délai, une seconde entrée apparaît dans `delivery_options`. La modal ne change pas de doctrine.
+
+Un rail nouvellement commercial sans wording public explicite fait échouer la composition avec `PRODUCT_DETAIL_RAIL_LABEL_MISSING` au lieu d'afficher un code technique ou un label inventé.
 
 ---
 
-## 6. État de sélection produit
+## 9. État de sélection produit — cible PDC-3
 
 La modal possède un **état de sélection**, pas une logique de stock.
 
@@ -246,10 +392,19 @@ selection = { Couleur: "Marron" }
 Sortie pure :
 
 ```text
+selected_options
 selected_sku_id
 selected_media
-option_values[] avec AVAILABLE | OUT_OF_STOCK | INCOMPATIBLE
-selection_message éventuel
+option_states
+selection_message
+```
+
+États d'option :
+
+```text
+AVAILABLE
+OUT_OF_STOCK
+INCOMPATIBLE
 ```
 
 Exemple :
@@ -260,33 +415,34 @@ Taille L = OUT_OF_STOCK
 message = "L indisponible pour Marron — rupture de stock"
 ```
 
-Cette réduction doit vivre dans **un seul owner de sélection** partagé par mobile et desktop. Le renderer ne boucle pas sur une matrice pour inventer la disponibilité ; il consomme l'état dérivé des `sellable_units` explicites.
+Cette réduction vit dans **un seul owner partagé mobile/desktop**.
 
-Le calcul est déterministe et frontend-safe parce qu'il ne décide d'aucune vérité métier : il filtre une liste d'unités déjà qualifiées par le backend.
+Le calcul est déterministe : il filtre les `sellable_units` déjà qualifiées. Il ne décide d'aucune vérité métier.
 
 ### Interdit
 
-- `_buildSizeGrid()` ne décide plus seul que `opt.stock === 0` représente la disponibilité d'une taille indépendamment de la couleur ;
-- le mobile et le desktop ne possèdent pas deux reducers de sélection ;
-- `variant_combo` n'est pas utilisé comme canal de stock dans la modal cible ;
-- « première option disponible » ne doit jamais masquer un choix utilisateur déjà explicite.
+- `_buildSizeGrid()` décide seul qu'une taille est disponible via `opt.stock` ;
+- mobile et desktop possèdent deux reducers ;
+- `variant_combo` redevient le canal de stock de la modal cible ;
+- « première option disponible » masque un choix utilisateur explicite ;
+- un produit legacy est présenté comme SKU-ready parce qu'il a des axes.
 
 ---
 
-## 7. Doctrine de la modal enrichie
+## 10. Doctrine de la modal enrichie
 
-La modal produit est la **fiche produit transactionnelle de Komerce** pour le catalogue vivant.
+La modal est la **fiche produit transactionnelle de Komerce** pour le catalogue vivant.
 
 Elle concentre :
 
-- découverte visuelle et mises en scène ;
+- découverte visuelle et mises en scène quand le catalogue les connaît ;
 - identité, prix et promotion ;
 - sélection visuelle des options ;
 - compréhension immédiate des indisponibilités ;
 - modes de livraison commercialement exposés ;
 - quantité ;
 - Ajouter / Acheter ;
-- enrichissements éditoriaux et suggestions selon le viewport.
+- enrichissements éditoriaux et suggestions.
 
 Elle reste distincte de la fiche snapshot lecture seule du panier partagé.
 
@@ -296,7 +452,7 @@ Elle reste distincte de la fiche snapshot lecture seule du panier partagé.
 - parcours vertical ;
 - galerie swipe ;
 - compteur média ;
-- vignettes couleur avec image produit quand le contrat en fournit ;
+- vignettes couleur photo quand fournies ;
 - sélection tactile compacte ;
 - indisponibilité expliquée ;
 - actions visibles/sticky.
@@ -305,130 +461,117 @@ Elle reste distincte de la fiche snapshot lecture seule du panier partagé.
 
 - galerie / médias à gauche ;
 - Buy Box à droite ;
-- mêmes SKU, mêmes options, même disponibilité et mêmes options de livraison que le mobile ;
-- détails et enrichissements éditoriaux adaptés à l'espace desktop.
+- mêmes SKU, mêmes options, mêmes disponibilités et mêmes `delivery_options` ;
+- détails et enrichissements adaptés à l'espace desktop.
 
 Le desktop n'est pas un mobile élargi. Le mobile n'est pas un desktop amputé.
 
 ---
 
-## 8. Ownership cible
+## 11. Ownership cible
 
-| Responsabilité | Owner cible |
+| Responsabilité | Owner |
 |---|---|
-| Contrat source fournisseur versionné | `services/suppliers/normalized-product.js` + `schemas/catalog/*` |
+| Contrat source fournisseur | `services/suppliers/normalized-product.js` + `schemas/catalog/*` |
 | Normalisation / enrichissement | raffinerie catalogue |
 | Unités vendables / stock | `product_skus` + services catalog propriétaires |
-| Rails / éligibilité transport | `logistics` |
-| Valorisation rail | `economic-engine` |
-| Projection publique produit | service catalog dédié de détail produit |
-| État de sélection produit | ViewModel/reducer modal unique |
-| Orchestration open/close/fetch | `b-modal-core.js` |
-| Rendu contenu produit | `b-modal-product.js` |
-| Médias / carousel / fullscreen | `b-modal-image-ux.js` |
-| Composition desktop | `b-modal-desktop-enhancers.js` uniquement pour le layout/enrichissement desktop, jamais pour recalculer stock/prix/livraison |
-| CSS modal | owners `modal-shell.css`, `modal-media.css`, `modal-product.css`, extension desktop déclarée |
+| Rails / exposition commerciale | `logistics` |
+| Valorisation transport | `economic-engine` |
+| Projection détail public | `services/catalog-product-detail.js` |
+| Façade HTTP détail | `routes/catalog-product-detail.js` |
+| État de sélection | ViewModel/reducer modal unique — PDC-3 |
+| Open/close/fetch modal | `b-modal-core.js` |
+| Rendu produit | `b-modal-product.js` |
+| Média / carousel / fullscreen | `b-modal-image-ux.js` |
+| Composition desktop | `b-modal-desktop-enhancers.js`, sans recalcul stock/prix/livraison |
 
-`modal-view-model.js` doit évoluer de « poseur de classes contractuelles » vers **owner du contrat d'affichage et de l'état dérivé de sélection**, ou être remplacé explicitement par un couple `product-detail-view-model` + `product-selection-state`. Il ne doit pas rester un décor au-dessus d'un rendu qui continue à lire le produit brut.
-
-La décision d'extraction se prend au Lot 2 après audit des tests ; aucune seconde abstraction parallèle n'est créée sans déprécier l'ancienne.
+`modal-view-model.js` doit évoluer vers l'owner réel du contrat d'affichage et de l'état dérivé de sélection, ou être remplacé explicitement par un couple ViewModel/reducer. Aucune abstraction parallèle durable n'est autorisée.
 
 ---
 
-## 9. Interdictions
+## 12. Interdictions
 
-- Ne jamais mettre de logique de fournisseur dans la modal.
-- Ne jamais mettre de logique de swipe, breakpoint ou CSS dans la raffinerie.
-- Ne jamais coder `STANDARD` / `EXPRESS` comme liste fixe dans le frontend.
-- Ne jamais coder un délai universel « 3 à 5 semaines » dans la modal.
-- Ne jamais reconstruire un stock couleur × taille depuis deux stocks d'axes.
-- Ne jamais exposer `product_skus` brut sans projection publique whitelistée.
-- Ne jamais créer un « product detail composer » qui recalcule pricing, routing ou éligibilité : il assemble des résultats propriétaires.
-- Ne jamais conserver durablement deux chemins de rendu, l'un sur le produit brut et l'autre sur le ViewModel.
-- Ne jamais réutiliser la modal catalogue pour la fiche snapshot du panier partagé.
+- Logique fournisseur dans la modal.
+- Swipe, breakpoint ou CSS dans la raffinerie.
+- Liste fixe Standard/Express dans le frontend.
+- Délai universel « 3 à 5 semaines » dans la modal.
+- Reconstruction d'un stock couleur × taille depuis deux stocks d'axes.
+- Exposition brute de `product_skus` ou `normalized_source_contract`.
+- « Product detail composer » qui recalcule pricing, routing ou éligibilité.
+- Deux chemins durables de rendu : produit brut et ViewModel.
+- Réutilisation de la modal catalogue pour le snapshot shared-cart.
+- Lecture publique directe du snapshot fournisseur V2.
+- Ancien prix reconstitué depuis `promo_pct` lorsque la source canonique ne le fournit pas.
 
 ---
 
-## 10. Séquencement de refactor
+## 13. Séquencement
 
-### Lot PDC-0 — Doctrine et cartes
+### PDC-0 — Doctrine et cartes
 
-- acter cette frontière ;
-- aligner `BOUTIQUE_ARCHITECTURE.md`, `BOUTIQUE_MODAL_ARCHITECTURE.md`, cartes `catalog` et `modal-product` ;
-- aucune modification comportementale.
+Frontière actée.
 
-### Lot PDC-1 — Préservation source riche
+### PDC-1 — Préservation source riche
 
-- versionner le contrat fournisseur suivant ;
-- préserver `media[]`, `option_axes[]`, `sellable_units[]` quand présents ;
-- adapter les connecteurs sans inventer de données ;
-- fixtures « source riche » et « source pauvre ».
+Contrat fournisseur V2 + snapshot normalisé séparé du brut.
 
-### Lot PDC-2 — Contrat détail backend
+### PDC-2 — Contrat détail backend
 
-- créer la projection publique détail produit ;
-- exposer médias, axes et `sellable_units` depuis le modèle SKU ;
-- brancher une projection `delivery_options` consommant seulement les rails commercialement exposables et valorisés ;
-- schéma/contrat API + tests.
+**Matérialisé par le contrat v1 et `GET /api/products/:id/detail`.**
 
-### Lot PDC-3 — État de sélection unique
+- données canoniques uniquement ;
+- axes descriptifs ;
+- SKU réels uniquement en mode `SKU` ;
+- médias associés par faits explicites ;
+- rails déjà commercialement exposés ;
+- aucun prix/délai transport inventé.
 
-- faire du ViewModel/reducer unique l'owner de la sélection ;
-- couleur → tailles disponibles dérivées des `sellable_units` ;
+### PDC-3 — État de sélection unique
+
+- reducer/ViewModel unique ;
+- couleur → tailles dérivées des `sellable_units` ;
 - SKU sélectionné explicite ;
-- média sélectionné dérivé du contrat ;
-- tests purs exhaustifs sur combinaisons et ruptures.
+- média courant dérivé ;
+- tests purs exhaustifs.
 
-### Lot PDC-4 — Modal mobile
+### PDC-4 — Modal mobile
 
-- brancher le mock cible sur le contrat ;
-- vignettes photo couleur ;
-- galerie/mises en scène ;
-- taille combo-aware + raison d'indisponibilité ;
-- options de livraison reçues ;
-- actions sticky ;
-- aucune règle métier locale.
+Mock cible branché sur contrat + état de sélection.
 
-### Lot PDC-5 — Modal desktop
+### PDC-5 — Modal desktop
 
-- même contrat et même état de sélection ;
-- galerie + Buy Box ;
-- supprimer les reconstructions prix/stock/livraison dans `b-modal-desktop-enhancers.js` ;
-- conserver uniquement les enrichissements réellement desktop.
+Même contrat et même état ; galerie + Buy Box ; suppression des reconstructions métier desktop.
 
-### Lot PDC-6 — Extinction legacy modal
+### PDC-6 — Extinction legacy modal
 
-- `b-modal-core.js` ne rend plus les champs métier depuis le produit liste brut ;
-- suppression des délais/livraisons hardcodés ;
-- suppression du double pilotage classes legacy / ViewModel ;
-- audit final : un seul owner par vérité.
+`b-modal-core.js` ne rend plus les vérités transactionnelles depuis le produit liste brut ; suppression des délais et livraisons hardcodés ; un seul owner par vérité.
 
-### Lot PDC-7 — Extinction stock legacy
+### PDC-7 — Extinction stock legacy
 
-Ce lot reste dépendant du chantier SKU et de sa couverture mesurée. Il ne supprime `products.stock` / `product_variants.stock` comme vérité que lorsque la bascule SKU est complète selon `DECISION_MODELE_STOCK_SKU.md`.
+Dépend de la couverture SKU mesurée et de `DECISION_MODELE_STOCK_SKU.md`.
 
 ---
 
-## 11. Définition de « terminé »
+## 14. Définition de « terminé »
 
-Le chantier est terminé quand :
+Le chantier complet est terminé quand :
 
-1. une source fournisseur riche peut traverser l'ingestion sans perdre médias/options/unités vendables connus ;
-2. `GET` détail produit expose un contrat public versionné et whitelisté ;
-3. la sélection Marron + L peut être expliquée comme indisponible à partir d'un SKU réel, sans stock par axe ;
+1. une source riche traverse l'ingestion sans perdre les faits connus ;
+2. le détail produit expose un contrat public versionné et validé ;
+3. Marron + L peut être expliqué comme indisponible depuis un SKU réel ;
 4. mobile et desktop consomment le même état de sélection ;
-5. aucune modal ne code un délai de livraison universel ni une liste fixe Standard/Express ;
-6. `AIR_EXPRESS` n'apparaît au client que lorsque `logistics` + `economic-engine` l'autorisent commercialement ;
-7. `b-modal-desktop-enhancers.js` n'est plus un second moteur de prix/stock/livraison ;
-8. la fiche snapshot shared-cart reste séparée ;
-9. les cartes feature-first, headers `@komerce-arch`, contrats API et gates reflètent les owners réels.
+5. aucune modal ne code un délai universel ni une liste Standard/Express ;
+6. `AIR_EXPRESS` n'apparaît que lorsque les moteurs propriétaires l'exposent ;
+7. `b-modal-desktop-enhancers.js` n'est plus un moteur parallèle ;
+8. le snapshot shared-cart reste séparé ;
+9. cartes, headers, contrats API et gates reflètent les owners réels.
 
 ---
 
-## 12. Phrase de revue
+## 15. Phrase de revue
 
-Toute PR de ce chantier doit pouvoir répondre en une phrase :
+Toute PR de ce chantier doit répondre en une phrase :
 
 > **Est-ce que je préserve un fait, résous une vérité métier, compose un contrat public ou rends une interaction ?**
 
-Si la réponse mélange deux de ces verbes dans le même composant sans ownership explicite, la PR doit être re-découpée avant merge.
+Si la réponse mélange deux de ces verbes dans le même composant sans ownership explicite, la PR est re-découpée avant merge.
