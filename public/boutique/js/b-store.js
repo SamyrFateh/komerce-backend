@@ -84,7 +84,9 @@ export const state = {
   /** Mode pager Temu — { cat: 'Mode', sub: 'Femme' } | null */
   flatSubcat: null,
   /** Modal ouvert (vrai entre openModal et closeModal). Lu par b-pager.js
-   *  pour bloquer l'auto-advance pendant l'affichage d'une fiche produit. */
+   *  pour bloquer l'auto-advance pendant l'affichage d'une fiche produit.
+   *  AVANT le fix : déclaré nulle part, lu 3 fois → garde inerte → scroll
+   *  horizontal automatique parasite après fermeture de modal. */
   modalOpen: false,
   modalProduct: null,
   /** Product Detail Contract v1 du produit modal courant. PDC-4 : rempli sur
@@ -96,9 +98,9 @@ export const state = {
   modalSubcatFilter: null,
   modalQty: 1,
   modalHistory: [],
-  /** Snapshot de sélection transmis comme variant_combo au backend. Pendant la
-   *  convergence PDC, le chemin SKU le synchronise depuis modalSelection.selected_options ;
-   *  le chemin LEGACY_VARIANTS continue à le remplir depuis _renderVariants. */
+  /** Snapshot de sélection transmis comme variant_combo à submitOrder. Le
+   *  chemin SKU le synchronise depuis modalSelection.selected_options ; le
+   *  chemin LEGACY_VARIANTS continue à le remplir depuis _renderVariants. */
   modalVariantCombo: {},
   /** Historique des produits vus (IDs), persisté en localStorage.
       Utilisé pour la section "Vu récemment" en desktop. */
@@ -124,10 +126,10 @@ export const state = {
    * Supprimé après PUT réussi ou annulation explicite.
    *
    * Shape : {
-   *   shared_cart_id : string,
-   *   token          : string,
-   *   return_tab     : 'group',
-   *   started_at     : number,
+   *   shared_cart_id : string,   // cartId numérique
+   *   token          : string,   // shareToken (pour notif / rafraîchi)
+   *   return_tab     : 'group',  // onglet de retour après édition
+   *   started_at     : number,   // Date.now() — pour debug
    * } | null
    */
   editSharedCart: null,
@@ -257,10 +259,47 @@ export function initDom() {
     cartContinue:       $('#k-cart-continue'),
     cartClear:          $('#k-cart-clear'),
     cartWhatsapp:       $('#k-cart-whatsapp'),
+    cartCheckout:       $('#k-cart-checkout'),
     // Order Modal
     orderModal:         $('#k-order-modal'),
     orderTitle:         $('#k-order-title'),
     orderBody:          $('#k-order-body'),
     orderClose:         $('#k-order-close'),
+    // Toast
+    toast:              $('#k-toast'),
+    // Scroll container mobile (pager Temu + scroll infini)
+    pageScroll:         $('#k-page-scroll'),
   });
+}
+
+/**
+ * Recalcule le scroll top mobile après resize/orientation change.
+ * (Style inline légitime : mesure de hauteur runtime impossible en CSS)
+ */
+export function updateMobileScrollTop() {
+  if (window.innerWidth > 899) return;
+  const doUpdate = () => {
+    // Mesure cohérente avec _recalcPagerVars() dans b-pager.js :
+    // on prend le bas réel du dernier élément fixe (hero + chips).
+    let top = 0;
+    [
+      document.getElementById('k-hero-fixed-wrap'),
+      document.getElementById('k-sticky-bar'),
+      document.querySelector('.k-cats-shell'),
+    ].forEach(function(el) {
+      if (!el) return;
+      const b = el.getBoundingClientRect().bottom;
+      if (b > top) top = b;
+    });
+    // Fallback si éléments non encore rendus
+    if (top < 10) {
+      const w = document.getElementById('k-hero-fixed-wrap');
+      const headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 44;
+      top = (w ? w.offsetHeight : 140) + headerH;
+    }
+    const s = dom.pageScroll;
+    if (s) s.style.top = top + 'px';
+  };
+  requestAnimationFrame(doUpdate);
+  setTimeout(doUpdate, 400);
 }
