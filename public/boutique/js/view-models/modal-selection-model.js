@@ -22,7 +22,11 @@
  * État de sélection unique de la fiche produit.
  *
  * Ce module ne connaît ni DOM, ni mobile, ni desktop, ni fournisseur.
- * Il réduit le Product Detail Contract v1 en un état d'interaction pur.
+ * Il réduit le Product Detail Contract v1 validé en un état d'interaction pur.
+ *
+ * Le contrat v1 garantit `option_axes`, `sellable_units`, `media`,
+ * `media.option_values` et `sellable_unit.media_ids`. Le reducer consomme cette
+ * frontière telle quelle : il n'ajoute pas de fallbacks de forme parallèles.
  *
  * L'ordre de `option_axes` est l'ordre de dépendance. Changer un axe efface
  * les choix des axes suivants : Couleur → Taille, par exemple.
@@ -41,7 +45,7 @@ function selectionError(code, message) {
 }
 
 function getAxisKeys(detail) {
-  return (detail.option_axes || []).map((axis) => axis.key);
+  return detail.option_axes.map((axis) => axis.key);
 }
 
 function unitMatches(unit, options) {
@@ -62,7 +66,7 @@ function buildOptionStates(detail, selectedOptions) {
   const states = {};
   const priorOptions = {};
 
-  for (const axis of detail.option_axes || []) {
+  for (const axis of detail.option_axes) {
     states[axis.key] = axis.values.map((option) => ({
       value: option.value,
       state: optionStateFor(detail, priorOptions, axis.key, option.value),
@@ -88,7 +92,7 @@ function resolveSelectedSku(detail, selectedOptions) {
 }
 
 function mediaMatchesSelection(media, selectedOptions) {
-  const entries = Object.entries(media.option_values || {});
+  const entries = Object.entries(media.option_values);
   return entries.length > 0
     && entries.every(([key, value]) => selectedOptions[key] === value);
 }
@@ -102,7 +106,7 @@ function deriveSelectedMedia(detail, selectedOptions, selectedSku) {
   const specific = detail.media.filter((media) => mediaMatchesSelection(media, selectedOptions));
   if (specific.length > 0) return specific;
 
-  const global = detail.media.filter((media) => Object.keys(media.option_values || {}).length === 0);
+  const global = detail.media.filter((media) => Object.keys(media.option_values).length === 0);
   return global.length > 0 ? global : detail.media.slice();
 }
 
@@ -121,7 +125,7 @@ function deriveSkuState(detail, selectedOptions, selectionMessage = null) {
 }
 
 function deriveLegacyState(detail) {
-  const global = detail.media.filter((media) => Object.keys(media.option_values || {}).length === 0);
+  const global = detail.media.filter((media) => Object.keys(media.option_values).length === 0);
 
   return {
     inventory_model: detail.inventory_model,
