@@ -48,13 +48,19 @@ function getAxisKeys(detail) {
   return detail.option_axes.map((axis) => axis.key);
 }
 
-function unitMatches(unit, options) {
-  return Object.entries(options).every(([key, value]) => unit.option_values[key] === value);
+function unitMatches(unit, optionEntries) {
+  for (let index = 0; index < optionEntries.length; index++) {
+    const [key, value] = optionEntries[index];
+    if (unit.option_values[key] !== value) return false;
+  }
+  return true;
 }
 
 function optionStateFor(detail, priorOptions, axisKey, value) {
+  // Une seule allocation par état d'option, pas une Object.entries() par SKU.
+  const priorEntries = Object.entries(priorOptions);
   const candidates = detail.sellable_units.filter((unit) =>
-    unit.option_values[axisKey] === value && unitMatches(unit, priorOptions)
+    unit.option_values[axisKey] === value && unitMatches(unit, priorEntries)
   );
 
   if (candidates.length === 0) return OPTION_STATE.INCOMPATIBLE;
