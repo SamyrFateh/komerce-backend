@@ -29,6 +29,7 @@ import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 
 let _qtyObserver = null;
+let _qtyObservedEl = null;
 
 function isPhotoAxis(axis) {
   return /couleur|color|coloris|teinte/i.test(axis.key || axis.display_name || '');
@@ -309,12 +310,17 @@ function renderSubtotal(detail, selection) {
 }
 
 function ensureQtyObserver() {
-  if (_qtyObserver || !dom.modalQtyVal || typeof MutationObserver === 'undefined') return;
+  const qtyEl = dom.modalQtyVal;
+  if (!qtyEl || typeof MutationObserver === 'undefined') return;
+  if (_qtyObserver && _qtyObservedEl === qtyEl) return;
+
+  if (_qtyObserver) _qtyObserver.disconnect();
+  _qtyObservedEl = qtyEl;
   _qtyObserver = new MutationObserver(() => {
     if (!isDesktop() || !state.modalProductDetail || !state.modalSelection) return;
     renderSubtotal(state.modalProductDetail, state.modalSelection);
   });
-  _qtyObserver.observe(dom.modalQtyVal, {
+  _qtyObserver.observe(qtyEl, {
     childList: true,
     characterData: true,
     subtree: true,
