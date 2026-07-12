@@ -1,5 +1,3 @@
-import { JSDOM } from 'jsdom';
-
 jest.mock('../../js/b-store.js', () => ({
   state: {},
   dom: {},
@@ -137,7 +135,7 @@ function productDetail(overrides = {}) {
 }
 
 function installDom() {
-  const jsdom = new JSDOM(`<!doctype html><html><body>
+  document.body.innerHTML = `
     <div id="k-modal">
       <div class="k-modal-img-wrap"></div>
       <div id="k-modal-variants"></div>
@@ -151,11 +149,8 @@ function installDom() {
       <span id="k-modal-promo-badge"></span>
       <button id="k-add-cart-btn">Ajouter</button>
       <button id="k-buy-now-btn">Acheter</button>
-    </div>
-  </body></html>`, { url: 'https://komerce.test' });
+    </div>`;
 
-  global.window = jsdom.window;
-  global.document = jsdom.window.document;
   window.matchMedia = jest.fn().mockReturnValue({ matches: true });
 
   dom.modal = document.getElementById('k-modal');
@@ -180,8 +175,6 @@ describe('mobile product detail renderer', () => {
 
   afterEach(() => {
     clearMobileProductDetailState();
-    delete global.window;
-    delete global.document;
   });
 
   test('rend vignettes couleur photo, tailles et livraison depuis le contrat', () => {
