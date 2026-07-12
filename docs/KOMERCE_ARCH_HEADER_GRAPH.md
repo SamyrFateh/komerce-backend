@@ -7,14 +7,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Totals
 
 - Scanned code files: 367
-- Files with full headers: 340
-- Files with lite headers: 27
+- Files with full headers: 341
+- Files with lite headers: 26
 - Files with any headers: 367
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 741
-- Edges: 4241
+- Edges: 4249
 - DB tables: 110
 - Doctrines: 140
 - Impact areas: 124
@@ -168,6 +168,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-catalog.js — boutique-catalog-renderer (catalog, high, full)
 - public/boutique/js/b-checkout-render.js — checkout-dom-renderer (checkout, high, full)
 - public/boutique/js/b-identity.js — boutique-client-identity (auth, high, full)
+- public/boutique/js/b-modal-cart.js — product-modal-cart-controls (boutique, high, full)
 - public/boutique/js/b-modal-core.js — product-modal-orchestrator (boutique, high, full)
 - public/boutique/js/b-modal-desktop-enhancers.js — desktop-product-modal-enhancer (boutique, high, full)
 - public/boutique/js/b-modal-product-detail-mobile.js — product-modal-mobile-detail (catalog, high, full)
@@ -328,7 +329,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-home-premium-v1.js -> owner public/boutique/js/b-catalog.js (boutique-b-home-premium-v1)
 - public/boutique/js/b-mobile-modal-v1.js -> owner public/boutique/js/boutique.js (boutique-b-mobile-modal-v1)
 - public/boutique/js/b-mobile-premium-v1.js -> owner public/boutique/js/boutique.js (boutique-b-mobile-premium-v1)
-- public/boutique/js/b-modal-cart.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-cart)
 - public/boutique/js/b-modal-nav.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-nav)
 - public/boutique/js/b-modal-social-proof.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-social-proof)
 - public/boutique/js/b-modal.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal)
