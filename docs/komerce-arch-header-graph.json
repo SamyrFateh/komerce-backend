@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 741,
-    "edges": 4243,
+    "edges": 4244,
     "dbTables": 110,
     "doctrines": 140,
     "impactAreas": 124,
@@ -2174,7 +2174,8 @@
         "b-store.js"
       ],
       "usedBy": [
-        "b-modal-core.js"
+        "b-modal-core.js",
+        "b-modal-mobile-product.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -2189,7 +2190,7 @@
         "media-carousel",
         "product-discovery"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-modal-mobile-product-bootstrap.js",
@@ -22311,6 +22312,12 @@
       "to": "public/boutique/js/b-modal-image-ux.js",
       "type": "uses",
       "label": "b-modal-core.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-mobile-product.js",
+      "to": "public/boutique/js/b-modal-image-ux.js",
+      "type": "uses",
+      "label": "b-modal-mobile-product.js"
     },
     {
       "from": "public/boutique/js/b-modal-image-ux.js",
@@ -46916,7 +46923,8 @@
         "public/boutique/js/b-store.js"
       ],
       "directUsedBy": [
-        "public/boutique/js/b-modal-core.js"
+        "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-mobile-product.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
