@@ -25,8 +25,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm ci
-          npm --prefix public/boutique ci
+          npm ci --silent
+          npm --prefix public/boutique ci --silent
 
       # ── Gate 1 : body PR contient un plan d'attaque structuré ──────────────
       - name: Plan d'attaque PR (body)
