@@ -1,7 +1,7 @@
 # Boutique Komerce — Index documentaire
 
 > **Point d'entrée pour la documentation Boutique.**
-> Date : 18 mai 2026
+> Mis à jour : 2026-07-12
 > Si tu débarques sur ce dossier, lis ce fichier en premier.
 
 ---
@@ -10,85 +10,124 @@
 
 | Tu veux... | Tu lis... |
 |---|---|
-| Comprendre les **règles** (invariants, ownership, process PR) | `BOUTIQUE_ARCHITECTURE.md` |
+| Comprendre les **règles Boutique** (invariants, ownership, process PR) | `BOUTIQUE_ARCHITECTURE.md` |
 | Savoir l'**état réel** du code aujourd'hui | `BOUTIQUE_ARCHITECTURE_LIVE.md` (généré, ne pas éditer) |
-| Comprendre comment **sources → dist** fonctionne | `BOUTIQUE_CSS_PIPELINE.md` |
-| Comprendre **le détail interne de `modal.css`** (1736L, 7 sections) | `BOUTIQUE_MODAL_ARCHITECTURE.md` |
+| Comprendre comment **sources CSS → dist** fonctionne | `BOUTIQUE_CSS_PIPELINE.md` |
+| Modifier la **modal produit** | `BOUTIQUE_MODAL_ARCHITECTURE.md` |
+| Comprendre la frontière **raffinerie → produit canonique → contrat détail → modal** | `../doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md` |
 | Savoir **qui possède quel composant JS** | `BOUTIQUE_COMPONENT_OWNERSHIP.md` |
-| Comprendre **les contrats produit** (props, slots) | `BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md` |
+| Comprendre les **contrats produit de carte** (props, slots) | `BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md` |
+
+Pour un chantier modal enrichie, l'ordre de lecture est :
+
+```text
+AGENTS.md
+→ docs/CARTE_FIRST_INDEX.md
+→ features/catalog.feature.js
+→ ../doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
+→ BOUTIQUE_ARCHITECTURE.md
+→ BOUTIQUE_MODAL_ARCHITECTURE.md
+→ BOUTIQUE_COMPONENT_OWNERSHIP.md
+```
+
+Ne pas démarrer depuis les anciens `MODAL_*_ARCHITECTURE.md` locaux sous `public/boutique/docs/` : ils sont historiques lorsque leur contenu diverge des documents canoniques sous `docs/boutique/`.
 
 ---
 
-## 2. Les 4 docs satellites de l'architecture
+## 2. Architecture documentaire active
 
-```
-                    BOUTIQUE_ARCHITECTURE.md
-                    (normatif — règles, ce qui DOIT être vrai)
+```text
+                         AGENTS.md
                               │
-              ┌───────────────┼───────────────┐
-              │               │               │
-              ▼               ▼               ▼
-BOUTIQUE_ARCHITECTURE_LIVE.md  BOUTIQUE_CSS_PIPELINE.md  BOUTIQUE_MODAL_ARCHITECTURE.md
-(descriptif — état réel,       (référentiel pipeline    (référentiel interne modal.css,
- généré, jamais édité)          source → bundle → dist)  7 sections, invariants, pièges)
+                    CARTE_FIRST_INDEX.md
+                              │
+                    features/*.feature.js
+                              │
+             doctrines actives du domaine/couture
+                              │
+                  BOUTIQUE_ARCHITECTURE.md
+                              │
+        ┌─────────────────────┼──────────────────────┐
+        │                     │                      │
+        ▼                     ▼                      ▼
+BOUTIQUE_ARCHITECTURE_LIVE  BOUTIQUE_CSS_PIPELINE  BOUTIQUE_MODAL_ARCHITECTURE
+(généré / descriptif)        (pipeline CSS)          (ownership modal)
 ```
 
-**Règle de hiérarchie** : `BOUTIQUE_ARCHITECTURE.md` est la **source normative**. Si une autre doc le contredit, c'est l'autre doc qui doit être alignée (ou la règle changée explicitement dans ARCHITECTURE.md).
+`DOCTRINE_PRODUCT_DETAIL_CONTRACT.md` est une doctrine de couture cross-feature : `catalog` en possède le contrat ; `logistics` et `economic-engine` contribuent leurs vérités ; la Boutique/modal le consomme.
+
+Règle : le document spécifique explique **comment** modifier sa zone. Il ne peut pas contredire la carte feature ni une doctrine active.
 
 ---
 
-## 3. Les 3 scripts associés
+## 3. Scripts associés
 
 | Script | Commande npm | Quand l'utiliser |
 |---|---|---|
-| `bundle-css.js` | `npm run bundle:css` | Après toute modif d'un fichier source CSS — sinon rien n'est en prod |
-| `gen-boutique-arch-live.js` | `npm run boutique:arch` | En début de session + après chaque PR — pour photographier l'état réel |
-| `audit-boutique-arch.js` | `npm run boutique:audit` | Avant tout commit — plante (exit 1) si les invariants §1 sont violés |
+| Déploiement CSS | `npm run deploy:css` | Après toute modif d'un fichier source CSS modal/boutique |
+| Vérification cache CSS | `npm run check:cache` | Après rebundle/déploiement CSS |
+| Audit architecture Boutique | `npm run audit:arch` | Avant commit Boutique |
+| Ownership Boutique | `npm run gate:boutique-ownership` | Depuis la racine, après changement d'owner/périmètre |
+| Carte globale | `npm run map:check` | Vérification complète carte-first |
 
-**Tous lancés depuis `public/boutique/`.**
+Les commandes exactes de pipeline CSS restent gouvernées par `BOUTIQUE_CSS_PIPELINE.md` et le `package.json` courant. Ne pas recopier une ancienne commande `modal.css` depuis une doc historique.
 
 ---
 
-## 4. Workflow type d'une PR CSS
+## 4. Workflow type d'une PR modal
 
 ```bash
+# 1. Lire carte + doctrine + owner
+# 2. Modifier uniquement les owners concernés
+
 cd public/boutique
+npm run check:html
+npm run check:imports
+npm run check:body-classes
+npm run deploy:css        # si CSS touché
+npm run check:cache       # si CSS touché
+npm run audit:arch
 
-# 1. Modifier les sources
-vim css/modal.css
-
-# 2. Rebundler (obligatoire — sinon non-prod)
-npm run bundle:css
-
-# 3. Régénérer la photo descriptive
-npm run boutique:arch
-
-# 4. Valider les invariants
-npm run boutique:audit
-
-# 5. Commit unique (sources + dist + docs LIVE ensemble)
-cd ../../
-git add public/boutique/css/ public/boutique/docs/
-git commit -m "..."
+cd ../..
+npm run gate:boutique-ownership
+npm run gate:docs-lint
+npm run gate:touched-files
+npm run map:check
 ```
 
-**Anti-pattern interdit** : commiter une modif source sans rebundle. Le dist daterait alors d'avant les modifs et la prod afficherait l'ancienne version sans avertissement. C'est précisément ce qui a créé la dette résolue le 18/05/2026.
+Anti-pattern interdit : modifier un source CSS sans régénérer le dist réellement livré.
 
 ---
 
 ## 5. Hiérarchie en cas de conflit
 
-Si plusieurs docs disent des choses différentes, voici qui gagne :
+La hiérarchie racine est celle de `AGENTS.md` :
 
-```
-1. BOUTIQUE_ARCHITECTURE.md            ← source normative, gagne sur tout
-2. BOUTIQUE_CSS_PIPELINE.md            ← détail pipeline, gagne sur les docs spécifiques
-3. BOUTIQUE_MODAL_ARCHITECTURE.md      ← spécifique modal
-4. BOUTIQUE_COMPONENT_OWNERSHIP.md     ← spécifique composants JS
-5. BOUTIQUE_ARCHITECTURE_LIVE.md       ← descriptif, jamais source de vérité (c'est une photo)
+```text
+1. Code de production
+2. DB live
+3. AGENTS.md
+4. CARTE_FIRST_INDEX.md
+5. features/*.feature.js
+6. Doctrines actives
+7. Générateurs
+8. Sorties générées à jour
+9. Archives
 ```
 
-**Si tu trouves un conflit** : ouvre une PR qui aligne la doc subordonnée sur la doc principale. Si c'est la doc principale qui se trompe, change-la explicitement dans la même PR.
+À l'intérieur des docs Boutique actives :
+
+```text
+BOUTIQUE_ARCHITECTURE.md
+        ↓
+BOUTIQUE_CSS_PIPELINE.md / BOUTIQUE_MODAL_ARCHITECTURE.md
+        ↓
+BOUTIQUE_COMPONENT_OWNERSHIP.md
+        ↓
+BOUTIQUE_ARCHITECTURE_LIVE.md (photo générée, jamais intention)
+```
+
+Si un conflit est trouvé, ne pas le contourner. Aligner la doc subordonnée ou changer explicitement l'intention dans la carte/doctrine de la même PR.
 
 ---
 
@@ -96,20 +135,18 @@ Si plusieurs docs disent des choses différentes, voici qui gagne :
 
 | Situation | Action |
 |---|---|
-| Tu modifies du CSS Boutique | 1. Modifier source, 2. `npm run bundle:css`, 3. `npm run boutique:audit` |
-| `boutique:audit` plante (exit 1) | Lire le rapport, corriger les violations avant de continuer |
-| `BOUTIQUE_ARCHITECTURE_LIVE.md` ne match pas tes changements | `npm run boutique:arch` (régénération) puis commit |
-| Tu veux ajouter un nouveau fichier CSS source | 1. Ajouter dans `bundle-css.js`, 2. Mettre à jour `BOUTIQUE_ARCHITECTURE.md` §2 inventaire, 3. `npm run bundle:css` |
-| Tu trouves un sélecteur dans 2 fichiers et ne sais pas si c'est OK | Vérifier `BOUTIQUE_ARCHITECTURE.md` §3 (table d'ownership avec exceptions multi-owner légitimes) |
-| Tu veux toucher un fichier verrouillé (b-pager.js, b-store.js, b-scroll-owner.js) | Lire `BOUTIQUE_ARCHITECTURE.md` §6 — PR isolée obligatoire |
-| Tu veux modifier `modal.css` | Lire d'abord `BOUTIQUE_MODAL_ARCHITECTURE.md` (les 7 sections + pièges connus) |
+| Tu modifies du CSS Boutique | source owner → `deploy:css` → `check:cache` → `audit:arch` |
+| `audit:arch` plante | lire le rapport et corriger l'ownership/la divergence avant de continuer |
+| Tu modifies la modal produit | lire `DOCTRINE_PRODUCT_DETAIL_CONTRACT.md` puis `BOUTIQUE_MODAL_ARCHITECTURE.md` |
+| Tu touches couleur/taille/stock | partir de `sellable_units` / SKU ; ne pas recréer un stock par axe dans la modal |
+| Tu touches Standard/Express | le frontend rend `delivery_options` ; la décision appartient aux moteurs backend |
+| Tu trouves un sélecteur dans deux fichiers | vérifier `BOUTIQUE_COMPONENT_OWNERSHIP.md` avant toute nouvelle règle |
+| Tu veux toucher `b-pager.js`, `b-store.js` ou `b-scroll-owner.js` | PR isolée selon la règle Boutique correspondante |
 
 ---
 
 ## 7. Évolution de l'index
 
-Si tu crées une nouvelle doc Boutique, ajoute-la au tableau §1 ci-dessus dans la même PR.
+Toute nouvelle doc Boutique active doit avoir une place explicite ici ou être rattachée à une doctrine/carte existante.
 
-Si tu supprimes une doc, retire la ligne correspondante.
-
-Si la hiérarchie §5 change, mets à jour dans la même PR `BOUTIQUE_ARCHITECTURE.md` § 1 et ici.
+Ne pas créer une doc satellite pour répéter une doctrine active. En cas de nouvelle frontière métier, modifier la doctrine propriétaire puis pointer les docs de zone vers elle.
