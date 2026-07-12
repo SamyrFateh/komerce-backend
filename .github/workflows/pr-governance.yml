@@ -54,6 +54,8 @@ jobs:
             tests/unit/b-modal-desktop-product.test.js \
             tests/unit/b-modal-product-detail-bootstrap.test.js \
             tests/unit/b-modal-mobile-product-bootstrap.test.js \
+            tests/unit/b-modal-mobile-product.test.js \
+            tests/unit/modal-selection-model.test.js \
             tests/unit/b-modal-desktop-enhancers.test.js \
             tests/unit/b-modal-approche-c-hybrid.test.js \
             tests/unit/main.test.js \
@@ -62,6 +64,8 @@ jobs:
             --collectCoverageFrom=js/b-modal-desktop-product.js \
             --collectCoverageFrom=js/b-modal-product-detail-bootstrap.js \
             --collectCoverageFrom=js/b-modal-mobile-product-bootstrap.js \
+            --collectCoverageFrom=js/b-modal-mobile-product.js \
+            --collectCoverageFrom=js/view-models/modal-selection-model.js \
             --collectCoverageFrom=js/b-modal-desktop-enhancers.js \
             --collectCoverageFrom=js/b-modal-approche-c-hybrid.js \
             --collectCoverageFrom=js/main.js \
@@ -83,6 +87,24 @@ jobs:
           echo "$code" > boutique-check-fast.exit-code
           exit 0
 
+      - name: Capture feature registry
+        run: |
+          set +e
+          npm run feature:registry > feature-registry.log 2>&1
+          code=$?
+          cat feature-registry.log
+          echo "$code" > feature-registry.exit-code
+          exit 0
+
+      - name: Capture schema freshness
+        run: |
+          set +e
+          npm run schema:check > schema-check.log 2>&1
+          code=$?
+          cat schema-check.log
+          echo "$code" > schema-check.exit-code
+          exit 0
+
       - name: Upload PDC-5 diagnostic
         if: always()
         uses: actions/upload-artifact@v4
@@ -95,5 +117,9 @@ jobs:
             pdc5-tests.exit-code
             boutique-check-fast.log
             boutique-check-fast.exit-code
+            feature-registry.log
+            feature-registry.exit-code
+            schema-check.log
+            schema-check.exit-code
             public/boutique/.pdc5-coverage/coverage-final.json
           retention-days: 1
