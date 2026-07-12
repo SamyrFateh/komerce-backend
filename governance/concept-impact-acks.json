@@ -1,0 +1,75 @@
+{
+  "$schema": "komerce-concept-impact-acks-v1",
+  "acks": [
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-packing-v1",
+      "feature": "economic-engine",
+      "status": "adapted",
+      "reason": "Le packing consomme maintenant un profil par rail; AIR_EXPRESS reste sans profil actif et aucun prix air n'est invente."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-packing-v1",
+      "feature": "orders",
+      "status": "compatible",
+      "reason": "Le rail execute n'est toujours pas persiste; le packing accepte un contexte de rail explicite sans introduire de defaut maritime."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-packing-v1",
+      "feature": "catalog",
+      "status": "compatible",
+      "reason": "Aucune eligibilite AIR n'est exposee en catalogue; le profil de packing AIR reste PENDING et ferme."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-packing-v1",
+      "feature": "customs",
+      "status": "compatible",
+      "reason": "Aucune regle de transportabilite n'est encore branchee; AIR_EXPRESS echoue ferme avant packing tant que son profil est absent."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-packing-v1",
+      "feature": "notifications",
+      "status": "not-applicable",
+      "reason": "Aucune promesse AIR ni ETA AIR n'est produite par le raccord rail vers packing."
+    },
+    {
+      "concept": "transport-rail@1",
+      "revision": "2026-07-11-air-express-packing-v1",
+      "feature": "dashboard",
+      "status": "not-applicable",
+      "reason": "Aucun rail execute n'est encore persiste ou segmente dans les projections dashboard."
+    },
+    {
+      "concept": "transport-cost-allocation@1",
+      "revision": "2026-07-11-shipment-cost-wiring-v1",
+      "feature": "logistics",
+      "status": "adapted",
+      "reason": "Le shipment explicite SEA ou AIR fournit maintenant le rail et les mesures physiques au moteur reel; un mode absent reste legacy sans defaut SEA implicite."
+    },
+    {
+      "concept": "transport-cost-allocation@1",
+      "revision": "2026-07-11-shipment-cost-wiring-v1",
+      "feature": "orders",
+      "status": "adapted",
+      "reason": "Les quotes-parts freight rail-aware sont maintenant persistees vers order_item_real_cost_allocations; la persistance du rail execute reste un lot distinct."
+    },
+    {
+      "concept": "transport-cost-allocation@1",
+      "revision": "2026-07-11-shipment-cost-wiring-v1",
+      "feature": "customs",
+      "status": "compatible",
+      "reason": "La ventilation customs existante reste distincte et intacte; seul le freight du shipment delegue sa cle au contrat transport."
+    },
+    {
+      "concept": "transport-cost-allocation@1",
+      "revision": "2026-07-11-shipment-cost-wiring-v1",
+      "feature": "dashboard",
+      "status": "compatible",
+      "reason": "Les allocations reelles restent dans la table existante et conservent allocation_method et confidence; aucun segment rail dashboard n'est encore ajoute."
+    }
+  ]
+}
