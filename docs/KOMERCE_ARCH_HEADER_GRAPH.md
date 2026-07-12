@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 363
-- Files with full headers: 336
+- Scanned code files: 364
+- Files with full headers: 337
 - Files with lite headers: 27
-- Files with any headers: 363
+- Files with any headers: 364
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 731
-- Edges: 4197
+- Graph nodes: 732
+- Edges: 4208
 - DB tables: 110
 - Doctrines: 139
 - Impact areas: 119
-- Unresolved code edges: 401
+- Unresolved code edges: 402
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 5
 - bootstrap: 1
 - boutique: 37
-- catalog: 37
+- catalog: 38
 - checkout: 2
 - customs: 6
 - dashboard: 30
@@ -60,7 +60,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 11
 - policy: 1
-- route: 99
+- route: 100
 - route-manifest: 1
 - schema: 1
 - service: 147
@@ -208,6 +208,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin/users.js — dashboard-users (dashboard, high, full)
 - routes/auth.js — auth-auth (auth-identity, high, full)
 - routes/boutique-suggestions.js — boutique-suggestions-http-facade (recommendations, high, full)
+- routes/catalog-product-detail.js — catalog-product-detail-http (catalog, high, full)
 - routes/client-auth.js — auth-client-auth (auth-identity, high, full)
 - routes/client-tracking.js — logistics-client-tracking (logistics, high, full)
 - routes/dashboard-clients.js — dashboard-dashboard-clients (dashboard, high, full)
@@ -684,13 +685,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/carriers.js -> services/* (services/*)
 - depends: routes/cash.js -> db.js (db.js)
 - depends: routes/cash.js -> services/* (services/*)
+- depends: routes/catalog-product-detail.js -> db.js (db.js)
 - depends: routes/categories.js -> db.js (db.js)
 - depends: routes/categories.js -> services/* (services/*)
 - depends: routes/client-auth.js -> db.js (db.js)
 - depends: routes/client-auth.js -> services/* (services/*)
 - depends: routes/client-tracking.js -> db.js (db.js)
 - depends: routes/client-tracking.js -> services/* (services/*)
-- depends: routes/collective-workspaces.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 

@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 363,
-    "filesWithFullHeaders": 336,
+    "scannedCodeFiles": 364,
+    "filesWithFullHeaders": 337,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 363,
+    "filesWithAnyHeaders": 364,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 731,
-    "edges": 4197,
+    "graphNodes": 732,
+    "edges": 4208,
     "dbTables": 110,
     "doctrines": 139,
     "impactAreas": 119,
-    "unresolvedCodeEdges": 401,
+    "unresolvedCodeEdges": 402,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 36,
     "boutique": 37,
-    "catalog": 37,
+    "catalog": 38,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 7,
@@ -75,7 +75,7 @@
     "state-store": 1,
     "schema": 1,
     "view-model": 3,
-    "route": 99,
+    "route": 100,
     "entrypoint": 1,
     "service": 147,
     "machine": 2,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 100,
-    "high": 153,
+    "high": 154,
     "low": 34
   },
   "nodes": [
@@ -5160,6 +5160,49 @@
         "payment"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "routes/catalog-product-detail.js",
+      "file": "routes/catalog-product-detail.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-product-detail-http",
+      "domain": "catalog",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_id"
+      ],
+      "outputs": [
+        "public_product_detail_v1"
+      ],
+      "depends": [
+        "db.js",
+        "services/catalog-product-detail.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "future public/boutique/js/b-modal-core.js"
+      ],
+      "dbRead": [
+        "product_skus",
+        "product_variants",
+        "products"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-detail",
+        "modal"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "routes/categories.js",
@@ -17401,6 +17444,16 @@
       "table": "cash_deposits"
     },
     {
+      "id": "db:product_skus",
+      "type": "db-table",
+      "table": "product_skus"
+    },
+    {
+      "id": "db:product_variants",
+      "type": "db-table",
+      "table": "product_variants"
+    },
+    {
       "id": "db:order_comments",
       "type": "db-table",
       "table": "order_comments"
@@ -17439,16 +17492,6 @@
       "id": "db:refunds",
       "type": "db-table",
       "table": "refunds"
-    },
-    {
-      "id": "db:product_skus",
-      "type": "db-table",
-      "table": "product_skus"
-    },
-    {
-      "id": "db:product_variants",
-      "type": "db-table",
-      "table": "product_variants"
     },
     {
       "id": "db:cart_shares",
@@ -18006,6 +18049,11 @@
       "doctrine": "personnalisation_navigation"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
       "id": "doctrine:moteur_economique_lisible",
       "type": "doctrine",
       "doctrine": "moteur_economique_lisible"
@@ -18124,11 +18172,6 @@
       "id": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
     },
     {
       "id": "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
@@ -18811,6 +18854,11 @@
       "area": "logistics"
     },
     {
+      "id": "impact:product-detail",
+      "type": "impact-area",
+      "area": "product-detail"
+    },
+    {
       "id": "impact:operations",
       "type": "impact-area",
       "area": "operations"
@@ -18874,11 +18922,6 @@
       "id": "impact:crons",
       "type": "impact-area",
       "area": "crons"
-    },
-    {
-      "id": "impact:product-detail",
-      "type": "impact-area",
-      "area": "product-detail"
     },
     {
       "id": "impact:customs",
@@ -26152,6 +26195,72 @@
       "label": "payment"
     },
     {
+      "from": "routes/catalog-product-detail.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "services/catalog-product-detail.js",
+      "type": "depends",
+      "label": "services/catalog-product-detail.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/catalog-product-detail.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-core.js",
+      "to": "routes/catalog-product-detail.js",
+      "type": "uses",
+      "label": "future public/boutique/js/b-modal-core.js"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "db:product_variants",
+      "type": "db-read",
+      "label": "product_variants"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "impact:product-detail",
+      "type": "impact",
+      "label": "product-detail"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "impact:modal",
+      "type": "impact",
+      "label": "modal"
+    },
+    {
       "from": "routes/categories.js",
       "to": "db.js",
       "type": "depends",
@@ -31770,7 +31879,7 @@
       "label": "schemas/catalog/product-detail.v1.schema.json"
     },
     {
-      "from": "services/catalog-product-detail.js",
+      "from": "routes/catalog-product-detail.js",
       "to": "services/catalog-product-detail.js",
       "type": "uses",
       "label": "routes/catalog-product-detail.js"
@@ -44259,6 +44368,7 @@
         "routes/boutique-suggestions.js",
         "routes/carriers.js",
         "routes/cash.js",
+        "routes/catalog-product-detail.js",
         "routes/categories.js",
         "routes/client-auth.js",
         "routes/client-tracking.js",
@@ -46363,6 +46473,7 @@
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-subcat.js",
         "public/boutique/js/view-models/modal-view-model.js",
+        "routes/catalog-product-detail.js",
         "routes/products.js"
       ]
     },
@@ -49314,6 +49425,50 @@
         "services/loyalty-service.js",
         "services/purchasing-trigger-service.js",
         "utils/logger.js"
+      ]
+    },
+    "routes/catalog-product-detail.js": {
+      "role": "catalog-product-detail-http",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/catalog-product-detail.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "public/boutique/js/b-modal-core.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_skus",
+        "product_variants",
+        "products"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-detail",
+        "modal"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:product_skus",
+        "db:product_variants",
+        "db:products",
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "impact:catalog",
+        "impact:modal",
+        "impact:product-detail",
+        "public/boutique/js/b-modal-core.js",
+        "services/catalog-product-detail.js"
       ]
     },
     "routes/categories.js": {
@@ -53122,7 +53277,7 @@
         "schemas/catalog/product-detail.v1.schema.json"
       ],
       "directUsedBy": [
-        "services/catalog-product-detail.js"
+        "routes/catalog-product-detail.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -53154,7 +53309,7 @@
         "impact:logistics",
         "impact:modal",
         "impact:product-detail",
-        "services/catalog-product-detail.js",
+        "routes/catalog-product-detail.js",
         "services/transport-rails.js"
       ]
     },
@@ -62167,6 +62322,12 @@
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "routes/categories.js",
