@@ -67,6 +67,16 @@ jobs:
           echo "$code" > ../../pdc4-tests.exit-code
           exit 0
 
+      - name: Capture Boutique check-fast diagnostic
+        if: always()
+        run: |
+          set +e
+          npm --prefix public/boutique run check:fast > boutique-check-fast.log 2>&1
+          code=$?
+          cat boutique-check-fast.log
+          echo "$code" > boutique-check-fast.exit-code
+          exit 0
+
       - name: Upload PDC-4 touched-tests diagnostic
         if: always()
         uses: actions/upload-artifact@v4
@@ -77,5 +87,7 @@ jobs:
             touched-tests.exit-code
             pdc4-tests.log
             pdc4-tests.exit-code
+            boutique-check-fast.log
+            boutique-check-fast.exit-code
             public/boutique/.pdc4-coverage/coverage-final.json
           retention-days: 1
