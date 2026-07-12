@@ -14,7 +14,6 @@ const mockSetupImageUX = jest.fn();
 const mockSetupSocialProof = jest.fn();
 const mockBuildCarouselSlides = jest.fn();
 const mockGoToSlide = jest.fn();
-const mockRenderVariants = jest.fn();
 const mockSyncScrollPadding = jest.fn();
 const mockInjectMobileDelivery = jest.fn();
 const mockInjectMobileTrust = jest.fn();
@@ -71,7 +70,6 @@ jest.mock('../../js/b-modal-product.js', () => ({
   goToSlide: mockGoToSlide,
   openSizeGuide: jest.fn(),
   closeSizeGuide: jest.fn(),
-  _renderVariants: mockRenderVariants,
   _syncScrollPadding: mockSyncScrollPadding,
   _injectMobileDelivery: mockInjectMobileDelivery,
   _injectMobileTrust: mockInjectMobileTrust,
@@ -215,20 +213,15 @@ beforeEach(() => {
   dom.grid.scrollLeft = 140;
   dom.grid.style.scrollSnapType = 'x mandatory';
   mockGetScrollY.mockReturnValue(321);
-  global.fetch = jest.fn((url) => {
-    if (String(url).startsWith('/api/products/')) {
-      return Promise.resolve({ ok: true, json: async () => ({ variants: { Taille: ['M', 'L'] } }) });
-    }
-    return Promise.resolve({
-      ok: true,
-      json: async () => ({
-        suggestions: [
-          { product_id: 2, id: 2, category: 'Tech', name: 'Produit 2' },
-          { product_id: 3, id: 3, category: 'Maison', name: 'Produit 3' },
-        ],
-      }),
-    });
-  });
+  global.fetch = jest.fn(() => Promise.resolve({
+    ok: true,
+    json: async () => ({
+      suggestions: [
+        { product_id: 2, id: 2, category: 'Tech', name: 'Produit 2' },
+        { product_id: 3, id: 3, category: 'Maison', name: 'Produit 3' },
+      ],
+    }),
+  }));
 });
 
 afterEach(() => {
@@ -257,13 +250,17 @@ test('setupModal déplace les actions, câble favoris, panier et overlay', () =>
   expect(dom.modalOverlay.classList.contains('open')).toBe(false);
 });
 
-test('openModal charge variantes et suggestions puis restaure le pager mobile', async () => {
+test('openModal charge les suggestions sans fetch legacy /api/products/:id puis restaure le pager mobile', async () => {
   openModal(1);
   await settle();
 
   expect(dom.modalSku.textContent).toBe('Réf. TECH-001');
   expect(document.getElementById('k-modal-fav-btn').classList.contains('liked')).toBe(true);
-  expect(mockRenderVariants).toHaveBeenCalledWith({ Taille: ['M', 'L'] }, expect.any(Object));
+  // PDC-6 : le fetch legacy /api/products/:id + _renderVariants n'existent plus.
+  expect(global.fetch).not.toHaveBeenCalledWith(
+    expect.stringMatching(/^\/api\/products\//),
+    expect.anything()
+  );
   expect(mockRenderSuggestions).toHaveBeenCalledWith(
     [expect.objectContaining({ id: 2 })],
     [expect.objectContaining({ id: 3 })],

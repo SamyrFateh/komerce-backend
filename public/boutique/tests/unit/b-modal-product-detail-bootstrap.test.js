@@ -186,13 +186,6 @@ describe('product detail modal bootstrap', () => {
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
   });
 
-  test('les roots attendus suivent seulement le viewport, pas une seconde logique produit', () => {
-    window.matchMedia.mockReturnValue({ matches: true });
-    expect(_productDetailBootstrapTestApi.expectedRootSelector()).toBe('[data-pdc4-root]');
-    window.matchMedia.mockReturnValue({ matches: false });
-    expect(_productDetailBootstrapTestApi.expectedRootSelector()).toBe('[data-pdc5-root]');
-  });
-
   test('ignore une réponse arrivée après navigation vers un autre produit', async () => {
     let resolveJson;
     fetch.mockResolvedValue({
@@ -210,7 +203,7 @@ describe('product detail modal bootstrap', () => {
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
   });
 
-  test('un échec HTTP purge les owners PDC puis laisse le chemin legacy de transition intact', async () => {
+  test('un échec HTTP purge les owners PDC et laisse intact le paint immédiat legacy (nom/prix/stock liste, hors périmètre PDC-6)', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     dom.modalVariants.innerHTML = '<div data-legacy="1">legacy</div>';
     fetch.mockResolvedValue({ ok: false, status: 503 });
@@ -228,7 +221,7 @@ describe('product detail modal bootstrap', () => {
     warn.mockRestore();
   });
 
-  test('desktop : le guard rétablit PDC-5 après un repaint legacy tardif', async () => {
+  test('PDC-6 : aucun MutationObserver ne protège plus #k-modal-variants — un repaint tardif du conteneur n\'est pas corrigé automatiquement', async () => {
     window.matchMedia.mockReturnValue({ matches: false });
     const payload = detail();
     fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
@@ -242,11 +235,23 @@ describe('product detail modal bootstrap', () => {
     await flush();
     await flush();
 
-    expect(renderDesktopProductDetail).toHaveBeenCalledWith(
-      payload,
-      state.modalSelection,
-      { forceMedia: false }
+    // Sans guard PDC-4/PDC-5 (supprimé PDC-6), aucun rerender automatique ne
+    // corrige ce repaint : ce n'est plus la responsabilité du bootstrap.
+    expect(renderDesktopProductDetail).not.toHaveBeenCalled();
+  });
+
+  test('PDC-6 : le module ne référence plus aucun mécanisme de guard variants legacy', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(
+      path.join(__dirname, '../../js/b-modal-product-detail-bootstrap.js'),
+      'utf8'
     );
+    expect(source).not.toMatch(/MutationObserver/);
+    expect(source).not.toMatch(/_variantGuard/);
+    expect(source).not.toMatch(/installVariantGuard/);
+    expect(source).not.toMatch(/disconnectVariantGuard/);
+    expect(source).not.toMatch(/expectedRootSelector/);
   });
 
   test('modal:closed invalide les requêtes et nettoie les deux compositions', () => {

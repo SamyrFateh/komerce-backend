@@ -57,7 +57,6 @@ module.exports = {
     boutique: [
       '../js/view-models/modal-selection-model.js',
       '../js/b-modal-product-detail-bootstrap.js',
-      '../js/b-modal-mobile-product-bootstrap.js',
       '../js/b-modal-mobile-product.js',
       '../js/b-modal-desktop-product.js',
       '../js/b-modal-desktop-enhancers.js',
@@ -72,7 +71,6 @@ module.exports = {
     tests: [
       '../tests/unit/modal-selection-model.test.js',
       '../tests/unit/b-modal-mobile-product.test.js',
-      '../tests/unit/b-modal-mobile-product-bootstrap.test.js',
       '../tests/unit/b-modal-desktop-product.test.js',
       '../tests/unit/b-modal-product-detail-bootstrap.test.js',
       '../tests/unit/b-modal-desktop-enhancers.test.js',

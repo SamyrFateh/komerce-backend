@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_id, product_data, cart_state, modal_events
  * @outputs       product_detail_modal, add_to_cart_path, suggestions_slot, modal_lifecycle
- * @depends       b-store.js, b-cart.js, b-cart-core.js, b-modal-product.js, b-modal-suggestions.js, b-modal-nav.js, b-modal-cart.js, b-modal-image-ux.js, routes/products.js
+ * @depends       b-store.js, b-cart.js, b-cart-core.js, b-modal-product.js, b-modal-suggestions.js, b-modal-nav.js, b-modal-cart.js, b-modal-image-ux.js
  * @used-by       b-modal.js, b-catalog.js, b-subcat.js, b-cart.js
  * @doctrine      participant_peut_verifier, boutique_preuve_confiance, modal_produit_sans_chevauchement
  * @impact-areas  product-discovery, participant-flow, creator-flow, modal-layout, cart, suggestions
@@ -66,7 +66,7 @@ import { setupImageUX }     from './b-modal-image-ux.js';
 import { setupSocialProof } from './b-modal-social-proof.js';
 import {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
-  _renderVariants, _syncScrollPadding,
+  _syncScrollPadding,
   _injectMobileDelivery, _injectMobileTrust,
   setupModalFAB, hideModalFAB,
 }                           from './b-modal-product.js';
@@ -236,23 +236,14 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
     buildCarouselSlides(product);
 
-    // Variants — fetch full product if has_variants (lazy, non-blocking)
+    // PDC-6 : le fetch legacy /api/products/:id + _renderVariants est supprimé.
+    // La vérité variantes/disponibilité vient désormais exclusivement du
+    // Product Detail Contract (b-modal-product-detail-bootstrap.js) via
+    // state.modalSelection. #k-modal-variants reste nettoyé à l'ouverture par
+    // hygiène générique (ancien conteneur DOM), sans lien avec ce fetch.
     let _variantContainer = dom.modalVariants || document.getElementById('k-modal-variants');
     if (_variantContainer) _variantContainer.innerHTML = '';
-    state.modalVariantCombo = {}; // Lot 2 — reset à chaque ouverture
-    if (product.has_variants) {
-      let _variantProductId = product.id;
-      fetch('/api/products/' + _variantProductId, { credentials: 'include' })
-        .then(function(r) { return r.json(); })
-        .then(function(full) {
-          // Guard: modal may have moved to another product by the time fetch returns
-          if (state.modalProduct && state.modalProduct.id !== _variantProductId) return;
-          if (full.variants && Object.keys(full.variants).length > 0) {
-            _renderVariants(full.variants, full);
-          }
-        })
-        .catch(function() { /* silently ignore network errors */ });
-    }
+    state.modalVariantCombo = {}; // Lot 2 — reset à chaque ouverture (couture de transport, cf. étape 7)
 
     dom.modalName.textContent = product.name;
     if (dom.modalSku) {

@@ -19,7 +19,7 @@
 'use strict';
 
 import { bus } from './b-bus.js';
-import { state, dom } from './b-store.js';
+import { state } from './b-store.js';
 import { createModalSelection } from './view-models/modal-selection-model.js';
 import {
   clearMobileProductDetailState,
@@ -32,7 +32,6 @@ import {
 
 let _installed = false;
 let _generation = 0;
-let _variantGuard = null;
 let _viewportMode = null;
 let _resizeTimer = null;
 
@@ -46,15 +45,6 @@ function viewportMode() {
 
 function currentProductId() {
   return state.modalProduct ? String(state.modalProduct.id) : null;
-}
-
-function expectedRootSelector() {
-  return isMobileViewport() ? '[data-pdc4-root]' : '[data-pdc5-root]';
-}
-
-function disconnectVariantGuard() {
-  if (_variantGuard) _variantGuard.disconnect();
-  _variantGuard = null;
 }
 
 function clearProductDetailState() {
@@ -71,29 +61,6 @@ function renderResponsiveProductDetail(detail, selection, forceMedia) {
   }
 }
 
-/**
- * Transition PDC-4/PDC-5 : le fetch legacy de b-modal-core.js peut encore
- * repeindre #k-modal-variants après le contrat détail. Le guard rétablit la
- * composition responsive depuis l'état PDC-3 ; il ne calcule aucune vérité.
- * PDC-6 supprime le fetch legacy et ce guard avec lui.
- */
-function installVariantGuard(detail) {
-  disconnectVariantGuard();
-  const container = dom.modalVariants || document.getElementById('k-modal-variants');
-  if (!container || typeof MutationObserver === 'undefined') return;
-
-  _variantGuard = new MutationObserver(() => {
-    if (!state.modalOpen) return;
-    if (currentProductId() !== String(detail.product.id)) return;
-    if (!state.modalSelection || !state.modalProductDetail) return;
-    if (container.querySelector(expectedRootSelector())) return;
-
-    renderResponsiveProductDetail(detail, state.modalSelection, false);
-  });
-
-  _variantGuard.observe(container, { childList: true, subtree: true });
-}
-
 function syncResponsiveComposition() {
   if (!state.modalOpen || !state.modalProductDetail || !state.modalSelection) return;
   const nextMode = viewportMode();
@@ -104,7 +71,6 @@ function syncResponsiveComposition() {
     state.modalSelection,
     false
   );
-  installVariantGuard(state.modalProductDetail);
 }
 
 function onViewportResize() {
@@ -118,7 +84,6 @@ async function loadProductDetail(product) {
   const productId = String(product.id);
   const generation = ++_generation;
   clearProductDetailState();
-  disconnectVariantGuard();
   _viewportMode = null;
 
   try {
@@ -138,10 +103,10 @@ async function loadProductDetail(product) {
     state.modalProductDetail = detail;
     state.modalSelection = selection;
     renderResponsiveProductDetail(detail, selection, true);
-    installVariantGuard(detail);
   } catch (error) {
-    // Transition PDC : le chemin legacy reste visible si le nouveau contrat est
-    // indisponible. PDC-6 retirera ce fallback avec l'ancien fetch modal.
+    // Si le contrat détail est indisponible, la modal reste sur le paint
+    // immédiat legacy de b-modal-core.js (nom/prix/stock du produit liste).
+    // PDC-6 a retiré le fetch variantes legacy ; ce fallback n'en dépend pas.
     console.warn('[Product Detail] contrat modal indisponible:', error?.message || error);
   }
 }
@@ -157,7 +122,6 @@ export function setupProductDetailModal() {
   bus.on('modal:closed', () => {
     _generation += 1;
     clearTimeout(_resizeTimer);
-    disconnectVariantGuard();
     _viewportMode = null;
     clearProductDetailState();
   });
@@ -167,6 +131,5 @@ export function setupProductDetailModal() {
 
 export const _productDetailBootstrapTestApi = Object.freeze({
   renderResponsiveProductDetail,
-  expectedRootSelector,
   syncResponsiveComposition,
 });

@@ -12,12 +12,13 @@
  * Périmètre couvert :
  *   - buildCarouselSlides (slides, dots vs compteur >5 images, miniatures desktop)
  *   - goToSlide (borne, sync dots/miniatures/compteur, bus carousel:changed)
- *   - _renderVariants (couleur ignorée, taille + guide des tailles, options
- *     out-of-stock désactivées, sélection met à jour le prix)
  *   - _syncScrollPadding (no-op desktop ≥900px)
  *   - _injectMobileDelivery / _injectMobileTrust (injection, dédup, no-op sans DOM)
  *   - setupModalFAB / hideModalFAB (topbar enrichie, cleanup observers)
  *   - openSizeGuide / closeSizeGuide (overlay, onglets, fermeture croix/backdrop/Escape)
+ *
+ * PDC-6 : _renderVariants et ses helpers (intelligence produit legacy) ont
+ *   été supprimés de b-modal-product.js ; leur couverture est retirée ici.
  *
  * state/dom/bus viennent des vrais b-store.js/b-bus.js. b-utils.js est mocké
  * (fonctions pures de formatage, comme dans les lots précédents).
@@ -33,7 +34,7 @@ const { bus } = require('../../js/b-bus.js');
 
 const {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
-  _renderVariants, _syncScrollPadding,
+  _syncScrollPadding,
   _injectMobileDelivery, _injectMobileTrust,
   setupModalFAB, hideModalFAB,
 } = require('../../js/b-modal-product.js');
@@ -145,68 +146,6 @@ describe('b-modal-product', () => {
       goToSlide(1);
       expect(spy).toHaveBeenCalledWith('carousel:changed', 1);
       spy.mockRestore();
-    });
-  });
-
-  describe('_renderVariants', () => {
-    it('sans container (dom.modalVariants absent et #k-modal-variants introuvable) → ne throw pas', () => {
-      dom.modalVariants = null;
-      expect(() => _renderVariants({ Taille: [{ value: 'M', stock: 5 }] }, makeProduct())).not.toThrow();
-    });
-
-    it('type "Couleur" → génère des swatches .k-sku avec image ou .k-vp sans image (Lot 2)', () => {
-      _renderVariants({
-        Couleur: [
-          { value: 'Rouge', stock: 5, image_url: 'http://img/rouge.jpg' },
-          { value: 'Bleu', stock: 0, image_url: 'http://img/bleu.jpg' },
-          { value: 'Vert', stock: 3 },
-        ]
-      }, makeProduct());
-      // 1 groupe créé
-      expect(dom.modalVariants.children).toHaveLength(1);
-      // 2 swatches photo + 1 pill texte (pas d'image)
-      const skus = dom.modalVariants.querySelectorAll('.k-sku');
-      expect(skus).toHaveLength(2);
-      const pills = dom.modalVariants.querySelectorAll('.k-vp');
-      expect(pills).toHaveLength(1);
-      // Rupture de stock
-      expect(skus[1].classList.contains('k-sku--out')).toBe(true);
-      expect(skus[1].disabled).toBe(true);
-    });
-
-    it('type "Taille" → groupe créé avec bouton guide des tailles (data-size-type=clothes)', () => {
-      _renderVariants({ Taille: [{ value: 'M', stock: 5 }, { value: 'L', stock: 0 }] }, makeProduct());
-      const guideBtn = dom.modalVariants.querySelector('.k-vg-size-guide');
-      expect(guideBtn).not.toBeNull();
-      expect(guideBtn.dataset.sizeType).toBe('clothes');
-    });
-
-    it('type "Pointure" → guide des tailles en mode "shoes"', () => {
-      _renderVariants({ Pointure: [{ value: '40', stock: 5 }] }, makeProduct());
-      const guideBtn = dom.modalVariants.querySelector('.k-vg-size-guide');
-      expect(guideBtn.dataset.sizeType).toBe('shoes');
-    });
-
-    it('option en stock : clic → devient active, met à jour le label et le prix', () => {
-      _renderVariants({ Taille: [{ value: 'M', stock: 5, price_kmf: 4500 }] }, makeProduct());
-      const btn = dom.modalVariants.querySelector('.k-vp');
-      expect(btn.disabled).toBe(false);
-      btn.click();
-      expect(btn.classList.contains('k-vp--active')).toBe(true);
-      expect(dom.modalVariants.querySelector('.k-vg-label-val').textContent).toBe('M');
-      expect(dom.modalPrice.textContent).toBe('4500 KMF');
-    });
-
-    it('option rupture (stock 0) : bouton désactivé, pas de classe active possible', () => {
-      _renderVariants({ Taille: [{ value: 'XL', stock: 0 }] }, makeProduct());
-      const btn = dom.modalVariants.querySelector('.k-vp');
-      expect(btn.disabled).toBe(true);
-      expect(btn.classList.contains('k-vp--out')).toBe(true);
-    });
-
-    it('type sans options (tableau vide) → aucun groupe créé', () => {
-      _renderVariants({ Taille: [] }, makeProduct());
-      expect(dom.modalVariants.children).toHaveLength(0);
     });
   });
 

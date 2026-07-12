@@ -19,7 +19,6 @@ import { setupDesktopUpgrade } from './b-desktop-upgrade.js';
 import { isDesktop } from './b-scroll-owner.js';
 import { setupProductOpenContract } from './b-product-open-contract.js';
 import { setupCartProductOpenStyle } from './b-cart-product-open-style.js';
-import { setupModalContractClasses } from './b-modal-desktop-enhancers.js';
 import { setupApprocheCHybridPdp } from './b-modal-approche-c-hybrid.js';
 import { setupPdpCurationSuggestions } from './b-pdp-curation-suggestions.js';
 import { setupHomePremiumV1 } from './b-home-premium-v1.js';
@@ -29,7 +28,6 @@ import { greetIfKnown } from './b-greeting.js';
 
 function setupBoutiqueRuntime() {
   setupSharePhoneGuard();
-  setupModalContractClasses();
   setupDesktopUpgrade();
   setupApprocheCHybridPdp();
   setupPdpCurationSuggestions();

@@ -4,10 +4,6 @@ jest.mock('../../js/b-catalog.js', () => ({ setActiveCat: jest.fn() }));
 jest.mock('../../js/b-cart-core.js', () => ({ showToast: jest.fn() }));
 jest.mock('../../js/b-modal.js', () => ({ openModal: jest.fn() }));
 jest.mock('../../js/b-scroll-owner.js', () => ({ isDesktop: jest.fn(() => true) }));
-jest.mock('../../js/view-models/modal-view-model.js', () => ({
-  buildModalViewModel: jest.fn((product) => ({ __vm: true, id: product && product.id })),
-  applyModalClasses: jest.fn(),
-}));
 
 describe('b-modal-desktop-enhancers — composition only', () => {
   let bus;
@@ -17,8 +13,6 @@ describe('b-modal-desktop-enhancers — composition only', () => {
   let showToast;
   let setActiveCat;
   let openModal;
-  let buildModalViewModel;
-  let applyModalClasses;
   let enhancers;
 
   function installDom() {
@@ -47,7 +41,6 @@ describe('b-modal-desktop-enhancers — composition only', () => {
     ({ showToast } = require('../../js/b-cart-core.js'));
     ({ setActiveCat } = require('../../js/b-catalog.js'));
     ({ openModal } = require('../../js/b-modal.js'));
-    ({ buildModalViewModel, applyModalClasses } = require('../../js/view-models/modal-view-model.js'));
     enhancers = require('../../js/b-modal-desktop-enhancers.js');
 
     installDom();
@@ -176,22 +169,17 @@ describe('b-modal-desktop-enhancers — composition only', () => {
     expect(openModal).toHaveBeenCalledWith('7', true);
   });
 
-  test('les classes ViewModel legacy restent un contrat structurel temporaire', () => {
-    enhancers.setupModalContractClasses();
-    enhancers.setupModalContractClasses();
-    bus.emit('modal:opened', state.modalProduct);
+  test('PDC-6 : setupModalContractClasses n\'existe plus et modal-view-model.js n\'est plus une dépendance', () => {
+    expect(enhancers.setupModalContractClasses).toBeUndefined();
 
-    expect(buildModalViewModel).toHaveBeenCalledWith(state.modalProduct);
-    expect(applyModalClasses).toHaveBeenCalledWith(dom.modal, { __vm: true, id: 42 });
-    expect(state._currentModalViewModel).toEqual({ __vm: true, id: 42 });
-  });
-
-  test('erreur ViewModel structurel : fallback silencieux sans casser la modal', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    buildModalViewModel.mockImplementationOnce(() => { throw new Error('boom'); });
-    enhancers.setupModalContractClasses();
-
-    expect(() => bus.emit('modal:opened', state.modalProduct)).not.toThrow();
-    expect(warn).toHaveBeenCalled();
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(
+      path.join(__dirname, '../../js/b-modal-desktop-enhancers.js'),
+      'utf8'
+    );
+    expect(source).not.toMatch(/modal-view-model/);
+    expect(source).not.toMatch(/buildModalViewModel/);
+    expect(source).not.toMatch(/applyModalClasses/);
   });
 });

@@ -11,7 +11,6 @@ const mockSetupSharePhoneGuard = jest.fn();
 const mockSetupDesktopUpgrade = jest.fn();
 const mockSetupProductOpenContract = jest.fn();
 const mockSetupCartProductOpenStyle = jest.fn();
-const mockSetupModalContractClasses = jest.fn();
 const mockSetupApprocheCHybridPdp = jest.fn();
 const mockSetupPdpCurationSuggestions = jest.fn();
 const mockSetupHomePremiumV1 = jest.fn();
@@ -35,9 +34,6 @@ jest.mock('../../js/b-product-open-contract.js', () => ({
 }));
 jest.mock('../../js/b-cart-product-open-style.js', () => ({
   setupCartProductOpenStyle: mockSetupCartProductOpenStyle,
-}));
-jest.mock('../../js/b-modal-desktop-enhancers.js', () => ({
-  setupModalContractClasses: mockSetupModalContractClasses,
 }));
 jest.mock('../../js/b-modal-approche-c-hybrid.js', () => ({
   setupApprocheCHybridPdp: mockSetupApprocheCHybridPdp,
@@ -64,7 +60,6 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
 
   expect(window._kbus).toBe(mockBus);
   expect(mockSetupSharePhoneGuard).toHaveBeenCalledTimes(1);
-  expect(mockSetupModalContractClasses).toHaveBeenCalledTimes(1);
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(1);
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   expect(mockSetupProductOpenContract).toHaveBeenCalledTimes(1);

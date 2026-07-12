@@ -7,7 +7,7 @@
  * @inputs        product_detail_v1, modal_selection_state
  * @outputs       mobile_product_modal_dom
  * @depends       b-store.js, b-utils.js, b-modal-product.js, b-modal-image-ux.js, view-models/modal-selection-model.js
- * @used-by       b-modal-mobile-product-bootstrap.js
+ * @used-by       b-modal-product-detail-bootstrap.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none

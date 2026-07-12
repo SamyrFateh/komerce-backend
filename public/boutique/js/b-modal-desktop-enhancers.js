@@ -4,10 +4,10 @@
  * @domain        boutique
  * @layer         ui-enhancer
  * @criticality   medium
- * @inputs        modal_state, product_view_model, desktop_viewport, bus_events
- * @outputs       desktop_navigation_and_editorial_enhancements, contract_classes
- * @depends       b-bus.js, b-catalog.js, b-modal.js, b-scroll-owner.js, view-models/modal-view-model.js
- * @used-by       b-desktop-upgrade.js, main.js
+ * @inputs        modal_state, desktop_viewport, bus_events
+ * @outputs       desktop_navigation_and_editorial_enhancements
+ * @depends       b-bus.js, b-catalog.js, b-modal.js, b-scroll-owner.js
+ * @used-by       b-desktop-upgrade.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -31,23 +31,23 @@
  * Ces vérités appartiennent au Product Detail Contract, au reducer SKU et au
  * renderer `b-modal-desktop-product.js`. L'enhancer conserve seulement le
  * contexte de navigation et les enrichissements éditoriaux desktop.
+ *
+ * PDC-6 : setupModalContractClasses() et sa dépendance au ViewModel modal
+ * legacy (dernière intelligence produit concurrente, classes CSS legacy) ont
+ * été supprimés. main.js n'appelle plus que setupModalDesktopEnhancers ainsi
+ * que le bootstrap Product Detail canonique.
  */
 
 import { bus }                  from './b-bus.js';
-import { state, dom, modalZone } from './b-store.js';
+import { state, modalZone }     from './b-store.js';
 import { fmtPrice }             from './b-utils.js';
 import { showToast }            from './b-cart-core.js';
 import { openModal }            from './b-modal.js';
 import { setActiveCat }         from './b-catalog.js';
 import { normalizeCategoryKey } from './shop-schema.js';
 import { isDesktop }            from './b-scroll-owner.js';
-import {
-  buildModalViewModel,
-  applyModalClasses,
-} from './view-models/modal-view-model.js';
 
 let _enhancersInstalled = false;
-let _vmListenerInstalled = false;
 
 function currentDisplayProduct() {
   const detail = state.modalProductDetail;
@@ -233,22 +233,6 @@ function injectRecentlyViewed() {
   scrollEl.appendChild(section);
 }
 
-/**
- * Compatibilité PR-M1 jusqu'à PDC-6 : les classes structurelles historiques
- * restent appliquées par le ViewModel legacy. Elles ne portent plus aucune
- * vérité de stock/prix/livraison dans l'enhancer desktop.
- */
-function applyLegacyContractClasses(product) {
-  if (!product || !dom.modal) return;
-  try {
-    const vm = buildModalViewModel(product);
-    applyModalClasses(dom.modal, vm);
-    state._currentModalViewModel = vm;
-  } catch (error) {
-    console.warn('[modal-view-model] build failed, falling back to legacy classes:', error);
-  }
-}
-
 function onModalOpened() {
   if (!isDesktop()) return;
   requestAnimationFrame(() => {
@@ -257,12 +241,6 @@ function onModalOpened() {
     injectShareRow();
     injectRecentlyViewed();
   });
-}
-
-export function setupModalContractClasses() {
-  if (_vmListenerInstalled) return;
-  _vmListenerInstalled = true;
-  bus.on('modal:opened', applyLegacyContractClasses);
 }
 
 export function setupModalDesktopEnhancers() {

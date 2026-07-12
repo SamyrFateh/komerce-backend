@@ -77,7 +77,6 @@ jest.mock('../../js/b-modal-product.js', () => ({
   goToSlide: jest.fn(),
   openSizeGuide: jest.fn(),
   closeSizeGuide: jest.fn(),
-  _renderVariants: jest.fn(),
   _syncScrollPadding: jest.fn(),
   _injectMobileDelivery: jest.fn(),
   _injectMobileTrust: jest.fn(),
