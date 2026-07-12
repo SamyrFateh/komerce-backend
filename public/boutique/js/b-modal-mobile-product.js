@@ -50,7 +50,7 @@ function renderMedia(detail, selection, force = false) {
 
   const media = selection.selected_media && selection.selected_media.length
     ? selection.selected_media
-    : detail.media;
+    : (detail.media || []);
 
   buildCarouselSlides({
     name: detail.product.name,
@@ -253,8 +253,9 @@ function renderDeliveryOptions(detail, root) {
   const delivery = document.createElement('section');
   delivery.className = 'k-modal-reassurance';
   delivery.dataset.productDeliveryOptions = '1';
+  const options = detail?.delivery_options || [];
 
-  if (!detail.delivery_options.length) {
+  if (!options.length) {
     const row = document.createElement('div');
     row.className = 'k-modal-reassurance-toggle';
     row.innerHTML =
@@ -265,7 +266,7 @@ function renderDeliveryOptions(detail, root) {
       '</span>';
     delivery.appendChild(row);
   } else {
-    detail.delivery_options.forEach((option) => {
+    options.forEach((option) => {
       const row = document.createElement('div');
       row.className = 'k-modal-reassurance-toggle';
       const main = document.createElement('span');
