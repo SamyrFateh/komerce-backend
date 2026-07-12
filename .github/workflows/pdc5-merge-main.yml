@@ -1,6 +1,7 @@
 name: PDC5 Merge Main
 
 # Workflow temporaire de synchronisation contrôlée avant fusion cumulative.
+# Déclenché depuis la base stackée mergeable, puis supprimé avant le merge final.
 on:
   pull_request:
     types: [synchronize]
