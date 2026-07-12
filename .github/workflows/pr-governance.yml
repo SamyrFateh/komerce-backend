@@ -8,6 +8,10 @@ concurrency:
   group: pr-governance-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+  pull-requests: read
+
 jobs:
   pr-plan:
     name: Plan d'attaque PR obligatoire
@@ -44,7 +48,7 @@ jobs:
       - name: Verify schema baseline / intended post-snapshot migrations
         run: npm run schema:check | tee schema-check.log
 
-      - name: Materialize intended schema documentation artifact
+      - name: Materialize intended schema documentation
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -94,6 +98,20 @@ jobs:
           NODE
 
           grep -n "Migration 104\|Migration 105\|object: product_skus" docs/SCHEMA.md | tee schema-doc-patch.log
+
+      - name: Commit intended schema documentation once
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if git diff --quiet -- docs/SCHEMA.md; then
+            echo "SCHEMA.md déjà matérialisé — aucun commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/SCHEMA.md
+          git commit -m "docs(schema): declare migrations 104 and 105 as intended schema"
+          git push origin "HEAD:${HEAD_BRANCH}"
 
       - name: Capture Boutique check-fast
         run: npm --prefix public/boutique run check:fast > boutique-check-fast.log 2>&1
