@@ -31,6 +31,7 @@ jest.mock('../../js/b-modal-mobile-product.js', () => ({
 }));
 
 jest.mock('../../js/b-modal-desktop-product.js', () => ({
+  clearDesktopProductDetailState: jest.fn(),
   renderDesktopProductDetail: jest.fn(),
 }));
 
@@ -40,7 +41,10 @@ const {
   clearMobileProductDetailState,
   renderMobileProductDetail,
 } = require('../../js/b-modal-mobile-product.js');
-const { renderDesktopProductDetail } = require('../../js/b-modal-desktop-product.js');
+const {
+  clearDesktopProductDetailState,
+  renderDesktopProductDetail,
+} = require('../../js/b-modal-desktop-product.js');
 const {
   setupProductDetailModal,
   _productDetailBootstrapTestApi,
@@ -111,6 +115,8 @@ describe('product detail modal bootstrap', () => {
     await flush();
     await flush();
 
+    expect(clearDesktopProductDetailState).toHaveBeenCalledTimes(1);
+    expect(clearMobileProductDetailState).toHaveBeenCalledTimes(1);
     expect(fetch).toHaveBeenCalledWith(`/api/products/${PRODUCT_ID}/detail`, { credentials: 'include' });
     expect(createModalSelection).toHaveBeenCalledWith(payload);
     expect(renderMobileProductDetail).toHaveBeenCalledWith(
@@ -139,6 +145,47 @@ describe('product detail modal bootstrap', () => {
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
   });
 
+  test('passage mobile vers desktop réutilise le contrat et la même sélection sans refetch', async () => {
+    const payload = detail();
+    fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
+
+    handlers['modal:opened']({ id: PRODUCT_ID });
+    await flush();
+    await flush();
+
+    const sharedSelection = state.modalSelection;
+    renderMobileProductDetail.mockClear();
+    renderDesktopProductDetail.mockClear();
+    window.matchMedia.mockReturnValue({ matches: false });
+
+    _productDetailBootstrapTestApi.syncResponsiveComposition();
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(createModalSelection).toHaveBeenCalledTimes(1);
+    expect(state.modalSelection).toBe(sharedSelection);
+    expect(renderDesktopProductDetail).toHaveBeenCalledWith(
+      payload,
+      sharedSelection,
+      { forceMedia: false }
+    );
+    expect(renderMobileProductDetail).not.toHaveBeenCalled();
+  });
+
+  test('un resize restant dans le même mode ne rerend pas la fiche', async () => {
+    const payload = detail();
+    fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
+
+    handlers['modal:opened']({ id: PRODUCT_ID });
+    await flush();
+    await flush();
+    renderMobileProductDetail.mockClear();
+
+    _productDetailBootstrapTestApi.syncResponsiveComposition();
+
+    expect(renderMobileProductDetail).not.toHaveBeenCalled();
+    expect(renderDesktopProductDetail).not.toHaveBeenCalled();
+  });
+
   test('les roots attendus suivent seulement le viewport, pas une seconde logique produit', () => {
     window.matchMedia.mockReturnValue({ matches: true });
     expect(_productDetailBootstrapTestApi.expectedRootSelector()).toBe('[data-pdc4-root]');
@@ -163,7 +210,7 @@ describe('product detail modal bootstrap', () => {
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
   });
 
-  test('un échec HTTP laisse le chemin legacy de transition intact', async () => {
+  test('un échec HTTP purge les owners PDC puis laisse le chemin legacy de transition intact', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     dom.modalVariants.innerHTML = '<div data-legacy="1">legacy</div>';
     fetch.mockResolvedValue({ ok: false, status: 503 });
@@ -172,6 +219,8 @@ describe('product detail modal bootstrap', () => {
     await flush();
     await flush();
 
+    expect(clearDesktopProductDetailState).toHaveBeenCalledTimes(1);
+    expect(clearMobileProductDetailState).toHaveBeenCalledTimes(1);
     expect(dom.modalVariants.querySelector('[data-legacy]')).not.toBeNull();
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
@@ -200,8 +249,9 @@ describe('product detail modal bootstrap', () => {
     );
   });
 
-  test('modal:closed invalide les requêtes et nettoie l’état partagé', () => {
+  test('modal:closed invalide les requêtes et nettoie les deux compositions', () => {
     handlers['modal:closed']();
-    expect(clearMobileProductDetailState).toHaveBeenCalled();
+    expect(clearDesktopProductDetailState).toHaveBeenCalledTimes(1);
+    expect(clearMobileProductDetailState).toHaveBeenCalledTimes(1);
   });
 });
