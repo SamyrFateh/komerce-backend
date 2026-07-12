@@ -10,7 +10,7 @@
  * @used-by       all-boutique-js-modules
  * @doctrine      state_partage_explicite, panier_local_source_unique, dom_refs_centralisees
  * @impact-areas  all-boutique, cart, checkout, catalog, modal, shared-cart, tracking
- * @version       2026-07
+ * @version       2026-06
  */
 'use strict';
 
@@ -22,6 +22,8 @@
  *   - state       → état mutable partagé (panier, catalogue, modal…)
  *   - dom         → cache des refs DOM (peuplé par initDom() au boot)
  *   - $, $$       → aliases querySelector / querySelectorAll
+ *
+ * Usage :
  */
 
 import { bus } from './b-bus.js';
@@ -89,18 +91,11 @@ export const state = {
    *  horizontal automatique parasite après fermeture de modal. */
   modalOpen: false,
   modalProduct: null,
-  /** Product Detail Contract v1 du produit modal courant. PDC-4 : rempli sur
-   *  le chemin mobile SKU, null pendant le fallback legacy ou à la fermeture. */
-  modalProductDetail: null,
-  /** État pur dérivé par modal-selection-model.js. Jamais reconstruit dans un
-   *  renderer ; mobile et desktop doivent consommer cette même shape. */
-  modalSelection: null,
   modalSubcatFilter: null,
   modalQty: 1,
   modalHistory: [],
-  /** Snapshot de sélection transmis comme variant_combo à submitOrder. Le
-   *  chemin SKU le synchronise depuis modalSelection.selected_options ; le
-   *  chemin LEGACY_VARIANTS continue à le remplir depuis _renderVariants. */
+  /** Variantes sélectionnées par l'utilisateur : { "Couleur": "Bleu", "Taille": "M" }.
+      Transmis comme variant_combo à submitOrder. Réinitialisé à chaque ouverture de modal. */
   modalVariantCombo: {},
   /** Historique des produits vus (IDs), persisté en localStorage.
       Utilisé pour la section "Vu récemment" en desktop. */
