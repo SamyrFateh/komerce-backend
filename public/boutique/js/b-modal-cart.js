@@ -4,9 +4,9 @@
  * @domain        boutique
  * @layer         ui-component
  * @criticality   high
- * @inputs        modal_product, modal_selection_state, cart_state
+ * @inputs        modal_product, modal_product_session, cart_state
  * @outputs       modal_quantity_ui, selected_cart_line_mutations, add_to_cart_action
- * @depends       b-store.js, b-cart.js, b-cart-selection.js
+ * @depends       b-store.js, b-cart.js, b-cart-selection.js, view-models/modal-product-session.js
  * @used-by       b-modal-core.js, b-modal-product-detail-mobile.js
  * @db-read       none
  * @db-write      none
@@ -32,13 +32,14 @@ import {
   findCartItemForSelection,
   setCartSelectionQty,
 } from './b-cart-selection.js';
+import { modalProductSession } from './view-models/modal-product-session.js';
 
 function isSkuDetailPath() {
-  return state.modalProductDetail?.inventory_model === 'SKU';
+  return modalProductSession.detail?.inventory_model === 'SKU';
 }
 
 function currentSkuSelection() {
-  return isSkuDetailPath() ? state.modalSelection : null;
+  return isSkuDetailPath() ? modalProductSession.selection : null;
 }
 
 function setButtonDisabled(button, disabled) {
@@ -60,7 +61,7 @@ function addButtonLabel(html) {
 }
 
 function selectedCombo() {
-  return state.modalSelection?.selected_options || {};
+  return modalProductSession.selection?.selected_options || {};
 }
 
 /**
