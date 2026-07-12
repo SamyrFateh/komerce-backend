@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         ui-controller
  * @criticality   high
- * @inputs        modal_lifecycle, product_id, product_detail_v1
+ * @inputs        modal_lifecycle, product_id, product_detail_v1, responsive_breakpoint
  * @outputs       shared_modal_selection_state, responsive_product_modal_render
  * @depends       b-bus.js, b-store.js, b-modal-mobile-product.js, b-modal-desktop-product.js, view-models/modal-selection-model.js
  * @used-by       main.js
@@ -30,9 +30,15 @@ import { renderDesktopProductDetail } from './b-modal-desktop-product.js';
 let _installed = false;
 let _generation = 0;
 let _variantGuard = null;
+let _viewportMode = null;
+let _resizeTimer = null;
 
 function isMobileViewport() {
   return window.matchMedia('(max-width: 899px)').matches;
+}
+
+function viewportMode() {
+  return isMobileViewport() ? 'mobile' : 'desktop';
 }
 
 function currentProductId() {
@@ -49,7 +55,8 @@ function disconnectVariantGuard() {
 }
 
 function renderResponsiveProductDetail(detail, selection, forceMedia) {
-  if (isMobileViewport()) {
+  _viewportMode = viewportMode();
+  if (_viewportMode === 'mobile') {
     renderMobileProductDetail(detail, selection, { forceMedia });
   } else {
     renderDesktopProductDetail(detail, selection, { forceMedia });
@@ -79,6 +86,24 @@ function installVariantGuard(detail) {
   _variantGuard.observe(container, { childList: true, subtree: true });
 }
 
+function syncResponsiveComposition() {
+  if (!state.modalOpen || !state.modalProductDetail || !state.modalSelection) return;
+  const nextMode = viewportMode();
+  if (nextMode === _viewportMode) return;
+
+  renderResponsiveProductDetail(
+    state.modalProductDetail,
+    state.modalSelection,
+    false
+  );
+  installVariantGuard(state.modalProductDetail);
+}
+
+function onViewportResize() {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(syncResponsiveComposition, 120);
+}
+
 async function loadProductDetail(product) {
   if (!product) return;
 
@@ -86,6 +111,7 @@ async function loadProductDetail(product) {
   const generation = ++_generation;
   clearMobileProductDetailState();
   disconnectVariantGuard();
+  _viewportMode = null;
 
   try {
     const response = await fetch(`/api/products/${productId}/detail`, {
@@ -122,12 +148,17 @@ export function setupProductDetailModal() {
 
   bus.on('modal:closed', () => {
     _generation += 1;
+    clearTimeout(_resizeTimer);
     disconnectVariantGuard();
+    _viewportMode = null;
     clearMobileProductDetailState();
   });
+
+  window.addEventListener('resize', onViewportResize, { passive: true });
 }
 
 export const _productDetailBootstrapTestApi = Object.freeze({
   renderResponsiveProductDetail,
   expectedRootSelector,
+  syncResponsiveComposition,
 });
