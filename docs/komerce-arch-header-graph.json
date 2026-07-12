@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 740,
-    "edges": 4230,
+    "edges": 4232,
     "dbTables": 110,
     "doctrines": 140,
     "impactAreas": 124,
-    "unresolvedCodeEdges": 405,
+    "unresolvedCodeEdges": 406,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -2211,10 +2211,12 @@
       "depends": [
         "b-store.js",
         "b-utils.js",
+        "b-modal-product.js",
+        "b-modal-image-ux.js",
         "view-models/modal-selection-model.js"
       ],
       "usedBy": [
-        "b-modal-core.js"
+        "b-modal-mobile-product-bootstrap.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -22308,15 +22310,27 @@
     },
     {
       "from": "public/boutique/js/b-modal-mobile-product.js",
+      "to": "public/boutique/js/b-modal-product.js",
+      "type": "depends",
+      "label": "b-modal-product.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-mobile-product.js",
+      "to": "public/boutique/js/b-modal-image-ux.js",
+      "type": "depends",
+      "label": "b-modal-image-ux.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-mobile-product.js",
       "to": "public/boutique/js/view-models/modal-selection-model.js",
       "type": "depends",
       "label": "view-models/modal-selection-model.js"
     },
     {
-      "from": "public/boutique/js/b-modal-core.js",
+      "from": "b-modal-mobile-product-bootstrap.js",
       "to": "public/boutique/js/b-modal-mobile-product.js",
       "type": "uses",
-      "label": "b-modal-core.js"
+      "label": "b-modal-mobile-product-bootstrap.js"
     },
     {
       "from": "public/boutique/js/b-modal-mobile-product.js",
@@ -46714,7 +46728,6 @@
         "public/boutique/js/b-modal-cart.js",
         "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-modal-image-ux.js",
-        "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-modal-nav.js",
         "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-modal-social-proof.js",
@@ -46813,6 +46826,7 @@
         "impact:product-modal",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-store.js"
       ]
     },
@@ -46826,10 +46840,12 @@
       "directDependsOn": [
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
+        "public/boutique/js/b-modal-product.js",
+        "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/view-models/modal-selection-model.js"
       ],
       "directUsedBy": [
-        "public/boutique/js/b-modal-core.js"
+        "b-modal-mobile-product-bootstrap.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -46854,7 +46870,8 @@
         "impact:mobile",
         "impact:product-modal",
         "impact:sku-selection",
-        "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-image-ux.js",
+        "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
         "public/boutique/js/view-models/modal-selection-model.js"
@@ -46923,6 +46940,7 @@
         "impact:product-modal",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js"
       ]
@@ -62158,6 +62176,12 @@
       "to": "public/boutique/js/b-modal-approche-c-hybrid.js",
       "type": "uses",
       "label": "modal-surfaces"
+    },
+    {
+      "from": "b-modal-mobile-product-bootstrap.js",
+      "to": "public/boutique/js/b-modal-mobile-product.js",
+      "type": "uses",
+      "label": "b-modal-mobile-product-bootstrap.js"
     },
     {
       "from": "public/boutique/js/b-scroll-owner.js",

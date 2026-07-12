@@ -14,11 +14,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 740
-- Edges: 4230
+- Edges: 4232
 - DB tables: 110
 - Doctrines: 140
 - Impact areas: 124
-- Unresolved code edges: 405
+- Unresolved code edges: 406
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -580,6 +580,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- uses: b-modal-mobile-product-bootstrap.js -> public/boutique/js/b-modal-mobile-product.js (b-modal-mobile-product-bootstrap.js)
 - depends: bootstrap/api-routes.js -> routes/economic-engine.js (routes/economic-engine.js)
 - depends: bootstrap/startup-migrations.js -> scripts/migration-037-fix-products.js (scripts/migration-037-fix-products.js)
 - depends: bootstrap/startup-migrations.js -> scripts/migration-038-replace-products.js (scripts/migration-038-replace-products.js)
@@ -693,7 +694,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/catalog-product-detail.js -> db.js (db.js)
 - depends: routes/categories.js -> db.js (db.js)
 - depends: routes/categories.js -> services/* (services/*)
-- depends: routes/client-auth.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 
