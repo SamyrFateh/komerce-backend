@@ -59,11 +59,6 @@ const REQUIRE_ALL = process.argv.includes('--all');
 const ADD_COL_RE = /ALTER\s+TABLE\s+(?:ONLY\s+)?(?:public\.)?(\w+)\s+ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/gi;
 const MIGRATION_RE = /^\d{3}/;
 
-function parseMigrationNumber(filename) {
-  const match = filename.match(/^(\d+)/);
-  return match ? parseInt(match[1], 10) : null;
-}
-
 function listMigrations() {
   return fs.readdirSync(MIGRATIONS_DIR)
     .filter((filename) => MIGRATION_RE.test(filename) && filename.endsWith('.sql'))
@@ -176,7 +171,8 @@ function main() {
         ? '✅ Dump fraîchement extrait à jour — toutes les colonnes de migration sont présentes.'
         : '✅ Dump cohérent avec sa baseline git — aucune colonne live attendue ne manque.'
     );
-    process.exit(0);
+    process.exitCode = 0;
+    return;
   }
 
   console.error(`\n❌ Dump de schéma PÉRIMÉ ou PARTIEL — ${missing.length} colonne(s) de baseline manquante(s) :\n`);
@@ -190,13 +186,12 @@ Action requise :
    git add docs/db/railway-live-schema.sql && git commit -m "chore(schema): refresh depuis Railway prod" && git push
 `);
 
-  process.exit(WARN_ONLY ? 0 : 1);
+  process.exitCode = WARN_ONLY ? 0 : 1;
 }
 
 if (require.main === module) main();
 
 module.exports = {
-  parseMigrationNumber,
   extractAddColumns,
   baselineFromDumpCommit,
   evaluateFreshness,
