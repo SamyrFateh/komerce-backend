@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 366,
-    "filesWithFullHeaders": 339,
+    "scannedCodeFiles": 367,
+    "filesWithFullHeaders": 340,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 366,
+    "filesWithAnyHeaders": 367,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 740,
-    "edges": 4234,
+    "graphNodes": 741,
+    "edges": 4241,
     "dbTables": 110,
     "doctrines": 140,
     "impactAreas": 124,
@@ -34,7 +34,7 @@
     "notification": 15,
     "auth": 8,
     "logistics": 36,
-    "boutique": 37,
+    "boutique": 38,
     "catalog": 40,
     "checkout": 2,
     "shared-cart": 42,
@@ -60,6 +60,7 @@
     "manual-test": 1,
     "middleware": 11,
     "ui-component": 39,
+    "service": 148,
     "ui-enhancer": 3,
     "ui-renderer": 6,
     "ui-page": 4,
@@ -77,7 +78,6 @@
     "view-model": 4,
     "route": 100,
     "entrypoint": 1,
-    "service": 147,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 100,
-    "high": 156,
+    "high": 157,
     "low": 34
   },
   "nodes": [
@@ -1201,6 +1201,47 @@
         "product-discovery"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/b-cart-selection.js",
+      "file": "public/boutique/js/b-cart-selection.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "boutique-cart-selection-identity",
+      "domain": "boutique",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_id",
+        "variant_combo",
+        "cart_state"
+      ],
+      "outputs": [
+        "exact_cart_line",
+        "selected_line_quantity_mutation"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-cart-core.js"
+      ],
+      "usedBy": [
+        "b-modal-cart.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "impactAreas": [
+        "cart",
+        "product-modal",
+        "sku-selection"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-cart-stepper-guard.js",
@@ -17860,6 +17901,11 @@
       "doctrine": "checkout_entry_visible"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
       "id": "doctrine:panier_ouvert_ferme",
       "type": "doctrine",
       "doctrine": "panier_ouvert_ferme"
@@ -17968,11 +18014,6 @@
       "id": "doctrine:image_produit_inspectable",
       "type": "doctrine",
       "doctrine": "image_produit_inspectable"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
     },
     {
       "id": "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
@@ -18625,6 +18666,16 @@
       "area": "product-discovery"
     },
     {
+      "id": "impact:product-modal",
+      "type": "impact-area",
+      "area": "product-modal"
+    },
+    {
+      "id": "impact:sku-selection",
+      "type": "impact-area",
+      "area": "sku-selection"
+    },
+    {
       "id": "impact:product-grid",
       "type": "impact-area",
       "area": "product-grid"
@@ -18730,11 +18781,6 @@
       "area": "tracking"
     },
     {
-      "id": "impact:product-modal",
-      "type": "impact-area",
-      "area": "product-modal"
-    },
-    {
       "id": "impact:shared-cart-creation",
       "type": "impact-area",
       "area": "shared-cart-creation"
@@ -18763,11 +18809,6 @@
       "id": "impact:mobile-product-detail",
       "type": "impact-area",
       "area": "mobile-product-detail"
-    },
-    {
-      "id": "impact:sku-selection",
-      "type": "impact-area",
-      "area": "sku-selection"
     },
     {
       "id": "impact:delivery-display",
@@ -20943,6 +20984,48 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "public/boutique/js/b-cart-selection.js",
+      "to": "public/boutique/js/b-store.js",
+      "type": "depends",
+      "label": "b-store.js"
+    },
+    {
+      "from": "public/boutique/js/b-cart-selection.js",
+      "to": "public/boutique/js/b-cart-core.js",
+      "type": "depends",
+      "label": "b-cart-core.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-cart.js",
+      "to": "public/boutique/js/b-cart-selection.js",
+      "type": "uses",
+      "label": "b-modal-cart.js"
+    },
+    {
+      "from": "public/boutique/js/b-cart-selection.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
+      "from": "public/boutique/js/b-cart-selection.js",
+      "to": "impact:cart",
+      "type": "impact",
+      "label": "cart"
+    },
+    {
+      "from": "public/boutique/js/b-cart-selection.js",
+      "to": "impact:product-modal",
+      "type": "impact",
+      "label": "product-modal"
+    },
+    {
+      "from": "public/boutique/js/b-cart-selection.js",
+      "to": "impact:sku-selection",
+      "type": "impact",
+      "label": "sku-selection"
     },
     {
       "from": "public/boutique/js/b-cart-stepper-guard.js",
@@ -45720,6 +45803,7 @@
         "impact:boutique",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart-pill.js",
+        "public/boutique/js/b-cart-selection.js",
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-checkout.js",
@@ -45809,6 +45893,42 @@
         "impact:catalog",
         "impact:product-discovery",
         "public/boutique/js/b-modal-core.js"
+      ]
+    },
+    "public/boutique/js/b-cart-selection.js": {
+      "role": "boutique-cart-selection-identity",
+      "domain": "boutique",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-store.js",
+        "public/boutique/js/b-cart-core.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/b-modal-cart.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "impactAreas": [
+        "cart",
+        "product-modal",
+        "sku-selection"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "impact:cart",
+        "impact:product-modal",
+        "impact:sku-selection",
+        "public/boutique/js/b-cart-core.js",
+        "public/boutique/js/b-modal-cart.js",
+        "public/boutique/js/b-store.js"
       ]
     },
     "public/boutique/js/b-cart-stepper-guard.js": {
@@ -46675,6 +46795,7 @@
       ],
       "mustCheck": [
         "impact:boutique",
+        "public/boutique/js/b-cart-selection.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-modal-product-detail-mobile.js"
       ]
@@ -47475,6 +47596,7 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-cart-pill.js",
+        "public/boutique/js/b-cart-selection.js",
         "public/boutique/js/b-cart-stepper-guard.js",
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-catalog-desktop-enhancers.js",

@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 366
-- Files with full headers: 339
+- Scanned code files: 367
+- Files with full headers: 340
 - Files with lite headers: 27
-- Files with any headers: 366
+- Files with any headers: 367
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 740
-- Edges: 4234
+- Graph nodes: 741
+- Edges: 4241
 - DB tables: 110
 - Doctrines: 140
 - Impact areas: 124
@@ -27,7 +27,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 5
 - bootstrap: 1
-- boutique: 37
+- boutique: 38
 - catalog: 40
 - checkout: 2
 - customs: 6
@@ -63,7 +63,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 100
 - route-manifest: 1
 - schema: 1
-- service: 147
+- service: 148
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -162,6 +162,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - middleware/soft-auth.js — auth-soft-auth (auth, high, full)
 - middleware/upload-hub.js — middleware-upload-hub (logistics, high, full)
 - middleware/verify-authkey-webhook.js — auth-verify-authkey-webhook (auth, high, full)
+- public/boutique/js/b-cart-selection.js — boutique-cart-selection-identity (boutique, high, full)
 - public/boutique/js/b-cart-stepper-guard.js — boutique-cart-stepper-event-guard (boutique, high, full)
 - public/boutique/js/b-catalog-desktop-enhancers.js — desktop-catalog-enhancer (catalog, high, full)
 - public/boutique/js/b-catalog.js — boutique-catalog-renderer (catalog, high, full)
