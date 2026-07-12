@@ -29,6 +29,14 @@ jobs:
       - name: Generate architecture graph
         run: npm run arch:gen
 
+      - name: Publish regenerated architecture graph
+        uses: actions/upload-artifact@v4
+        with:
+          name: reconciled-architecture-graph
+          path: |
+            docs/komerce-arch-header-graph.json
+            docs/KOMERCE_ARCH_HEADER_GRAPH.md
+
       # BLOQUANT : interdit une PR qui modifie des headers sans regenerer le graphe.
       - name: Graph regenerated in PR (drift)
         run: |
