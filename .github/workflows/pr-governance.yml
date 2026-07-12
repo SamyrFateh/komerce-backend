@@ -54,7 +54,7 @@ jobs:
           function appendTableNote(table, sentinel, note) {
             if (md.includes(sentinel)) return;
             const escaped = table.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const re = new RegExp(`^\\| \\`${escaped}\\` \\| .* \\|$`, 'm');
+            const re = new RegExp('^\\| `' + escaped + '` \\| .* \\|$', 'm');
             if (!re.test(md)) throw new Error(`Ligne SCHEMA introuvable pour ${table}`);
             md = md.replace(re, (line) => line.replace(/ \|$/, ` ${note} |`));
           }
