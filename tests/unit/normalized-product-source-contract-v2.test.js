@@ -85,6 +85,21 @@ describe('NormalizedSupplierProduct v2 contract', () => {
     expect(verdict.errors).toContain('schema_version non supportée : "3" (versions supportées : 1, 2)');
   });
 
+  test.each([
+    ['const', { schema_version: 2 }],
+    ['minimum', { stock_available: -1 }],
+    ['maximum', { supplier_delay_days: 366 }],
+    ['minLength', { source_locale: '' }],
+    ['maxLength', { supplier_product_id: 'X'.repeat(129) }],
+    ['format', { image_url: 'pas-une-url' }],
+    ['type', { raw_payload: null }],
+    ['minItems', { option_axes: [{ key: 'Couleur', values: [] }], sellable_units: [] }],
+    ['uniqueItems', { option_axes: [{ key: 'Couleur', values: ['Marron', 'Marron'] }], sellable_units: [] }],
+    ['maxItems', { media: Array.from({ length: 101 }, (_, i) => ({ url: `https://cdn.example.com/${i}.jpg`, role: 'OTHER' })), sellable_units: [] }],
+  ])('humanise et refuse le mot-clé schéma %s', (_keyword, overrides) => {
+    expect(validateNormalizedProduct(richProduct(overrides)).valid).toBe(false);
+  });
+
   test('refuse deux axes portant la même clé', () => {
     const product = richProduct({
       option_axes: [
@@ -98,6 +113,32 @@ describe('NormalizedSupplierProduct v2 contract', () => {
     expect(verdict.errors).toContain('option_axes : axe dupliqué "Couleur"');
   });
 
+  test('refuse deux médias portant la même référence fournisseur', () => {
+    const media = richProduct().media[0];
+    const product = richProduct({
+      media: [media, { ...media, url: 'https://cdn.example.com/duplicate.jpg' }],
+      sellable_units: [],
+    });
+    const verdict = validateNormalizedProduct(product);
+    expect(verdict.valid).toBe(false);
+    expect(verdict.errors).toContain('media[1] : supplier_media_id dupliqué "m-brown-scene"');
+  });
+
+  test('refuse un média associé à un axe inconnu', () => {
+    const product = richProduct({
+      media: [{
+        supplier_media_id: 'm-style',
+        url: 'https://cdn.example.com/style.jpg',
+        role: 'SCENE',
+        option_values: { Style: 'Soirée' },
+      }],
+      sellable_units: [],
+    });
+    const verdict = validateNormalizedProduct(product);
+    expect(verdict.valid).toBe(false);
+    expect(verdict.errors).toContain('media[0].option_values : axe inconnu "Style"');
+  });
+
   test('refuse un SKU dont la combinaison est incomplète', () => {
     const product = richProduct({
       sellable_units: [{
@@ -109,6 +150,22 @@ describe('NormalizedSupplierProduct v2 contract', () => {
     const verdict = validateNormalizedProduct(product);
     expect(verdict.valid).toBe(false);
     expect(verdict.errors).toContain('sellable_units[0].option_values incomplet : axe "Taille" absent');
+  });
+
+  test('refuse des valeurs d’option alors qu’aucun axe n’est déclaré', () => {
+    const product = richProduct({
+      option_axes: [],
+      media: [],
+      sellable_units: [{
+        supplier_sku: 'ROB-ORPHAN',
+        option_values: { Couleur: 'Marron' },
+        stock_available: 1,
+      }],
+    });
+    const verdict = validateNormalizedProduct(product);
+    expect(verdict.valid).toBe(false);
+    expect(verdict.errors).toContain('sellable_units[0].option_values : aucun axe déclaré');
+    expect(verdict.errors).toContain('sellable_units[0].option_values : axe inconnu "Couleur"');
   });
 
   test('refuse une valeur d’option inconnue au lieu de la deviner', () => {
@@ -188,6 +245,22 @@ describe('NormalizedSupplierProduct v2 contract', () => {
     expect(snapshot.option_axes).toEqual(product.option_axes);
     expect(snapshot.sellable_units).toEqual(product.sellable_units);
     expect(snapshot).not.toHaveProperty('raw_payload');
+  });
+
+  test('snapshot V2 invalide échoue bruyamment avec un code stable', () => {
+    expect(() => buildNormalizedSourceContractSnapshot(richProduct({
+      sellable_units: [{
+        supplier_sku: 'ROB-BAD',
+        option_values: { Couleur: 'Marron' },
+      }],
+    }))).toThrow('NormalizedSupplierProduct v2 invalide');
+
+    try {
+      buildNormalizedSourceContractSnapshot(richProduct({ raw_payload: null }));
+      throw new Error('le snapshot invalide aurait dû échouer');
+    } catch (err) {
+      expect(err.code).toBe('NORMALIZED_SOURCE_CONTRACT_INVALID');
+    }
   });
 
   test('snapshot V1 reste null : aucune richesse inventée', () => {
