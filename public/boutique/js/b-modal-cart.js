@@ -63,6 +63,25 @@ function selectedCombo() {
   return state.modalSelection?.selected_options || {};
 }
 
+/**
+ * Verrou transitoire pendant le fetch du Product Detail Contract.
+ * Sans ce verrou, un utilisateur très rapide pourrait ajouter un produit à
+ * variantes pendant que la modal legacy est encore visible quelques ms.
+ */
+function setModalTransactionPending(pending) {
+  if (!state.modalProduct) return;
+  if (!pending) {
+    _syncModalQtyUI();
+    return;
+  }
+
+  state.modalQty = 1;
+  if (dom.modalQtyVal) dom.modalQtyVal.textContent = '1';
+  setTransactionControlsDisabled(true);
+  dom.addCartBtn?.classList.remove('in-cart');
+  addButtonLabel('Chargement du produit…');
+}
+
 function syncSkuSelectionUI(selection) {
   const selectionReady = Boolean(selection?.selected_sku_id);
 
@@ -184,4 +203,4 @@ function setupModalCart() {
   });
 }
 
-export { _syncModalQtyUI, setupModalCart };
+export { _syncModalQtyUI, setModalTransactionPending, setupModalCart };
