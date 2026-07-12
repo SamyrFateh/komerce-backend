@@ -8,7 +8,7 @@
 
 module.exports = {
   name:     'dashboard',
-  type:     'feature',
+  type:     'transversal',
   domain:   'dashboard',
   status:   'production',
   owner:    'backend-core',
@@ -234,6 +234,22 @@ module.exports = {
              'POST /seed-test, POST /purchasing/repair-ordered-without-pos), montées sous ' +
              '/api/admin via adminRouter.',
         risk: 'aucun — contrat corrigé pour refléter les 4 vraies routes.' },
+      { gap: 'ONTOLOGY_GAP (Lot O1.5, 2026-07-12) — ce manifest écrit réellement dans ~15 tables ' +
+             'via ses routes hub/relay/admin opérationnelles (voir db.tables, entrées W/RW : ' +
+             'incidents, invoices, loyalty_rewards, order_comments, order_incidents, order_items, ' +
+             'order_status_history, orders, parcel_items, parcels, partners, products, ' +
+             'purchase_orders, recipients, relais, risk_provisions, scan_events, scans, sms_log, ' +
+             'suppliers, users, wallet_transactions, wallets — cf. section db ci-dessus). Ces ' +
+             'mutations métier n\'ont pas leur propriétaire naturel ici : elles appartiennent aux ' +
+             'domaines qu\'elles touchent (logistics pour parcels/scans/relais, orders pour ' +
+             'orders/order_items, purchasing pour purchase_orders, wallet pour wallets/' +
+             'wallet_transactions, loyalty pour loyalty_rewards, etc.). Non redistribuées dans ce ' +
+             'lot : O1 est un ontology refactor de la classification et du registre, pas un product ' +
+             'refactor du code runtime — aucun fichier ni route n\'a été déplacé pour ce delta.',
+        risk: 'classification honnête mais transitoire : tant que ces mutations restent ici, ' +
+              '`dashboard` est un cas hybride agrégation+opérations, pas un `aggregation-readonly` ' +
+              'pur. Un futur lot (product refactor, hors O1) doit auditer chaque table W/RW et la ' +
+              'redistribuer vers sa feature propriétaire avant que ce gap puisse se refermer.' },
     ],
   },
 
@@ -242,7 +258,10 @@ module.exports = {
 
   // ── Invariants ─────────────────────────────────────────────────────────
   invariants: [
-    'dashboard = lecture seule : aucune mutation de données dans les routes et services dashboard',
+    'dashboard agrège en lecture pour les vues de pilotage/reporting (Control Tower, Pilotage, Santé, Clients, radar, risques) : ' +
+      'ces surfaces-là ne mutent aucune donnée. À l\'inverse, les routes hub/relais/admin opérationnelles (voir db.tables entrées ' +
+      'W/RW) écrivent réellement — ancien invariant "lecture seule" corrigé au Lot O1.5 (2026-07-12) car contredit par le code ; ' +
+      'voir debt.knownGaps pour le plan de redistribution de ces mutations vers leurs features propriétaires',
     'les métriques passent par dashboard-cache.js (pas de requêtes directes dupliquées)',
     'admin-legacy ct-app-v7.js / ct-views-v7.js sont actifs en prod — ne pas supprimer sans migration',
     'auth-guard.js protège toutes les routes admin ; aucune route admin sans vérification de token',
@@ -441,6 +460,10 @@ module.exports = {
   // plus honnête disponible dans le schéma actuel tant que ces mutations n'ont pas
   // été auditées et redistribuées vers leurs features propriétaires (hors périmètre
   // O1, qui est un ontology refactor et non un product refactor).
+  // Delta gouvernance (2026-07-12) : le champ binaire `type` (ligne ~10) restait
+  // 'feature' malgré ce verdict — incohérence corrigée en 'transversal', aligné sur
+  // `kind: business-transversal`. `feature-registry-check.js` compte désormais
+  // `dashboard` dans les domaines transversaux, pas dans les features métier.
   classification: {
     kind:     'business-transversal',
     decision: 'aggregation-lecture',

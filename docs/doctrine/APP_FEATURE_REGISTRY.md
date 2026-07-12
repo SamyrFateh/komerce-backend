@@ -1,6 +1,6 @@
 # Registre Canonique des Features — Application complète Komerce
 
-> **Version** : 1.4 — 2026-07 (Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty` ; Lot O1.4 : scission `purchasing` d'`orders` ; Lot O1.5 : `dashboard` confirmé non-business-feature, dette dash-repo documentée)
+> **Version** : 1.5 — 2026-07 (Lot O1.2 : scission `wallet-loyalty` → `wallet` + `loyalty` ; Lot O1.3 : `sourcing` ajouté au registre canonique (précédemment absent malgré manifest et code déjà en place) ; Lot O1.4 : scission `purchasing` d'`orders` ; Lot O1.5 : `dashboard` reclassé `transversal` dans ce tableau, `admin-dashboard` reclassé projection/ui-shell — gouvernance corrective, aucun code runtime déplacé)
 > **Statut** : registre actif — gouverné par `docs/doctrine/FEATURE_DOCTRINE.md`
 > **Construit à partir de** : headers `@komerce-arch` réels (`@domain`) du dépôt
 > **backend**, croisés avec les fichiers réels des dépôts **bout** (boutique frontend)
@@ -41,16 +41,17 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 11 | `recommendations` | feature | backend | [`recommendations.feature.js`](../../features/recommendations.feature.js) | staging | Classement et suggestions boutique |
 | 12 | `inventory` | feature | backend | [`inventory.feature.js`](../../features/inventory.feature.js) | staging | Suivi de stock |
 | 13 | `refunds` | feature | backend | [`refunds.feature.js`](../../features/refunds.feature.js) | production | Remboursement transverse (wallet, cash, panier partagé) |
-| 14 | `dashboard` | feature | backend + dash | [`dashboard.feature.js`](../../features/dashboard.feature.js) | production | Tableaux de bord et back-office (admin, hub, relais, finance) |
+| 14 | `dashboard` | transversal (legacy, agrégation + opérations mixtes) | backend + dash | [`dashboard.feature.js`](../../features/dashboard.feature.js) | production | Tableaux de bord et back-office (admin, hub, relais, finance) — voir note ⚠ ci-dessous |
 | 15 | `auth` | transversal | backend | [`auth.feature.js`](../../features/auth.feature.js) | production | Garde transverse (middlewares OTP/session/identité vérifiée) — consommée par toutes les features |
 | 16 | `auth-identity` | transversal | backend | [`auth-identity.feature.js`](../../features/auth-identity.feature.js) | production | Routes actives d'identité : OTP, login, magic-link, inscription — partage `domain: 'auth'` avec la ligne #15, voir note ⚠ ci-dessous |
 | 17 | `platform-ops` | transversal | backend | [`platform-ops.feature.js`](../../features/platform-ops.feature.js) | production | Santé applicative, config, modules — infrastructure d'exploitation |
 | 18 | `infrastructure` | transversal | backend | [`infrastructure.feature.js`](../../features/infrastructure.feature.js) | production | Middleware non-auth (error-handler, rate-limit, upload, validate), utilitaires partagés, bootstrap applicatif |
-| 19 | `admin-dashboard` | feature | dash | [`admin-dashboard.feature.js`](../../public/dashboards/features/admin-dashboard.feature.js) | production | Tableau de bord admin SPA multi-vues (`dashboards/admin/**`) |
+| 19 | `admin-dashboard` | projection/ui-shell | dash | [`admin-dashboard.feature.js`](../../public/dashboards/features/admin-dashboard.feature.js) | production | Tableau de bord admin SPA multi-vues (`dashboards/admin/**`) — voir note ⚠ ci-dessous |
 | 20 | `legacy-control-tower` | feature | dash | [`legacy-control-tower.feature.js`](../../public/dashboards/features/legacy-control-tower.feature.js) | deprecated | Ancien control tower, remplacé par `admin-dashboard` (`dashboards/admin-legacy/**`) |
 | 21 | `platform` | transversal | dash | [`platform.feature.js`](../../public/features/platform.feature.js) | production | Infrastructure transversale dashboards (auth-guard, service worker, composants colis partagés, QR viewer) — hors `admin/` |
-| 22 | `admin-dashboard` (copie `public/features/`) | feature | dash | [`admin-dashboard.feature.js`](../../public/features/admin-dashboard.feature.js) | production | Copie octet-pour-octet du manifest #19, présente dans `public/features/` en plus de `public/dashboards/features/` — voir note ⚠ ci-dessous |
+| 22 | `admin-dashboard` (copie `public/features/`) | projection/ui-shell | dash | [`admin-dashboard.feature.js`](../../public/features/admin-dashboard.feature.js) | production | Copie octet-pour-octet du manifest #19 (à une divergence pré-existante près, `ClientsView.js`, non liée à ce lot), présente dans `public/features/` en plus de `public/dashboards/features/` — voir note ⚠ ci-dessous |
 | 23 | `legacy-control-tower` (copie `public/features/`) | feature | dash | [`legacy-control-tower.feature.js`](../../public/features/legacy-control-tower.feature.js) | deprecated | Copie octet-pour-octet du manifest #20, présente dans `public/features/` en plus de `public/dashboards/features/` — voir note ⚠ ci-dessous |
+| 24 | `sourcing` | feature | backend | [`sourcing.feature.js`](../../features/sourcing.feature.js) | production | Qualification de candidats fournisseur avant catalogue (scan, décision garder/watchlist/rejeter) — extrait de `logistics` (Lot O1.3, 2026-07-12) |
 
 > ⚠️ **Note sur les lignes #19/#20 vs #22/#23** : le dépôt dashboards contient un
 > sous-dossier `dashboards/` imbriqué (donc `public/dashboards/**` une fois déployé)
@@ -112,11 +113,33 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 > périmètre O1, qui est un ontology refactor et non un product refactor),
 > `business-transversal` reste le verdict le plus honnête disponible.
 >
-> Les manifests dash (`admin-dashboard` #19/#22, `legacy-control-tower` #20/#23,
-> `platform` #21) n'ont **pas** pu être revus dans ce lot : le dépôt `dash` n'était pas
-> présent dans les archives fournies pour cette session (seuls `backend` et `boutique`
-> l'étaient). Leur reclassification business-feature → projection/aggregation reste donc
-> une dette ouverte, à traiter dès que le dépôt `dash` sera disponible.
+> **Delta gouvernance (2026-07-12, audit froid post-merge)** : ce même verdict
+> `business-transversal` n'avait pas été répercuté sur le champ binaire `type` de
+> `dashboard.feature.js` (resté `feature`) ni sur la colonne *Type* de la ligne #14
+> ci-dessus, qui continuaient toutes deux à présenter `dashboard` comme une feature
+> métier ordinaire — contradiction corrigée : `type` passe à `transversal`,
+> `feature-registry-check.js` compte désormais `dashboard` parmi les domaines
+> transversaux. L'invariant "dashboard = lecture seule" du manifest, lui aussi
+> contredit par les entrées `db.tables` en W/RW et par les routes hub/relay
+> mutantes, a été reformulé pour distinguer les surfaces de pilotage (lecture pure)
+> des routes opérationnelles (mutantes) ; l'`ONTOLOGY_GAP` sur la redistribution de
+> ces ~15 tables vers leurs features propriétaires est désormais formalisé dans
+> `debt.knownGaps` du manifest, pas seulement en commentaire. Aucun fichier ni route
+> n'a été déplacé pour ce delta.
+>
+> Le dépôt `dash` (`admin-dashboard` #19/#22, `legacy-control-tower` #20/#23,
+> `platform` #21), absent lors du premier passage O1.5, est désormais disponible et a
+> été revalidé pour ce même delta : `admin-dashboard` (#19/#22) — vérification
+> empirique de `dashboards/admin/js/**` (0 accès DB direct, mutations HTTP observées
+> ciblant des routes possédées par catalog/customs/orders, jamais de table propre) —
+> est reclassé `projection/ui-shell` dans la colonne *Type* et documenté comme tel
+> dans les deux copies du manifest (`classification.verdict`, voir fichiers). Un
+> `ONTOLOGY_GAP` reste ouvert : le schéma `kind` de `feature-classification-check.js`
+> ne couvre que `backend/features/` et n'a pas de valeur prévue pour une projection
+> cross-repo avec manifest propre — non résolu ici, à trancher en O2 si une doctrine
+> de classification dash-repo est créée. `legacy-control-tower` (#20/#23, déjà
+> `deprecated`) et `platform` (#21, déjà `transversal`) n'ont pas été retouchés : leur
+> classification actuelle n'est pas mise en cause par ce delta.
 
 > ℹ️ **Note sur les lignes #15/#16** : `auth` et `auth-identity` étaient initialement deux
 > manifests distincts déclarant le même `domain: 'auth'`, ce qui produisait 5 faux
@@ -154,7 +177,7 @@ de vérité qui divergeraient à la première PR boutique non répercutée ici.
                      │
    ┌─────────────────┼──────────────────────────────────────┐
    ▼                 ▼                                      ▼
-catalog ──► shared-cart ──► orders ──► payment       economic-engine
+sourcing ──► catalog ──► shared-cart ──► orders ──► payment       economic-engine
               │                │           │           (pricing pour
               │                ▼           ▼            catalog, orders,
               │           purchasing   refunds          shared-cart)
@@ -171,13 +194,16 @@ catalog ──► shared-cart ──► orders ──► payment       economic-
                     customs (déclaration, consommée par logistics,
                               dashboard)
                           │
-                    dashboard (lecture agrégée de toutes les features
-                              ci-dessus — n'écrit jamais dans leur domaine)
+                    dashboard (agrégation en lecture pour le pilotage/reporting ;
+                              routes hub/relais/admin opérationnelles mutantes —
+                              transversal legacy, ONTOLOGY_GAP voir manifest)
 ```
 
 Règle de lecture du schéma : une flèche `A ──► B` signifie *A consomme un service de B*,
-jamais l'inverse. `dashboard` est en lecture seule sur tout le reste — voir son manifest
-pour l'invariant explicite.
+jamais l'inverse. `dashboard` est en lecture seule sur ses surfaces de pilotage/reporting
+uniquement ; ses routes hub/relais/admin opérationnelles écrivent réellement dans les
+domaines d'autres features (voir `debt.knownGaps` de son manifest pour le détail table
+par table et le plan de redistribution, hors périmètre O1).
 
 ---
 
@@ -192,14 +218,25 @@ corriger au fil de l'eau plutôt qu'en bloquant ce registre) :
 - fichiers historiques sans header `@komerce-arch` du tout (`@domain unknown`, 35 fichiers
   au moment de la rédaction) — chacun doit recevoir un header daté avant ou pendant son
   prochain changement, puis rejoindre le manifest de la feature correspondante ;
-- sous-domaine `sourcing` mentionné dans les doctrines produit mais pas encore porté par
-  un `@domain` dédié — actuellement réparti entre `economic-engine`, `catalog`, `orders` et
-  `dashboard`. À scinder en feature `sourcing` propre dès que son périmètre métier sera
-  tranché (Lot O1.3, non traité dans cette session). `purchasing` (bon de commande
-  fournisseur) a lui été scindé d'`orders` au Lot O1.4 (2026-07-12, voir note ⚠ lignes
-  #2/#2b) — mais `services/purchasing-admin-service.js` reste `@domain dashboard` et écrit
-  dans les mêmes tables que `purchasing` (`purchase_orders`, `suppliers`,
-  `product_suppliers`) : `ONTOLOGY_GAP` documenté dans `purchasing.feature.js`, non résolu ;
+- `sourcing` a été scindé de `logistics` au Lot O1.3 (2026-07-12) — voir ligne #24 et
+  `features/sourcing.feature.js`. Un homonyme sans rapport a été détecté au même lot :
+  `routes/sourcing.js` (moteur margin/rail admin d'`economic-engine`) — les deux ne
+  doivent jamais être confondus ni fusionnés. `ONTOLOGY_GAP catalog/sourcing` documenté
+  dans `sourcing.feature.js` et non résolu ici (frontière fine explicitement hors
+  périmètre O1) : (1) `migrations/041_sourcing_candidates.sql` crée conjointement
+  `supplier_catalog_imports` (table `catalog`) et `sourcing_candidates` /
+  `sourcing_candidate_events` (tables `sourcing`) dans le même fichier, non scindée ;
+  (2) `services/supplier-catalog-scanner.js` et
+  `services/suppliers/catalog-import-orchestrator.js` restent dans `catalog` malgré leur
+  rôle dans le pipeline sourcing — non déplacés faute de démonstration que leur service
+  principal a cessé d'être l'entrée catalogue. Ce gap fin catalog/sourcing (`/catalogs/import`,
+  écriture `products`, délégation au catalog-import-orchestrator dans le périmètre
+  `sourcing`) est **conservé pour O2** et doit y être challengé, pas corrigé au fil de l'eau ;
+- `purchasing` (bon de commande fournisseur) a été scindé d'`orders` au Lot O1.4
+  (2026-07-12, voir note ⚠ lignes #2/#2b) — mais `services/purchasing-admin-service.js`
+  reste `@domain dashboard` et écrit dans les mêmes tables que `purchasing`
+  (`purchase_orders`, `suppliers`, `product_suppliers`) : `ONTOLOGY_GAP` documenté dans
+  `purchasing.feature.js`, non résolu ;
 - **le dépôt `dash`** (dashboards admin, hub, relais) n'a aucune doctrine d'ownership
   équivalente à `BOUTIQUE_OWNERSHIP_LIVE.md` côté boutique. Le manifest `dashboard.feature.js`
   liste les fichiers connus (`dashboards/admin/*`, `hub/index.html`, `relais/index.html`,
