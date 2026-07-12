@@ -9,51 +9,49 @@ jest.mock('../../js/view-models/modal-view-model.js', () => ({
   applyModalClasses: jest.fn(),
 }));
 
-const { bus } = require('../../js/b-bus.js');
-const { state, dom } = require('../../js/b-store.js');
-const { isDesktop } = require('../../js/b-scroll-owner.js');
-const { showToast } = require('../../js/b-cart-core.js');
-const { setActiveCat } = require('../../js/b-catalog.js');
-const { openModal } = require('../../js/b-modal.js');
-const {
-  buildModalViewModel,
-  applyModalClasses,
-} = require('../../js/view-models/modal-view-model.js');
-
-function installDom() {
-  document.body.innerHTML = `
-    <div id="k-modal" class="k-modal">
-      <div class="k-modal-topbar"><button class="k-modal-back"></button></div>
-      <div class="k-modal-info"></div>
-      <div class="k-modal-scroll"></div>
-      <div class="k-modal-actions"><div class="k-modal-subtotal">legacy subtotal</div></div>
-    </div>
-    <div id="k-modal-aed-price">legacy eur</div>
-    <div id="k-modal-flash-bar">legacy promo</div>
-    <div id="k-modal-stock-bar">legacy stock</div>
-    <div id="k-modal-delivery">legacy delivery</div>
-    <div id="k-modal-payment">legacy payment</div>`;
-  dom.modal = document.getElementById('k-modal');
-}
-
-function flushRaf() {
-  return Promise.resolve();
-}
-
 describe('b-modal-desktop-enhancers — composition only', () => {
+  let bus;
+  let state;
+  let dom;
+  let isDesktop;
+  let showToast;
+  let setActiveCat;
+  let openModal;
+  let buildModalViewModel;
+  let applyModalClasses;
   let enhancers;
+
+  function installDom() {
+    document.body.innerHTML = `
+      <div id="k-modal" class="k-modal">
+        <div class="k-modal-topbar"><button class="k-modal-back"></button></div>
+        <div class="k-modal-info"></div>
+        <div class="k-modal-scroll"></div>
+        <div class="k-modal-actions"><div class="k-modal-subtotal">legacy subtotal</div></div>
+      </div>
+      <div id="k-modal-aed-price">legacy eur</div>
+      <div id="k-modal-flash-bar">legacy promo</div>
+      <div id="k-modal-stock-bar">legacy stock</div>
+      <div id="k-modal-delivery">legacy delivery</div>
+      <div id="k-modal-payment">legacy payment</div>`;
+    dom.modal = document.getElementById('k-modal');
+  }
 
   beforeEach(() => {
     jest.resetModules();
+    document.body.innerHTML = '';
+
+    ({ bus } = require('../../js/b-bus.js'));
+    ({ state, dom } = require('../../js/b-store.js'));
+    ({ isDesktop } = require('../../js/b-scroll-owner.js'));
+    ({ showToast } = require('../../js/b-cart-core.js'));
+    ({ setActiveCat } = require('../../js/b-catalog.js'));
+    ({ openModal } = require('../../js/b-modal.js'));
+    ({ buildModalViewModel, applyModalClasses } = require('../../js/view-models/modal-view-model.js'));
+    enhancers = require('../../js/b-modal-desktop-enhancers.js');
+
     installDom();
-
-    const currentBus = require('../../js/b-bus.js').bus;
-    const store = require('../../js/b-store.js');
-    const scrollOwner = require('../../js/b-scroll-owner.js');
-    store.dom.modal = document.getElementById('k-modal');
-    Object.assign(state, store.state);
-
-    scrollOwner.isDesktop.mockReturnValue(true);
+    isDesktop.mockReturnValue(true);
     state.modalProduct = {
       id: 42,
       name: 'Sac à main tressé',
@@ -74,9 +72,6 @@ describe('b-modal-desktop-enhancers — composition only', () => {
       configurable: true,
     });
     jest.spyOn(window, 'open').mockImplementation(() => {});
-
-    enhancers = require('../../js/b-modal-desktop-enhancers.js');
-    enhancers.__testBus = currentBus;
   });
 
   afterEach(() => {
@@ -90,7 +85,7 @@ describe('b-modal-desktop-enhancers — composition only', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  test('desktop : setup est idempotent et rend les enrichissements éditoriaux', async () => {
+  test('desktop : setup est idempotent et rend les enrichissements éditoriaux', () => {
     const onSpy = jest.spyOn(bus, 'on');
     enhancers.setupModalDesktopEnhancers();
     enhancers.setupModalDesktopEnhancers();
@@ -98,7 +93,6 @@ describe('b-modal-desktop-enhancers — composition only', () => {
     expect(onSpy).toHaveBeenCalledWith('modal:opened', expect.any(Function));
 
     bus.emit('modal:opened', state.modalProduct);
-    await flushRaf();
 
     expect(dom.modal.querySelector('.k-modal-breadcrumb')).not.toBeNull();
     expect(dom.modal.querySelector('.k-modal-share-row')).not.toBeNull();
