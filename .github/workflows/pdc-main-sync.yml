@@ -1,0 +1,123 @@
+name: PDC Main Sync
+
+on:
+  pull_request:
+    types: [synchronize]
+
+concurrency:
+  group: pdc-main-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  sync-main:
+    if: github.event.pull_request.number == 572
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Merge current main with bounded conflict resolution
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          set +e
+          git merge --no-commit --no-ff origin/main > merge-main.log 2>&1
+          merge_code=$?
+          set -e
+          cat merge-main.log
+
+          if [ "$merge_code" -ne 0 ]; then
+            generated=(
+              docs/BOUTIQUE_360.json
+              docs/BOUTIQUE_360.md
+              docs/KOMERCE_ARCH_HEADER_GRAPH.md
+              docs/META_GRAPH.json
+              docs/META_GRAPH.md
+              docs/komerce-arch-header-graph.json
+            )
+            for file in "${generated[@]}"; do
+              if git diff --name-only --diff-filter=U | grep -Fxq "$file"; then
+                echo "Résolution générée différée: $file → ours, puis régénération canonique"
+                git checkout --ours -- "$file"
+                git add "$file"
+              fi
+            done
+
+            manifest='public/boutique/features/modal-product.feature.js'
+            if git diff --name-only --diff-filter=U | grep -Fxq "$manifest"; then
+              git checkout --ours -- "$manifest"
+              grep -Fq "canonicalFeature: 'catalog'" "$manifest"
+              grep -Fq "sliceKind: 'frontend-slice'" "$manifest"
+              grep -Fq "b-modal-product-detail-bootstrap.js / setupProductDetailModal()" "$manifest"
+              grep -Fq "un seul état de sélection produit est partagé par mobile et desktop" "$manifest"
+              echo "Résolution manifeste modal-product: superset PDC + métadonnées O4 de main validé"
+              git add "$manifest"
+            fi
+          fi
+
+          git diff --name-only --diff-filter=U | tee merge-conflicts.log
+          if [ -s merge-conflicts.log ]; then
+            echo "Conflits non autorisés à résoudre automatiquement."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix public/boutique ci
+
+      - name: Regenerate combined governance artifacts
+        run: |
+          npm run arch:360:all
+          npm run business-graph:gen
+
+      - name: Validate combined tree before merge commit
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-not-for-prod
+          ADMIN_PASSWORD: ci-test-admin
+          STRIPE_SECRET_KEY: sk_test_dummy
+          STRIPE_WEBHOOK_SECRET: whsec_dummy
+          QR_SECRET: ci-test-qr-secret
+          AUTHKEY_API_KEY: ci-dummy
+          PAYPAL_CLIENT_ID: ci-dummy
+          PAYPAL_CLIENT_SECRET: ci-dummy
+          PAYPAL_WEBHOOK_ID: ci-dummy
+          META_WA_APP_SECRET: ci-dummy
+        run: |
+          npm run feature:registry
+          npm run gate:docs-lint
+          npm run schema:check
+          npm run map:check
+          npm --prefix public/boutique run check:fast
+
+      - name: Commit synchronized cumulative PDC head
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git add -A
+          git commit -m "merge(main): synchronize cumulative PDC integration"
+          git push origin "HEAD:${HEAD_BRANCH}"
+
+      - name: Upload sync diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdc-main-sync-diagnostic
+          path: |
+            merge-main.log
+            merge-conflicts.log
+          retention-days: 1
