@@ -29,7 +29,7 @@ module.exports = {
   perimeter: {
     in: [
       'création, qualification (type/sévérité/impact client) et résolution (reship/refund/manual_fix/dismissed/auto_resolved) d\'un incident',
-      'table incidents en écriture multi-domaines : logistics (scan-engine), payments (reconciliation-service), notifications (alert-engine), dashboard (ops-api)',
+      'table incidents en écriture multi-domaines : logistics (scan-engine), payments (reconciliation-service), notifications (alert-engine), dashboard (ops-api legacy, SQL inline hors incident-service.js)',
       'engagement opérationnel réel déclenché par une résolution (ex. reship crée un incident fils)',
     ],
     out: [
@@ -69,10 +69,14 @@ module.exports = {
     status: 'NOT_APPLICABLE',
     authedRoutesDetected: 0,
     totalRoutes: 0,
-    note: "Aucune route propre — service consommé exclusivement via internalApi par d'autres domaines (logistics, payments, notifications, dashboard).",
+    note: "Aucune route propre. services/incident-service.js expose un internalApi mais n'est require() par aucun fichier de production actuel — voir debt.knownGaps. Les écritures runtime actuelles sur la table incidents (logistics, payments, notifications, dashboard/ops-api legacy) passent par SQL inline, pas par ce service.",
   },
   contract: {
     exposes: [], // aucune route propre — consommé via internalApi
+
+    // DECLARED INTERNAL API OWNER — l'API interne existe réellement dans le code
+    // (services/incident-service.js), mais aucune de ses fonctions n'est require()
+    // par un fichier de production à ce jour (cf. debt.knownGaps).
     internalApi: [
       { fn: 'listIncidents', file: 'services/incident-service.js' },
       { fn: 'getIncident', file: 'services/incident-service.js' },
@@ -80,10 +84,23 @@ module.exports = {
       { fn: 'escalateIncident', file: 'services/incident-service.js' },
       { fn: 'getIncidentDashboard', file: 'services/incident-service.js' },
     ],
+
+    // CURRENT RUNTIME WRITERS / PRODUCERS — écrivent réellement dans la table
+    // incidents aujourd'hui, mais via SQL inline, pas via incident-service.js.
     consumes: [
-      'logistics (scan-engine écrit incidents)',
-      'payments (reconciliation-service écrit incidents)',
-      'notifications (alert-engine écrit incidents)',
+      'logistics (scan-engine écrit incidents — SQL inline)',
+      'payments (reconciliation-service écrit incidents — SQL inline)',
+      'notifications (alert-engine écrit incidents — SQL inline)',
+      'dashboard / ops-api legacy (écrit incidents — SQL inline)',
+    ],
+
+    // TARGET CONSUMERS AFTER WIRING — état visé une fois la dette de câblage
+    // résolue (hors périmètre de ce lot, cf. debt.knownGaps).
+    targetConsumersAfterWiring: [
+      'logistics',
+      'payments',
+      'notifications',
+      'dashboard / ops-api',
     ],
   },
 
@@ -119,7 +136,7 @@ module.exports = {
       ownsTables:          true,  // incidents, table propre avec 6 CHECK constraints
       ownsLifecycle:       true,  // open → investigating → resolved | dismissed
       activeService:       true,  // "détecter, qualifier et résoudre"
-      multiConsumer:       true,  // logistics, payments, notifications, dashboard — Signal 4 transversal
+      multiConsumer:       true,  // table incidents écrite par logistics, payments, notifications, dashboard/ops-api legacy — Signal 4 transversal (écriture directe SQL, pas via incident-service.js — cf. debt.knownGaps)
       ownsMigrations:      false, // exception connue, pas de migration dédiée identifiée
       externalSideEffect:  'none',
       surface:             'internal-api',
@@ -127,7 +144,7 @@ module.exports = {
     rationale: [
       "table incidents avec 6 CHECK constraints (types, sévérité, statut, résolution, impact client, source) — domaine modélisé, pas une table auxiliaire",
       "lifecycle engageant : open → investigating → resolved/dismissed, une résolution reship crée un incident fils (engagement opérationnel réel)",
-      "multi-consommé symétriquement par 4 domaines distincts (scan-engine/logistics, reconciliation-service/payments, alert-engine/notifications, ops-api/dashboard) — Signal 4 de la doctrine",
+      "table incidents écrite symétriquement par 4 domaines distincts (scan-engine/logistics, reconciliation-service/payments, alert-engine/notifications, ops-api/dashboard) — Signal 4 de la doctrine ; câblage effectif via services/incident-service.js encore non fait (SQL inline actuellement, cf. debt.knownGaps)",
       "impact client direct : champs client_impact (none → blocked) et client_notified, une résolution refund déclenche un remboursement",
       "l'ancien invariant «aucune écriture métier ne passe par platform-ops» était mensonger vis-à-vis de cette table — corrigé par ce split",
     ],

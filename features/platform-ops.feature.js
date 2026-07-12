@@ -211,6 +211,15 @@ module.exports = {
         risk: 'faible — la lecture est documentée ici (incidents: R), l\'écriture legacy est ' +
               'assumée et trackée côté incident-management.feature.js.',
       },
+      { gap: 'CONSERVÉ (2026-07-12, Lot O2) — modules / fabrics / garment_models. Le service ' +
+             'réel doit être rechallengé contre catalog / product configuration. platform-ops ' +
+             'les possède actuellement en runtime et en DB (routes/modules.js, CRUD actif), ' +
+             "mais cette frontière n'est pas considérée définitivement validée. Aucun split, " +
+             'retag de routes/modules.js, déplacement de table ou nouvelle feature décidé ce lot ' +
+             '— la classification a seulement été corrigée pour cesser de présenter platform-ops ' +
+             'comme une infrastructure pure sans tables ni service actif.',
+        risk: 'moyen — frontière produit non tranchée entre platform-ops et catalog ; pas de risque technique immédiat.',
+      },
     ],
   },
 
@@ -233,18 +242,19 @@ module.exports = {
     kind:     'technical-transversal',
     decision: 'transversal-technique',
     signals: {
-      ownsTables:          false, // pas de tables métier propriétaires
-      ownsLifecycle:       false,
-      activeService:       false, // expose la santé, ne rend pas de service métier
+      ownsTables:          true,  // fabrics, garment_models — CRUD actif via routes/modules.js, cf. db.tables et invariants
+      ownsLifecycle:       false, // fabrics/garment_models sont des tables de configuration, pas un lifecycle métier engageant
+      activeService:       true,  // le module fabrics/garment_models (routes/modules.js) rend un service actif (configurateur), distinct de health/monitoring qui reste passif
       multiConsumer:       false, // platform-ops ne consomme pas d'autres features — c'est l'inverse
       ownsMigrations:      false, // aucune migration métier dédiée
       externalSideEffect:  'none',
       surface:             'api',
     },
     rationale: [
-      'invariant explicite : aucune écriture métier ne passe par platform-ops',
-      'infrastructure pure — santé applicative, config, modules actifs',
-      'pas de règle métier propre (service = «pas de service métier»)',
+      "surfaces health/monitoring : observation technique passive, aucune écriture métier — l'invariant «aucune écriture métier» reste vrai pour ce sous-périmètre",
+      "simulator : mutation des domaines tiers par design de simulation, mais aucune autorité métier propre sur leurs lifecycles",
+      "modules (fabrics, garment_models) : CRUD actif via routes/modules.js, tables actuellement possédées par platform-ops en runtime et en DB — frontière métier encore non résolue vis-à-vis de catalog (cf. debt.knownGaps)",
+      "platform-ops n'est donc pas une infrastructure pure au sens strict : elle combine de l'observation passive (health/monitoring) et un CRUD métier actif non encore rattaché (modules)",
       'consommé transversalement par l\'outillage CI, monitoring, et toutes les features',
     ],
   },

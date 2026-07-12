@@ -30,7 +30,7 @@ module.exports = {
     in: [
       "détection des commandes disponibles depuis 14 jours sans retrait (auto_unsold() sur orders)",
       "arbitrage et résolution d'un invendu : vente WhatsApp, vente revendeur, don, destruction",
-      "calcul du prix de liquidation depuis le prix original",
+      "calcul du prix de liquidation depuis le prix original (politique actuelle : 75% par défaut, ajustable via PATCH avant résolution)",
     ],
     out: [
       'réception, affectation et dispatch des articles au hub (feature inventory — aucun point de contact technique : ' +
@@ -98,7 +98,7 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'un invendu résolu ne revient jamais en available',
-    'le prix de liquidation est calculé depuis le prix original (75% par défaut)',
+    'toute résolution possède un statut terminal autorisé et un horodatage resolved_at',
   ],
 
   // ── Classification ────────────────────────────────────────────────────────
