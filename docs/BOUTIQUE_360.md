@@ -1,14 +1,14 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-12T12:17:41.724Z.
+> Régénéré le 2026-07-12T19:37:00.979Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **66** (66 headés) · Événements bus : **18** · Bundles CSS : **3**
-- Endpoints appelés : **51** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
-- Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
+- Modules JS : **71** (71 headés) · Événements bus : **17** · Bundles CSS : **3**
+- Endpoints appelés : **52** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 25 dynamiques
+- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
 
@@ -42,6 +42,7 @@
 | `/api/payments/stripe/intent` | b-checkout | ⚪ non prouvé |
 | `/api/products` | b-modal-core, komerce-api | 🔵 dynamique |
 | `/api/products/{id}` | komerce-api | 🔵 dynamique |
+| `/api/products/{id}/detail` | b-modal-product-detail-bootstrap | 🔵 dynamique |
 | `/api/public/config` | b-checkout, b-paypal | ⚪ non prouvé |
 | `/api/purchasing/suppliers` | komerce-api | ⚪ non prouvé |
 | `/api/purchasing/suppliers/{id}` | komerce-api | 🔵 dynamique |
@@ -76,17 +77,16 @@
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
 | `checkout:open` | b-cart | boutique | 🟢 sain |
 | `chip:center` | b-pager | b-catalog | 🟢 sain |
-| `modal:close` | b-cart, b-checkout, b-modal-desktop-enhancers | b-modal-core, b-modal-desktop-enhancers | 🟢 sain |
-| `modal:closed` | b-modal-core | b-modal-approche-c-hybrid, b-pager | 🟡 non déclaré |
+| `modal:close` | b-cart, b-checkout, b-modal-desktop-enhancers | b-modal-core | 🟢 sain |
+| `modal:closed` | b-modal-core | b-modal-approche-c-hybrid, b-modal-product-detail-bootstrap, b-pager | 🟡 non déclaré |
 | `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-modal-suggestions, b-product-open-contract | 🟢 sain |
-| `modal:opened` | b-modal-core | b-mobile-modal-v1, b-mobile-premium-v1, b-modal-approche-c-hybrid, b-modal-desktop-enhancers, b-pager, b-pdp-curation-suggestions | 🟡 non déclaré |
+| `modal:opened` | b-modal-core | b-mobile-modal-v1, b-mobile-premium-v1, b-modal-approche-c-hybrid, b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions | 🟡 non déclaré |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
 | `nav:goto-track` | b-checkout | b-nav | 🟢 sain |
 | `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
 | `side-cart:render` | b-cart, b-cart-core, b-group-view | b-cart | 🟢 sain |
 | `sidebar:built` | b-desktop-sidebar | — | 🔴 émission orpheline |
-| `toast` | b-modal-desktop-enhancers | — | 🔴 émission orpheline |
 | `view:changed` | b-nav | b-catalog-desktop-enhancers, b-home-premium-v1 | 🟡 non déclaré |
 
 ### Diagramme
@@ -99,9 +99,7 @@ graph LR
   b_cart_core["b-cart-core"] -->|cart:update| b_mini_cart["b-mini-cart"]
   b_cart_core["b-cart-core"] -->|cart:update| b_nav["b-nav"]
   b_cart["b-cart"] -->|modal:close| b_modal_core["b-modal-core"]
-  b_cart["b-cart"] -->|modal:close| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
   b_checkout["b-checkout"] -->|modal:close| b_modal_core["b-modal-core"]
-  b_checkout["b-checkout"] -->|modal:close| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
   b_modal_desktop_enhancers["b-modal-desktop-enhancers"] -->|modal:close| b_modal_core["b-modal-core"]
   b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
   b_cart["b-cart"] -->|modal:open| b_modal_core["b-modal-core"]
@@ -124,9 +122,11 @@ graph LR
   b_modal_core["b-modal-core"] -->|modal:opened| b_mobile_premium_v1["b-mobile-premium-v1"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_approche_c_hybrid["b-modal-approche-c-hybrid"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
+  b_modal_core["b-modal-core"] -->|modal:opened| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_pager["b-pager"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_pdp_curation_suggestions["b-pdp-curation-suggestions"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_approche_c_hybrid["b-modal-approche-c-hybrid"]
+  b_modal_core["b-modal-core"] -->|modal:closed| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_pager["b-pager"]
   b_modal_product["b-modal-product"] -->|carousel:changed| b_modal_image_ux["b-modal-image-ux"]
   b_modal_suggestions["b-modal-suggestions"] -->|modal:suggestions-rendered| b_pdp_curation_suggestions["b-pdp-curation-suggestions"]
