@@ -1,5 +1,3 @@
-import { JSDOM } from 'jsdom';
-
 const handlers = {};
 
 jest.mock('../../js/b-bus.js', () => ({
@@ -58,12 +56,8 @@ function flush() {
 }
 
 function installDom() {
-  const jsdom = new JSDOM(`<!doctype html><html><body>
-    <div id="k-modal"><div id="k-modal-variants"></div></div>
-  </body></html>`, { url: 'https://komerce.test' });
-  global.window = jsdom.window;
-  global.document = jsdom.window.document;
-  global.MutationObserver = jsdom.window.MutationObserver;
+  document.body.innerHTML = `
+    <div id="k-modal"><div id="k-modal-variants"></div></div>`;
   window.matchMedia = jest.fn().mockReturnValue({ matches: true });
   dom.modal = document.getElementById('k-modal');
   dom.modalVariants = document.getElementById('k-modal-variants');
@@ -77,10 +71,7 @@ describe('mobile product detail bootstrap', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    document.body.innerHTML = '<div id="k-modal"><div id="k-modal-variants"></div></div>';
-    dom.modal = document.getElementById('k-modal');
-    dom.modalVariants = document.getElementById('k-modal-variants');
-    window.matchMedia.mockReturnValue({ matches: true });
+    installDom();
     state.modalOpen = true;
     state.modalProduct = { id: PRODUCT_ID, name: 'Robe Dubaï' };
     state.modalSelection = { selected_options: {} };
@@ -96,9 +87,6 @@ describe('mobile product detail bootstrap', () => {
 
   afterAll(() => {
     delete global.fetch;
-    delete global.MutationObserver;
-    delete global.window;
-    delete global.document;
   });
 
   test('charge le contrat détail au modal:opened puis rend une sélection unique', async () => {
