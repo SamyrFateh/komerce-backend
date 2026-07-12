@@ -1,0 +1,102 @@
+{
+  "$id": "komerce/catalog/normalized-supplier-product/v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "supplier_name", "product_name", "currency", "raw_payload"],
+  "properties": {
+    "schema_version":      { "const": "2" },
+    "supplier_name":       { "type": "string", "minLength": 1 },
+    "supplier_product_id": { "type": ["string", "null"], "maxLength": 128 },
+    "product_name":        { "type": "string", "minLength": 2, "maxLength": 300 },
+    "supplier_category":   { "type": ["string", "null"], "maxLength": 200 },
+    "purchase_price":      { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10000000 },
+    "currency":            { "enum": ["AED", "EUR", "USD", "KMF"] },
+    "image_url":           { "type": ["string", "null"], "format": "uri", "maxLength": 2000 },
+    "product_url":         { "type": ["string", "null"], "format": "uri", "maxLength": 2000 },
+    "description":         { "type": ["string", "null"], "maxLength": 10000 },
+    "stock_available":     { "type": ["integer", "null"], "minimum": 0 },
+    "min_order_qty":       { "type": ["integer", "null"], "minimum": 1 },
+    "supplier_delay_days": { "type": ["integer", "null"], "minimum": 0, "maximum": 365 },
+    "weight_kg":           { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 500 },
+    "source_locale":       { "type": ["string", "null"], "minLength": 2, "maxLength": 35 },
+    "dimensions": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "l_cm": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 },
+        "w_cm": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 },
+        "h_cm": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 }
+      }
+    },
+    "media": {
+      "type": ["array", "null"],
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "role"],
+        "properties": {
+          "supplier_media_id": { "type": ["string", "null"], "minLength": 1, "maxLength": 128 },
+          "url":               { "type": "string", "format": "uri", "maxLength": 2000 },
+          "role":              { "enum": ["PRODUCT", "SCENE", "DETAIL", "SIZE_GUIDE", "OTHER"] },
+          "alt":               { "type": ["string", "null"], "maxLength": 500 },
+          "option_values": {
+            "type": ["object", "null"],
+            "maxProperties": 20,
+            "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 200 }
+          },
+          "display_order": { "type": ["integer", "null"], "minimum": 0, "maximum": 10000 }
+        }
+      }
+    },
+    "option_axes": {
+      "type": ["array", "null"],
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "values"],
+        "properties": {
+          "key":          { "type": "string", "minLength": 1, "maxLength": 128 },
+          "display_name": { "type": ["string", "null"], "maxLength": 200 },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+          },
+          "display_order": { "type": ["integer", "null"], "minimum": 0, "maximum": 1000 }
+        }
+      }
+    },
+    "sellable_units": {
+      "type": ["array", "null"],
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["supplier_sku", "option_values"],
+        "properties": {
+          "supplier_sku":   { "type": "string", "minLength": 1, "maxLength": 128 },
+          "option_values": {
+            "type": "object",
+            "maxProperties": 20,
+            "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 200 }
+          },
+          "stock_available": { "type": ["integer", "null"], "minimum": 0 },
+          "purchase_price":  { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10000000 },
+          "currency":        { "type": ["string", "null"], "enum": ["AED", "EUR", "USD", "KMF", null] },
+          "media_refs": {
+            "type": ["array", "null"],
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1, "maxLength": 128 }
+          },
+          "is_active": { "type": ["boolean", "null"] }
+        }
+      }
+    },
+    "raw_payload": { "type": "object" }
+  }
+}
