@@ -37,7 +37,30 @@ jobs:
             --collectCoverageFrom=js/b-cart-selection.js \
             --collectCoverageFrom=js/b-modal-cart.js \
             --coverageReporters=json-summary \
+            --coverageReporters=json \
             --coverageDirectory=.diag-coverage
+      - name: Build uncovered report
+        run: |
+          cd public/boutique
+          node - <<'NODE' > /tmp/pdc4-uncovered.json
+          const fs = require('fs');
+          const path = require('path');
+          const raw = JSON.parse(fs.readFileSync('.diag-coverage/coverage-final.json', 'utf8'));
+          const report = {};
+          for (const [file, cov] of Object.entries(raw)) {
+            const name = path.basename(file);
+            const statementLines = [...new Set(Object.entries(cov.s)
+              .filter(([, count]) => count === 0)
+              .map(([id]) => cov.statementMap[id].start.line))]
+              .sort((a, b) => a - b);
+            const branchLines = [...new Set(Object.entries(cov.b)
+              .filter(([, counts]) => counts.some((count) => count === 0))
+              .map(([id]) => cov.branchMap[id].loc.start.line))]
+              .sort((a, b) => a - b);
+            report[name] = { statementLines, branchLines };
+          }
+          process.stdout.write(JSON.stringify(report, null, 2));
+          NODE
       - name: Run touched-tests strict
         id: touched
         continue-on-error: true
@@ -48,7 +71,7 @@ jobs:
           set +e
           node scripts/touched-tests-gate.js --base origin/feat/modal-selection-model-v1 --strict > /tmp/pdc4-touched.log 2>&1
           code=$?
-          tail -n 160 /tmp/pdc4-touched.log > /tmp/pdc4-touched-tail.log
+          tail -n 100 /tmp/pdc4-touched.log > /tmp/pdc4-touched-tail.log
           echo "$code" > /tmp/pdc4-touched-exit-code
           echo "code=$code" >> "$GITHUB_OUTPUT"
       - name: Comment measured coverage
@@ -61,6 +84,9 @@ jobs:
             const summary = fs.existsSync(summaryPath)
               ? JSON.stringify(JSON.parse(fs.readFileSync(summaryPath, 'utf8')), null, 2)
               : 'coverage-summary.json absent';
+            const uncovered = fs.existsSync('/tmp/pdc4-uncovered.json')
+              ? fs.readFileSync('/tmp/pdc4-uncovered.json', 'utf8')
+              : 'uncovered report absent';
             const touched = fs.existsSync('/tmp/pdc4-touched-tail.log')
               ? fs.readFileSync('/tmp/pdc4-touched-tail.log', 'utf8')
               : 'touched-tests non exécuté';
@@ -71,7 +97,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `## PDC-4 coverage diagnostic\n\n### Measured coverage\n\n\`\`\`json\n${summary}\n\`\`\`\n\n### touched-tests --strict — exit ${touchedCode}\n\n\`\`\`text\n${touched}\n\`\`\``
+              body: `## PDC-4 detailed coverage\n\n### Measured coverage\n\n\`\`\`json\n${summary}\n\`\`\`\n\n### Uncovered lines\n\n\`\`\`json\n${uncovered}\n\`\`\`\n\n### touched-tests --strict — exit ${touchedCode}\n\n\`\`\`text\n${touched}\n\`\`\``
             });
       - name: Preserve touched-tests failure
         if: steps.touched.outputs.code != '0'
