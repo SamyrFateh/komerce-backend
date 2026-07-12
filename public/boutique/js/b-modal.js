@@ -6,21 +6,19 @@
  * @owner         public/boutique/js/b-modal-core.js
  * @purpose       supports public/boutique/js/b-modal-core.js
  * @impact-areas  boutique
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
 /**
- * b-modal.js — Façade (ARCH-2 complet, PR5).
+ * b-modal.js — Façade.
  *
- * Ce fichier est désormais une façade pure : il ré-exporte la surface publique
- * de la modal sans contenir de logique. Tous les consommateurs existants
- * (b-catalog, b-favs, b-subcat, b-product-open-contract, boutique.js) continuent
- * d'importer depuis ce chemin — aucun changement côté consommateurs.
- *
- * Implémentation → b-modal-core.js (cycle open/close, state, overlay, body-lock,
- * historique, setupModal) + les 4 sous-modules ARCH-2.
+ * La surface publique reste inchangée. PDC-4 charge l'adaptateur mobile détail
+ * comme side-effect : il écoute `modal:opened`/`modal:closed` sans devenir un
+ * second owner du lifecycle, qui reste dans b-modal-core.js.
  */
+
+import './b-modal-product-detail-mobile.js';
 
 import {
   openModal, closeModal, modalGoBack, setupModal,
