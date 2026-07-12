@@ -20,7 +20,7 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
-  service: 'Sélectionner une unité vendable SKU dans un état unique puis afficher la fiche produit en deux compositions responsive.',
+  service: 'Sélectionner une unité vendable SKU dans un état unique puis composer la fiche produit mobile ou desktop depuis le même contrat détail.',
 
   perimeter: {
     in: [
@@ -29,13 +29,16 @@ module.exports = {
       'états AVAILABLE / OUT_OF_STOCK / INCOMPATIBLE dérivés des sellable_units réelles',
       'sélection transactionnelle par sku_id',
       'médias courants dérivés des associations option_values / media_ids explicites',
+      'composition mobile PDC-4 : vignettes photo, tailles combo-aware, message contextuel, livraison contractuelle et galerie liée à la sélection',
+      'orchestration mobile du fetch GET /api/products/:id/detail sur le cycle modal',
       'layout et cascade de #k-modal et .k-modal-product-zone',
       'placement grille image/détails/actions desktop',
     ],
     out: [
       'données produit et vérité stock (feature catalog)',
       'routing et choix de rail (feature logistics)',
-      'ajout panier et checkout (features orders/shared-cart)',
+      'création de SKU depuis la modal',
+      'checkout final (features orders/payments)',
       'fiche snapshot lecture seule du panier partagé',
     ],
   },
@@ -43,6 +46,8 @@ module.exports = {
   files: {
     boutique: [
       '../js/view-models/modal-selection-model.js',
+      '../js/b-modal-mobile-product.js',
+      '../js/b-modal-mobile-product-bootstrap.js',
       '../css/modal-shell.css',
       '../css/modal-product.css',
       '../css/modal-product-lot4-hybrid.css',
@@ -52,6 +57,8 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/modal-selection-model.test.js',
+      '../tests/unit/b-modal-mobile-product.test.js',
+      '../tests/unit/b-modal-mobile-product-bootstrap.test.js',
     ],
   },
 
@@ -65,6 +72,7 @@ module.exports = {
     'docs/MODAL_MOBILE_ARCHITECTURE.md',
     'docs/PDP_DESKTOP_APPROCHE_C_HYBRIDE.md',
     'docs/ROADMAP_MODAL_TEMU.md',
+    '../../../docs/chantier/PDC4_MOBILE_MODAL.md',
   ],
 
   contract: {
@@ -72,17 +80,21 @@ module.exports = {
     internalApi: [
       'modal-selection-model.js / createModalSelection(productDetail)',
       'modal-selection-model.js / selectModalOption(productDetail, state, axisKey, value)',
+      'b-modal-mobile-product.js / renderMobileProductDetail(productDetail, selection)',
+      'b-modal-mobile-product-bootstrap.js / setupMobileProductDetail()',
       'b-modal-suggestions.js / suggestions produit dans la modal',
       'b-pdp-curation-suggestions.js / suggestions curatées PDP',
     ],
     consumes: [
       'catalog — Product Detail Contract v1 / GET /api/products/:id/detail',
+      'boutique — b-modal-image-ux.js pour le compteur et fullscreen de la galerie reconstruite',
+      'boutique — panier legacy transitoire reçoit le snapshot variant_combo dérivé de selected_options ; résolution SKU autoritaire reste backend',
       'boutique — b-modal-suggestions.js importe b-bus.js, b-cart.js, b-scroll-owner.js, b-store.js, b-utils.js',
       'boutique — b-pdp-curation-suggestions.js importe b-bus.js, b-scroll-owner.js, b-store.js',
     ],
   },
 
-  authority: 'boutique — modal-selection-model.js est l unique owner de l état de sélection SKU ; tout changement de layout doit préserver les contrats render-static.',
+  authority: 'boutique — modal-selection-model.js est l unique owner de l état de sélection SKU ; b-modal-mobile-product.js ne fait que rendre cet état et le contrat détail.',
 
   invariants: [
     'un seul état de sélection produit est partagé par mobile et desktop',
@@ -91,6 +103,12 @@ module.exports = {
     'changer un axe efface les sélections des axes suivants dans l ordre du contrat',
     'selected_sku_id n est posé que pour une unité vendable AVAILABLE résolue',
     'un produit LEGACY_VARIANTS est explicitement selection_supported=false : aucun faux SKU n est fabriqué',
+    'sur mobile PDC-4, Ajouter et Acheter restent désactivés pour un produit SKU tant que selected_sku_id est null',
+    'les vignettes photo viennent de option_axes.values.thumbnail_url ; aucune couleur ou image n est déduite par heuristique',
+    'le carousel mobile suit selected_media et le fullscreen relit les slides après chaque reconstruction',
+    'la livraison mobile rend delivery_options ; aucune liste Standard/Express ni délai universel n est codé dans le renderer PDC-4',
+    'le snapshot modalVariantCombo de transition est une copie de selected_options, jamais une seconde intelligence de stock',
+    'le guard de repaint legacy est transitoire jusqu à PDC-6 et ne dérive aucune vérité métier',
     'le product-zone desktop reste en display:grid avec grid-template-columns',
   ],
 
