@@ -10,26 +10,14 @@
 
 La modal produit est la **fiche produit transactionnelle de Komerce** pour le catalogue vivant.
 
-Elle permet au client de :
+Elle permet au client de comprendre visuellement le produit, voir son identité et son prix, sélectionner une unité réellement vendable, comprendre une indisponibilité, voir les options de livraison commercialement exposées, choisir une quantité et déclencher Ajouter / Acheter.
 
-- comprendre visuellement le produit et ses mises en scène ;
-- voir son identité, son prix et sa promotion ;
-- sélectionner une unité réellement vendable ;
-- comprendre immédiatement pourquoi une option est indisponible ;
-- voir les options de livraison commercialement exposées ;
-- choisir une quantité ;
-- ajouter ou acheter.
-
-Elle est distincte de la fiche article lecture seule du panier partagé, qui est construite depuis le snapshot dans `b-group-view.js`.
-
-Règle Boutique First :
+Elle reste distincte de la fiche article lecture seule du panier partagé, construite depuis le snapshot dans `b-group-view.js`.
 
 ```txt
 Catalogue vivant → modal produit globale enrichie.
 Panier partagé participant → fiche snapshot lecture seule.
 ```
-
-Ne pas mélanger ces deux vérités.
 
 Règle responsive :
 
@@ -41,36 +29,34 @@ Mobile et desktop consomment le même contrat détail et le même état de séle
 
 ## 2. Entrée de la modal
 
-La cible est un contrat détail produit public, versionné et whitelisté, conforme à `DOCTRINE_PRODUCT_DETAIL_CONTRACT.md`.
-
-La modal ne doit pas dépendre durablement du produit de liste brut stocké dans `state.products` pour rendre les vérités transactionnelles.
-
-Chaîne cible :
+La cible consomme le Product Detail Contract v1 :
 
 ```txt
-GET détail produit
+GET /api/products/:id/detail
       ↓
-product_detail contract
+product_detail_v1
       ↓
-ModalViewModel / état de sélection unique
+modal-selection-model.js
       ↓
 renderers modal
       ↓
 mobile / desktop
 ```
 
-Le contrat fournit notamment :
+Le contrat fournit :
 
 ```txt
-identity
+product
 pricing
 media
 option_axes
 sellable_units
- delivery_options
+delivery_options
 ```
 
-`product_variants` décrit les axes de sélection. `product_skus` décrit les unités vendables et porte la vérité de stock en mode SKU.
+La modal ne doit pas dépendre durablement du produit de liste brut de `state.products` pour rendre les vérités transactionnelles.
+
+`product_variants` décrit les axes. `product_skus` décrit les unités vendables et porte la vérité de stock en mode SKU. La Boutique ne lit directement ni l'une ni l'autre table : elle consomme le contrat public.
 
 ---
 
@@ -82,7 +68,8 @@ sellable_units
 |---|---|
 | Façade publique / compatibilité ouverture | `public/boutique/js/b-modal.js` |
 | Cycle ouverture/fermeture, fetch détail, body lock, topbar, historique | `public/boutique/js/b-modal-core.js` |
-| Contrat d'affichage et état dérivé de sélection | `public/boutique/js/view-models/modal-view-model.js` **ou remplacement explicitement acté au Lot PDC-3** |
+| **État dérivé de sélection SKU** | `public/boutique/js/view-models/modal-selection-model.js` |
+| Contrat d'affichage legacy / classes historiques pendant convergence | `public/boutique/js/view-models/modal-view-model.js` |
 | Rendu contenu produit et interactions de sélection | `public/boutique/js/b-modal-product.js` |
 | Images, carousel, compteur, lightbox fullscreen, bouton **Voir en grand** | `public/boutique/js/b-modal-image-ux.js` |
 | Social proof conditionnel | `public/boutique/js/b-modal-social-proof.js` |
@@ -90,6 +77,24 @@ sellable_units
 | Suggestions / recommandations dans la modal | `public/boutique/js/b-modal-suggestions.js` |
 | Intégration panier personnel depuis la modal | `public/boutique/js/b-modal-cart.js` |
 | Composition et enrichissements desktop | `public/boutique/js/b-modal-desktop-enhancers.js` |
+
+### Décision PDC-3
+
+`modal-selection-model.js` est l'**unique owner de la sélection SKU cible**.
+
+`modal-view-model.js` n'est pas étendu pour porter une deuxième logique SKU. Il garde temporairement ses responsabilités historiques de normalisation produit brut et classes contractuelles jusqu'à PDC-6.
+
+La convergence est donc explicite :
+
+```txt
+modal-view-model.js
+= legacy display compatibility
+
+modal-selection-model.js
+= sélection SKU cible unique
+```
+
+PDC-4/PDC-5 branchent les renderers sur le reducer. PDC-6 retire les lectures métier legacy et réévalue alors la forme finale du ViewModel d'affichage.
 
 ### CSS
 
@@ -99,8 +104,6 @@ sellable_units
 | Images / carousel / media / bouton **Voir en grand** | `public/boutique/css/modal-media.css` |
 | Informations produit / sélection / prix / actions | `public/boutique/css/modal-product.css` |
 | Extension PDP hybride desktop | `public/boutique/css/modal-product-lot4-hybrid.css` |
-
-Ancienne doc ou ancien fichier `modal.css` monolithique : historique. Ne pas l'utiliser comme source de vérité si le code actuel est split en `modal-*`.
 
 ---
 
@@ -119,17 +122,39 @@ Marron + L → SKU C → rupture
 Beige  + L → SKU D → disponible
 ```
 
-Après sélection `Couleur = Marron`, la taille `L` doit être présentée comme indisponible pour cette sélection, avec une raison compréhensible :
+Au départ, `L` peut être globalement `AVAILABLE` parce que `Beige + L` est disponible.
+
+Après sélection :
+
+```txt
+Couleur = Marron
+```
+
+le reducer recalcule l'axe suivant depuis les `sellable_units` compatibles :
+
+```txt
+S → AVAILABLE
+M → AVAILABLE
+L → OUT_OF_STOCK
+```
+
+Un clic sur `L` ne modifie pas la sélection et produit :
 
 ```txt
 L indisponible pour Marron — rupture de stock
 ```
 
-### État de sélection unique
-
-L'état dérivé de sélection possède :
+Une combinaison absente produit :
 
 ```txt
+S indisponible pour Beige — combinaison non proposée
+```
+
+### État public du reducer
+
+```txt
+inventory_model
+selection_supported
 selected_options
 selected_sku_id
 selected_media
@@ -137,7 +162,7 @@ option_states
 selection_message
 ```
 
-`option_states` utilise des états explicites :
+`option_states` utilise uniquement :
 
 ```txt
 AVAILABLE
@@ -145,57 +170,111 @@ OUT_OF_STOCK
 INCOMPATIBLE
 ```
 
-Le mobile et le desktop lisent le même état.
+### Ordre des axes
 
-### Interdit
+L'ordre de `option_axes` est l'ordre de dépendance d'interaction.
 
-- décider dans `_buildSizeGrid()` qu'une taille est disponible uniquement via `opt.stock` de l'axe Taille ;
-- reconstruire une matrice couleur × taille dans deux renderers ;
-- faire de `variant_combo` le canal de vérité du stock cible ;
-- choisir un SKU silencieusement alors que la sélection utilisateur reste ambiguë ;
-- masquer une rupture sans raison lorsque le contrat fournit un état explicable.
+```txt
+Couleur
+  ↓
+Taille
+```
+
+Changer un axe amont efface les choix des axes suivants.
+
+Exemple :
+
+```txt
+Marron + M
+   ↓ changement Couleur
+Beige
+```
+
+La taille `M` n'est pas silencieusement conservée. L'état devient :
+
+```txt
+selected_options = { Couleur: "Beige" }
+selected_sku_id = null
+```
+
+puis les tailles sont recalculées pour Beige.
+
+### Sélection complète
+
+`selected_sku_id` n'est posé que si :
+
+1. tous les axes sont sélectionnés ;
+2. une `sellable_unit` correspond exactement ;
+3. son `stock_status` vaut `AVAILABLE`.
+
+Aucune « première variante disponible » n'est choisie silencieusement pour compléter un choix utilisateur ambigu.
+
+### Produit sans axes
+
+Un produit SKU avec un SKU par défaut :
+
+```txt
+option_axes = []
+option_values = {}
+```
+
+peut résoudre immédiatement `selected_sku_id` si l'unité est `AVAILABLE`.
+
+### Produit legacy
+
+Pour :
+
+```txt
+inventory_model = LEGACY_VARIANTS
+```
+
+le reducer retourne :
+
+```txt
+selection_supported = false
+selected_sku_id = null
+option_states = {}
+```
+
+Il reste passif. Il ne reconstruit aucun stock depuis `product_variants.stock`.
 
 ---
 
 ## 5. Doctrine média / mises en scène
 
-La zone média n'est plus une simple photo produit unique.
+La zone média peut contenir image principale, vues complémentaires, mises en scène et médias associés à une valeur d'option ou à un SKU.
 
-Le contrat peut fournir :
+Le reducer dérive `selected_media` selon l'ordre suivant :
 
-- image produit principale ;
-- vues complémentaires ;
-- mises en scène ;
-- médias associés à une couleur ou à un SKU.
+```txt
+1. media_ids du SKU sélectionné
+2. médias dont option_values correspondent à la sélection courante
+3. médias globaux option_values = {}
+4. galerie complète comme fallback visuel
+```
 
-La modal rend les médias reçus. Elle ne devine pas qu'une image appartient à « Marron » depuis son nom de fichier ou son ordre.
+Aucune association n'est déduite depuis le nom de fichier, l'ordre d'une image ou sa couleur dominante.
 
 ### Mobile
 
 - galerie swipe ;
 - compteur `N/N` ;
 - média dominant ;
-- libellé éditorial éventuel fourni par le contrat ;
-- bouton **Voir en grand** géré par `b-modal-image-ux.js`.
-
-Les vignettes couleur utilisent une image réelle du produit lorsque `thumbnail_url` est fourni par le contrat. Pas de fallback hex inventé.
+- bouton **Voir en grand** géré par `b-modal-image-ux.js` ;
+- vignettes couleur photo lorsque `thumbnail_url` est fourni.
 
 ### Desktop
 
 - galerie à gauche ;
 - miniatures / navigation média ;
 - Buy Box à droite ;
-- même sélection média dérivée que le mobile.
-
-Le desktop n'est pas un mobile agrandi. Le média reste cependant la même vérité produit.
+- même `selected_media` dérivé que le mobile.
 
 ---
 
 ## 6. Doctrine livraison
 
-La modal sait rendre une liste d'options de livraison. Elle ne décide jamais d'un rail.
-
-Entrée :
+La modal rend :
 
 ```txt
 delivery_options[]
@@ -212,24 +291,20 @@ eta_label
 unavailable_reason
 ```
 
-Le frontend ne contient pas une liste fixe `STANDARD / EXPRESS`.
+Le frontend ne possède pas une liste fixe Standard / Express.
 
-Aujourd'hui, `AIR_EXPRESS` est connu par `logistics` mais n'est pas commercialement exposable. Il ne doit donc pas être présenté comme promesse client.
-
-Demain, lorsque les moteurs propriétaires exposent Standard et Express, la modal affiche les deux **sans changer sa doctrine**.
+`AIR_EXPRESS` ne doit pas être présenté tant que `logistics` ne l'expose pas commercialement. Un `price_kmf` ou `eta_label` nul reste nul tant qu'un moteur propriétaire ne fournit pas la vérité.
 
 ### Interdit
 
 - `product.delivery_delay || '3 à 5 semaines'` comme vérité universelle ;
-- injecter « Point relais · Gratuit · 3 à 5 semaines » depuis `b-modal-desktop-enhancers.js` sans contrat backend ;
-- déduire Express depuis le poids, le produit ou le viewport dans le frontend ;
-- afficher un prix ou un délai Express tant que `logistics` et `economic-engine` ne l'ont pas rendu commercialement exposable.
+- « Point relais · Gratuit · 3 à 5 semaines » injecté par un enhancer ;
+- Express déduit depuis le poids, le produit ou le viewport ;
+- prix ou délai inventé par la Boutique.
 
 ---
 
-## 7. Composition mobile cible
-
-Ordre fonctionnel cible :
+## 7. Composition mobile cible — PDC-4
 
 ```txt
 TOPBAR
@@ -244,17 +319,18 @@ AJOUTER / ACHETER — actions visibles/sticky
 ENRICHISSEMENTS / SUGGESTIONS
 ```
 
-Invariants mobile :
+Invariants :
 
-- ne pas casser le scroll ni les actions visibles ;
-- le choix couleur rafraîchit l'état des autres axes depuis le reducer unique ;
-- une rupture est expliquée dans le contexte de la sélection ;
-- la galerie suit les médias associés quand le contrat les fournit ;
+- le choix d'un axe appelle le reducer unique ;
+- le renderer lit `option_states`, il ne filtre pas lui-même les SKU ;
+- une rupture est expliquée depuis `selection_message` ;
+- la galerie lit `selected_media` ;
+- le CTA transactionnel utilise `selected_sku_id` ;
 - aucune logique métier n'est dupliquée dans une bottom-sheet de taille.
 
 ---
 
-## 8. Composition desktop cible
+## 8. Composition desktop cible — PDC-5
 
 ```txt
 ┌─────────────────────────┬──────────────────────────┐
@@ -267,23 +343,11 @@ Invariants mobile :
 │                         │                          │
 │                         │  Livraison(s) publique(s)│
 │                         │  Quantité                │
-│                         │  AJOUTER / ACHETER        │
+│                         │  AJOUTER / ACHETER       │
 └─────────────────────────┴──────────────────────────┘
-
-       détails / éditorial / suggestions dessous
 ```
 
-`b-modal-desktop-enhancers.js` peut améliorer la composition desktop : breadcrumb, partage, détails, récemment vus, placement Buy Box.
-
-Il ne doit plus reconstruire lui-même :
-
-- le prix commercial ;
-- le stock ;
-- la disponibilité variante ;
-- les options de livraison ;
-- un délai de transport.
-
-Ces informations viennent du contrat / ViewModel.
+`b-modal-desktop-enhancers.js` peut améliorer la composition desktop. Il ne doit plus reconstruire prix, stock, disponibilité variante, options de livraison ou délai de transport.
 
 ---
 
@@ -295,12 +359,7 @@ Owner CSS : `public/boutique/css/modal-media.css`.
 
 Orchestrateur : `public/boutique/js/b-modal-core.js`.
 
-Invariants :
-
-- le bouton **Voir en grand** est injecté dans la zone media de la modal produit ;
-- le fullscreen image appartient à `b-modal-image-ux.js`, pas au catalogue ;
-- le layout et la position du bouton appartiennent à `modal-media.css` ;
-- ne pas corriger ce parcours depuis `public/boutique/js/b-catalog.js`, `public/boutique/css/products.css` ou `public/boutique/css/boutique-desktop.css`.
+Le fullscreen image appartient au media UX. Il ne doit pas être corrigé depuis le catalogue, `products.css` ou `boutique-desktop.css`.
 
 ---
 
@@ -308,57 +367,38 @@ Invariants :
 
 ### JS
 
-Modifier le fichier owner de la zone touchée :
+- ouverture / fermeture / fetch détail → `b-modal-core.js` ;
+- état de sélection SKU → `view-models/modal-selection-model.js` ;
+- compatibilité d'affichage legacy → `view-models/modal-view-model.js` jusqu'à PDC-6 ;
+- rendu produit → `b-modal-product.js` ;
+- image / carousel / lightbox → `b-modal-image-ux.js` ;
+- suggestions → `b-modal-suggestions.js` ;
+- panier depuis modal → `b-modal-cart.js` ;
+- composition desktop → `b-modal-desktop-enhancers.js`.
 
-- ouverture/fermeture/fetch détail → `public/boutique/js/b-modal-core.js` ;
-- sélection et contrat d'affichage → owner ViewModel/reducer unique ;
-- rendu produit catalogue → `public/boutique/js/b-modal-product.js` ;
-- image, carousel, lightbox, **Voir en grand** → `public/boutique/js/b-modal-image-ux.js` ;
-- suggestions → `public/boutique/js/b-modal-suggestions.js` ;
-- panier depuis modal → `public/boutique/js/b-modal-cart.js` ;
-- composition desktop → `public/boutique/js/b-modal-desktop-enhancers.js`.
-
-La modal produit ne doit pas posséder :
-
-- le pager catégories ;
-- le hero ;
-- le panier partagé participant ;
-- la fiche snapshot lecture seule ;
-- la décision de rail ;
-- le pricing transport ;
-- la vérité de stock.
+La modal ne possède pas le pager catégories, le hero, le panier partagé participant, la vérité de stock, la décision de rail ou le pricing transport.
 
 ### CSS
 
-Modifier le fichier CSS owner :
-
-- structure overlay/topbar/actions → `public/boutique/css/modal-shell.css` ;
-- image/carousel/media/**Voir en grand** → `public/boutique/css/modal-media.css` ;
-- infos produit/prix/sélection/actions → `public/boutique/css/modal-product.css` ;
-- enrichissement hybride desktop → `public/boutique/css/modal-product-lot4-hybrid.css`.
-
-Après modification CSS :
-
-```bash
-cd public/boutique
-npm run deploy:css
-npm run check:cache
-npm run audit:arch
-```
+- overlay / topbar / actions → `modal-shell.css` ;
+- image / carousel / media → `modal-media.css` ;
+- infos produit / sélection / actions → `modal-product.css` ;
+- enrichissement hybride desktop → `modal-product-lot4-hybrid.css`.
 
 ---
 
 ## 11. Invariants
 
 - La modal catalogue affiche le catalogue vivant ; la fiche shared-cart affiche le snapshot.
-- Une unité vendable = un SKU ; les axes ne portent pas une vérité de stock indépendante.
-- Un seul owner dérive l'état de sélection pour mobile et desktop.
-- Les médias sont rendus depuis leurs associations explicites ; aucune déduction depuis le nom de fichier.
+- Une unité vendable = un SKU.
+- `modal-selection-model.js` est l'unique owner de l'état de sélection SKU cible.
+- Les axes ne portent pas une vérité de stock indépendante.
+- Mobile et desktop lisent le même état dérivé.
+- Les médias sont dérivés uniquement depuis les associations explicites du contrat.
 - Le frontend ne décide jamais d'un rail ni d'un délai de livraison.
 - Mobile : ne pas casser le scroll ni les actions visibles.
 - Desktop : ne pas corriger un problème de layout global depuis la modal.
 - Pas de CSS stable injecté par JS.
-- Pas de sélecteurs `.k-modal-*` dispersés hors fichiers modal owners sans raison documentée.
 - Toute modification du parcours **Voir en grand** passe par `b-modal-image-ux.js` et `modal-media.css`.
 - `b-modal-desktop-enhancers.js` reste un enhancer de composition, jamais un second moteur produit.
 
@@ -366,43 +406,33 @@ npm run audit:arch
 
 ## 12. Tests
 
+PDC-3 doit prouver au minimum :
+
+1. disponibilité initiale agrégée depuis les unités réelles ;
+2. couleur A + taille disponible → SKU précis ;
+3. couleur A + taille en rupture → `OUT_OF_STOCK` + raison ;
+4. couleur B rend la même taille disponible → état rafraîchi ;
+5. combinaison inexistante → `INCOMPATIBLE` ;
+6. sélection partielle → aucun SKU choisi silencieusement ;
+7. changement d'axe amont → choix aval effacés ;
+8. produit sans axe → SKU par défaut ;
+9. produit legacy → `selection_supported=false` ;
+10. média associé à une couleur / SKU → `selected_media` rafraîchi.
+
 Après modification modal :
 
 ```bash
 cd public/boutique
-npm run check:html
 npm run check:imports
-npm run check:body-classes
 npm run audit:arch
+npm run test:unit -- modal-selection-model.test.js
 ```
 
-Depuis la racine repo :
+Depuis la racine :
 
 ```bash
 npm run gate:boutique-ownership
 npm run map:check
 ```
 
-Tests métier de sélection obligatoires au Lot PDC-3 :
-
-1. couleur A + taille disponible → SKU précis ;
-2. couleur A + taille en rupture → `OUT_OF_STOCK` + raison ;
-3. couleur B rend la même taille disponible → état rafraîchi ;
-4. combinaison inexistante → `INCOMPATIBLE` ;
-5. sélection partielle → aucun SKU choisi silencieusement ;
-6. produit sans variante → SKU par défaut ;
-7. média associé à une couleur → galerie rafraîchie ;
-8. absence d'Express dans `delivery_options` → aucune UI Express inventée.
-
-Tests manuels :
-
-1. ouvrir une fiche produit depuis la grille mobile ;
-2. swiper les médias et vérifier le compteur ;
-3. changer de couleur et vérifier médias + tailles ;
-4. vérifier une taille indisponible avec raison contextuelle ;
-5. ouvrir le fullscreen image puis le fermer ;
-6. vérifier les options de livraison réellement reçues ;
-7. ajouter au panier avec le `sku_id` sélectionné ;
-8. ouvrir la même fiche desktop et retrouver la même disponibilité ;
-9. fermer et retrouver le scroll correct ;
-10. vérifier que la fiche lecture seule du panier partagé n'a pas été changée par erreur.
+Les tests manuels d'interaction complète commencent à PDC-4 lorsque le renderer mobile consomme réellement le reducer.
