@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        modal_open_event, public_product_detail_v1, modal_selection_state
  * @outputs       mobile_product_detail_render, option_selection_events
- * @depends       b-bus.js, b-store.js, b-utils.js, b-modal-product.js, b-modal-image-ux.js, b-modal-cart.js, view-models/modal-selection-model.js
+ * @depends       b-bus.js, b-store.js, b-utils.js, b-modal-product.js, b-modal-image-ux.js, b-modal-cart.js, view-models/modal-selection-model.js, view-models/modal-product-session.js
  * @used-by       b-modal.js
  * @db-read       none
  * @db-write      none
@@ -40,6 +40,12 @@ import {
   createModalSelection,
   selectModalOption,
 } from './view-models/modal-selection-model.js';
+import {
+  modalProductSession,
+  resetModalProductSession,
+  setModalProductDetail,
+  setModalProductSelection,
+} from './view-models/modal-product-session.js';
 
 let _requestVersion = 0;
 let _variantObserver = null;
@@ -384,13 +390,19 @@ function renderMedia(detail, selection) {
 }
 
 function onSelection(detail, axisKey, value) {
-  state.modalSelection = selectModalOption(detail, state.modalSelection, axisKey, value);
+  const nextSelection = selectModalOption(
+    detail,
+    modalProductSession.selection,
+    axisKey,
+    value
+  );
+  setModalProductSelection(nextSelection);
   renderCurrentSelection(detail);
-  bus.emit('modal:selection-changed', state.modalSelection);
+  bus.emit('modal:selection-changed', modalProductSession.selection);
 }
 
 function renderCurrentSelection(detail) {
-  const selection = state.modalSelection;
+  const selection = modalProductSession.selection;
   if (!selection) return;
 
   state.modalVariantCombo = { ...selection.selected_options };
@@ -409,17 +421,20 @@ function guardVariantsAgainstLegacyRenderer(detail) {
 
   disconnectVariantObserver();
   _variantObserver = new MutationObserver(() => {
-    if (state.modalProductDetail !== detail) return;
+    if (modalProductSession.detail !== detail) return;
     if (container.querySelector('[data-pdc-sku-selection="1"]')) return;
-    renderSelectionAxes(detail, state.modalSelection, (axisKey, value) => onSelection(detail, axisKey, value));
+    renderSelectionAxes(
+      detail,
+      modalProductSession.selection,
+      (axisKey, value) => onSelection(detail, axisKey, value)
+    );
   });
   _variantObserver.observe(container, { childList: true });
 }
 
 async function activateMobileProductDetail(product) {
   const version = ++_requestVersion;
-  state.modalProductDetail = null;
-  state.modalSelection = null;
+  resetModalProductSession();
   disconnectVariantObserver();
 
   if (!isMobileViewport()) return;
@@ -445,13 +460,13 @@ async function activateMobileProductDetail(product) {
       return;
     }
 
-    state.modalProductDetail = detail;
-    state.modalSelection = createModalSelection(detail);
+    setModalProductDetail(detail);
+    setModalProductSelection(createModalSelection(detail));
     renderCurrentSelection(detail);
     guardVariantsAgainstLegacyRenderer(detail);
     bus.emit('modal:product-detail-ready', {
       detail,
-      selection: state.modalSelection,
+      selection: modalProductSession.selection,
     });
   } catch (_) {
     if (isCurrentRequest(version, product.id)) setModalTransactionPending(false);
@@ -463,8 +478,7 @@ bus.on('modal:opened', activateMobileProductDetail);
 bus.on('modal:closed', () => {
   _requestVersion++;
   disconnectVariantObserver();
-  state.modalProductDetail = null;
-  state.modalSelection = null;
+  resetModalProductSession();
 });
 
 export {
