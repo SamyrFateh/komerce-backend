@@ -123,6 +123,8 @@ Pour un produit `inventory_model = SKU` :
 
 Le frontend cible transmet le `sku_id` sélectionné depuis le contrat détail produit. Le backend garde une validation autoritaire et ne fait jamais confiance au stock frontend.
 
+Un `sku_id` reçu du client doit être revalidé contre le `product_id`, son état actif et, lorsque la sélection lisible est transmise, sa combinaison canonique. Le SKU est une référence explicite, jamais un contournement de l'autorité backend.
+
 ---
 
 ## 6. Moteur stock
