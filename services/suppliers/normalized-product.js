@@ -4,51 +4,31 @@
  * @domain        catalog
  * @layer         service
  * @criticality   high
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       schemas/catalog/normalized-supplier-product.v1.schema.json
- * @used-by       services/suppliers/connectors/api-connector.base.js, services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js
+ * @inputs        supplier_connector_output
+ * @outputs       validated_normalized_supplier_product, normalized_source_contract_snapshot
+ * @depends       schemas/catalog/normalized-supplier-product.v1.schema.json, schemas/catalog/normalized-supplier-product.v2.schema.json
+ * @used-by       services/suppliers/connectors/api-connector.base.js, services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/catalog-import-orchestrator.js
  * @db-read       none
  * @db-write      none
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  catalog, product-discovery
- * @version       2026-06
+ * @db-txn        none
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
+ * @impact-areas  catalog, product-discovery, product-detail
+ * @version       2026-07
  */
 
 /**
- * KOMERCE — Format pivot NormalizedSupplierProduct
+ * KOMERCE — Contrat pivot NormalizedSupplierProduct
  * ═══════════════════════════════════════════════════════════════════
  *
- * Tous les connecteurs (CSV, manuel, API) doivent retourner des
- * objets dans ce format. Le scanner ne connaît AUCUNE spécificité
- * fournisseur — il consomme uniquement ce format pivot.
+ * V1 reste accepté pour les sources plates historiques.
  *
- * Architecture cible :
- *   ┌─────────┐   ┌──────────┐   ┌──────────────────────┐
- *   │   CSV   │──▶│ csv      │──▶│                      │
- *   ├─────────┤   ├──────────┤   │   NormalizedSupplier │
- *   │ Manual  │──▶│ manual   │──▶│        Product[]     │──▶ scanner
- *   ├─────────┤   ├──────────┤   │                      │
- *   │   API   │──▶│ api/noon │──▶│                      │
- *   └─────────┘   └──────────┘   └──────────────────────┘
+ * V2 préserve explicitement, lorsqu'une source les connaît déjà :
+ *   - media[]
+ *   - option_axes[]
+ *   - sellable_units[]
  *
- * @typedef {Object} NormalizedSupplierProduct
- * @property {string}  supplier_name        Identifiant fournisseur (ex: 'Noon', 'Manual', 'Dragon Mart')
- * @property {string} [supplier_product_id] Référence interne fournisseur (SKU, ASIN…)
- * @property {string}  product_name         Nom du produit
- * @property {string} [supplier_category]   Catégorie selon le fournisseur (texte libre)
- * @property {number} [purchase_price]      Prix d'achat
- * @property {string} [currency]            'AED' | 'EUR' | 'USD' | 'KMF'
- * @property {string} [image_url]
- * @property {string} [product_url]
- * @property {string} [description]
- * @property {number} [stock_available]
- * @property {number} [min_order_qty]
- * @property {number} [supplier_delay_days]
- * @property {number} [weight_kg]           Poids fourni si disponible
- * @property {Object} [dimensions]          { l_cm, w_cm, h_cm }
- * @property {Object} [raw_payload]         Payload brut original (pour debug / re-traitement)
+ * Le contrat ne fabrique JAMAIS une matrice couleur × taille. Une source riche
+ * reste riche ; une source pauvre reste pauvre honnêtement.
  */
 
 'use strict';
@@ -56,17 +36,19 @@
 const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 const schemaV1 = require('../../schemas/catalog/normalized-supplier-product.v1.schema.json');
+const schemaV2 = require('../../schemas/catalog/normalized-supplier-product.v2.schema.json');
 
-// ING-1 — le contrat pivot est désormais un schéma versionné compilé au
-// require, pas une convention JSDoc vérifiée à la main. Un connecteur qui
-// contourne le schéma n'existe pas (doctrine ING-I1).
+const CURRENT_SCHEMA_VERSION = '2';
+const SUPPORTED_SCHEMA_VERSIONS = Object.freeze(['1', '2']);
+
 const ajv = new Ajv({ allErrors: true, strict: false, verbose: true });
 addFormats(ajv);
-const validateSchema = ajv.compile(schemaV1);
 
-// Messages lisibles par champ + par règle violée. Le fallback générique
-// couvre toute règle non listée ici (bornes, format...) — cf. doctrine ING-1 :
-// « weight_kg hors bornes (0, 500] », traduit depuis le schéma, pas en dur.
+const validators = Object.freeze({
+  '1': ajv.compile(schemaV1),
+  '2': ajv.compile(schemaV2),
+});
+
 const FIELD_MESSAGES = {
   product_name:  { required: 'product_name requis', minLength: 'product_name requis' },
   supplier_name: { required: 'supplier_name requis' },
@@ -89,17 +71,17 @@ function boundsPhrase(err) {
   return `${lo}, ${hi}`;
 }
 
-/**
- * Traduit une erreur ajv en message lisible pour l'admin (doctrine ING-1).
- * Ces messages remontent jusqu'à l'écran admin — ils ne doivent jamais
- * exposer le jargon JSON Schema brut.
- */
-function humanizeError(err) {
-  const field = err.keyword === 'required'
-    ? err.params.missingProperty
-    : (err.instancePath || '').replace(/^\//, '').split('/')[0] || '(objet)';
+function fieldPath(err) {
+  if (err.keyword === 'required') return err.params.missingProperty;
+  const path = String(err.instancePath || '').replace(/^\//, '').replace(/\//g, '.');
+  return path || '(objet)';
+}
 
-  const known = FIELD_MESSAGES[field]?.[err.keyword];
+/** Traduit une erreur Ajv en message lisible pour l'admin. */
+function humanizeError(err) {
+  const field = fieldPath(err);
+  const rootField = field.split('.')[0];
+  const known = FIELD_MESSAGES[rootField]?.[err.keyword];
   if (known) return known;
 
   switch (err.keyword) {
@@ -109,6 +91,8 @@ function humanizeError(err) {
       return `champ inconnu hors contrat : "${err.params.additionalProperty}"`;
     case 'enum':
       return `${field} doit être l'une de : ${err.params.allowedValues.join(', ')}`;
+    case 'const':
+      return `${field} doit valoir ${JSON.stringify(err.params.allowedValue)}`;
     case 'minimum':
     case 'maximum':
     case 'exclusiveMinimum':
@@ -118,6 +102,12 @@ function humanizeError(err) {
       return `${field} trop court (minimum ${err.params.limit} caractères)`;
     case 'maxLength':
       return `${field} trop long (maximum ${err.params.limit} caractères)`;
+    case 'minItems':
+      return `${field} doit contenir au moins ${err.params.limit} élément(s)`;
+    case 'maxItems':
+      return `${field} contient trop d'éléments (maximum ${err.params.limit})`;
+    case 'uniqueItems':
+      return `${field} contient une valeur dupliquée`;
     case 'format':
       return `${field} format invalide (${err.params.format} attendu)`;
     case 'type':
@@ -127,42 +117,177 @@ function humanizeError(err) {
   }
 }
 
+function schemaVersionOf(obj) {
+  const raw = obj?.schema_version;
+  if (raw === undefined || raw === null || raw === '') return '1';
+  return String(raw);
+}
+
+function canonicalOptionValues(values) {
+  return Object.keys(values || {})
+    .sort()
+    .map((key) => `${key}\u0000${values[key]}`)
+    .join('\u0001');
+}
+
 /**
- * Valide qu'un objet est un NormalizedSupplierProduct conforme au contrat v1.
- * Utilisé par tous les connecteurs avant de retourner leurs résultats.
- *
- * @param {Object} obj
- * @returns {{ valid: boolean, errors: string[] }}
+ * Les règles ci-dessous expriment les coutures référentielles impossibles à
+ * garantir proprement en JSON Schema sans dupliquer la donnée : axes uniques,
+ * combos complets, références média et absence de SKU/combinaison dupliqués.
+ */
+function validateRichStructureV2(obj) {
+  const errors = [];
+  const axes = new Map();
+
+  for (const axis of obj.option_axes || []) {
+    if (axes.has(axis.key)) {
+      errors.push(`option_axes : axe dupliqué "${axis.key}"`);
+      continue;
+    }
+    axes.set(axis.key, new Set(axis.values || []));
+  }
+
+  const mediaIds = new Set();
+  for (let i = 0; i < (obj.media || []).length; i++) {
+    const media = obj.media[i];
+    if (media.supplier_media_id) {
+      if (mediaIds.has(media.supplier_media_id)) {
+        errors.push(`media[${i}] : supplier_media_id dupliqué "${media.supplier_media_id}"`);
+      } else {
+        mediaIds.add(media.supplier_media_id);
+      }
+    }
+
+    for (const [key, value] of Object.entries(media.option_values || {})) {
+      if (!axes.has(key)) {
+        errors.push(`media[${i}].option_values : axe inconnu "${key}"`);
+      } else if (!axes.get(key).has(value)) {
+        errors.push(`media[${i}].option_values : valeur inconnue ${key}="${value}"`);
+      }
+    }
+  }
+
+  const supplierSkus = new Set();
+  const combos = new Set();
+  const axisKeys = [...axes.keys()].sort();
+
+  for (let i = 0; i < (obj.sellable_units || []).length; i++) {
+    const unit = obj.sellable_units[i];
+
+    if (supplierSkus.has(unit.supplier_sku)) {
+      errors.push(`sellable_units[${i}] : supplier_sku dupliqué "${unit.supplier_sku}"`);
+    } else {
+      supplierSkus.add(unit.supplier_sku);
+    }
+
+    const optionValues = unit.option_values || {};
+    const unitKeys = Object.keys(optionValues).sort();
+
+    if (axisKeys.length === 0 && unitKeys.length > 0) {
+      errors.push(`sellable_units[${i}].option_values : aucun axe déclaré`);
+    }
+
+    for (const key of axisKeys) {
+      if (!Object.prototype.hasOwnProperty.call(optionValues, key)) {
+        errors.push(`sellable_units[${i}].option_values incomplet : axe "${key}" absent`);
+      }
+    }
+
+    for (const [key, value] of Object.entries(optionValues)) {
+      if (!axes.has(key)) {
+        errors.push(`sellable_units[${i}].option_values : axe inconnu "${key}"`);
+      } else if (!axes.get(key).has(value)) {
+        errors.push(`sellable_units[${i}].option_values : valeur inconnue ${key}="${value}"`);
+      }
+    }
+
+    const comboKey = canonicalOptionValues(optionValues);
+    if (combos.has(comboKey)) {
+      errors.push(`sellable_units[${i}] : combinaison d'options dupliquée`);
+    } else {
+      combos.add(comboKey);
+    }
+
+    for (const mediaRef of unit.media_refs || []) {
+      if (!mediaIds.has(mediaRef)) {
+        errors.push(`sellable_units[${i}].media_refs : média inconnu "${mediaRef}"`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Valide un objet contre la version de contrat qu'il déclare.
+ * Absence de schema_version = V1 pour compatibilité stricte avec les connecteurs
+ * historiques. Une structure riche doit donc déclarer V2 explicitement.
  */
 function validateNormalizedProduct(obj) {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
     return { valid: false, errors: ['Objet invalide'] };
   }
-  const ok = validateSchema(obj);
-  if (ok) return { valid: true, errors: [] };
-  const errors = (validateSchema.errors || []).map(humanizeError);
-  return { valid: false, errors };
+
+  const version = schemaVersionOf(obj);
+  const validateSchema = validators[version];
+  if (!validateSchema) {
+    return {
+      valid: false,
+      errors: [`schema_version non supportée : "${version}" (versions supportées : ${SUPPORTED_SCHEMA_VERSIONS.join(', ')})`],
+    };
+  }
+
+  const schemaOk = validateSchema(obj);
+  const errors = schemaOk
+    ? []
+    : (validateSchema.errors || []).map(humanizeError);
+
+  if (version === '2' && schemaOk) {
+    errors.push(...validateRichStructureV2(obj));
+  }
+
+  return { valid: errors.length === 0, errors };
 }
 
-/**
- * Filtre une liste pour ne garder que les produits valides.
- * Retourne aussi les invalides séparément avec leurs erreurs.
- *
- * @param {Array<Object>} products
- * @returns {{ valid: Array, invalid: Array<{ product, errors }> }}
- */
+/** Sépare une liste en produits valides et rejets motivés. */
 function partitionValid(products) {
   const valid = [];
   const invalid = [];
-  for (const p of products || []) {
-    const v = validateNormalizedProduct(p);
-    if (v.valid) valid.push(p);
-    else invalid.push({ product: p, errors: v.errors });
+  for (const product of products || []) {
+    const verdict = validateNormalizedProduct(product);
+    if (verdict.valid) valid.push(product);
+    else invalid.push({ product, errors: verdict.errors });
   }
   return { valid, invalid };
 }
 
+/**
+ * Snapshot du contrat source NORMALISÉ destiné à sourcing_candidates.
+ *
+ * raw_payload reste persisté séparément et intégralement. Le snapshot V2
+ * conserve la traduction fournisseur → contrat Komerce (rôles média, axes,
+ * unités vendables) pour que PDC-2 puisse promouvoir ces faits sans relire ni
+ * deviner la donnée fournisseur. Les V1 restent null : aucun faux enrichissement.
+ */
+function buildNormalizedSourceContractSnapshot(product) {
+  if (schemaVersionOf(product) !== '2') return null;
+
+  const verdict = validateNormalizedProduct(product);
+  if (!verdict.valid) {
+    const err = new Error(`NormalizedSupplierProduct v2 invalide : ${verdict.errors.join(' ; ')}`);
+    err.code = 'NORMALIZED_SOURCE_CONTRACT_INVALID';
+    throw err;
+  }
+
+  const { raw_payload: _rawPayload, ...contract } = product;
+  return JSON.parse(JSON.stringify(contract));
+}
+
 module.exports = {
+  CURRENT_SCHEMA_VERSION,
+  SUPPORTED_SCHEMA_VERSIONS,
   validateNormalizedProduct,
   partitionValid,
+  buildNormalizedSourceContractSnapshot,
+  _validateRichStructureV2: validateRichStructureV2,
 };
