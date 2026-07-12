@@ -609,6 +609,34 @@ function _canonicalCombo(combo) {
 }
 
 /**
+ * Résout le SKU actif correspondant à une combinaison (ou au SKU par défaut
+ * si combo est null/undefined) pour un produit. Lecture seule.
+ *
+ * Lot 3 (cf. DECISION_MODELE_STOCK_SKU.md §D) : point d'entrée unique utilisé
+ * par la création de commande pour les produits en inventory_model = 'SKU'.
+ * Ne fait AUCUNE supposition sur inventory_model — c'est à l'appelant de
+ * décider s'il doit passer par ce chemin (la bascule reste explicite, portée
+ * par l'appelant, jamais déduite ici).
+ *
+ * @returns {object|null} { id, sku, stock, price_kmf } ou null si aucun SKU
+ *   actif ne correspond à cette combinaison pour ce produit.
+ */
+async function resolveActiveSku(dbClient, productId, comboRaw) {
+  const combo = _canonicalCombo(comboRaw ?? null);
+
+  const { rows: [row] } = await dbClient.query(
+    combo === null
+      ? `SELECT id, sku, stock, price_kmf FROM product_skus
+          WHERE product_id = $1 AND variant_combo IS NULL AND is_active = true`
+      : `SELECT id, sku, stock, price_kmf FROM product_skus
+          WHERE product_id = $1 AND variant_combo = $2::jsonb AND is_active = true`,
+    combo === null ? [productId] : [productId, JSON.stringify(combo)]
+  );
+
+  return row || null;
+}
+
+/**
  * Liste les combinaisons possibles (produit cartésien des axes déclarés dans
  * product_variants) croisées avec les SKU déjà déclarés dans product_skus.
  * Lecture seule.
@@ -909,6 +937,7 @@ module.exports = {
   replaceVariants,
   deleteVariant,
   getSkuCandidates,
+  resolveActiveSku,
   upsertProductSku,
   deactivateProductSku,
   auditProductSkuReadiness,

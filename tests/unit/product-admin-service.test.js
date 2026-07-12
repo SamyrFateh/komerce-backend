@@ -390,4 +390,36 @@ describe('product-admin-service', () => {
       expect(db.query.mock.calls[1][0]).toContain('UPDATE products SET stock');
     });
   });
+
+  describe('resolveActiveSku (Lot 3)', () => {
+    it('resout le SKU par defaut (combo null)', async () => {
+      const row = { id: 'sku-default', sku: null, stock: 10, price_kmf: 5000 };
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [row] }) };
+
+      await expect(svc.resolveActiveSku(db, 'prod-001', null)).resolves.toEqual(row);
+      expect(db.query.mock.calls[0][0]).toMatch(/variant_combo IS NULL/);
+      expect(db.query.mock.calls[0][1]).toEqual(['prod-001']);
+    });
+
+    it('resout un SKU par combo (jsonb) et retourne null si aucune ligne active', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+
+      await expect(svc.resolveActiveSku(db, 'prod-001', { couleur: 'Noir', taille: 'M' })).resolves.toBeNull();
+      expect(db.query.mock.calls[0][0]).toMatch(/variant_combo = \$2::jsonb/);
+      expect(db.query.mock.calls[0][1]).toEqual(['prod-001', JSON.stringify({ couleur: 'Noir', taille: 'M' })]);
+    });
+
+    it('canonicalise le combo (cles triees) avant la requete', async () => {
+      const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+
+      await svc.resolveActiveSku(db, 'prod-001', { taille: 'M', couleur: 'Noir' });
+      expect(db.query.mock.calls[0][1][1]).toBe(JSON.stringify({ couleur: 'Noir', taille: 'M' }));
+    });
+
+    it('rejette un combo malforme (valeur non-string)', async () => {
+      const db = { query: jest.fn() };
+      await expect(svc.resolveActiveSku(db, 'prod-001', { couleur: 42 })).rejects.toMatchObject({ status: 400 });
+      expect(db.query).not.toHaveBeenCalled();
+    });
+  });
 });

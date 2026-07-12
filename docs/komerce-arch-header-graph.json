@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 721,
-    "edges": 4140,
+    "edges": 4142,
     "dbTables": 110,
     "doctrines": 134,
     "impactAreas": 117,
@@ -6503,13 +6503,15 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/*",
+        "services/product-admin-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
         "orders",
+        "product_skus",
         "product_variants",
         "products",
         "recipients",
@@ -17283,6 +17285,11 @@
       "table": "refunds"
     },
     {
+      "id": "db:product_skus",
+      "type": "db-table",
+      "table": "product_skus"
+    },
+    {
       "id": "db:product_variants",
       "type": "db-table",
       "table": "product_variants"
@@ -17316,11 +17323,6 @@
       "id": "db:cost_benchmarks",
       "type": "db-table",
       "table": "cost_benchmarks"
-    },
-    {
-      "id": "db:product_skus",
-      "type": "db-table",
-      "table": "product_skus"
     },
     {
       "id": "db:product_suppliers",
@@ -27731,6 +27733,12 @@
       "label": "services/*"
     },
     {
+      "from": "routes/orders/create.js",
+      "to": "services/product-admin-service.js",
+      "type": "depends",
+      "label": "services/product-admin-service.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/orders/create.js",
       "type": "uses",
@@ -27741,6 +27749,12 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "routes/orders/create.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
     },
     {
       "from": "routes/orders/create.js",
@@ -50021,7 +50035,8 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/*",
+        "services/product-admin-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -50029,6 +50044,7 @@
       "ownedFiles": [],
       "dbRead": [
         "orders",
+        "product_skus",
         "product_variants",
         "products",
         "recipients",
@@ -50055,6 +50071,7 @@
         "db:order_items",
         "db:order_status_history",
         "db:orders",
+        "db:product_skus",
         "db:product_variants",
         "db:products",
         "db:recipients",
@@ -50068,6 +50085,7 @@
         "services/customs-classification.js",
         "services/loyalty-service.js",
         "services/order-cost-snapshot.js",
+        "services/product-admin-service.js",
         "services/routing.js",
         "utils/logger.js",
         "utils/rates.js",
@@ -56664,6 +56682,7 @@
         "impact:admin-dashboard",
         "impact:catalog",
         "impact:product-discovery",
+        "routes/orders/create.js",
         "routes/products.js",
         "services/catalog-overrides.js",
         "services/product-price-audit.js",
