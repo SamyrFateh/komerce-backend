@@ -23,6 +23,12 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : meme identite metier que
+  // backend:shared-cart — cas de preuve canonique de la mission O4 §12 (une
+  // seule identite cross-repo, pas deux business features distinctes).
+  canonicalFeature: 'shared-cart',
+  sliceKind: 'frontend-slice',
+
   service: "Panier partage et flux groupe (creation, gestion, rendu createur/participant, orchestration commande collective).",
 
   perimeter: {

@@ -23,6 +23,17 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : ce manifeste couvre par nature un
+  // socle transversal (bus, panier de base, utilitaires, orchestration UI)
+  // sans identite metier unique — l'equivalent frontend du manifeste dash
+  // `platform` (type frontend-transversal). Ne pas rattacher a un
+  // canonicalFeature unique : ce serait un rattachement arbitraire, pas une
+  // identite metier verifiee. ~19 fichiers catalog/shared-cart mal ranges ici
+  // restent une dette connue et documentee (docs/BUSINESS_FEATURE_GRAPH.md
+  // §O4), hors perimetre de deplacement de fichiers pour ce lot.
+  canonicalFeature: null,
+  sliceKind: 'frontend-transversal',
+
   service: "Coeur transversal de la boutique (orchestration UI, état partagé, panier/modal de base, utilitaires) — tout ce qui ne relève pas d'un domaine métier dédié.",
 
   perimeter: {

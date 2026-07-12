@@ -1,7 +1,7 @@
 {
   "name": "komerce-backend",
   "version": "10.6.1",
-  "description": "Komerce — Backend API e-commerce diaspora comorienne",
+  "description": "Komerce \u2014 Backend API e-commerce diaspora comorienne",
   "main": "server.js",
   "scripts": {
     "start": "npm run build && node server.js",
@@ -42,8 +42,9 @@
     "boutique:360": "node scripts/gen-boutique-360.js",
     "boutique:360:check": "node scripts/gen-boutique-360.js --check",
     "boutique:360:save": "node scripts/gen-boutique-360.js --save",
-    "business-graph:gen": "node scripts/business-graph-gen.js",
-    "business-graph:check": "node scripts/business-graph-gen.js --check",
+    "business-graph:gen": "node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique",
+    "business-graph:check": "node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique",
+    "business-graph:ratchet-check": "node scripts/business-graph-ratchet-check.js",
     "meta:graph": "node scripts/gen-meta-graph.js",
     "meta:graph:check": "node scripts/gen-meta-graph.js --check",
     "meta:graph:save": "node scripts/gen-meta-graph.js --save",

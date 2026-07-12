@@ -23,6 +23,19 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : ONTOLOGY GAP explicite (mission O4
+  // §3, cas E). Aucune feature backend/dash canonique ne represente le
+  // tracking evenementiel UI (verifie : ni logistics — tracking colis
+  // physique, identite differente — ni infrastructure/notifications/platform-ops).
+  // canonicalFeature reste null ; sliceKind='frontend-transversal' est un
+  // classement PROVISOIRE (evite une erreur de resolution sans creer
+  // silencieusement une nouvelle business feature), documente explicitement
+  // dans governance/business-graph-ontology-gaps.json (id: tracking-no-canonical-owner).
+  // Decision produit a prendre : creer feature 'analytics' dediee, ou
+  // rattacher a une feature existante.
+  canonicalFeature: null,
+  sliceKind: 'frontend-transversal',
+
   service: "Analytics et tracking evenementiel cote boutique (suivi parcours, evenements UI).",
 
   perimeter: {

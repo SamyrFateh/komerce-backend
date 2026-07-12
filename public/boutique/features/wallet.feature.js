@@ -23,6 +23,15 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : rattache a backend:wallet (solde,
+  // credit/debit), PAS backend:wallet-loyalty. Le manifeste lui-meme le
+  // documente en perimeter.out ("scindees de wallet-loyalty au Lot O1.2") et
+  // son fichier unique (b-wallet.js) traite consultation solde/utilisation
+  // avoir — pas de logique de recompenses fidelite (feature loyalty separee
+  // cote backend). Mission O4 §12 : ne pas recreer wallet-loyalty cote boutique.
+  canonicalFeature: 'wallet',
+  sliceKind: 'frontend-slice',
+
   service: "Portefeuille et fidelite cote boutique (consultation solde, utilisation avoir).",
 
   perimeter: {

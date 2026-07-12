@@ -117,6 +117,21 @@ const STEPS = [
     cmd:       'npm run business-graph:check',
   },
 
+  // ── Drift ratchet typé du Business Feature Graph (Lot O4) ───────────────
+  // Compare le nombre de warnings PAR TYPE à governance/business-graph-drift-baseline.json.
+  // warn:true pour l'instant (adoption progressive, même pattern que
+  // feature-classification ci-dessus) : la classification sémantique (Phase E)
+  // vient d'être posée sur une baseline capturée en une seule session — passer
+  // en bloquant après une revue humaine des 13 ACTIONABLE_DRIFT identifiés
+  // (voir governance/business-graph-warning-semantics.js).
+  {
+    label:     'Business Feature Graph — drift ratchet typé (Lot O4)',
+    category:  'gate',
+    npmScript: 'business-graph:ratchet-check',
+    cmd:       'npm run business-graph:ratchet-check',
+    warn:      true,
+  },
+
   // ── Reconstructions 360 ────────────────────────────────────────────────
   {
     label:     'Dashboard 360 check',

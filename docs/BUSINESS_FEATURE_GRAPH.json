@@ -33,8 +33,8 @@
     ],
     "technicalArchitectureGraph": "docs/komerce-arch-header-graph.json",
     "openapiContract": "docs/contract/openapi.json",
-    "boutiqueRoot": "../boutique",
-    "dashRoot": "../Public"
+    "boutiqueRoot": "public/boutique",
+    "dashRoot": "public"
   },
   "scope": {
     "businessManifestsResolved": 28,
@@ -59,7 +59,8 @@
     "READS_TABLE",
     "EXPOSES_INTERFACE",
     "PROVIDES_INTERNAL_API",
-    "CONSUMES_FEATURE"
+    "CONSUMES_FEATURE",
+    "IMPLEMENTED_IN"
   ],
   "nodes": {
     "features": [
@@ -510,6 +511,98 @@
         "repo": "backend",
         "declaredOnly": false,
         "resolvable": true
+      }
+    ],
+    "boutiqueManifests": [
+      {
+        "id": "boutique-manifest:auth",
+        "name": "auth",
+        "file": "boutique:features/auth.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "auth-identity",
+        "sliceKind": "frontend-slice",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:boutique",
+        "name": "boutique",
+        "file": "boutique:features/boutique.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": null,
+        "sliceKind": "frontend-transversal",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:catalog",
+        "name": "catalog",
+        "file": "boutique:features/catalog.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "catalog",
+        "sliceKind": "frontend-slice",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:checkout",
+        "name": "checkout",
+        "file": "boutique:features/checkout.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "payments",
+        "sliceKind": "ui-orchestration",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:modal-product",
+        "name": "modal-product",
+        "file": "boutique:features/modal-product.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "catalog",
+        "sliceKind": "frontend-slice",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:payment",
+        "name": "payment",
+        "file": "boutique:features/payment.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "payments",
+        "sliceKind": "frontend-slice",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:recommendations",
+        "name": "recommendations",
+        "file": "boutique:features/recommendations.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "recommendations",
+        "sliceKind": "frontend-slice",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:shared-cart",
+        "name": "shared-cart",
+        "file": "boutique:features/shared-cart.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "shared-cart",
+        "sliceKind": "frontend-slice",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:tracking",
+        "name": "tracking",
+        "file": "boutique:features/tracking.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": null,
+        "sliceKind": "frontend-transversal",
+        "governed": true
+      },
+      {
+        "id": "boutique-manifest:wallet",
+        "name": "wallet",
+        "file": "boutique:features/wallet.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "wallet",
+        "sliceKind": "frontend-slice",
+        "governed": true
       }
     ]
   },
@@ -1088,6 +1181,20 @@
         "declared": "js/b-subcat.js",
         "resolvedPath": "public/boutique/js/b-subcat.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "boutique",
+        "declared": "js/b-cart-product-open-style.js",
+        "resolvedPath": "public/boutique/js/b-cart-product-open-style.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "boutique",
+        "declared": "css/hero.css",
+        "resolvedPath": "public/boutique/css/hero.css",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "catalog",
@@ -13980,6 +14087,48 @@
         "raw": "auth-identity (identification du client)",
         "resolved": true
       }
+    ],
+    "implementedIn": [
+      {
+        "canonicalFeature": "auth-identity",
+        "boutiqueManifest": "auth",
+        "sliceKind": "frontend-slice"
+      },
+      {
+        "canonicalFeature": "catalog",
+        "boutiqueManifest": "catalog",
+        "sliceKind": "frontend-slice"
+      },
+      {
+        "canonicalFeature": "payments",
+        "boutiqueManifest": "checkout",
+        "sliceKind": "ui-orchestration"
+      },
+      {
+        "canonicalFeature": "catalog",
+        "boutiqueManifest": "modal-product",
+        "sliceKind": "frontend-slice"
+      },
+      {
+        "canonicalFeature": "payments",
+        "boutiqueManifest": "payment",
+        "sliceKind": "frontend-slice"
+      },
+      {
+        "canonicalFeature": "recommendations",
+        "boutiqueManifest": "recommendations",
+        "sliceKind": "frontend-slice"
+      },
+      {
+        "canonicalFeature": "shared-cart",
+        "boutiqueManifest": "shared-cart",
+        "sliceKind": "frontend-slice"
+      },
+      {
+        "canonicalFeature": "wallet",
+        "boutiqueManifest": "wallet",
+        "sliceKind": "frontend-slice"
+      }
     ]
   },
   "tableOwnership": {
@@ -15558,28 +15707,85 @@
       "resolution": "single-writer"
     }
   },
-  "orphanTechnicalNodes": [
-    "public/boutique/js/b-boutique-wow-style.js",
-    "public/boutique/js/b-cart-core.js",
-    "public/boutique/js/b-cart-pill.js",
-    "public/boutique/js/b-cart-product-open-style.js",
-    "public/boutique/js/b-cart-stepper-guard.js",
-    "public/boutique/js/b-cart.js",
-    "public/boutique/js/b-desktop-global-cart-access.js",
-    "public/boutique/js/b-desktop-sidebar.js",
-    "public/boutique/js/b-desktop-upgrade.js",
-    "public/boutique/js/b-favs.js",
-    "public/boutique/js/b-greeting.js",
-    "public/boutique/js/b-home-premium-v1.js",
-    "public/boutique/js/b-mini-cart.js",
-    "public/boutique/js/b-mobile-modal-v1.js",
-    "public/boutique/js/b-mobile-premium-v1.js",
-    "public/boutique/js/b-modal-approche-c-hybrid.js",
-    "public/boutique/js/b-nav.js",
-    "public/boutique/js/boutique.js",
-    "public/boutique/js/card-config.js",
-    "public/boutique/js/taxonomy-no-hardcode.test.js"
-  ],
+  "orphanTechnicalNodes": [],
+  "bigMap": {
+    "perRepo": {
+      "backend": {
+        "manifestsDiscovered": 24,
+        "manifestsConnected": 24,
+        "technicalNodesTotal": 295,
+        "technicalNodesOwned": 295,
+        "technicalOrphans": 0
+      },
+      "dash": {
+        "manifestsDiscovered": 3,
+        "manifestsConnected": 3,
+        "technicalNodesTotal": null,
+        "technicalNodesOwned": null,
+        "technicalOrphans": null,
+        "note": "pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)"
+      },
+      "boutique": {
+        "manifestsDiscovered": 10,
+        "manifestsConnected": 10,
+        "technicalNodesTotal": 67,
+        "technicalNodesOwned": 67,
+        "technicalOrphans": 0
+      }
+    },
+    "canonical": {
+      "crossRepoFeatures": [
+        "auth-identity",
+        "catalog",
+        "payments",
+        "recommendations",
+        "shared-cart",
+        "wallet"
+      ],
+      "singleRepoFeatures": [
+        "admin-dashboard",
+        "auth",
+        "customs",
+        "dashboard",
+        "decision-signals",
+        "documents",
+        "economic-engine",
+        "incident-management",
+        "infrastructure",
+        "inventory",
+        "legacy-control-tower",
+        "logistics",
+        "loyalty",
+        "notifications",
+        "orders",
+        "platform",
+        "platform-ops",
+        "purchasing",
+        "refunds",
+        "sourcing",
+        "unsold-resolution",
+        "wallet-loyalty"
+      ],
+      "unmappedLocalManifests": [],
+      "ontologyGaps": [
+        {
+          "id": "checkout-orders-boutique-coverage",
+          "boutiqueManifest": "checkout",
+          "finding": "boutique/features/checkout.feature.js décrit un service quasi identique à backend:orders (\"tunnel de commande, du panier valide à la confirmation\") et son perimeter.out cite 'orders' — mais backend:orders.files.boutique est vide (0 fichier revendiqué), alors que backend:payments.files.boutique revendique factuellement b-checkout.js + b-checkout-render.js.",
+          "currentDecision": "canonicalFeature fixé à 'payments' (preuve fichier, priorité 1 de la mission O4 §6), sliceKind 'ui-orchestration' — pas 'frontend-slice' pur, car ce manifeste orchestre la soumission de commande ET la sélection du moyen de paiement sans être l'implémentation exclusive de l'un ou l'autre.",
+          "openQuestion": "backend:orders devrait-il revendiquer explicitement une part de b-checkout.js (rendu récapitulatif / soumission commande), avec backend:payments ne gardant que la partie encaissement (b-paypal.js) ? Décision produit non tranchée par O4 — cf. mission §3 \"si le cas est E, ne crée pas silencieusement, signale l'ONTOLOGY GAP\"."
+        },
+        {
+          "id": "tracking-no-canonical-owner",
+          "boutiqueManifest": "tracking",
+          "finding": "boutique/features/tracking.feature.js décrit un service d'analytics/tracking événementiel UI (suivi parcours, événements). Aucune feature backend ou dash canonique ne représente ce service : vérifié explicitement contre logistics (tracking colis physique — identité métier différente malgré le nom proche), infrastructure (middlewares/bootstrap transverses), notifications (émission de messages sortants, pas de collecte d'événements) et platform-ops (santé applicative). C'est un cas E pur (mission O4 §3) : véritable ONTOLOGY GAP, pas une erreur de nommage à corriger par une fusion.",
+          "currentDecision": "canonicalFeature reste null. sliceKind fixé à 'frontend-transversal' à titre PROVISOIRE — seule valeur du enum ALLOWED_SLICE_KINDS permettant d'éviter que ce manifeste retombe en BOUTIQUE-MANIFEST-UNGOVERNED, sans pour autant inventer une business feature. Ce n'est pas un vrai transversal multi-feature comme le manifeste `boutique` générique ou `platform` côté dash — c'est un classement de repli documenté.",
+          "openQuestion": "Faut-il créer une feature 'analytics' dédiée côté backend/dash (si un service de collecte équivalent existe ou est prévu côté serveur), ou rattacher ce manifeste à une feature existante par proximité fonctionnelle (ex. platform-ops) ? Décision produit non tranchée par O4."
+        }
+      ],
+      "technicalOrphansRemaining": 0
+    }
+  },
   "drifts": {
     "error": [],
     "warn": [
@@ -15882,106 +16088,6 @@
         "type": "EXPOSED-ROUTE-UNRESOLVED",
         "ref": "logistics / POST /api/hub/volume",
         "msg": "\"POST /api/hub/volume\" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-boutique-wow-style.js",
-        "msg": "nœud technique \"public/boutique/js/b-boutique-wow-style.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-cart-core.js",
-        "msg": "nœud technique \"public/boutique/js/b-cart-core.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-cart-pill.js",
-        "msg": "nœud technique \"public/boutique/js/b-cart-pill.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-cart-product-open-style.js",
-        "msg": "nœud technique \"public/boutique/js/b-cart-product-open-style.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-cart-stepper-guard.js",
-        "msg": "nœud technique \"public/boutique/js/b-cart-stepper-guard.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-cart.js",
-        "msg": "nœud technique \"public/boutique/js/b-cart.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-desktop-global-cart-access.js",
-        "msg": "nœud technique \"public/boutique/js/b-desktop-global-cart-access.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-desktop-sidebar.js",
-        "msg": "nœud technique \"public/boutique/js/b-desktop-sidebar.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-desktop-upgrade.js",
-        "msg": "nœud technique \"public/boutique/js/b-desktop-upgrade.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-favs.js",
-        "msg": "nœud technique \"public/boutique/js/b-favs.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-greeting.js",
-        "msg": "nœud technique \"public/boutique/js/b-greeting.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-home-premium-v1.js",
-        "msg": "nœud technique \"public/boutique/js/b-home-premium-v1.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-mini-cart.js",
-        "msg": "nœud technique \"public/boutique/js/b-mini-cart.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-mobile-modal-v1.js",
-        "msg": "nœud technique \"public/boutique/js/b-mobile-modal-v1.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-mobile-premium-v1.js",
-        "msg": "nœud technique \"public/boutique/js/b-mobile-premium-v1.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-modal-approche-c-hybrid.js",
-        "msg": "nœud technique \"public/boutique/js/b-modal-approche-c-hybrid.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/b-nav.js",
-        "msg": "nœud technique \"public/boutique/js/b-nav.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/boutique.js",
-        "msg": "nœud technique \"public/boutique/js/boutique.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/card-config.js",
-        "msg": "nœud technique \"public/boutique/js/card-config.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
-      },
-      {
-        "type": "TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP",
-        "ref": "public/boutique/js/taxonomy-no-hardcode.test.js",
-        "msg": "nœud technique \"public/boutique/js/taxonomy-no-hardcode.test.js\" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré"
       },
       {
         "type": "WRITER-NOT-OWNER",

@@ -23,6 +23,15 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : meme identite metier que
+  // backend:recommendations (rendu du classement produit calcule cote
+  // backend par services/boutique-ranking-engine.js). Ecart mineur constate,
+  // non corrige ici (hors perimetre O4) : backend:recommendations.files.boutique
+  // ne revendique pas encore b-modal-suggestions.js / b-pdp-curation-suggestions.js —
+  // dette a traiter separement, symetrique au fix deja fait sur catalog.
+  canonicalFeature: 'recommendations',
+  sliceKind: 'frontend-slice',
+
   service: "Suggestions et curation produit (rail de suggestions modal, curation editoriale PDP).",
 
   perimeter: {

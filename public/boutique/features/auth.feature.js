@@ -23,6 +23,16 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : identite metier verifiee par le
+  // service rendu (login/OTP/identite), pas par le nom. backend:auth designe
+  // les gardes transverses (middlewares JWT/session/roles) — feature DIFFERENTE.
+  // backend:auth-identity designe l'authentification/gestion d'identite active
+  // (OTP, login/register, magic-link, guest-checkout, profil) — c'est la meme
+  // identite metier que ce manifeste boutique. Voir docs/BUSINESS_FEATURE_GRAPH.md
+  // §O4 pour la preuve complete.
+  canonicalFeature: 'auth-identity',
+  sliceKind: 'frontend-slice',
+
   service: "Authentification et identite utilisateur cote boutique (login telephone, gestion identite).",
 
   perimeter: {

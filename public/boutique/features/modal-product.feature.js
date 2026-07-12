@@ -21,6 +21,15 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : ce manifeste possede son propre
+  // domain déclaré ('catalog') et son propre service rendu est une couche de
+  // RENDU (layout/grille/cascade CSS de la fiche produit), pas un service
+  // metier autonome — les donnees produit restent la propriete de catalog, et
+  // l'ajout panier reste la propriete de orders/shared-cart (perimeter.out
+  // ci-dessous). Ne devient donc pas une business feature independante.
+  canonicalFeature: 'catalog',
+  sliceKind: 'frontend-slice',
+
   service: 'Afficher la fiche produit en modal : image plein cadre + colonne détails/achat, en grille 2 colonnes sur desktop.',
 
   perimeter: {

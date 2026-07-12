@@ -41,6 +41,14 @@ const BOUTIQUE_ROOT = path.resolve(ROOT, argVal('--boutique-root') || process.en
 // et un manifest `platform` uniquement dans `features/` (pas de copie).
 const DASH_ROOT = path.resolve(ROOT, argVal('--dash-root') || process.env.KOMERCE_DASH_ROOT || '../dash');
 const DASH_ROOT_MOUNTED = fs.existsSync(DASH_ROOT);
+// Lot O4 (cross-repo feature coverage) : le dépôt boutique possède ses PROPRES
+// manifests features/*.feature.js (10 à ce jour), jusqu'ici jamais chargés par
+// ce générateur — BOUTIQUE_ROOT ne servait qu'à vérifier l'EXISTENCE des
+// fichiers déclarés côté backend (files.boutique), pas à lire la déclaration
+// boutique elle-même. C'est la cause directe des 10 manifests "hors graphe" et
+// d'une partie des 20 orphelins techniques révélés par O3.
+const BOUTIQUE_FEATURES_DIR = path.join(BOUTIQUE_ROOT, 'features');
+const BOUTIQUE_ROOT_MOUNTED = fs.existsSync(BOUTIQUE_ROOT);
 const DASH_CANONICAL_FEATURES_DIR = path.join(DASH_ROOT, 'dashboards', 'features');
 const DASH_COPY_FEATURES_DIR = path.join(DASH_ROOT, 'features');
 // Divergence déjà documentée (APP_FEATURE_REGISTRY.md ligne #22) entre la copie
@@ -205,6 +213,35 @@ function loadDashFeatureManifests(warns) {
   return out;
 }
 
+// Charge les manifests du dépôt `boutique` (Lot O4). Contrairement à `dash`,
+// pas de duplication connue backend-side — un seul dossier `features/`.
+// Chaque manifest boutique porte (depuis O4) `canonicalFeature` (nom d'une
+// feature backend/dash existante, ou null) et `sliceKind` ('frontend-slice' |
+// 'frontend-transversal' | 'ui-orchestration'). Ces manifests ne deviennent
+// PAS des nœuds `feature:<name>` : plusieurs noms de manifests boutique
+// collisionnent avec des noms de features backend qui désignent une IDENTITÉ
+// MÉTIER DIFFÉRENTE (ex. boutique:auth ≠ backend:auth — voir AUDIT_NOTE_O4).
+// Namespace dédié : `boutique-manifest:<name>`.
+function loadBoutiqueFeatureManifests() {
+  const out = [];
+  if (!BOUTIQUE_ROOT_MOUNTED || !fs.existsSync(BOUTIQUE_FEATURES_DIR)) return out;
+  for (const f of fs.readdirSync(BOUTIQUE_FEATURES_DIR)) {
+    if (!f.endsWith('.feature.js') || f.startsWith('_')) continue;
+    const full = path.join(BOUTIQUE_FEATURES_DIR, f);
+    const name = f.replace(/\.feature\.js$/, '');
+    try {
+      const m = loadOneManifest(full);
+      m.__repo = 'boutique';
+      m.__file = `boutique:${path.relative(BOUTIQUE_ROOT, full).replace(/\\/g, '/')}`;
+      m.__manifestDir = path.dirname(full);
+      out.push(m);
+    } catch (e) {
+      out.push({ name, __repo: 'boutique', __file: `boutique:features/${f}`, __broken: e.message });
+    }
+  }
+  return out.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+}
+
 const CAPABILITIES_DIR = path.join(ROOT, 'capabilities');
 // Piloting capabilities (docs/doctrine/PILOTING_CAPABILITY_DOCTRINE.md) vivent
 // dans capabilities/<nom>.capability.js, jamais dans features/ — gouvernance
@@ -356,6 +393,14 @@ function build() {
   manifests.push(...dashManifests, ...capabilityManifests);
   const manifestNames = new Set(manifests.map(m => m.name).filter(Boolean));
 
+  // Lot O4 : chargé À PART de `manifests` — plusieurs noms de manifests
+  // boutique (auth, catalog, shared-cart, wallet, recommendations) collisionnent
+  // avec des noms de features backend/dash qui désignent une identité métier
+  // différente ou plus large. Les fusionner dans le même Map par nom serait
+  // exactement l'erreur que la mission O4 interdit ("ne pas fusionner deux
+  // manifests uniquement parce qu'ils portent un nom similaire").
+  const boutiqueManifests = loadBoutiqueFeatureManifests();
+
   // ── 5.1 Nœuds "feature" (business + transversaux + déclarés-seuls) ───────
   const featureNodes = [];
   for (const m of manifests) {
@@ -441,6 +486,82 @@ function build() {
 
   const featureNodeByName = new Map(featureNodes.map(n => [n.name, n]));
 
+  // ── 5.1b Nœuds "boutique-manifest" + résolution canonicalFeature (Lot O4) ─
+  //   Namespace séparé de `feature:` (cf. commentaire au chargement). Un
+  //   manifest boutique gouverné doit déclarer explicitement l'un des deux :
+  //     - canonicalFeature: '<nom>'   -> doit résoudre contre featureNodeByName
+  //     - sliceKind: 'frontend-transversal' avec canonicalFeature: null
+  //   Absence des deux = manifest non gouverné (retour à l'état "hors graphe").
+  const ALLOWED_SLICE_KINDS = new Set(['frontend-slice', 'frontend-transversal', 'ui-orchestration']);
+  const boutiqueManifestNodes = [];
+  const implementedInEdges = []; // { canonicalFeature, boutiqueManifest, sliceKind }
+  const boutiqueOwnedRepoPaths = new Set(); // 'public/boutique/...' couverts via manifest boutique
+  for (const bm of boutiqueManifests) {
+    if (bm.__broken) {
+      errors.push({ type: 'MANIFEST-LOAD-ERROR', ref: bm.__file, msg: `manifest boutique illisible : ${bm.__broken}` });
+      continue;
+    }
+    const name = bm.name;
+    const hasCanonical = Object.prototype.hasOwnProperty.call(bm, 'canonicalFeature');
+    const sliceKind = bm.sliceKind || null;
+
+    if (!hasCanonical && !sliceKind) {
+      warns.push({
+        type: 'BOUTIQUE-MANIFEST-UNGOVERNED', ref: name,
+        msg: `boutique/features/${name}.feature.js ne déclare ni "canonicalFeature" ni "sliceKind" — manifest hors graphe de couverture cross-repo (O4)`,
+      });
+    } else if (sliceKind && !ALLOWED_SLICE_KINDS.has(sliceKind)) {
+      errors.push({
+        type: 'BOUTIQUE-SLICE-KIND-INVALID', ref: name,
+        msg: `sliceKind="${sliceKind}" invalide pour boutique:${name} — valeurs autorisées : ${[...ALLOWED_SLICE_KINDS].join(' | ')}`,
+      });
+    } else if (bm.canonicalFeature) {
+      if (!featureNodeByName.has(bm.canonicalFeature)) {
+        errors.push({
+          type: 'CANONICAL-FEATURE-UNRESOLVED', ref: name,
+          msg: `boutique:${name} déclare canonicalFeature="${bm.canonicalFeature}", aucune feature backend/dash de ce nom n'existe dans le graphe`,
+        });
+      } else {
+        implementedInEdges.push({ canonicalFeature: bm.canonicalFeature, boutiqueManifest: name, sliceKind: sliceKind || 'frontend-slice' });
+      }
+    } else if (sliceKind === 'frontend-transversal' && bm.canonicalFeature === null) {
+      // Topologie attendue — pas de canonicalFeature unique, cf. équivalent
+      // dash-repo (manifest `platform`, type frontend-transversal).
+    } else if (hasCanonical && bm.canonicalFeature == null && sliceKind !== 'frontend-transversal') {
+      errors.push({
+        type: 'CANONICAL-FEATURE-UNRESOLVED', ref: name,
+        msg: `boutique:${name} déclare canonicalFeature=null sans sliceKind="frontend-transversal" — décision de rattachement manquante`,
+      });
+    }
+
+    boutiqueManifestNodes.push({
+      id: `boutique-manifest:${name}`,
+      name,
+      file: bm.__file,
+      repo: 'boutique',
+      canonicalFeature: bm.canonicalFeature || null,
+      sliceKind: sliceKind || null,
+      governed: Boolean(hasCanonical || sliceKind),
+    });
+
+    // Fichiers déclarés par CE manifest boutique -> chemin repo-relatif
+    // 'public/boutique/...', pour compter comme "possédés" côté orphelins
+    // techniques (5.3), que le manifest backend correspondant les liste ou non
+    // dans son propre files.boutique (source d'autorité complémentaire, pas
+    // une duplication — cf. mission O4 §6, priorité 1 "info déjà présente
+    // dans les manifests").
+    for (const [, files] of Object.entries(bm.files || {})) {
+      for (const rel of (files || [])) {
+        const clean = String(rel || '').replace(/\\/g, '/');
+        if (!clean) continue;
+        const abs = path.resolve(bm.__manifestDir, clean);
+        const relToBoutiqueRoot = path.relative(BOUTIQUE_ROOT, abs).replace(/\\/g, '/');
+        if (relToBoutiqueRoot.startsWith('..')) continue; // hors dépôt boutique, ignore
+        boutiqueOwnedRepoPaths.add(`public/boutique/${relToBoutiqueRoot}`);
+      }
+    }
+  }
+
   // ── 5.2 Bridge FEATURE -> FILE (IMPLEMENTED_BY) ──────────────────────────
   const implementedByEdges = [];
   const NON_TECH_CATEGORIES = new Set(['migrations', 'tests', 'dash', 'docs', 'ci', 'assets', 'config', 'db', 'scripts', 'boutique']);
@@ -509,6 +630,12 @@ function build() {
 
   // ── 5.3 Orphelins techniques : fichier scanné par arch:gen, sans feature ─
   const filesOwnedByFeature = new Set(implementedByEdges.filter(e => e.status !== 'missing-on-disk').map(e => e.resolvedPath));
+  // Lot O4 : un fichier public/boutique/... possédé par un manifest boutique
+  // GOUVERNÉ (canonicalFeature résolu, ou sliceKind frontend-transversal) sort
+  // de l'orphelinat technique même si le manifest backend ne le liste pas
+  // (encore) dans son propre files.boutique — double source d'autorité,
+  // convergente par construction (cf. commentaire 5.1b).
+  for (const p of boutiqueOwnedRepoPaths) filesOwnedByFeature.add(p);
   const TRANSVERSAL_GLOB_FILE = path.join(ROOT, 'governance', 'transversal-paths.json');
   let transversalGlobs = ['core/', 'bootstrap/', 'middleware/', 'db/', 'db.js'];
   if (fs.existsSync(TRANSVERSAL_GLOB_FILE)) {
@@ -689,6 +816,62 @@ function build() {
     }
   }
 
+  // ── 5.7 Big Map — couverture cross-repo (Lot O4 §13) ─────────────────────
+  const ONTOLOGY_GAPS_FILE = path.join(ROOT, 'governance', 'business-graph-ontology-gaps.json');
+  let ontologyGaps = [];
+  if (fs.existsSync(ONTOLOGY_GAPS_FILE)) {
+    try { ontologyGaps = JSON.parse(fs.readFileSync(ONTOLOGY_GAPS_FILE, 'utf8')).gaps || []; } catch { /* noop */ }
+  }
+
+  const backendManifestsOnly = manifests.filter(m => m.__repo !== 'dash' && !m.__isCapability);
+  const isBoutiquePath = p => p.startsWith('public/boutique/');
+  const boutiqueArchFileIds = [...archFileIds].filter(isBoutiquePath);
+  const backendArchFileIds = [...archFileIds].filter(p => !isBoutiquePath(p));
+  const boutiqueOrphans = orphanTechnicalNodes.filter(isBoutiquePath);
+  const backendOrphans = orphanTechnicalNodes.filter(p => !isBoutiquePath(p));
+
+  const boutiqueManifestsConnected = boutiqueManifestNodes.filter(n => n.governed && (n.canonicalFeature || n.sliceKind === 'frontend-transversal')).length;
+
+  const crossRepoFeatureNames = [...new Set(implementedInEdges.map(e => e.canonicalFeature))].sort();
+  const singleRepoFeatureNames = featureNodes
+    .filter(n => !n.declaredOnly && !crossRepoFeatureNames.includes(n.name))
+    .map(n => n.name).sort();
+  const unmappedBoutiqueManifests = boutiqueManifestNodes.filter(n => !n.governed).map(n => n.name);
+
+  const bigMap = {
+    perRepo: {
+      backend: {
+        manifestsDiscovered: backendManifestsOnly.length,
+        manifestsConnected: backendManifestsOnly.filter(m => !m.__broken).length,
+        technicalNodesTotal: backendArchFileIds.length,
+        technicalNodesOwned: backendArchFileIds.length - backendOrphans.length,
+        technicalOrphans: backendOrphans.length,
+      },
+      dash: {
+        manifestsDiscovered: dashManifests.length,
+        manifestsConnected: dashManifests.filter(m => !m.__broken).length,
+        technicalNodesTotal: null,
+        technicalNodesOwned: null,
+        technicalOrphans: null,
+        note: 'pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)',
+      },
+      boutique: {
+        manifestsDiscovered: boutiqueManifests.length,
+        manifestsConnected: boutiqueManifestsConnected,
+        technicalNodesTotal: boutiqueArchFileIds.length,
+        technicalNodesOwned: boutiqueArchFileIds.length - boutiqueOrphans.length,
+        technicalOrphans: boutiqueOrphans.length,
+      },
+    },
+    canonical: {
+      crossRepoFeatures: crossRepoFeatureNames,
+      singleRepoFeatures: singleRepoFeatureNames,
+      unmappedLocalManifests: unmappedBoutiqueManifests,
+      ontologyGaps,
+      technicalOrphansRemaining: orphanTechnicalNodes.length,
+    },
+  };
+
   const model = {
     version: 'O3-1.0',
     generatedFrom: {
@@ -706,16 +889,18 @@ function build() {
       boutiqueRepoMounted: fs.existsSync(BOUTIQUE_ROOT),
     },
     nodeTypes: ['business-feature', 'business-transversal', 'technical-transversal', 'piloting-capability', 'projection', 'frontend-transversal', 'deprecated'],
-    edgeTypes: ['IMPLEMENTED_BY', 'OWNS_TABLE_LIFECYCLE', 'WRITES_TABLE', 'READS_TABLE', 'EXPOSES_INTERFACE', 'PROVIDES_INTERNAL_API', 'CONSUMES_FEATURE'],
-    nodes: { features: featureNodes },
+    edgeTypes: ['IMPLEMENTED_BY', 'OWNS_TABLE_LIFECYCLE', 'WRITES_TABLE', 'READS_TABLE', 'EXPOSES_INTERFACE', 'PROVIDES_INTERNAL_API', 'CONSUMES_FEATURE', 'IMPLEMENTED_IN'],
+    nodes: { features: featureNodes, boutiqueManifests: boutiqueManifestNodes },
     edges: {
       implementedBy: implementedByEdges,
       exposesInterface: exposesEdges,
       providesInternalApi: internalApiEdges,
       consumesFeature: consumesEdges,
+      implementedIn: implementedInEdges,
     },
     tableOwnership,
     orphanTechnicalNodes,
+    bigMap,
     drifts: {
       error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
       warn: warns.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
@@ -765,6 +950,47 @@ function renderMd(model) {
       const tag = n.declaredOnly ? ' _(déclaré seulement — ' + n.unresolvedReason.split(' — ')[0] + ')_' : '';
       L.push(`- \`${n.name}\`${tag}`);
     }
+    L.push('');
+  }
+
+  L.push('## Big Map — couverture cross-repo (Lot O4)');
+  L.push('');
+  L.push('Synthèse de couverture par dépôt et identités métier cross-repo. Voir mission O4 §13.');
+  L.push('');
+  if (model.bigMap) {
+    L.push('### Par dépôt');
+    L.push('');
+    L.push('| Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |');
+    L.push('|---|---|---|---|---|---|');
+    for (const [repo, s] of Object.entries(model.bigMap.perRepo)) {
+      const total = s.technicalNodesTotal === null ? 'N/A' : s.technicalNodesTotal;
+      const owned = s.technicalNodesOwned === null ? 'N/A' : s.technicalNodesOwned;
+      const orph  = s.technicalOrphans === null ? 'N/A' : s.technicalOrphans;
+      L.push(`| ${repo} | ${s.manifestsDiscovered} | ${s.manifestsConnected} | ${total} | ${owned} | ${orph} |`);
+    }
+    for (const [repo, s] of Object.entries(model.bigMap.perRepo)) {
+      if (s.note) L.push(`\n_${repo}_ : ${s.note}`);
+    }
+    L.push('');
+    L.push('### Identités canoniques');
+    L.push('');
+    L.push(`- **Cross-repo features** (${model.bigMap.canonical.crossRepoFeatures.length}) : ${model.bigMap.canonical.crossRepoFeatures.map(n => '`' + n + '`').join(', ') || '—'}`);
+    L.push(`- **Single-repo features** (${model.bigMap.canonical.singleRepoFeatures.length}) : ${model.bigMap.canonical.singleRepoFeatures.map(n => '`' + n + '`').join(', ') || '—'}`);
+    L.push(`- **Unmapped local manifests** (${model.bigMap.canonical.unmappedLocalManifests.length}) : ${model.bigMap.canonical.unmappedLocalManifests.map(n => '`' + n + '`').join(', ') || '—'}`);
+    L.push('');
+    if (model.bigMap.canonical.ontologyGaps.length) {
+      L.push('### Ontology gaps');
+      L.push('');
+      for (const g of model.bigMap.canonical.ontologyGaps) {
+        L.push(`- **${g.id}** (manifest boutique \`${g.boutiqueManifest}\`)`);
+        L.push(`  - constat : ${g.finding}`);
+        L.push(`  - décision actuelle : ${g.currentDecision}`);
+        L.push(`  - question ouverte : ${g.openQuestion}`);
+      }
+      L.push('');
+    }
+  } else {
+    L.push('_Big Map non calculée (générateur pré-O4)._');
     L.push('');
   }
 
@@ -843,8 +1069,19 @@ function renderMd(model) {
   L.push('');
   L.push(`### WARN / DEBT (${model.drifts.warn.length})`);
   L.push('');
+  L.push('Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d\'extraction).');
+  L.push('');
   if (!model.drifts.warn.length) L.push('- none');
-  for (const d of model.drifts.warn) L.push(`- **[${d.type}]** ${d.ref} — ${d.msg}`);
+  let warningSemantics = null;
+  try { warningSemantics = require('../governance/business-graph-warning-semantics.js'); } catch { /* module optionnel */ }
+  for (const d of model.drifts.warn) {
+    let tag = '';
+    if (warningSemantics) {
+      const { category } = warningSemantics.classify(d, { ROOT });
+      tag = ` _[${category}]_`;
+    }
+    L.push(`- **[${d.type}]**${tag} ${d.ref} — ${d.msg}`);
+  }
   L.push('');
 
   L.push('## Orphan technical nodes');

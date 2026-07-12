@@ -23,6 +23,14 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : projection frontend directe de
+  // backend:payments (le nom 'payment' au singulier ne colle pas par hasard —
+  // verifie par le service rendu : integration/orchestration PayPal, meme
+  // perimetre que backend:payments qui exclut explicitement l'ownership
+  // commande a orders).
+  canonicalFeature: 'payments',
+  sliceKind: 'frontend-slice',
+
   service: "Integration paiement (PayPal) — rendu et orchestration du flux de paiement tiers.",
 
   perimeter: {

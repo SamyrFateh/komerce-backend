@@ -1,0 +1,12 @@
+{
+  "_comment": "Lot O4 Phase F — baseline typée du drift ratchet (mission O4 §10). Une entrée par TYPE de warning, jamais un total global (le total masque les déplacements de dette entre catégories). Règle appliquée par scripts/business-graph-ratchet-check.js : count > baseline pour un type connu -> FAIL ; type absent de cette baseline et présent dans le graphe -> FAIL (nouvelle catégorie de dette, doit être ajoutée ici explicitement, jamais silencieusement) ; count <= baseline -> PASS (une réduction n'échoue jamais, y compris à zéro : le type peut alors être retiré de cette baseline lors d'un lot dédié).",
+  "generatedFrom": "docs/BUSINESS_FEATURE_GRAPH.json — Lot O4, capture Phase F (post cross-repo coverage : 116 -> 96 warnings après rattachement des 10 manifests boutique et résolution des 20 orphelins techniques)",
+  "baseline": {
+    "WRITER-NOT-OWNER": 36,
+    "EXPOSED-ROUTE-OWNER-MISMATCH": 34,
+    "CONSUMES-REFERENCE-UNRESOLVED": 14,
+    "EXPOSED-ROUTE-UNRESOLVED": 8,
+    "DASH-MANIFEST-DUPLICATE-COPY": 2,
+    "EXPOSE-ENTRY-UNPARSED": 2
+  }
+}

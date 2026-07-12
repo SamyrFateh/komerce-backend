@@ -1,0 +1,130 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * business-graph-ratchet-check.js — Lot O4 Phase F : drift ratchet typé.
+ *
+ *   Régénère le Business Feature Graph (mêmes racines --dash-root public
+ *   --boutique-root public/boutique que business-graph:check, cf. package.json)
+ *   puis compare le nombre de warnings PAR TYPE à governance/business-graph-drift-baseline.json.
+ *
+ *   Règle (mission O4 §10) :
+ *     - count(type) > baseline(type)         -> FAIL (nouvelle dette silencieuse)
+ *     - type présent dans le graphe, absent
+ *       de la baseline                        -> FAIL (nouvelle catégorie de warning,
+ *                                                doit être ajoutée explicitement)
+ *     - count(type) <= baseline(type)        -> PASS (une réduction n'échoue jamais)
+ *     - type dans la baseline, absent du
+ *       graphe actuel (dette résorbée)        -> PASS + note (baseline peut être
+ *                                                resserrée dans un lot dédié)
+ *
+ *   Ce script n'écrit JAMAIS la baseline lui-même : la resserrer après une
+ *   vraie réduction de dette est une décision explicite (édition manuelle de
+ *   governance/business-graph-drift-baseline.json), jamais un effet de bord
+ *   silencieux d'un run vert.
+ *
+ * Usage :
+ *   node scripts/business-graph-ratchet-check.js
+ *   node scripts/business-graph-ratchet-check.js --root DIR
+ */
+
+const fs   = require('fs');
+const path = require('path');
+const cp   = require('child_process');
+
+const args = process.argv.slice(2);
+function argVal(f) { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; }
+const ROOT = path.resolve(argVal('--root') || path.join(__dirname, '..'));
+
+const GRAPH_FILE    = path.join(ROOT, 'docs', 'BUSINESS_FEATURE_GRAPH.json');
+const BASELINE_FILE = path.join(ROOT, 'governance', 'business-graph-drift-baseline.json');
+const semantics      = require(path.join(ROOT, 'governance', 'business-graph-warning-semantics.js'));
+
+const C = { red: '\x1b[31m', grn: '\x1b[32m', ylw: '\x1b[33m', dim: '\x1b[2m', bld: '\x1b[1m', r: '\x1b[0m' };
+
+// ── 1. Régénère le graphe (source de vérité fraîche, pas un JSON périmé) ──
+try {
+  cp.execSync('node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique', {
+    cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'],
+  });
+} catch (e) {
+  console.error(`${C.red}${C.bld}✖ business-graph-ratchet-check : la génération du graphe a échoué (0 error attendu avant tout ratchet).${C.r}`);
+  console.error((e.stdout || '').toString() + (e.stderr || '').toString());
+  process.exit(1);
+}
+
+if (!fs.existsSync(GRAPH_FILE)) {
+  console.error(`${C.red}✖ ${GRAPH_FILE} introuvable après génération.${C.r}`);
+  process.exit(1);
+}
+if (!fs.existsSync(BASELINE_FILE)) {
+  console.error(`${C.red}✖ ${BASELINE_FILE} introuvable — aucune baseline de ratchet définie.${C.r}`);
+  process.exit(1);
+}
+
+const graph    = JSON.parse(fs.readFileSync(GRAPH_FILE, 'utf8'));
+const baseline = JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf8')).baseline || {};
+
+if ((graph.drifts.error || []).length > 0) {
+  console.error(`${C.red}${C.bld}✖ ${graph.drifts.error.length} ERROR(s) dans le graphe — le ratchet ne s'applique qu'aux warnings, corrige d'abord les erreurs.${C.r}`);
+  process.exit(1);
+}
+
+// ── 2. Compte par type + classification sémantique (Phase E) ──────────────
+const warns = graph.drifts.warn || [];
+const countByType = {};
+const classifiedByType = {};
+for (const w of warns) {
+  countByType[w.type] = (countByType[w.type] || 0) + 1;
+  const { category } = semantics.classify(w, { ROOT });
+  classifiedByType[w.type] = classifiedByType[w.type] || {};
+  classifiedByType[w.type][category] = (classifiedByType[w.type][category] || 0) + 1;
+}
+
+const allTypes = new Set([...Object.keys(countByType), ...Object.keys(baseline)]);
+const rows = [];
+let hasFailure = false;
+
+for (const type of [...allTypes].sort()) {
+  const current = countByType[type] || 0;
+  const base    = Object.prototype.hasOwnProperty.call(baseline, type) ? baseline[type] : null;
+
+  let status, note;
+  if (base === null) {
+    status = 'FAIL';
+    note = 'nouvelle catégorie de warning, absente de governance/business-graph-drift-baseline.json — ajoute-la explicitement après revue, ne laisse jamais une nouvelle catégorie passer silencieusement';
+    hasFailure = true;
+  } else if (current > base) {
+    status = 'FAIL';
+    note = `augmentation (${base} -> ${current}) — nouveau drift non budgétisé`;
+    hasFailure = true;
+  } else if (current < base) {
+    status = 'PASS';
+    note = `réduction (${base} -> ${current}) — la baseline peut être resserrée manuellement si la dette est vraiment résorbée`;
+  } else {
+    status = 'PASS';
+    note = 'stable';
+  }
+  rows.push({ type, base, current, status, note, classification: classifiedByType[type] || {} });
+}
+
+// ── 3. Rapport ──────────────────────────────────────────────────────────
+console.log(`\n${C.bld}business-graph:ratchet-check — Lot O4 Phase F${C.r}\n`);
+for (const r of rows) {
+  const col = r.status === 'FAIL' ? C.red : C.grn;
+  const baseTxt = r.base === null ? C.ylw + 'absent de la baseline' + C.r : `baseline ${r.base}`;
+  console.log(`  ${col}${r.status === 'FAIL' ? '✖' : '✔'}${C.r} ${C.bld}${r.type}${C.r} — actuel ${r.current} (${baseTxt})`);
+  console.log(`      ${C.dim}${r.note}${C.r}`);
+  const catParts = Object.entries(r.classification).map(([c, n]) => `${c}=${n}`).join(', ');
+  if (catParts) console.log(`      ${C.dim}sémantique (Phase E) : ${catParts}${C.r}`);
+}
+
+const totalCurrent = warns.length;
+const totalBase    = Object.values(baseline).reduce((a, b) => a + b, 0);
+console.log(`\n${C.dim}Total warnings : ${totalCurrent} (baseline totale ${totalBase} — indicatif seulement, le ratchet raisonne par type, jamais sur ce total)${C.r}`);
+
+if (hasFailure) {
+  console.log(`\n${C.red}${C.bld}✖ business-graph:ratchet-check ÉCHEC — nouveau drift au-dessus de la baseline typée.${C.r}`);
+  process.exit(1);
+}
+console.log(`\n${C.grn}${C.bld}✔ business-graph:ratchet-check OK — aucune dette nouvelle au-dessus de la baseline typée.${C.r}`);

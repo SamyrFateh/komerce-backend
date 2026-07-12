@@ -118,6 +118,12 @@ module.exports = {
       'js/shop-schema.js',
       'js/b-pager.js',
       'js/b-subcat.js',
+      // Lot O4 (cross-repo feature coverage) : ecart factuel comble — ces 2
+      // fichiers sont declares par boutique/features/catalog.feature.js
+      // (canonicalFeature: 'catalog') mais n'etaient pas encore revendiques
+      // ici, ce qui les faisait apparaitre en TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP.
+      'js/b-cart-product-open-style.js',
+      'css/hero.css',
       'css/products.css',
       'css/categories.css',
       'css/modal-shell.css',

@@ -23,6 +23,15 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : meme identite metier que
+  // backend:catalog (service equivalent : navigation/decouverte produit).
+  // Preuve fichier : 11/13 fichiers js listes ici sont deja revendiques par
+  // backend:catalog.files.boutique ; les 2 restants (b-cart-product-open-style.js,
+  // css/hero.css) etaient un ecart factuel comble au meme lot (voir
+  // features/catalog.feature.js cote backend).
+  canonicalFeature: 'catalog',
+  sliceKind: 'frontend-slice',
+
   service: "Navigation et affichage catalogue (listing, sous-categories, fiches produit, rendu cartes) — tout ce qui touche au parcours de decouverte des produits.",
 
   perimeter: {

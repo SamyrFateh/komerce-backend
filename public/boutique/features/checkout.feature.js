@@ -23,6 +23,19 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : canonicalFeature fixe a 'payments'
+  // sur PREUVE FICHIER (backend:payments.files.boutique revendique
+  // factuellement b-checkout.js + b-checkout-render.js ; backend:orders.files.boutique
+  // est vide). sliceKind='ui-orchestration' (pas 'frontend-slice' pur) car ce
+  // manifeste orchestre a la fois la soumission de commande ET la selection du
+  // moyen de paiement, sans etre l'implementation exclusive de l'un ou l'autre.
+  // ONTOLOGY GAP documente et NON tranche silencieusement — voir
+  // governance/business-graph-ontology-gaps.json (id: checkout-orders-boutique-coverage) :
+  // backend:orders devrait-il revendiquer une part de ce fichier (rendu
+  // recapitulatif / soumission) ? Decision produit non prise par O4.
+  canonicalFeature: 'payments',
+  sliceKind: 'ui-orchestration',
+
   service: "Tunnel de commande (rendu du recapitulatif, validation, soumission) — du panier valide a la confirmation.",
 
   perimeter: {

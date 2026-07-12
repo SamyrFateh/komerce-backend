@@ -52,6 +52,37 @@
 - `legacy-control-tower`
 - `wallet-loyalty`
 
+## Big Map — couverture cross-repo (Lot O4)
+
+Synthèse de couverture par dépôt et identités métier cross-repo. Voir mission O4 §13.
+
+### Par dépôt
+
+| Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
+|---|---|---|---|---|---|
+| backend | 24 | 24 | 295 | 295 | 0 |
+| dash | 3 | 3 | N/A | N/A | N/A |
+| boutique | 10 | 10 | 67 | 67 | 0 |
+
+_dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
+
+### Identités canoniques
+
+- **Cross-repo features** (6) : `auth-identity`, `catalog`, `payments`, `recommendations`, `shared-cart`, `wallet`
+- **Single-repo features** (22) : `admin-dashboard`, `auth`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `logistics`, `loyalty`, `notifications`, `orders`, `platform`, `platform-ops`, `purchasing`, `refunds`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
+- **Unmapped local manifests** (0) : —
+
+### Ontology gaps
+
+- **checkout-orders-boutique-coverage** (manifest boutique `checkout`)
+  - constat : boutique/features/checkout.feature.js décrit un service quasi identique à backend:orders ("tunnel de commande, du panier valide à la confirmation") et son perimeter.out cite 'orders' — mais backend:orders.files.boutique est vide (0 fichier revendiqué), alors que backend:payments.files.boutique revendique factuellement b-checkout.js + b-checkout-render.js.
+  - décision actuelle : canonicalFeature fixé à 'payments' (preuve fichier, priorité 1 de la mission O4 §6), sliceKind 'ui-orchestration' — pas 'frontend-slice' pur, car ce manifeste orchestre la soumission de commande ET la sélection du moyen de paiement sans être l'implémentation exclusive de l'un ou l'autre.
+  - question ouverte : backend:orders devrait-il revendiquer explicitement une part de b-checkout.js (rendu récapitulatif / soumission commande), avec backend:payments ne gardant que la partie encaissement (b-paypal.js) ? Décision produit non tranchée par O4 — cf. mission §3 "si le cas est E, ne crée pas silencieusement, signale l'ONTOLOGY GAP".
+- **tracking-no-canonical-owner** (manifest boutique `tracking`)
+  - constat : boutique/features/tracking.feature.js décrit un service d'analytics/tracking événementiel UI (suivi parcours, événements). Aucune feature backend ou dash canonique ne représente ce service : vérifié explicitement contre logistics (tracking colis physique — identité métier différente malgré le nom proche), infrastructure (middlewares/bootstrap transverses), notifications (émission de messages sortants, pas de collecte d'événements) et platform-ops (santé applicative). C'est un cas E pur (mission O4 §3) : véritable ONTOLOGY GAP, pas une erreur de nommage à corriger par une fusion.
+  - décision actuelle : canonicalFeature reste null. sliceKind fixé à 'frontend-transversal' à titre PROVISOIRE — seule valeur du enum ALLOWED_SLICE_KINDS permettant d'éviter que ce manifeste retombe en BOUTIQUE-MANIFEST-UNGOVERNED, sans pour autant inventer une business feature. Ce n'est pas un vrai transversal multi-feature comme le manifeste `boutique` générique ou `platform` côté dash — c'est un classement de repli documenté.
+  - question ouverte : Faut-il créer une feature 'analytics' dédiée côté backend/dash (si un service de collecte équivalent existe ou est prévu côté serveur), ou rattacher ce manifeste à une feature existante par proximité fonctionnelle (ex. platform-ops) ? Décision produit non tranchée par O4.
+
 ## Feature → implémentation
 
 ### admin-dashboard _(projection)_
@@ -104,7 +135,7 @@
 - migrations: 4
 - docs: 3
 - routes: 4
-- boutique: 30
+- boutique: 32
 - dash: 4
 - tests: 24
 - tables owned (lifecycle): 6 — `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `product_skus`, `supplier_catalog_imports`
@@ -1205,147 +1236,110 @@
 
 - none
 
-### WARN / DEBT (116)
+### WARN / DEBT (96)
 
-- **[CONSUMES-REFERENCE-UNRESOLVED]** auth -> "notification" (entrée: "notification") — contract.consumes de auth référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** auth -> "operations" (entrée: "operations") — contract.consumes de auth référence "operations", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** incident-management -> "ops-api legacy" (entrée: "dashboard / ops-api legacy (écrit incidents — SQL inline)") — contract.consumes de incident-management référence "ops-api legacy", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** infrastructure -> "notification" (entrée: "notification — bootstrap/api-routes.js monte les routes notification") — contract.consumes de infrastructure référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** infrastructure -> "operations" (entrée: "operations — bootstrap/api-routes.js monte les routes operations") — contract.consumes de infrastructure référence "operations", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** infrastructure -> "payment" (entrée: "payment — bootstrap/api-routes.js monte les routes payment") — contract.consumes de infrastructure référence "payment", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** logistics -> "notification" (entrée: "notification") — contract.consumes de logistics référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** logistics -> "payment" (entrée: "payment") — contract.consumes de logistics référence "payment", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** notifications -> "toutes les features emettrices" (entrée: "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement") — contract.consumes de notifications référence "toutes les features emettrices", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** orders -> "notification" (entrée: "notification") — contract.consumes de orders référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** orders -> "payment" (entrée: "payment") — contract.consumes de orders référence "payment", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** purchasing -> "notification" (entrée: "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)") — contract.consumes de purchasing référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** shared-cart -> "notification" (entrée: "notification") — contract.consumes de shared-cart référence "notification", ne correspond à aucun nom de feature connu
-- **[CONSUMES-REFERENCE-UNRESOLVED]** shared-cart -> "products" (entrée: "products") — contract.consumes de shared-cart référence "products", ne correspond à aucun nom de feature connu
-- **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
-- **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
-- **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** customs / GET /api/admin/customs — contract.exposes déclare "GET /api/admin/customs" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans customs.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** documents / GET /api/admin/documents — contract.exposes déclare "GET /api/admin/documents" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans documents.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** documents / GET /api/admin/documents/{id} — contract.exposes déclare "GET /api/admin/documents/{id}" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans documents.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** documents / GET /api/admin/documents/summary — contract.exposes déclare "GET /api/admin/documents/summary" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans documents.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** economic-engine / GET /api/dashboard/annulations-parcels — contract.exposes déclare "GET /api/dashboard/annulations-parcels" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** economic-engine / GET /api/dashboard/finance — contract.exposes déclare "GET /api/dashboard/finance" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** economic-engine / GET /api/dashboard/payments — contract.exposes déclare "GET /api/dashboard/payments" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** economic-engine / GET /api/dashboard/sales — contract.exposes déclare "GET /api/dashboard/sales" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** infrastructure / GET /api/health — contract.exposes déclare "GET /api/health" mais le contrat OpenAPI le résout vers "routes/health.js", non déclaré dans infrastructure.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** infrastructure / GET /api/public/config — contract.exposes déclare "GET /api/public/config" mais le contrat OpenAPI le résout vers "routes/public.js", non déclaré dans infrastructure.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** infrastructure / POST /api/shared-carts/stripe/webhook — contract.exposes déclare "POST /api/shared-carts/stripe/webhook" mais le contrat OpenAPI le résout vers "routes/shared-cart-cash.js", non déclaré dans infrastructure.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** orders / DELETE /api/admin/orders/{id} — contract.exposes déclare "DELETE /api/admin/orders/{id}" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans orders.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** orders / GET /api/admin/orders — contract.exposes déclare "GET /api/admin/orders" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans orders.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** orders / POST /api/admin/orders/{id}/refund — contract.exposes déclare "POST /api/admin/orders/{id}/refund" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans orders.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** orders / POST /api/hub/orders/mark-ordered — contract.exposes déclare "POST /api/hub/orders/mark-ordered" mais le contrat OpenAPI le résout vers "routes/hub.js", non déclaré dans orders.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** platform-ops / GET /api/v2/parcels/{id}/detail — contract.exposes déclare "GET /api/v2/parcels/{id}/detail" mais le contrat OpenAPI le résout vers "routes/parcel-api-v2.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** platform-ops / GET /api/v2/parcels/{id}/orders — contract.exposes déclare "GET /api/v2/parcels/{id}/orders" mais le contrat OpenAPI le résout vers "routes/parcel-api-v2.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** platform-ops / GET /api/v2/parcels/{id}/scans — contract.exposes déclare "GET /api/v2/parcels/{id}/scans" mais le contrat OpenAPI le résout vers "routes/parcel-api-v2.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** platform-ops / GET /health — contract.exposes déclare "GET /health" mais le contrat OpenAPI le résout vers "routes/unknown.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** platform-ops / GET /health/detailed — contract.exposes déclare "GET /health/detailed" mais le contrat OpenAPI le résout vers "routes/detailed.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** platform-ops / GET /health/metrics — contract.exposes déclare "GET /health/metrics" mais le contrat OpenAPI le résout vers "routes/metrics.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** platform-ops / GET /health/ready — contract.exposes déclare "GET /health/ready" mais le contrat OpenAPI le résout vers "routes/ready.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** platform-ops / GET /health/version — contract.exposes déclare "GET /health/version" mais le contrat OpenAPI le résout vers "routes/version.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / GET /api/admin/sourcing/candidates — contract.exposes déclare "GET /api/admin/sourcing/candidates" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / GET /api/admin/sourcing/candidates/{id} — contract.exposes déclare "GET /api/admin/sourcing/candidates/{id}" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / GET /api/admin/sourcing/catalogs — contract.exposes déclare "GET /api/admin/sourcing/catalogs" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / GET /api/admin/sourcing/connectors — contract.exposes déclare "GET /api/admin/sourcing/connectors" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / POST /api/admin/sourcing/candidates/{id}/import-product — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/import-product" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / POST /api/admin/sourcing/candidates/{id}/reject — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/reject" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / POST /api/admin/sourcing/candidates/{id}/scan — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/scan" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / POST /api/admin/sourcing/candidates/{id}/watchlist — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/watchlist" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / POST /api/admin/sourcing/candidates/scan-batch — contract.exposes déclare "POST /api/admin/sourcing/candidates/scan-batch" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / POST /api/admin/sourcing/catalogs/import — contract.exposes déclare "POST /api/admin/sourcing/catalogs/import" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** sourcing / PUT /api/admin/sourcing/candidates/{id} — contract.exposes déclare "PUT /api/admin/sourcing/candidates/{id}" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-UNRESOLVED]** catalog / DELETE /api/products/{id}/skus/{id} — "DELETE /api/products/{id}/skus/{id}" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** catalog / GET /api/products/{id}/skus — "GET /api/products/{id}/skus" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** catalog / GET /api/products/{id}/skus/readiness — "GET /api/products/{id}/skus/readiness" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** catalog / POST /api/products/{id}/skus — "POST /api/products/{id}/skus" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** logistics / POST /api/hub/photo — "POST /api/hub/photo" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** logistics / POST /api/hub/volume — "POST /api/hub/volume" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-boutique-wow-style.js — nœud technique "public/boutique/js/b-boutique-wow-style.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-cart-core.js — nœud technique "public/boutique/js/b-cart-core.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-cart-pill.js — nœud technique "public/boutique/js/b-cart-pill.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-cart-product-open-style.js — nœud technique "public/boutique/js/b-cart-product-open-style.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-cart-stepper-guard.js — nœud technique "public/boutique/js/b-cart-stepper-guard.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-cart.js — nœud technique "public/boutique/js/b-cart.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-desktop-global-cart-access.js — nœud technique "public/boutique/js/b-desktop-global-cart-access.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-desktop-sidebar.js — nœud technique "public/boutique/js/b-desktop-sidebar.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-desktop-upgrade.js — nœud technique "public/boutique/js/b-desktop-upgrade.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-favs.js — nœud technique "public/boutique/js/b-favs.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-greeting.js — nœud technique "public/boutique/js/b-greeting.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-home-premium-v1.js — nœud technique "public/boutique/js/b-home-premium-v1.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-mini-cart.js — nœud technique "public/boutique/js/b-mini-cart.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-mobile-modal-v1.js — nœud technique "public/boutique/js/b-mobile-modal-v1.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-mobile-premium-v1.js — nœud technique "public/boutique/js/b-mobile-premium-v1.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-modal-approche-c-hybrid.js — nœud technique "public/boutique/js/b-modal-approche-c-hybrid.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/b-nav.js — nœud technique "public/boutique/js/b-nav.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/boutique.js — nœud technique "public/boutique/js/boutique.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/card-config.js — nœud technique "public/boutique/js/card-config.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP]** public/boutique/js/taxonomy-no-hardcode.test.js — nœud technique "public/boutique/js/taxonomy-no-hardcode.test.js" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré
-- **[WRITER-NOT-OWNER]** alerts — table "alerts" a 7 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** basket_items — table "basket_items" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** baskets — table "baskets" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** cart_shares — table "cart_shares" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par orders
-- **[WRITER-NOT-OWNER]** charges — table "charges" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** economic_snapshots — table "economic_snapshots" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** finance_config — table "finance_config" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** incidents — table "incidents" a 5 écrivain(s) déclaré(s) (dashboard, incident-management, logistics, notifications, payments) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** invoices — table "invoices" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** loyalty_rewards — table "loyalty_rewards" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** notification_log — table "notification_log" a 2 écrivain(s) déclaré(s) (notifications, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** order_comments — table "order_comments" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** order_item_real_cost_allocations — table "order_item_real_cost_allocations" a 2 écrivain(s) déclaré(s) (customs, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** order_items — table "order_items" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics, orders
-- **[WRITER-NOT-OWNER]** order_status_history — table "order_status_history" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** orders — table "orders" a 10 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, shared-cart, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** parcel_items — table "parcel_items" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, inventory, logistics
-- **[WRITER-NOT-OWNER]** parcels — table "parcels" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par customs, dashboard, logistics, payments
-- **[WRITER-NOT-OWNER]** pickup_print_tokens — table "pickup_print_tokens" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** pickup_reveal_codes — table "pickup_reveal_codes" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** price_history — table "price_history" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** product_variants — table "product_variants" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** products — table "products" a 4 écrivain(s) déclaré(s) (catalog, dashboard, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** purchase_orders — table "purchase_orders" : lifecycle owner = purchasing (classification.signals.ownsTables), mais aussi écrite par orders
-- **[WRITER-NOT-OWNER]** recipients — table "recipients" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard, orders
-- **[WRITER-NOT-OWNER]** relais — table "relais" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** revoked_tokens — table "revoked_tokens" a 2 écrivain(s) déclaré(s) (auth-identity, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** scan_events — table "scan_events" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** scans — table "scans" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics, orders
-- **[WRITER-NOT-OWNER]** sms_log — table "sms_log" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** sourcing_candidate_events — table "sourcing_candidate_events" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** sourcing_candidates — table "sourcing_candidates" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
-- **[WRITER-NOT-OWNER]** stripe_events_processed — table "stripe_events_processed" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par payments
-- **[WRITER-NOT-OWNER]** users — table "users" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard, infrastructure
-- **[WRITER-NOT-OWNER]** wallet_transactions — table "wallet_transactions" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
-- **[WRITER-NOT-OWNER]** wallets — table "wallets" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
+Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
+
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ auth -> "notification" (entrée: "notification") — contract.consumes de auth référence "notification", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ auth -> "operations" (entrée: "operations") — contract.consumes de auth référence "operations", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ incident-management -> "ops-api legacy" (entrée: "dashboard / ops-api legacy (écrit incidents — SQL inline)") — contract.consumes de incident-management référence "ops-api legacy", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ infrastructure -> "notification" (entrée: "notification — bootstrap/api-routes.js monte les routes notification") — contract.consumes de infrastructure référence "notification", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ infrastructure -> "operations" (entrée: "operations — bootstrap/api-routes.js monte les routes operations") — contract.consumes de infrastructure référence "operations", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ infrastructure -> "payment" (entrée: "payment — bootstrap/api-routes.js monte les routes payment") — contract.consumes de infrastructure référence "payment", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ logistics -> "notification" (entrée: "notification") — contract.consumes de logistics référence "notification", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ logistics -> "payment" (entrée: "payment") — contract.consumes de logistics référence "payment", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ notifications -> "toutes les features emettrices" (entrée: "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement") — contract.consumes de notifications référence "toutes les features emettrices", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ orders -> "notification" (entrée: "notification") — contract.consumes de orders référence "notification", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ orders -> "payment" (entrée: "payment") — contract.consumes de orders référence "payment", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ purchasing -> "notification" (entrée: "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)") — contract.consumes de purchasing référence "notification", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "notification" (entrée: "notification") — contract.consumes de shared-cart référence "notification", ne correspond à aucun nom de feature connu
+- **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "products" (entrée: "products") — contract.consumes de shared-cart référence "products", ne correspond à aucun nom de feature connu
+- **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
+- **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
+- **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ customs / GET /api/admin/customs — contract.exposes déclare "GET /api/admin/customs" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans customs.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ documents / GET /api/admin/documents — contract.exposes déclare "GET /api/admin/documents" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans documents.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ documents / GET /api/admin/documents/{id} — contract.exposes déclare "GET /api/admin/documents/{id}" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans documents.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ documents / GET /api/admin/documents/summary — contract.exposes déclare "GET /api/admin/documents/summary" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans documents.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ economic-engine / GET /api/dashboard/annulations-parcels — contract.exposes déclare "GET /api/dashboard/annulations-parcels" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ economic-engine / GET /api/dashboard/finance — contract.exposes déclare "GET /api/dashboard/finance" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ economic-engine / GET /api/dashboard/payments — contract.exposes déclare "GET /api/dashboard/payments" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ economic-engine / GET /api/dashboard/sales — contract.exposes déclare "GET /api/dashboard/sales" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ infrastructure / GET /api/health — contract.exposes déclare "GET /api/health" mais le contrat OpenAPI le résout vers "routes/health.js", non déclaré dans infrastructure.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ infrastructure / GET /api/public/config — contract.exposes déclare "GET /api/public/config" mais le contrat OpenAPI le résout vers "routes/public.js", non déclaré dans infrastructure.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ infrastructure / POST /api/shared-carts/stripe/webhook — contract.exposes déclare "POST /api/shared-carts/stripe/webhook" mais le contrat OpenAPI le résout vers "routes/shared-cart-cash.js", non déclaré dans infrastructure.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ orders / DELETE /api/admin/orders/{id} — contract.exposes déclare "DELETE /api/admin/orders/{id}" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans orders.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ orders / GET /api/admin/orders — contract.exposes déclare "GET /api/admin/orders" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans orders.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ orders / POST /api/admin/orders/{id}/refund — contract.exposes déclare "POST /api/admin/orders/{id}/refund" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans orders.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ orders / POST /api/hub/orders/mark-ordered — contract.exposes déclare "POST /api/hub/orders/mark-ordered" mais le contrat OpenAPI le résout vers "routes/hub.js", non déclaré dans orders.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /api/v2/parcels/{id}/detail — contract.exposes déclare "GET /api/v2/parcels/{id}/detail" mais le contrat OpenAPI le résout vers "routes/parcel-api-v2.js", non déclaré dans platform-ops.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /api/v2/parcels/{id}/orders — contract.exposes déclare "GET /api/v2/parcels/{id}/orders" mais le contrat OpenAPI le résout vers "routes/parcel-api-v2.js", non déclaré dans platform-ops.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /api/v2/parcels/{id}/scans — contract.exposes déclare "GET /api/v2/parcels/{id}/scans" mais le contrat OpenAPI le résout vers "routes/parcel-api-v2.js", non déclaré dans platform-ops.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ platform-ops / GET /health — contract.exposes déclare "GET /health" mais le contrat OpenAPI le résout vers "routes/unknown.js", non déclaré dans platform-ops.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /health/detailed — contract.exposes déclare "GET /health/detailed" mais le contrat OpenAPI le résout vers "routes/detailed.js", non déclaré dans platform-ops.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /health/metrics — contract.exposes déclare "GET /health/metrics" mais le contrat OpenAPI le résout vers "routes/metrics.js", non déclaré dans platform-ops.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /health/ready — contract.exposes déclare "GET /health/ready" mais le contrat OpenAPI le résout vers "routes/ready.js", non déclaré dans platform-ops.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /health/version — contract.exposes déclare "GET /health/version" mais le contrat OpenAPI le résout vers "routes/version.js", non déclaré dans platform-ops.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / GET /api/admin/sourcing/candidates — contract.exposes déclare "GET /api/admin/sourcing/candidates" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / GET /api/admin/sourcing/candidates/{id} — contract.exposes déclare "GET /api/admin/sourcing/candidates/{id}" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / GET /api/admin/sourcing/catalogs — contract.exposes déclare "GET /api/admin/sourcing/catalogs" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / GET /api/admin/sourcing/connectors — contract.exposes déclare "GET /api/admin/sourcing/connectors" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/{id}/import-product — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/import-product" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/{id}/reject — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/reject" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/{id}/scan — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/scan" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/{id}/watchlist — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/watchlist" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/scan-batch — contract.exposes déclare "POST /api/admin/sourcing/candidates/scan-batch" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/catalogs/import — contract.exposes déclare "POST /api/admin/sourcing/catalogs/import" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / PUT /api/admin/sourcing/candidates/{id} — contract.exposes déclare "PUT /api/admin/sourcing/candidates/{id}" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ catalog / DELETE /api/products/{id}/skus/{id} — "DELETE /api/products/{id}/skus/{id}" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ catalog / GET /api/products/{id}/skus — "GET /api/products/{id}/skus" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ catalog / GET /api/products/{id}/skus/readiness — "GET /api/products/{id}/skus/readiness" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ catalog / POST /api/products/{id}/skus — "POST /api/products/{id}/skus" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ logistics / POST /api/hub/photo — "POST /api/hub/photo" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ logistics / POST /api/hub/volume — "POST /api/hub/volume" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ alerts — table "alerts" a 7 écrivain(s) déclaré(s) (catalog, logistics, notifications, orders, payments, purchasing, shared-cart) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ basket_items — table "basket_items" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ baskets — table "baskets" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ cart_shares — table "cart_shares" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par orders
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ charges — table "charges" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ economic_snapshots — table "economic_snapshots" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ finance_config — table "finance_config" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ incidents — table "incidents" a 5 écrivain(s) déclaré(s) (dashboard, incident-management, logistics, notifications, payments) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ invoices — table "invoices" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ loyalty_rewards — table "loyalty_rewards" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ notification_log — table "notification_log" a 2 écrivain(s) déclaré(s) (notifications, platform-ops) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_comments — table "order_comments" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_item_real_cost_allocations — table "order_item_real_cost_allocations" a 2 écrivain(s) déclaré(s) (customs, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_items — table "order_items" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics, orders
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_status_history — table "order_status_history" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" a 10 écrivain(s) déclaré(s) (customs, dashboard, inventory, logistics, orders, payments, platform-ops, purchasing, shared-cart, wallet) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcel_items — table "parcel_items" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, inventory, logistics
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ parcels — table "parcels" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par customs, dashboard, logistics, payments
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ pickup_print_tokens — table "pickup_print_tokens" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ pickup_reveal_codes — table "pickup_reveal_codes" a 2 écrivain(s) déclaré(s) (infrastructure, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ price_history — table "price_history" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ product_variants — table "product_variants" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ products — table "products" a 4 écrivain(s) déclaré(s) (catalog, dashboard, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ purchase_orders — table "purchase_orders" : lifecycle owner = purchasing (classification.signals.ownsTables), mais aussi écrite par orders
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ recipients — table "recipients" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par dashboard, orders
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ relais — table "relais" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ revoked_tokens — table "revoked_tokens" a 2 écrivain(s) déclaré(s) (auth-identity, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scan_events — table "scan_events" a 2 écrivain(s) déclaré(s) (dashboard, logistics) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ scans — table "scans" : lifecycle owner = platform-ops (classification.signals.ownsTables), mais aussi écrite par dashboard, logistics, orders
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sms_log — table "sms_log" a 2 écrivain(s) déclaré(s) (dashboard, orders) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidate_events — table "sourcing_candidate_events" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidates — table "sourcing_candidates" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ stripe_events_processed — table "stripe_events_processed" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par payments
+- **[WRITER-NOT-OWNER]** _[ACTIONABLE_DRIFT]_ users — table "users" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard, infrastructure
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ wallet_transactions — table "wallet_transactions" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** _[EXPECTED_TOPOLOGY]_ wallets — table "wallets" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
 
 ## Orphan technical nodes
 
 Fichiers présents dans le Technical Architecture Graph, non revendiqués par une carte feature ni un transversal déclaré (`governance/transversal-paths.json`).
 
-- public/boutique/js/b-boutique-wow-style.js
-- public/boutique/js/b-cart-core.js
-- public/boutique/js/b-cart-pill.js
-- public/boutique/js/b-cart-product-open-style.js
-- public/boutique/js/b-cart-stepper-guard.js
-- public/boutique/js/b-cart.js
-- public/boutique/js/b-desktop-global-cart-access.js
-- public/boutique/js/b-desktop-sidebar.js
-- public/boutique/js/b-desktop-upgrade.js
-- public/boutique/js/b-favs.js
-- public/boutique/js/b-greeting.js
-- public/boutique/js/b-home-premium-v1.js
-- public/boutique/js/b-mini-cart.js
-- public/boutique/js/b-mobile-modal-v1.js
-- public/boutique/js/b-mobile-premium-v1.js
-- public/boutique/js/b-modal-approche-c-hybrid.js
-- public/boutique/js/b-nav.js
-- public/boutique/js/boutique.js
-- public/boutique/js/card-config.js
-- public/boutique/js/taxonomy-no-hardcode.test.js
+- none
 
