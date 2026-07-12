@@ -46,14 +46,21 @@ jobs:
           echo "$code" > touched-tests.exit-code
           exit "$code"
 
-      - name: Run PDC-4 tests verbosely
+      - name: Measure PDC-4 detailed coverage
         if: always()
         run: |
           set +e
           cd public/boutique
-          npm test -- --runInBand \
+          node_modules/.bin/jest \
             tests/unit/b-modal-mobile-product.test.js \
             tests/unit/b-modal-mobile-product-bootstrap.test.js \
+            --runInBand \
+            --coverage \
+            --collectCoverageFrom=js/b-modal-mobile-product.js \
+            --collectCoverageFrom=js/b-modal-mobile-product-bootstrap.js \
+            --coverageReporters=json \
+            --coverageReporters=text \
+            --coverageDirectory=.pdc4-coverage \
             > ../../pdc4-tests.log 2>&1
           code=$?
           cat ../../pdc4-tests.log
@@ -70,4 +77,5 @@ jobs:
             touched-tests.exit-code
             pdc4-tests.log
             pdc4-tests.exit-code
+            public/boutique/.pdc4-coverage/coverage-final.json
           retention-days: 1
