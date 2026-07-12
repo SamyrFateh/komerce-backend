@@ -451,4 +451,64 @@ describe('cancelBackorder', () => {
     expect(result.body.current_status).toBe('shipped');
     expectTransactionRolledBack(client);
   });
+
+  // Lot 4 — régression bug backorder : le SELECT parcel_items doit ramener
+  // variant_combo/sku_id/has_variants, sinon adjustStock() ne restaure que
+  // products.stock et le stock variante/SKU reste silencieusement perdu.
+
+  test('restaure aussi product_variants quand l\'article a un variant_combo (chemin legacy 2 axes)', async () => {
+    const order  = makeOrder();
+    const parcel = makeParcel();
+    const items = [{
+      id: 'pi-001', product_id: 'prod-001', product_name: 'Robe',
+      quantity: 2, price_kmf: 5000, order_item_id: 'oi-001',
+      has_variants: true, variant_combo: { color: 'Rouge' }, sku_id: null,
+    }];
+    const client = makeClient([
+      { rows: [order] },          // SELECT order
+      { rows: [parcel] },         // SELECT parcel backorder
+      { rows: items },            // SELECT parcel_items (avec variant_combo/has_variants/sku_id)
+      { rows: [], rowCount: 1 },  // UPDATE parcels cancelled
+      { rows: [], rowCount: 1 },  // adjustStock: UPDATE products (stock global)
+      { rows: [], rowCount: 1 },  // adjustStock: UPDATE product_variants (axe color)
+      { rows: [], rowCount: 1 },  // INSERT order_status_history
+    ]);
+    pool.getClient.mockResolvedValue(client);
+
+    const result = await cancelBackorder(ORDER_ID, { parcel_id: PARCEL_ID, reason: 'Client change d\'avis' }, USER_ADMIN);
+
+    expect(result.status).toBe(200);
+    const sqls = client.calls.map(c => String(c.sql).replace(/\s+/g, ' ').trim());
+    expect(sqls.some(s => s.startsWith('UPDATE products SET stock'))).toBe(true);
+    expect(sqls.some(s => s.startsWith('UPDATE product_variants SET stock'))).toBe(true);
+    expectTransactionCommitted(client);
+  });
+
+  test('restaure product_skus (chemin SKU exclusif, pas products.stock) quand l\'article a un sku_id', async () => {
+    const order  = makeOrder();
+    const parcel = makeParcel();
+    const items = [{
+      id: 'pi-001', product_id: 'prod-001', product_name: 'Robe',
+      quantity: 1, price_kmf: 5000, order_item_id: 'oi-001',
+      has_variants: true, variant_combo: { color: 'Rouge', size: 'M' }, sku_id: 'sku-001',
+    }];
+    const client = makeClient([
+      { rows: [order] },          // SELECT order
+      { rows: [parcel] },         // SELECT parcel backorder
+      { rows: items },            // SELECT parcel_items (avec sku_id)
+      { rows: [], rowCount: 1 },  // UPDATE parcels cancelled
+      { rows: [], rowCount: 1 },  // adjustStock: UPDATE product_skus (chemin exclusif)
+      { rows: [], rowCount: 1 },  // INSERT order_status_history
+    ]);
+    pool.getClient.mockResolvedValue(client);
+
+    const result = await cancelBackorder(ORDER_ID, { parcel_id: PARCEL_ID, reason: 'Client change d\'avis' }, USER_ADMIN);
+
+    expect(result.status).toBe(200);
+    const sqls = client.calls.map(c => String(c.sql).replace(/\s+/g, ' ').trim());
+    expect(sqls.some(s => s.startsWith('UPDATE product_skus SET stock'))).toBe(true);
+    expect(sqls.some(s => s.startsWith('UPDATE products SET stock'))).toBe(false);
+    expect(sqls.some(s => s.startsWith('UPDATE product_variants SET stock'))).toBe(false);
+    expectTransactionCommitted(client);
+  });
 });

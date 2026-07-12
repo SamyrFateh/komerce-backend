@@ -495,8 +495,14 @@ async function cancelBackorder(orderId, body, user) {
     }
 
     // Charger les articles du backorder
+    // Lot 4 (fix bug documenté DECISION_MODELE_STOCK_SKU.md) : oi.variant_combo,
+    // oi.sku_id et p.has_variants sont OBLIGATOIRES ici — sans eux, adjustStock()
+    // ne restaure que products.stock (chemin "sinon aucun effet") et le stock
+    // couleur/taille (ou SKU) reste silencieusement jamais restauré à
+    // l'annulation d'un backorder. Le bug était un oubli de SELECT, pas un
+    // problème du moteur adjustStock lui-même.
     const { rows: boItems } = await client.query(
-      `SELECT pi.*, oi.price_kmf, p.name AS product_name
+      `SELECT pi.*, oi.price_kmf, oi.variant_combo, oi.sku_id, p.name AS product_name, p.has_variants
        FROM parcel_items pi
        JOIN products p ON p.id = pi.product_id
        JOIN order_items oi ON oi.id = pi.order_item_id
