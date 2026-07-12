@@ -26,7 +26,10 @@ module.exports = {
   service: "Coeur transversal de la boutique (orchestration UI, état partagé, panier/modal de base, utilitaires) — tout ce qui ne relève pas d'un domaine métier dédié.",
 
   perimeter: {
-    in:  ['fichiers js/* annotés @domain boutique'],
+    in:  [
+      'fichiers js/* annotés @domain boutique',
+      'identité exacte d une ligne panier product_id + variant_combo pour les surfaces de sélection SKU',
+    ],
     out: ['logique backend équivalente (repo komerce-backend)'],
   },
 
@@ -36,6 +39,7 @@ module.exports = {
       '../js/b-bus.js',
       '../js/b-cart-core.js',
       '../js/b-cart-pill.js',
+      '../js/b-cart-selection.js',
       '../js/b-cart-stepper-guard.js',
       '../js/b-cart.js',
       '../js/b-desktop-global-cart-access.js',
@@ -92,6 +96,7 @@ module.exports = {
       '../tests/e2e/resilience.spec.js',
       '../tests/e2e/render-integrity.spec.js',
       '../tests/contracts.spec.js',
+      '../tests/unit/b-cart-selection.test.js',
       '../tests/unit/b-friendly-group-redirect.test.js',
       '../tests/unit/b-mobile-modal-v1.test.js',
       '../tests/unit/b-modal-cart.test.js',
@@ -138,8 +143,6 @@ module.exports = {
 
   contract: {
     exposes: [],
-    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : socle technique
-    // transverse — exports JS internes, pas des routes HTTP.
     internalApi: [
       'bus (b-bus.js)',
       'store / dom / state (b-store.js)',
@@ -147,6 +150,7 @@ module.exports = {
       'scroll-owner / isDesktop (b-scroll-owner.js)',
       'cart-core / showToast / cartTotal / cartQty (b-cart-core.js)',
       'cart / openCart / closeCart / renderCart / clearCart (b-cart.js)',
+      'cart-selection / findCartItemForSelection / setCartSelectionQty (b-cart-selection.js)',
       'cart-stepper-guard / installCartStepperGuard (b-cart-stepper-guard.js)',
       'modal / openModal (b-modal.js)',
     ],
@@ -154,7 +158,7 @@ module.exports = {
       'auth — b-greeting.js appelle /api/auth/me',
       'catalog — b-cart.js, b-desktop-sidebar.js, b-nav.js, boutique.js importent b-catalog.js, shop-schema.js, b-pager.js, b-subcat.js, home-controller.js',
       'checkout — b-nav.js, boutique.js importent b-checkout.js',
-      'modal-product — b-modal-core.js, b-modal.js importent b-modal-suggestions.js',
+      'modal-product — b-modal-core.js, b-modal.js et b-modal-cart.js consomment l état de sélection produit',
       'shared-cart — b-modal-approche-c-hybrid.js, b-nav.js, boutique.js importent b-share-cart.js, b-group-view.js',
       'tracking — b-nav.js, boutique.js importent b-tracking.js',
       'wallet — b-nav.js importe b-wallet.js',
@@ -167,5 +171,6 @@ module.exports = {
     'tout fichier js/* portant @domain boutique doit être listé dans files.js de ce manifeste',
     'tout CSS transversal (tokens/reset/layout) ou générique boutique (cart/desktop/interactions) doit être listé dans files.css',
     'tout test unitaire/spec couvrant un fichier files.js de ce manifeste doit être listé dans files.tests',
+    'une surface SKU qui modifie une quantité panier cible une ligne exacte product_id + variant_combo et ne prend jamais arbitrairement la première ligne du produit',
   ],
 };
