@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 729,
-    "edges": 4178,
+    "edges": 4184,
     "dbTables": 110,
     "doctrines": 138,
     "impactAreas": 119,
-    "unresolvedCodeEdges": 399,
+    "unresolvedCodeEdges": 400,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -15453,17 +15453,19 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "normalized_supplier_products",
+        "catalog_import_context"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "sourcing_candidates",
+        "import_summary"
       ],
       "depends": [
         "db.js",
         "services/supplier-catalog-scanner.js",
-        "services/pricing-engine.js"
+        "services/pricing-engine.js",
+        "services/suppliers/normalized-product.js",
+        "services/suppliers/connectors/*"
       ],
       "usedBy": [
         "routes/sourcing-scanner.js"
@@ -15482,12 +15484,14 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
       ],
       "impactAreas": [
-        "catalog"
+        "catalog",
+        "product-detail"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "services/suppliers/connectors/_connector-utils.js",
@@ -15623,12 +15627,10 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "manual_supplier_product_payload"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "normalized_supplier_product_v1_or_v2"
       ],
       "depends": [
         "services/suppliers/connectors/_connector-utils.js",
@@ -15640,17 +15642,17 @@
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
+      "dbTxn": [],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
       ],
       "impactAreas": [
         "catalog",
-        "product-discovery"
+        "product-discovery",
+        "product-detail"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "services/suppliers/connectors/noon-connector.js",
@@ -18257,6 +18259,16 @@
       "doctrine": "token_public_controle"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
       "id": "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I2)",
       "type": "doctrine",
       "doctrine": "DOCTRINE_INGESTION_CATALOGUE (ING-I2)"
@@ -18275,16 +18287,6 @@
       "id": "doctrine:ING-I3)",
       "type": "doctrine",
       "doctrine": "ING-I3)"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
@@ -41357,6 +41359,18 @@
       "label": "services/pricing-engine.js"
     },
     {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "services/suppliers/normalized-product.js",
+      "type": "depends",
+      "label": "services/suppliers/normalized-product.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "services/suppliers/connectors/*",
+      "type": "depends",
+      "label": "services/suppliers/connectors/*"
+    },
+    {
       "from": "routes/sourcing-scanner.js",
       "to": "services/suppliers/catalog-import-orchestrator.js",
       "type": "uses",
@@ -41394,15 +41408,27 @@
     },
     {
       "from": "services/suppliers/catalog-import-orchestrator.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
     },
     {
       "from": "services/suppliers/catalog-import-orchestrator.js",
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "impact:product-detail",
+      "type": "impact",
+      "label": "product-detail"
     },
     {
       "from": "services/suppliers/connectors/_connector-utils.js",
@@ -41538,9 +41564,15 @@
     },
     {
       "from": "services/suppliers/connectors/manual-connector.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/connectors/manual-connector.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
     },
     {
       "from": "services/suppliers/connectors/manual-connector.js",
@@ -41553,6 +41585,12 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "services/suppliers/connectors/manual-connector.js",
+      "to": "impact:product-detail",
+      "type": "impact",
+      "label": "product-detail"
     },
     {
       "from": "services/suppliers/connectors/noon-connector.js",
@@ -59016,7 +59054,9 @@
       "directDependsOn": [
         "db.js",
         "services/supplier-catalog-scanner.js",
-        "services/pricing-engine.js"
+        "services/pricing-engine.js",
+        "services/suppliers/normalized-product.js",
+        "services/suppliers/connectors/*"
       ],
       "directUsedBy": [
         "routes/sourcing-scanner.js"
@@ -59033,18 +59073,22 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
       ],
       "impactAreas": [
-        "catalog"
+        "catalog",
+        "product-detail"
       ],
       "mustCheck": [
         "db:products",
         "db:sourcing_candidate_events",
         "db:sourcing_candidates",
         "db:supplier_catalog_imports",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
         "impact:catalog",
+        "impact:product-detail",
         "routes/sourcing-scanner.js",
         "services/catalog-eligibility.js",
         "services/pricing-engine.js",
@@ -59174,15 +59218,19 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
       ],
       "impactAreas": [
         "catalog",
-        "product-discovery"
+        "product-discovery",
+        "product-detail"
       ],
       "mustCheck": [
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
         "impact:catalog",
+        "impact:product-detail",
         "impact:product-discovery",
         "routes/sourcing-scanner.js",
         "services/suppliers/connectors/_connector-utils.js",
@@ -63584,6 +63632,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js",
+      "to": "services/suppliers/connectors/*",
+      "type": "depends",
+      "label": "services/suppliers/connectors/*"
     },
     {
       "from": "services/suppliers/connectors/_connector-utils.js",
