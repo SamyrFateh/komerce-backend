@@ -20,9 +20,9 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 720,
-    "edges": 4137,
-    "dbTables": 109,
+    "graphNodes": 721,
+    "edges": 4140,
+    "dbTables": 110,
     "doctrines": 134,
     "impactAreas": 117,
     "unresolvedCodeEdges": 393,
@@ -7487,6 +7487,7 @@
         "komerce-api.js"
       ],
       "dbRead": [
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -13359,11 +13360,13 @@
         "catalog_field_overrides",
         "order_items",
         "orders",
+        "product_skus",
         "product_variants",
         "products"
       ],
       "dbWrite": [
         "catalog_field_overrides",
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -17313,6 +17316,11 @@
       "id": "db:cost_benchmarks",
       "type": "db-table",
       "table": "cost_benchmarks"
+    },
+    {
+      "id": "db:product_skus",
+      "type": "db-table",
+      "table": "product_skus"
     },
     {
       "id": "db:product_suppliers",
@@ -29212,6 +29220,12 @@
     },
     {
       "from": "routes/products.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "routes/products.js",
       "to": "db:product_variants",
       "type": "db-read",
       "label": "product_variants"
@@ -37862,6 +37876,12 @@
     },
     {
       "from": "services/product-admin-service.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/product-admin-service.js",
       "to": "db:product_variants",
       "type": "db-read",
       "label": "product_variants"
@@ -37877,6 +37897,12 @@
       "to": "db:catalog_field_overrides",
       "type": "db-write",
       "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/product-admin-service.js",
+      "to": "db:product_skus",
+      "type": "db-write",
+      "label": "product_skus"
     },
     {
       "from": "services/product-admin-service.js",
@@ -50957,6 +50983,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -50976,6 +51003,7 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:product_skus",
         "db:product_variants",
         "db:products",
         "doctrine:catalogue_source_db",
@@ -56602,11 +56630,13 @@
         "catalog_field_overrides",
         "order_items",
         "orders",
+        "product_skus",
         "product_variants",
         "products"
       ],
       "dbWrite": [
         "catalog_field_overrides",
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -56626,6 +56656,7 @@
         "db:catalog_field_overrides",
         "db:order_items",
         "db:orders",
+        "db:product_skus",
         "db:product_variants",
         "db:products",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",

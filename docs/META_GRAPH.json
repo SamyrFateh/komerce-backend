@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-11T23:09:16.326Z",
+  "generatedAt": "2026-07-12T11:21:35.203Z",
   "sources": {
     "backend": {
-      "nodes": 720
+      "nodes": 721
     },
     "boutique": {
       "modules": 66,
@@ -20,7 +20,7 @@
     "endpointsConsumed": 85,
     "sharedEndpoints": 2,
     "phantomSeams": 0,
-    "sharedTables": 10
+    "sharedTables": 11
   },
   "endpoints": {
     "/api/shares": {
@@ -511,6 +511,7 @@
       "routeFile": "routes/products.js",
       "services": [],
       "tables": [
+        "product_skus",
         "product_variants",
         "products"
       ]
@@ -1463,6 +1464,7 @@
       "orders",
       "parcel_items",
       "parcels",
+      "product_skus",
       "product_variants",
       "products",
       "relais",
@@ -1827,6 +1829,18 @@
         "komerce-api"
       ],
       "dashboards": []
+    },
+    "product_skus": {
+      "routes": [
+        "routes/products.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": [
+        "EconomicFlowView",
+        "PricingStrategyView"
+      ]
     },
     "product_variants": {
       "routes": [

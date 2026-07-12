@@ -67,6 +67,10 @@ jest.mock('../../services/product-admin-service', () => ({
   appendImages: jest.fn(),
   replaceVariants: jest.fn(),
   deleteVariant: jest.fn(),
+  getSkuCandidates: jest.fn(),
+  upsertProductSku: jest.fn(),
+  deactivateProductSku: jest.fn(),
+  auditProductSkuReadiness: jest.fn(),
 }));
 
 jest.mock('fs', () => ({ unlinkSync: jest.fn() }));
@@ -534,6 +538,124 @@ describe('DELETE /api/products/:id/variants/:variantId (admin)', () => {
 
   it('id produit invalide → 400', async () => {
     const res = await request(buildApp()).delete('/api/products/not-a-uuid/variants/variant-1');
+    expect(res.status).toBe(400);
+  });
+});
+
+// ─── SKU (Lot 1) ────────────────────────────────────────────────────────────
+
+describe('GET /api/products/:id/skus (admin)', () => {
+  it('id invalide → 400', async () => {
+    const res = await request(buildApp()).get('/api/products/not-a-uuid/skus');
+    expect(res.status).toBe(400);
+  });
+
+  it('non-admin → 403', async () => {
+    mockUser = { id: 'u1', role: 'client' };
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}/skus`);
+    expect(res.status).toBe(403);
+  });
+
+  it('?candidates=1 → délègue à getSkuCandidates', async () => {
+    productAdminService.getSkuCandidates.mockResolvedValue({ product_id: VALID_UUID, candidates: [] });
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}/skus?candidates=1`);
+    expect(res.status).toBe(200);
+    expect(productAdminService.getSkuCandidates).toHaveBeenCalledWith(expect.anything(), VALID_UUID);
+  });
+
+  it('produit introuvable → 404', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [] });
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}/skus`);
+    expect(res.status).toBe(404);
+  });
+
+  it('nominal → 200 + skus déclarés', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: VALID_UUID, name: 'Riz', has_variants: false, inventory_model: 'LEGACY_VARIANTS' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sku-1', sku: null, variant_combo: null, stock: 10 }] });
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}/skus`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ product_id: VALID_UUID, product_name: 'Riz', count: 1 });
+  });
+});
+
+describe('GET /api/products/:id/skus/readiness (admin)', () => {
+  it('non-admin → 403', async () => {
+    mockUser = { id: 'u1', role: 'client' };
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}/skus/readiness`);
+    expect(res.status).toBe(403);
+  });
+
+  it('nominal → 200 + résultat du service', async () => {
+    productAdminService.auditProductSkuReadiness.mockResolvedValue({ product_id: VALID_UUID, ready: true, reasons: [] });
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}/skus/readiness`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ ready: true });
+  });
+
+  it('produit introuvable → 404', async () => {
+    productAdminService.auditProductSkuReadiness.mockRejectedValue(Object.assign(new Error('Produit introuvable'), { status: 404 }));
+    const res = await request(buildApp()).get(`/api/products/${VALID_UUID}/skus/readiness`);
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/products/:id/skus (admin)', () => {
+  it('non-admin → 403', async () => {
+    mockUser = { id: 'u1', role: 'client' };
+    const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/skus`).send({ stock: 5 });
+    expect(res.status).toBe(403);
+  });
+
+  it('nominal → 201 + résultat du service', async () => {
+    productAdminService.upsertProductSku.mockResolvedValue({ message: 'SKU enregistré', sku: { id: 'sku-1' } });
+    const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/skus`).send({ stock: 5 });
+    expect(res.status).toBe(201);
+    expect(productAdminService.upsertProductSku).toHaveBeenCalledWith(expect.anything(), VALID_UUID, { stock: 5 });
+  });
+
+  it('erreur métier 400 → 400 + message', async () => {
+    productAdminService.upsertProductSku.mockRejectedValue(Object.assign(new Error('stock invalide'), { status: 400 }));
+    const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/skus`).send({ stock: -1 });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: 'stock invalide' });
+  });
+
+  it('erreur métier 409 (doublon combo) → 409', async () => {
+    productAdminService.upsertProductSku.mockRejectedValue(Object.assign(new Error('Combo déjà déclaré'), { status: 409 }));
+    const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/skus`).send({ stock: 1, variant_combo: { couleur: 'Noir' } });
+    expect(res.status).toBe(409);
+  });
+
+  it('erreur technique inattendue (sans status) → 500 via next', async () => {
+    productAdminService.upsertProductSku.mockRejectedValue(new Error('boom'));
+    const res = await request(buildApp()).post(`/api/products/${VALID_UUID}/skus`).send({ stock: 1 });
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('DELETE /api/products/:id/skus/:skuId (admin)', () => {
+  it('non-admin → 403', async () => {
+    mockUser = { id: 'u1', role: 'client' };
+    const res = await request(buildApp()).delete(`/api/products/${VALID_UUID}/skus/sku-1`);
+    expect(res.status).toBe(403);
+  });
+
+  it('nominal → status/body délégués au service (désactivation, pas suppression)', async () => {
+    productAdminService.deactivateProductSku.mockResolvedValue({ status: 200, body: { message: 'SKU désactivé' } });
+    const res = await request(buildApp()).delete(`/api/products/${VALID_UUID}/skus/sku-1`);
+    expect(res.status).toBe(200);
+    expect(productAdminService.deactivateProductSku).toHaveBeenCalledWith(expect.anything(), VALID_UUID, 'sku-1');
+  });
+
+  it('SKU introuvable → 404', async () => {
+    productAdminService.deactivateProductSku.mockResolvedValue({ status: 404, body: { error: 'SKU introuvable pour ce produit' } });
+    const res = await request(buildApp()).delete(`/api/products/${VALID_UUID}/skus/sku-x`);
+    expect(res.status).toBe(404);
+  });
+
+  it('id produit invalide → 400', async () => {
+    const res = await request(buildApp()).delete('/api/products/not-a-uuid/skus/sku-1');
     expect(res.status).toBe(400);
   });
 });
