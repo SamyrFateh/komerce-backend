@@ -55,6 +55,7 @@ module.exports = {
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
       'docs/doctrine/DOCTRINE_NON_CONFORMITE.md',
+      'docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md',
       'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md',
     ],
     utils: [
@@ -75,7 +76,8 @@ module.exports = {
       'services/parcel-service.js',
     
       'services/hub-operations.js',
-      'services/routing.js',],
+      'services/routing.js',
+      'services/transport-rails.js',],
     routes: [
       'routes/parcels.js',
       'routes/parcel-api-v2/read.js',
@@ -134,6 +136,7 @@ module.exports = {
       'tests/unit/parcel-api-v2-read.test.js',
       'tests/unit/relais.test.js',
       'tests/unit/routing.test.js',
+      'tests/unit/transport-rails.test.js',
       'tests/unit/scans.test.js',
       'tests/unit/sourcing-scanner.test.js',
       'tests/unit/tracking.test.js',
