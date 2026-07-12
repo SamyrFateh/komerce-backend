@@ -10,7 +10,7 @@
 
 La modal produit est la **fiche produit transactionnelle de Komerce** pour le catalogue vivant.
 
-Elle permet au client de comprendre visuellement le produit, voir son identité et son prix, sélectionner une unité réellement vendable, comprendre une indisponibilité, voir les options de livraison commercialement exposées, choisir une quantité et déclencher Ajouter / Acheter.
+Elle permet de comprendre le produit, voir son identité et son prix, sélectionner une unité réellement vendable, comprendre une indisponibilité, voir les options de livraison commercialement exposées, choisir une quantité et déclencher Ajouter / Acheter.
 
 Elle reste distincte de la fiche article lecture seule du panier partagé, construite depuis le snapshot dans `b-group-view.js`.
 
@@ -27,9 +27,15 @@ Mobile et desktop consomment le même contrat détail et le même état de séle
 
 ---
 
-## 2. Entrée de la modal
+## 2. Chaîne active
 
-La cible consomme le Product Detail Contract v1 :
+Le Product Detail Contract v1 est servi par :
+
+```txt
+GET /api/products/:id/detail
+```
+
+Le chemin cible est :
 
 ```txt
 GET /api/products/:id/detail
@@ -38,25 +44,34 @@ product_detail_v1
       ↓
 modal-selection-model.js
       ↓
-renderers modal
+selected_options
+selected_sku_id
+selected_media
+option_states
+selection_message
       ↓
-mobile / desktop
+renderers mobile / desktop
 ```
 
-Le contrat fournit :
+### État au PDC-4
+
+Le **mobile SKU consomme réellement cette chaîne** via :
 
 ```txt
-product
-pricing
-media
-option_axes
-sellable_units
-delivery_options
+b-modal.js
+  ↓ side-effect import
+b-modal-product-detail-mobile.js
+  ↓ modal:opened
+GET /api/products/:id/detail
+  ↓
+modal-selection-model.js
+  ↓
+rendu mobile SKU
 ```
 
-La modal ne doit pas dépendre durablement du produit de liste brut de `state.products` pour rendre les vérités transactionnelles.
+Le desktop reste sur la composition historique jusqu'à PDC-5.
 
-`product_variants` décrit les axes. `product_skus` décrit les unités vendables et porte la vérité de stock en mode SKU. La Boutique ne lit directement ni l'une ni l'autre table : elle consomme le contrat public.
+`LEGACY_VARIANTS` reste explicitement sur le renderer historique jusqu'à PDC-6/PDC-7. Le mobile PDC ne tente pas de fabriquer des `sellable_units` depuis les stocks d'axes legacy.
 
 ---
 
@@ -66,71 +81,88 @@ La modal ne doit pas dépendre durablement du produit de liste brut de `state.pr
 
 | Zone | Owner |
 |---|---|
-| Façade publique / compatibilité ouverture | `public/boutique/js/b-modal.js` |
-| Cycle ouverture/fermeture, fetch détail, body lock, topbar, historique | `public/boutique/js/b-modal-core.js` |
-| **État dérivé de sélection SKU** | `public/boutique/js/view-models/modal-selection-model.js` |
-| Contrat d'affichage legacy / classes historiques pendant convergence | `public/boutique/js/view-models/modal-view-model.js` |
-| Rendu contenu produit et interactions de sélection | `public/boutique/js/b-modal-product.js` |
-| Images, carousel, compteur, lightbox fullscreen, bouton **Voir en grand** | `public/boutique/js/b-modal-image-ux.js` |
-| Social proof conditionnel | `public/boutique/js/b-modal-social-proof.js` |
-| Navigation produit précédent/suivant | `public/boutique/js/b-modal-nav.js` |
-| Suggestions / recommandations dans la modal | `public/boutique/js/b-modal-suggestions.js` |
-| Intégration panier personnel depuis la modal | `public/boutique/js/b-modal-cart.js` |
+| Façade publique / activation adaptateur mobile | `public/boutique/js/b-modal.js` |
+| Cycle ouverture/fermeture, body lock, historique | `public/boutique/js/b-modal-core.js` |
+| **Adaptateur Product Detail mobile SKU** | `public/boutique/js/b-modal-product-detail-mobile.js` |
+| **État dérivé de sélection SKU unique** | `public/boutique/js/view-models/modal-selection-model.js` |
+| Contrat d'affichage legacy / classes historiques | `public/boutique/js/view-models/modal-view-model.js` |
+| Renderer variantes / livraison legacy | `public/boutique/js/b-modal-product.js` — fallback legacy uniquement à terme |
+| Contrôles quantité / Ajouter modal | `public/boutique/js/b-modal-cart.js` |
+| Identité exacte ligne panier `product + combo` | `public/boutique/js/b-cart-selection.js` |
+| Images, carousel, lightbox fullscreen | `public/boutique/js/b-modal-image-ux.js` |
+| Social proof | `public/boutique/js/b-modal-social-proof.js` |
+| Navigation précédent/suivant | `public/boutique/js/b-modal-nav.js` |
+| Suggestions | `public/boutique/js/b-modal-suggestions.js` |
 | Composition et enrichissements desktop | `public/boutique/js/b-modal-desktop-enhancers.js` |
 
-### Décision PDC-3
+### Frontière d'ownership PDC-4
 
-`modal-selection-model.js` est l'**unique owner de la sélection SKU cible**.
+`b-modal-core.js` reste l'owner du lifecycle. PDC-4 ne crée pas un second `openModal()`.
 
-`modal-view-model.js` n'est pas étendu pour porter une deuxième logique SKU. Il garde temporairement ses responsabilités historiques de normalisation produit brut et classes contractuelles jusqu'à PDC-6.
-
-La convergence est donc explicite :
+`b-modal-product-detail-mobile.js` écoute :
 
 ```txt
-modal-view-model.js
-= legacy display compatibility
-
-modal-selection-model.js
-= sélection SKU cible unique
+modal:opened
+modal:closed
 ```
 
-PDC-4/PDC-5 branchent les renderers sur le reducer. PDC-6 retire les lectures métier legacy et réévalue alors la forme finale du ViewModel d'affichage.
+et adapte uniquement les vérités produit du chemin mobile SKU.
 
-### CSS
+`modal-selection-model.js` reste l'unique owner de la sélection. L'adaptateur mobile **consomme** le reducer ; il ne recalcule aucune disponibilité.
 
-| Zone | Owner |
-|---|---|
-| Shell / overlay / topbar / scroll / actions | `public/boutique/css/modal-shell.css` |
-| Images / carousel / media / bouton **Voir en grand** | `public/boutique/css/modal-media.css` |
-| Informations produit / sélection / prix / actions | `public/boutique/css/modal-product.css` |
-| Extension PDP hybride desktop | `public/boutique/css/modal-product-lot4-hybrid.css` |
+`modal-view-model.js` garde temporairement ses responsabilités historiques d'affichage. Il ne reçoit pas une seconde logique SKU.
 
 ---
 
-## 4. Doctrine de sélection SKU
+## 4. Contrat détail consommé
+
+Le mobile SKU consomme :
+
+```txt
+product
+pricing
+media
+option_axes
+sellable_units
+delivery_options
+inventory_model
+```
+
+Il ne lit directement ni `product_skus`, ni `product_variants`, ni `normalized_source_contract`.
+
+### Interdit
+
+- `product.stock` comme vérité du chemin mobile SKU ;
+- `opt.stock` pour décider de la disponibilité d'une taille/couleur SKU ;
+- reconstruction d'un ancien prix depuis `promo_pct` ;
+- `product.delivery_delay || '3 à 5 semaines'` ;
+- liste frontend fixe Standard / Express ;
+- `Gratuit` inventé quand `price_kmf` est `null`.
+
+---
+
+## 5. Sélection SKU
 
 > **Une unité vendable = un SKU.**
-
-La modal sélectionne un `sku_id`. Elle ne maintient pas une vérité de stock séparée par couleur et par taille.
 
 Exemple :
 
 ```txt
-Marron + S → SKU A → disponible
-Marron + M → SKU B → disponible
-Marron + L → SKU C → rupture
-Beige  + L → SKU D → disponible
+Marron + S → SKU A → AVAILABLE
+Marron + M → SKU B → AVAILABLE
+Marron + L → SKU C → OUT_OF_STOCK
+Beige  + L → SKU D → AVAILABLE
 ```
 
-Au départ, `L` peut être globalement `AVAILABLE` parce que `Beige + L` est disponible.
+Au départ, `L` peut être globalement `AVAILABLE` grâce à `Beige + L`.
 
-Après sélection :
+Après :
 
 ```txt
 Couleur = Marron
 ```
 
-le reducer recalcule l'axe suivant depuis les `sellable_units` compatibles :
+le reducer produit :
 
 ```txt
 S → AVAILABLE
@@ -138,7 +170,7 @@ M → AVAILABLE
 L → OUT_OF_STOCK
 ```
 
-Un clic sur `L` ne modifie pas la sélection et produit :
+Un clic sur `L` garde la sélection actuelle et produit :
 
 ```txt
 L indisponible pour Marron — rupture de stock
@@ -150,7 +182,7 @@ Une combinaison absente produit :
 S indisponible pour Beige — combinaison non proposée
 ```
 
-### État public du reducer
+### État du reducer
 
 ```txt
 inventory_model
@@ -162,7 +194,7 @@ option_states
 selection_message
 ```
 
-`option_states` utilise uniquement :
+États autorisés :
 
 ```txt
 AVAILABLE
@@ -180,26 +212,17 @@ Couleur
 Taille
 ```
 
-Changer un axe amont efface les choix des axes suivants.
-
-Exemple :
+Changer un axe amont efface les choix aval :
 
 ```txt
 Marron + M
-   ↓ changement Couleur
+   ↓ Couleur = Beige
 Beige
 ```
 
-La taille `M` n'est pas silencieusement conservée. L'état devient :
+La taille n'est jamais conservée silencieusement.
 
-```txt
-selected_options = { Couleur: "Beige" }
-selected_sku_id = null
-```
-
-puis les tailles sont recalculées pour Beige.
-
-### Sélection complète
+### Sélection transactionnelle
 
 `selected_sku_id` n'est posé que si :
 
@@ -207,28 +230,11 @@ puis les tailles sont recalculées pour Beige.
 2. une `sellable_unit` correspond exactement ;
 3. son `stock_status` vaut `AVAILABLE`.
 
-Aucune « première variante disponible » n'est choisie silencieusement pour compléter un choix utilisateur ambigu.
+Aucune première option disponible n'est choisie silencieusement.
 
-### Produit sans axes
+Un SKU par défaut sans axes peut être résolu immédiatement si son unité est disponible.
 
-Un produit SKU avec un SKU par défaut :
-
-```txt
-option_axes = []
-option_values = {}
-```
-
-peut résoudre immédiatement `selected_sku_id` si l'unité est `AVAILABLE`.
-
-### Produit legacy
-
-Pour :
-
-```txt
-inventory_model = LEGACY_VARIANTS
-```
-
-le reducer retourne :
+Pour `LEGACY_VARIANTS` :
 
 ```txt
 selection_supported = false
@@ -236,51 +242,147 @@ selected_sku_id = null
 option_states = {}
 ```
 
-Il reste passif. Il ne reconstruit aucun stock depuis `product_variants.stock`.
+---
+
+## 6. Rendu mobile SKU actif
+
+Owner : `b-modal-product-detail-mobile.js`.
+
+Ordre fonctionnel :
+
+```txt
+TOPBAR
+MEDIA / GALERIE
+IDENTITÉ + PRIX
+OPTIONS VISUELLES
+OPTIONS TEXTE / TAILLE
+MESSAGE CONTEXTUEL
+DELIVERY_OPTIONS
+QUANTITÉ
+AJOUTER / ACHETER
+SUGGESTIONS
+```
+
+### Ouverture
+
+`modal:opened` déclenche le fetch `/detail` sur viewport mobile.
+
+Pendant le fetch :
+
+```txt
+Ajouter = disabled
+Acheter = disabled
+qty− = disabled
+qty+ = disabled
+```
+
+Le libellé devient :
+
+```txt
+Chargement du produit…
+```
+
+Cette fenêtre ferme la course entre le rendu legacy synchrone et le contrat détail asynchrone.
+
+### Décision après fetch
+
+```txt
+inventory_model = SKU
+→ activer Product Detail + reducer
+
+inventory_model = LEGACY_VARIANTS
+→ déverrouiller + garder renderer legacy
+
+HTTP non OK / réseau indisponible
+→ déverrouiller + garder renderer legacy
+```
+
+Une réponse tardive d'un ancien produit ne peut pas remplacer le produit courant : `_requestVersion` + vérification `modalProduct.id` protègent la course.
+
+### Axes et options
+
+Les boutons portent l'état reçu du reducer :
+
+```txt
+data-option-state="AVAILABLE|OUT_OF_STOCK|INCOMPATIBLE"
+```
+
+Les options indisponibles restent cliquables avec `aria-disabled="true"` mais sans `disabled` HTML. Le clic doit atteindre le reducer pour afficher la raison contextuelle.
+
+Le renderer ne filtre jamais les `sellable_units` lui-même.
+
+### Prix
+
+Ordre :
+
+```txt
+prix SKU sélectionné explicite
+  ↓ fallback
+pricing.price_kmf
+```
+
+`old_price_kmf` est affiché uniquement s'il existe dans le contrat.
+
+`promo_pct` peut alimenter le badge promotion. Il ne sert jamais à recalculer un ancien prix.
+
+### Stock affiché
+
+Ordre :
+
+```txt
+selection_message
+  ↓
+selected SKU available_quantity
+  ↓
+axes restant à sélectionner
+  ↓
+rupture SKU par défaut
+```
+
+Le chemin SKU mobile ne lit pas `product.stock`.
 
 ---
 
-## 5. Doctrine média / mises en scène
+## 7. Média
 
-La zone média peut contenir image principale, vues complémentaires, mises en scène et médias associés à une valeur d'option ou à un SKU.
-
-Le reducer dérive `selected_media` selon l'ordre suivant :
+Le reducer dérive `selected_media` :
 
 ```txt
 1. media_ids du SKU sélectionné
-2. médias dont option_values correspondent à la sélection courante
-3. médias globaux option_values = {}
-4. galerie complète comme fallback visuel
+2. médias dont option_values correspondent à la sélection
+3. médias globaux
+4. galerie complète
 ```
 
-Aucune association n'est déduite depuis le nom de fichier, l'ordre d'une image ou sa couleur dominante.
+Le mobile reconstruit le carousel depuis `selected_media` et rappelle `setupImageUX()` afin que compteur et fullscreen reflètent la galerie courante.
 
-### Mobile
+Aucune association n'est déduite depuis le filename, l'ordre d'une image ou une couleur dominante.
 
-- galerie swipe ;
-- compteur `N/N` ;
-- média dominant ;
-- bouton **Voir en grand** géré par `b-modal-image-ux.js` ;
-- vignettes couleur photo lorsque `thumbnail_url` est fourni.
+### Couture legacy temporaire
 
-### Desktop
+Le core lance encore un fetch historique `/api/products/:id` pour les variantes. Il peut terminer après `/detail` et écraser le conteneur.
 
-- galerie à gauche ;
-- miniatures / navigation média ;
-- Buy Box à droite ;
-- même `selected_media` dérivé que le mobile.
+PDC-4 installe temporairement un `MutationObserver` sur le conteneur variantes. Si le marker :
+
+```txt
+data-pdc-sku-selection="1"
+```
+
+disparaît alors que le contrat SKU courant reste actif, les axes PDC sont restaurés.
+
+Ce guard est **une couture de convergence**, pas une architecture finale. PDC-6 supprime le fetch/rendu variante legacy du chemin SKU et doit retirer cet observer.
 
 ---
 
-## 6. Doctrine livraison
+## 8. Livraison
 
-La modal rend :
+La modal rend exactement :
 
 ```txt
 delivery_options[]
 ```
 
-Chaque option publique peut porter :
+Champs :
 
 ```txt
 code
@@ -291,148 +393,179 @@ eta_label
 unavailable_reason
 ```
 
-Le frontend ne possède pas une liste fixe Standard / Express.
+Le panneau mobile supprime les blocs legacy `data-mobile-delivery`, `data-mobile-reassurance` et `data-mobile-trust` avant de rendre le contrat.
 
-`AIR_EXPRESS` ne doit pas être présenté tant que `logistics` ne l'expose pas commercialement. Un `price_kmf` ou `eta_label` nul reste nul tant qu'un moteur propriétaire ne fournit pas la vérité.
+Il affiche :
 
-### Interdit
+- `label` toujours ;
+- `price_kmf` uniquement s'il n'est pas `null` ;
+- `eta_label` uniquement s'il existe ;
+- `unavailable_reason` uniquement pour une option indisponible.
 
-- `product.delivery_delay || '3 à 5 semaines'` comme vérité universelle ;
-- « Point relais · Gratuit · 3 à 5 semaines » injecté par un enhancer ;
-- Express déduit depuis le poids, le produit ou le viewport ;
-- prix ou délai inventé par la Boutique.
-
----
-
-## 7. Composition mobile cible — PDC-4
+Donc :
 
 ```txt
-TOPBAR
-MEDIA / MISES EN SCÈNE / SWIPE
-IDENTITÉ + PRIX
-OPTIONS VISUELLES COULEUR
-TAILLE / POINTURE COMBO-AWARE
-MESSAGE D'INDISPONIBILITÉ CONTEXTUEL
-LIVRAISON(S) PUBLIQUE(S)
-QUANTITÉ
-AJOUTER / ACHETER — actions visibles/sticky
-ENRICHISSEMENTS / SUGGESTIONS
+price_kmf = null
+≠ Gratuit
+
+eta_label = null
+≠ 3 à 5 semaines
 ```
 
-Invariants :
-
-- le choix d'un axe appelle le reducer unique ;
-- le renderer lit `option_states`, il ne filtre pas lui-même les SKU ;
-- une rupture est expliquée depuis `selection_message` ;
-- la galerie lit `selected_media` ;
-- le CTA transactionnel utilise `selected_sku_id` ;
-- aucune logique métier n'est dupliquée dans une bottom-sheet de taille.
+`AIR_EXPRESS` absent du contrat reste absent de l'UI.
 
 ---
 
-## 8. Composition desktop cible — PDC-5
+## 9. Panier et identité de sélection
+
+Le backend commande reste autoritaire : le frontend transmet le snapshot `selected_options` comme `variant_combo`, puis `routes/orders/create.js` résout et revalide le SKU actif réel.
+
+Le mobile synchronise :
+
+```txt
+state.modalVariantCombo = modalSelection.selected_options
+```
+
+`addToCart()` conserve donc son snapshot de sélection existant.
+
+### Problème corrigé PDC-4
+
+Les helpers historiques `quickAdd` / `quickRemove` ciblent d'abord un produit par `product_id`. Deux SKU du même produit peuvent donc avoir deux lignes différentes.
+
+Le stepper SKU modal utilise désormais :
+
+```txt
+product_id + variant_combo canonique
+```
+
+Owner : `b-cart-selection.js`.
+
+```txt
+findCartItemForSelection(productId, combo)
+setCartSelectionQty(productId, combo, quantity)
+```
+
+`b-cart-selection.js` ne crée pas de ligne et n'est pas un second moteur panier. La création reste à `addToCart()` ; la persistance/badges restent à `saveCart()`.
+
+Le chemin legacy garde les helpers historiques jusqu'à extinction.
+
+### CTA SKU
+
+Sélection incomplète :
+
+```txt
+selected_sku_id = null
+→ Ajouter disabled
+→ Acheter disabled
+→ stepper disabled
+→ « Choisissez vos options »
+```
+
+Sélection complète :
+
+```txt
+selected_sku_id != null
+→ quantité de la ligne product+combo exacte
+→ Ajouter / Acheter actifs
+```
+
+---
+
+## 10. Desktop — PDC-5
+
+Cible :
 
 ```txt
 ┌─────────────────────────┬──────────────────────────┐
-│                         │  Nom / Référence         │
-│     GALERIE / MÉDIAS    │  Prix / Promotion       │
-│                         │                          │
-│   miniatures / scène    │  Couleurs photo          │
-│   image dominante       │  Tailles combo-aware     │
-│                         │  disponibilité expliquée │
-│                         │                          │
-│                         │  Livraison(s) publique(s)│
-│                         │  Quantité                │
-│                         │  AJOUTER / ACHETER       │
+│     GALERIE / MÉDIAS    │  Nom / Référence         │
+│                         │  Prix / Promotion         │
+│   miniatures / scène    │  Options                  │
+│   image dominante       │  disponibilité expliquée │
+│                         │  delivery_options         │
+│                         │  Quantité                 │
+│                         │  AJOUTER / ACHETER        │
 └─────────────────────────┴──────────────────────────┘
 ```
 
-`b-modal-desktop-enhancers.js` peut améliorer la composition desktop. Il ne doit plus reconstruire prix, stock, disponibilité variante, options de livraison ou délai de transport.
+PDC-5 doit consommer **le même `state.modalSelection`**.
+
+`b-modal-desktop-enhancers.js` ne doit plus reconstruire prix, stock, variantes, rails ou délais.
 
 ---
 
-## 9. Cas sensible : Voir en grand mobile
+## 11. Extinction legacy — PDC-6
 
-Owner fonctionnel : `public/boutique/js/b-modal-image-ux.js`.
+PDC-6 doit :
 
-Owner CSS : `public/boutique/css/modal-media.css`.
+1. arrêter le fetch `/api/products/:id` de variantes pour le chemin SKU ;
+2. retirer `_renderVariants` du chemin SKU ;
+3. retirer `_injectMobileDelivery` / `_injectMobileTrust` du chemin SKU ;
+4. supprimer le `MutationObserver` de convergence PDC-4 ;
+5. empêcher `b-modal-core.js` de rendre les vérités transactionnelles depuis le produit liste brut sur le chemin SKU ;
+6. réévaluer puis réduire `modal-view-model.js` legacy ;
+7. vérifier qu'un seul owner subsiste par vérité.
 
-Orchestrateur : `public/boutique/js/b-modal-core.js`.
-
-Le fullscreen image appartient au media UX. Il ne doit pas être corrigé depuis le catalogue, `products.css` ou `boutique-desktop.css`.
-
----
-
-## 10. Règles de modification
-
-### JS
-
-- ouverture / fermeture / fetch détail → `b-modal-core.js` ;
-- état de sélection SKU → `view-models/modal-selection-model.js` ;
-- compatibilité d'affichage legacy → `view-models/modal-view-model.js` jusqu'à PDC-6 ;
-- rendu produit → `b-modal-product.js` ;
-- image / carousel / lightbox → `b-modal-image-ux.js` ;
-- suggestions → `b-modal-suggestions.js` ;
-- panier depuis modal → `b-modal-cart.js` ;
-- composition desktop → `b-modal-desktop-enhancers.js`.
-
-La modal ne possède pas le pager catégories, le hero, le panier partagé participant, la vérité de stock, la décision de rail ou le pricing transport.
-
-### CSS
-
-- overlay / topbar / actions → `modal-shell.css` ;
-- image / carousel / media → `modal-media.css` ;
-- infos produit / sélection / actions → `modal-product.css` ;
-- enrichissement hybride desktop → `modal-product-lot4-hybrid.css`.
+Le fallback `LEGACY_VARIANTS` reste tant que PDC-7 n'autorise pas son extinction.
 
 ---
 
-## 11. Invariants
+## 12. CSS
 
-- La modal catalogue affiche le catalogue vivant ; la fiche shared-cart affiche le snapshot.
-- Une unité vendable = un SKU.
-- `modal-selection-model.js` est l'unique owner de l'état de sélection SKU cible.
-- Les axes ne portent pas une vérité de stock indépendante.
-- Mobile et desktop lisent le même état dérivé.
-- Les médias sont dérivés uniquement depuis les associations explicites du contrat.
-- Le frontend ne décide jamais d'un rail ni d'un délai de livraison.
-- Mobile : ne pas casser le scroll ni les actions visibles.
-- Desktop : ne pas corriger un problème de layout global depuis la modal.
-- Pas de CSS stable injecté par JS.
-- Toute modification du parcours **Voir en grand** passe par `b-modal-image-ux.js` et `modal-media.css`.
-- `b-modal-desktop-enhancers.js` reste un enhancer de composition, jamais un second moteur produit.
+| Zone | Owner |
+|---|---|
+| Overlay / topbar / actions | `modal-shell.css` |
+| Image / carousel / fullscreen | `modal-media.css` |
+| Infos produit / options / actions | `modal-product.css` |
+| Enrichissement desktop | `modal-product-lot4-hybrid.css` |
+
+Le chemin PDC-4 réutilise volontairement les classes stables de la modal actuelle. Il n'injecte aucune règle CSS par JS.
+
+Une disponibilité ou une livraison ne doit jamais être corrigée par CSS.
 
 ---
 
-## 12. Tests
+## 13. Tests obligatoires
 
-PDC-3 doit prouver au minimum :
+PDC-4 couvre :
 
-1. disponibilité initiale agrégée depuis les unités réelles ;
-2. couleur A + taille disponible → SKU précis ;
-3. couleur A + taille en rupture → `OUT_OF_STOCK` + raison ;
-4. couleur B rend la même taille disponible → état rafraîchi ;
-5. combinaison inexistante → `INCOMPATIBLE` ;
-6. sélection partielle → aucun SKU choisi silencieusement ;
-7. changement d'axe amont → choix aval effacés ;
-8. produit sans axe → SKU par défaut ;
-9. produit legacy → `selection_supported=false` ;
-10. média associé à une couleur / SKU → `selected_media` rafraîchi.
+1. desktop → aucun fetch détail mobile ;
+2. mobile SKU → `/api/products/:id/detail` ;
+3. fetch en cours → CTA/stepper verrouillés ;
+4. legacy / HTTP KO / réseau → fallback déverrouillé ;
+5. réponse produit A tardive → ignorée si B est courant ;
+6. Marron + L → `OUT_OF_STOCK` + message exact ;
+7. Marron + M → SKU précis, prix SKU et médias associés ;
+8. livraison exacte sans `Gratuit` / `3 à 5 semaines` inventés ;
+9. ancien prix absent → aucune reconstruction ;
+10. overwrite variantes legacy tardif → marker PDC restauré ;
+11. quantité panier → ligne product+combo exacte ;
+12. sélection SKU incomplète → aucun fallback `quickAdd` legacy ;
+13. fermeture modal → détail et sélection purgés.
 
-Après modification modal :
+Commandes :
 
 ```bash
 cd public/boutique
-npm run check:imports
-npm run audit:arch
-npm run test:unit -- modal-selection-model.test.js
-```
+npm run check:fast
+npm run test:coverage
 
-Depuis la racine :
-
-```bash
+cd ../..
 npm run gate:boutique-ownership
 npm run map:check
 ```
 
-Les tests manuels d'interaction complète commencent à PDC-4 lorsque le renderer mobile consomme réellement le reducer.
+---
+
+## 14. Invariants
+
+- La modal catalogue affiche le catalogue vivant ; la fiche shared-cart affiche le snapshot.
+- Une unité vendable = un SKU.
+- `modal-selection-model.js` est l'unique owner de l'état de sélection SKU.
+- Mobile et desktop doivent lire le même état dérivé.
+- Le mobile SKU ne lit pas un stock autonome de couleur/taille.
+- Les médias sont dérivés uniquement depuis les associations explicites du contrat.
+- Le frontend ne décide jamais d'un rail ni d'un délai universel.
+- Une quantité SKU modal cible la ligne panier exacte `product_id + variant_combo`.
+- `b-modal-core.js` reste owner du lifecycle.
+- Le guard MutationObserver PDC-4 est temporaire et doit mourir avec le fetch variante legacy à PDC-6.
+- `b-modal-desktop-enhancers.js` reste un enhancer de composition, jamais un second moteur produit.
