@@ -17,6 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # historique complet pour git diff
+          show-progress: false
 
       - uses: actions/setup-node@v4
         with:
@@ -48,5 +49,5 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          git fetch origin ${{ github.base_ref }} --depth=1
+          git fetch origin ${{ github.base_ref }} --depth=1 --quiet
           node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict
