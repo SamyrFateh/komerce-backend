@@ -46,6 +46,20 @@ jobs:
           echo "$code" > touched-tests.exit-code
           exit "$code"
 
+      - name: Run PDC-4 tests verbosely
+        if: always()
+        run: |
+          set +e
+          cd public/boutique
+          npm test -- --runInBand \
+            tests/unit/b-modal-mobile-product.test.js \
+            tests/unit/b-modal-mobile-product-bootstrap.test.js \
+            > ../../pdc4-tests.log 2>&1
+          code=$?
+          cat ../../pdc4-tests.log
+          echo "$code" > ../../pdc4-tests.exit-code
+          exit 0
+
       - name: Upload PDC-4 touched-tests diagnostic
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,4 +68,6 @@ jobs:
           path: |
             touched-tests.log
             touched-tests.exit-code
+            pdc4-tests.log
+            pdc4-tests.exit-code
           retention-days: 1
