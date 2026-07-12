@@ -20,57 +20,67 @@ Elle permet au client de :
 - choisir une quantité ;
 - ajouter ou acheter.
 
-Elle est distincte de la fiche article lecture seule du panier partagé, qui est construite depuis le snapshot dans `b-group-view.js`.
+Elle est distincte de la fiche article lecture seule du panier partagé, construite depuis le snapshot dans `b-group-view.js`.
 
-Règle Boutique First :
-
-```txt
+```text
 Catalogue vivant → modal produit globale enrichie.
 Panier partagé participant → fiche snapshot lecture seule.
 ```
 
-Ne pas mélanger ces deux vérités.
-
-Règle responsive :
-
 > **Une intelligence produit. Deux compositions responsive.**
 
-Mobile et desktop consomment le même contrat détail et le même état de sélection. Ils peuvent organiser l'écran différemment ; ils ne possèdent jamais deux logiques de stock, prix, médias ou livraison.
+Mobile et desktop consomment le même contrat détail et le même état de sélection. Ils organisent l'écran différemment ; ils ne possèdent jamais deux logiques de stock, prix, médias ou livraison.
 
 ---
 
-## 2. Entrée de la modal
+## 2. Chaîne active PDC-5
 
-La cible est un contrat détail produit public, versionné et whitelisté, conforme à `DOCTRINE_PRODUCT_DETAIL_CONTRACT.md`.
-
-La modal ne doit pas dépendre durablement du produit de liste brut stocké dans `state.products` pour rendre les vérités transactionnelles.
-
-Chaîne cible :
-
-```txt
-GET détail produit
-      ↓
-product_detail contract
-      ↓
-ModalViewModel / état de sélection unique
-      ↓
-renderers modal
-      ↓
-mobile / desktop
+```text
+GET /api/products/:id/detail
+        ↓
+b-modal-product-detail-bootstrap.js
+        ↓
+createModalSelection(detail)
+        ↓
+state.modalProductDetail
+state.modalSelection
+        ↓
+┌─────────────────────────────┬──────────────────────────────┐
+│ mobile                      │ desktop                      │
+│ b-modal-mobile-product.js   │ b-modal-desktop-product.js   │
+│ PDC-4                       │ PDC-5                        │
+└─────────────────────────────┴──────────────────────────────┘
 ```
 
-Le contrat fournit notamment :
+Le contrat fournit :
 
-```txt
-identity
+```text
+product
 pricing
 media
 option_axes
 sellable_units
- delivery_options
+delivery_options
 ```
 
 `product_variants` décrit les axes de sélection. `product_skus` décrit les unités vendables et porte la vérité de stock en mode SKU.
+
+### Une seule ouverture produit
+
+`b-modal-product-detail-bootstrap.js` possède le chargement du contrat détail pour **les deux viewports**.
+
+Il :
+
+1. reçoit `modal:opened` ;
+2. charge `GET /api/products/:id/detail` ;
+3. ignore une réponse devenue obsolète après navigation produit ;
+4. crée une seule sélection initiale ;
+5. choisit uniquement le renderer responsive ;
+6. nettoie l'état au `modal:closed`.
+
+Il est interdit de recréer un fetch Product Detail mobile et un fetch Product Detail desktop.
+
+`b-modal-mobile-product-bootstrap.js` est un alias de compatibilité temporaire. Il ne possède plus de fetch ni d'état.
 
 ---
 
@@ -81,15 +91,20 @@ sellable_units
 | Zone | Owner |
 |---|---|
 | Façade publique / compatibilité ouverture | `public/boutique/js/b-modal.js` |
-| Cycle ouverture/fermeture, fetch détail, body lock, topbar, historique | `public/boutique/js/b-modal-core.js` |
-| Contrat d'affichage et état dérivé de sélection | `public/boutique/js/view-models/modal-view-model.js` **ou remplacement explicitement acté au Lot PDC-3** |
-| Rendu contenu produit et interactions de sélection | `public/boutique/js/b-modal-product.js` |
-| Images, carousel, compteur, lightbox fullscreen, bouton **Voir en grand** | `public/boutique/js/b-modal-image-ux.js` |
+| Cycle legacy modal, body lock, topbar, historique | `public/boutique/js/b-modal-core.js` — dette transitoire PDC-6 |
+| Fetch Product Detail responsive | `public/boutique/js/b-modal-product-detail-bootstrap.js` |
+| État dérivé de sélection SKU | `public/boutique/js/view-models/modal-selection-model.js` |
+| Composition produit mobile | `public/boutique/js/b-modal-mobile-product.js` |
+| Composition produit desktop | `public/boutique/js/b-modal-desktop-product.js` |
+| Images, carousel, compteur, lightbox fullscreen, **Voir en grand** | `public/boutique/js/b-modal-image-ux.js` |
+| Navigation / partage / trust / récemment vus desktop | `public/boutique/js/b-modal-desktop-enhancers.js` |
+| Placement actions + UI paiement hybride desktop | `public/boutique/js/b-modal-approche-c-hybrid.js` |
 | Social proof conditionnel | `public/boutique/js/b-modal-social-proof.js` |
 | Navigation produit précédent/suivant | `public/boutique/js/b-modal-nav.js` |
-| Suggestions / recommandations dans la modal | `public/boutique/js/b-modal-suggestions.js` |
+| Suggestions / recommandations | `public/boutique/js/b-modal-suggestions.js` |
 | Intégration panier personnel depuis la modal | `public/boutique/js/b-modal-cart.js` |
-| Composition et enrichissements desktop | `public/boutique/js/b-modal-desktop-enhancers.js` |
+| Renderer produit legacy | `public/boutique/js/b-modal-product.js` — compatibilité jusqu'à PDC-6 |
+| Classes structurelles ViewModel legacy | `public/boutique/js/view-models/modal-view-model.js` — compatibilité jusqu'à PDC-6 |
 
 ### CSS
 
@@ -98,9 +113,9 @@ sellable_units
 | Shell / overlay / topbar / scroll / actions | `public/boutique/css/modal-shell.css` |
 | Images / carousel / media / bouton **Voir en grand** | `public/boutique/css/modal-media.css` |
 | Informations produit / sélection / prix / actions | `public/boutique/css/modal-product.css` |
-| Extension PDP hybride desktop | `public/boutique/css/modal-product-lot4-hybrid.css` |
+| Composition PDP hybride desktop | `public/boutique/css/modal-product-lot4-hybrid.css` |
 
-Ancienne doc ou ancien fichier `modal.css` monolithique : historique. Ne pas l'utiliser comme source de vérité si le code actuel est split en `modal-*`.
+Ancien `modal.css` monolithique : historique. Ne pas le recréer.
 
 ---
 
@@ -110,26 +125,24 @@ Ancienne doc ou ancien fichier `modal.css` monolithique : historique. Ne pas l'u
 
 La modal sélectionne un `sku_id`. Elle ne maintient pas une vérité de stock séparée par couleur et par taille.
 
-Exemple :
-
-```txt
+```text
 Marron + S → SKU A → disponible
 Marron + M → SKU B → disponible
 Marron + L → SKU C → rupture
 Beige  + L → SKU D → disponible
 ```
 
-Après sélection `Couleur = Marron`, la taille `L` doit être présentée comme indisponible pour cette sélection, avec une raison compréhensible :
+Après `Couleur = Marron` :
 
-```txt
+```text
 L indisponible pour Marron — rupture de stock
 ```
 
-### État de sélection unique
+### Owner unique
 
-L'état dérivé de sélection possède :
+`modal-selection-model.js` possède :
 
-```txt
+```text
 selected_options
 selected_sku_id
 selected_media
@@ -137,55 +150,76 @@ option_states
 selection_message
 ```
 
-`option_states` utilise des états explicites :
+États d'option :
 
-```txt
+```text
 AVAILABLE
 OUT_OF_STOCK
 INCOMPATIBLE
 ```
 
-Le mobile et le desktop lisent le même état.
+Changer un axe amont efface les choix aval dans l'ordre de `option_axes`.
+
+Exemple :
+
+```text
+Marron + M
+    ↓ changement Couleur
+Beige
+    ↓
+Taille effacée
+```
+
+### Produit legacy
+
+```text
+inventory_model = LEGACY_VARIANTS
+        ↓
+selection_supported = false
+```
+
+Aucun renderer ne transforme des axes legacy en faux SKU.
 
 ### Interdit
 
-- décider dans `_buildSizeGrid()` qu'une taille est disponible uniquement via `opt.stock` de l'axe Taille ;
-- reconstruire une matrice couleur × taille dans deux renderers ;
-- faire de `variant_combo` le canal de vérité du stock cible ;
-- choisir un SKU silencieusement alors que la sélection utilisateur reste ambiguë ;
-- masquer une rupture sans raison lorsque le contrat fournit un état explicable.
+- décider dans `_buildSizeGrid()` qu'une taille est disponible via `opt.stock` ;
+- reconstruire couleur × taille dans un renderer ;
+- créer deux reducers mobile/desktop ;
+- utiliser `variant_combo` comme vérité de stock frontend ;
+- choisir un SKU silencieusement alors que la sélection reste ambiguë ;
+- masquer une rupture explicable.
+
+`state.modalVariantCombo` reste temporairement une **copie lisible de `selected_options`** pour la compatibilité transactionnelle actuelle. Il ne dérive aucune disponibilité.
 
 ---
 
-## 5. Doctrine média / mises en scène
+## 5. Doctrine média
 
-La zone média n'est plus une simple photo produit unique.
+La modal rend les médias reçus. Elle ne déduit jamais une association depuis :
 
-Le contrat peut fournir :
+- le nom du fichier ;
+- l'ordre de l'image ;
+- une couleur dominante ;
+- le viewport.
 
-- image produit principale ;
-- vues complémentaires ;
-- mises en scène ;
-- médias associés à une couleur ou à un SKU.
-
-La modal rend les médias reçus. Elle ne devine pas qu'une image appartient à « Marron » depuis son nom de fichier ou son ordre.
-
-### Mobile
+### Mobile PDC-4
 
 - galerie swipe ;
-- compteur `N/N` ;
-- média dominant ;
-- libellé éditorial éventuel fourni par le contrat ;
-- bouton **Voir en grand** géré par `b-modal-image-ux.js`.
+- compteur `N/N` dès deux médias pour une fiche détail enrichie ;
+- vignettes couleur photo depuis `thumbnail_url` ;
+- galerie reconstruite depuis `selected_media` ;
+- `setupImageUX()` relit les slides après reconstruction ;
+- bouton **Voir en grand** et fullscreen restent propriétaires de `b-modal-image-ux.js`.
 
-Les vignettes couleur utilisent une image réelle du produit lorsque `thumbnail_url` est fourni par le contrat. Pas de fallback hex inventé.
+Le seuil legacy historique du compteur reste distinct tant que PDC-6 n'a pas éteint l'ancien chemin.
 
-### Desktop
+### Desktop PDC-5
 
 - galerie à gauche ;
-- miniatures / navigation média ;
 - Buy Box à droite ;
-- même sélection média dérivée que le mobile.
+- même `selected_media` que mobile ;
+- changement d'option → même reducer → nouvelle galerie ;
+- aucune reconstruction média dans `b-modal-desktop-enhancers.js`.
 
 Le desktop n'est pas un mobile agrandi. Le média reste cependant la même vérité produit.
 
@@ -193,17 +227,15 @@ Le desktop n'est pas un mobile agrandi. Le média reste cependant la même véri
 
 ## 6. Doctrine livraison
 
-La modal sait rendre une liste d'options de livraison. Elle ne décide jamais d'un rail.
+La modal rend :
 
-Entrée :
-
-```txt
+```text
 delivery_options[]
 ```
 
-Chaque option publique peut porter :
+Chaque option peut porter :
 
-```txt
+```text
 code
 label
 available
@@ -214,24 +246,42 @@ unavailable_reason
 
 Le frontend ne contient pas une liste fixe `STANDARD / EXPRESS`.
 
-Aujourd'hui, `AIR_EXPRESS` est connu par `logistics` mais n'est pas commercialement exposable. Il ne doit donc pas être présenté comme promesse client.
+Aujourd'hui, `AIR_EXPRESS` reste absent tant qu'il n'est pas commercialement exposable par les moteurs propriétaires.
 
-Demain, lorsque les moteurs propriétaires exposent Standard et Express, la modal affiche les deux **sans changer sa doctrine**.
+Demain, lorsque le contrat fournit Standard et Express, **les deux renderers les affichent sans nouvelle doctrine**.
+
+### Absence honnête
+
+```text
+price_kmf = null
+eta_label = null
+```
+
+n'autorise aucun fallback :
+
+```text
+Gratuit
+3 à 5 semaines
+```
+
+### Owners de rendu
+
+- mobile : `b-modal-mobile-product.js` ;
+- desktop : `b-modal-desktop-product.js`.
 
 ### Interdit
 
-- `product.delivery_delay || '3 à 5 semaines'` comme vérité universelle ;
-- injecter « Point relais · Gratuit · 3 à 5 semaines » depuis `b-modal-desktop-enhancers.js` sans contrat backend ;
-- déduire Express depuis le poids, le produit ou le viewport dans le frontend ;
-- afficher un prix ou un délai Express tant que `logistics` et `economic-engine` ne l'ont pas rendu commercialement exposable.
+- `product.delivery_delay || '3 à 5 semaines'` ;
+- « Point relais · Gratuit · 3 à 5 semaines » dans un enhancer ;
+- déduire Express depuis poids, produit ou viewport ;
+- rendre la livraison produit depuis `b-modal-approche-c-hybrid.js` ;
+- rendre la livraison produit depuis `b-modal-desktop-enhancers.js`.
 
 ---
 
-## 7. Composition mobile cible
+## 7. Composition mobile PDC-4
 
-Ordre fonctionnel cible :
-
-```txt
+```text
 TOPBAR
 MEDIA / MISES EN SCÈNE / SWIPE
 IDENTITÉ + PRIX
@@ -244,98 +294,175 @@ AJOUTER / ACHETER — actions visibles/sticky
 ENRICHISSEMENTS / SUGGESTIONS
 ```
 
-Invariants mobile :
+Invariants :
 
-- ne pas casser le scroll ni les actions visibles ;
-- le choix couleur rafraîchit l'état des autres axes depuis le reducer unique ;
+- le choix couleur rafraîchit les autres axes depuis le reducer unique ;
 - une rupture est expliquée dans le contexte de la sélection ;
-- la galerie suit les médias associés quand le contrat les fournit ;
-- aucune logique métier n'est dupliquée dans une bottom-sheet de taille.
+- la galerie suit `selected_media` ;
+- Ajouter/Acheter restent désactivés en mode SKU sans `selected_sku_id` ;
+- aucune bottom-sheet ne possède une seconde logique de taille.
 
 ---
 
-## 8. Composition desktop cible
+## 8. Composition desktop PDC-5
 
-```txt
+```text
 ┌─────────────────────────┬──────────────────────────┐
 │                         │  Nom / Référence         │
 │     GALERIE / MÉDIAS    │  Prix / Promotion       │
 │                         │                          │
-│   miniatures / scène    │  Couleurs photo          │
-│   image dominante       │  Tailles combo-aware     │
+│   média dominant        │  Couleurs photo          │
+│   carousel / fullscreen │  Tailles combo-aware     │
 │                         │  disponibilité expliquée │
 │                         │                          │
 │                         │  Livraison(s) publique(s)│
 │                         │  Quantité                │
+│                         │  Sous-total              │
 │                         │  AJOUTER / ACHETER        │
 └─────────────────────────┴──────────────────────────┘
 
-       détails / éditorial / suggestions dessous
+       navigation / partage / trust / récemment vus dessous
 ```
 
-`b-modal-desktop-enhancers.js` peut améliorer la composition desktop : breadcrumb, partage, détails, récemment vus, placement Buy Box.
+### `b-modal-desktop-product.js`
 
-Il ne doit plus reconstruire lui-même :
+Possède le rendu transactionnel desktop :
 
-- le prix commercial ;
-- le stock ;
-- la disponibilité variante ;
-- les options de livraison ;
-- un délai de transport.
+- identité ;
+- prix produit ou prix du SKU sélectionné ;
+- ancien prix uniquement depuis `old_price_kmf` ;
+- référence SKU sélectionnée ;
+- disponibilité depuis `state.modalSelection` ;
+- axes ;
+- raison d'indisponibilité ;
+- livraison depuis `delivery_options` ;
+- sous-total `prix courant × modalQty` ;
+- galerie depuis `selected_media`.
 
-Ces informations viennent du contrat / ViewModel.
+Il ne calcule aucune vérité métier nouvelle.
+
+### `b-modal-desktop-enhancers.js`
+
+Est un enhancer de composition uniquement :
+
+- breadcrumb ;
+- partage ;
+- trust générique ;
+- récemment vus.
+
+Il est interdit qu'il reconstruise :
+
+- prix ;
+- ancien prix ;
+- économie EUR ;
+- stock ;
+- rareté ;
+- livraison ;
+- sous-total ;
+- disponibilité variante.
+
+### `b-modal-approche-c-hybrid.js`
+
+Peut composer :
+
+- placement des actions ;
+- garde minimale de quantité ;
+- UI de choix paiement ;
+- entrée partage existante.
+
+Il ne rend plus :
+
+- livraison produit ;
+- sous-total produit.
 
 ---
 
-## 9. Cas sensible : Voir en grand mobile
+## 9. Transition jusqu'à PDC-6
+
+`b-modal-core.js` lance encore le fetch legacy `/api/products/:id` et peut repeindre tardivement `#k-modal-variants`.
+
+PDC-4/PDC-5 utilisent temporairement un guard de repaint dans :
+
+```text
+b-modal-product-detail-bootstrap.js
+```
+
+Il vérifie seulement que le root attendu existe :
+
+```text
+mobile  → [data-pdc4-root]
+desktop → [data-pdc5-root]
+```
+
+Si le renderer legacy remplace ce root, le guard rerend depuis :
+
+```text
+state.modalProductDetail
+state.modalSelection
+```
+
+Le guard :
+
+- ne charge pas un second contrat ;
+- ne recalcule aucun stock ;
+- ne recrée aucune sélection ;
+- doit disparaître en PDC-6 avec le fetch legacy.
+
+Autres dettes transitoires PDC-6 :
+
+- alias `b-modal-mobile-product-bootstrap.js` ;
+- `_renderVariants()` legacy ;
+- classes structurelles de `modal-view-model.js` si elles ne sont plus nécessaires après confrontation runtime.
+
+---
+
+## 10. Cas sensible : Voir en grand
 
 Owner fonctionnel : `public/boutique/js/b-modal-image-ux.js`.
 
 Owner CSS : `public/boutique/css/modal-media.css`.
 
-Orchestrateur : `public/boutique/js/b-modal-core.js`.
-
 Invariants :
 
-- le bouton **Voir en grand** est injecté dans la zone media de la modal produit ;
-- le fullscreen image appartient à `b-modal-image-ux.js`, pas au catalogue ;
-- le layout et la position du bouton appartiennent à `modal-media.css` ;
-- ne pas corriger ce parcours depuis `public/boutique/js/b-catalog.js`, `public/boutique/css/products.css` ou `public/boutique/css/boutique-desktop.css`.
+- **Voir en grand** est injecté dans la zone média ;
+- fullscreen appartient à `b-modal-image-ux.js` ;
+- position/layout appartiennent à `modal-media.css` ;
+- les renderers responsive reconstruisent le carousel puis appellent `setupImageUX()` ;
+- ne pas corriger ce parcours depuis `b-catalog.js`, `products.css` ou `boutique-desktop.css`.
 
 ---
 
-## 10. Règles de modification
+## 11. Règles de modification
 
 ### JS
 
-Modifier le fichier owner de la zone touchée :
-
-- ouverture/fermeture/fetch détail → `public/boutique/js/b-modal-core.js` ;
-- sélection et contrat d'affichage → owner ViewModel/reducer unique ;
-- rendu produit catalogue → `public/boutique/js/b-modal-product.js` ;
-- image, carousel, lightbox, **Voir en grand** → `public/boutique/js/b-modal-image-ux.js` ;
-- suggestions → `public/boutique/js/b-modal-suggestions.js` ;
-- panier depuis modal → `public/boutique/js/b-modal-cart.js` ;
-- composition desktop → `public/boutique/js/b-modal-desktop-enhancers.js`.
+| Besoin | Owner |
+|---|---|
+| Fetch Product Detail / cycle d'état responsive | `b-modal-product-detail-bootstrap.js` |
+| Disponibilité / SKU / média dérivé | `view-models/modal-selection-model.js` |
+| Composition mobile | `b-modal-mobile-product.js` |
+| Composition desktop transactionnelle | `b-modal-desktop-product.js` |
+| Carousel / compteur / fullscreen | `b-modal-image-ux.js` |
+| Navigation / partage / trust / récemment vus desktop | `b-modal-desktop-enhancers.js` |
+| Placement actions / UI paiement hybride | `b-modal-approche-c-hybrid.js` |
+| Suggestions | `b-modal-suggestions.js` |
+| Panier depuis modal | `b-modal-cart.js` |
 
 La modal produit ne doit pas posséder :
 
 - le pager catégories ;
 - le hero ;
-- le panier partagé participant ;
-- la fiche snapshot lecture seule ;
+- la fiche snapshot shared-cart ;
 - la décision de rail ;
 - le pricing transport ;
 - la vérité de stock.
 
 ### CSS
 
-Modifier le fichier CSS owner :
-
-- structure overlay/topbar/actions → `public/boutique/css/modal-shell.css` ;
-- image/carousel/media/**Voir en grand** → `public/boutique/css/modal-media.css` ;
-- infos produit/prix/sélection/actions → `public/boutique/css/modal-product.css` ;
-- enrichissement hybride desktop → `public/boutique/css/modal-product-lot4-hybrid.css`.
+- overlay/topbar/actions → `modal-shell.css` ;
+- image/carousel/media/**Voir en grand** → `modal-media.css` ;
+- infos produit/prix/sélection/actions → `modal-product.css` ;
+- composition hybride desktop → `modal-product-lot4-hybrid.css`.
 
 Après modification CSS :
 
@@ -348,23 +475,22 @@ npm run audit:arch
 
 ---
 
-## 11. Invariants
+## 12. Invariants de revue
 
-- La modal catalogue affiche le catalogue vivant ; la fiche shared-cart affiche le snapshot.
-- Une unité vendable = un SKU ; les axes ne portent pas une vérité de stock indépendante.
-- Un seul owner dérive l'état de sélection pour mobile et desktop.
-- Les médias sont rendus depuis leurs associations explicites ; aucune déduction depuis le nom de fichier.
+- La modal catalogue affiche le catalogue vivant ; shared-cart affiche son snapshot.
+- Une unité vendable = un SKU.
+- Un seul fetch Product Detail alimente les deux viewports.
+- Un seul reducer dérive l'état de sélection.
+- Mobile et desktop lisent le même `state.modalSelection`.
+- Les médias viennent d'associations explicites.
 - Le frontend ne décide jamais d'un rail ni d'un délai de livraison.
-- Mobile : ne pas casser le scroll ni les actions visibles.
-- Desktop : ne pas corriger un problème de layout global depuis la modal.
+- Le desktop ne possède plus de second moteur produit dans ses enhancers.
 - Pas de CSS stable injecté par JS.
-- Pas de sélecteurs `.k-modal-*` dispersés hors fichiers modal owners sans raison documentée.
-- Toute modification du parcours **Voir en grand** passe par `b-modal-image-ux.js` et `modal-media.css`.
-- `b-modal-desktop-enhancers.js` reste un enhancer de composition, jamais un second moteur produit.
+- Le guard legacy est une dette PDC-6 ; ne pas l'étendre.
 
 ---
 
-## 12. Tests
+## 13. Tests
 
 Après modification modal :
 
@@ -376,33 +502,24 @@ npm run check:body-classes
 npm run audit:arch
 ```
 
-Depuis la racine repo :
+Depuis la racine :
 
 ```bash
 npm run gate:boutique-ownership
 npm run map:check
 ```
 
-Tests métier de sélection obligatoires au Lot PDC-3 :
+Scénarios métier obligatoires :
 
-1. couleur A + taille disponible → SKU précis ;
+1. couleur A + taille disponible → même `sku_id` mobile et desktop ;
 2. couleur A + taille en rupture → `OUT_OF_STOCK` + raison ;
 3. couleur B rend la même taille disponible → état rafraîchi ;
 4. combinaison inexistante → `INCOMPATIBLE` ;
 5. sélection partielle → aucun SKU choisi silencieusement ;
 6. produit sans variante → SKU par défaut ;
-7. média associé à une couleur → galerie rafraîchie ;
-8. absence d'Express dans `delivery_options` → aucune UI Express inventée.
-
-Tests manuels :
-
-1. ouvrir une fiche produit depuis la grille mobile ;
-2. swiper les médias et vérifier le compteur ;
-3. changer de couleur et vérifier médias + tailles ;
-4. vérifier une taille indisponible avec raison contextuelle ;
-5. ouvrir le fullscreen image puis le fermer ;
-6. vérifier les options de livraison réellement reçues ;
-7. ajouter au panier avec le `sku_id` sélectionné ;
-8. ouvrir la même fiche desktop et retrouver la même disponibilité ;
-9. fermer et retrouver le scroll correct ;
-10. vérifier que la fiche lecture seule du panier partagé n'a pas été changée par erreur.
+7. média associé à une couleur → même galerie dérivée mobile/desktop ;
+8. absence d'Express dans `delivery_options` → aucune UI Express inventée ;
+9. `old_price_kmf = null` → aucun ancien prix reconstruit depuis la promotion ;
+10. quantité desktop modifiée → sous-total recalculé depuis le prix courant du contrat/SKU ;
+11. enhancer desktop → aucun write prix/stock/livraison/sous-total ;
+12. repaint legacy tardif → root responsive restauré depuis l'état partagé pendant la transition PDC-6.
