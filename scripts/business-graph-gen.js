@@ -19,7 +19,7 @@
  * Usage :
  *   node scripts/business-graph-gen.js              (re)génère
  *   node scripts/business-graph-gen.js --check      cliquet — stale ou référence invalide -> exit 1
- *   node scripts/business-graph-gen.js --boutique-root DIR   racine du SCOPE boutique (répertoire ; défaut ../boutique — voir model.scopeTopology pour la relation Git réelle, souvent une sous-arborescence du même dépôt, pas un checkout séparé)
+ *   node scripts/business-graph-gen.js --boutique-root DIR   racine du SCOPE boutique (répertoire ; défaut ../boutique — voir model.scopeTopology pour la position dans l'arbre, déterministe, souvent une sous-arborescence du même dépôt, pas un checkout séparé)
  *   node scripts/business-graph-gen.js --root DIR
  */
 
@@ -64,33 +64,48 @@ const DASH_KNOWN_COPY_DIVERGENCES = {
 // désignait en réalité un franchissement de SCOPE (frontière de gouvernance
 // déclarée : manifests/registre/autorité propres à backend, dash, boutique),
 // pas nécessairement un franchissement de dépôt Git séparé. Dans CETTE
-// topologie (vérifié : aucun .git ni sous ROOT ni sous public/boutique ni
-// sous public/dashboards — cf. AGENTS.md/mémoire produit qui décrivent
-// Komerce comme un monorepo backend + boutique + dashboards), boutique et
-// dash sont des SOUS-RÉPERTOIRES du même arbre que le backend, pas des
+// topologie (Komerce : monorepo backend + boutique + dashboards), boutique
+// et dash sont des SOUS-RÉPERTOIRES du même arbre que le backend, pas des
 // checkouts Git distincts. Les flags --dash-root/--boutique-root et les
 // variables KOMERCE_DASH_ROOT/KOMERCE_BOUTIQUE_ROOT existent pour permettre
 // à ce générateur de fonctionner AUSSI si un jour ces scopes vivent dans des
-// dépôts Git réellement séparés (topologie historique visée par O1.5/O3) —
-// mais ce n'est PAS la topologie observée ici, et le prétendre serait
-// factuellement faux. detectScopeRelation() constate, ne suppose jamais.
-function detectScopeRelation(mountPath) {
+// dépôts Git réellement séparés (topologie historique visée par O1.5/O3).
+//
+// Fix O4.1.1 (déterminisme) : cette fonction ne doit JAMAIS dépendre de
+// fs.existsSync('.git'). La présence physique d'un répertoire .git varie
+// selon l'environnement d'exécution (ZIP extrait / clone Git local / CI
+// GitHub Actions) sans que le code métier ni la gouvernance n'aient changé,
+// ce qui rendait `docs/BUSINESS_FEATURE_GRAPH.json` non déterministe entre
+// environnements bien que comparé strictement par `business-graph:check`.
+// computeScopeTopology() constate uniquement des faits stables et
+// reconstructibles à partir des paths/configurations du générateur
+// (mountPath, position relative à ROOT) — jamais de l'état du filesystem Git.
+// La distinction conceptuelle "cross-scope" vs "dépôt Git séparé" reste
+// possible via `relation`, mais n'est plus dérivée d'une détection runtime :
+// un mountPath hors de l'arbre ROOT est classé 'external-path-scope' sans
+// prétendre vérifier s'il s'agit effectivement d'un dépôt Git séparé.
+function computeScopeTopology(mountPath) {
   if (!fs.existsSync(mountPath)) return { mounted: false, relation: 'not-mounted' };
   const rel = path.relative(ROOT, mountPath);
   const isNestedUnderRoot = rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
-  const hasOwnGitDir = fs.existsSync(path.join(mountPath, '.git'));
-  const rootHasGitDir = fs.existsSync(path.join(ROOT, '.git'));
-  let relation;
-  if (isNestedUnderRoot && !hasOwnGitDir) {
-    relation = 'same-repository-subdirectory'; // constat direct : pas de .git propre, imbriqué sous ROOT
-  } else if (isNestedUnderRoot && hasOwnGitDir) {
-    relation = 'nested-but-has-own-git-dir'; // cas nested git (submodule-like) — rare, signalé tel quel
-  } else if (!isNestedUnderRoot && hasOwnGitDir) {
-    relation = 'separate-git-checkout'; // chemin externe avec son propre .git — vraiment "cross-repo"
-  } else {
-    relation = 'externally-mounted-path-git-relationship-unverified'; // chemin externe sans .git détecté ici
+  const relation = isNestedUnderRoot
+    ? 'same-tree-scope' // sous-arborescence du même arbre versionné que ROOT — constat purement positionnel
+    : 'external-path-scope'; // chemin hors de l'arbre ROOT — cross-scope potentiellement cross-repo, non vérifié ici pour rester déterministe
+  return { mounted: true, relation, isNestedUnderRoot };
+}
+
+// Détection informative de la présence de .git — JAMAIS sérialisée dans
+// docs/BUSINESS_FEATURE_GRAPH.json ni .md. Utilisée uniquement pour un log
+// runtime facultatif (utile en debug local), sans influence sur l'artefact
+// gouverné ni sur son déterminisme entre environnements.
+function logGitPresenceInfo(scopeLabel, mountPath) {
+  try {
+    const hasOwnGitDir = fs.existsSync(path.join(mountPath, '.git'));
+    const rootHasGitDir = fs.existsSync(path.join(ROOT, '.git'));
+    console.log(`[business-graph-gen] (info runtime, non sérialisé) scope=${scopeLabel} hasOwnGitDir=${hasOwnGitDir} rootHasGitDir=${rootHasGitDir}`);
+  } catch {
+    // best-effort logging only — ne doit jamais faire échouer la génération
   }
-  return { mounted: true, relation, hasOwnGitDir, rootHasGitDir, isNestedUnderRoot };
 }
 
 const DOCS = path.join(ROOT, 'docs');
@@ -972,6 +987,12 @@ function build() {
     },
   };
 
+  // Log informatif uniquement (debug local) — ces appels n'écrivent rien dans
+  // `model` et n'influencent jamais docs/BUSINESS_FEATURE_GRAPH.json/.md.
+  logGitPresenceInfo('backend/ROOT', ROOT);
+  logGitPresenceInfo('dash', DASH_ROOT);
+  logGitPresenceInfo('boutique', BOUTIQUE_ROOT);
+
   const model = {
     // Lot O4-2 (point 8) : le format a changé depuis O3-1.0 — nouveaux nœuds
     // (boutique-manifest), nouvel edge type (BOUTIQUE_MANIFEST_IMPLEMENTED_BY),
@@ -1020,9 +1041,9 @@ function build() {
     // relation ci-dessous n'est pas 'separate-git-checkout'.
     scopeTopology: {
       backend: { mountPath: '.', relation: 'self', note: 'scope de référence — ce générateur tourne depuis ce dépôt' },
-      dash: { mountPath: path.relative(ROOT, DASH_ROOT) || '.', ...detectScopeRelation(DASH_ROOT) },
-      boutique: { mountPath: path.relative(ROOT, BOUTIQUE_ROOT) || '.', ...detectScopeRelation(BOUTIQUE_ROOT) },
-      note: '"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="separate-git-checkout" ci-dessus pour le scope concerné.',
+      dash: { mountPath: path.relative(ROOT, DASH_ROOT) || '.', ...computeScopeTopology(DASH_ROOT) },
+      boutique: { mountPath: path.relative(ROOT, BOUTIQUE_ROOT) || '.', ...computeScopeTopology(BOUTIQUE_ROOT) },
+      note: '"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance). relation constate la position dans l\'arbre (same-tree-scope / external-path-scope), de façon déterministe et indépendante de la présence physique de .git — voir logGitPresenceInfo() pour un diagnostic runtime non sérialisé.',
     },
     drifts: {
       error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
@@ -1083,13 +1104,13 @@ function renderMd(model) {
   L.push('> **Note de terminologie (Lot O4-2, point 9)** — "cross-repo" dans les livrables O4 précédents désignait en réalité un franchissement de **scope** (frontière de gouvernance : manifests/registre/autorité propres à backend, dash, boutique), pas nécessairement un franchissement de **dépôt Git séparé**. Le tableau ci-dessous constate la relation réelle par scope. Tant qu\'une ligne n\'affiche pas `separate-git-checkout`, "cross-repo" doit se lire "cross-scope" — un franchissement de frontière de gouvernance à l\'intérieur du même arbre versionné.');
   L.push('');
   if (model.scopeTopology) {
-    L.push('### Topologie des scopes (relation Git réelle)');
+    L.push('### Topologie des scopes (position dans l\'arbre — déterministe)');
     L.push('');
-    L.push('| Scope | Chemin monté | Relation constatée | Sous ROOT ? | .git propre ? |');
-    L.push('|---|---|---|---|---|');
+    L.push('| Scope | Chemin monté | Relation constatée | Sous ROOT ? |');
+    L.push('|---|---|---|---|');
     for (const [scope, t] of Object.entries(model.scopeTopology)) {
       if (scope === 'note') continue;
-      L.push(`| ${scope} | \`${t.mountPath}\` | \`${t.relation}\` | ${t.isNestedUnderRoot === undefined ? '—' : (t.isNestedUnderRoot ? 'oui' : 'non')} | ${t.hasOwnGitDir === undefined ? '—' : (t.hasOwnGitDir ? 'oui' : 'non')} |`);
+      L.push(`| ${scope} | \`${t.mountPath}\` | \`${t.relation}\` | ${t.isNestedUnderRoot === undefined ? '—' : (t.isNestedUnderRoot ? 'oui' : 'non')} |`);
     }
     L.push('');
     L.push(`_${model.scopeTopology.note}_`);

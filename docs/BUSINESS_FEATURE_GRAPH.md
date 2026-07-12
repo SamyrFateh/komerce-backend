@@ -58,15 +58,15 @@ Synthèse de couverture par scope et identités métier cross-scope. Voir missio
 
 > **Note de terminologie (Lot O4-2, point 9)** — "cross-repo" dans les livrables O4 précédents désignait en réalité un franchissement de **scope** (frontière de gouvernance : manifests/registre/autorité propres à backend, dash, boutique), pas nécessairement un franchissement de **dépôt Git séparé**. Le tableau ci-dessous constate la relation réelle par scope. Tant qu'une ligne n'affiche pas `separate-git-checkout`, "cross-repo" doit se lire "cross-scope" — un franchissement de frontière de gouvernance à l'intérieur du même arbre versionné.
 
-### Topologie des scopes (relation Git réelle)
+### Topologie des scopes (position dans l'arbre — déterministe)
 
-| Scope | Chemin monté | Relation constatée | Sous ROOT ? | .git propre ? |
-|---|---|---|---|---|
-| backend | `.` | `self` | — | — |
-| dash | `public` | `same-repository-subdirectory` | oui | non |
-| boutique | `public/boutique` | `same-repository-subdirectory` | oui | non |
+| Scope | Chemin monté | Relation constatée | Sous ROOT ? |
+|---|---|---|---|
+| backend | `.` | `self` | — |
+| dash | `public` | `same-tree-scope` | oui |
+| boutique | `public/boutique` | `same-tree-scope` | oui |
 
-_"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="separate-git-checkout" ci-dessus pour le scope concerné._
+_"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance). relation constate la position dans l'arbre (same-tree-scope / external-path-scope), de façon déterministe et indépendante de la présence physique de .git — voir logGitPresenceInfo() pour un diagnostic runtime non sérialisé._
 
 ### Par dépôt
 

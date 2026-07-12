@@ -16630,20 +16630,16 @@
     "dash": {
       "mountPath": "public",
       "mounted": true,
-      "relation": "same-repository-subdirectory",
-      "hasOwnGitDir": false,
-      "rootHasGitDir": false,
+      "relation": "same-tree-scope",
       "isNestedUnderRoot": true
     },
     "boutique": {
       "mountPath": "public/boutique",
       "mounted": true,
-      "relation": "same-repository-subdirectory",
-      "hasOwnGitDir": false,
-      "rootHasGitDir": false,
+      "relation": "same-tree-scope",
       "isNestedUnderRoot": true
     },
-    "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation=\"separate-git-checkout\" ci-dessus pour le scope concerné."
+    "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance). relation constate la position dans l'arbre (same-tree-scope / external-path-scope), de façon déterministe et indépendante de la présence physique de .git — voir logGitPresenceInfo() pour un diagnostic runtime non sérialisé."
   },
   "drifts": {
     "error": [],
