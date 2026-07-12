@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 362,
-    "filesWithFullHeaders": 335,
+    "scannedCodeFiles": 363,
+    "filesWithFullHeaders": 336,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 362,
+    "filesWithAnyHeaders": 363,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 729,
-    "edges": 4184,
+    "graphNodes": 731,
+    "edges": 4197,
     "dbTables": 110,
-    "doctrines": 138,
+    "doctrines": 139,
     "impactAreas": 119,
-    "unresolvedCodeEdges": 400,
+    "unresolvedCodeEdges": 401,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 36,
     "boutique": 37,
-    "catalog": 36,
+    "catalog": 37,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 7,
@@ -77,7 +77,7 @@
     "view-model": 3,
     "route": 99,
     "entrypoint": 1,
-    "service": 146,
+    "service": 147,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 100,
-    "high": 152,
+    "high": 153,
     "low": 34
   },
   "nodes": [
@@ -9135,6 +9135,53 @@
       "version": "2026-07"
     },
     {
+      "id": "services/catalog-product-detail.js",
+      "file": "services/catalog-product-detail.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-product-detail-contract",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_id",
+        "canonical_catalog_rows",
+        "commercially_exposed_transport_rails"
+      ],
+      "outputs": [
+        "public_product_detail_v1"
+      ],
+      "depends": [
+        "services/transport-rails.js",
+        "schemas/catalog/product-detail.v1.schema.json"
+      ],
+      "usedBy": [
+        "routes/catalog-product-detail.js"
+      ],
+      "dbRead": [
+        "product_skus",
+        "product_variants",
+        "products"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/specs/DECISION_MODELE_STOCK_SKU.md",
+        "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-detail",
+        "modal",
+        "logistics"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/catalog-public-view.js",
       "file": "services/catalog-public-view.js",
       "type": "file",
@@ -18079,6 +18126,21 @@
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
+      "id": "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
+      "type": "doctrine",
+      "doctrine": "docs/specs/DECISION_MODELE_STOCK_SKU.md"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
@@ -18264,11 +18326,6 @@
       "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
     },
     {
-      "id": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
-    },
-    {
       "id": "doctrine:DOCTRINE_INGESTION_CATALOGUE (ING-I2)",
       "type": "doctrine",
       "doctrine": "DOCTRINE_INGESTION_CATALOGUE (ING-I2)"
@@ -18287,11 +18344,6 @@
       "id": "doctrine:ING-I3)",
       "type": "doctrine",
       "doctrine": "ING-I3)"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
     },
     {
       "id": "doctrine:whatsapp_template_trace",
@@ -18824,6 +18876,11 @@
       "area": "crons"
     },
     {
+      "id": "impact:product-detail",
+      "type": "impact-area",
+      "area": "product-detail"
+    },
+    {
       "id": "impact:customs",
       "type": "impact-area",
       "area": "customs"
@@ -18892,11 +18949,6 @@
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
-    },
-    {
-      "id": "impact:product-detail",
-      "type": "impact-area",
-      "area": "product-detail"
     },
     {
       "id": "impact:api",
@@ -31704,6 +31756,84 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "services/transport-rails.js",
+      "type": "depends",
+      "label": "services/transport-rails.js"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "schemas/catalog/product-detail.v1.schema.json",
+      "type": "depends",
+      "label": "schemas/catalog/product-detail.v1.schema.json"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "services/catalog-product-detail.js",
+      "type": "uses",
+      "label": "routes/catalog-product-detail.js"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:product_variants",
+      "type": "db-read",
+      "label": "product_variants"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
+      "type": "doctrine",
+      "label": "docs/specs/DECISION_MODELE_STOCK_SKU.md"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "impact:product-detail",
+      "type": "impact",
+      "label": "product-detail"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "impact:modal",
+      "type": "impact",
+      "label": "modal"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
     },
     {
       "from": "routes/products.js",
@@ -52980,6 +53110,54 @@
         "services/product-admin-service.js"
       ]
     },
+    "services/catalog-product-detail.js": {
+      "role": "catalog-product-detail-contract",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/transport-rails.js",
+        "schemas/catalog/product-detail.v1.schema.json"
+      ],
+      "directUsedBy": [
+        "services/catalog-product-detail.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_skus",
+        "product_variants",
+        "products"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/specs/DECISION_MODELE_STOCK_SKU.md",
+        "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-detail",
+        "modal",
+        "logistics"
+      ],
+      "mustCheck": [
+        "db:product_skus",
+        "db:product_variants",
+        "db:products",
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
+        "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
+        "impact:catalog",
+        "impact:logistics",
+        "impact:modal",
+        "impact:product-detail",
+        "services/catalog-product-detail.js",
+        "services/transport-rails.js"
+      ]
+    },
     "services/catalog-public-view.js": {
       "role": "catalog-public-view",
       "domain": "catalog",
@@ -59404,6 +59582,7 @@
         "impact:logistics",
         "impact:notifications",
         "impact:orders",
+        "services/catalog-product-detail.js",
         "services/parcelOptimizationService.js"
       ]
     },
@@ -62834,6 +63013,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "schemas/catalog/product-detail.v1.schema.json",
+      "type": "depends",
+      "label": "schemas/catalog/product-detail.v1.schema.json"
     },
     {
       "from": "services/collective-stock-reservation-service.js",

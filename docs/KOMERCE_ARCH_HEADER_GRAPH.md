@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 362
-- Files with full headers: 335
+- Scanned code files: 363
+- Files with full headers: 336
 - Files with lite headers: 27
-- Files with any headers: 362
+- Files with any headers: 363
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 729
-- Edges: 4184
+- Graph nodes: 731
+- Edges: 4197
 - DB tables: 110
-- Doctrines: 138
+- Doctrines: 139
 - Impact areas: 119
-- Unresolved code edges: 400
+- Unresolved code edges: 401
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 5
 - bootstrap: 1
 - boutique: 37
-- catalog: 36
+- catalog: 37
 - checkout: 2
 - customs: 6
 - dashboard: 30
@@ -63,7 +63,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 99
 - route-manifest: 1
 - schema: 1
-- service: 146
+- service: 147
 - state: 1
 - state-store: 1
 - ui-component: 38
@@ -241,6 +241,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)
 - services/catalog-enrichment.js — catalog-enrichment (catalog, high, full)
 - services/catalog-overrides.js — catalog-field-overrides (catalog, high, full)
+- services/catalog-product-detail.js — catalog-product-detail-contract (catalog, high, full)
 - services/catalog-public-view.js — catalog-public-view (catalog, high, full)
 - services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
