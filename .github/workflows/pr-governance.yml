@@ -28,6 +28,7 @@ jobs:
           npm ci
           npm --prefix public/boutique ci
 
+      # ── Gate 1 : body PR contient un plan d'attaque structuré ──────────────
       - name: Plan d'attaque PR (body)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -35,38 +36,17 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node scripts/pr-governance-check.js
 
+      # ── Gate 2 : fichiers applicatifs touchés ont un signal test ───────────
+      # PR_BODY injecté pour que touched-tests-gate puisse détecter ## Tests
+      # sans appel API supplémentaire.
+      # --strict active la règle de complétion au contact (QUALITY_PYRAMID_DOCTRINE.md
+      # Niveau 3.1) : si un fichier ET son test sont touchés, la couverture doit
+      # atteindre le seuil cible (governance/coverage-thresholds.json), pas juste
+      # "un test existe". Le gate sélectionne désormais le Jest du workspace
+      # concerné (backend racine ou public/boutique).
       - name: Code touché ↔ signal test (touched-tests)
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
-          set +e
-          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict > touched-tests.log 2>&1
-          code=$?
-          cat touched-tests.log
-          echo "$code" > touched-tests.exit-code
-          exit "$code"
-
-      - name: Measure normalized-product detailed coverage
-        if: always()
-        run: |
-          node_modules/.bin/jest \
-            tests/unit/normalized-product.test.js \
-            tests/unit/normalized-product-source-contract-v2.test.js \
-            --runInBand \
-            --coverage \
-            --collectCoverageFrom=services/suppliers/normalized-product.js \
-            --coverageReporters=json \
-            --coverageDirectory=.diag-coverage \
-            --silent || true
-
-      - name: Upload touched-tests diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: touched-tests-diagnostic-real-diff
-          path: |
-            touched-tests.log
-            touched-tests.exit-code
-            .diag-coverage/coverage-final.json
-          retention-days: 1
+          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict
