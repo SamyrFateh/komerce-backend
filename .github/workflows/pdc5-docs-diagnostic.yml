@@ -1,0 +1,37 @@
+name: PDC5 Docs Diagnostic
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  docs-history:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Capture docs history lint
+        run: |
+          set +e
+          node scripts/docs-history-lint.js --strict > docs-history.log 2>&1
+          code=$?
+          cat docs-history.log
+          echo "$code" > docs-history.exit-code
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pdc5-docs-history-diagnostic
+          path: |
+            docs-history.log
+            docs-history.exit-code
+          retention-days: 1
