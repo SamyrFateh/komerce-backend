@@ -103,6 +103,20 @@ const STEPS = [
     cmd:       'npm run arch:gate',
   },
 
+  // ── Business Feature Graph (Lot O3) ─────────────────────────────────────
+  // Résout le pont feature <-> fichier/table/route à partir du Technical
+  // Architecture Graph ci-dessus (arch:gate) et des manifests
+  // features/*.feature.js, capabilities/*.capability.js, et — quand montés —
+  // des dépôts boutique/dash (KOMERCE_BOUTIQUE_ROOT / KOMERCE_DASH_ROOT,
+  // défaut ../boutique / ../dash). Validé standalone (0 error, déterministe
+  // sur deux exécutions) avant activation ici.
+  {
+    label:     'Business Feature Graph (Lot O3)',
+    category:  'gate',
+    npmScript: 'business-graph:check',
+    cmd:       'npm run business-graph:check',
+  },
+
   // ── Reconstructions 360 ────────────────────────────────────────────────
   {
     label:     'Dashboard 360 check',

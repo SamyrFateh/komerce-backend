@@ -42,6 +42,8 @@
     "boutique:360": "node scripts/gen-boutique-360.js",
     "boutique:360:check": "node scripts/gen-boutique-360.js --check",
     "boutique:360:save": "node scripts/gen-boutique-360.js --save",
+    "business-graph:gen": "node scripts/business-graph-gen.js",
+    "business-graph:check": "node scripts/business-graph-gen.js --check",
     "meta:graph": "node scripts/gen-meta-graph.js",
     "meta:graph:check": "node scripts/gen-meta-graph.js --check",
     "meta:graph:save": "node scripts/gen-meta-graph.js --save",

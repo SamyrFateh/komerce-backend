@@ -1,0 +1,913 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * business-graph-gen.js — Lot O3 : Business Feature Graph & Ownership Bridge.
+ *
+ *   Construit le pont entre la vérité métier déclarée (features/*.feature.js,
+ *   docs/doctrine/APP_FEATURE_REGISTRY.md) et la vérité structurelle observée
+ *   (docs/komerce-arch-header-graph.json, docs/contract/openapi.json).
+ *
+ *   Ne recopie PAS le Technical Architecture Graph : résout les références des
+ *   cartes vers les nœuds déjà reconstruits par generate-komerce-arch-graph.js.
+ *
+ *   Source d'autorité métier (ordre décroissant) :
+ *     FEATURE_DOCTRINE > APP_FEATURE_REGISTRY > features/*.feature.js > ce graphe généré
+ *
+ *   Sorties : docs/BUSINESS_FEATURE_GRAPH.json + docs/BUSINESS_FEATURE_GRAPH.md
+ *
+ * Usage :
+ *   node scripts/business-graph-gen.js              (re)génère
+ *   node scripts/business-graph-gen.js --check      cliquet — stale ou référence invalide -> exit 1
+ *   node scripts/business-graph-gen.js --boutique-root DIR   racine du dépôt boutique (défaut ../boutique)
+ *   node scripts/business-graph-gen.js --root DIR
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const args = process.argv.slice(2);
+const CHECK = args.includes('--check');
+function argVal(f) { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; }
+
+const ROOT = path.resolve(argVal('--root') || path.join(__dirname, '..'));
+const BOUTIQUE_ROOT = path.resolve(ROOT, argVal('--boutique-root') || process.env.KOMERCE_BOUTIQUE_ROOT || '../boutique');
+// Dépôt `dash` (dashboards admin, hub, relais) — cf. APP_FEATURE_REGISTRY.md
+// « Les trois dépôts et leur gouvernance propre ». Absent lors du premier
+// passage O1.5/O3, désormais montable comme boutique (sibling dir, override
+// possible). Contient DEUX localisations de manifests pour admin-dashboard et
+// legacy-control-tower (`dashboards/features/` = canonique, `features/` =
+// copie octet-pour-octet documentée — voir registry lignes #19/#22, #20/#23),
+// et un manifest `platform` uniquement dans `features/` (pas de copie).
+const DASH_ROOT = path.resolve(ROOT, argVal('--dash-root') || process.env.KOMERCE_DASH_ROOT || '../dash');
+const DASH_ROOT_MOUNTED = fs.existsSync(DASH_ROOT);
+const DASH_CANONICAL_FEATURES_DIR = path.join(DASH_ROOT, 'dashboards', 'features');
+const DASH_COPY_FEATURES_DIR = path.join(DASH_ROOT, 'features');
+// Divergence déjà documentée (APP_FEATURE_REGISTRY.md ligne #22) entre la copie
+// et le canonique pour admin-dashboard : une ligne ClientsView.js en plus dans
+// la copie `features/`, non liée à ce lot — tolérée telle quelle, pas une erreur.
+const DASH_KNOWN_COPY_DIVERGENCES = {
+  'admin-dashboard': [
+    "    '../admin/js/ClientsView.js',",
+  ],
+};
+const DOCS = path.join(ROOT, 'docs');
+const FEATURES_DIR = path.join(ROOT, 'features');
+const ARCH_GRAPH_FILE = path.join(DOCS, 'komerce-arch-header-graph.json');
+const OPENAPI_FILE = path.join(DOCS, 'contract', 'openapi.json');
+const OUT_JSON = path.join(DOCS, 'BUSINESS_FEATURE_GRAPH.json');
+const OUT_MD = path.join(DOCS, 'BUSINESS_FEATURE_GRAPH.md');
+
+const C = {
+  red: '\x1b[31m', grn: '\x1b[32m', ylw: '\x1b[33m',
+  cyn: '\x1b[36m', dim: '\x1b[2m', bld: '\x1b[1m', r: '\x1b[0m',
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// 0. Baseline métier O2 (section 2 de la mission O3 / APP_FEATURE_REGISTRY).
+//    Utilisée UNIQUEMENT comme repli quand classification.kind est absent
+//    d'un manifest (dette ratchet phase 1, cf. feature-classification-check.js).
+//    Si classification.kind existe et contredit cette baseline -> DRIFT ERROR.
+//    Cette liste n'est pas une nouvelle doctrine : elle reformule en JSON la
+//    classification déjà arrêtée par O2 (mission O3 §2), le temps que le
+//    backfill de `classification` sur les 13 cartes restantes progresse.
+// ─────────────────────────────────────────────────────────────────────────
+const O2_BASELINE = {
+  'business-feature': [
+    'shared-cart', 'orders', 'purchasing', 'payments', 'wallet', 'loyalty',
+    'logistics', 'economic-engine', 'catalog', 'sourcing', 'customs',
+    'inventory', 'unsold-resolution', 'recommendations',
+  ],
+  'business-transversal': [
+    'notifications', 'documents', 'refunds', 'dashboard', 'incident-management',
+  ],
+  'technical-transversal': [
+    'auth', 'auth-identity', 'platform-ops', 'infrastructure',
+  ],
+  'piloting-capability': ['decision-signals'],
+  // Section « projection / ui-shell » de la mission — FEATURE_DOCTRINE distingue
+  // en interne projection (admin-dashboard) et frontend-transversal (platform) ;
+  // les deux restent affichés sous la même vue Markdown "Projections / UI Shells".
+  'projection': ['admin-dashboard'],
+  'frontend-transversal': ['platform'],
+  'deprecated': ['wallet-loyalty', 'legacy-control-tower'],
+};
+const NAME_TO_BASELINE_KIND = {};
+for (const [kind, names] of Object.entries(O2_BASELINE)) {
+  for (const n of names) NAME_TO_BASELINE_KIND[n] = kind;
+}
+
+// Manifests attendus dans un autre dépôt (dash) non monté dans cet environnement.
+const DASH_REPO_NAMES = new Set(['admin-dashboard', 'legacy-control-tower', 'platform']);
+
+// ─────────────────────────────────────────────────────────────────────────
+// 1. Chargement des sources
+// ─────────────────────────────────────────────────────────────────────────
+function loadJSON(f, label, errors) {
+  if (!fs.existsSync(f)) {
+    errors.push(`Source manquante : ${label} (${path.relative(ROOT, f)}). Lance le générateur correspondant d'abord.`);
+    return null;
+  }
+  try { return JSON.parse(fs.readFileSync(f, 'utf8')); }
+  catch (e) { errors.push(`Source illisible : ${label} — ${e.message}`); return null; }
+}
+
+function loadFeatureManifests() {
+  const out = [];
+  if (!fs.existsSync(FEATURES_DIR)) return out;
+  for (const f of fs.readdirSync(FEATURES_DIR)) {
+    if (!f.endsWith('.feature.js') || f.startsWith('_')) continue;
+    const full = path.join(FEATURES_DIR, f);
+    try {
+      delete require.cache[require.resolve(full)];
+      const m = require(full);
+      m.__file = path.relative(ROOT, full);
+      out.push(m);
+    } catch (e) {
+      out.push({ name: f.replace(/\.feature\.js$/, ''), __file: path.relative(ROOT, full), __broken: e.message });
+    }
+  }
+  return out.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+}
+
+function loadOneManifest(full, repoRootForCache) {
+  delete require.cache[require.resolve(full)];
+  return require(full);
+}
+
+// Charge les manifests du dépôt `dash`, s'il est monté. Convention observée
+// (APP_FEATURE_REGISTRY.md) : `dashboards/features/*.feature.js` est la copie
+// canonique pour les manifests qui y vivent (admin-dashboard, legacy-control-
+// tower) ; `features/*.feature.js` contient soit une copie octet-pour-octet
+// de la précédente (mêmes deux noms), soit un manifest qui n'existe qu'à cet
+// emplacement (platform, pas de copie dashboards/). On ne charge chaque nom
+// qu'une fois (canonique en priorité), et on vérifie la copie pour divergence
+// non documentée.
+function loadDashFeatureManifests(warns) {
+  const out = [];
+  if (!DASH_ROOT_MOUNTED) return out;
+
+  const canonicalNames = new Set();
+  if (fs.existsSync(DASH_CANONICAL_FEATURES_DIR)) {
+    for (const f of fs.readdirSync(DASH_CANONICAL_FEATURES_DIR)) {
+      if (!f.endsWith('.feature.js') || f.startsWith('_')) continue;
+      const full = path.join(DASH_CANONICAL_FEATURES_DIR, f);
+      let m;
+      try { m = loadOneManifest(full); }
+      catch (e) { out.push({ name: f.replace(/\.feature\.js$/, ''), __repo: 'dash', __file: `dash:dashboards/features/${f}`, __broken: e.message }); continue; }
+      m.__repo = 'dash';
+      m.__file = `dash:${path.relative(DASH_ROOT, full).replace(/\\/g, '/')}`;
+      m.__manifestDir = path.dirname(full);
+      out.push(m);
+      canonicalNames.add(m.name);
+    }
+  }
+
+  if (fs.existsSync(DASH_COPY_FEATURES_DIR)) {
+    for (const f of fs.readdirSync(DASH_COPY_FEATURES_DIR)) {
+      if (!f.endsWith('.feature.js') || f.startsWith('_')) continue;
+      const full = path.join(DASH_COPY_FEATURES_DIR, f);
+      const name = f.replace(/\.feature\.js$/, '');
+      if (canonicalNames.has(name)) {
+        // Copie documentée : vérifier qu'elle ne diverge pas au-delà de ce qui
+        // est déjà consigné dans APP_FEATURE_REGISTRY.md pour ce nom.
+        const canonicalFull = path.join(DASH_CANONICAL_FEATURES_DIR, f);
+        let canonicalSrc, copySrc;
+        try { canonicalSrc = fs.readFileSync(canonicalFull, 'utf8'); copySrc = fs.readFileSync(full, 'utf8'); }
+        catch (e) { warns.push({ type: 'DASH-MANIFEST-COPY-UNREADABLE', ref: name, msg: e.message }); continue; }
+        const canonicalLines = new Set(canonicalSrc.split('\n'));
+        const copyLines = copySrc.split('\n');
+        const allowed = new Set(DASH_KNOWN_COPY_DIVERGENCES[name] || []);
+        const unexpectedExtra = copyLines.filter(l => !canonicalLines.has(l) && !allowed.has(l) && l.trim() !== '');
+        if (unexpectedExtra.length) {
+          warns.push({
+            type: 'DASH-MANIFEST-COPY-DIVERGES', ref: name,
+            msg: `"public/features/${f}" diverge de "public/dashboards/features/${f}" au-delà de la divergence déjà documentée (APP_FEATURE_REGISTRY.md) : ${unexpectedExtra.length} ligne(s) inattendue(s)`,
+          });
+        } else {
+          warns.push({
+            type: 'DASH-MANIFEST-DUPLICATE-COPY', ref: name,
+            msg: `"public/features/${f}" est une copie déclarée de "public/dashboards/features/${f}" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique`,
+          });
+        }
+        continue; // ne pas doubler le nœud feature avec la copie
+      }
+      // Pas de copie canonique pour ce nom (ex. platform) -> seule source.
+      let m;
+      try { m = loadOneManifest(full); }
+      catch (e) { out.push({ name, __repo: 'dash', __file: `dash:features/${f}`, __broken: e.message }); continue; }
+      m.__repo = 'dash';
+      m.__file = `dash:${path.relative(DASH_ROOT, full).replace(/\\/g, '/')}`;
+      m.__manifestDir = path.dirname(full);
+      out.push(m);
+    }
+  }
+  return out;
+}
+
+const CAPABILITIES_DIR = path.join(ROOT, 'capabilities');
+// Piloting capabilities (docs/doctrine/PILOTING_CAPABILITY_DOCTRINE.md) vivent
+// dans capabilities/<nom>.capability.js, jamais dans features/ — gouvernance
+// volontairement distincte (pas de client, pas de cycle de vie métier, pas
+// d'authority). Même forme files:{...}/db:{tables} qu'un manifest feature,
+// donc réutilisable telle quelle par le reste du pipeline O3 ; pas de
+// `contract` ni `classification.kind` — le kind vient uniquement de la
+// baseline O2 (§0, 'piloting-capability').
+function loadCapabilityManifests() {
+  const out = [];
+  if (!fs.existsSync(CAPABILITIES_DIR)) return out;
+  for (const f of fs.readdirSync(CAPABILITIES_DIR)) {
+    if (!f.endsWith('.capability.js') || f.startsWith('_')) continue;
+    const full = path.join(CAPABILITIES_DIR, f);
+    try {
+      delete require.cache[require.resolve(full)];
+      const m = require(full);
+      m.__file = path.relative(ROOT, full);
+      m.__isCapability = true;
+      out.push(m);
+    } catch (e) {
+      out.push({ name: f.replace(/\.capability\.js$/, ''), __file: path.relative(ROOT, full), __broken: e.message, __isCapability: true });
+    }
+  }
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2. Résolution de fichiers déclarés -> chemin repo-relatif -> existence disque
+//    (même logique que touched-files-feature-gate.js, pour rester une seule
+//    source de résolution de chemins entre les deux gates)
+// ─────────────────────────────────────────────────────────────────────────
+const CATEGORY_PREFIX = { boutique: 'public/boutique', dash: 'public' };
+
+function declaredPath(rel, category) {
+  const clean = String(rel || '').replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!clean || clean.endsWith('/')) return null;
+  const prefix = CATEGORY_PREFIX[category];
+  if (prefix) return `${prefix}/${clean}`;
+  return clean;
+}
+
+// Un fichier déclaré 'public/boutique/...' vit en réalité dans le dépôt
+// boutique séparé (monté ici en --boutique-root, défaut ../boutique).
+// Un fichier déclaré 'public/...' (dash, hors boutique) vit dans le dépôt
+// dashboards, non monté dans cet environnement -> scope non résolu, pas une
+// erreur de gouvernance.
+function resolveOnDisk(repoRelPath) {
+  if (repoRelPath.startsWith('public/boutique/')) {
+    const sub = repoRelPath.slice('public/boutique/'.length);
+    const abs = path.join(BOUTIQUE_ROOT, sub);
+    if (fs.existsSync(BOUTIQUE_ROOT)) {
+      return { exists: fs.existsSync(abs), scope: 'boutique-repo', absPath: abs };
+    }
+    return { exists: null, scope: 'boutique-repo-not-mounted', absPath: abs };
+  }
+  if (repoRelPath.startsWith('public/')) {
+    const sub = repoRelPath.slice('public/'.length);
+    const abs = path.join(DASH_ROOT, sub);
+    if (DASH_ROOT_MOUNTED) {
+      return { exists: fs.existsSync(abs), scope: 'dash-repo', absPath: abs };
+    }
+    return { exists: null, scope: 'dash-repo-not-mounted', absPath: abs };
+  }
+  const abs = path.join(ROOT, repoRelPath);
+  return { exists: fs.existsSync(abs), scope: 'backend-repo', absPath: abs };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 3. Résolution des tables : table -> { writers, readers, lifecycleOwner }
+// ─────────────────────────────────────────────────────────────────────────
+function parseDbTables(manifest) {
+  const out = [];
+  const tables = (manifest.db && manifest.db.tables) || [];
+  for (const t of tables) {
+    const m = String(t).match(/^([a-zA-Z0-9_.]+)\s*:\s*(RW|R|W)\s*$/);
+    if (!m) { out.push({ raw: t, unparsed: true }); continue; }
+    out.push({ table: m[1], mode: m[2] });
+  }
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 4. Résolution contract.consumes -> nom de feature
+//    Convention observée dans tous les manifests : "<feature> (texte libre)"
+//    ou juste "<feature>". On prend le préfixe avant la première parenthèse.
+// ─────────────────────────────────────────────────────────────────────────
+// Une entrée contract.consumes peut nommer un seul nom ('auth'), un nom suivi
+// d'un commentaire libre ('wallet (application credit)'), ou une liste de noms
+// avant le commentaire ('orders, customs, wallet, refunds (donnees source...)').
+// On isole le segment "noms" (avant la 1re parenthèse ou le 1er tiret-cadratin
+// de commentaire), puis on éclate sur virgule/slash.
+function extractConsumedFeatureNames(entry) {
+  let namesSegment = String(entry).split('(')[0];
+  namesSegment = namesSegment.split(' — ')[0].split(' - ')[0];
+  return namesSegment.split(/[,/]/).map(s => s.trim()).filter(Boolean);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 5. Résolution contract.exposes contre le contrat OpenAPI (x-route-file)
+// ─────────────────────────────────────────────────────────────────────────
+const normPath = p => p.replace(/[?#].*$/, '')
+  .replace(/\{[^}]+\}/g, '{id}')
+  .replace(/:[A-Za-z0-9_]+/g, '{id}')
+  .replace(/\/+$/, '') || '/';
+
+function buildOpenapiIndex(openapi) {
+  const idx = {}; // "METHOD /path" -> routeFile
+  if (!openapi || !openapi.paths) return idx;
+  for (const [route, methods] of Object.entries(openapi.paths)) {
+    const np = normPath(route);
+    for (const [method, def] of Object.entries(methods || {})) {
+      if (!def) continue;
+      const key = `${method.toUpperCase()} ${np}`;
+      idx[key] = def['x-route-file'] || null;
+    }
+  }
+  return idx;
+}
+
+function parseExposeEntry(entry) {
+  const m = String(entry).trim().match(/^([A-Z]+)\s+(\S+)$/);
+  if (!m) return null;
+  return { method: m[1], path: normPath(m[2]) };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// MAIN BUILD
+// ─────────────────────────────────────────────────────────────────────────
+function build() {
+  const sourceErrors = [];
+  const archGraph = loadJSON(ARCH_GRAPH_FILE, 'Technical Architecture Graph', sourceErrors);
+  const openapi = loadJSON(OPENAPI_FILE, 'Contrat OpenAPI', sourceErrors);
+  if (!archGraph) {
+    return { fatal: true, sourceErrors };
+  }
+
+  const archNodeById = new Map((archGraph.nodes || []).map(n => [n.id, n]));
+  const archFileIds = new Set((archGraph.nodes || []).filter(n => n.type === 'file' || n.type === 'file-lite').map(n => n.id));
+  const openapiIndex = buildOpenapiIndex(openapi);
+
+  const errors = [];   // ERROR : bloquant en --check
+  const warns = [];    // WARN : dette visible, non bloquante
+  const debtO2 = [];   // dette O2 déjà documentée, reportée telle quelle (informative)
+
+  const manifests = loadFeatureManifests();
+  const dashManifests = loadDashFeatureManifests(warns);
+  const capabilityManifests = loadCapabilityManifests();
+  manifests.push(...dashManifests, ...capabilityManifests);
+  const manifestNames = new Set(manifests.map(m => m.name).filter(Boolean));
+
+  // ── 5.1 Nœuds "feature" (business + transversaux + déclarés-seuls) ───────
+  const featureNodes = [];
+  for (const m of manifests) {
+    if (m.__broken) {
+      errors.push({ type: 'MANIFEST-LOAD-ERROR', ref: m.__file, msg: `manifest illisible : ${m.__broken}` });
+      continue;
+    }
+    const name = m.name;
+    const declaredKind = m.classification && m.classification.kind;
+    const baselineKind = NAME_TO_BASELINE_KIND[name] || null;
+
+    let businessKind = declaredKind || baselineKind || 'unclassified';
+    let kindSource = declaredKind ? 'manifest.classification.kind' : (baselineKind ? 'O2-baseline (mission O3 §2 / registry)' : 'none');
+
+    if (declaredKind && baselineKind) {
+      // aggregation-readonly / integration-adapter sont des raffinements de
+      // business-transversal / business-feature dans la doctrine — pas une
+      // contradiction en soi. Seule une divergence de FAMILLE est un drift.
+      const familyOf = k => (k === 'aggregation-readonly' ? 'business-transversal'
+        : k === 'integration-adapter' ? 'business-feature' : k);
+      if (familyOf(declaredKind) !== familyOf(baselineKind)) {
+        errors.push({
+          type: 'CLASSIFICATION-CONTRADICTS-O2-BASELINE', ref: name,
+          msg: `manifest.classification.kind="${declaredKind}" contredit la baseline O2 ("${baselineKind}")`,
+        });
+      }
+    }
+
+    featureNodes.push({
+      id: `feature:${name}`,
+      name,
+      file: m.__file,
+      legacyType: m.type || null,
+      status: m.status || null,
+      owner: m.owner || null,
+      since: m.since || null,
+      service: m.service || m.capability || null,
+      businessKind,
+      kindSource,
+      governedBy: m.__isCapability ? (m.governedBy || 'docs/doctrine/PILOTING_CAPABILITY_DOCTRINE.md') : 'docs/doctrine/FEATURE_DOCTRINE.md',
+      repo: m.__repo || 'backend',
+      declaredOnly: false,
+      resolvable: true,
+    });
+  }
+
+  // Nœuds déclarés dans le registre / la baseline O2 mais sans manifest
+  // résolvable dans cet environnement (dépôt dash non monté, ou référence
+  // absente de tout registre — cf. decision-signals).
+  const REGISTRY_KNOWN_UNRESOLVED_NAMES = new Set(['admin-dashboard', 'legacy-control-tower', 'platform']);
+  for (const [name, kind] of Object.entries(NAME_TO_BASELINE_KIND)) {
+    if (manifestNames.has(name)) continue;
+    const isDashRepo = DASH_REPO_NAMES.has(name);
+    featureNodes.push({
+      id: `feature:${name}`,
+      name,
+      file: null,
+      legacyType: null,
+      status: null,
+      owner: null,
+      since: null,
+      service: null,
+      businessKind: kind,
+      kindSource: 'O2-baseline (mission O3 §2)',
+      declaredOnly: true,
+      resolvable: false,
+      unresolvedReason: isDashRepo
+        ? 'manifest déclaré dans APP_FEATURE_REGISTRY.md sous le dépôt dash (public/dashboards/features ou public/features), non monté dans cet environnement — SCOPE, pas un drift'
+        : 'aucun manifest, aucune ligne de registre trouvée pour ce nom dans les sources disponibles — référence de baseline O3 non résolue',
+    });
+    if (!isDashRepo) {
+      errors.push({
+        type: 'BASELINE-REFERENCE-UNRESOLVED', ref: name,
+        msg: `"${name}" figure dans la baseline O2 (mission O3 §2, "${kind}") mais n'a ni manifest ni ligne dans APP_FEATURE_REGISTRY.md — incohérence O2 à signaler, pas à corriger silencieusement dans O3`,
+      });
+    } else {
+      warns.push({
+        type: 'SCOPE-UNRESOLVED-DASH-REPO', ref: name,
+        msg: `"${name}" vit dans le dépôt dash (non fourni dans cet environnement) — nœud représenté déclaratif seulement, non résolu contre du code`,
+      });
+    }
+  }
+
+  const featureNodeByName = new Map(featureNodes.map(n => [n.name, n]));
+
+  // ── 5.2 Bridge FEATURE -> FILE (IMPLEMENTED_BY) ──────────────────────────
+  const implementedByEdges = [];
+  const NON_TECH_CATEGORIES = new Set(['migrations', 'tests', 'dash', 'docs', 'ci', 'assets', 'config', 'db', 'scripts', 'boutique']);
+  // boutique reste "hors scan technique backend" mais résolu séparément contre
+  // le dépôt boutique (cf. resolveOnDisk) — donc pas "hors périmètre", juste
+  // "hors scan arch:gen backend".
+
+  for (const m of manifests) {
+    if (m.__broken) continue;
+    const name = m.name;
+
+    if (m.__repo === 'dash') {
+      // Manifest vivant dans le dépôt dash lui-même : les chemins déclarés
+      // (ex. '../admin/js/app.js') sont relatifs au dossier du manifest dans
+      // CE dépôt, pas au ROOT backend ni à un préfixe public/* — convention
+      // distincte des manifests backend qui référencent dash/boutique.
+      for (const [category, files] of Object.entries(m.files || {})) {
+        for (const rel of (files || [])) {
+          const clean = String(rel || '').replace(/\\/g, '/');
+          if (!clean) continue;
+          const absPath = path.resolve(m.__manifestDir, clean);
+          const dashRelPath = path.relative(DASH_ROOT, absPath).replace(/\\/g, '/');
+          const displayPath = `dash:${dashRelPath}`;
+          const exists = fs.existsSync(absPath);
+          const status = exists ? 'resolved-in-dash-repo' : 'missing-on-disk';
+          implementedByEdges.push({ feature: name, category, declared: rel, resolvedPath: displayPath, status });
+          if (!exists) {
+            errors.push({
+              type: 'FILE-DECLARED-INEXISTANT', ref: `${name} / ${displayPath}`,
+              msg: `${name}.files.${category} (dash) déclare "${rel}" -> "${displayPath}", introuvable sur disque`,
+            });
+          }
+        }
+      }
+      continue;
+    }
+
+    for (const [category, files] of Object.entries(m.files || {})) {
+      for (const rel of (files || [])) {
+        const repoRelPath = declaredPath(rel, category);
+        if (!repoRelPath) continue;
+        const diskInfo = resolveOnDisk(repoRelPath);
+        const inArchGraph = archFileIds.has(repoRelPath);
+        const outOfArchScanScope = NON_TECH_CATEGORIES.has(category) && category !== 'boutique';
+
+        let status;
+        if (diskInfo.scope === 'dash-repo-not-mounted') status = 'scope-unresolved-dash-repo';
+        else if (diskInfo.scope === 'boutique-repo-not-mounted') status = 'scope-unresolved-boutique-repo';
+        else if (diskInfo.exists === false) status = 'missing-on-disk';
+        else if (inArchGraph) status = 'resolved-in-technical-graph';
+        else if (outOfArchScanScope) status = 'resolved-on-disk-out-of-arch-scan-scope';
+        else if (diskInfo.exists === true) status = 'resolved-on-disk-no-header';
+        else status = 'unknown';
+
+        implementedByEdges.push({ feature: name, category, declared: rel, resolvedPath: repoRelPath, status });
+
+        if (status === 'missing-on-disk') {
+          errors.push({
+            type: 'FILE-DECLARED-INEXISTANT', ref: `${name} / ${repoRelPath}`,
+            msg: `${name}.files.${category} déclare "${rel}" -> "${repoRelPath}", introuvable sur disque`,
+          });
+        }
+      }
+    }
+  }
+
+  // ── 5.3 Orphelins techniques : fichier scanné par arch:gen, sans feature ─
+  const filesOwnedByFeature = new Set(implementedByEdges.filter(e => e.status !== 'missing-on-disk').map(e => e.resolvedPath));
+  const TRANSVERSAL_GLOB_FILE = path.join(ROOT, 'governance', 'transversal-paths.json');
+  let transversalGlobs = ['core/', 'bootstrap/', 'middleware/', 'db/', 'db.js'];
+  if (fs.existsSync(TRANSVERSAL_GLOB_FILE)) {
+    try { transversalGlobs = JSON.parse(fs.readFileSync(TRANSVERSAL_GLOB_FILE, 'utf8')).paths || transversalGlobs; } catch { /* noop */ }
+  }
+  const orphanTechnicalNodes = [];
+  for (const fileId of archFileIds) {
+    if (filesOwnedByFeature.has(fileId)) continue;
+    if (transversalGlobs.some(g => fileId.startsWith(g))) continue;
+    orphanTechnicalNodes.push(fileId);
+  }
+  orphanTechnicalNodes.sort();
+  for (const f of orphanTechnicalNodes) {
+    warns.push({ type: 'TECHNICAL-NODE-WITHOUT-BUSINESS-OWNERSHIP', ref: f, msg: `nœud technique "${f}" présent dans le Technical Architecture Graph mais revendiqué par aucune carte feature ni transversal déclaré` });
+  }
+
+  // ── 5.4 Tables : writers / readers / lifecycle owner ─────────────────────
+  const tableIndex = {}; // table -> { writers:[{feature,mode}], readers:[feature] }
+  for (const m of manifests) {
+    if (m.__broken) continue;
+    for (const entry of parseDbTables(m)) {
+      if (entry.unparsed) {
+        warns.push({ type: 'DB-TABLES-ENTRY-UNPARSED', ref: m.name, msg: `entrée db.tables illisible : "${entry.raw}"` });
+        continue;
+      }
+      const rec = (tableIndex[entry.table] = tableIndex[entry.table] || { writers: [], readers: [] });
+      if (entry.mode === 'R') rec.readers.push(m.name);
+      else rec.writers.push({ feature: m.name, mode: entry.mode });
+    }
+  }
+
+  const tableOwnership = {};
+  for (const [table, rec] of Object.entries(tableIndex)) {
+    const writerNames = rec.writers.map(w => w.feature);
+    let lifecycleOwner = null, resolution;
+    if (writerNames.length === 1) {
+      lifecycleOwner = writerNames[0];
+      resolution = 'single-writer';
+    } else if (writerNames.length > 1) {
+      const owningCandidates = writerNames.filter(fn => {
+        const node = featureNodeByName.get(fn);
+        const m = manifests.find(mm => mm.name === fn);
+        return m && m.classification && m.classification.signals && m.classification.signals.ownsTables === true;
+      });
+      if (owningCandidates.length === 1) {
+        lifecycleOwner = owningCandidates[0];
+        resolution = 'multi-writer-resolved-by-classification-signal';
+      } else {
+        resolution = 'ambiguous-multi-writer';
+      }
+    } else {
+      resolution = 'no-declared-writer';
+    }
+
+    tableOwnership[table] = {
+      writers: rec.writers, readers: rec.readers.sort(),
+      lifecycleOwner, resolution,
+    };
+
+    if (resolution === 'ambiguous-multi-writer') {
+      warns.push({
+        type: 'WRITER-NOT-OWNER', ref: table,
+        msg: `table "${table}" a ${writerNames.length} écrivain(s) déclaré(s) (${writerNames.join(', ')}) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur`,
+      });
+    } else if (resolution === 'multi-writer-resolved-by-classification-signal' && writerNames.length > 1) {
+      const others = writerNames.filter(w => w !== lifecycleOwner);
+      warns.push({
+        type: 'WRITER-NOT-OWNER', ref: table,
+        msg: `table "${table}" : lifecycle owner = ${lifecycleOwner} (classification.signals.ownsTables), mais aussi écrite par ${others.join(', ')}`,
+      });
+    }
+  }
+
+  // ── 5.5 Interfaces : exposes / internalApi / consumes ────────────────────
+  const exposesEdges = [];
+  const internalApiEdges = [];
+  const consumesEdges = [];
+
+  for (const m of manifests) {
+    if (m.__broken) continue;
+    const name = m.name;
+
+    // contract.exposes
+    for (const entry of ((m.contract && m.contract.exposes) || [])) {
+      const parsed = parseExposeEntry(entry);
+      if (!parsed) { warns.push({ type: 'EXPOSE-ENTRY-UNPARSED', ref: `${name} / ${entry}`, msg: 'entrée contract.exposes non parseable (attendu "METHOD /path")' }); continue; }
+      const key = `${parsed.method} ${parsed.path}`;
+      const routeFile = Object.prototype.hasOwnProperty.call(openapiIndex, key) ? openapiIndex[key] : undefined;
+      let status;
+      if (routeFile === undefined) status = 'not-in-openapi-contract';
+      else if (!routeFile) status = 'in-contract-no-route-file';
+      else {
+        const declaredRoutes = (m.files && m.files.routes) || [];
+        const ownsFile = declaredRoutes.some(r => declaredPath(r, 'routes') === routeFile);
+        status = ownsFile ? 'resolved-owned' : 'resolved-different-owner';
+      }
+      exposesEdges.push({ feature: name, entry, method: parsed.method, path: parsed.path, routeFile: routeFile || null, status });
+      if (status === 'resolved-different-owner') {
+        warns.push({ type: 'EXPOSED-ROUTE-OWNER-MISMATCH', ref: `${name} / ${key}`, msg: `contract.exposes déclare "${key}" mais le contrat OpenAPI le résout vers "${routeFile}", non déclaré dans ${name}.files.routes` });
+      } else if (status === 'not-in-openapi-contract') {
+        warns.push({ type: 'EXPOSED-ROUTE-UNRESOLVED', ref: `${name} / ${key}`, msg: `"${key}" déclaré par ${name} mais absent du contrat OpenAPI généré (docs/contract/openapi.json)` });
+      }
+    }
+
+    // contract.internalApi — `file` est presque toujours un chemin unique,
+    // mais quelques manifests (ex. auth) déclarent une liste "a.js, b.js, c.js"
+    // dans le même champ : on résout chaque chemin individuellement.
+    for (const entry of ((m.contract && m.contract.internalApi) || [])) {
+      // Deux formes observées dans le repo : { fn, file } (majorité des cartes)
+      // et une chaîne libre "chemin — description" (infrastructure.feature.js).
+      let rawFile, fn;
+      if (typeof entry === 'string') {
+        rawFile = entry.split(' — ')[0].trim();
+        fn = null;
+      } else {
+        rawFile = entry && entry.file;
+        fn = entry && entry.fn;
+      }
+      if (!rawFile) { warns.push({ type: 'INTERNAL-API-ENTRY-MALFORMED', ref: name, msg: `entrée contract.internalApi sans champ file résoluble : ${JSON.stringify(entry)}` }); continue; }
+
+      // Convention observée dans refunds.feature.js : une signature de fonction
+      // bare ("processRefund(orderOrCartId, reason)"), sans " — " ni chemin de
+      // fichier ni objet {fn,file} — documente l'API sans prétendre à un
+      // fichier résolvable. Détection : pas de '/' (pas un chemin), termine
+      // par une parenthèse fermante précédée d'arguments -> signature, pas un
+      // chemin. On ne split PAS sur les virgules internes aux parenthèses.
+      const looksLikeBareSignature = typeof entry === 'string'
+        && !rawFile.includes('/')
+        && /^[A-Za-z_$][\w$]*\([^()]*\)$/.test(rawFile);
+      if (looksLikeBareSignature) {
+        internalApiEdges.push({ feature: name, fn: rawFile, file: null, status: 'documented-signature-no-file' });
+        continue;
+      }
+
+      const filesList = String(rawFile).split(',').map(s => s.trim()).filter(Boolean);
+      for (const file of filesList) {
+        // "bootstrap/* — ..." : référence un dossier entier, pas un fichier
+        // unique — vérifier l'existence du dossier plutôt qu'un fichier exact.
+        const isDirGlob = file.endsWith('/*');
+        const target = isDirGlob ? file.slice(0, -2) : file;
+        const diskInfo = resolveOnDisk(target);
+        let exists = diskInfo.exists;
+        if (isDirGlob && diskInfo.absPath) {
+          try { exists = fs.statSync(diskInfo.absPath).isDirectory(); } catch { exists = false; }
+        }
+        const status = exists === false ? 'implementation-unresolved' : (exists === true ? 'resolved' : 'scope-unresolved');
+        internalApiEdges.push({ feature: name, fn: fn || null, file, status });
+        if (status === 'implementation-unresolved') {
+          errors.push({ type: 'INTERNAL-API-IMPLEMENTATION-UNRESOLVED', ref: `${name} / ${file}`, msg: `contract.internalApi déclare "${fn || file}" dans "${file}", ${isDirGlob ? 'dossier' : 'fichier'} introuvable sur disque` });
+        }
+      }
+    }
+
+    // contract.consumes -> FEATURE CONSUMES FEATURE
+    for (const entry of ((m.contract && m.contract.consumes) || [])) {
+      const candidates = extractConsumedFeatureNames(entry);
+      for (const consumedName of candidates) {
+        const known = manifestNames.has(consumedName) || NAME_TO_BASELINE_KIND[consumedName];
+        consumesEdges.push({ from: name, to: consumedName, raw: entry, resolved: !!known });
+        if (!known) {
+          warns.push({ type: 'CONSUMES-REFERENCE-UNRESOLVED', ref: `${name} -> "${consumedName}" (entrée: "${entry}")`, msg: `contract.consumes de ${name} référence "${consumedName}", ne correspond à aucun nom de feature connu` });
+        }
+      }
+    }
+  }
+
+  // ── 5.6 Feature avec zéro implémentation runtime résolue ─────────────────
+  for (const node of featureNodes) {
+    if (node.declaredOnly) continue; // déjà couvert par BASELINE-REFERENCE-UNRESOLVED / SCOPE-UNRESOLVED-DASH-REPO
+    if (node.businessKind === 'deprecated') continue; // zéro empreinte runtime = état attendu d'une dépréciation terminée, pas un gap
+    const ownEdges = implementedByEdges.filter(e => e.feature === node.name);
+    const anyResolvedFile = ownEdges.some(e => e.status === 'resolved-in-technical-graph' || e.status === 'resolved-on-disk-out-of-arch-scan-scope' || e.status === 'resolved-on-disk-no-header' || e.status === 'resolved-in-dash-repo');
+    const ownsAnyTable = Object.values(tableOwnership).some(t => t.lifecycleOwner === node.name);
+    const writesAnyTable = Object.values(tableOwnership).some(t => (t.writers || []).some(w => w.feature === node.name));
+    const exposesAny = exposesEdges.some(e => e.feature === node.name);
+    if (!anyResolvedFile && !ownsAnyTable && !writesAnyTable && !exposesAny) {
+      errors.push({ type: 'FEATURE-ZERO-RUNTIME-IMPLEMENTATION', ref: node.name, msg: `"${node.name}" n'a aucun fichier résolu, aucune table possédée/écrite, aucune route exposée résolue — aucun chemin vers le runtime réel` });
+    }
+  }
+
+  const model = {
+    version: 'O3-1.0',
+    generatedFrom: {
+      featureManifests: manifests.map(m => m.__file).filter(Boolean),
+      technicalArchitectureGraph: path.relative(ROOT, ARCH_GRAPH_FILE),
+      openapiContract: openapi ? path.relative(ROOT, OPENAPI_FILE) : null,
+      boutiqueRoot: fs.existsSync(BOUTIQUE_ROOT) ? path.relative(ROOT, BOUTIQUE_ROOT) : null,
+      dashRoot: DASH_ROOT_MOUNTED ? path.relative(ROOT, DASH_ROOT) : null,
+    },
+    scope: {
+      businessManifestsResolved: manifests.filter(m => !m.__broken).length,
+      businessManifestsBroken: manifests.filter(m => m.__broken).length,
+      declaredOnlyNodes: featureNodes.filter(n => n.declaredOnly).length,
+      dashRepoMounted: DASH_ROOT_MOUNTED,
+      boutiqueRepoMounted: fs.existsSync(BOUTIQUE_ROOT),
+    },
+    nodeTypes: ['business-feature', 'business-transversal', 'technical-transversal', 'piloting-capability', 'projection', 'frontend-transversal', 'deprecated'],
+    edgeTypes: ['IMPLEMENTED_BY', 'OWNS_TABLE_LIFECYCLE', 'WRITES_TABLE', 'READS_TABLE', 'EXPOSES_INTERFACE', 'PROVIDES_INTERNAL_API', 'CONSUMES_FEATURE'],
+    nodes: { features: featureNodes },
+    edges: {
+      implementedBy: implementedByEdges,
+      exposesInterface: exposesEdges,
+      providesInternalApi: internalApiEdges,
+      consumesFeature: consumesEdges,
+    },
+    tableOwnership,
+    orphanTechnicalNodes,
+    drifts: {
+      error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
+      warn: warns.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
+    },
+  };
+
+  return { model, sourceErrors };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// MARKDOWN PROJECTION
+// ─────────────────────────────────────────────────────────────────────────
+function renderMd(model) {
+  const L = [];
+  L.push('# Business Feature Graph — Komerce (Lot O3)');
+  L.push('');
+  L.push('> Généré par `scripts/business-graph-gen.js`. Ne pas éditer à la main.');
+  L.push('> Source d\'autorité : FEATURE_DOCTRINE > APP_FEATURE_REGISTRY > features/*.feature.js > ce document.');
+  L.push('> Vérifié par `node scripts/business-graph-gen.js --check` (`npm run business-graph:check`).');
+  L.push('');
+
+  const F = model.nodes.features;
+  const byKind = {};
+  for (const n of F) (byKind[n.businessKind] = byKind[n.businessKind] || []).push(n);
+
+  L.push('## Feature Map');
+  L.push('');
+  const KIND_LABELS = {
+    'business-feature': 'Business features',
+    'business-transversal': 'Business transversals',
+    'technical-transversal': 'Technical transversals',
+    'piloting-capability': 'Piloting capabilities',
+    'projection': 'Projections / UI shells',
+    'frontend-transversal': 'Projections / UI shells',
+    'deprecated': 'Deprecated',
+  };
+  const grouped = {};
+  for (const [kind, label] of Object.entries(KIND_LABELS)) {
+    grouped[label] = grouped[label] || [];
+    for (const n of (byKind[kind] || [])) grouped[label].push(n);
+  }
+  for (const [label, nodes] of Object.entries(grouped)) {
+    if (!nodes.length) continue;
+    L.push(`### ${label}`);
+    L.push('');
+    for (const n of nodes.sort((a, b) => a.name.localeCompare(b.name))) {
+      const tag = n.declaredOnly ? ' _(déclaré seulement — ' + n.unresolvedReason.split(' — ')[0] + ')_' : '';
+      L.push(`- \`${n.name}\`${tag}`);
+    }
+    L.push('');
+  }
+
+  L.push('## Feature → implémentation');
+  L.push('');
+  for (const n of F.filter(x => !x.declaredOnly).sort((a, b) => a.name.localeCompare(b.name))) {
+    const impl = model.edges.implementedBy.filter(e => e.feature === n.name);
+    const byCat = {};
+    for (const e of impl) (byCat[e.category] = byCat[e.category] || []).push(e);
+    const tablesOwned = Object.entries(model.tableOwnership).filter(([, t]) => t.lifecycleOwner === n.name).map(([t]) => t);
+    const tablesWritten = Object.entries(model.tableOwnership).filter(([, t]) => (t.writers || []).some(w => w.feature === n.name)).map(([t]) => t);
+    const exposed = model.edges.exposesInterface.filter(e => e.feature === n.name);
+    const internalApi = model.edges.providesInternalApi.filter(e => e.feature === n.name);
+    const deps = model.edges.consumesFeature.filter(e => e.from === n.name);
+    const consumers = model.edges.consumesFeature.filter(e => e.to === n.name);
+
+    L.push(`### ${n.name} _(${n.businessKind})_`);
+    L.push('');
+    if (n.service) L.push(`> ${n.service}`);
+    L.push('');
+    for (const [cat, items] of Object.entries(byCat)) {
+      L.push(`- ${cat}: ${items.length}`);
+    }
+    L.push(`- tables owned (lifecycle): ${tablesOwned.length}${tablesOwned.length ? ' — ' + tablesOwned.map(t => '`' + t + '`').join(', ') : ''}`);
+    L.push(`- tables written: ${tablesWritten.length}`);
+    L.push(`- interfaces exposed: ${exposed.length}`);
+    L.push(`- internal APIs: ${internalApi.length}`);
+    L.push(`- dependencies (consumes): ${deps.length}${deps.length ? ' — ' + deps.map(d => d.to).join(', ') : ''}`);
+    L.push(`- consumers: ${consumers.length}${consumers.length ? ' — ' + consumers.map(d => d.from).join(', ') : ''}`);
+    L.push('');
+  }
+
+  L.push('## Table ownership');
+  L.push('');
+  L.push('| Table | Lifecycle owner | Résolution | Writers | Readers |');
+  L.push('|---|---|---|---|---|');
+  for (const [table, t] of Object.entries(model.tableOwnership).sort(([a], [b]) => a.localeCompare(b))) {
+    L.push(`| \`${table}\` | ${t.lifecycleOwner ? '`' + t.lifecycleOwner + '`' : '_ambiguë_'} | ${t.resolution} | ${(t.writers || []).map(w => w.feature).join(', ') || '—'} | ${(t.readers || []).join(', ') || '—'} |`);
+  }
+  L.push('');
+
+  L.push('## Interface ownership');
+  L.push('');
+  L.push('### Routes (contract.exposes)');
+  L.push('');
+  L.push('| Route | Feature | Résolution technique |');
+  L.push('|---|---|---|');
+  for (const e of model.edges.exposesInterface) {
+    L.push(`| \`${e.method} ${e.path}\` | ${e.feature} | ${e.routeFile ? '`' + e.routeFile + '`' : '—'} (${e.status}) |`);
+  }
+  L.push('');
+  L.push('### API internes (contract.internalApi)');
+  L.push('');
+  L.push('| Fonction | Fichier | Feature | Statut |');
+  L.push('|---|---|---|---|');
+  for (const e of model.edges.providesInternalApi) {
+    L.push(`| \`${e.fn || '—'}\` | \`${e.file}\` | ${e.feature} | ${e.status} |`);
+  }
+  L.push('');
+
+  L.push('## Cross-feature dependencies');
+  L.push('');
+  L.push('| Feature | consumes | Résolu ? |');
+  L.push('|---|---|---|');
+  for (const e of model.edges.consumesFeature) {
+    L.push(`| ${e.from} | ${e.to} (\`${e.raw}\`) | ${e.resolved ? '✔' : '✖'} |`);
+  }
+  L.push('');
+
+  L.push('## Drifts');
+  L.push('');
+  L.push(`### ERROR (${model.drifts.error.length})`);
+  L.push('');
+  if (!model.drifts.error.length) L.push('- none');
+  for (const d of model.drifts.error) L.push(`- **[${d.type}]** ${d.ref} — ${d.msg}`);
+  L.push('');
+  L.push(`### WARN / DEBT (${model.drifts.warn.length})`);
+  L.push('');
+  if (!model.drifts.warn.length) L.push('- none');
+  for (const d of model.drifts.warn) L.push(`- **[${d.type}]** ${d.ref} — ${d.msg}`);
+  L.push('');
+
+  L.push('## Orphan technical nodes');
+  L.push('');
+  L.push('Fichiers présents dans le Technical Architecture Graph, non revendiqués par une carte feature ni un transversal déclaré (`governance/transversal-paths.json`).');
+  L.push('');
+  if (!model.orphanTechnicalNodes.length) L.push('- none');
+  for (const f of model.orphanTechnicalNodes) L.push(`- ${f}`);
+  L.push('');
+
+  return L.join('\n') + '\n';
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// RUN
+// ─────────────────────────────────────────────────────────────────────────
+function stableStringify(obj) {
+  return JSON.stringify(obj, null, 2) + '\n';
+}
+
+const { model, fatal, sourceErrors } = build();
+if (fatal) {
+  console.error(`${C.red}${C.bld}✖ Impossible de générer le Business Feature Graph :${C.r}`);
+  sourceErrors.forEach(e => console.error(`${C.red}  - ${e}${C.r}`));
+  process.exit(2);
+}
+if (sourceErrors.length) {
+  sourceErrors.forEach(e => console.log(`${C.ylw}⚠ ${e}${C.r}`));
+}
+
+const jsonOut = stableStringify(model);
+const mdOut = renderMd(model);
+
+if (CHECK) {
+  let stale = false;
+  const reasons = [];
+  if (!fs.existsSync(OUT_JSON)) { stale = true; reasons.push('docs/BUSINESS_FEATURE_GRAPH.json absent'); }
+  else if (fs.readFileSync(OUT_JSON, 'utf8') !== jsonOut) { stale = true; reasons.push('docs/BUSINESS_FEATURE_GRAPH.json ne correspond plus au générateur — régénère avec npm run business-graph:gen'); }
+  if (!fs.existsSync(OUT_MD)) { stale = true; reasons.push('docs/BUSINESS_FEATURE_GRAPH.md absent'); }
+  else if (fs.readFileSync(OUT_MD, 'utf8') !== mdOut) { stale = true; reasons.push('docs/BUSINESS_FEATURE_GRAPH.md ne correspond plus au générateur'); }
+
+  const nErr = model.drifts.error.length;
+  const nWarn = model.drifts.warn.length;
+  console.log(`${C.bld}Business Feature Graph check${C.r} — ${model.nodes.features.length} feature(s), ${nErr} error(s), ${nWarn} warn(s)`);
+  if (stale) {
+    console.log(`${C.red}${C.bld}✖ Artefact stale :${C.r}`);
+    reasons.forEach(r => console.log(`${C.red}   ↳ ${r}${C.r}`));
+  }
+  if (nErr) {
+    console.log(`${C.red}${C.bld}✖ ${nErr} référence(s) métier non résolue(s) / contradiction(s) :${C.r}`);
+    model.drifts.error.forEach(d => console.log(`${C.red}   [${d.type}] ${d.ref} — ${d.msg}${C.r}`));
+  }
+  if (nWarn) {
+    console.log(`${C.ylw}▲ ${nWarn} avertissement(s) / dette visible (non bloquant) :${C.r}`);
+    model.drifts.warn.forEach(d => console.log(`${C.ylw}   [${d.type}] ${d.ref} — ${d.msg}${C.r}`));
+  }
+  if (stale || nErr) process.exit(1);
+  console.log(`${C.grn}${C.bld}✔ Business Feature Graph reconstructible et à jour.${C.r}`);
+  process.exit(0);
+}
+
+fs.mkdirSync(DOCS, { recursive: true });
+fs.writeFileSync(OUT_JSON, jsonOut);
+fs.writeFileSync(OUT_MD, mdOut);
+console.log(`${C.grn}${C.bld}✔ Business Feature Graph généré${C.r} — ${model.nodes.features.length} feature(s), ${model.drifts.error.length} error(s), ${model.drifts.warn.length} warn(s)`);
+console.log(`  docs/BUSINESS_FEATURE_GRAPH.json + docs/BUSINESS_FEATURE_GRAPH.md`);
