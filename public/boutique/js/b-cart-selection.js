@@ -71,8 +71,10 @@ export function setCartSelectionQty(productId, combo, quantity) {
   if (!Number.isFinite(nextQty)) return false;
 
   if (nextQty < 1) {
-    const index = state.cart.indexOf(item);
-    if (index >= 0) state.cart.splice(index, 1);
+    // `findCartItemForSelection` renvoie une référence issue de `state.cart.find`.
+    // L'appel est synchrone et ne contient aucun await : l'index existe donc
+    // nécessairement à cet instant. Une seconde garde ici était inatteignable.
+    state.cart.splice(state.cart.indexOf(item), 1);
   } else {
     item.qty = Math.floor(nextQty);
   }
