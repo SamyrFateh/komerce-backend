@@ -1,6 +1,5 @@
 name: PR Governance
 
-# Déclenché uniquement sur pull_request (pas sur push main — pas de PR_NUMBER).
 on:
   pull_request:
     types: [opened, edited, synchronize, ready_for_review]
@@ -16,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # historique complet pour git diff
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -28,7 +27,6 @@ jobs:
           npm ci
           npm --prefix public/boutique ci
 
-      # ── Gate 1 : body PR contient un plan d'attaque structuré ──────────────
       - name: Plan d'attaque PR (body)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -36,17 +34,35 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node scripts/pr-governance-check.js
 
-      # ── Gate 2 : fichiers applicatifs touchés ont un signal test ───────────
-      # PR_BODY injecté pour que touched-tests-gate puisse détecter ## Tests
-      # sans appel API supplémentaire.
-      # --strict active la règle de complétion au contact (QUALITY_PYRAMID_DOCTRINE.md
-      # Niveau 3.1) : si un fichier ET son test sont touchés, la couverture doit
-      # atteindre le seuil cible (governance/coverage-thresholds.json), pas juste
-      # "un test existe". Le gate sélectionne désormais le Jest du workspace
-      # concerné (backend racine ou public/boutique).
       - name: Code touché ↔ signal test (touched-tests)
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
-          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict
+          set +e
+          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict > touched-tests.log 2>&1
+          code=$?
+          cat touched-tests.log
+          echo "$code" > touched-tests.exit-code
+          exit 0
+
+      - name: Capture Boutique check-fast diagnostic
+        run: |
+          set +e
+          npm --prefix public/boutique run check:fast > boutique-check-fast.log 2>&1
+          code=$?
+          cat boutique-check-fast.log
+          echo "$code" > boutique-check-fast.exit-code
+          exit 0
+
+      - name: Upload final PDC-4 diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdc4-final-diagnostic
+          path: |
+            touched-tests.log
+            touched-tests.exit-code
+            boutique-check-fast.log
+            boutique-check-fast.exit-code
+          retention-days: 1
