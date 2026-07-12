@@ -1,89 +1,183 @@
 /**
- * @komerce-arch-lite
- * @role          boutique-b-modal-cart
+ * @komerce-arch
+ * @role          product-modal-cart-controls
  * @domain        boutique
  * @layer         ui-component
- * @owner         public/boutique/js/b-modal-core.js
- * @purpose       supports public/boutique/js/b-modal-core.js
- * @impact-areas  boutique
- * @version       2026-06
+ * @criticality   high
+ * @inputs        modal_product, modal_selection_state, cart_state
+ * @outputs       modal_quantity_ui, selected_cart_line_mutations, add_to_cart_action
+ * @depends       b-store.js, b-cart.js, b-cart-selection.js
+ * @used-by       b-modal-core.js, b-modal-product-detail-mobile.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
+ * @impact-areas  product-modal, cart, sku-selection
+ * @version       2026-07
  */
+
 'use strict';
 
 /**
- * @module b-modal-cart
- * @brief Interactions panier de la fiche produit — extrait de b-modal.js (ARCH-2, PR4).
+ * Interactions panier de la fiche produit.
  *
- * Périmètre (responsabilité « Stepper quantité, bouton ajout panier, sync panier ») :
- *   - _syncModalQtyUI() : synchronise l'affichage du stepper + le libellé du bouton
- *     « Ajouter » avec le contenu réel du panier.
- *   - setupModalCart() : câble le stepper −/+ (ajout/retrait direct) et le bouton
- *     « Ajouter au panier ». Appelé une fois par setupModal().
- *
- * Hors périmètre (restent dans le core avec closeModal) : le bouton « ⚡ Acheter »
- *   (buyNowBtn) et le bouton d'accès panier (modalCartBtn) ferment la modal en direct
- *   — ce sont des actions de fermeture/navigation, pas du stepper/ajout/sync.
- *
- * Découplage : ce module n'appelle ni openModal ni closeModal → il n'importe RIEN de
- *   b-modal.js (aucun cycle, garde-fou check:imports I-2). Corps repris à l'identique.
- *
- * Consommateurs : b-modal.js (openModal appelle _syncModalQtyUI ; setupModal appelle
- *   setupModalCart). Aucun consommateur externe (fonctions internes, non ré-exportées).
- *
- * Dépendances : b-store.js, b-cart.js
+ * PDC-4 : le chemin SKU travaille sur l'identité exacte
+ * `product_id + selected_options`. Le chemin LEGACY_VARIANTS garde les helpers
+ * historiques par product_id jusqu'à l'extinction legacy.
  */
 
-import { state, dom }                    from './b-store.js';
+import { state, dom } from './b-store.js';
 import { addToCart, quickAdd, quickRemove } from './b-cart.js';
+import {
+  findCartItemForSelection,
+  setCartSelectionQty,
+} from './b-cart-selection.js';
 
-'use strict';
+function currentSkuSelection() {
+  if (state.modalProductDetail?.inventory_model !== 'SKU') return null;
+  return state.modalSelection;
+}
 
-  /* ── FIX: Sync qty stepper display with real cart contents ── */
-  function _syncModalQtyUI() {
+function setButtonDisabled(button, disabled) {
+  if (!button) return;
+  button.disabled = disabled;
+  button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+}
+
+function setTransactionControlsDisabled(disabled) {
+  setButtonDisabled(dom.qtyMinus, disabled);
+  setButtonDisabled(dom.qtyPlus, disabled);
+  setButtonDisabled(dom.addCartBtn, disabled);
+  setButtonDisabled(document.getElementById('k-buy-now-btn'), disabled);
+}
+
+function addButtonLabel(html) {
+  if (!dom.addCartBtn) return;
+  dom.addCartBtn.innerHTML = html;
+}
+
+function selectedCombo() {
+  return state.modalSelection?.selected_options || {};
+}
+
+function syncSkuSelectionUI(selection) {
+  const selectionReady = Boolean(selection?.selected_sku_id);
+
+  if (!selectionReady) {
+    state.modalQty = 1;
+    if (dom.modalQtyVal) dom.modalQtyVal.textContent = '1';
+    setTransactionControlsDisabled(true);
+    dom.addCartBtn?.classList.remove('in-cart');
+    addButtonLabel(selection
+      ? 'Choisissez vos options'
+      : 'Chargement du produit…');
+    return;
+  }
+
+  const item = findCartItemForSelection(state.modalProduct.id, selectedCombo());
+  state.modalQty = item ? item.qty : 1;
+  if (dom.modalQtyVal) dom.modalQtyVal.textContent = String(state.modalQty);
+
+  setButtonDisabled(dom.qtyMinus, !item);
+  setButtonDisabled(dom.qtyPlus, false);
+  setButtonDisabled(dom.addCartBtn, false);
+  setButtonDisabled(document.getElementById('k-buy-now-btn'), false);
+
+  if (!dom.addCartBtn) return;
+  if (item) {
+    dom.addCartBtn.classList.add('in-cart');
+    addButtonLabel('🧺 Dans le panier (' + state.modalQty + ')');
+  } else {
+    dom.addCartBtn.classList.remove('in-cart');
+    addButtonLabel('<img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" style="pointer-events:none;flex-shrink:0"> Ajouter au panier');
+  }
+}
+
+/**
+ * Synchronise stepper + CTA avec le panier réel.
+ *
+ * SKU : match exact product + combo sélectionnée.
+ * Legacy : comportement historique par product_id.
+ */
+function _syncModalQtyUI() {
+  if (!state.modalProduct) return;
+
+  const selection = currentSkuSelection();
+  if (state.modalProductDetail?.inventory_model === 'SKU') {
+    syncSkuSelectionUI(selection);
+    return;
+  }
+
+  const pid = String(state.modalProduct.id);
+  const item = state.cart.find((cartItem) => String(cartItem.product?.id ?? cartItem.id) === pid);
+  state.modalQty = item ? item.qty : 1;
+  if (dom.modalQtyVal) dom.modalQtyVal.textContent = String(state.modalQty);
+
+  setButtonDisabled(dom.qtyMinus, false);
+  setButtonDisabled(dom.qtyPlus, false);
+  setButtonDisabled(dom.addCartBtn, false);
+  setButtonDisabled(document.getElementById('k-buy-now-btn'), false);
+
+  if (!dom.addCartBtn) return;
+  if (item) {
+    dom.addCartBtn.classList.add('in-cart');
+    addButtonLabel('🧺 Dans le panier (' + state.modalQty + ')');
+  } else {
+    dom.addCartBtn.classList.remove('in-cart');
+    addButtonLabel('<img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" style="pointer-events:none;flex-shrink:0"> Ajouter au panier');
+  }
+}
+
+function changeSelectedSkuQty(delta, sourceButton) {
+  const selection = currentSkuSelection();
+  if (!selection?.selected_sku_id || !state.modalProduct) return;
+
+  const combo = selectedCombo();
+  const item = findCartItemForSelection(state.modalProduct.id, combo);
+
+  if (!item) {
+    if (delta > 0) addToCart(state.modalProduct, 1, sourceButton);
+    _syncModalQtyUI();
+    return;
+  }
+
+  setCartSelectionQty(state.modalProduct.id, combo, item.qty + delta);
+  _syncModalQtyUI();
+}
+
+/** Câble le stepper −/+ et « Ajouter au panier ». */
+function setupModalCart() {
+  dom.qtyMinus.addEventListener('click', () => {
     if (!state.modalProduct) return;
-    const pid = String(state.modalProduct.id);
-    const item = state.cart.find(i => String(i.product?.id ?? i.id) === pid);
-    state.modalQty = item ? item.qty : 1; /* BUGFIX: défaut 1 (pas 0) — produit pas encore au panier → qty initiale = 1 pour ajouter directement */
-    if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
-    // Update "Ajouter" button label
-    if (dom.addCartBtn) {
-      // FIX: tester item (produit réellement dans le panier), pas modalQty > 0
-      // modalQty vaut toujours 1 par défaut même hors panier → bouton montrait
-      // "Dans le panier" sur tout produit ouvert même vierge de tout ajout.
-      if (item) {
-        dom.addCartBtn.classList.add('in-cart');
-        dom.addCartBtn.innerHTML = '🧺 Dans le panier (' + state.modalQty + ')';
-      } else {
-        dom.addCartBtn.classList.remove('in-cart');
-        /* FIX Bug 3: utiliser l'image panier_tresse_vert au lieu du SVG générique */
-        dom.addCartBtn.innerHTML = '<img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" style="pointer-events:none;flex-shrink:0"> Ajouter au panier';
-      }
+
+    if (currentSkuSelection()) {
+      changeSelectedSkuQty(-1, dom.qtyMinus);
+    } else {
+      quickRemove(String(state.modalProduct.id), dom.qtyMinus);
+      _syncModalQtyUI();
     }
-  }
+  });
 
-  /* ── Stepper −/+ + bouton « Ajouter au panier » (câblage) ── */
-  function setupModalCart() {
-    // FIX: Stepper +/− = ajout/retrait direct du panier (comme cartes suggestions)
-    dom.qtyMinus.addEventListener('click', () => {
-      if (!state.modalProduct) return;
-      const pid = String(state.modalProduct.id);
-      quickRemove(pid, dom.qtyMinus);
-      _syncModalQtyUI();
-    });
-    dom.qtyPlus.addEventListener('click', () => {
-      if (!state.modalProduct) return;
-      const pid = String(state.modalProduct.id);
-      quickAdd(pid, dom.qtyPlus);
-      _syncModalQtyUI();
-    });
+  dom.qtyPlus.addEventListener('click', () => {
+    if (!state.modalProduct) return;
 
-    dom.addCartBtn.addEventListener('click', () => {
-      if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
-      // Si pas encore dans le panier, ajouter 1
-      addToCart(state.modalProduct, 1, dom.addCartBtn);
+    if (currentSkuSelection()) {
+      changeSelectedSkuQty(1, dom.qtyPlus);
+    } else {
+      quickAdd(String(state.modalProduct.id), dom.qtyPlus);
       _syncModalQtyUI();
-    });
-  }
+    }
+  });
 
+  dom.addCartBtn.addEventListener('click', () => {
+    if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
+
+    const selection = currentSkuSelection();
+    if (state.modalProductDetail?.inventory_model === 'SKU' && !selection?.selected_sku_id) return;
+
+    addToCart(state.modalProduct, 1, dom.addCartBtn);
+    _syncModalQtyUI();
+  });
+}
 
 export { _syncModalQtyUI, setupModalCart };
