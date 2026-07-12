@@ -45,6 +45,32 @@ const DEFAULT_BY_TYPE = {
   // même principe que le reste de ce fichier : un nouveau cas doit attirer
   // l'attention, pas être noyé).
   'BOUTIQUE-FILE-MULTIPLE-OWNERS':  'ACTIONABLE_DRIFT',
+  // Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate.
+  // Une couture cross-feature techniquement observée (code ou interface)
+  // sans contract.consumes déclaré est un écart probable à corriger, jamais
+  // un classement EXPECTED_TOPOLOGY par défaut (même principe que le reste
+  // de ce fichier) : soit la déclaration manque, soit le couplage est réel
+  // et non désiré.
+  'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY': 'ACTIONABLE_DRIFT',
+  // Ambiguïté d'ownership technique (fichier backend/dash revendiqué par
+  // plusieurs features) — même sémantique que BOUTIQUE-FILE-MULTIPLE-OWNERS
+  // côté boutique : contradiction de gouvernance active.
+  'AMBIGUOUS-FILE-OWNER': 'ACTIONABLE_DRIFT',
+  // Un routeFile qui résout vers plusieurs features canoniques est un défaut
+  // d'attribution d'ownership de route, à trancher explicitement.
+  'AMBIGUOUS-INTERFACE-PROVIDER': 'ACTIONABLE_DRIFT',
+  // require()/import() dynamique non résolu statiquement : limitation
+  // inhérente au modèle regex/disque d'O5 (mission §14), pas une dette de
+  // gouvernance déclarative.
+  'DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED': 'GENERATOR_LIMITATION',
+  // Module consumer côté Meta Graph non résolu vers un fileId gouverné —
+  // artefact d'extraction/convention de nommage, pas une déclaration fautive.
+  'INTERFACE-CONSUMER-FILE-UNRESOLVED': 'GENERATOR_LIMITATION',
+  // Dépendance technique réelle depuis un manifest boutique dont l'absence
+  // de canonicalFeature est un ontology gap DÉJÀ documenté par O4
+  // (governance/business-graph-ontology-gaps.json) — dette réelle mais déjà
+  // connue et déjà assumée en amont, pas un nouvel écart de comportement.
+  'LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER': 'KNOWN_DEBT',
 };
 
 // ── Noms de features réellement connus (pour distinguer INVALID_DECLARATION

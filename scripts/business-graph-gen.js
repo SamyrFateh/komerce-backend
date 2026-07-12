@@ -19,7 +19,7 @@
  * Usage :
  *   node scripts/business-graph-gen.js              (re)génère
  *   node scripts/business-graph-gen.js --check      cliquet — stale ou référence invalide -> exit 1
- *   node scripts/business-graph-gen.js --boutique-root DIR   racine du SCOPE boutique (répertoire ; défaut ../boutique — voir model.scopeTopology pour la position dans l'arbre, déterministe, souvent une sous-arborescence du même dépôt, pas un checkout séparé)
+ *   node scripts/business-graph-gen.js --boutique-root DIR   racine du SCOPE boutique (répertoire ; défaut ../boutique — voir model.scopeTopology pour la relation Git réelle, souvent une sous-arborescence du même dépôt, pas un checkout séparé)
  *   node scripts/business-graph-gen.js --root DIR
  */
 
@@ -64,48 +64,33 @@ const DASH_KNOWN_COPY_DIVERGENCES = {
 // désignait en réalité un franchissement de SCOPE (frontière de gouvernance
 // déclarée : manifests/registre/autorité propres à backend, dash, boutique),
 // pas nécessairement un franchissement de dépôt Git séparé. Dans CETTE
-// topologie (Komerce : monorepo backend + boutique + dashboards), boutique
-// et dash sont des SOUS-RÉPERTOIRES du même arbre que le backend, pas des
+// topologie (vérifié : aucun .git ni sous ROOT ni sous public/boutique ni
+// sous public/dashboards — cf. AGENTS.md/mémoire produit qui décrivent
+// Komerce comme un monorepo backend + boutique + dashboards), boutique et
+// dash sont des SOUS-RÉPERTOIRES du même arbre que le backend, pas des
 // checkouts Git distincts. Les flags --dash-root/--boutique-root et les
 // variables KOMERCE_DASH_ROOT/KOMERCE_BOUTIQUE_ROOT existent pour permettre
 // à ce générateur de fonctionner AUSSI si un jour ces scopes vivent dans des
-// dépôts Git réellement séparés (topologie historique visée par O1.5/O3).
-//
-// Fix O4.1.1 (déterminisme) : cette fonction ne doit JAMAIS dépendre de
-// fs.existsSync('.git'). La présence physique d'un répertoire .git varie
-// selon l'environnement d'exécution (ZIP extrait / clone Git local / CI
-// GitHub Actions) sans que le code métier ni la gouvernance n'aient changé,
-// ce qui rendait `docs/BUSINESS_FEATURE_GRAPH.json` non déterministe entre
-// environnements bien que comparé strictement par `business-graph:check`.
-// computeScopeTopology() constate uniquement des faits stables et
-// reconstructibles à partir des paths/configurations du générateur
-// (mountPath, position relative à ROOT) — jamais de l'état du filesystem Git.
-// La distinction conceptuelle "cross-scope" vs "dépôt Git séparé" reste
-// possible via `relation`, mais n'est plus dérivée d'une détection runtime :
-// un mountPath hors de l'arbre ROOT est classé 'external-path-scope' sans
-// prétendre vérifier s'il s'agit effectivement d'un dépôt Git séparé.
-function computeScopeTopology(mountPath) {
+// dépôts Git réellement séparés (topologie historique visée par O1.5/O3) —
+// mais ce n'est PAS la topologie observée ici, et le prétendre serait
+// factuellement faux. detectScopeRelation() constate, ne suppose jamais.
+function detectScopeRelation(mountPath) {
   if (!fs.existsSync(mountPath)) return { mounted: false, relation: 'not-mounted' };
   const rel = path.relative(ROOT, mountPath);
   const isNestedUnderRoot = rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
-  const relation = isNestedUnderRoot
-    ? 'same-tree-scope' // sous-arborescence du même arbre versionné que ROOT — constat purement positionnel
-    : 'external-path-scope'; // chemin hors de l'arbre ROOT — cross-scope potentiellement cross-repo, non vérifié ici pour rester déterministe
-  return { mounted: true, relation, isNestedUnderRoot };
-}
-
-// Détection informative de la présence de .git — JAMAIS sérialisée dans
-// docs/BUSINESS_FEATURE_GRAPH.json ni .md. Utilisée uniquement pour un log
-// runtime facultatif (utile en debug local), sans influence sur l'artefact
-// gouverné ni sur son déterminisme entre environnements.
-function logGitPresenceInfo(scopeLabel, mountPath) {
-  try {
-    const hasOwnGitDir = fs.existsSync(path.join(mountPath, '.git'));
-    const rootHasGitDir = fs.existsSync(path.join(ROOT, '.git'));
-    console.log(`[business-graph-gen] (info runtime, non sérialisé) scope=${scopeLabel} hasOwnGitDir=${hasOwnGitDir} rootHasGitDir=${rootHasGitDir}`);
-  } catch {
-    // best-effort logging only — ne doit jamais faire échouer la génération
+  const hasOwnGitDir = fs.existsSync(path.join(mountPath, '.git'));
+  const rootHasGitDir = fs.existsSync(path.join(ROOT, '.git'));
+  let relation;
+  if (isNestedUnderRoot && !hasOwnGitDir) {
+    relation = 'same-repository-subdirectory'; // constat direct : pas de .git propre, imbriqué sous ROOT
+  } else if (isNestedUnderRoot && hasOwnGitDir) {
+    relation = 'nested-but-has-own-git-dir'; // cas nested git (submodule-like) — rare, signalé tel quel
+  } else if (!isNestedUnderRoot && hasOwnGitDir) {
+    relation = 'separate-git-checkout'; // chemin externe avec son propre .git — vraiment "cross-repo"
+  } else {
+    relation = 'externally-mounted-path-git-relationship-unverified'; // chemin externe sans .git détecté ici
   }
+  return { mounted: true, relation, hasOwnGitDir, rootHasGitDir, isNestedUnderRoot };
 }
 
 const DOCS = path.join(ROOT, 'docs');
@@ -114,6 +99,8 @@ const ARCH_GRAPH_FILE = path.join(DOCS, 'komerce-arch-header-graph.json');
 const OPENAPI_FILE = path.join(DOCS, 'contract', 'openapi.json');
 const OUT_JSON = path.join(DOCS, 'BUSINESS_FEATURE_GRAPH.json');
 const OUT_MD = path.join(DOCS, 'BUSINESS_FEATURE_GRAPH.md');
+const META_GRAPH_FILE = path.join(DOCS, 'META_GRAPH.json');
+const featureDependencyConformance = require('./lib/feature-dependency-conformance.js');
 
 const C = {
   red: '\x1b[31m', grn: '\x1b[32m', ylw: '\x1b[33m',
@@ -987,11 +974,66 @@ function build() {
     },
   };
 
-  // Log informatif uniquement (debug local) — ces appels n'écrivent rien dans
-  // `model` et n'influencent jamais docs/BUSINESS_FEATURE_GRAPH.json/.md.
-  logGitPresenceInfo('backend/ROOT', ROOT);
-  logGitPresenceInfo('dash', DASH_ROOT);
-  logGitPresenceInfo('boutique', BOUTIQUE_ROOT);
+  // ── 5.8 Lot O5 ──────────────────────────────────────────────────────────
+  let metaGraph = null;
+  if (fs.existsSync(META_GRAPH_FILE)) {
+    try { metaGraph = JSON.parse(fs.readFileSync(META_GRAPH_FILE, 'utf8')); }
+    catch (e) { sourceErrors.push(`Source illisible : Meta Graph (canal interface O5) — ${e.message}`); }
+  } else {
+    sourceErrors.push(`Source manquante : docs/META_GRAPH.json (canal interface O5). Lance npm run meta:graph d'abord — le canal interface sera vide sans elle (pas fatal, dégradé).`);
+  }
+
+  const o5 = featureDependencyConformance.computeDependencyConformance({
+    implementedByEdges, boutiqueManifestImplementedBy: boutiqueImplementedByEdges,
+    boutiqueManifestNodes, consumesEdges, ontologyGaps, metaGraph,
+    ROOT, DASH_ROOT, BOUTIQUE_ROOT,
+  });
+
+  for (const p of o5.pairs) {
+    if (p.conformanceStatus !== 'OBSERVED_UNDECLARED') continue;
+    const channelNames = p.channels.map(c => c.channel).sort().join('+');
+    warns.push({
+      type: 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY', ref: `${p.from} -> ${p.to}`,
+      msg: `dépendance cross-feature observée (canal: ${channelNames}, ${p.channels.reduce((n, c) => n + c.evidence.length, 0)} preuve(s)) sans contract.consumes déclaré chez "${p.from}" vers "${p.to}"`,
+    });
+  }
+  for (const r of o5.ambiguousOwnerRecords) {
+    warns.push({
+      type: 'AMBIGUOUS-FILE-OWNER', ref: `${r.fileId} (${r.role})`,
+      msg: `"${r.fileId}" est revendiqué par ${r.candidates.length} feature(s) (${r.candidates.join(', ')}) — ownership ambigu, O5 ne collapse pas ce fichier (rôle observé : ${r.role})`,
+    });
+  }
+  for (const r of o5.ambiguousInterfaceProviderRecords) {
+    warns.push({
+      type: 'AMBIGUOUS-INTERFACE-PROVIDER', ref: `${r.routeFile} (${r.endpoint})`,
+      msg: `"${r.routeFile}" (endpoint ${r.endpoint}) résout vers ${r.providerFeatures.length} features (${r.providerFeatures.join(', ')}) — provider ambigu pour le canal interface, aucun owner choisi arbitrairement`,
+    });
+  }
+  for (const r of o5.interfaceConsumerUnresolved) {
+    warns.push({
+      type: 'INTERFACE-CONSUMER-FILE-UNRESOLVED', ref: `${r.scope}:${r.module} (${r.endpoint})`,
+      msg: `module consumer "${r.module}" (scope ${r.scope}, endpoint ${r.endpoint}) non résolu vers un fileId gouverné — ${r.consumerStatus}`,
+    });
+  }
+  const gapByManifest = new Map();
+  for (const r of o5.localManifestGapRecords) {
+    const list = gapByManifest.get(r.consumerManifest) || [];
+    list.push(r);
+    gapByManifest.set(r.consumerManifest, list);
+  }
+  for (const [manifestName, records] of gapByManifest.entries()) {
+    const providers = [...new Set(records.map(r => r.providerFeature))].sort();
+    warns.push({
+      type: 'LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER', ref: `boutique-manifest:${manifestName}`,
+      msg: `${records.length} dépendance(s) technique(s) observée(s) depuis boutique-manifest:${manifestName} (ontology gap déjà documenté, canonicalFeature=null) vers ${providers.join(', ')} — visible mais non collapsable en paire canonical-feature (pas de Feature Card consumer pour déclarer contract.consumes)`,
+    });
+  }
+  for (const [scope, list] of o5.dynamicUnresolvedByScope.entries()) {
+    warns.push({
+      type: 'DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED', ref: `scope:${scope}`,
+      msg: `${list.length} appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope ${scope} (ex. ${list.slice(0, 3).map(d => `${d.sourceFileId}: ${d.raw}`).join(' | ')}) — limitation du modèle statique O5, jamais inventé`,
+    });
+  }
 
   const model = {
     // Lot O4-2 (point 8) : le format a changé depuis O3-1.0 — nouveaux nœuds
@@ -1015,7 +1057,7 @@ function build() {
       boutiqueRepoMounted: fs.existsSync(BOUTIQUE_ROOT),
     },
     nodeTypes: ['business-feature', 'business-transversal', 'technical-transversal', 'piloting-capability', 'projection', 'frontend-transversal', 'deprecated'],
-    edgeTypes: ['IMPLEMENTED_BY', 'OWNS_TABLE_LIFECYCLE', 'WRITES_TABLE', 'READS_TABLE', 'EXPOSES_INTERFACE', 'PROVIDES_INTERNAL_API', 'CONSUMES_FEATURE', 'IMPLEMENTED_IN', 'BOUTIQUE_MANIFEST_IMPLEMENTED_BY'],
+    edgeTypes: ['IMPLEMENTED_BY', 'OWNS_TABLE_LIFECYCLE', 'WRITES_TABLE', 'READS_TABLE', 'EXPOSES_INTERFACE', 'PROVIDES_INTERNAL_API', 'CONSUMES_FEATURE', 'IMPLEMENTED_IN', 'BOUTIQUE_MANIFEST_IMPLEMENTED_BY', 'OBSERVED_CODE_DEPENDENCY', 'OBSERVED_INTERFACE_DEPENDENCY'],
     nodes: { features: featureNodes, boutiqueManifests: boutiqueManifestNodes },
     edges: {
       implementedBy: implementedByEdges,
@@ -1029,6 +1071,18 @@ function build() {
       // techniques boutique (5.3), pas une simple présence dans files.*.
       boutiqueManifestImplementedBy: boutiqueImplementedByEdges,
     },
+    o5: {
+      version: 'O5-1.0',
+      pairs: o5.pairs,
+      transversalTopology: o5.transversalRecords,
+      localManifestDependenciesWithoutCanonicalConsumer: o5.localManifestGapRecords,
+      ambiguousOwners: o5.ambiguousOwnerRecords,
+      ambiguousInterfaceProviders: o5.ambiguousInterfaceProviderRecords,
+      interfaceConsumerUnresolved: o5.interfaceConsumerUnresolved,
+      dynamicUnresolvedByScope: Object.fromEntries([...o5.dynamicUnresolvedByScope.entries()].map(([k, v]) => [k, v])),
+      coverage: o5.coverage,
+      metaGraphMounted: !!metaGraph,
+    },
     tableOwnership,
     orphanTechnicalNodes,
     bigMap,
@@ -1041,9 +1095,9 @@ function build() {
     // relation ci-dessous n'est pas 'separate-git-checkout'.
     scopeTopology: {
       backend: { mountPath: '.', relation: 'self', note: 'scope de référence — ce générateur tourne depuis ce dépôt' },
-      dash: { mountPath: path.relative(ROOT, DASH_ROOT) || '.', ...computeScopeTopology(DASH_ROOT) },
-      boutique: { mountPath: path.relative(ROOT, BOUTIQUE_ROOT) || '.', ...computeScopeTopology(BOUTIQUE_ROOT) },
-      note: '"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance). relation constate la position dans l\'arbre (same-tree-scope / external-path-scope), de façon déterministe et indépendante de la présence physique de .git — voir logGitPresenceInfo() pour un diagnostic runtime non sérialisé.',
+      dash: { mountPath: path.relative(ROOT, DASH_ROOT) || '.', ...detectScopeRelation(DASH_ROOT) },
+      boutique: { mountPath: path.relative(ROOT, BOUTIQUE_ROOT) || '.', ...detectScopeRelation(BOUTIQUE_ROOT) },
+      note: '"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="separate-git-checkout" ci-dessus pour le scope concerné.',
     },
     drifts: {
       error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
@@ -1104,13 +1158,13 @@ function renderMd(model) {
   L.push('> **Note de terminologie (Lot O4-2, point 9)** — "cross-repo" dans les livrables O4 précédents désignait en réalité un franchissement de **scope** (frontière de gouvernance : manifests/registre/autorité propres à backend, dash, boutique), pas nécessairement un franchissement de **dépôt Git séparé**. Le tableau ci-dessous constate la relation réelle par scope. Tant qu\'une ligne n\'affiche pas `separate-git-checkout`, "cross-repo" doit se lire "cross-scope" — un franchissement de frontière de gouvernance à l\'intérieur du même arbre versionné.');
   L.push('');
   if (model.scopeTopology) {
-    L.push('### Topologie des scopes (position dans l\'arbre — déterministe)');
+    L.push('### Topologie des scopes (relation Git réelle)');
     L.push('');
-    L.push('| Scope | Chemin monté | Relation constatée | Sous ROOT ? |');
-    L.push('|---|---|---|---|');
+    L.push('| Scope | Chemin monté | Relation constatée | Sous ROOT ? | .git propre ? |');
+    L.push('|---|---|---|---|---|');
     for (const [scope, t] of Object.entries(model.scopeTopology)) {
       if (scope === 'note') continue;
-      L.push(`| ${scope} | \`${t.mountPath}\` | \`${t.relation}\` | ${t.isNestedUnderRoot === undefined ? '—' : (t.isNestedUnderRoot ? 'oui' : 'non')} |`);
+      L.push(`| ${scope} | \`${t.mountPath}\` | \`${t.relation}\` | ${t.isNestedUnderRoot === undefined ? '—' : (t.isNestedUnderRoot ? 'oui' : 'non')} | ${t.hasOwnGitDir === undefined ? '—' : (t.hasOwnGitDir ? 'oui' : 'non')} |`);
     }
     L.push('');
     L.push(`_${model.scopeTopology.note}_`);
@@ -1249,6 +1303,74 @@ function renderMd(model) {
   L.push('');
   if (!model.orphanTechnicalNodes.length) L.push('- none');
   for (const f of model.orphanTechnicalNodes) L.push(`- ${f}`);
+  L.push('');
+
+  L.push('## Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate');
+  L.push('');
+  L.push(`Meta Graph monté : ${model.o5.metaGraphMounted ? 'oui' : 'non (canal interface dégradé)'}.`);
+  L.push('');
+  L.push('### Coverage par scope');
+  L.push('');
+  L.push(`- backend : ${model.o5.coverage.backend.filesObserved} fichier(s) \`.js\`/\`.mjs\` observés (canal A)`);
+  L.push(`- boutique : ${model.o5.coverage.boutique.filesObserved} fichier(s) observés, dont ${model.o5.coverage.boutique.nonCanonicalManifestFiles} sous manifest non-canonique (canonicalFeature=null)`);
+  L.push(`- dash : ${model.o5.coverage.dash.filesObserved} fichier(s) observés`);
+  for (const lim of model.o5.coverage.dash.limitations) L.push(`  - _${lim}_`);
+  L.push('');
+  L.push('### Dependency conformance summary (paires canonical-feature → canonical-feature)');
+  L.push('');
+  L.push('| Consumer | Provider | Canaux | Preuves | Statut |');
+  L.push('|---|---|---|---|---|');
+  if (!model.o5.pairs.length) L.push('| _none_ | | | | |');
+  for (const p of model.o5.pairs) {
+    const chans = p.channels.map(c => c.channel).join(', ');
+    const nEvidence = p.channels.reduce((n, c) => n + c.evidence.length, 0);
+    L.push(`| ${p.from} | ${p.to} | ${chans} | ${nEvidence} | **${p.conformanceStatus}** |`);
+  }
+  L.push('');
+  L.push('### Observed undeclared dependencies');
+  L.push('');
+  const undeclared = model.o5.pairs.filter(p => p.conformanceStatus === 'OBSERVED_UNDECLARED');
+  if (!undeclared.length) L.push('- none');
+  for (const p of undeclared) L.push(`- \`${p.from}\` → \`${p.to}\` (canaux: ${p.channels.map(c => c.channel).join(', ')})`);
+  L.push('');
+  L.push('### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")');
+  L.push('');
+  const observedPairKeys = new Set(model.o5.pairs.map(p => `${p.from}\u0000${p.to}`));
+  const declaredWithoutO5Evidence = model.edges.consumesFeature.filter(e => e.resolved && !observedPairKeys.has(`${e.from}\u0000${e.to}`));
+  if (!declaredWithoutO5Evidence.length) L.push('- none');
+  for (const e of declaredWithoutO5Evidence) L.push(`- \`${e.from}\` → \`${e.to}\` (déclaré : \`${e.raw}\`)`);
+  L.push('');
+  L.push('### Transversal topology (consumer = local-manifest frontend-transversal, hors ontology gap)');
+  L.push('');
+  const transversalByManifest = {};
+  for (const r of model.o5.transversalTopology) (transversalByManifest[r.consumerManifest] = transversalByManifest[r.consumerManifest] || new Set()).add(`${r.providerFeature} (${r.channel})`);
+  if (!Object.keys(transversalByManifest).length) L.push('- none');
+  for (const [m, set] of Object.entries(transversalByManifest)) L.push(`- \`boutique-manifest:${m}\` → ${[...set].sort().join(', ')}`);
+  L.push('');
+  L.push('### Local-manifest dependencies without canonical consumer (ontology gap, KNOWN_DEBT)');
+  L.push('');
+  const gapByM = {};
+  for (const r of model.o5.localManifestDependenciesWithoutCanonicalConsumer) (gapByM[r.consumerManifest] = gapByM[r.consumerManifest] || new Set()).add(`${r.providerFeature} (${r.channel})`);
+  if (!Object.keys(gapByM).length) L.push('- none');
+  for (const [m, set] of Object.entries(gapByM)) L.push(`- \`boutique-manifest:${m}\` → ${[...set].sort().join(', ')}`);
+  L.push('');
+  L.push('### Ambiguous owners / providers (jamais collapsés arbitrairement)');
+  L.push('');
+  if (!model.o5.ambiguousOwners.length && !model.o5.ambiguousInterfaceProviders.length) L.push('- none');
+  for (const r of model.o5.ambiguousOwners) L.push(`- \`${r.fileId}\` (${r.role}) revendiqué par : ${r.candidates.join(', ')}`);
+  for (const r of model.o5.ambiguousInterfaceProviders) L.push(`- \`${r.routeFile}\` (endpoint ${r.endpoint}) résout vers : ${r.providerFeatures.join(', ')}`);
+  L.push('');
+  L.push('### Interface consumer unresolved (canal D)');
+  L.push('');
+  if (!model.o5.interfaceConsumerUnresolved.length) L.push('- none');
+  for (const r of model.o5.interfaceConsumerUnresolved.slice(0, 30)) L.push(`- ${r.scope}:\`${r.module}\` (endpoint ${r.endpoint}) — ${r.consumerStatus}`);
+  if (model.o5.interfaceConsumerUnresolved.length > 30) L.push(`- … (${model.o5.interfaceConsumerUnresolved.length - 30} de plus, cf. docs/BUSINESS_FEATURE_GRAPH.json → o5.interfaceConsumerUnresolved)`);
+  L.push('');
+  L.push('### Dynamic dependencies non résolues statiquement (limitation du modèle, jamais inventées)');
+  L.push('');
+  const dynEntries = Object.entries(model.o5.dynamicUnresolvedByScope);
+  if (!dynEntries.length) L.push('- none');
+  for (const [scope, list] of dynEntries) L.push(`- scope \`${scope}\` : ${list.length} appel(s) — ex. ${list.slice(0, 3).map(d => `\`${d.sourceFileId}\`: \`${d.raw}\``).join(', ')}`);
   L.push('');
 
   return L.join('\n') + '\n';

@@ -1,6 +1,8 @@
 {
   "_comment": "Lot O4-2 (point 2) — baseline typée par TYPE + CATÉGORIE SÉMANTIQUE (Phase E), pas seulement par TYPE (limite d'O4 Phase F initiale : un déplacement de dette d'EXPECTED_TOPOLOGY vers ACTIONABLE_DRIFT au sein d'un même type, ex. WRITER-NOT-OWNER, passait inaperçu tant que le TOTAL du type restait stable). Clé = \"TYPE::CATEGORY\". Règle appliquée par scripts/business-graph-ratchet-check.js : count > baseline pour une clé connue -> FAIL ; clé absente de cette baseline et présente dans le graphe -> FAIL (nouvelle catégorie de dette, doit être ajoutée ici explicitement, jamais silencieusement) ; count <= baseline -> PASS (une réduction n'échoue jamais, y compris à zéro : la clé peut alors être retirée de cette baseline lors d'un lot dédié).",
   "generatedFrom": "docs/BUSINESS_FEATURE_GRAPH.json — Lot O4-2, capture après durcissement gouvernance boutique stricte (point 6), vérification fs.existsSync des fichiers boutique (point 7), et edges boutique-manifest->file vérifiées (points 3/4). 96 warnings au total, répartition identique à la baseline O4 Phase F (aucun mouvement de dette entre catégories détecté à cette capture) + 0 BOUTIQUE-FILE-MULTIPLE-OWNERS (aucun conflit constaté).",
+  "_comment_o5": "Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate. Les clés OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT, DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED::GENERATOR_LIMITATION, LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT sont NOUVELLES (canal code backend+boutique+dash + canal interface via META_GRAPH, absentes avant O5). Elles ne déplacent ni ne gonflent aucune clé O4/O4-2 ci-dessus (toutes stables à cette capture, cf. LOT_O5_LIVRABLE.md §12). Dette révélée maintenant, pas introduite par O5 : le code observé existait déjà, seule son observation est nouvelle.",
+  "_comment_o5_reprise": "REPRISE FINALE O5 — Dash Interface Bridge. Le canal interface (Canal D) résolvait systématiquement les modules dashboards en INTERFACE-CONSUMER-FILE-UNRESOLVED (71 cas, classés GENERATOR_LIMITATION) faute de bridge module->fileId pour le scope dash, alors que docs/DASHBOARDS_360.json (modules[].id/.file, déjà généré) permettait cette résolution via les entrées 'views/' déjà gouvernées par implementedByEdges — même principe d'inversion de convention basename que le bridge boutique existant, aucune invention de chemin. Correction : buildDashViewToFileId() dans feature-dependency-conformance.js. Effet mesuré : INTERFACE-CONSUMER-FILE-UNRESOLVED::GENERATOR_LIMITATION passe de 71 à 0 (clé retirée de cette baseline, cf. règle de réduction ci-dessus) ; OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT passe de 85 à 94 (+9) — 9 dépendances cross-feature réelles et jusqu'ici invisibles, toutes admin-dashboard -> {catalog, customs, dashboard, decision-signals, economic-engine, inventory, logistics, orders, payments} via des vues admin dont l'appel API résout vers une route backend d'une autre feature canonique, sans contract.consumes déclaré côté admin-dashboard. Dette réelle et préexistante, révélée par la correction du bridge, pas introduite par elle (cf. docs/LOT_O5_LIVRABLE.md §6 pour le détail par paire).",
   "baseline": {
     "CONSUMES-REFERENCE-UNRESOLVED::INVALID_DECLARATION": 12,
     "CONSUMES-REFERENCE-UNRESOLVED::GENERATOR_LIMITATION": 2,
@@ -14,6 +16,9 @@
     "WRITER-NOT-OWNER::KNOWN_DEBT": 30,
     "WRITER-NOT-OWNER::EXPECTED_TOPOLOGY": 5,
     "WRITER-NOT-OWNER::ACTIONABLE_DRIFT": 1,
-    "BOUTIQUE-FILE-MULTIPLE-OWNERS::ACTIONABLE_DRIFT": 0
+    "BOUTIQUE-FILE-MULTIPLE-OWNERS::ACTIONABLE_DRIFT": 0,
+    "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY::ACTIONABLE_DRIFT": 94,
+    "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED::GENERATOR_LIMITATION": 1,
+    "LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER::KNOWN_DEBT": 1
   }
 }
