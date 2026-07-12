@@ -59,6 +59,7 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/b-modal-product-detail-mobile.test.js',
+      '../tests/unit/b-modal-product-detail-mobile-edge.test.js',
       '../tests/unit/modal-selection-model.test.js',
       '../tests/unit/modal-selection-model-axis-order.test.js',
     ],
