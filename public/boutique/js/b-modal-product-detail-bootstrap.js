@@ -25,7 +25,10 @@ import {
   clearMobileProductDetailState,
   renderMobileProductDetail,
 } from './b-modal-mobile-product.js';
-import { renderDesktopProductDetail } from './b-modal-desktop-product.js';
+import {
+  clearDesktopProductDetailState,
+  renderDesktopProductDetail,
+} from './b-modal-desktop-product.js';
 
 let _installed = false;
 let _generation = 0;
@@ -52,6 +55,11 @@ function expectedRootSelector() {
 function disconnectVariantGuard() {
   if (_variantGuard) _variantGuard.disconnect();
   _variantGuard = null;
+}
+
+function clearProductDetailState() {
+  clearDesktopProductDetailState();
+  clearMobileProductDetailState();
 }
 
 function renderResponsiveProductDetail(detail, selection, forceMedia) {
@@ -109,7 +117,7 @@ async function loadProductDetail(product) {
 
   const productId = String(product.id);
   const generation = ++_generation;
-  clearMobileProductDetailState();
+  clearProductDetailState();
   disconnectVariantGuard();
   _viewportMode = null;
 
@@ -151,7 +159,7 @@ export function setupProductDetailModal() {
     clearTimeout(_resizeTimer);
     disconnectVariantGuard();
     _viewportMode = null;
-    clearMobileProductDetailState();
+    clearProductDetailState();
   });
 
   window.addEventListener('resize', onViewportResize, { passive: true });
