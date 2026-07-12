@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 365
-- Files with full headers: 338
+- Scanned code files: 366
+- Files with full headers: 339
 - Files with lite headers: 27
-- Files with any headers: 365
+- Files with any headers: 366
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 736
-- Edges: 4219
+- Graph nodes: 740
+- Edges: 4234
 - DB tables: 110
 - Doctrines: 140
-- Impact areas: 121
+- Impact areas: 124
 - Unresolved code edges: 405
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 5
 - bootstrap: 1
 - boutique: 37
-- catalog: 39
+- catalog: 40
 - checkout: 2
 - customs: 6
 - dashboard: 30
@@ -66,7 +66,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - service: 147
 - state: 1
 - state-store: 1
-- ui-component: 38
+- ui-component: 39
 - ui-enhancer: 3
 - ui-experiment: 1
 - ui-infrastructure: 1
@@ -169,6 +169,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-identity.js — boutique-client-identity (auth, high, full)
 - public/boutique/js/b-modal-core.js — product-modal-orchestrator (boutique, high, full)
 - public/boutique/js/b-modal-desktop-enhancers.js — desktop-product-modal-enhancer (boutique, high, full)
+- public/boutique/js/b-modal-product-detail-mobile.js — product-modal-mobile-detail (catalog, high, full)
 - public/boutique/js/b-modal-product.js — product-modal-content-renderer (boutique, high, full)
 - public/boutique/js/b-modal-suggestions.js — product-modal-suggestions (recommendations, high, full)
 - public/boutique/js/b-nav.js — boutique-nav (boutique, high, full)
