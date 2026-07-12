@@ -4,8 +4,12 @@
   "_défaut_si_absent": { "stmts": 100, "branch": 100 },
   "_règle": "Un override doit être justifié par un commentaire dans la PR qui l'introduit (ex: branche de défense inatteignable en pratique, dépendance externe non mockable proprement). Toute entrée ici doit être revue à chaque modification du fichier concerné — même logique que governance/test-exemptions.json.",
   "_justification_boutique_2026_07_10": "Seuils alignés sur la couverture réelle du lot de stabilisation pré-Playwright. Les branches restantes sont surtout des défenses DOM/browser et des chemins d'orchestration ; la couverture globale Boutique demeure mesurée séparément par le job dédié.",
+  "_justification_pdc1_2026_07_12": "PDC-1 ajoute des tests de contrat offensifs V2 aux suites historiques des trois owners touchés. Les seuils restent élevés sur le validateur et le connecteur ; l'orchestrateur conserve davantage de branches legacy import/archivage/exclusion hors périmètre PDC-1. Les trois entrées doivent être resserrées à chaque prochain contact avec ces owners.",
   "public/boutique/js/boutique.js": { "stmts": 85, "branch": 45 },
   "public/boutique/js/b-cart-stepper-guard.js": { "stmts": 90, "branch": 75 },
   "public/boutique/js/b-catalog-desktop-enhancers.js": { "stmts": 80, "branch": 75 },
-  "public/boutique/js/b-group-banner.js": { "stmts": 95, "branch": 90 }
+  "public/boutique/js/b-group-banner.js": { "stmts": 95, "branch": 90 },
+  "services/suppliers/normalized-product.js": { "stmts": 95, "branch": 85 },
+  "services/suppliers/connectors/manual-connector.js": { "stmts": 90, "branch": 75 },
+  "services/suppliers/catalog-import-orchestrator.js": { "stmts": 80, "branch": 65 }
 }
