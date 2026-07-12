@@ -21,6 +21,14 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
+  // Lot O4 (cross-repo feature coverage) : ce manifeste possède son propre
+  // domain déclaré ('catalog') mais reste une tranche frontend de la business
+  // feature canonique catalog. Le rendu modal ne devient pas une business
+  // feature autonome : catalogue et unités vendables restent la propriété de
+  // catalog, tandis que checkout/orders/shared-cart restent hors périmètre.
+  canonicalFeature: 'catalog',
+  sliceKind: 'frontend-slice',
+
   service: 'Sélectionner une unité vendable SKU dans un état unique puis composer la fiche produit mobile ou desktop depuis le même contrat détail.',
 
   perimeter: {
