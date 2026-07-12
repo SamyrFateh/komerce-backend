@@ -7,10 +7,10 @@
  * @inputs        product_images, modal_media_state, pointer_events
  * @outputs       image_zoom_state, carousel_interactions, media_focus
  * @depends       b-store.js
- * @used-by       b-modal-core.js
+ * @used-by       b-modal-core.js, b-modal-mobile-product.js
  * @doctrine      image_produit_inspectable, modal_produit_sans_chevauchement
  * @impact-areas  product-modal, media-carousel, product-discovery
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
@@ -19,9 +19,9 @@
  * @brief Expérience image de la modal produit — compteur 1/N et lightbox mobile.
  *
  * Compteur 1/N :
- *   Affiché en bas-droite de l'image quand le produit a > 5 images,
- *   en remplacement des dots (illisibles au-delà de 5).
- *   Fonctionne mobile + desktop.
+ *   Ancien parcours : affiché quand le produit a > 5 images.
+ *   Product Detail mobile PDC-4 : affiché dès qu'il existe > 1 média, pour que
+ *   le swipe et la position dans les mises en scène soient immédiatement lisibles.
  *
  * Lightbox plein écran :
  *   Tap sur l'image ou "Voir en grand" → .k-modal-fullscreen
@@ -33,21 +33,19 @@
  *   Retiré sur desktop via CSS.
  *
  * Point d'entrée : setupImageUX().
- * À appeler depuis bus.on('modal:opened') dans le bootstrap principal.
+ * À appeler depuis bus.on('modal:opened') ou après une reconstruction média PDC-4.
  *
  * Dépendances : b-bus.js, b-store.js
  */
 
 import { bus }        from './b-bus.js';
 import { state }      from './b-store.js';
-import { modalZone }  from './b-store.js';           // S5 — hook DOM centralisé
+import { modalZone }  from './b-store.js';
 
 'use strict';
 
-// Seuil à partir duquel on bascule sur le compteur 1/N au lieu des dots
 const COUNTER_THRESHOLD = 5;
 
-// ── État local ────────────────────────────────────────────────
 let _fsOpen      = false;
 let _fsIdx       = 0;
 let _fsTouchX    = 0;
@@ -66,6 +64,11 @@ function _getSlides() {
   return Array.from(track.querySelectorAll('.k-modal-slide'));
 }
 
+function _isEnrichedMobileDetail() {
+  return Boolean(state.modalProductDetail)
+    && window.matchMedia('(max-width: 899px)').matches;
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  COMPTEUR 1/N
 // ═══════════════════════════════════════════════════════════════
@@ -74,15 +77,16 @@ function _refreshCounter(idx) {
   let counterEl = modalZone('.k-modal-counter');
   if (!counterEl) return;
   let total = _fsImages.length;
-  if (total > COUNTER_THRESHOLD) {
+  const showCounter = total > COUNTER_THRESHOLD
+    || (_isEnrichedMobileDetail() && total > 1);
+
+  if (showCounter) {
     counterEl.textContent = (idx + 1) + '\u202f/\u202f' + total;
     counterEl.classList.add('is-visible');
-    // Masquer les dots — illisibles quand il y en a > 5
     let dots = modalZone('.k-modal-dots');
     if (dots) dots.style.display = 'none';
   } else {
     counterEl.classList.remove('is-visible');
-    // Réafficher les dots si on revient sur un produit avec peu d'images
     let dots = modalZone('.k-modal-dots');
     if (dots) dots.style.display = '';
   }
@@ -96,7 +100,6 @@ function _injectViewFullBtn() {
   let imgWrap = modalZone('.k-modal-img-wrap');
   if (!imgWrap) return;
 
-  // Éviter les doublons à chaque ouverture
   let existing = imgWrap.querySelector('.k-modal-view-full');
   if (existing) existing.remove();
 
@@ -129,7 +132,6 @@ function _buildFsSlides() {
     let slide = document.createElement('div');
     slide.className = 'k-modal-fullscreen-slide';
     let img = document.createElement('img');
-    // Haute résolution pour le fullscreen : ,w_800/ → ,w_1600/
     img.src = src.replace(/(,w_)\d+(\/|,)/, '$11600$2');
     img.alt = '';
     img.loading = 'lazy';
@@ -174,7 +176,6 @@ function _setupFsHandlers() {
   let closeBtn = fs.querySelector('.k-modal-fullscreen-close');
   if (closeBtn) closeBtn.addEventListener('click', _closeFs);
 
-  // Swipe horizontal pour changer d'image
   fs.addEventListener('touchstart', function(e) {
     _fsTouchX = e.touches[0].clientX;
   }, { passive: true });
@@ -186,7 +187,6 @@ function _setupFsHandlers() {
     }
   }, { passive: true });
 
-  // Tap sur le fond ou le slide (pas sur l'image elle-même) → fermer
   fs.addEventListener('click', function(e) {
     if (
       e.target === fs ||
@@ -196,7 +196,6 @@ function _setupFsHandlers() {
     }
   });
 
-  // Fermer sur Escape (desktop, au cas où)
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && _fsOpen) _closeFs();
   });
@@ -209,10 +208,7 @@ function _setupFsHandlers() {
 function _setupCarouselTap() {
   let carousel = modalZone('.k-modal-carousel');
   if (!carousel) return;
-  // cursor:zoom-in piloté par CSS sur mobile ; pas de cursor sur desktop
-  // (le zoom loupe est géré par setupZoom dans b-modal-desktop-enhancers.js)
   carousel.addEventListener('click', function() {
-    // isDesktop() n'est pas importé ici : on détecte via media query
     if (window.matchMedia('(max-width: 899px)').matches) {
       _openFs(state.carouselIndex || 0);
     }
@@ -221,7 +217,6 @@ function _setupCarouselTap() {
 
 // ═══════════════════════════════════════════════════════════════
 //  SYNC AVEC LE CAROUSEL MODAL
-//  bus.on('carousel:changed', idx) émis par b-modal.js à chaque slide
 // ═══════════════════════════════════════════════════════════════
 
 function _setupCarouselSync() {
@@ -236,13 +231,10 @@ function _setupCarouselSync() {
 
 /**
  * setupImageUX()
- * À appeler depuis bus.on('modal:opened') dans le bootstrap.
- * Idempotent : les handlers globaux (swipe, Escape, carousel:changed)
- * ne sont installés qu'une seule fois ; les éléments DOM (slides FS,
- * bouton "Voir en grand") sont reconstruits à chaque ouverture de produit.
+ * Idempotent : les handlers globaux ne sont installés qu'une seule fois ; les
+ * images fullscreen et le compteur sont relus à chaque appel.
  */
 export function setupImageUX() {
-  // Reconstruire à chaque ouverture (nouveau produit, nouvelles images)
   requestAnimationFrame(function() {
     let slides = _getSlides();
     _fsImages = slides.map(function(s) {
