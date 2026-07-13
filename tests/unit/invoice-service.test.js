@@ -274,13 +274,17 @@ describe('getOrCreateInvoice — calcul items FACT-01', () => {
 // ═══════════════════════════════════════════════════════════════════════
 describe('sendInvoiceReadyNotification', () => {
   const mockCreateToken = jest.fn();
-  const mockNotifyText = jest.fn();
+  // POST-O8 (INVOICE_AUTHKEY_WID) : le transport passe désormais par
+  // notifyInvoiceReady (template WID si configuré, sinon repli texte libre).
+  // `orders` construit toujours l'URL publique signée et la passe dans un
+  // payload prêt ; `notifications` choisit le transport.
+  const mockNotifyInvoiceReady = jest.fn();
 
   jest.mock('../../services/invoice-public-token', () => ({
     createInvoicePublicToken: (...a) => mockCreateToken(...a),
   }), { virtual: true });
   jest.mock('../../services/notification-service', () => ({
-    notifyText: (...a) => mockNotifyText(...a),
+    notifyInvoiceReady: (...a) => mockNotifyInvoiceReady(...a),
   }), { virtual: true });
 
   beforeEach(() => {
@@ -299,31 +303,36 @@ describe('sendInvoiceReadyNotification', () => {
     });
   }
 
-  it('construit un lien public signé et envoie via notifyText (stripe_eur → "facture disponible")', async () => {
+  it('construit un lien public signé et le passe à notifyInvoiceReady (stripe_eur → "facture disponible")', async () => {
     mockExistingInvoice();
-    mockNotifyText.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
+    mockNotifyInvoiceReady.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
 
     const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
 
     expect(mockCreateToken).toHaveBeenCalledWith('order-1');
-    expect(mockNotifyText).toHaveBeenCalledWith(
+    expect(mockNotifyInvoiceReady).toHaveBeenCalledWith(
       '+269111',
-      expect.stringContaining('facture'),
-      'invoice_ready',
+      expect.objectContaining({
+        publicUrl: expect.stringContaining('/api/invoices/public/signed-token-abc'),
+        message: expect.stringContaining('facture'),
+        invoiceNumber: 'KOM-INV-2026-000042',
+      }),
       'order-1',
     );
-    const [, message] = mockNotifyText.mock.calls[0];
-    expect(message).toContain('/api/invoices/public/signed-token-abc');
     expect(result).toEqual({ ok: true, messageId: 'm1' });
   });
 
   it('utilise le message "paiement enregistré" pour cash_relais', async () => {
     mockExistingInvoice({ payment_mode: 'cash_relais' });
-    mockNotifyText.mockResolvedValueOnce({ ok: true });
+    mockNotifyInvoiceReady.mockResolvedValueOnce({ ok: true });
 
     await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
 
-    expect(mockNotifyText).toHaveBeenCalledWith('+269111', expect.stringContaining('enregistre'), 'invoice_ready', 'order-1');
+    expect(mockNotifyInvoiceReady).toHaveBeenCalledWith(
+      '+269111',
+      expect.objectContaining({ message: expect.stringContaining('enregistre') }),
+      'order-1',
+    );
   });
 
   it('skip proprement si aucun téléphone sur la facture', async () => {
@@ -332,7 +341,7 @@ describe('sendInvoiceReadyNotification', () => {
     const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
 
     expect(result).toEqual({ ok: false, reason: 'no_phone' });
-    expect(mockNotifyText).not.toHaveBeenCalled();
+    expect(mockNotifyInvoiceReady).not.toHaveBeenCalled();
   });
 
   it('non-bloquant si getOrCreateInvoice rejette (ex. paiement pas encore confirmé)', async () => {
@@ -342,15 +351,15 @@ describe('sendInvoiceReadyNotification', () => {
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain('non payée');
-    expect(mockNotifyText).not.toHaveBeenCalled();
+    expect(mockNotifyInvoiceReady).not.toHaveBeenCalled();
   });
 
-  it('propage un résultat ok:false sans lever si notifyText échoue', async () => {
+  it('propage un résultat ok:false sans lever si notifyInvoiceReady échoue', async () => {
     mockExistingInvoice();
-    mockNotifyText.mockResolvedValueOnce({ ok: false, reason: 'no_phone_or_message' });
+    mockNotifyInvoiceReady.mockResolvedValueOnce({ ok: false, reason: 'no_phone_or_payload' });
 
     const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
 
-    expect(result).toEqual({ ok: false, reason: 'no_phone_or_message' });
+    expect(result).toEqual({ ok: false, reason: 'no_phone_or_payload' });
   });
 });
