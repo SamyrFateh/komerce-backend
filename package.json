@@ -1,7 +1,7 @@
 {
   "name": "komerce-backend",
   "version": "10.6.1",
-  "description": "Komerce \u2014 Backend API e-commerce diaspora comorienne",
+  "description": "Komerce — Backend API e-commerce diaspora comorienne",
   "main": "server.js",
   "scripts": {
     "start": "npm run build && node server.js",
@@ -103,7 +103,7 @@
     "predeploy": "node scripts/predeploy-gate.js",
     "predeploy:report": "node scripts/predeploy-gate.js --report",
     "predeploy:skip-tests": "node scripts/predeploy-gate.js --skip-tests",
-    "prepare": "bash scripts/setup-hooks.sh 2>/dev/null || true",
+    "prepare": "node -e \"if (!process.env.CI) require('child_process').execFileSync('bash',['scripts/setup-hooks.sh'],{stdio:'inherit'})\"",
     "hooks:install": "bash scripts/setup-hooks.sh"
   },
   "dependencies": {
