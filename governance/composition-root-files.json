@@ -1,0 +1,9 @@
+{
+  "version": "O6-1.0",
+  "note": "Fichiers de composition/bootstrap qui montent, planifient ou câblent des features au démarrage de l'application. La famille COMPOSITION_ROOT_WIRING dérive de l'appartenance des fichiers de PREUVE à cette liste ET du fait que le consumer possède l'un de ces fichiers — jamais du nom 'infrastructure'. Une preuve infrastructure->feature issue d'un fichier runtime absent de cette liste devient UNCLASSIFIED_OBSERVED_DEPENDENCY.",
+  "wiringFiles": [
+    "bootstrap/api-routes.js",
+    "bootstrap/crons.js",
+    "middleware/error-handler.js"
+  ]
+}

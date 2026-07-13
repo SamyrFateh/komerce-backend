@@ -136,6 +136,22 @@ const STEPS = [
     cmd:       'npm run business-graph:ratchet-check',
   },
 
+  // ── Lot O6 — Feature Dependency Disposition ─────────────────────────────
+  // Classifie les 94 paires OBSERVED_UNDECLARED du Lot O5 en familles
+  // architecturales dérivées des preuves (jamais du nom), gouverne le ledger
+  // d'exceptions et la couverture des ontology gaps (ex. `tracking`). Ne
+  // réobserve rien, ne modifie pas le ratchet O5 ci-dessus. Bloquant :
+  // UNCLASSIFIED_OBSERVED_DEPENDENCY, STALE/DUPLICATE/MISSING/ILLEGITIMATE
+  // exception, UNEXPLAINED_RUNTIME_CYCLE, UNCOVERED_LOCAL_MANIFEST_GAP,
+  // REVIEW_REQUIRED. Validé standalone (0 violation, déterministe) avant
+  // activation ici — voir docs/LOT_O6_LIVRABLE.md.
+  {
+    label:     'Business Feature Graph — dependency disposition (Lot O6, bloquant)',
+    category:  'gate',
+    npmScript: 'business-graph:disposition-check',
+    cmd:       'npm run business-graph:disposition-check',
+  },
+
   // ── Reconstructions 360 ────────────────────────────────────────────────
   {
     label:     'Dashboard 360 check',

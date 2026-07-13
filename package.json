@@ -45,6 +45,7 @@
     "business-graph:gen": "node scripts/business-graph-gen.js --dash-root public --boutique-root public/boutique",
     "business-graph:check": "node scripts/business-graph-gen.js --check --dash-root public --boutique-root public/boutique",
     "business-graph:ratchet-check": "node scripts/business-graph-ratchet-check.js",
+    "business-graph:disposition-check": "node scripts/business-graph-disposition-check.js",
     "meta:graph": "node scripts/gen-meta-graph.js",
     "meta:graph:check": "node scripts/gen-meta-graph.js --check",
     "meta:graph:save": "node scripts/gen-meta-graph.js --save",

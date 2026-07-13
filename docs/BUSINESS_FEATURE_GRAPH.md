@@ -1772,3 +1772,204 @@ Meta Graph monté : oui.
 
 - scope `backend` : 14 appel(s) — ex. `scripts/boutique-ownership-full-check.js`: `path.join(abs, f`, `scripts/contract-generate.js`: `...`, `scripts/feature-audit.js`: `full`
 
+## O6 — Dependency Disposition
+
+> Couche de qualification/décision au-dessus des paires O5 `OBSERVED_UNDECLARED`. O6 classifie et gouverne la dette ; **O6 ne remédie pas** encore les coutures cross-feature. Détail par paire : `docs/O6_INVENTORY.md`. Enforcement : `npm run business-graph:disposition-check`.
+
+Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du nom) : `infrastructure`.
+
+### Summary by family
+
+| Family | N | Policy |
+|---|---|---|
+| PROJECTION | 9 | projection-dependency-policy |
+| COMPOSITION_ROOT_WIRING | 9 | application-wiring-not-consumption |
+| NON_RUNTIME_TEST | 9 | non-runtime-evidence |
+| TECHNICAL_PRIMITIVE | 33 | technical-dependency-policy |
+| BUSINESS_TRANSVERSAL_SERVICE | 11 | business-dependency-declare-candidate |
+| CROSS_FEATURE_DIRECT_IMPORT | 18 | boundary-remediation-required |
+| BUSINESS_FEATURE_INTERFACE | 3 | business-dependency-declare-candidate |
+| PILOTING_CAPABILITY | 2 | piloting-capability-dependency |
+| UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
+| **TOTAL** | **94** | |
+
+### Projection dependencies
+
+Vues Dash → endpoint backend. Jamais dans un `contract.consumes` backend.
+
+- `admin-dashboard` → `catalog` — interface, RUNTIME_ONLY
+- `admin-dashboard` → `customs` — interface, RUNTIME_ONLY
+- `admin-dashboard` → `dashboard` — interface, RUNTIME_ONLY
+- `admin-dashboard` → `decision-signals` — interface, RUNTIME_ONLY
+- `admin-dashboard` → `economic-engine` — interface, RUNTIME_ONLY
+- `admin-dashboard` → `inventory` — interface, RUNTIME_ONLY
+- `admin-dashboard` → `logistics` — interface, RUNTIME_ONLY
+- `admin-dashboard` → `orders` — interface, RUNTIME_ONLY
+- `admin-dashboard` → `payments` — interface, RUNTIME_ONLY
+
+### Composition root wiring
+
+Bootstrap/cron/error-handler qui montent ou déclenchent une feature. Pas une consommation de service.
+
+- `infrastructure` → `auth-identity` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `decision-signals` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `loyalty` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `notifications` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `payments` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `platform-ops` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `purchasing` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `sourcing` — business-file-import, RUNTIME_ONLY
+- `infrastructure` → `unsold-resolution` — business-file-import, RUNTIME_ONLY
+
+### Non-runtime test evidence
+
+Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
+
+- `auth-identity` → `logistics` — business-file-import, TEST_ONLY
+- `auth` → `auth-identity` — business-file-import, TEST_ONLY
+- `auth` → `notifications` — business-file-import, TEST_ONLY
+- `economic-engine` → `logistics` — business-file-import, TEST_ONLY
+- `inventory` → `logistics` — business-file-import, TEST_ONLY
+- `platform-ops` → `catalog` — business-file-import, TEST_ONLY
+- `platform-ops` → `payments` — business-file-import, TEST_ONLY
+- `platform-ops` → `purchasing` — business-file-import, TEST_ONLY
+- `platform-ops` → `shared-cart` — business-file-import, TEST_ONLY
+
+### Technical primitives
+
+Usage de db.js / middleware / logger / utils / validators d'un transversal technique. Politique technique, pas `contract.consumes`.
+
+- `auth-identity` → `auth` — technical-primitive, RUNTIME_ONLY
+- `auth-identity` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `auth` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `catalog` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `customs` → `infrastructure` — technical-primitive, RUNTIME_ONLY
+- `dashboard` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `decision-signals` → `auth` — technical-primitive, RUNTIME_ONLY
+- `decision-signals` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `documents` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `economic-engine` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `incident-management` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `inventory` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `logistics` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `loyalty` → `auth` — technical-primitive, RUNTIME_ONLY
+- `loyalty` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `notifications` → `auth` — technical-primitive, RUNTIME_ONLY
+- `notifications` → `auth-identity` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
+- `notifications` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `orders` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `payments` → `auth` — technical-primitive, RUNTIME_ONLY
+- `payments` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `payments` → `platform-ops` — business-file-import, RUNTIME_ONLY
+- `platform-ops` → `auth` — technical-primitive, RUNTIME_ONLY
+- `platform-ops` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `purchasing` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `recommendations` → `infrastructure` — technical-primitive, RUNTIME_ONLY
+- `refunds` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `shared-cart` → `auth-identity` — business-file-import, RUNTIME_ONLY
+- `shared-cart` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+- `sourcing` → `infrastructure` — technical-primitive, RUNTIME_ONLY
+- `unsold-resolution` → `infrastructure` — technical-primitive, RUNTIME_ONLY
+- `wallet` → `auth` — technical-primitive, RUNTIME_ONLY
+- `wallet` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
+
+### Business transversal services
+
+Consommation réelle d'un service transversal métier — candidat `contract.consumes` (internal API préférée).
+
+- `auth-identity` → `notifications` — business-file-import, RUNTIME_ONLY _(exception: runtime-cycle)_
+- `logistics` → `notifications` — business-file-import, RUNTIME_AND_TEST
+- `loyalty` → `notifications` — business-file-import, RUNTIME_AND_TEST
+- `orders` → `notifications` — business-file-import, RUNTIME_AND_TEST
+- `payments` → `documents` — business-file-import, RUNTIME_AND_TEST
+- `payments` → `notifications` — business-file-import, RUNTIME_AND_TEST
+- `payments` → `refunds` — business-file-import, RUNTIME_AND_TEST
+- `purchasing` → `notifications` — business-file-import, RUNTIME_AND_TEST
+- `shared-cart` → `notifications` — business-file-import, RUNTIME_AND_TEST
+- `shared-cart` → `refunds` — business-file-import, RUNTIME_ONLY
+- `wallet` → `documents` — business-file-import, RUNTIME_AND_TEST
+
+### Cross-feature direct imports
+
+require() direct d'un fichier d'une autre business-feature — couture à casser AVANT déclaration.
+
+- `auth-identity` → `orders` — business-file-import, RUNTIME_ONLY _(exception: direct-import, ownership-suspect)_
+- `dashboard` → `catalog` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
+- `dashboard` → `purchasing` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
+- `economic-engine` → `loyalty` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
+- `logistics` → `loyalty` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
+- `logistics` → `payments` — business-file-import, RUNTIME_ONLY _(exception: direct-import, runtime-cycle)_
+- `logistics` → `purchasing` — business-file-import, RUNTIME_ONLY _(exception: direct-import, runtime-cycle)_
+- `orders` → `loyalty` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
+- `orders` → `payments` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
+- `payments` → `loyalty` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
+- `payments` → `purchasing` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
+- `platform-ops` → `economic-engine` — business-file-import, RUNTIME_ONLY _(exception: direct-import, ownership-suspect)_
+- `platform-ops` → `logistics` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import, ownership-suspect)_
+- `platform-ops` → `orders` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import, ownership-suspect)_
+- `purchasing` → `logistics` — business-file-import, RUNTIME_ONLY _(exception: direct-import, runtime-cycle)_
+- `shared-cart` → `loyalty` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
+- `shared-cart` → `payments` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
+- `wallet` → `payments` — business-file-import, RUNTIME_ONLY _(exception: direct-import, runtime-cycle)_
+
+### Business feature interfaces
+
+Consommation d'une business-feature via interface/http — candidat `contract.consumes`.
+
+- `decision-signals` → `logistics` — technical-primitive, RUNTIME_ONLY
+- `payments` → `logistics` — mixed, RUNTIME_AND_TEST _(exception: runtime-cycle)_
+- `payments` → `wallet` — interface, RUNTIME_ONLY _(exception: runtime-cycle)_
+
+### Piloting capability dependencies
+
+Consommation de decision-signals (capacité de pilotage).
+
+- `dashboard` → `decision-signals` — business-file-import, RUNTIME_AND_TEST
+- `notifications` → `decision-signals` — business-file-import, RUNTIME_AND_TEST
+
+### Exceptions requiring human decision
+
+Ledger `governance/feature-dependency-exceptions.json` — uniquement les paires dont la politique de famille ne suffit pas (imports directs, cycles, ownership suspects). Une entrée dont la paire disparaît d'O5 devient stale (bloquant).
+
+- `auth-identity` → `notifications` — **boundary-to-break** — BUSINESS_TRANSVERSAL_SERVICE — preuve: routes/client-auth.js -> services/notification-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
+- `auth-identity` → `orders` — **ownership-review** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/authkey-client.js -> services/invoice-public-token.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration.
+- `dashboard` → `catalog` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin/index.js -> routes/admin/catalog-approval.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `dashboard` → `purchasing` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin/system.js -> services/repair-ordered-without-purchase-orders.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `economic-engine` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin-finance-config.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `logistics` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/scan-operations.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `logistics` → `payments` — **boundary-to-break** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/parcel-auto-create-service.js -> services/payment-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
+- `logistics` → `purchasing` — **boundary-to-break** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/pickup-secret.js -> routes/purchasing.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
+- `notifications` → `auth-identity` — **boundary-to-break** — TECHNICAL_PRIMITIVE — preuve: services/notifications/internals.js -> services/authkey-client.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
+- `orders` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/verify-qr-collection.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `orders` → `payments` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/admin-order-refund.js -> services/payment-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `payments` → `logistics` — **boundary-to-break** — BUSINESS_FEATURE_INTERFACE — preuve: services/payment-paypal.js -> routes/pickup-secret.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
+- `payments` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/payment-cash-confirm.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `payments` → `purchasing` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/cash.js -> services/purchasing-trigger-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `payments` → `wallet` — **boundary-to-break** — BUSINESS_FEATURE_INTERFACE — preuve: public/boutique/js/b-checkout.js -> /api/wallet. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
+- `platform-ops` → `economic-engine` — **ownership-review** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/modules.js -> services/pricing-engine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration.
+- `platform-ops` → `logistics` — **ownership-review** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/parcel-operations.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration.
+- `platform-ops` → `orders` — **ownership-review** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/order-status-machine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration.
+- `purchasing` → `logistics` — **boundary-to-break** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/purchasing-receive-service.js -> routes/scans.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
+- `shared-cart` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/shared-cart.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `shared-cart` → `payments` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: public/boutique/js/b-share-cart.js -> public/boutique/js/b-checkout.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `wallet` → `payments` — **boundary-to-break** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/wallet-service.js -> services/payment-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
+
+### Runtime cycles
+
+Cycles runtime réels (après exclusion test-only + composition-root). Chaque direction porte une décision dans le ledger.
+
+- `auth-identity` ↔ `notifications` — auth-identity→notifications (BUSINESS_TRANSVERSAL_SERVICE) ; notifications→auth-identity (TECHNICAL_PRIMITIVE)
+- `logistics` ↔ `payments` — logistics→payments (CROSS_FEATURE_DIRECT_IMPORT) ; payments→logistics (BUSINESS_FEATURE_INTERFACE)
+- `logistics` ↔ `purchasing` — logistics→purchasing (CROSS_FEATURE_DIRECT_IMPORT) ; purchasing→logistics (CROSS_FEATURE_DIRECT_IMPORT)
+- `payments` ↔ `wallet` — payments→wallet (BUSINESS_FEATURE_INTERFACE) ; wallet→payments (CROSS_FEATURE_DIRECT_IMPORT)
+
+### Ontology gap coverage (flux local-manifest séparé, hors paires)
+
+`tracking` et consorts vivent dans `model.o5.localManifestDependenciesWithoutCanonicalConsumer`, pas dans les paires `from → to`. Couverture par le registre ontologique autoritaire.
+
+- `tracking` → auth-identity, logistics, orders — couvert
+
+### Unclassified dependencies
+
+- _none_ (gate vert)
+

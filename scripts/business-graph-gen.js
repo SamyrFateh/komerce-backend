@@ -25,6 +25,8 @@
 
 const fs = require('fs');
 const path = require('path');
+// Lot O6 — couche de disposition (qualification/décision) au-dessus des paires O5.
+const featureDependencyDisposition = require('./lib/feature-dependency-disposition');
 
 // Lot O5-closure (régression O4.1.1) : toute valeur de chemin sérialisée dans
 // le JSON/Markdown généré doit utiliser `/`, indépendamment de l'OS qui a
@@ -102,6 +104,11 @@ const OPENAPI_FILE = path.join(DOCS, 'contract', 'openapi.json');
 const OUT_JSON = path.join(DOCS, 'BUSINESS_FEATURE_GRAPH.json');
 const OUT_MD = path.join(DOCS, 'BUSINESS_FEATURE_GRAPH.md');
 const META_GRAPH_FILE = path.join(DOCS, 'META_GRAPH.json');
+// Lot O6 — config, ledger d'exceptions, registre ontologique, inventaire.
+const COMPOSITION_ROOT_FILES = path.join(ROOT, 'governance', 'composition-root-files.json');
+const EXCEPTIONS_LEDGER_FILE = path.join(ROOT, 'governance', 'feature-dependency-exceptions.json');
+const ONTOLOGY_GAPS_FILE = path.join(ROOT, 'governance', 'business-graph-ontology-gaps.json');
+const OUT_O6_INVENTORY = path.join(DOCS, 'O6_INVENTORY.md');
 const featureDependencyConformance = require('./lib/feature-dependency-conformance.js');
 
 const C = {
@@ -1037,6 +1044,48 @@ function build() {
     });
   }
 
+  // ── 5.9 Lot O6 — Feature Dependency Disposition ──────────────────────────
+  // Couche de qualification/décision au-dessus des paires O5. NE réobserve rien,
+  // NE modifie pas les warns O5 (le ratchet O5 reste intact), NE crée pas de 2e
+  // graphe. Les issues O6 (unclassified/stale/…) vivent dans model.o6 et sont
+  // ENFORCÉES par le gate séparé scripts/business-graph-disposition-check.js.
+  const o6KindOf = (name) => {
+    const n = featureNodes.find(f => f.name === name);
+    return n ? n.businessKind : (name === 'admin-dashboard' ? 'projection' : 'unclassified');
+  };
+  let o6CompRootConfig = { wiringFiles: [] };
+  if (fs.existsSync(COMPOSITION_ROOT_FILES)) {
+    try { o6CompRootConfig = JSON.parse(fs.readFileSync(COMPOSITION_ROOT_FILES, 'utf8')); }
+    catch (e) { sourceErrors.push(`Source illisible : governance/composition-root-files.json (O6) — ${e.message}`); }
+  } else {
+    sourceErrors.push('Source manquante : governance/composition-root-files.json (O6). La famille COMPOSITION_ROOT_WIRING ne pourra pas être dérivée.');
+  }
+  const o6WiringFiles = new Set(o6CompRootConfig.wiringFiles || []);
+  // Propriétaires du composition-root : dérivés de l'ownership déclaré des fichiers
+  // wiring dans les manifests (JAMAIS du nom 'infrastructure').
+  const o6CompRootOwners = new Set();
+  for (const man of manifests) {
+    if (man.__broken || !man.name) continue;
+    const flat = JSON.stringify(man.files || {});
+    for (const w of o6WiringFiles) { if (flat.includes(w)) { o6CompRootOwners.add(man.name); break; } }
+  }
+  const o6Dispositions = featureDependencyDisposition.buildDispositions(o5.pairs, {
+    kindOf: o6KindOf, compRootOwners: o6CompRootOwners, wiringFiles: o6WiringFiles,
+  });
+  let o6Ledger = { exceptions: [] };
+  if (fs.existsSync(EXCEPTIONS_LEDGER_FILE)) {
+    try { o6Ledger = JSON.parse(fs.readFileSync(EXCEPTIONS_LEDGER_FILE, 'utf8')); }
+    catch (e) { sourceErrors.push(`Source illisible : governance/feature-dependency-exceptions.json (O6) — ${e.message}`); }
+  }
+  let o6OntologyRegistry = null;
+  if (fs.existsSync(ONTOLOGY_GAPS_FILE)) {
+    try { o6OntologyRegistry = JSON.parse(fs.readFileSync(ONTOLOGY_GAPS_FILE, 'utf8')); } catch { /* déjà signalé ailleurs */ }
+  }
+  const o6ExceptionRecon = featureDependencyDisposition.reconcileExceptions(o6Dispositions, o6Ledger);
+  const o6OntologyGapCoverage = featureDependencyDisposition.reconcileOntologyGaps(
+    o5.localManifestGapRecords, o6OntologyRegistry,
+  );
+
   const model = {
     // Lot O4-2 (point 8) : le format a changé depuis O3-1.0 — nouveaux nœuds
     // (boutique-manifest), nouvel edge type (BOUTIQUE_MANIFEST_IMPLEMENTED_BY),
@@ -1048,7 +1097,10 @@ function build() {
     // OBSERVED_INTERFACE_DEPENDENCY) et la section model.o5, pas seulement
     // model.o5.version. Un consommateur qui lisait O4-1.0 doit être
     // revérifié avant de lire O5-1.0.
-    version: 'O5-1.0',
+    // Lot O6 : bump O5-1.0 -> O6-1.0 — le format porte désormais model.o6
+    // (dispositions par famille, cycles runtime, couverture ontology gap,
+    // réconciliation du ledger d'exceptions). model.o5 reste O5-1.0 inchangé.
+    version: 'O6-1.0',
     generatedFrom: {
       featureManifests: manifests.map(m => m.__file).filter(Boolean),
       technicalArchitectureGraph: toPosixPath(path.relative(ROOT, ARCH_GRAPH_FILE)),
@@ -1089,6 +1141,29 @@ function build() {
       dynamicUnresolvedByScope: Object.fromEntries([...o5.dynamicUnresolvedByScope.entries()].map(([k, v]) => [k, v])),
       coverage: o5.coverage,
       metaGraphMounted: !!metaGraph,
+    },
+    o6: {
+      version: 'O6-1.0',
+      compositionRootOwners: [...o6CompRootOwners].sort(),
+      wiringFiles: [...o6WiringFiles].sort(),
+      familySummary: o6Dispositions.familySummary,
+      pairClassifications: o6Dispositions.classifications.map(c => ({
+        from: c.from, to: c.to, family: c.family, evidenceRole: c.evidenceRole,
+        consumerKind: c.consumerKind, providerKind: c.providerKind,
+        channels: c.channels, couplingObserved: c.couplingObserved,
+        policy: c.policy, exceptionRequired: c.exceptionRequired, exceptionReasons: c.exceptionReasons,
+      })),
+      unclassified: o6Dispositions.unclassified,
+      matrix: o6Dispositions.matrix,
+      runtimeCycles: o6Dispositions.cycles,
+      exceptions: o6ExceptionRecon.exceptions,
+      staleExceptions: o6ExceptionRecon.staleExceptions,
+      duplicateExceptionKeys: o6ExceptionRecon.duplicateKeys,
+      illegitimateExceptions: o6ExceptionRecon.illegitimateExceptions,
+      missingExceptions: o6ExceptionRecon.missingExceptions,
+      emptyRationaleExceptions: o6ExceptionRecon.emptyRationale,
+      unexplainedRuntimeCycles: o6ExceptionRecon.unexplainedRuntimeCycles,
+      ontologyGapCoverage: o6OntologyGapCoverage,
     },
     tableOwnership,
     orphanTechnicalNodes,
@@ -1383,6 +1458,147 @@ function renderMd(model) {
   for (const [scope, list] of dynEntries) L.push(`- scope \`${scope}\` : ${list.length} appel(s) — ex. ${list.slice(0, 3).map(d => `\`${d.sourceFileId}\`: \`${d.raw}\``).join(', ')}`);
   L.push('');
 
+  renderO6Section(L, model);
+
+  return L.join('\n') + '\n';
+}
+
+// ── Lot O6 — Dependency Disposition (vues markdown) ───────────────────────
+function renderO6Section(L, model) {
+  const o6 = model.o6;
+  if (!o6) return;
+  const cls = o6.pairClassifications;
+  const byFam = {};
+  for (const c of cls) (byFam[c.family] = byFam[c.family] || []).push(c);
+
+  L.push('## O6 — Dependency Disposition');
+  L.push('');
+  L.push('> Couche de qualification/décision au-dessus des paires O5 `OBSERVED_UNDECLARED`. O6 classifie et gouverne la dette ; **O6 ne remédie pas** encore les coutures cross-feature. Détail par paire : `docs/O6_INVENTORY.md`. Enforcement : `npm run business-graph:disposition-check`.');
+  L.push('');
+  L.push(`Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du nom) : ${o6.compositionRootOwners.map(o => '`' + o + '`').join(', ') || '_none_'}.`);
+  L.push('');
+
+  L.push('### Summary by family');
+  L.push('');
+  L.push('| Family | N | Policy |');
+  L.push('|---|---|---|');
+  for (const f of featureDependencyDisposition.FAMILIES) {
+    L.push(`| ${f} | ${o6.familySummary[f] || 0} | ${featureDependencyDisposition.POLICY[f]} |`);
+  }
+  L.push(`| UNCLASSIFIED | ${o6.familySummary.UNCLASSIFIED || 0} | _(bloquant si > 0)_ |`);
+  L.push(`| **TOTAL** | **${cls.length}** | |`);
+  L.push('');
+
+  const famBlock = (title, family, note) => {
+    L.push(`### ${title}`);
+    L.push('');
+    if (note) { L.push(note); L.push(''); }
+    const list = (byFam[family] || []).slice().sort((a, b) => (a.from + a.to).localeCompare(b.from + b.to));
+    if (!list.length) { L.push('- _none_'); L.push(''); return; }
+    for (const c of list) L.push(`- \`${c.from}\` → \`${c.to}\` — ${c.couplingObserved}, ${c.evidenceRole}${c.exceptionRequired ? ' _(exception: ' + c.exceptionReasons.join(', ') + ')_' : ''}`);
+    L.push('');
+  };
+
+  famBlock('Projection dependencies', 'PROJECTION', 'Vues Dash → endpoint backend. Jamais dans un `contract.consumes` backend.');
+  famBlock('Composition root wiring', 'COMPOSITION_ROOT_WIRING', 'Bootstrap/cron/error-handler qui montent ou déclenchent une feature. Pas une consommation de service.');
+  famBlock('Non-runtime test evidence', 'NON_RUNTIME_TEST', 'Preuves 100 % tests/. Visible mais hors dette de contrat runtime.');
+  famBlock('Technical primitives', 'TECHNICAL_PRIMITIVE', "Usage de db.js / middleware / logger / utils / validators d'un transversal technique. Politique technique, pas `contract.consumes`.");
+  famBlock('Business transversal services', 'BUSINESS_TRANSVERSAL_SERVICE', 'Consommation réelle d\'un service transversal métier — candidat `contract.consumes` (internal API préférée).');
+  famBlock('Cross-feature direct imports', 'CROSS_FEATURE_DIRECT_IMPORT', 'require() direct d\'un fichier d\'une autre business-feature — couture à casser AVANT déclaration.');
+  famBlock('Business feature interfaces', 'BUSINESS_FEATURE_INTERFACE', 'Consommation d\'une business-feature via interface/http — candidat `contract.consumes`.');
+  famBlock('Piloting capability dependencies', 'PILOTING_CAPABILITY', 'Consommation de decision-signals (capacité de pilotage).');
+
+  L.push('### Exceptions requiring human decision');
+  L.push('');
+  L.push('Ledger `governance/feature-dependency-exceptions.json` — uniquement les paires dont la politique de famille ne suffit pas (imports directs, cycles, ownership suspects). Une entrée dont la paire disparaît d\'O5 devient stale (bloquant).');
+  L.push('');
+  if (!o6.exceptions.length) L.push('- _none_');
+  for (const e of o6.exceptions.slice().sort((a, b) => (a.from + a.to).localeCompare(b.from + b.to))) {
+    L.push(`- \`${e.from}\` → \`${e.to}\` — **${e.decision}** — ${e.rationale}`);
+  }
+  L.push('');
+
+  L.push('### Runtime cycles');
+  L.push('');
+  L.push('Cycles runtime réels (après exclusion test-only + composition-root). Chaque direction porte une décision dans le ledger.');
+  L.push('');
+  if (!o6.runtimeCycles.length) L.push('- _none_');
+  for (const cy of o6.runtimeCycles) {
+    L.push(`- \`${cy.nodes[0]}\` ↔ \`${cy.nodes[1]}\` — ${cy.directions.map(d => `${d.from}→${d.to} (${d.family})`).join(' ; ')}`);
+  }
+  L.push('');
+
+  L.push('### Ontology gap coverage (flux local-manifest séparé, hors paires)');
+  L.push('');
+  L.push('`tracking` et consorts vivent dans `model.o5.localManifestDependenciesWithoutCanonicalConsumer`, pas dans les paires `from → to`. Couverture par le registre ontologique autoritaire.');
+  L.push('');
+  const gc = o6.ontologyGapCoverage;
+  if (!gc.consumers.length) L.push('- _none_');
+  for (const c of gc.consumers) {
+    const status = gc.covered.includes(c) ? 'couvert' : '**NON COUVERT (bloquant)**';
+    L.push(`- \`${c}\` → ${(gc.providersByConsumer[c] || []).join(', ')} — ${status}`);
+  }
+  L.push('');
+
+  L.push('### Unclassified dependencies');
+  L.push('');
+  if (!o6.unclassified.length) L.push('- _none_ (gate vert)');
+  for (const u of o6.unclassified) L.push(`- \`${u.from}\` → \`${u.to}\` — ${u.couplingObserved}, ${u.evidenceRole}`);
+  L.push('');
+}
+
+// ── Lot O6 — Inventaire déterministe des 94 (projection) ──────────────────
+function renderO6Inventory(model) {
+  const o6 = model.o6;
+  const L = [];
+  L.push('# O6 — Dependency Debt Inventory');
+  L.push('');
+  L.push('> Projection déterministe générée par `scripts/business-graph-gen.js`. Ne pas éditer à la main.');
+  L.push('> Chaque paire ci-dessous est une dépendance O5 `OBSERVED_UNDECLARED` classée dans exactement une famille O6, dérivée de ses preuves réelles.');
+  L.push('> O6 classifie et gouverne ; **O6 ne remédie pas** encore les coutures.');
+  L.push('');
+  L.push('## Summary by family');
+  L.push('');
+  L.push('| Family | N |');
+  L.push('|---|---|');
+  for (const f of featureDependencyDisposition.FAMILIES) L.push(`| ${f} | ${o6.familySummary[f] || 0} |`);
+  L.push(`| UNCLASSIFIED | ${o6.familySummary.UNCLASSIFIED || 0} |`);
+  L.push(`| **TOTAL** | **${o6.pairClassifications.length}** |`);
+  L.push('');
+  L.push('## The 94 pairs (from → to)');
+  L.push('');
+  L.push('| from → to | family | evidence role | consumer kind | provider kind | channels | coupling | policy | exception | top evidence |');
+  L.push('|---|---|---|---|---|---|---|---|---|---|');
+  const rows = o6.pairClassifications.slice().sort((a, b) => (a.from + '->' + a.to).localeCompare(b.from + '->' + b.to));
+  for (const c of rows) {
+    const ev = (c.topEvidence || []).length
+      ? (c.topEvidence.find(e => e.role === 'RUNTIME') || c.topEvidence[0]).label.replace(/\|/g, '/')
+      : '';
+    const exc = c.exceptionRequired ? c.exceptionReasons.join(', ') : '—';
+    L.push(`| ${c.from} → ${c.to} | ${c.family} | ${c.evidenceRole} | ${c.consumerKind} | ${c.providerKind} | ${c.channels.join('+')} | ${c.couplingObserved} | ${c.policy || '—'} | ${exc} | \`${ev}\` |`);
+  }
+  L.push('');
+  L.push('## Exceptions ledger (measured, not fixed)');
+  L.push('');
+  L.push(`Total exceptions : **${o6.exceptions.length}**.`);
+  L.push('');
+  L.push('| from → to | decision | rationale |');
+  L.push('|---|---|---|');
+  for (const e of o6.exceptions.slice().sort((a, b) => (a.from + a.to).localeCompare(b.from + b.to))) {
+    L.push(`| ${e.from} → ${e.to} | ${e.decision} | ${(e.rationale || '').replace(/\|/g, '/')} |`);
+  }
+  L.push('');
+  L.push('## Runtime cycles');
+  L.push('');
+  if (!o6.runtimeCycles.length) L.push('- _none_');
+  for (const cy of o6.runtimeCycles) L.push(`- \`${cy.nodes[0]}\` ↔ \`${cy.nodes[1]}\``);
+  L.push('');
+  L.push('## Ontology gap coverage (separate flux)');
+  L.push('');
+  const gc = o6.ontologyGapCoverage;
+  if (!gc.consumers.length) L.push('- _none_');
+  for (const c of gc.consumers) L.push(`- \`${c}\` → ${(gc.providersByConsumer[c] || []).join(', ')} — ${gc.covered.includes(c) ? 'couvert' : 'NON COUVERT'}`);
+  L.push('');
   return L.join('\n') + '\n';
 }
 
@@ -1405,6 +1621,7 @@ if (sourceErrors.length) {
 
 const jsonOut = stableStringify(model);
 const mdOut = renderMd(model);
+const o6InventoryOut = renderO6Inventory(model);
 
 if (CHECK) {
   let stale = false;
@@ -1413,6 +1630,8 @@ if (CHECK) {
   else if (fs.readFileSync(OUT_JSON, 'utf8') !== jsonOut) { stale = true; reasons.push('docs/BUSINESS_FEATURE_GRAPH.json ne correspond plus au générateur — régénère avec npm run business-graph:gen'); }
   if (!fs.existsSync(OUT_MD)) { stale = true; reasons.push('docs/BUSINESS_FEATURE_GRAPH.md absent'); }
   else if (fs.readFileSync(OUT_MD, 'utf8') !== mdOut) { stale = true; reasons.push('docs/BUSINESS_FEATURE_GRAPH.md ne correspond plus au générateur'); }
+  if (!fs.existsSync(OUT_O6_INVENTORY)) { stale = true; reasons.push('docs/O6_INVENTORY.md absent'); }
+  else if (fs.readFileSync(OUT_O6_INVENTORY, 'utf8') !== o6InventoryOut) { stale = true; reasons.push('docs/O6_INVENTORY.md ne correspond plus au générateur'); }
 
   const nErr = model.drifts.error.length;
   const nWarn = model.drifts.warn.length;
@@ -1437,5 +1656,6 @@ if (CHECK) {
 fs.mkdirSync(DOCS, { recursive: true });
 fs.writeFileSync(OUT_JSON, jsonOut);
 fs.writeFileSync(OUT_MD, mdOut);
+fs.writeFileSync(OUT_O6_INVENTORY, o6InventoryOut);
 console.log(`${C.grn}${C.bld}✔ Business Feature Graph généré${C.r} — ${model.nodes.features.length} feature(s), ${model.drifts.error.length} error(s), ${model.drifts.warn.length} warn(s)`);
-console.log(`  docs/BUSINESS_FEATURE_GRAPH.json + docs/BUSINESS_FEATURE_GRAPH.md`);
+console.log(`  docs/BUSINESS_FEATURE_GRAPH.json + docs/BUSINESS_FEATURE_GRAPH.md + docs/O6_INVENTORY.md`);

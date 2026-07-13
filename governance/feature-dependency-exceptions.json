@@ -1,0 +1,212 @@
+{
+  "version": "O6-1.0",
+  "_comment": "Ledger d'EXCEPTIONS O6 — porte UNIQUEMENT les paires O5 OBSERVED_UNDECLARED dont la politique de famille ne suffit pas à décider sans jugement humain (CROSS_FEATURE_DIRECT_IMPORT, directions de cycles runtime, ownership suspects). NE contient PAS les 94. Clé unique from->to. Une entrée dont la paire a disparu d'O5 OBSERVED_UNDECLARED est STALE (bloquant) et doit être supprimée — l'historique appartient à Git. O6 décide ; O6 ne remédie pas encore les coutures.",
+  "exceptions": [
+    {
+      "from": "auth-identity",
+      "to": "notifications",
+      "decision": "boundary-to-break",
+      "reasons": [
+        "runtime-cycle"
+      ],
+      "rationale": "BUSINESS_TRANSVERSAL_SERVICE — preuve: routes/client-auth.js -> services/notification-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+    },
+    {
+      "from": "auth-identity",
+      "to": "orders",
+      "decision": "ownership-review",
+      "reasons": [
+        "direct-import",
+        "ownership-suspect"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/authkey-client.js -> services/invoice-public-token.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+    },
+    {
+      "from": "dashboard",
+      "to": "catalog",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin/index.js -> routes/admin/catalog-approval.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "dashboard",
+      "to": "purchasing",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin/system.js -> services/repair-ordered-without-purchase-orders.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "economic-engine",
+      "to": "loyalty",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin-finance-config.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "logistics",
+      "to": "loyalty",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/scan-operations.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "logistics",
+      "to": "payments",
+      "decision": "boundary-to-break",
+      "reasons": [
+        "direct-import",
+        "runtime-cycle"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/parcel-auto-create-service.js -> services/payment-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+    },
+    {
+      "from": "logistics",
+      "to": "purchasing",
+      "decision": "boundary-to-break",
+      "reasons": [
+        "direct-import",
+        "runtime-cycle"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/pickup-secret.js -> routes/purchasing.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+    },
+    {
+      "from": "notifications",
+      "to": "auth-identity",
+      "decision": "boundary-to-break",
+      "reasons": [
+        "runtime-cycle"
+      ],
+      "rationale": "TECHNICAL_PRIMITIVE — preuve: services/notifications/internals.js -> services/authkey-client.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+    },
+    {
+      "from": "orders",
+      "to": "loyalty",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/verify-qr-collection.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "orders",
+      "to": "payments",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/admin-order-refund.js -> services/payment-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "payments",
+      "to": "logistics",
+      "decision": "boundary-to-break",
+      "reasons": [
+        "runtime-cycle"
+      ],
+      "rationale": "BUSINESS_FEATURE_INTERFACE — preuve: services/payment-paypal.js -> routes/pickup-secret.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+    },
+    {
+      "from": "payments",
+      "to": "loyalty",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/payment-cash-confirm.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "payments",
+      "to": "purchasing",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/cash.js -> services/purchasing-trigger-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "payments",
+      "to": "wallet",
+      "decision": "boundary-to-break",
+      "reasons": [
+        "runtime-cycle"
+      ],
+      "rationale": "BUSINESS_FEATURE_INTERFACE — preuve: public/boutique/js/b-checkout.js -> /api/wallet. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+    },
+    {
+      "from": "platform-ops",
+      "to": "economic-engine",
+      "decision": "ownership-review",
+      "reasons": [
+        "direct-import",
+        "ownership-suspect"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/modules.js -> services/pricing-engine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+    },
+    {
+      "from": "platform-ops",
+      "to": "logistics",
+      "decision": "ownership-review",
+      "reasons": [
+        "direct-import",
+        "ownership-suspect"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/parcel-operations.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+    },
+    {
+      "from": "platform-ops",
+      "to": "orders",
+      "decision": "ownership-review",
+      "reasons": [
+        "direct-import",
+        "ownership-suspect"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/order-status-machine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+    },
+    {
+      "from": "purchasing",
+      "to": "logistics",
+      "decision": "boundary-to-break",
+      "reasons": [
+        "direct-import",
+        "runtime-cycle"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/purchasing-receive-service.js -> routes/scans.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+    },
+    {
+      "from": "shared-cart",
+      "to": "loyalty",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/shared-cart.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "shared-cart",
+      "to": "payments",
+      "decision": "internal-api-required",
+      "reasons": [
+        "direct-import"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: public/boutique/js/b-share-cart.js -> public/boutique/js/b-checkout.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+    },
+    {
+      "from": "wallet",
+      "to": "payments",
+      "decision": "boundary-to-break",
+      "reasons": [
+        "direct-import",
+        "runtime-cycle"
+      ],
+      "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/wallet-service.js -> services/payment-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+    }
+  ]
+}

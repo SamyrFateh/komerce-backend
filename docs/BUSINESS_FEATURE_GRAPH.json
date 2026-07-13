@@ -1,5 +1,5 @@
 {
-  "version": "O5-1.0",
+  "version": "O6-1.0",
   "generatedFrom": {
     "featureManifests": [
       "features/auth.feature.js",
@@ -21457,6 +21457,1764 @@
       }
     },
     "metaGraphMounted": true
+  },
+  "o6": {
+    "version": "O6-1.0",
+    "compositionRootOwners": [
+      "infrastructure"
+    ],
+    "wiringFiles": [
+      "bootstrap/api-routes.js",
+      "bootstrap/crons.js",
+      "middleware/error-handler.js"
+    ],
+    "familySummary": {
+      "PROJECTION": 9,
+      "COMPOSITION_ROOT_WIRING": 9,
+      "NON_RUNTIME_TEST": 9,
+      "TECHNICAL_PRIMITIVE": 33,
+      "BUSINESS_TRANSVERSAL_SERVICE": 11,
+      "CROSS_FEATURE_DIRECT_IMPORT": 18,
+      "BUSINESS_FEATURE_INTERFACE": 3,
+      "PILOTING_CAPABILITY": 2,
+      "UNCLASSIFIED": 0
+    },
+    "pairClassifications": [
+      {
+        "from": "admin-dashboard",
+        "to": "catalog",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "customs",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "dashboard",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "business-transversal",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "decision-signals",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "piloting-capability",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "economic-engine",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "inventory",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "logistics",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "orders",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "payments",
+        "family": "PROJECTION",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "projection",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "projection-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "auth",
+        "to": "auth-identity",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "auth",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "technical-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "auth",
+        "to": "notifications",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "auth-identity",
+        "to": "auth",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "auth-identity",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "technical-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "auth-identity",
+        "to": "logistics",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "auth-identity",
+        "to": "notifications",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "runtime-cycle"
+        ]
+      },
+      {
+        "from": "auth-identity",
+        "to": "orders",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "ownership-suspect"
+        ]
+      },
+      {
+        "from": "catalog",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "customs",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "dashboard",
+        "to": "catalog",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "dashboard",
+        "to": "decision-signals",
+        "family": "PILOTING_CAPABILITY",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-transversal",
+        "providerKind": "piloting-capability",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "piloting-capability-dependency",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "dashboard",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "dashboard",
+        "to": "purchasing",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "decision-signals",
+        "to": "auth",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "piloting-capability",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "decision-signals",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "piloting-capability",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "decision-signals",
+        "to": "logistics",
+        "family": "BUSINESS_FEATURE_INTERFACE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "piloting-capability",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "documents",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "economic-engine",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "economic-engine",
+        "to": "logistics",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "economic-engine",
+        "to": "loyalty",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "incident-management",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "auth-identity",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "decision-signals",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "piloting-capability",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "loyalty",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "notifications",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "payments",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "platform-ops",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "purchasing",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "sourcing",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "unsold-resolution",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "inventory",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "inventory",
+        "to": "logistics",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "logistics",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "logistics",
+        "to": "loyalty",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "logistics",
+        "to": "notifications",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "logistics",
+        "to": "payments",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "runtime-cycle"
+        ]
+      },
+      {
+        "from": "logistics",
+        "to": "purchasing",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "runtime-cycle"
+        ]
+      },
+      {
+        "from": "loyalty",
+        "to": "auth",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "loyalty",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "loyalty",
+        "to": "notifications",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "notifications",
+        "to": "auth",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "notifications",
+        "to": "auth-identity",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "runtime-cycle"
+        ]
+      },
+      {
+        "from": "notifications",
+        "to": "decision-signals",
+        "family": "PILOTING_CAPABILITY",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-transversal",
+        "providerKind": "piloting-capability",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "piloting-capability-dependency",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "notifications",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "orders",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "orders",
+        "to": "loyalty",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "orders",
+        "to": "notifications",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "orders",
+        "to": "payments",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "payments",
+        "to": "auth",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "payments",
+        "to": "documents",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "payments",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "payments",
+        "to": "logistics",
+        "family": "BUSINESS_FEATURE_INTERFACE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface",
+          "static-code"
+        ],
+        "couplingObserved": "mixed",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "runtime-cycle"
+        ]
+      },
+      {
+        "from": "payments",
+        "to": "loyalty",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "payments",
+        "to": "notifications",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "payments",
+        "to": "platform-ops",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "payments",
+        "to": "purchasing",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "payments",
+        "to": "refunds",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "payments",
+        "to": "wallet",
+        "family": "BUSINESS_FEATURE_INTERFACE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "runtime-cycle"
+        ]
+      },
+      {
+        "from": "platform-ops",
+        "to": "auth",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "platform-ops",
+        "to": "catalog",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "platform-ops",
+        "to": "economic-engine",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "ownership-suspect"
+        ]
+      },
+      {
+        "from": "platform-ops",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "technical-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "platform-ops",
+        "to": "logistics",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "ownership-suspect"
+        ]
+      },
+      {
+        "from": "platform-ops",
+        "to": "orders",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "ownership-suspect"
+        ]
+      },
+      {
+        "from": "platform-ops",
+        "to": "payments",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "platform-ops",
+        "to": "purchasing",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "platform-ops",
+        "to": "shared-cart",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "technical-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "purchasing",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "purchasing",
+        "to": "logistics",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "runtime-cycle"
+        ]
+      },
+      {
+        "from": "purchasing",
+        "to": "notifications",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "recommendations",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "refunds",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-transversal",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "shared-cart",
+        "to": "auth-identity",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "shared-cart",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "shared-cart",
+        "to": "loyalty",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "shared-cart",
+        "to": "notifications",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "shared-cart",
+        "to": "payments",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import"
+        ]
+      },
+      {
+        "from": "shared-cart",
+        "to": "refunds",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "sourcing",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "unsold-resolution",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "wallet",
+        "to": "auth",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "wallet",
+        "to": "documents",
+        "family": "BUSINESS_TRANSVERSAL_SERVICE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "wallet",
+        "to": "infrastructure",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "wallet",
+        "to": "payments",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "runtime-cycle"
+        ]
+      }
+    ],
+    "unclassified": [],
+    "matrix": {
+      "PROJECTION|RUNTIME_ONLY|projection|business-feature|interface": 7,
+      "PROJECTION|RUNTIME_ONLY|projection|business-transversal|interface": 1,
+      "PROJECTION|RUNTIME_ONLY|projection|piloting-capability|interface": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|technical-transversal|business-file-import": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-transversal|technical-primitive": 3,
+      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|technical-transversal|technical-transversal|technical-primitive": 2,
+      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 5,
+      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|technical-primitive": 10,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|technical-primitive": 7,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-transversal|business-feature|business-file-import": 1,
+      "PILOTING_CAPABILITY|RUNTIME_AND_TEST|business-transversal|piloting-capability|business-file-import": 2,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-transversal|technical-primitive": 5,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-transversal|business-feature|business-file-import": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|piloting-capability|technical-transversal|technical-primitive": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-transversal|technical-primitive": 1,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|piloting-capability|business-feature|technical-primitive": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 7,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|technical-transversal|business-file-import": 2,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|piloting-capability|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 5,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 5,
+      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 9,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-transversal|business-file-import": 1,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 2,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 2,
+      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|business-feature|business-transversal|business-file-import": 1
+    },
+    "runtimeCycles": [
+      {
+        "nodes": [
+          "auth-identity",
+          "notifications"
+        ],
+        "key": "auth-identity<->notifications",
+        "directions": [
+          {
+            "from": "auth-identity",
+            "to": "notifications",
+            "family": "BUSINESS_TRANSVERSAL_SERVICE"
+          },
+          {
+            "from": "notifications",
+            "to": "auth-identity",
+            "family": "TECHNICAL_PRIMITIVE"
+          }
+        ]
+      },
+      {
+        "nodes": [
+          "logistics",
+          "payments"
+        ],
+        "key": "logistics<->payments",
+        "directions": [
+          {
+            "from": "logistics",
+            "to": "payments",
+            "family": "CROSS_FEATURE_DIRECT_IMPORT"
+          },
+          {
+            "from": "payments",
+            "to": "logistics",
+            "family": "BUSINESS_FEATURE_INTERFACE"
+          }
+        ]
+      },
+      {
+        "nodes": [
+          "logistics",
+          "purchasing"
+        ],
+        "key": "logistics<->purchasing",
+        "directions": [
+          {
+            "from": "logistics",
+            "to": "purchasing",
+            "family": "CROSS_FEATURE_DIRECT_IMPORT"
+          },
+          {
+            "from": "purchasing",
+            "to": "logistics",
+            "family": "CROSS_FEATURE_DIRECT_IMPORT"
+          }
+        ]
+      },
+      {
+        "nodes": [
+          "payments",
+          "wallet"
+        ],
+        "key": "payments<->wallet",
+        "directions": [
+          {
+            "from": "payments",
+            "to": "wallet",
+            "family": "BUSINESS_FEATURE_INTERFACE"
+          },
+          {
+            "from": "wallet",
+            "to": "payments",
+            "family": "CROSS_FEATURE_DIRECT_IMPORT"
+          }
+        ]
+      }
+    ],
+    "exceptions": [
+      {
+        "from": "auth-identity",
+        "to": "notifications",
+        "decision": "boundary-to-break",
+        "rationale": "BUSINESS_TRANSVERSAL_SERVICE — preuve: routes/client-auth.js -> services/notification-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+      },
+      {
+        "from": "auth-identity",
+        "to": "orders",
+        "decision": "ownership-review",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/authkey-client.js -> services/invoice-public-token.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+      },
+      {
+        "from": "dashboard",
+        "to": "catalog",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin/index.js -> routes/admin/catalog-approval.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "dashboard",
+        "to": "purchasing",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin/system.js -> services/repair-ordered-without-purchase-orders.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "economic-engine",
+        "to": "loyalty",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin-finance-config.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "logistics",
+        "to": "loyalty",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/scan-operations.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "logistics",
+        "to": "payments",
+        "decision": "boundary-to-break",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/parcel-auto-create-service.js -> services/payment-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+      },
+      {
+        "from": "logistics",
+        "to": "purchasing",
+        "decision": "boundary-to-break",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/pickup-secret.js -> routes/purchasing.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+      },
+      {
+        "from": "notifications",
+        "to": "auth-identity",
+        "decision": "boundary-to-break",
+        "rationale": "TECHNICAL_PRIMITIVE — preuve: services/notifications/internals.js -> services/authkey-client.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+      },
+      {
+        "from": "orders",
+        "to": "loyalty",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/verify-qr-collection.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "orders",
+        "to": "payments",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/admin-order-refund.js -> services/payment-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "payments",
+        "to": "logistics",
+        "decision": "boundary-to-break",
+        "rationale": "BUSINESS_FEATURE_INTERFACE — preuve: services/payment-paypal.js -> routes/pickup-secret.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+      },
+      {
+        "from": "payments",
+        "to": "loyalty",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/payment-cash-confirm.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "payments",
+        "to": "purchasing",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/cash.js -> services/purchasing-trigger-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "payments",
+        "to": "wallet",
+        "decision": "boundary-to-break",
+        "rationale": "BUSINESS_FEATURE_INTERFACE — preuve: public/boutique/js/b-checkout.js -> /api/wallet. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+      },
+      {
+        "from": "platform-ops",
+        "to": "economic-engine",
+        "decision": "ownership-review",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/modules.js -> services/pricing-engine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+      },
+      {
+        "from": "platform-ops",
+        "to": "logistics",
+        "decision": "ownership-review",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/parcel-operations.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+      },
+      {
+        "from": "platform-ops",
+        "to": "orders",
+        "decision": "ownership-review",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/order-status-machine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+      },
+      {
+        "from": "purchasing",
+        "to": "logistics",
+        "decision": "boundary-to-break",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/purchasing-receive-service.js -> routes/scans.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+      },
+      {
+        "from": "shared-cart",
+        "to": "loyalty",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/shared-cart.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "shared-cart",
+        "to": "payments",
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: public/boutique/js/b-share-cart.js -> public/boutique/js/b-checkout.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "wallet",
+        "to": "payments",
+        "decision": "boundary-to-break",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/wallet-service.js -> services/payment-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+      }
+    ],
+    "staleExceptions": [],
+    "duplicateExceptionKeys": [],
+    "illegitimateExceptions": [],
+    "missingExceptions": [],
+    "emptyRationaleExceptions": [],
+    "unexplainedRuntimeCycles": [],
+    "ontologyGapCoverage": {
+      "consumers": [
+        "tracking"
+      ],
+      "covered": [
+        "tracking"
+      ],
+      "uncovered": [],
+      "providersByConsumer": {
+        "tracking": [
+          "auth-identity",
+          "logistics",
+          "orders"
+        ]
+      }
+    }
   },
   "tableOwnership": {
     "revoked_tokens": {
