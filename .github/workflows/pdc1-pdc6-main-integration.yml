@@ -1,0 +1,96 @@
+name: PDC1-PDC6 Main Integration
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pdc1-pdc6-main-integration
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    if: github.head_ref == 'integration/pdc1-pdc6-main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: integration/pdc1-pdc6-main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch canonical PDC-6 head
+        run: |
+          git fetch origin feat/pdc6-legacy-modal-extinction-final
+          test "$(git rev-parse origin/feat/pdc6-legacy-modal-extinction-final)" = "1cf302c482f2c76ed4a10028e241006324998c48"
+
+      - name: Merge cumulative PDC-1 to PDC-6
+        id: merge
+        run: |
+          set -euo pipefail
+          if git merge-base --is-ancestor 1cf302c482f2c76ed4a10028e241006324998c48 HEAD; then
+            echo "already_integrated=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! git merge --no-ff -X ours 1cf302c482f2c76ed4a10028e241006324998c48 \
+            -m "integration(pdc): merge PDC-1→PDC-6 into main"; then
+            echo "Automatic conservative merge did not resolve every conflict."
+            echo "Unmerged paths:"
+            git diff --name-only --diff-filter=U
+            exit 1
+          fi
+
+          echo "already_integrated=false" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        if: steps.merge.outputs.already_integrated != 'true'
+        run: npm ci
+
+      - name: Regenerate canonical architecture artifacts
+        if: steps.merge.outputs.already_integrated != 'true'
+        run: |
+          npm run arch:gen
+          npm run dashboards:360
+          npm run boutique:360
+          npm run meta:graph
+
+      - name: Validate PDC and governance
+        if: steps.merge.outputs.already_integrated != 'true'
+        run: |
+          npm --prefix public/boutique run check:fast
+          npm run feature:registry
+          npm run gate:schema
+          npm run gate:docs-lint
+          npm run gate:boutique-ownership
+          npm run map:check
+
+      - name: Prove PDC-6 legacy extinction
+        if: steps.merge.outputs.already_integrated != 'true'
+        run: |
+          set -euo pipefail
+          ! grep -n "_renderVariants" public/boutique/js/b-modal-core.js public/boutique/js/b-modal-product.js
+          ! grep -nE "fetch\([^\n]*api/products/.+[^/]detail" public/boutique/js/b-modal-core.js
+          test ! -e public/boutique/js/view-models/modal-view-model.js
+          test ! -e public/boutique/js/b-modal-mobile-product-bootstrap.js
+
+      - name: Commit generated artifacts and push integration
+        if: steps.merge.outputs.already_integrated != 'true'
+        run: |
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(governance): regenerate artifacts after PDC integration"
+          fi
+          git status --short
+          git push origin HEAD:integration/pdc1-pdc6-main
