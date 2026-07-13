@@ -3,23 +3,12 @@
 /**
  * tests/unit/b-modal-image-ux.test.js
  *
- * Module js/b-modal-image-ux.js (262L) — @criticality medium. Compteur
- * 1/N (>5 images), bouton "Voir en grand", lightbox plein écran (swipe,
- * Escape, tap-to-close), sync avec bus 'carousel:changed'.
+ * Module js/b-modal-image-ux.js — compteur 1/N, bouton "Voir en grand",
+ * lightbox plein écran, swipe, Escape et sync carousel.
  *
- * 0% de couverture réelle avant cette session : seul point de contact,
- * `b-modal-core.test.js`, le mocke intégralement — jamais importé pour
- * de vrai nulle part.
- *
- * b-bus.js et b-store.js réels. jest.resetModules() par test : état
- * module-level (_fsOpen, _fsIdx, _fsImages, _installed) doit repartir à
- * zéro à chaque cas (même piège documenté dans
- * b-modal-desktop-enhancers.test.js).
- *
- * Seul export public : setupImageUX(). Le reste (_openFs, _closeFs,
- * _goTo, _refreshCounter, _injectViewFullBtn, _setupFsHandlers,
- * _setupCarouselTap, _setupCarouselSync) est exercé indirectement via
- * DOM + bus, comme le ferait b-modal-core.js en production.
+ * PDC-4 ajoute une différence intentionnelle : une fiche détail mobile enrichie
+ * montre le compteur dès 2 médias, alors que le parcours legacy conserve son
+ * seuil historique > 5 images.
  */
 
 describe('b-modal-image-ux', () => {
@@ -58,13 +47,39 @@ describe('b-modal-image-ux', () => {
     ({ setupImageUX } = require('../../js/b-modal-image-ux.js'));
 
     state.carouselIndex = 0;
+    state.modalProductDetail = null;
     jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(); return 1; });
   });
 
   describe('compteur 1/N', () => {
-    test('<= 5 images -> compteur masqué, dots réaffichés', () => {
+    test('<= 5 images legacy -> compteur masqué, dots réaffichés', () => {
       buildModalDom(3);
       setupImageUX();
+      expect(document.querySelector('.k-modal-counter').classList.contains('is-visible')).toBe(false);
+      expect(document.querySelector('.k-modal-dots').style.display).toBe('');
+    });
+
+    test('fiche détail mobile enrichie -> compteur visible dès 2 médias', () => {
+      buildModalDom(2);
+      state.modalProductDetail = { product: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' } };
+      window.matchMedia = jest.fn().mockReturnValue({ matches: true });
+
+      setupImageUX();
+
+      const counter = document.querySelector('.k-modal-counter');
+      expect(counter.classList.contains('is-visible')).toBe(true);
+      expect(counter.textContent).toContain('1');
+      expect(counter.textContent).toContain('2');
+      expect(document.querySelector('.k-modal-dots').style.display).toBe('none');
+    });
+
+    test('fiche détail desktop conserve le seuil historique du compteur', () => {
+      buildModalDom(2);
+      state.modalProductDetail = { product: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' } };
+      window.matchMedia = jest.fn().mockReturnValue({ matches: false });
+
+      setupImageUX();
+
       expect(document.querySelector('.k-modal-counter').classList.contains('is-visible')).toBe(false);
       expect(document.querySelector('.k-modal-dots').style.display).toBe('');
     });
@@ -157,7 +172,7 @@ describe('b-modal-image-ux', () => {
       start.touches = [{ clientX: 200 }];
       fs.dispatchEvent(start);
       const end = new Event('touchend');
-      end.changedTouches = [{ clientX: 100 }]; // swipe gauche -> slide suivante
+      end.changedTouches = [{ clientX: 100 }];
       fs.dispatchEvent(end);
       expect(document.querySelector('.k-modal-fullscreen-counter').textContent).toContain('2');
     });
@@ -171,7 +186,7 @@ describe('b-modal-image-ux', () => {
       start.touches = [{ clientX: 200 }];
       fs.dispatchEvent(start);
       const end = new Event('touchend');
-      end.changedTouches = [{ clientX: 190 }]; // 10px, sous le seuil
+      end.changedTouches = [{ clientX: 190 }];
       fs.dispatchEvent(end);
       expect(document.querySelector('.k-modal-fullscreen-counter').textContent).toContain('1');
     });
@@ -194,10 +209,10 @@ describe('b-modal-image-ux', () => {
     test('handlers fullscreen (Escape, swipe) installés une seule fois même après 2 setupImageUX()', () => {
       buildModalDom(3);
       setupImageUX();
-      setupImageUX(); // 2e appel : _installed déjà true, pas de double-listener
+      setupImageUX();
       document.querySelector('.k-modal-view-full').click();
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); // no-op, déjà fermé
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
       expect(document.querySelector('.k-modal-fullscreen').classList.contains('is-open')).toBe(false);
     });
   });
@@ -225,7 +240,7 @@ describe('b-modal-image-ux', () => {
       buildModalDom(8);
       setupImageUX();
       bus.emit('carousel:changed', 4);
-      expect(document.querySelector('.k-modal-counter').textContent).toContain('5'); // idx+1
+      expect(document.querySelector('.k-modal-counter').textContent).toContain('5');
     });
   });
 });

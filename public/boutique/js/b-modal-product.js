@@ -4,13 +4,13 @@
  * @domain        boutique
  * @layer         ui-renderer
  * @criticality   high
- * @inputs        product, variant_state, media_state
+ * @inputs        product, media_state
  * @outputs       modal_product_content, carousel_state, product_detail_sections
  * @depends       b-store.js, b-utils.js, b-bus.js
  * @used-by       b-modal-core.js
  * @doctrine      boutique_preuve_confiance, fiche_produit_lisible, modal_produit_sans_chevauchement
  * @impact-areas  product-modal, product-discovery, participant-verification, media-carousel
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
@@ -20,21 +20,25 @@
  *
  * Périmètre (responsabilité « Rendu fiche produit » du découpage ARCH-2) :
  *   - Carousel d'images : buildCarouselSlides, goToSlide (dots, miniatures, compteur N/N)
- *   - Variantes : _renderVariants (tailles/pointures + déclenchement guide des tailles)
- *   - Encarts mobile : _syncScrollPadding, _injectMobileDelivery, _injectMobileTrust
+ *   - Encarts mobile : _syncScrollPadding
  *   - Topbar enrichie / retour-haut : setupModalFAB, setupEnrichedTopbar, hideModalFAB,
  *     scrollModalToTop (ces deux derniers privés, usage intra-module uniquement)
  *   - Guide des tailles : openSizeGuide, closeSizeGuide
  *
+ * PDC-6 : _renderVariants et ses helpers exclusifs (_buildSizeGrid,
+ *   _openVariantSheet, _closeVariantSheet, _vsOverlay) ont été supprimés —
+ *   c'était l'intelligence produit legacy (lecture directe de opt.stock /
+ *   product.stock) alimentée par le fetch /api/products/:id retiré de
+ *   b-modal-core.js. La disponibilité et les variantes sont désormais
+ *   projetées depuis state.modalSelection (Product Detail Contract).
+ *
  * Découplage : ce module ne dépend QUE de b-bus / b-store / b-utils.
  *   Il n'importe rien de b-modal.js → aucun cycle (garde-fou check:imports I-2).
- *   Les corps de fonction sont repris à l'identique de b-modal.js (aucune
- *   modification de logique dans cette PR — extraction pure).
  *
  * Consommateurs : b-modal.js (ré-exporte buildCarouselSlides, goToSlide,
  *   openSizeGuide, closeSizeGuide pour préserver sa surface publique, et
- *   importe _renderVariants, _syncScrollPadding, _injectMobileDelivery,
- *   _injectMobileTrust, setupModalFAB et hideModalFAB pour openModal/closeModal).
+ *   importe _syncScrollPadding,
+ *   setupModalFAB et hideModalFAB pour openModal/closeModal).
  *
  * Dépendances : b-bus.js, b-store.js, b-utils.js
  */
@@ -185,346 +189,6 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     bus.emit('carousel:changed', index);
   }
 
-  /* ════ VARIANTES ════ */
-
-  /**
-   * _renderVariants — Rendu des variantes du produit.
-   *
-   * Couleur → rangée de SKUs miniatures : image réelle du produit + nom de couleur.
-   *   - Si opt.image_url est fourni par l'API : on l'affiche.
-   *   - Pas de fallback hex, pas de COLOR_MAP — si pas d'image, on affiche juste le nom en pill texte.
-   *   - Clic couleur : met à jour le carousel principal + le prix si différent.
-   *
-   * Autres types (Taille, Pointure…) → grille de pills texte compactes.
-   *
-   * @param {Object} variants  { "Couleur": [{value, stock, price_kmf, image_url}], "Taille": [...] }
-   * @param {Object} product   Produit complet (fallback price_kmf + images)
-   */
-  function _renderVariants(variants, product) {
-    let container = dom.modalVariants || document.getElementById('k-modal-variants');
-    if (!container) return;
-    container.innerHTML = '';
-
-    // Lot 2 — reset du combo à chaque (re)rendu des variantes (nouveau produit)
-    state.modalVariantCombo = {};
-
-    let isMobile = window.innerWidth < 900;
-
-    Object.keys(variants).forEach(function(type) {
-      let options = variants[type];
-      if (!options || !options.length) return;
-
-      let isCouleur = /couleur|color|coloris|teinte/i.test(type);
-      let isTaille = /taille|pointure/i.test(type);
-      let sizeType = /pointure/i.test(type) ? 'shoes' : 'clothes';
-
-      let group = document.createElement('div');
-      group.className = 'k-vg';
-
-      /* ── Couleur → swatches photo .k-sku (Lot 2) ── */
-      if (isCouleur) {
-        // Label "Couleur · Bleu"
-        let labelRow = document.createElement('div');
-        labelRow.className = 'k-vg-label';
-        labelRow.innerHTML =
-          '<span class="k-vg-label-type">' + type + '</span>' +
-          '<span class="k-vg-label-sep">·</span>' +
-          '<span class="k-vg-label-val"></span>';
-        let labelVal = labelRow.querySelector('.k-vg-label-val');
-        group.appendChild(labelRow);
-
-        let skuWrap = document.createElement('div');
-        skuWrap.className = 'k-vg-skus';
-
-        let activeIndex = -1;
-
-        options.forEach(function(opt, i) {
-          let isOut = (opt.stock === 0);
-          // Normaliser : images[] ou image_url ou fallback product
-          let optImages = opt.images && opt.images.length
-            ? opt.images
-            : (opt.image_url ? [opt.image_url] : null);
-          let thumbUrl = optImages ? optImages[0] : null;
-
-          let sku = document.createElement('button');
-          sku.type = 'button';
-          sku.className = 'k-sku' + (isOut ? ' k-sku--out' : '');
-
-          if (thumbUrl) {
-            sku.innerHTML =
-              '<img src="' + optimizeImgUrl(thumbUrl, 120) + '" alt="' + (opt.value || '') + '">' +
-              (isOut ? '<span class="k-sku-slash"></span>' : '') +
-              '<span class="k-sku-name">' + (opt.value || '') + '</span>';
-          } else {
-            // Pas d'image → pill texte simple (pas de rond coloré)
-            sku.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
-            sku.textContent = opt.value || '';
-          }
-
-          if (isOut) {
-            sku.disabled = true;
-          } else {
-            sku.addEventListener('click', function() {
-              // État actif
-              skuWrap.querySelectorAll('.k-sku, .k-vp').forEach(function(s) {
-                s.classList.remove('k-sku--active', 'k-vp--active');
-              });
-              sku.classList.add(thumbUrl ? 'k-sku--active' : 'k-vp--active');
-              labelVal.textContent = opt.value || '';
-
-              // Lot 2 — combo variante courant
-              state.modalVariantCombo[type] = opt.value;
-
-              // Prix
-              if (opt.price_kmf) {
-                dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
-              }
-
-              // Swap carousel avec les images de CE SKU
-              if (optImages && optImages.length) {
-                let skuProduct = Object.assign({}, product, { images: optImages });
-                buildCarouselSlides(skuProduct);
-                goToSlide(0);
-              }
-            });
-          }
-
-          skuWrap.appendChild(sku);
-        });
-
-        group.appendChild(skuWrap);
-        container.appendChild(group);
-        return; // couleur traitée, passer au type suivant
-      }
-
-      /* ── État partagé entre trigger compact + sheet ── */
-      let selectedValue = null;
-      let selectedPrice = null;
-
-      /* ── Mobile + Taille/Pointure → bouton compact + bottom-sheet ── */
-      if (isMobile && isTaille) {
-        // Bouton compact "Taille · — ▾"
-        let trigger = document.createElement('button');
-        trigger.type = 'button';
-        trigger.className = 'k-vs-trigger';
-        trigger.setAttribute('aria-expanded', 'false');
-        trigger.innerHTML =
-          '<span class="k-vs-trigger-label">' +
-            '<span class="k-vs-trigger-type">' + type + '</span>' +
-            '<span class="k-vs-trigger-sep">·</span>' +
-            '<span class="k-vs-trigger-val">Choisir</span>' +
-          '</span>' +
-          '<span class="k-vs-trigger-chevron">▾</span>';
-        let triggerVal = trigger.querySelector('.k-vs-trigger-val');
-
-        trigger.addEventListener('click', function() {
-          _openVariantSheet(type, sizeType, options, function(val, price) {
-            selectedValue = val;
-            selectedPrice = price;
-            triggerVal.textContent = val;
-            triggerVal.classList.add('is-set');
-            if (price) dom.modalPrice.textContent = fmtPrice(price);
-            // Lot 2 — combo variante courant (bottom-sheet mobile)
-            state.modalVariantCombo[type] = val;
-          }, selectedValue);
-        });
-
-        group.appendChild(trigger);
-
-        // Desktop fallback : grille inline cachée par CSS (le trigger a display:none @≥900px)
-        // On ajoute quand même la grille pour le resize / orientation change
-        let wrap = _buildSizeGrid(options, type, sizeType, function(val, price) {
-          selectedValue = val;
-          selectedPrice = price;
-          triggerVal.textContent = val;
-          triggerVal.classList.add('is-set');
-        });
-        group.appendChild(wrap.label);
-        group.appendChild(wrap.grid);
-
-      } else {
-        /* ── Desktop ou type non-taille → grille inline (comportement existant) ── */
-        let wrap = _buildSizeGrid(options, type, sizeType, function(val, price) {
-          selectedValue = val;
-          selectedPrice = price;
-        });
-        group.appendChild(wrap.label);
-        group.appendChild(wrap.grid);
-      }
-
-      container.appendChild(group);
-    });
-
-    // Ajuster le padding-bottom du scroll pour la barre d'actions fixe
-    _syncScrollPadding();
-  }
-
-  /* ── Helper : construire la grille de pills (réutilisé inline + dans la sheet) ── */
-  function _buildSizeGrid(options, type, sizeType, onSelect) {
-    let isTaille = /taille|pointure/i.test(type);
-
-    // Label "Taille · M  [📏 Guide des tailles]"
-    let labelRow = document.createElement('div');
-    labelRow.className = 'k-vg-label';
-    let guideHTML = isTaille
-      ? '<button type="button" class="k-vg-size-guide" data-size-type="' + sizeType +
-          '">📏 Guide des tailles</button>'
-      : '';
-    labelRow.innerHTML =
-      '<span class="k-vg-label-type">' + type + '</span>' +
-      '<span class="k-vg-label-sep">·</span>' +
-      '<span class="k-vg-label-val"></span>' +
-      guideHTML;
-    let labelVal = labelRow.querySelector('.k-vg-label-val');
-
-    let guideBtn = labelRow.querySelector('.k-vg-size-guide');
-    if (guideBtn) {
-      guideBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        openSizeGuide(guideBtn.dataset.sizeType);
-      });
-    }
-
-    let wrap = document.createElement('div');
-    wrap.className = 'k-vg-sizes';
-
-    options.forEach(function(opt) {
-      let isOut = (opt.stock === 0);
-      let btn   = document.createElement('button');
-      btn.type  = 'button';
-      btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
-      btn.textContent = opt.value;
-      btn.disabled    = isOut;
-
-      btn.addEventListener('click', function() {
-        if (isOut) return;
-        wrap.querySelectorAll('.k-vp').forEach(function(b) { b.classList.remove('k-vp--active'); });
-        btn.classList.add('k-vp--active');
-        labelVal.textContent = opt.value;
-        if (opt.price_kmf) dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
-        // Lot 2 — combo variante courant
-        state.modalVariantCombo[type] = opt.value;
-        if (onSelect) onSelect(opt.value, opt.price_kmf);
-      });
-
-      wrap.appendChild(btn);
-    });
-
-    return { label: labelRow, grid: wrap };
-  }
-
-  /* ── Bottom-sheet variantes (Lot 1) ── */
-  let _vsOverlay = null;
-
-  function _openVariantSheet(type, sizeType, options, onConfirm, currentValue) {
-    // Réutiliser l'overlay s'il existe déjà
-    if (_vsOverlay) _vsOverlay.remove();
-
-    _vsOverlay = document.createElement('div');
-    _vsOverlay.className = 'k-vs-overlay';
-    _vsOverlay.setAttribute('role', 'dialog');
-    _vsOverlay.setAttribute('aria-modal', 'true');
-    _vsOverlay.setAttribute('aria-label', 'Choisir ' + type.toLowerCase());
-
-    let pendingValue = currentValue || null;
-    let pendingPrice = null;
-
-    let html = [
-      '<div class="k-vs-panel">',
-        '<div class="k-vs-header">',
-          '<div class="k-vs-header-left">',
-            '<span class="k-vs-header-title">' + type + '</span>',
-            '<button type="button" class="k-vs-header-guide" data-size-type="' + sizeType + '">📏 Guide</button>',
-          '</div>',
-          '<button type="button" class="k-vs-close" aria-label="Fermer">',
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>',
-          '</button>',
-        '</div>',
-        '<div class="k-vs-body">',
-          '<div class="k-vg-sizes" id="k-vs-grid"></div>',
-        '</div>',
-        '<button type="button" class="k-vs-confirm" disabled>Confirmer</button>',
-      '</div>'
-    ].join('');
-
-    _vsOverlay.innerHTML = html;
-    document.body.appendChild(_vsOverlay);
-
-    // Remplir la grille
-    let grid = _vsOverlay.querySelector('#k-vs-grid');
-    let confirmBtn = _vsOverlay.querySelector('.k-vs-confirm');
-
-    options.forEach(function(opt) {
-      let isOut = (opt.stock === 0);
-      let btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
-      if (opt.value === currentValue) btn.className += ' k-vp--active';
-      btn.textContent = opt.value;
-      btn.disabled = isOut;
-
-      btn.addEventListener('click', function() {
-        if (isOut) return;
-        grid.querySelectorAll('.k-vp').forEach(function(b) { b.classList.remove('k-vp--active'); });
-        btn.classList.add('k-vp--active');
-        pendingValue = opt.value;
-        pendingPrice = opt.price_kmf || null;
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Confirmer — ' + opt.value;
-      });
-
-      grid.appendChild(btn);
-    });
-
-    // Si une valeur est déjà sélectionnée
-    if (currentValue) {
-      confirmBtn.disabled = false;
-      confirmBtn.textContent = 'Confirmer — ' + currentValue;
-      // Retrouver le prix
-      let match = options.find(function(o) { return o.value === currentValue; });
-      if (match) pendingPrice = match.price_kmf || null;
-    }
-
-    // Guide des tailles
-    _vsOverlay.querySelector('.k-vs-header-guide').addEventListener('click', function(e) {
-      e.stopPropagation();
-      openSizeGuide(sizeType);
-    });
-
-    // Fermeture
-    function close() { _closeVariantSheet(); }
-    _vsOverlay.querySelector('.k-vs-close').addEventListener('click', close);
-    _vsOverlay.addEventListener('click', function(e) {
-      if (e.target === _vsOverlay) close();
-    });
-    function _onKey(e) {
-      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', _onKey); }
-    }
-    document.addEventListener('keydown', _onKey);
-
-    // Confirmer
-    confirmBtn.addEventListener('click', function() {
-      if (pendingValue && onConfirm) onConfirm(pendingValue, pendingPrice);
-      close();
-    });
-
-    // Ouvrir avec animation
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        _vsOverlay.classList.add('is-open');
-      });
-    });
-  }
-
-  function _closeVariantSheet() {
-    if (!_vsOverlay) return;
-    _vsOverlay.classList.remove('is-open');
-    setTimeout(function() {
-      if (_vsOverlay && _vsOverlay.parentNode) _vsOverlay.remove();
-      _vsOverlay = null;
-    }, 260);
-  }
-
   /* ════ ENCARTS MOBILE (livraison / trust / padding) ════ */
 
   /* ── SYNC PADDING SCROLL ────────────────────────────────────────
@@ -554,66 +218,6 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       });
     });
   }
-
-  /* ── LOT 3 — RÉASSURANCE MOBILE COMPACTE ─────────────────────────
-     Remplace _injectMobileDelivery + _injectMobileTrust par une seule
-     ligne compacte : icône + délai livraison, dépliable en accordéon
-     pour révéler les 3 items trust (retrait relais / cash / échange).
-     Masqué desktop par CSS. Dédoublonnage via data-mobile-reassurance. */
-  function _injectMobileReassurance(product) {
-    if (!dom.modal) return;
-    // Nettoyer : supprimer l'ancien format ET l'ancien lot 3 si présent
-    let oldD = dom.modal.querySelector('[data-mobile-delivery]');
-    let oldT = dom.modal.querySelector('[data-mobile-trust]');
-    let oldR = dom.modal.querySelector('[data-mobile-reassurance]');
-    if (oldD) oldD.remove();
-    if (oldT) oldT.remove();
-    if (oldR) oldR.remove();
-
-    let info = dom.modal.querySelector('.k-modal-info');
-    if (!info) return;
-
-    let delay = (product && product.delivery_delay) || '3 à 5 semaines';
-
-    let el = document.createElement('div');
-    el.className = 'k-modal-reassurance';
-    el.setAttribute('data-mobile-reassurance', '1');
-    el.innerHTML =
-      '<button type="button" class="k-modal-reassurance-toggle" aria-expanded="false">' +
-        '<span class="k-modal-reassurance-main">' +
-          '<span class="k-modal-reassurance-icon">📦</span>' +
-          '<span class="k-modal-reassurance-label">Livraison relais</span>' +
-          '<span class="k-modal-reassurance-delay">· ' + delay + '</span>' +
-        '</span>' +
-        '<span class="k-modal-reassurance-chevron">▾</span>' +
-      '</button>' +
-      '<div class="k-modal-reassurance-details" hidden>' +
-        '<span class="k-modal-reassurance-item">📍 Retrait en relais</span>' +
-        '<span class="k-modal-reassurance-item">💵 Paiement cash</span>' +
-        '<span class="k-modal-reassurance-item">🔄 Échange 14 j</span>' +
-      '</div>';
-
-    // Accordéon
-    let toggle = el.querySelector('.k-modal-reassurance-toggle');
-    let details = el.querySelector('.k-modal-reassurance-details');
-    toggle.addEventListener('click', function() {
-      let open = details.hidden;
-      details.hidden = !open;
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
-    // Insérer après .k-modal-meta
-    let meta = info.querySelector('.k-modal-meta');
-    if (meta && meta.nextSibling) {
-      info.insertBefore(el, meta.nextSibling);
-    } else {
-      info.appendChild(el);
-    }
-  }
-
-  /* Backward-compat : les anciens noms redirigent vers le nouveau */
-  function _injectMobileDelivery(product) { _injectMobileReassurance(product); }
-  function _injectMobileTrust() { /* absorbé par _injectMobileReassurance */ }
 
   /* ════ TOPBAR ENRICHIE + RETOUR HAUT ════ */
 
@@ -921,10 +525,10 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
 
 // Surface publique ré-exportée par b-modal.js : buildCarouselSlides, goToSlide,
 // openSizeGuide, closeSizeGuide. Helpers consommés par openModal/closeModal :
-// _renderVariants, _syncScrollPadding, _injectMobile*, setupModalFAB, hideModalFAB.
+// _syncScrollPadding, setupModalFAB, hideModalFAB.
+// PDC-6 : _renderVariants retiré (fetch legacy /api/products/:id supprimé).
 export {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
-  _renderVariants, _syncScrollPadding,
-  _injectMobileDelivery, _injectMobileTrust,
+  _syncScrollPadding,
   setupModalFAB, hideModalFAB,
 };

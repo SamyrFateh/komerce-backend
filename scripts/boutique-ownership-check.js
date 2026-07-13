@@ -35,7 +35,10 @@ const requiredModalJs = [
   'public/boutique/js/b-modal-suggestions.js',
   'public/boutique/js/b-modal-cart.js',
   'public/boutique/js/b-modal-desktop-enhancers.js',
-  'public/boutique/js/view-models/modal-view-model.js',
+  'public/boutique/js/b-modal-product-detail-bootstrap.js',
+  'public/boutique/js/b-modal-mobile-product.js',
+  'public/boutique/js/b-modal-desktop-product.js',
+  'public/boutique/js/view-models/modal-selection-model.js',
 ];
 
 const requiredModalCss = [

@@ -79,7 +79,6 @@ module.exports = {
       '../js/komerce-api.js',
       '../js/main.js',
       '../js/render/render-categories.js',
-      '../js/view-models/modal-view-model.js',
     ],
     css: [
       '../css/tokens.css',

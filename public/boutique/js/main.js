@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/boutique.js
  * @purpose       supports public/boutique/js/boutique.js
  * @impact-areas  boutique
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
@@ -19,20 +19,20 @@ import { setupDesktopUpgrade } from './b-desktop-upgrade.js';
 import { isDesktop } from './b-scroll-owner.js';
 import { setupProductOpenContract } from './b-product-open-contract.js';
 import { setupCartProductOpenStyle } from './b-cart-product-open-style.js';
-import { setupModalContractClasses } from './b-modal-desktop-enhancers.js';
 import { setupApprocheCHybridPdp } from './b-modal-approche-c-hybrid.js';
 import { setupPdpCurationSuggestions } from './b-pdp-curation-suggestions.js';
 import { setupHomePremiumV1 } from './b-home-premium-v1.js';
+import { setupProductDetailModal } from './b-modal-product-detail-bootstrap.js';
 // FIX GREETING — b-greeting importé mais jamais appelé dans setupBoutiqueRuntime
 import { greetIfKnown } from './b-greeting.js';
 
 function setupBoutiqueRuntime() {
   setupSharePhoneGuard();
-  setupModalContractClasses();
   setupDesktopUpgrade();
   setupApprocheCHybridPdp();
   setupPdpCurationSuggestions();
   setupHomePremiumV1();
+  setupProductDetailModal();
   setupProductOpenContract();
   setupCartProductOpenStyle();
   // FIX GREETING — appelé après le boot, best-effort (silencieux si non connecté)

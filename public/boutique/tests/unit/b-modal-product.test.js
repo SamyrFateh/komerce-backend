@@ -12,12 +12,12 @@
  * Périmètre couvert :
  *   - buildCarouselSlides (slides, dots vs compteur >5 images, miniatures desktop)
  *   - goToSlide (borne, sync dots/miniatures/compteur, bus carousel:changed)
- *   - _renderVariants (couleur ignorée, taille + guide des tailles, options
- *     out-of-stock désactivées, sélection met à jour le prix)
  *   - _syncScrollPadding (no-op desktop ≥900px)
- *   - _injectMobileDelivery / _injectMobileTrust (injection, dédup, no-op sans DOM)
  *   - setupModalFAB / hideModalFAB (topbar enrichie, cleanup observers)
  *   - openSizeGuide / closeSizeGuide (overlay, onglets, fermeture croix/backdrop/Escape)
+ *
+ * PDC-6 : _renderVariants et ses helpers (intelligence produit legacy) ont
+ *   été supprimés de b-modal-product.js ; leur couverture est retirée ici.
  *
  * state/dom/bus viennent des vrais b-store.js/b-bus.js. b-utils.js est mocké
  * (fonctions pures de formatage, comme dans les lots précédents).
@@ -33,8 +33,7 @@ const { bus } = require('../../js/b-bus.js');
 
 const {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
-  _renderVariants, _syncScrollPadding,
-  _injectMobileDelivery, _injectMobileTrust,
+  _syncScrollPadding,
   setupModalFAB, hideModalFAB,
 } = require('../../js/b-modal-product.js');
 
@@ -148,68 +147,6 @@ describe('b-modal-product', () => {
     });
   });
 
-  describe('_renderVariants', () => {
-    it('sans container (dom.modalVariants absent et #k-modal-variants introuvable) → ne throw pas', () => {
-      dom.modalVariants = null;
-      expect(() => _renderVariants({ Taille: [{ value: 'M', stock: 5 }] }, makeProduct())).not.toThrow();
-    });
-
-    it('type "Couleur" → génère des swatches .k-sku avec image ou .k-vp sans image (Lot 2)', () => {
-      _renderVariants({
-        Couleur: [
-          { value: 'Rouge', stock: 5, image_url: 'http://img/rouge.jpg' },
-          { value: 'Bleu', stock: 0, image_url: 'http://img/bleu.jpg' },
-          { value: 'Vert', stock: 3 },
-        ]
-      }, makeProduct());
-      // 1 groupe créé
-      expect(dom.modalVariants.children).toHaveLength(1);
-      // 2 swatches photo + 1 pill texte (pas d'image)
-      const skus = dom.modalVariants.querySelectorAll('.k-sku');
-      expect(skus).toHaveLength(2);
-      const pills = dom.modalVariants.querySelectorAll('.k-vp');
-      expect(pills).toHaveLength(1);
-      // Rupture de stock
-      expect(skus[1].classList.contains('k-sku--out')).toBe(true);
-      expect(skus[1].disabled).toBe(true);
-    });
-
-    it('type "Taille" → groupe créé avec bouton guide des tailles (data-size-type=clothes)', () => {
-      _renderVariants({ Taille: [{ value: 'M', stock: 5 }, { value: 'L', stock: 0 }] }, makeProduct());
-      const guideBtn = dom.modalVariants.querySelector('.k-vg-size-guide');
-      expect(guideBtn).not.toBeNull();
-      expect(guideBtn.dataset.sizeType).toBe('clothes');
-    });
-
-    it('type "Pointure" → guide des tailles en mode "shoes"', () => {
-      _renderVariants({ Pointure: [{ value: '40', stock: 5 }] }, makeProduct());
-      const guideBtn = dom.modalVariants.querySelector('.k-vg-size-guide');
-      expect(guideBtn.dataset.sizeType).toBe('shoes');
-    });
-
-    it('option en stock : clic → devient active, met à jour le label et le prix', () => {
-      _renderVariants({ Taille: [{ value: 'M', stock: 5, price_kmf: 4500 }] }, makeProduct());
-      const btn = dom.modalVariants.querySelector('.k-vp');
-      expect(btn.disabled).toBe(false);
-      btn.click();
-      expect(btn.classList.contains('k-vp--active')).toBe(true);
-      expect(dom.modalVariants.querySelector('.k-vg-label-val').textContent).toBe('M');
-      expect(dom.modalPrice.textContent).toBe('4500 KMF');
-    });
-
-    it('option rupture (stock 0) : bouton désactivé, pas de classe active possible', () => {
-      _renderVariants({ Taille: [{ value: 'XL', stock: 0 }] }, makeProduct());
-      const btn = dom.modalVariants.querySelector('.k-vp');
-      expect(btn.disabled).toBe(true);
-      expect(btn.classList.contains('k-vp--out')).toBe(true);
-    });
-
-    it('type sans options (tableau vide) → aucun groupe créé', () => {
-      _renderVariants({ Taille: [] }, makeProduct());
-      expect(dom.modalVariants.children).toHaveLength(0);
-    });
-  });
-
   describe('_syncScrollPadding', () => {
     it('desktop (innerWidth ≥ 900) → no-op, ne pose pas de --k-modal-cta-h', () => {
       window.innerWidth = 1200;
@@ -220,53 +157,6 @@ describe('b-modal-product', () => {
     it('mobile (innerWidth < 900) → ne throw pas même sans .k-modal-actions', () => {
       window.innerWidth = 400;
       expect(() => _syncScrollPadding()).not.toThrow();
-    });
-  });
-
-  describe('_injectMobileDelivery', () => {
-    it('sans dom.modal → ne throw pas', () => {
-      dom.modal = null;
-      expect(() => _injectMobileDelivery(makeProduct())).not.toThrow();
-    });
-
-    it('injecte l\'encart réassurance avec le délai par défaut', () => {
-      _injectMobileDelivery(makeProduct({ delivery_delay: undefined }));
-      const el = dom.modal.querySelector('[data-mobile-reassurance]');
-      expect(el).not.toBeNull();
-      expect(el.textContent).toContain('3 à 5 semaines');
-    });
-
-    it('utilise le délai personnalisé du produit si fourni', () => {
-      _injectMobileDelivery(makeProduct({ delivery_delay: '48h' }));
-      const el = dom.modal.querySelector('[data-mobile-reassurance]');
-      expect(el.textContent).toContain('48h');
-    });
-
-    it('dédoublonne : un second appel retire l\'ancien encart avant d\'insérer le nouveau', () => {
-      _injectMobileDelivery(makeProduct({ delivery_delay: '48h' }));
-      _injectMobileDelivery(makeProduct({ delivery_delay: '72h' }));
-      const els = dom.modal.querySelectorAll('[data-mobile-reassurance]');
-      expect(els).toHaveLength(1);
-      expect(els[0].textContent).toContain('72h');
-    });
-  });
-
-  describe('_injectMobileTrust', () => {
-    it('sans dom.modal → ne throw pas', () => {
-      dom.modal = null;
-      expect(() => _injectMobileTrust()).not.toThrow();
-    });
-
-    it('_injectMobileDelivery injecte 3 items trust dans l\'accordéon', () => {
-      _injectMobileDelivery(makeProduct());
-      const el = dom.modal.querySelector('[data-mobile-reassurance]');
-      expect(el.querySelectorAll('.k-modal-reassurance-item')).toHaveLength(3);
-    });
-
-    it('dédoublonne au second appel', () => {
-      _injectMobileDelivery(makeProduct());
-      _injectMobileDelivery(makeProduct());
-      expect(dom.modal.querySelectorAll('[data-mobile-reassurance]')).toHaveLength(1);
     });
   });
 
