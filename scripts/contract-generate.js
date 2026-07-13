@@ -1902,6 +1902,28 @@ for (const r of ROUTE_SCHEMA_MAP) schemaIndex[`${r.method.toUpperCase()} ${normP
 const inventory   = listMountedRoutes();
 const routeFiles  = buildRouteFileMap();
 
+// Route ownership must follow the same recursive route graph used by
+// feature-audit. Runtime introspection proves that an operation is mounted,
+// but Express layers do not retain the source filename. The generated
+// route registry does: exact METHOD + normalized fullPath -> routeFile,
+// including nested router.use() and passthrough re-exports.
+function buildRecursiveRouteFileIndex() {
+  const registryFile = path.join(__dirname, '..', 'docs', '_generated', 'route-registry.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(registryFile, 'utf8'));
+    const index = new Map();
+    for (const route of (data.routes || [])) {
+      if (!route.method || !route.fullPath || !route.routeFile) continue;
+      const key = `${String(route.method).toUpperCase()} ${normPath(route.fullPath)}`;
+      if (!index.has(key)) index.set(key, route.routeFile);
+    }
+    return index;
+  } catch (_) {
+    return new Map();
+  }
+}
+const recursiveRouteFiles = buildRecursiveRouteFileIndex();
+
 // GARDE-FOU anti-régression : un montage partiel ne doit JAMAIS écraser le contrat.
 if (inventory.length < 150) {
   console.error(`✖ Introspection: seulement ${inventory.length} routes (< 150 attendu). Montage incomplet — écriture ANNULÉE pour ne pas régresser le contrat.`);
@@ -1947,7 +1969,11 @@ for (const ep of inventory) {
   if (seenOps.has(key)) continue; seenOps.add(key);
   if (!openapi.paths[prefix]) openapi.paths[prefix] = {};
 
-  const op = { summary: `${ep.method} ${prefix}`, 'x-route-file': routeFileFor(prefix, routeFiles) };
+  const recursiveRouteFile = recursiveRouteFiles.get(`${ep.method} ${prefix}`);
+  const op = {
+    summary: `${ep.method} ${prefix}`,
+    'x-route-file': recursiveRouteFile || routeFileFor(prefix, routeFiles),
+  };
   const enrich = schemaIndex[key];
   const reqBody = enrich ? buildRequestBody(enrich.schema) : null;
   const joiParams = enrich ? buildParameters(enrich.schema) : [];

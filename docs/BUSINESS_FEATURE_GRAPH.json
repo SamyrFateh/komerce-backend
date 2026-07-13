@@ -9661,7 +9661,7 @@
         "entry": "GET /api/auth/invoices",
         "method": "GET",
         "path": "/api/auth/invoices",
-        "routeFile": "routes/auth.js",
+        "routeFile": "routes/client-auth.js",
         "status": "resolved-owned"
       },
       {
@@ -9685,7 +9685,7 @@
         "entry": "POST /api/auth/magic-link",
         "method": "POST",
         "path": "/api/auth/magic-link",
-        "routeFile": "routes/auth.js",
+        "routeFile": "routes/client-auth.js",
         "status": "resolved-owned"
       },
       {
@@ -9693,7 +9693,7 @@
         "entry": "GET /api/auth/magic-link/validate",
         "method": "GET",
         "path": "/api/auth/magic-link/validate",
-        "routeFile": "routes/auth.js",
+        "routeFile": "routes/client-auth.js",
         "status": "resolved-owned"
       },
       {
@@ -9717,7 +9717,7 @@
         "entry": "GET /api/auth/orders",
         "method": "GET",
         "path": "/api/auth/orders",
-        "routeFile": "routes/auth.js",
+        "routeFile": "routes/client-auth.js",
         "status": "resolved-owned"
       },
       {
@@ -9965,32 +9965,32 @@
         "entry": "GET /api/products/:id/skus",
         "method": "GET",
         "path": "/api/products/{id}/skus",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/products.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "catalog",
         "entry": "GET /api/products/:id/skus/readiness",
         "method": "GET",
         "path": "/api/products/{id}/skus/readiness",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/products.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "catalog",
         "entry": "POST /api/products/:id/skus",
         "method": "POST",
         "path": "/api/products/{id}/skus",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/products.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "catalog",
         "entry": "DELETE /api/products/:id/skus/:skuId",
         "method": "DELETE",
         "path": "/api/products/{id}/skus/{id}",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/products.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "catalog",
@@ -10021,8 +10021,8 @@
         "entry": "GET /api/admin/customs",
         "method": "GET",
         "path": "/api/admin/customs",
-        "routeFile": "routes/admin.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/admin/customs.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "customs",
@@ -10173,7 +10173,7 @@
         "entry": "GET /api/admin/dashboard",
         "method": "GET",
         "path": "/api/admin/dashboard",
-        "routeFile": "routes/admin-dashboard.js",
+        "routeFile": "routes/admin/dashboard.js",
         "status": "resolved-owned"
       },
       {
@@ -10181,7 +10181,7 @@
         "entry": "GET /api/dashboard/clients",
         "method": "GET",
         "path": "/api/dashboard/clients",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-clients.js",
         "status": "resolved-owned"
       },
       {
@@ -10189,7 +10189,7 @@
         "entry": "GET /api/dashboard/ops",
         "method": "GET",
         "path": "/api/dashboard/ops",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-ops.js",
         "status": "resolved-owned"
       },
       {
@@ -10197,7 +10197,7 @@
         "entry": "GET /api/dashboard/hub",
         "method": "GET",
         "path": "/api/dashboard/hub",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-hub.js",
         "status": "resolved-owned"
       },
       {
@@ -10245,7 +10245,7 @@
         "entry": "GET /api/admin/partners",
         "method": "GET",
         "path": "/api/admin/partners",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/partners.js",
         "status": "resolved-owned"
       },
       {
@@ -10253,7 +10253,7 @@
         "entry": "GET /api/admin/users",
         "method": "GET",
         "path": "/api/admin/users",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/users.js",
         "status": "resolved-owned"
       },
       {
@@ -10261,7 +10261,7 @@
         "entry": "GET /api/admin/counts",
         "method": "GET",
         "path": "/api/admin/counts",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/system.js",
         "status": "resolved-owned"
       },
       {
@@ -10269,7 +10269,7 @@
         "entry": "POST /api/admin/reset",
         "method": "POST",
         "path": "/api/admin/reset",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/system.js",
         "status": "resolved-owned"
       },
       {
@@ -10277,7 +10277,7 @@
         "entry": "POST /api/admin/seed-test",
         "method": "POST",
         "path": "/api/admin/seed-test",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/system.js",
         "status": "resolved-owned"
       },
       {
@@ -10285,7 +10285,7 @@
         "entry": "POST /api/admin/purchasing/repair-ordered-without-pos",
         "method": "POST",
         "path": "/api/admin/purchasing/repair-ordered-without-pos",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/system.js",
         "status": "resolved-owned"
       },
       {
@@ -10293,7 +10293,7 @@
         "entry": "GET /api/admin/alerts",
         "method": "GET",
         "path": "/api/admin/alerts",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/dashboard.js",
         "status": "resolved-owned"
       },
       {
@@ -10333,7 +10333,7 @@
         "entry": "GET /api/admin/margins",
         "method": "GET",
         "path": "/api/admin/margins",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/dashboard.js",
         "status": "resolved-owned"
       },
       {
@@ -10341,7 +10341,7 @@
         "entry": "POST /api/admin/partners",
         "method": "POST",
         "path": "/api/admin/partners",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/partners.js",
         "status": "resolved-owned"
       },
       {
@@ -10349,7 +10349,7 @@
         "entry": "DELETE /api/admin/partners/:id",
         "method": "DELETE",
         "path": "/api/admin/partners/{id}",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/partners.js",
         "status": "resolved-owned"
       },
       {
@@ -10357,7 +10357,7 @@
         "entry": "GET /api/admin/partners/:id",
         "method": "GET",
         "path": "/api/admin/partners/{id}",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/partners.js",
         "status": "resolved-owned"
       },
       {
@@ -10365,7 +10365,7 @@
         "entry": "PUT /api/admin/partners/:id",
         "method": "PUT",
         "path": "/api/admin/partners/{id}",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/partners.js",
         "status": "resolved-owned"
       },
       {
@@ -10373,7 +10373,7 @@
         "entry": "GET /api/admin/partners/stats",
         "method": "GET",
         "path": "/api/admin/partners/stats",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/partners.js",
         "status": "resolved-owned"
       },
       {
@@ -10453,7 +10453,7 @@
         "entry": "POST /api/admin/users",
         "method": "POST",
         "path": "/api/admin/users",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/users.js",
         "status": "resolved-owned"
       },
       {
@@ -10461,7 +10461,7 @@
         "entry": "DELETE /api/admin/users/:id",
         "method": "DELETE",
         "path": "/api/admin/users/{id}",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/users.js",
         "status": "resolved-owned"
       },
       {
@@ -10469,7 +10469,7 @@
         "entry": "PUT /api/admin/users/:id/password",
         "method": "PUT",
         "path": "/api/admin/users/{id}/password",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/users.js",
         "status": "resolved-owned"
       },
       {
@@ -10477,7 +10477,7 @@
         "entry": "PUT /api/admin/users/:id/role",
         "method": "PUT",
         "path": "/api/admin/users/{id}/role",
-        "routeFile": "routes/admin.js",
+        "routeFile": "routes/admin/users.js",
         "status": "resolved-owned"
       },
       {
@@ -10485,7 +10485,7 @@
         "entry": "GET /api/dashboard/clients/detail",
         "method": "GET",
         "path": "/api/dashboard/clients/detail",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-clients.js",
         "status": "resolved-owned"
       },
       {
@@ -10493,7 +10493,7 @@
         "entry": "GET /api/dashboard/clients/list",
         "method": "GET",
         "path": "/api/dashboard/clients/list",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-clients.js",
         "status": "resolved-owned"
       },
       {
@@ -10501,7 +10501,7 @@
         "entry": "GET /api/dashboard/forecast",
         "method": "GET",
         "path": "/api/dashboard/forecast",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-ops.js",
         "status": "resolved-owned"
       },
       {
@@ -10509,7 +10509,7 @@
         "entry": "GET /api/dashboard/global",
         "method": "GET",
         "path": "/api/dashboard/global",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-ops.js",
         "status": "resolved-owned"
       },
       {
@@ -10517,7 +10517,7 @@
         "entry": "GET /api/dashboard/history",
         "method": "GET",
         "path": "/api/dashboard/history",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-clients.js",
         "status": "resolved-owned"
       },
       {
@@ -10525,7 +10525,7 @@
         "entry": "GET /api/dashboard/hub-dubai",
         "method": "GET",
         "path": "/api/dashboard/hub-dubai",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-hub.js",
         "status": "resolved-owned"
       },
       {
@@ -10533,7 +10533,7 @@
         "entry": "GET /api/dashboard/pilotage",
         "method": "GET",
         "path": "/api/dashboard/pilotage",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-ops.js",
         "status": "resolved-owned"
       },
       {
@@ -10541,7 +10541,7 @@
         "entry": "GET /api/dashboard/pipeline",
         "method": "GET",
         "path": "/api/dashboard/pipeline",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-ops.js",
         "status": "resolved-owned"
       },
       {
@@ -10549,7 +10549,7 @@
         "entry": "GET /api/dashboard/relais",
         "method": "GET",
         "path": "/api/dashboard/relais",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-clients.js",
         "status": "resolved-owned"
       },
       {
@@ -10557,7 +10557,7 @@
         "entry": "GET /api/dashboard/retards",
         "method": "GET",
         "path": "/api/dashboard/retards",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-ops.js",
         "status": "resolved-owned"
       },
       {
@@ -10565,7 +10565,7 @@
         "entry": "GET /api/dashboard/stats",
         "method": "GET",
         "path": "/api/dashboard/stats",
-        "routeFile": "routes/dashboard.js",
+        "routeFile": "routes/dashboard-ops.js",
         "status": "resolved-owned"
       },
       {
@@ -10733,24 +10733,24 @@
         "entry": "GET /api/admin/documents",
         "method": "GET",
         "path": "/api/admin/documents",
-        "routeFile": "routes/admin.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/admin/documents.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "documents",
         "entry": "GET /api/admin/documents/summary",
         "method": "GET",
         "path": "/api/admin/documents/summary",
-        "routeFile": "routes/admin.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/admin/documents.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "documents",
         "entry": "GET /api/admin/documents/:id",
         "method": "GET",
         "path": "/api/admin/documents/{id}",
-        "routeFile": "routes/admin.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/admin/documents.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "economic-engine",
@@ -11157,32 +11157,32 @@
         "entry": "GET /api/dashboard/annulations-parcels",
         "method": "GET",
         "path": "/api/dashboard/annulations-parcels",
-        "routeFile": "routes/dashboard.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/dashboard-finance.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "economic-engine",
         "entry": "GET /api/dashboard/finance",
         "method": "GET",
         "path": "/api/dashboard/finance",
-        "routeFile": "routes/dashboard.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/dashboard-finance.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "economic-engine",
         "entry": "GET /api/dashboard/payments",
         "method": "GET",
         "path": "/api/dashboard/payments",
-        "routeFile": "routes/dashboard.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/dashboard-finance.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "economic-engine",
         "entry": "GET /api/dashboard/sales",
         "method": "GET",
         "path": "/api/dashboard/sales",
-        "routeFile": "routes/dashboard.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/dashboard-finance.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "economic-engine",
@@ -11341,7 +11341,7 @@
         "entry": "GET /api/health",
         "method": "GET",
         "path": "/api/health",
-        "routeFile": "routes/health.js",
+        "routeFile": "server.js",
         "status": "resolved-different-owner"
       },
       {
@@ -11349,7 +11349,7 @@
         "entry": "GET /api/public/config",
         "method": "GET",
         "path": "/api/public/config",
-        "routeFile": "routes/public.js",
+        "routeFile": "server.js",
         "status": "resolved-different-owner"
       },
       {
@@ -11365,7 +11365,7 @@
         "entry": "POST /api/shared-carts/stripe/webhook",
         "method": "POST",
         "path": "/api/shared-carts/stripe/webhook",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "server.js",
         "status": "resolved-different-owner"
       },
       {
@@ -11445,7 +11445,7 @@
         "entry": "POST /api/v2/parcels/:ref/scan",
         "method": "POST",
         "path": "/api/v2/parcels/{id}/scan",
-        "routeFile": "routes/parcel-api-v2.js",
+        "routeFile": "routes/parcel-api-v2/scans.js",
         "status": "resolved-owned"
       },
       {
@@ -11509,7 +11509,7 @@
         "entry": "GET /api/hub/auto-distribute",
         "method": "GET",
         "path": "/api/hub/auto-distribute",
-        "routeFile": "routes/hub.js",
+        "routeFile": "routes/auto-distribute-api.js",
         "status": "resolved-owned"
       },
       {
@@ -11517,7 +11517,7 @@
         "entry": "POST /api/hub/auto-distribute",
         "method": "POST",
         "path": "/api/hub/auto-distribute",
-        "routeFile": "routes/hub.js",
+        "routeFile": "routes/auto-distribute-api.js",
         "status": "resolved-owned"
       },
       {
@@ -11525,7 +11525,7 @@
         "entry": "POST /api/hub/auto-distribute/cleanup",
         "method": "POST",
         "path": "/api/hub/auto-distribute/cleanup",
-        "routeFile": "routes/hub.js",
+        "routeFile": "routes/auto-distribute-api.js",
         "status": "resolved-owned"
       },
       {
@@ -11557,8 +11557,8 @@
         "entry": "POST /api/hub/photo",
         "method": "POST",
         "path": "/api/hub/photo",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/hub.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "logistics",
@@ -11605,8 +11605,8 @@
         "entry": "POST /api/hub/volume",
         "method": "POST",
         "path": "/api/hub/volume",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/hub.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "logistics",
@@ -11925,7 +11925,7 @@
         "entry": "GET /api/v2/parcels",
         "method": "GET",
         "path": "/api/v2/parcels",
-        "routeFile": "routes/parcel-api-v2.js",
+        "routeFile": "routes/parcel-api-v2/read.js",
         "status": "resolved-owned"
       },
       {
@@ -11933,7 +11933,7 @@
         "entry": "GET /api/v2/parcels/:ref",
         "method": "GET",
         "path": "/api/v2/parcels/{id}",
-        "routeFile": "routes/parcel-api-v2.js",
+        "routeFile": "routes/parcel-api-v2/read.js",
         "status": "resolved-owned"
       },
       {
@@ -11941,7 +11941,7 @@
         "entry": "GET /api/v2/parcels/:ref/label",
         "method": "GET",
         "path": "/api/v2/parcels/{id}/label",
-        "routeFile": "routes/parcel-api-v2.js",
+        "routeFile": "routes/parcel-label.js",
         "status": "resolved-owned"
       },
       {
@@ -11949,7 +11949,7 @@
         "entry": "GET /api/v2/parcels/:ref/timeline",
         "method": "GET",
         "path": "/api/v2/parcels/{id}/timeline",
-        "routeFile": "routes/parcel-api-v2.js",
+        "routeFile": "routes/parcel-api-v2/read.js",
         "status": "resolved-owned"
       },
       {
@@ -11957,7 +11957,7 @@
         "entry": "GET /api/v2/parcels/alerts",
         "method": "GET",
         "path": "/api/v2/parcels/alerts",
-        "routeFile": "routes/parcel-api-v2.js",
+        "routeFile": "routes/parcel-api-v2/read.js",
         "status": "resolved-owned"
       },
       {
@@ -11965,7 +11965,7 @@
         "entry": "GET /api/v2/parcels/critical",
         "method": "GET",
         "path": "/api/v2/parcels/critical",
-        "routeFile": "routes/parcel-api-v2.js",
+        "routeFile": "routes/parcel-api-v2/read.js",
         "status": "resolved-owned"
       },
       {
@@ -11973,7 +11973,7 @@
         "entry": "GET /api/v2/parcels/kpis",
         "method": "GET",
         "path": "/api/v2/parcels/kpis",
-        "routeFile": "routes/parcel-api-v2.js",
+        "routeFile": "routes/parcel-api-v2/read.js",
         "status": "resolved-owned"
       },
       {
@@ -11981,7 +11981,7 @@
         "entry": "GET /api/v2/parcels/reconciliation",
         "method": "GET",
         "path": "/api/v2/parcels/reconciliation",
-        "routeFile": "routes/parcel-api-v2.js",
+        "routeFile": "routes/parcel-api-v2/read.js",
         "status": "resolved-owned"
       },
       {
@@ -12077,7 +12077,7 @@
         "entry": "GET /api/orders/:ref",
         "method": "GET",
         "path": "/api/orders/{id}",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/detail.js",
         "status": "resolved-owned"
       },
       {
@@ -12085,7 +12085,7 @@
         "entry": "POST /api/orders/:id/cancel",
         "method": "POST",
         "path": "/api/orders/{id}/cancel",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/cancel.js",
         "status": "resolved-owned"
       },
       {
@@ -12101,32 +12101,32 @@
         "entry": "GET /api/admin/orders",
         "method": "GET",
         "path": "/api/admin/orders",
-        "routeFile": "routes/admin.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/admin/orders.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "orders",
         "entry": "DELETE /api/admin/orders/:id",
         "method": "DELETE",
         "path": "/api/admin/orders/{id}",
-        "routeFile": "routes/admin.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/admin/orders.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "orders",
         "entry": "POST /api/admin/orders/:id/refund",
         "method": "POST",
         "path": "/api/admin/orders/{id}/refund",
-        "routeFile": "routes/admin.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/admin/orders.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "orders",
         "entry": "POST /api/hub/orders/mark-ordered",
         "method": "POST",
         "path": "/api/hub/orders/mark-ordered",
-        "routeFile": "routes/hub.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/hub-mark-ordered.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "orders",
@@ -12173,7 +12173,7 @@
         "entry": "POST /api/orders/:id/cancel-backorder",
         "method": "POST",
         "path": "/api/orders/{id}/cancel-backorder",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/parcels.js",
         "status": "resolved-owned"
       },
       {
@@ -12181,7 +12181,7 @@
         "entry": "PATCH /api/orders/:id/cost",
         "method": "PATCH",
         "path": "/api/orders/{id}/cost",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/status.js",
         "status": "resolved-owned"
       },
       {
@@ -12189,7 +12189,7 @@
         "entry": "GET /api/orders/:id/history",
         "method": "GET",
         "path": "/api/orders/{id}/history",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/detail.js",
         "status": "resolved-owned"
       },
       {
@@ -12197,7 +12197,7 @@
         "entry": "POST /api/orders/:id/mark-availability",
         "method": "POST",
         "path": "/api/orders/{id}/mark-availability",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/parcels.js",
         "status": "resolved-owned"
       },
       {
@@ -12205,7 +12205,7 @@
         "entry": "GET /api/orders/:id/parcels",
         "method": "GET",
         "path": "/api/orders/{id}/parcels",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/parcels.js",
         "status": "resolved-owned"
       },
       {
@@ -12213,7 +12213,7 @@
         "entry": "POST /api/orders/:id/partial-ship",
         "method": "POST",
         "path": "/api/orders/{id}/partial-ship",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/parcels.js",
         "status": "resolved-owned"
       },
       {
@@ -12221,7 +12221,7 @@
         "entry": "POST /api/orders/:id/qr-token",
         "method": "POST",
         "path": "/api/orders/{id}/qr-token",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/qr.js",
         "status": "resolved-owned"
       },
       {
@@ -12229,7 +12229,7 @@
         "entry": "PATCH /api/orders/:id/status",
         "method": "PATCH",
         "path": "/api/orders/{id}/status",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/status.js",
         "status": "resolved-owned"
       },
       {
@@ -12237,7 +12237,7 @@
         "entry": "GET /api/orders/:id/sub-orders",
         "method": "GET",
         "path": "/api/orders/{id}/sub-orders",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/parcels.js",
         "status": "resolved-owned"
       },
       {
@@ -12245,7 +12245,7 @@
         "entry": "GET /api/orders/credits",
         "method": "GET",
         "path": "/api/orders/credits",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/list.js",
         "status": "resolved-owned"
       },
       {
@@ -12253,7 +12253,7 @@
         "entry": "PATCH /api/orders/parcels/:parcelId/status",
         "method": "PATCH",
         "path": "/api/orders/parcels/{id}/status",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/parcels.js",
         "status": "resolved-owned"
       },
       {
@@ -12261,7 +12261,7 @@
         "entry": "GET /api/orders/problems",
         "method": "GET",
         "path": "/api/orders/problems",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/list.js",
         "status": "resolved-owned"
       },
       {
@@ -12269,7 +12269,7 @@
         "entry": "GET /api/orders/relais",
         "method": "GET",
         "path": "/api/orders/relais",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/list.js",
         "status": "resolved-owned"
       },
       {
@@ -12277,7 +12277,7 @@
         "entry": "GET /api/orders/retrait/:token",
         "method": "GET",
         "path": "/api/orders/retrait/{id}",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/qr.js",
         "status": "resolved-owned"
       },
       {
@@ -12285,7 +12285,7 @@
         "entry": "PATCH /api/orders/sub-orders/:subId/status",
         "method": "PATCH",
         "path": "/api/orders/sub-orders/{id}/status",
-        "routeFile": "routes/orders.js",
+        "routeFile": "routes/orders/parcels.js",
         "status": "resolved-owned"
       },
       {
@@ -12485,8 +12485,8 @@
         "entry": "GET /health",
         "method": "GET",
         "path": "/health",
-        "routeFile": "routes/unknown.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/health.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "platform-ops",
@@ -12669,24 +12669,24 @@
         "entry": "GET /api/v2/parcels/:id/orders",
         "method": "GET",
         "path": "/api/v2/parcels/{id}/orders",
-        "routeFile": "routes/parcel-api-v2.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/ops-api.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "platform-ops",
         "entry": "GET /api/v2/parcels/:id/scans",
         "method": "GET",
         "path": "/api/v2/parcels/{id}/scans",
-        "routeFile": "routes/parcel-api-v2.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/ops-api.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "platform-ops",
         "entry": "GET /api/v2/parcels/:ref/detail",
         "method": "GET",
         "path": "/api/v2/parcels/{id}/detail",
-        "routeFile": "routes/parcel-api-v2.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/ops-api.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "platform-ops",
@@ -12717,32 +12717,32 @@
         "entry": "GET /health/detailed",
         "method": "GET",
         "path": "/health/detailed",
-        "routeFile": "routes/detailed.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/health.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "platform-ops",
         "entry": "GET /health/metrics",
         "method": "GET",
         "path": "/health/metrics",
-        "routeFile": "routes/metrics.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/health.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "platform-ops",
         "entry": "GET /health/ready",
         "method": "GET",
         "path": "/health/ready",
-        "routeFile": "routes/ready.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/health.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "platform-ops",
         "entry": "GET /health/version",
         "method": "GET",
         "path": "/health/version",
-        "routeFile": "routes/version.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/health.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "purchasing",
@@ -12837,7 +12837,7 @@
         "entry": "POST   /api/shared-carts/from-cart-items",
         "method": "POST",
         "path": "/api/shared-carts/from-cart-items",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12845,7 +12845,7 @@
         "entry": "POST   /api/shared-carts/from-basket",
         "method": "POST",
         "path": "/api/shared-carts/from-basket",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12853,7 +12853,7 @@
         "entry": "POST   /api/shared-carts/from-order",
         "method": "POST",
         "path": "/api/shared-carts/from-order",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12861,7 +12861,7 @@
         "entry": "GET    /api/shared-carts/mine",
         "method": "GET",
         "path": "/api/shared-carts/mine",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12869,7 +12869,7 @@
         "entry": "GET    /api/shared-carts/:id",
         "method": "GET",
         "path": "/api/shared-carts/{id}",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12877,7 +12877,7 @@
         "entry": "GET    /api/shared-carts/:id/as-cart-items",
         "method": "GET",
         "path": "/api/shared-carts/{id}/as-cart-items",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12885,7 +12885,7 @@
         "entry": "PUT    /api/shared-carts/:id/items",
         "method": "PUT",
         "path": "/api/shared-carts/{id}/items",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12893,7 +12893,7 @@
         "entry": "POST   /api/shared-carts/:id/close",
         "method": "POST",
         "path": "/api/shared-carts/{id}/close",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12901,7 +12901,7 @@
         "entry": "POST   /api/shared-carts/:id/finalize",
         "method": "POST",
         "path": "/api/shared-carts/{id}/finalize",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12909,7 +12909,7 @@
         "entry": "POST   /api/shared-carts/:id/awaiting-choice/complete",
         "method": "POST",
         "path": "/api/shared-carts/{id}/awaiting-choice/complete",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12917,7 +12917,7 @@
         "entry": "POST   /api/shared-carts/:id/awaiting-choice/adjust",
         "method": "POST",
         "path": "/api/shared-carts/{id}/awaiting-choice/adjust",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12925,7 +12925,7 @@
         "entry": "POST   /api/shared-carts/:id/awaiting-choice/cancel",
         "method": "POST",
         "path": "/api/shared-carts/{id}/awaiting-choice/cancel",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12933,7 +12933,7 @@
         "entry": "POST   /api/shared-carts/:id/extend-window",
         "method": "POST",
         "path": "/api/shared-carts/{id}/extend-window",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12941,7 +12941,7 @@
         "entry": "POST   /api/shared-carts/:id/cancel",
         "method": "POST",
         "path": "/api/shared-carts/{id}/cancel",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12949,7 +12949,7 @@
         "entry": "GET    /api/shared-carts/public/:token",
         "method": "GET",
         "path": "/api/shared-carts/public/{id}",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12957,7 +12957,7 @@
         "entry": "GET    /api/shared-carts/public/:token/estimations",
         "method": "GET",
         "path": "/api/shared-carts/public/{id}/estimations",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12965,7 +12965,7 @@
         "entry": "POST   /api/shared-carts/public/:token/estimations",
         "method": "POST",
         "path": "/api/shared-carts/public/{id}/estimations",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12973,7 +12973,7 @@
         "entry": "DELETE /api/shared-carts/public/:token/estimations/:estimationId",
         "method": "DELETE",
         "path": "/api/shared-carts/public/{id}/estimations/{id}",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12981,7 +12981,7 @@
         "entry": "GET    /api/shared-carts/public/:token/estimations/by-phone",
         "method": "GET",
         "path": "/api/shared-carts/public/{id}/estimations/by-phone",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -12989,7 +12989,7 @@
         "entry": "POST   /api/shared-carts/public/:token/contributions",
         "method": "POST",
         "path": "/api/shared-carts/public/{id}/contributions",
-        "routeFile": "routes/shared-cart-cash.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -13013,7 +13013,7 @@
         "entry": "GET    /api/admin/shared-carts",
         "method": "GET",
         "path": "/api/admin/shared-carts",
-        "routeFile": "routes/shared-cart-refund-admin.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -13021,7 +13021,7 @@
         "entry": "GET    /api/admin/shared-carts/refund-queue",
         "method": "GET",
         "path": "/api/admin/shared-carts/refund-queue",
-        "routeFile": "routes/shared-cart-refund-admin.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -13029,7 +13029,7 @@
         "entry": "GET    /api/admin/shared-carts/:id",
         "method": "GET",
         "path": "/api/admin/shared-carts/{id}",
-        "routeFile": "routes/shared-cart-refund-admin.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -13037,7 +13037,7 @@
         "entry": "POST   /api/admin/shared-carts/:id/expire",
         "method": "POST",
         "path": "/api/admin/shared-carts/{id}/expire",
-        "routeFile": "routes/shared-cart-refund-admin.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -13045,7 +13045,7 @@
         "entry": "POST   /api/admin/shared-carts/:id/extend",
         "method": "POST",
         "path": "/api/admin/shared-carts/{id}/extend",
-        "routeFile": "routes/shared-cart-refund-admin.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -13053,7 +13053,7 @@
         "entry": "POST   /api/admin/shared-carts/:id/note",
         "method": "POST",
         "path": "/api/admin/shared-carts/{id}/note",
-        "routeFile": "routes/shared-cart-refund-admin.js",
+        "routeFile": "routes/shared-cart.js",
         "status": "resolved-owned"
       },
       {
@@ -13101,88 +13101,88 @@
         "entry": "GET /api/admin/sourcing/connectors",
         "method": "GET",
         "path": "/api/admin/sourcing/connectors",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "POST /api/admin/sourcing/catalogs/import",
         "method": "POST",
         "path": "/api/admin/sourcing/catalogs/import",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "GET /api/admin/sourcing/catalogs",
         "method": "GET",
         "path": "/api/admin/sourcing/catalogs",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "GET /api/admin/sourcing/candidates",
         "method": "GET",
         "path": "/api/admin/sourcing/candidates",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "GET /api/admin/sourcing/candidates/:id",
         "method": "GET",
         "path": "/api/admin/sourcing/candidates/{id}",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "PUT /api/admin/sourcing/candidates/:id",
         "method": "PUT",
         "path": "/api/admin/sourcing/candidates/{id}",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "POST /api/admin/sourcing/candidates/:id/scan",
         "method": "POST",
         "path": "/api/admin/sourcing/candidates/{id}/scan",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "POST /api/admin/sourcing/candidates/scan-batch",
         "method": "POST",
         "path": "/api/admin/sourcing/candidates/scan-batch",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "POST /api/admin/sourcing/candidates/:id/import-product",
         "method": "POST",
         "path": "/api/admin/sourcing/candidates/{id}/import-product",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "POST /api/admin/sourcing/candidates/:id/reject",
         "method": "POST",
         "path": "/api/admin/sourcing/candidates/{id}/reject",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "sourcing",
         "entry": "POST /api/admin/sourcing/candidates/:id/watchlist",
         "method": "POST",
         "path": "/api/admin/sourcing/candidates/{id}/watchlist",
-        "routeFile": "routes/sourcing.js",
-        "status": "resolved-different-owner"
+        "routeFile": "routes/sourcing-scanner.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "unsold-resolution",
@@ -14088,6 +14088,12 @@
         "from": "wallet",
         "to": "auth-identity",
         "raw": "auth-identity (identification du client)",
+        "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "sourcing",
+        "raw": "sourcing",
         "resolved": true
       }
     ],
@@ -15033,38 +15039,23 @@
             "channel": "interface",
             "evidence": [
               {
-                "endpoint": "/api/dashboard/finance",
-                "routeFile": "routes/dashboard.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/AccountingView.js"
-              },
-              {
-                "endpoint": "/api/dashboard/finance",
-                "routeFile": "routes/dashboard.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/PilotageFinView.js"
-              },
-              {
-                "endpoint": "/api/dashboard/finance",
-                "routeFile": "routes/dashboard.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/SanteView.js"
-              },
-              {
                 "endpoint": "/api/dashboard/clients",
-                "routeFile": "routes/dashboard.js",
+                "routeFile": "routes/dashboard-clients.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ClientsView.js"
               },
               {
                 "endpoint": "/api/dashboard/clients",
-                "routeFile": "routes/dashboard.js",
+                "routeFile": "routes/dashboard-clients.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/SanteView.js"
               },
               {
                 "endpoint": "/api/dashboard/clients/list",
-                "routeFile": "routes/dashboard.js",
+                "routeFile": "routes/dashboard-clients.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ClientsView.js"
               },
               {
                 "endpoint": "/api/dashboard/clients/detail",
-                "routeFile": "routes/dashboard.js",
+                "routeFile": "routes/dashboard-clients.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ClientsView.js"
               },
               {
@@ -15074,12 +15065,12 @@
               },
               {
                 "endpoint": "/api/dashboard/ops",
-                "routeFile": "routes/dashboard.js",
+                "routeFile": "routes/dashboard-ops.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ControlTowerView.js"
               },
               {
                 "endpoint": "/api/dashboard/ops",
-                "routeFile": "routes/dashboard.js",
+                "routeFile": "routes/dashboard-ops.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/SanteView.js"
               },
               {
@@ -15089,12 +15080,12 @@
               },
               {
                 "endpoint": "/api/admin/partners",
-                "routeFile": "routes/admin.js",
+                "routeFile": "routes/admin/partners.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/CustomsView.js"
               },
               {
                 "endpoint": "/api/admin/partners",
-                "routeFile": "routes/admin.js",
+                "routeFile": "routes/admin/partners.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/SuppliersView.js"
               },
               {
@@ -15104,7 +15095,7 @@
               },
               {
                 "endpoint": "/api/dashboard/pipeline",
-                "routeFile": "routes/dashboard.js",
+                "routeFile": "routes/dashboard-ops.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/HubRelaisView.js"
               },
               {
@@ -15118,18 +15109,8 @@
                 "consumerFileId": "dash:dashboards/admin/js/views/PilotageView.js"
               },
               {
-                "endpoint": "/api/dashboard/sales",
-                "routeFile": "routes/dashboard.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/SalesView.js"
-              },
-              {
-                "endpoint": "/api/dashboard/sales",
-                "routeFile": "routes/dashboard.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/SanteView.js"
-              },
-              {
                 "endpoint": "/api/admin/partners/stats",
-                "routeFile": "routes/admin.js",
+                "routeFile": "routes/admin/partners.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/SuppliersView.js"
               }
             ]
@@ -15171,6 +15152,21 @@
           {
             "channel": "interface",
             "evidence": [
+              {
+                "endpoint": "/api/dashboard/finance",
+                "routeFile": "routes/dashboard-finance.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/AccountingView.js"
+              },
+              {
+                "endpoint": "/api/dashboard/finance",
+                "routeFile": "routes/dashboard-finance.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/PilotageFinView.js"
+              },
+              {
+                "endpoint": "/api/dashboard/finance",
+                "routeFile": "routes/dashboard-finance.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/SanteView.js"
+              },
               {
                 "endpoint": "/api/admin/economic/charges",
                 "routeFile": "routes/economic.js",
@@ -15242,24 +15238,19 @@
                 "consumerFileId": "dash:dashboards/admin/js/views/PricingStrategyView.js"
               },
               {
-                "endpoint": "/api/admin/finance-config",
-                "routeFile": "routes/admin-finance-config.js",
+                "endpoint": "/api/dashboard/sales",
+                "routeFile": "routes/dashboard-finance.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/SalesView.js"
+              },
+              {
+                "endpoint": "/api/dashboard/sales",
+                "routeFile": "routes/dashboard-finance.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/SanteView.js"
               },
               {
-                "endpoint": "/api/admin/sourcing/catalogs",
-                "routeFile": "routes/sourcing.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/SourcingScannerView.js"
-              },
-              {
-                "endpoint": "/api/admin/sourcing/candidates",
-                "routeFile": "routes/sourcing.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/SourcingScannerView.js"
-              },
-              {
-                "endpoint": "/api/admin/sourcing/catalogs/import",
-                "routeFile": "routes/sourcing.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/SourcingScannerView.js"
+                "endpoint": "/api/admin/finance-config",
+                "routeFile": "routes/admin-finance-config.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/SanteView.js"
               },
               {
                 "endpoint": "/api/admin/sourcing/synthesis",
@@ -15322,22 +15313,17 @@
             "evidence": [
               {
                 "endpoint": "/api/v2/parcels",
-                "routeFile": "routes/parcel-api-v2.js",
-                "consumerFileId": "dash:dashboards/admin/js/views/HubRelaisView.js"
-              },
-              {
-                "endpoint": "/api/hub/orders/mark-ordered",
-                "routeFile": "routes/hub.js",
+                "routeFile": "routes/parcel-api-v2/read.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/HubRelaisView.js"
               },
               {
                 "endpoint": "/api/hub/auto-distribute",
-                "routeFile": "routes/hub.js",
+                "routeFile": "routes/auto-distribute-api.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/HubRelaisView.js"
               },
               {
                 "endpoint": "/api/v2/parcels/reconciliation",
-                "routeFile": "routes/parcel-api-v2.js",
+                "routeFile": "routes/parcel-api-v2/read.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ProblemsView.js"
               },
               {
@@ -15374,13 +15360,18 @@
             "evidence": [
               {
                 "endpoint": "/api/orders",
-                "routeFile": "routes/orders.js",
+                "routeFile": "routes/orders/create.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/OrdersLogisticsView.js"
               },
               {
                 "endpoint": "/api/orders",
-                "routeFile": "routes/orders.js",
+                "routeFile": "routes/orders/create.js",
                 "consumerFileId": "dash:dashboards/admin/js/views/ProblemsView.js"
+              },
+              {
+                "endpoint": "/api/hub/orders/mark-ordered",
+                "routeFile": "routes/hub-mark-ordered.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/HubRelaisView.js"
               },
               {
                 "endpoint": "/api/invoices",
@@ -15433,6 +15424,33 @@
           }
         ],
         "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "sourcing",
+        "channels": [
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/admin/sourcing/catalogs",
+                "routeFile": "routes/sourcing-scanner.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/SourcingScannerView.js"
+              },
+              {
+                "endpoint": "/api/admin/sourcing/candidates",
+                "routeFile": "routes/sourcing-scanner.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/SourcingScannerView.js"
+              },
+              {
+                "endpoint": "/api/admin/sourcing/catalogs/import",
+                "routeFile": "routes/sourcing-scanner.js",
+                "consumerFileId": "dash:dashboards/admin/js/views/SourcingScannerView.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth",
@@ -19598,7 +19616,7 @@
             "evidence": [
               {
                 "endpoint": "/api/orders",
-                "routeFile": "routes/orders.js",
+                "routeFile": "routes/orders/create.js",
                 "consumerFileId": "public/boutique/js/b-checkout.js"
               }
             ]
@@ -21231,13 +21249,6 @@
         "sourceFileId": "public/boutique/js/b-nav.js",
         "endpoint": "/api/relais/public",
         "providerFeature": "logistics",
-        "channel": "interface"
-      },
-      {
-        "consumerManifest": "boutique",
-        "sourceFileId": "public/boutique/js/komerce-api.js",
-        "endpoint": "/api/health",
-        "providerFeature": "platform-ops",
         "channel": "interface"
       },
       {
@@ -23233,193 +23244,18 @@
       },
       {
         "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "customs / GET /api/admin/customs",
-        "msg": "contract.exposes déclare \"GET /api/admin/customs\" mais le contrat OpenAPI le résout vers \"routes/admin.js\", non déclaré dans customs.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "documents / GET /api/admin/documents",
-        "msg": "contract.exposes déclare \"GET /api/admin/documents\" mais le contrat OpenAPI le résout vers \"routes/admin.js\", non déclaré dans documents.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "documents / GET /api/admin/documents/{id}",
-        "msg": "contract.exposes déclare \"GET /api/admin/documents/{id}\" mais le contrat OpenAPI le résout vers \"routes/admin.js\", non déclaré dans documents.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "documents / GET /api/admin/documents/summary",
-        "msg": "contract.exposes déclare \"GET /api/admin/documents/summary\" mais le contrat OpenAPI le résout vers \"routes/admin.js\", non déclaré dans documents.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "economic-engine / GET /api/dashboard/annulations-parcels",
-        "msg": "contract.exposes déclare \"GET /api/dashboard/annulations-parcels\" mais le contrat OpenAPI le résout vers \"routes/dashboard.js\", non déclaré dans economic-engine.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "economic-engine / GET /api/dashboard/finance",
-        "msg": "contract.exposes déclare \"GET /api/dashboard/finance\" mais le contrat OpenAPI le résout vers \"routes/dashboard.js\", non déclaré dans economic-engine.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "economic-engine / GET /api/dashboard/payments",
-        "msg": "contract.exposes déclare \"GET /api/dashboard/payments\" mais le contrat OpenAPI le résout vers \"routes/dashboard.js\", non déclaré dans economic-engine.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "economic-engine / GET /api/dashboard/sales",
-        "msg": "contract.exposes déclare \"GET /api/dashboard/sales\" mais le contrat OpenAPI le résout vers \"routes/dashboard.js\", non déclaré dans economic-engine.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
         "ref": "infrastructure / GET /api/health",
-        "msg": "contract.exposes déclare \"GET /api/health\" mais le contrat OpenAPI le résout vers \"routes/health.js\", non déclaré dans infrastructure.files.routes"
+        "msg": "contract.exposes déclare \"GET /api/health\" mais le contrat OpenAPI le résout vers \"server.js\", non déclaré dans infrastructure.files.routes"
       },
       {
         "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
         "ref": "infrastructure / GET /api/public/config",
-        "msg": "contract.exposes déclare \"GET /api/public/config\" mais le contrat OpenAPI le résout vers \"routes/public.js\", non déclaré dans infrastructure.files.routes"
+        "msg": "contract.exposes déclare \"GET /api/public/config\" mais le contrat OpenAPI le résout vers \"server.js\", non déclaré dans infrastructure.files.routes"
       },
       {
         "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
         "ref": "infrastructure / POST /api/shared-carts/stripe/webhook",
-        "msg": "contract.exposes déclare \"POST /api/shared-carts/stripe/webhook\" mais le contrat OpenAPI le résout vers \"routes/shared-cart-cash.js\", non déclaré dans infrastructure.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "orders / DELETE /api/admin/orders/{id}",
-        "msg": "contract.exposes déclare \"DELETE /api/admin/orders/{id}\" mais le contrat OpenAPI le résout vers \"routes/admin.js\", non déclaré dans orders.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "orders / GET /api/admin/orders",
-        "msg": "contract.exposes déclare \"GET /api/admin/orders\" mais le contrat OpenAPI le résout vers \"routes/admin.js\", non déclaré dans orders.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "orders / POST /api/admin/orders/{id}/refund",
-        "msg": "contract.exposes déclare \"POST /api/admin/orders/{id}/refund\" mais le contrat OpenAPI le résout vers \"routes/admin.js\", non déclaré dans orders.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "orders / POST /api/hub/orders/mark-ordered",
-        "msg": "contract.exposes déclare \"POST /api/hub/orders/mark-ordered\" mais le contrat OpenAPI le résout vers \"routes/hub.js\", non déclaré dans orders.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "platform-ops / GET /api/v2/parcels/{id}/detail",
-        "msg": "contract.exposes déclare \"GET /api/v2/parcels/{id}/detail\" mais le contrat OpenAPI le résout vers \"routes/parcel-api-v2.js\", non déclaré dans platform-ops.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "platform-ops / GET /api/v2/parcels/{id}/orders",
-        "msg": "contract.exposes déclare \"GET /api/v2/parcels/{id}/orders\" mais le contrat OpenAPI le résout vers \"routes/parcel-api-v2.js\", non déclaré dans platform-ops.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "platform-ops / GET /api/v2/parcels/{id}/scans",
-        "msg": "contract.exposes déclare \"GET /api/v2/parcels/{id}/scans\" mais le contrat OpenAPI le résout vers \"routes/parcel-api-v2.js\", non déclaré dans platform-ops.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "platform-ops / GET /health",
-        "msg": "contract.exposes déclare \"GET /health\" mais le contrat OpenAPI le résout vers \"routes/unknown.js\", non déclaré dans platform-ops.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "platform-ops / GET /health/detailed",
-        "msg": "contract.exposes déclare \"GET /health/detailed\" mais le contrat OpenAPI le résout vers \"routes/detailed.js\", non déclaré dans platform-ops.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "platform-ops / GET /health/metrics",
-        "msg": "contract.exposes déclare \"GET /health/metrics\" mais le contrat OpenAPI le résout vers \"routes/metrics.js\", non déclaré dans platform-ops.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "platform-ops / GET /health/ready",
-        "msg": "contract.exposes déclare \"GET /health/ready\" mais le contrat OpenAPI le résout vers \"routes/ready.js\", non déclaré dans platform-ops.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "platform-ops / GET /health/version",
-        "msg": "contract.exposes déclare \"GET /health/version\" mais le contrat OpenAPI le résout vers \"routes/version.js\", non déclaré dans platform-ops.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / GET /api/admin/sourcing/candidates",
-        "msg": "contract.exposes déclare \"GET /api/admin/sourcing/candidates\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / GET /api/admin/sourcing/candidates/{id}",
-        "msg": "contract.exposes déclare \"GET /api/admin/sourcing/candidates/{id}\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / GET /api/admin/sourcing/catalogs",
-        "msg": "contract.exposes déclare \"GET /api/admin/sourcing/catalogs\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / GET /api/admin/sourcing/connectors",
-        "msg": "contract.exposes déclare \"GET /api/admin/sourcing/connectors\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / POST /api/admin/sourcing/candidates/{id}/import-product",
-        "msg": "contract.exposes déclare \"POST /api/admin/sourcing/candidates/{id}/import-product\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / POST /api/admin/sourcing/candidates/{id}/reject",
-        "msg": "contract.exposes déclare \"POST /api/admin/sourcing/candidates/{id}/reject\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / POST /api/admin/sourcing/candidates/{id}/scan",
-        "msg": "contract.exposes déclare \"POST /api/admin/sourcing/candidates/{id}/scan\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / POST /api/admin/sourcing/candidates/{id}/watchlist",
-        "msg": "contract.exposes déclare \"POST /api/admin/sourcing/candidates/{id}/watchlist\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / POST /api/admin/sourcing/candidates/scan-batch",
-        "msg": "contract.exposes déclare \"POST /api/admin/sourcing/candidates/scan-batch\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / POST /api/admin/sourcing/catalogs/import",
-        "msg": "contract.exposes déclare \"POST /api/admin/sourcing/catalogs/import\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "sourcing / PUT /api/admin/sourcing/candidates/{id}",
-        "msg": "contract.exposes déclare \"PUT /api/admin/sourcing/candidates/{id}\" mais le contrat OpenAPI le résout vers \"routes/sourcing.js\", non déclaré dans sourcing.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "catalog / DELETE /api/products/{id}/skus/{id}",
-        "msg": "\"DELETE /api/products/{id}/skus/{id}\" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "catalog / GET /api/products/{id}/skus",
-        "msg": "\"GET /api/products/{id}/skus\" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "catalog / GET /api/products/{id}/skus/readiness",
-        "msg": "\"GET /api/products/{id}/skus/readiness\" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "catalog / POST /api/products/{id}/skus",
-        "msg": "\"POST /api/products/{id}/skus\" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+        "msg": "contract.exposes déclare \"POST /api/shared-carts/stripe/webhook\" mais le contrat OpenAPI le résout vers \"server.js\", non déclaré dans infrastructure.files.routes"
       },
       {
         "type": "EXPOSED-ROUTE-UNRESOLVED",
@@ -23430,16 +23266,6 @@
         "type": "EXPOSED-ROUTE-UNRESOLVED",
         "ref": "infrastructure / GET /webhook/authkey-whatsapp",
         "msg": "\"GET /webhook/authkey-whatsapp\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "logistics / POST /api/hub/photo",
-        "msg": "\"POST /api/hub/photo\" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "logistics / POST /api/hub/volume",
-        "msg": "\"POST /api/hub/volume\" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
       },
       {
         "type": "LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER",
@@ -23459,7 +23285,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> dashboard",
-        "msg": "dépendance cross-feature observée (canal: interface, 20 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"dashboard\""
+        "msg": "dépendance cross-feature observée (canal: interface, 15 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"dashboard\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -23469,7 +23295,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> economic-engine",
-        "msg": "dépendance cross-feature observée (canal: interface, 20 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"economic-engine\""
+        "msg": "dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"economic-engine\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -23479,12 +23305,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> logistics",
-        "msg": "dépendance cross-feature observée (canal: interface, 8 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"logistics\""
+        "msg": "dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"logistics\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> orders",
-        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"orders\""
+        "msg": "dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"orders\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
