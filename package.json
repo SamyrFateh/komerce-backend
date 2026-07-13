@@ -49,6 +49,8 @@
     "meta:graph": "node scripts/gen-meta-graph.js",
     "meta:graph:check": "node scripts/gen-meta-graph.js --check",
     "meta:graph:save": "node scripts/gen-meta-graph.js --save",
+    "feature:360:gen": "node scripts/gen-feature-360.js",
+    "feature:360:check": "node scripts/feature-360-check.js",
     "arch:360:all": "npm run arch:gen && npm run dashboards:360 && npm run boutique:360 && npm run meta:graph",
     "contract:generate": "node scripts/contract-generate.js",
     "security:360": "node scripts/run-security-360.js",

@@ -152,6 +152,19 @@ const STEPS = [
     cmd:       'npm run business-graph:disposition-check',
   },
 
+  // ── Lot O8 — Feature 360 (business piloting projection) ────────────────
+  // Projection déterministe de lecture au-dessus de la chaîne Feature First
+  // O2-O7.3 déjà gouvernée (aucune nouvelle vérité, aucun registre parallèle).
+  // Bloquant : artefact périmé (stale), duplicate feature id, fuite de bruit
+  // technique/projection dans businessDependencies, mismatch consumes/
+  // consumedBy, dette inventée sans signal source. Voir docs/LOT_O8_FEATURE_360_LIVRABLE.md.
+  {
+    label:     'Feature 360 — projection de pilotage business (Lot O8, bloquant)',
+    category:  'gate',
+    npmScript: 'feature:360:check',
+    cmd:       'npm run feature:360:check',
+  },
+
   // ── Reconstructions 360 ────────────────────────────────────────────────
   {
     label:     'Dashboard 360 check',
