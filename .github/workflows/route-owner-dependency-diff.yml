@@ -14,12 +14,12 @@ concurrency:
 
 jobs:
   diff:
-    if: github.head_ref == 'fix/route-file-owner-registry'
+    if: github.head_ref == 'diag/route-owner-dependency-diff'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/route-file-owner-registry
+          ref: diag/route-owner-dependency-diff
           fetch-depth: 0
           persist-credentials: true
 
@@ -77,4 +77,4 @@ jobs:
             exit 0
           fi
           git commit --no-verify -m "chore(governance): publish route-owner dependency diff"
-          git push origin HEAD:fix/route-file-owner-registry
+          git push origin HEAD:diag/route-owner-dependency-diff
