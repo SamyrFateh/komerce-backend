@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: pdc1-pdc6-main-integration
-  cancel-in-progress: false
+  group: pdc1-pdc6-main-integration-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   integrate:
