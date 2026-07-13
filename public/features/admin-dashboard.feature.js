@@ -78,7 +78,7 @@ module.exports = {
     '../admin/js/views/TransitaireView.js',
     '../admin/portal-pilotage.js',
   ]},
-  contract: { exposes: [], consumes: [] },
+  contract: { exposes: [], consumes: ['sourcing'] },
   authority: 'dashboards',
   invariants: ['tout fichier admin/**/*.js doit etre declare ici'],
 };
