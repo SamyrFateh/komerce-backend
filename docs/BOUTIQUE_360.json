@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-07-13T10:50:54.201Z",
+  "generatedAt": "2026-07-13T11:02:28.723Z",
   "summary": {
-    "modules": 66,
-    "withHeader": 66,
-    "events": 18,
+    "modules": 69,
+    "withHeader": 69,
+    "events": 17,
     "declaredActive": 12,
     "declaredDead": 5,
     "cssBundles": 3,
-    "endpoints": 51,
-    "orphanEmit": 2,
+    "endpoints": 52,
+    "orphanEmit": 1,
     "orphanListen": 1,
-    "undeclared": 7,
+    "undeclared": 6,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 30,
     "dynamicEndpoints": 24
@@ -785,9 +785,8 @@
       "layer": "ui-experiment",
       "criticality": "medium",
       "doctrine": [
-        "modal_produit_sans_chevauchement",
-        "partager_geste_natif",
-        "checkout_sans_friction"
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
       ],
       "depends": [
         "b-cart.js",
@@ -795,7 +794,7 @@
         "b-modal-core.js"
       ],
       "usedBy": [
-        "modal-surfaces"
+        "main.js"
       ],
       "emits": [],
       "listens": [
@@ -805,7 +804,6 @@
       "imports": [
         "b-bus",
         "b-store",
-        "b-utils",
         "b-scroll-owner",
         "b-modal",
         "b-cart",
@@ -853,8 +851,7 @@
         "b-modal-suggestions.js",
         "b-modal-nav.js",
         "b-modal-cart.js",
-        "b-modal-image-ux.js",
-        "routes/products.js"
+        "b-modal-image-ux.js"
       ],
       "usedBy": [
         "b-modal.js",
@@ -898,30 +895,25 @@
       "role": "desktop-product-modal-enhancer",
       "domain": "boutique",
       "layer": "ui-enhancer",
-      "criticality": "high",
+      "criticality": "medium",
       "doctrine": [
-        "modal_produit_sans_chevauchement",
-        "desktop_premium",
-        "participant_peut_verifier"
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
       ],
       "depends": [
         "b-bus.js",
         "b-catalog.js",
         "b-modal.js",
-        "b-scroll-owner.js",
-        "view-models/modal-view-model.js"
+        "b-scroll-owner.js"
       ],
       "usedBy": [
-        "boutique.js",
-        "b-modal-core.js"
+        "b-desktop-upgrade.js"
       ],
       "emits": [
-        "modal:close",
-        "toast"
+        "modal:close"
       ],
       "listens": [
-        "modal:opened",
-        "modal:close"
+        "modal:opened"
       ],
       "imports": [
         "b-bus",
@@ -931,12 +923,44 @@
         "b-modal",
         "b-catalog",
         "shop-schema",
-        "b-scroll-owner",
-        "modal-view-model"
+        "b-scroll-owner"
       ],
-      "bodyClasses": [
-        "is-open"
-      ]
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-desktop-product.js",
+      "id": "b-modal-desktop-product",
+      "hasHeader": true,
+      "role": "desktop-product-modal-renderer",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": "high",
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-utils.js",
+        "b-scroll-owner.js",
+        "b-modal-product.js",
+        "b-modal-image-ux.js",
+        "view-models/modal-selection-model.js"
+      ],
+      "usedBy": [
+        "b-modal-product-detail-bootstrap.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-utils",
+        "b-scroll-owner",
+        "modal-selection-model",
+        "b-modal-product",
+        "b-modal-image-ux"
+      ],
+      "bodyClasses": []
     },
     {
       "file": "public/boutique/js/b-modal-image-ux.js",
@@ -954,7 +978,8 @@
         "b-store.js"
       ],
       "usedBy": [
-        "b-modal-core.js"
+        "b-modal-core.js",
+        "b-modal-mobile-product.js"
       ],
       "emits": [],
       "listens": [
@@ -963,6 +988,39 @@
       "imports": [
         "b-bus",
         "b-store"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-mobile-product.js",
+      "id": "b-modal-mobile-product",
+      "hasHeader": true,
+      "role": "mobile-product-modal-renderer",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": "high",
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-utils.js",
+        "b-modal-product.js",
+        "b-modal-image-ux.js",
+        "view-models/modal-selection-model.js"
+      ],
+      "usedBy": [
+        "b-modal-product-detail-bootstrap.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-utils",
+        "modal-selection-model",
+        "b-modal-product",
+        "b-modal-image-ux"
       ],
       "bodyClasses": []
     },
@@ -984,6 +1042,42 @@
       "imports": [
         "b-bus",
         "b-store"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-product-detail-bootstrap.js",
+      "id": "b-modal-product-detail-bootstrap",
+      "hasHeader": true,
+      "role": "product-detail-modal-orchestrator",
+      "domain": "catalog",
+      "layer": "ui-controller",
+      "criticality": "high",
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "depends": [
+        "b-bus.js",
+        "b-store.js",
+        "b-modal-mobile-product.js",
+        "b-modal-desktop-product.js",
+        "view-models/modal-selection-model.js"
+      ],
+      "usedBy": [
+        "main.js"
+      ],
+      "emits": [],
+      "listens": [
+        "modal:opened",
+        "modal:closed"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "modal-selection-model",
+        "b-modal-mobile-product",
+        "b-modal-desktop-product"
       ],
       "bodyClasses": []
     },
@@ -1786,10 +1880,10 @@
         "b-scroll-owner",
         "b-product-open-contract",
         "b-cart-product-open-style",
-        "b-modal-desktop-enhancers",
         "b-modal-approche-c-hybrid",
         "b-pdp-curation-suggestions",
         "b-home-premium-v1",
+        "b-modal-product-detail-bootstrap",
         "b-greeting"
       ],
       "bodyClasses": []
@@ -1923,30 +2017,28 @@
       "bodyClasses": []
     },
     {
-      "file": "public/boutique/js/view-models/modal-view-model.js",
-      "id": "modal-view-model",
+      "file": "public/boutique/js/view-models/modal-selection-model.js",
+      "id": "modal-selection-model",
       "hasHeader": true,
-      "role": "product-modal-view-model",
-      "domain": "boutique",
+      "role": "product-modal-selection-model",
+      "domain": "catalog",
       "layer": "view-model",
       "criticality": "high",
       "doctrine": [
-        "fiche_produit_lisible",
-        "modal_contract_stable",
-        "desktop_premium"
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
       ],
       "depends": [
-        "b-utils.js"
+        "none"
       ],
       "usedBy": [
-        "b-modal-desktop-enhancers.js",
-        "b-modal-core.js"
+        "future b-modal-core.js",
+        "future b-modal-product.js",
+        "future b-modal-desktop-enhancers.js"
       ],
       "emits": [],
       "listens": [],
-      "imports": [
-        "b-utils"
-      ],
+      "imports": [],
       "bodyClasses": []
     },
     {
@@ -2015,8 +2107,7 @@
         "b-modal-desktop-enhancers"
       ],
       "listeners": [
-        "b-modal-core",
-        "b-modal-desktop-enhancers"
+        "b-modal-core"
       ]
     },
     "checkout:open": {
@@ -2097,6 +2188,7 @@
         "b-mobile-premium-v1",
         "b-modal-approche-c-hybrid",
         "b-modal-desktop-enhancers",
+        "b-modal-product-detail-bootstrap",
         "b-pager",
         "b-pdp-curation-suggestions"
       ]
@@ -2107,14 +2199,9 @@
       ],
       "listeners": [
         "b-modal-approche-c-hybrid",
+        "b-modal-product-detail-bootstrap",
         "b-pager"
       ]
-    },
-    "toast": {
-      "emitters": [
-        "b-modal-desktop-enhancers"
-      ],
-      "listeners": []
     },
     "carousel:changed": {
       "emitters": [
@@ -2305,9 +2392,9 @@
       "contractStatus": "UNKNOWN"
     },
     {
-      "module": "b-modal-core",
-      "route": "/api/products",
-      "raw": "/api/products/",
+      "module": "b-modal-product-detail-bootstrap",
+      "route": "/api/products/{id}/detail",
+      "raw": "/api/products/${productId}/detail",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
     },
@@ -2764,8 +2851,7 @@
   },
   "diagnostics": {
     "orphanEmit": [
-      "sidebar:built",
-      "toast"
+      "sidebar:built"
     ],
     "orphanListen": [
       "modal:product-changed"
@@ -2776,7 +2862,6 @@
       "modal:opened",
       "modal:product-changed",
       "sidebar:built",
-      "toast",
       "view:changed"
     ],
     "declaredUnused": [
@@ -2824,8 +2909,8 @@
       "/api/parcels/{id}",
       "/api/parcels/{id}/items",
       "/api/payments/paypal/capture/{id}",
-      "/api/products",
       "/api/products/{id}",
+      "/api/products/{id}/detail",
       "/api/purchasing/suppliers/{id}",
       "/api/shared-carts/public/{id}",
       "/api/shared-carts/public/{id}/contributions",
@@ -2873,9 +2958,6 @@
       "modal-has-cart": [
         "b-modal-core"
       ],
-      "is-open": [
-        "b-modal-desktop-enhancers"
-      ],
       "k-sg-open": [
         "b-modal-product"
       ],
@@ -2917,6 +2999,7 @@
     "/api/payments/stripe/intent",
     "/api/products",
     "/api/products/{id}",
+    "/api/products/{id}/detail",
     "/api/public/config",
     "/api/purchasing/suppliers",
     "/api/purchasing/suppliers/{id}",

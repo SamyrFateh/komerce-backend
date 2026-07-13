@@ -11,10 +11,10 @@ const mockSetupSharePhoneGuard = jest.fn();
 const mockSetupDesktopUpgrade = jest.fn();
 const mockSetupProductOpenContract = jest.fn();
 const mockSetupCartProductOpenStyle = jest.fn();
-const mockSetupModalContractClasses = jest.fn();
 const mockSetupApprocheCHybridPdp = jest.fn();
 const mockSetupPdpCurationSuggestions = jest.fn();
 const mockSetupHomePremiumV1 = jest.fn();
+const mockSetupProductDetailModal = jest.fn();
 const mockGreetIfKnown = jest.fn();
 const mockIsDesktop = jest.fn();
 
@@ -35,9 +35,6 @@ jest.mock('../../js/b-product-open-contract.js', () => ({
 jest.mock('../../js/b-cart-product-open-style.js', () => ({
   setupCartProductOpenStyle: mockSetupCartProductOpenStyle,
 }));
-jest.mock('../../js/b-modal-desktop-enhancers.js', () => ({
-  setupModalContractClasses: mockSetupModalContractClasses,
-}));
 jest.mock('../../js/b-modal-approche-c-hybrid.js', () => ({
   setupApprocheCHybridPdp: mockSetupApprocheCHybridPdp,
 }));
@@ -46,6 +43,9 @@ jest.mock('../../js/b-pdp-curation-suggestions.js', () => ({
 }));
 jest.mock('../../js/b-home-premium-v1.js', () => ({
   setupHomePremiumV1: mockSetupHomePremiumV1,
+}));
+jest.mock('../../js/b-modal-product-detail-bootstrap.js', () => ({
+  setupProductDetailModal: mockSetupProductDetailModal,
 }));
 jest.mock('../../js/b-greeting.js', () => ({ greetIfKnown: mockGreetIfKnown }));
 
@@ -60,8 +60,8 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
 
   expect(window._kbus).toBe(mockBus);
   expect(mockSetupSharePhoneGuard).toHaveBeenCalledTimes(1);
-  expect(mockSetupModalContractClasses).toHaveBeenCalledTimes(1);
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(1);
+  expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   expect(mockSetupProductOpenContract).toHaveBeenCalledTimes(1);
   expect(mockSetupCartProductOpenStyle).toHaveBeenCalledTimes(1);
   expect(mockGreetIfKnown).toHaveBeenCalledTimes(1);
@@ -77,5 +77,6 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   window.dispatchEvent(new Event('resize'));
   jest.advanceTimersByTime(150);
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(2);
+  expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   jest.useRealTimers();
 });

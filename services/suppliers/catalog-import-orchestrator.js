@@ -4,62 +4,39 @@
  * @domain        catalog
  * @layer         service
  * @criticality   medium
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js,
- *                services/suppliers/connectors/*
+ * @inputs        normalized_supplier_products, catalog_import_context
+ * @outputs       sourcing_candidates, import_summary
+ * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/suppliers/normalized-product.js, services/suppliers/connectors/*
  * @used-by       routes/sourcing-scanner.js
  * @db-read       sourcing_candidates
  * @db-write      products, sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  catalog
- * @version       2026-06
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md
+ * @impact-areas  catalog, product-detail
+ * @version       2026-07
  */
 
 'use strict';
 
 /**
- * KOMERCE — Service orchestration import catalogue fournisseur (Lot B1)
+ * KOMERCE — Service orchestration import catalogue fournisseur
  *
- * Extraction iso-comportement depuis routes/sourcing-scanner.js :
- *   POST /catalogs/import → importCatalog(body, userId)
- *
- * Le dispatch vers les connecteurs (csv/manual/api) reste un paramètre injecté
- * (dispatchToConnector) plutôt que require()-é ici, pour ne pas dupliquer le
- * registre CONNECTORS qui reste défini dans la route (liste affichée aussi par
- * GET /connectors). Le routeur passe sa propre fonction dispatchToConnector.
- *
- * Règles métier déplacées telles quelles (aucun changement de comportement) :
- *   DSC-E1 — UPSERT idempotent sur (supplier_name, supplier_product_id), les
- *            états terminaux (imported_to_catalog, rejected) ne sont jamais régressés.
- *   DSC-E2 — les champs marqués data_sources[champ] = 'manual' sont préservés
- *            lors d'un ré-import (verrou édition manuelle), journalisés dans
- *            sourcing_candidate_events si au moins un champ est verrouillé.
- *   DSC-E3 — archivage des candidats disparus, actif seulement si
- *            body.is_full_snapshot === true.
- *
- * Pattern de retour : { status: number, body: object } (cf. sourcing-mutations.js)
+ * Le connecteur produit un NormalizedSupplierProduct versionné. Le brut source
+ * et, en V2, le snapshot du contrat NORMALISÉ sont persistés séparément :
+ * `raw_payload` reste la source intégrale ; `normalized_source_contract`
+ * conserve le mapping riche validé sans transformer ces faits en catalogue.
  */
 
 const db = require('../../db');
 const scanner = require('../supplier-catalog-scanner');
 const pricingEngine = require('../pricing-engine');
 const eligibility = require('../catalog-eligibility');
+const { buildNormalizedSourceContractSnapshot } = require('./normalized-product');
 const { getRuleNumber } = require('../../utils/rules');
 
 /**
  * Agrège les raisons de rejet d'un tableau d'entrées invalides en compte par
- * raison — c'est la « ligne de synthèse » que lit le fondateur (doctrine
- * ING-2, §8 de DOCTRINE_INGESTION_CATALOGUE) : il n'a jamais à relire une
- * ligne fournisseur, seulement à voir « N fois telle raison ».
- *
- * Accepte les formes d'entrées invalid connues dans ce codebase :
- *   { errors: string[] }  (connecteurs csv/manual, partitionValid)
- *   { error: string }     (erreurs de traitement par produit, cf. ligne 266)
- *
- * @param {Array<{errors?: string[], error?: string}>} invalidArr
- * @returns {Object<string, number>}
+ * raison — c'est la « ligne de synthèse » que lit le fondateur.
  */
 function aggregateReasons(invalidArr) {
   const counts = {};
@@ -67,8 +44,8 @@ function aggregateReasons(invalidArr) {
     const reasons = Array.isArray(item.errors)
       ? item.errors
       : (item.error ? [item.error] : ['raison inconnue']);
-    for (const r of reasons) {
-      counts[r] = (counts[r] || 0) + 1;
+    for (const reason of reasons) {
+      counts[reason] = (counts[reason] || 0) + 1;
     }
   }
   return counts;
@@ -76,12 +53,7 @@ function aggregateReasons(invalidArr) {
 
 /**
  * Importe un catalogue fournisseur : dispatch connecteur → normalisation →
- * scan pricing → upsert idempotent sourcing_candidates → archivage optionnel.
- *
- * @param {object} body - corps de requête brut (supplier_name, source_type, ...)
- * @param {string|number|null} userId - req.user?.id
- * @param {(body: object) => Promise<{products: object[], invalid?: object[]}>} dispatchToConnector
- * @returns {Promise<{ status: number, body: object }>}
+ * éligibilité/scan → upsert sourcing_candidates → archivage optionnel.
  */
 async function importCatalog(body, userId, dispatchToConnector) {
   const b = body || {};
@@ -113,13 +85,13 @@ async function importCatalog(body, userId, dispatchToConnector) {
     };
   }
 
-  // ING-2 / ING-I4 : « le sale déclenche, il ne s'accumule pas ». Un fichier
-  // dont le taux d'invalides dépasse le seuil est un fichier malade — on
-  // refuse l'import EN BLOC plutôt que d'importer les bonnes lignes en
-  // laissant les mauvaises s'accumuler silencieusement import après import.
+  // ING-I4 : un fichier malade est refusé en bloc.
   const totalFromConnector = products.length + invalidFromConnector.length;
   const maxInvalidPct = await getRuleNumber('CATALOG_IMPORT_MAX_INVALID_PCT', 30);
-  const invalidPct = totalFromConnector > 0 ? (invalidFromConnector.length / totalFromConnector) * 100 : 0;
+  const invalidPct = totalFromConnector > 0
+    ? (invalidFromConnector.length / totalFromConnector) * 100
+    : 0;
+
   if (invalidPct > maxInvalidPct) {
     return {
       status: 400,
@@ -134,11 +106,11 @@ async function importCatalog(body, userId, dispatchToConnector) {
     };
   }
 
-  // 2. Charger config Komerce + exclusions éligibilité une seule fois (une requête, pas par produit)
+  // 2. Charger config Komerce + exclusions une fois.
   const config = await pricingEngine.loadGlobalConfig();
   const activeExclusions = await eligibility.loadActiveExclusions();
 
-  // 3. Créer l'import
+  // 3. Créer l'import.
   const importRes = await db.query(
     `INSERT INTO supplier_catalog_imports
        (supplier_name, source_type, source_filename, notes, total_items, imported_by)
@@ -148,20 +120,20 @@ async function importCatalog(body, userId, dispatchToConnector) {
   );
   const importId = importRes.rows[0].id;
 
-  // 4. Pour chaque NormalizedSupplierProduct : normaliser Komerce + scanner + persister
+  // 4. Pour chaque NormalizedSupplierProduct : raffiner et persister.
   const results = { created: 0, errors: [...invalidFromConnector] };
   for (const product of products) {
     try {
+      // PDC-1 : snapshot du mapping fournisseur → contrat normalisé. V1 = null.
+      // On le construit AVANT le scanner : le scanner n'a pas le droit de
+      // réinterpréter ou d'aplatir media/axes/unités vendables.
+      const normalizedSourceContract = buildNormalizedSourceContractSnapshot(product);
       const normalized = await scanner.normalizeCandidate(product, { config });
 
-      // ③ Éligibilité (DOCTRINE_CATALOGUE §3) — avant tout pricing : on ne
-      // raffine pas ce qu'on n'embarquera pas. Matching sur la donnée SOURCE.
+      // ③ Éligibilité — avant pricing, sur la donnée SOURCE.
       const verdict = eligibility.checkEligibility(normalized, activeExclusions);
       const isAbsoluteExclusion = verdict?.layer === 'absolute';
 
-      // absolute → on n'appelle pas pricing-engine, le candidat est écarté d'office.
-      // restricted / éligible → scan normal, la contrainte (si restricted) est
-      // portée dans le scan_result pour l'étage ④ (rails).
       const scan = isAbsoluteExclusion
         ? {
             scan_result: null,
@@ -172,20 +144,14 @@ async function importCatalog(body, userId, dispatchToConnector) {
           }
         : await scanner.scanCandidate(normalized, { config });
 
-      // État pipeline : une exclusion absolue est un rejet automatique — le
-      // candidat ne doit jamais atteindre l'admin comme "à décider" (§7).
       const autoState = isAbsoluteExclusion ? 'rejected' : 'scanned';
       const autoRejectedReason = isAbsoluteExclusion ? `[auto-exclusion] ${verdict.label}` : null;
 
-      // DSC-E1 — UPSERT idempotent sur (supplier_name, supplier_product_id)
-      // Les états terminaux (imported_to_catalog, rejected) ne sont jamais régressés.
       const scanJson = JSON.stringify({
         ...scan.scan_result,
         sourcing_decision: scan.sourcing_decision,
         reason: scan.reason,
         recommended_action: scan.recommended_action,
-        // Portée pour l'étage ④ (rails) : contrainte transport si restricted,
-        // null si le candidat est pleinement éligible.
         eligibility: verdict,
       });
       const incomingDataSources = JSON.stringify(normalized.data_sources);
@@ -200,7 +166,8 @@ async function importCatalog(body, userId, dispatchToConnector) {
            komerce_category, estimated_weight_kg, estimated_volume_m3,
            purchase_price_kmf, target_margin_pct,
            data_sources, scan_result, scan_at, confidence,
-           state, rejected_reason, updated_by, raw_payload
+           state, rejected_reason, updated_by, raw_payload,
+           normalized_source_contract
          ) VALUES (
            $1, $2, $3,
            $4, $5, $6, $7,
@@ -210,7 +177,8 @@ async function importCatalog(body, userId, dispatchToConnector) {
            $18, $19, $20,
            $21, $22,
            $23::jsonb, $24, NOW(), $25,
-           $26, $27, $28, $29::jsonb
+           $26, $27, $28, $29::jsonb,
+           $30::jsonb
          )
          ON CONFLICT (supplier_name, supplier_product_id)
            WHERE supplier_product_id IS NOT NULL
@@ -218,7 +186,6 @@ async function importCatalog(body, userId, dispatchToConnector) {
            import_id           = EXCLUDED.import_id,
            product_name        = EXCLUDED.product_name,
            supplier_category   = EXCLUDED.supplier_category,
-           -- DSC-E2 : préserver les champs édités manuellement (data_sources[champ] = 'manual')
            purchase_price      = CASE WHEN (sourcing_candidates.data_sources->>'purchase_price') = 'manual'
                                       THEN sourcing_candidates.purchase_price
                                       ELSE EXCLUDED.purchase_price END,
@@ -244,6 +211,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
            product_url         = EXCLUDED.product_url,
            description         = EXCLUDED.description,
            raw_payload         = EXCLUDED.raw_payload,
+           normalized_source_contract = EXCLUDED.normalized_source_contract,
            stock_available     = EXCLUDED.stock_available,
            min_order_qty       = EXCLUDED.min_order_qty,
            supplier_delay_days = EXCLUDED.supplier_delay_days,
@@ -251,13 +219,10 @@ async function importCatalog(body, userId, dispatchToConnector) {
            dim_l_cm            = EXCLUDED.dim_l_cm,
            dim_w_cm            = EXCLUDED.dim_w_cm,
            dim_h_cm            = EXCLUDED.dim_h_cm,
-           -- Fusionner data_sources : les marques 'manual' existantes priment
            data_sources        = sourcing_candidates.data_sources || EXCLUDED.data_sources,
            scan_result         = EXCLUDED.scan_result,
            scan_at             = NOW(),
            confidence          = EXCLUDED.confidence,
-           -- Ne pas régresser un état terminal (un rejet auto-exclusion est
-           -- lui-même terminal dès la première détection, cf. EXCLUDED.state).
            state               = CASE WHEN sourcing_candidates.state IN ('imported_to_catalog', 'rejected')
                                       THEN sourcing_candidates.state
                                       ELSE EXCLUDED.state END,
@@ -276,10 +241,10 @@ async function importCatalog(body, userId, dispatchToConnector) {
           normalized.purchase_price_kmf, normalized.target_margin_pct,
           incomingDataSources, scanJson, scan.confidence,
           autoState, autoRejectedReason, userId || null,
-          // ING-5 (verrou 4, ING-I3) — le brut ne se perd jamais : la donnée
-          // source intégrale (toutes colonnes, y compris non mappées) voyage
-          // jusqu'en base, indépendamment de ce que la normalisation a retenu.
+          // ING-I3 : source brute intégrale, non modifiée.
           product.raw_payload ? JSON.stringify(product.raw_payload) : null,
+          // PDC-1 : mapping riche validé, séparé du brut. V1 reste NULL.
+          normalizedSourceContract ? JSON.stringify(normalizedSourceContract) : null,
         ]
       );
 
@@ -287,11 +252,10 @@ async function importCatalog(body, userId, dispatchToConnector) {
       const wasUpdated = row.was_updated;
 
       if (wasUpdated) {
-        // DSC-E2 : journaliser les champs ignorés pour cause de verrou 'manual'
         const manualSources = row.data_sources || {};
         const lockedFields = Object.entries(manualSources)
-          .filter(([, v]) => v === 'manual')
-          .map(([k]) => k);
+          .filter(([, value]) => value === 'manual')
+          .map(([key]) => key);
 
         await db.query(
           `INSERT INTO sourcing_candidate_events
@@ -315,13 +279,10 @@ async function importCatalog(body, userId, dispatchToConnector) {
     }
   }
 
-  // DSC-E3 — Archivage des candidats disparus (full snapshot uniquement)
-  // Activé si is_full_snapshot=true dans le body.
-  // Passe à 'archived' les candidats du même supplier_name absents du lot
-  // et pas dans un état terminal (imported_to_catalog, rejected).
+  // DSC-E3 — Archivage des candidats disparus, full snapshot uniquement.
   if (b.is_full_snapshot) {
     const importedIds = products
-      .map(p => p.supplier_product_id)
+      .map((product) => product.supplier_product_id)
       .filter(Boolean);
 
     const archiveRes = await db.query(

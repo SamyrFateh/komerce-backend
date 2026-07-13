@@ -1,12 +1,12 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-07-13T10:50:58.039Z — 485 endpoints
+> 2026-07-13T11:03:10.935Z — 486 endpoints
 
 | Niveau | Compte |
 |---|---|
 | 🟢 PROTECTED | 430 |
 | ⚪ PUBLIC (légitime) | 5 |
-| 🟠 UNPROTECTED | 48 |
+| 🟠 UNPROTECTED | 49 |
 | 🔴 ADMIN_NO_GUARD | 0 |
 | ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 2 |
 
@@ -37,6 +37,7 @@
 - 🟠 `POST /api/payments/paypal/create-order` — UNPROTECTED
 - 🟠 `POST /api/pricing/calculate` — UNPROTECTED
 - 🟠 `POST /api/pricing/couture` — UNPROTECTED
+- 🟠 `GET /api/products/{id}/detail` — UNPROTECTED
 - 🟠 `GET /api/products/{id}` — UNPROTECTED
 - 🟠 `GET /api/products/categories` — UNPROTECTED
 - 🟠 `GET /api/products/subcategories` — UNPROTECTED

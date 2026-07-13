@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-13T10:50:53.092Z",
+  "generatedAt": "2026-07-13T11:02:27.272Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 474,
+  "count": 475,
   "routes": [
     {
       "method": "GET",
@@ -3512,6 +3512,17 @@
       "routeFile": "routes/products.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/products/:id/detail",
+      "mountPrefix": "/api/products",
+      "localPath": "/:id/detail",
+      "routeFile": "routes/catalog-product-detail.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/products.js"
       ]
     },
     {
