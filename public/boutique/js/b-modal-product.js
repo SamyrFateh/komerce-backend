@@ -20,7 +20,7 @@
  *
  * Périmètre (responsabilité « Rendu fiche produit » du découpage ARCH-2) :
  *   - Carousel d'images : buildCarouselSlides, goToSlide (dots, miniatures, compteur N/N)
- *   - Encarts mobile : _syncScrollPadding, _injectMobileDelivery, _injectMobileTrust
+ *   - Encarts mobile : _syncScrollPadding
  *   - Topbar enrichie / retour-haut : setupModalFAB, setupEnrichedTopbar, hideModalFAB,
  *     scrollModalToTop (ces deux derniers privés, usage intra-module uniquement)
  *   - Guide des tailles : openSizeGuide, closeSizeGuide
@@ -37,7 +37,7 @@
  *
  * Consommateurs : b-modal.js (ré-exporte buildCarouselSlides, goToSlide,
  *   openSizeGuide, closeSizeGuide pour préserver sa surface publique, et
- *   importe _syncScrollPadding, _injectMobileDelivery, _injectMobileTrust,
+ *   importe _syncScrollPadding,
  *   setupModalFAB et hideModalFAB pour openModal/closeModal).
  *
  * Dépendances : b-bus.js, b-store.js, b-utils.js
@@ -218,66 +218,6 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       });
     });
   }
-
-  /* ── LOT 3 — RÉASSURANCE MOBILE COMPACTE ─────────────────────────
-     Remplace _injectMobileDelivery + _injectMobileTrust par une seule
-     ligne compacte : icône + délai livraison, dépliable en accordéon
-     pour révéler les 3 items trust (retrait relais / cash / échange).
-     Masqué desktop par CSS. Dédoublonnage via data-mobile-reassurance. */
-  function _injectMobileReassurance(product) {
-    if (!dom.modal) return;
-    // Nettoyer : supprimer l'ancien format ET l'ancien lot 3 si présent
-    let oldD = dom.modal.querySelector('[data-mobile-delivery]');
-    let oldT = dom.modal.querySelector('[data-mobile-trust]');
-    let oldR = dom.modal.querySelector('[data-mobile-reassurance]');
-    if (oldD) oldD.remove();
-    if (oldT) oldT.remove();
-    if (oldR) oldR.remove();
-
-    let info = dom.modal.querySelector('.k-modal-info');
-    if (!info) return;
-
-    let delay = (product && product.delivery_delay) || '3 à 5 semaines';
-
-    let el = document.createElement('div');
-    el.className = 'k-modal-reassurance';
-    el.setAttribute('data-mobile-reassurance', '1');
-    el.innerHTML =
-      '<button type="button" class="k-modal-reassurance-toggle" aria-expanded="false">' +
-        '<span class="k-modal-reassurance-main">' +
-          '<span class="k-modal-reassurance-icon">📦</span>' +
-          '<span class="k-modal-reassurance-label">Livraison relais</span>' +
-          '<span class="k-modal-reassurance-delay">· ' + delay + '</span>' +
-        '</span>' +
-        '<span class="k-modal-reassurance-chevron">▾</span>' +
-      '</button>' +
-      '<div class="k-modal-reassurance-details" hidden>' +
-        '<span class="k-modal-reassurance-item">📍 Retrait en relais</span>' +
-        '<span class="k-modal-reassurance-item">💵 Paiement cash</span>' +
-        '<span class="k-modal-reassurance-item">🔄 Échange 14 j</span>' +
-      '</div>';
-
-    // Accordéon
-    let toggle = el.querySelector('.k-modal-reassurance-toggle');
-    let details = el.querySelector('.k-modal-reassurance-details');
-    toggle.addEventListener('click', function() {
-      let open = details.hidden;
-      details.hidden = !open;
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
-    // Insérer après .k-modal-meta
-    let meta = info.querySelector('.k-modal-meta');
-    if (meta && meta.nextSibling) {
-      info.insertBefore(el, meta.nextSibling);
-    } else {
-      info.appendChild(el);
-    }
-  }
-
-  /* Backward-compat : les anciens noms redirigent vers le nouveau */
-  function _injectMobileDelivery(product) { _injectMobileReassurance(product); }
-  function _injectMobileTrust() { /* absorbé par _injectMobileReassurance */ }
 
   /* ════ TOPBAR ENRICHIE + RETOUR HAUT ════ */
 
@@ -585,11 +525,10 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
 
 // Surface publique ré-exportée par b-modal.js : buildCarouselSlides, goToSlide,
 // openSizeGuide, closeSizeGuide. Helpers consommés par openModal/closeModal :
-// _syncScrollPadding, _injectMobile*, setupModalFAB, hideModalFAB.
+// _syncScrollPadding, setupModalFAB, hideModalFAB.
 // PDC-6 : _renderVariants retiré (fetch legacy /api/products/:id supprimé).
 export {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
   _syncScrollPadding,
-  _injectMobileDelivery, _injectMobileTrust,
   setupModalFAB, hideModalFAB,
 };
