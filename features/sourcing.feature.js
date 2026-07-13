@@ -103,6 +103,15 @@ module.exports = {
       'sourcing_candidate_events: RW',  // partagé avec catalog (W à la création)
       'supplier_catalog_imports: R',    // W-via:catalog-import-orchestrator (feature catalog)
       'products: W',                    // création produit candidate à l'import (import-product)
+      // PDC-8 Lot 6 — import-product ouvre une transaction dédiée (db.getClient)
+      // qui inclut désormais l'appel à catalog-promotion.js (feature catalog).
+      // Ces tables sont écrites PAR catalog-promotion.js, DANS la transaction de
+      // cette route, pas par sourcing-scanner.js lui-même (writer réel documenté
+      // en commentaire, même convention que supplier_catalog_imports ci-dessus).
+      'catalog_media: W',        // via:catalog-promotion (feature catalog)
+      'product_variants: W',     // via:catalog-promotion (feature catalog)
+      'product_skus: RW',        // via:catalog-promotion (feature catalog) — R pour la réconciliation
+      'product_sku_media: W',    // via:catalog-promotion (feature catalog)
     ],
   },
 
@@ -129,7 +138,10 @@ module.exports = {
     ],
     consumes: [
       'catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, ' +
-        'supplier-catalog-scanner pour le scan pricing lui-même)',
+        'supplier-catalog-scanner pour le scan pricing lui-même, et depuis PDC-8 Lot 6 : ' +
+        'catalog-promotion.js — appelé dans la transaction de POST .../import-product pour ' +
+        'promouvoir normalized_source_contract V2 vers catalog_media/product_variants/' +
+        'product_skus/product_sku_media)',
       'economic-engine (pricing-engine.loadGlobalConfig — config de scan)',
       'auth',
     ],

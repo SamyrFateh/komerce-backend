@@ -3,7 +3,9 @@
   "knownDriftAllowlist": {
     "_role": "Fiction CONNUE et figee : un header @db-* (et le code) nomme une table absente de la DB live. Bloquant SAUF si listee ici. Liste nominative (anti-substitution). Reprise AUTOMATIQUE : quand la fiction est resolue (DB corrigee ou header re-tagge), arch-reconcile.js elague l entree tout seul (pre-commit ou npm run arch:reconcile -- --write). Ajouter une entree reste un acte humain volontaire.",
     "catalog_enrichment_runs": "Migration 100 (services/catalog-enrichment.js), pas encore deployee sur Railway. Auto-elaguee des que la migration est live + npm run arch:reconcile -- --write.",
-    "product_skus": "Migration 104 (routes/products.js, services/product-admin-service.js), Lot 0/1 DECISION_MODELE_STOCK_SKU.md, pas encore deployee sur Railway. Auto-elaguee des que la migration est live + npm run arch:reconcile -- --write."
+    "product_skus": "Migration 104 (routes/products.js, services/product-admin-service.js), Lot 0/1 DECISION_MODELE_STOCK_SKU.md, pas encore deployee sur Railway. Auto-elaguee des que la migration est live + npm run arch:reconcile -- --write.",
+    "catalog_media": "Migration 106 (routes/sourcing-scanner.js, services/catalog-promotion.js), PDC-8 Lot 2/6, pas encore deployee sur Railway. Auto-elaguee des que la migration est live + npm run arch:reconcile -- --write.",
+    "product_sku_media": "Migration 109 (routes/sourcing-scanner.js, services/catalog-promotion.js), PDC-8 Lot 5/6, pas encore deployee sur Railway. Auto-elaguee des que la migration est live + npm run arch:reconcile -- --write."
   },
   "ratchet": {
     "_role": "Dette de doc reelle, plafond qui ne peut que BAISSER. arch-reconcile l abaisse automatiquement a la mesure courante; il ne le releve jamais (un nouveau manque reste bloquant).",

@@ -53,6 +53,10 @@ module.exports = {
       'services/product-publication-guard.js',
       'services/product-admin-service.js',
       'services/product-price-audit.js',
+      'services/catalog-promotion.js',
+      'services/catalog-promotion/axes.js',
+      'services/catalog-promotion/sku.js',
+      'services/catalog-promotion/sku-media.js',
       'services/suppliers/normalized-product.js',
       'services/suppliers/connectors/api-connector.base.js',
       'services/suppliers/connectors/manual-connector.js',
@@ -80,6 +84,10 @@ module.exports = {
       'migrations/101_variant_images.sql',
       'migrations/104_product_skus.sql',
       'migrations/105_catalog_source_contract_v2.sql',
+      'migrations/106_catalog_media.sql',
+      'migrations/107_product_variants_axis_display_name.sql',
+      'migrations/108_product_skus_supplier_identity.sql',
+      'migrations/109_product_sku_media.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_CATALOGUE.md',
@@ -152,6 +160,10 @@ module.exports = {
       'tests/unit/manual-connector.test.js',
       'tests/unit/manual-connector-source-v2.test.js',
       'tests/unit/noon-connector.test.js',
+      'tests/unit/catalog-promotion.test.js',
+      'tests/unit/catalog-promotion-axes.test.js',
+      'tests/unit/catalog-promotion-sku.test.js',
+      'tests/unit/catalog-promotion-sku-media.test.js',
       'tests/unit/normalized-product.test.js',
       'tests/unit/normalized-product-source-contract-v2.test.js',
       'tests/unit/product-admin-service.test.js',
@@ -188,11 +200,13 @@ module.exports = {
       'catalog_field_overrides: RW',
       'catalog_glossary: R',
       'catalog_enrichment_runs: W',
+      'catalog_media: RW',           // PDC-8 Lot 2 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
       'order_items: R',
       'orders: R',
       'price_history: W',
-      'product_skus: RW',
-      'product_variants: RW',
+      'product_skus: RW',            // PDC-8 Lot 4 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
+      'product_sku_media: RW',       // PDC-8 Lot 5 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
+      'product_variants: RW',        // PDC-8 Lot 3 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
       'products: RW',
       'sourcing_candidate_events: W',
       'sourcing_candidates: RW',

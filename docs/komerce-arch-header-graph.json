@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 367,
-    "filesWithFullHeaders": 340,
+    "scannedCodeFiles": 371,
+    "filesWithFullHeaders": 344,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 367,
+    "filesWithAnyHeaders": 371,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 742,
-    "edges": 4249,
-    "dbTables": 110,
-    "doctrines": 140,
+    "graphNodes": 756,
+    "edges": 4286,
+    "dbTables": 112,
+    "doctrines": 148,
     "impactAreas": 125,
-    "unresolvedCodeEdges": 404,
+    "unresolvedCodeEdges": 411,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 62
+    "multiWriterTables": 65
   },
   "byDomain": {
     "infrastructure": 20,
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 42,
+    "catalog": 46,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 4,
@@ -84,7 +84,7 @@
     "view-model": 3,
     "route": 100,
     "entrypoint": 1,
-    "service": 146,
+    "service": 150,
     "external-adapter": 2,
     "machine": 2,
     "policy": 1,
@@ -94,7 +94,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 101,
-    "high": 156,
+    "high": 160,
     "low": 34
   },
   "nodes": [
@@ -8250,17 +8250,23 @@
         "db.js",
         "middleware/auth.js",
         "services/*",
-        "services/suppliers/catalog-import-orchestrator.js"
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/catalog-promotion.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
+        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
         "supplier_catalog_imports"
       ],
       "dbWrite": [
+        "catalog_media",
+        "product_sku_media",
+        "product_skus",
+        "product_variants",
         "products",
         "sourcing_candidate_events",
         "sourcing_candidates"
@@ -8274,15 +8280,18 @@
         }
       ],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "import-product : transaction dédiée (db.getClient/BEGIN..COMMIT)",
+        "promotion catalogue incluse ; reste des routes : query_direct"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "PDC-8 Lot 6",
+        "DOCTRINE_INGESTION_CATALOGUE.md"
       ],
       "impactAreas": [
-        "sourcing"
+        "sourcing",
+        "catalog"
       ],
-      "version": "2026-07 (Lot O1.3 — @domain corrigé logistics → sourcing, @role précisé)"
+      "version": "2026-07 (PDC-8 Lot 6 — import-product transactionnel + promotion catalogue câblée)"
     },
     {
       "id": "routes/sourcing.js",
@@ -9355,6 +9364,169 @@
         "product-detail",
         "modal",
         "logistics"
+      ],
+      "version": "2026-07"
+    },
+    {
+      "id": "services/catalog-promotion.js",
+      "file": "services/catalog-promotion.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-promotion-orchestrator",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_id",
+        "normalized_source_contract (V2 validé)"
+      ],
+      "outputs": [
+        "catalog_media_rows",
+        "product_variants_rows",
+        "product_skus_rows",
+        "product_sku_media_rows"
+      ],
+      "depends": [
+        "services/catalog-promotion/axes.js",
+        "services/catalog-promotion/sku.js",
+        "services/catalog-promotion/sku-media.js",
+        "services/suppliers/normalized-product.js"
+      ],
+      "usedBy": [
+        "routes/sourcing-scanner.js (POST /candidates/:id/import-product)"
+      ],
+      "dbRead": [
+        "product_skus"
+      ],
+      "dbWrite": [
+        "catalog_media",
+        "product_sku_media",
+        "product_skus",
+        "product_variants"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned"
+      ],
+      "doctrine": [
+        "PDC-8 (tous lots)",
+        "DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "version": "2026-07"
+    },
+    {
+      "id": "services/catalog-promotion/axes.js",
+      "file": "services/catalog-promotion/axes.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-promotion-axes-mapping",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "normalized_source_contract.option_axes[]"
+      ],
+      "outputs": [
+        "product_variants_descriptive_rows"
+      ],
+      "depends": [
+        "@none"
+      ],
+      "usedBy": [
+        "services/catalog-promotion.js (Lot 6)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "PDC-8 §OPTION AXES",
+        "§DOCTRINE ZÉRO HEURISTIQUE"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "version": "2026-07"
+    },
+    {
+      "id": "services/catalog-promotion/sku-media.js",
+      "file": "services/catalog-promotion/sku-media.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-promotion-sku-media-linking",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "sellable_units_resolved (sku_id + media_refs)",
+        "catalog_media_by_source_id"
+      ],
+      "outputs": [
+        "sku_media_link_plan"
+      ],
+      "depends": [
+        "@none"
+      ],
+      "usedBy": [
+        "services/catalog-promotion.js (Lot 6)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "PDC-8 §RELATION SKU ↔ MEDIA",
+        "§DOCTRINE ZÉRO HEURISTIQUE"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "version": "2026-07"
+    },
+    {
+      "id": "services/catalog-promotion/sku.js",
+      "file": "services/catalog-promotion/sku.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-promotion-sku-reconciliation",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_skus_existing_rows",
+        "normalized_source_contract.sellable_units[]"
+      ],
+      "outputs": [
+        "sku_reconciliation_plan (toCreate/toUpdate/toReactivate/toDeactivate)"
+      ],
+      "depends": [
+        "@none"
+      ],
+      "usedBy": [
+        "services/catalog-promotion.js (Lot 6)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "PDC-8 §SKU — IDENTITÉ SOURCE STABLE",
+        "§STOCK",
+        "§DOCTRINE ZÉRO HEURISTIQUE"
+      ],
+      "impactAreas": [
+        "catalog"
       ],
       "version": "2026-07"
     },
@@ -17716,6 +17888,16 @@
       "table": "supplier_catalog_imports"
     },
     {
+      "id": "db:catalog_media",
+      "type": "db-table",
+      "table": "catalog_media"
+    },
+    {
+      "id": "db:product_sku_media",
+      "type": "db-table",
+      "table": "product_sku_media"
+    },
+    {
       "id": "db:pickup_verify_attempts",
       "type": "db-table",
       "table": "pickup_verify_attempts"
@@ -18276,6 +18458,16 @@
       "doctrine": "retour_stripe_boutique"
     },
     {
+      "id": "doctrine:PDC-8 Lot 6",
+      "type": "doctrine",
+      "doctrine": "PDC-8 Lot 6"
+    },
+    {
+      "id": "doctrine:DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "doctrine": "DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
       "id": "doctrine:wallet_ledger_trace",
       "type": "doctrine",
       "doctrine": "wallet_ledger_trace"
@@ -18319,6 +18511,36 @@
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md"
+    },
+    {
+      "id": "doctrine:PDC-8 (tous lots)",
+      "type": "doctrine",
+      "doctrine": "PDC-8 (tous lots)"
+    },
+    {
+      "id": "doctrine:PDC-8 §OPTION AXES",
+      "type": "doctrine",
+      "doctrine": "PDC-8 §OPTION AXES"
+    },
+    {
+      "id": "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+      "type": "doctrine",
+      "doctrine": "§DOCTRINE ZÉRO HEURISTIQUE"
+    },
+    {
+      "id": "doctrine:PDC-8 §RELATION SKU ↔ MEDIA",
+      "type": "doctrine",
+      "doctrine": "PDC-8 §RELATION SKU ↔ MEDIA"
+    },
+    {
+      "id": "doctrine:PDC-8 §SKU — IDENTITÉ SOURCE STABLE",
+      "type": "doctrine",
+      "doctrine": "PDC-8 §SKU — IDENTITÉ SOURCE STABLE"
+    },
+    {
+      "id": "doctrine:§STOCK",
+      "type": "doctrine",
+      "doctrine": "§STOCK"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
@@ -30752,10 +30974,22 @@
       "label": "services/suppliers/catalog-import-orchestrator.js"
     },
     {
+      "from": "routes/sourcing-scanner.js",
+      "to": "services/catalog-promotion.js",
+      "type": "depends",
+      "label": "services/catalog-promotion.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/sourcing-scanner.js",
       "type": "uses",
       "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
     },
     {
       "from": "routes/sourcing-scanner.js",
@@ -30774,6 +31008,30 @@
       "to": "db:supplier_catalog_imports",
       "type": "db-read",
       "label": "supplier_catalog_imports"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "db:catalog_media",
+      "type": "db-write",
+      "label": "catalog_media"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "db:product_sku_media",
+      "type": "db-write",
+      "label": "product_sku_media"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "db:product_skus",
+      "type": "db-write",
+      "label": "product_skus"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "db:product_variants",
+      "type": "db-write",
+      "label": "product_variants"
     },
     {
       "from": "routes/sourcing-scanner.js",
@@ -30802,15 +31060,27 @@
     },
     {
       "from": "routes/sourcing-scanner.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:PDC-8 Lot 6",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "PDC-8 Lot 6"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "doctrine:DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_INGESTION_CATALOGUE.md"
     },
     {
       "from": "routes/sourcing-scanner.js",
       "to": "impact:sourcing",
       "type": "impact",
       "label": "sourcing"
+    },
+    {
+      "from": "routes/sourcing-scanner.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
     },
     {
       "from": "routes/sourcing.js",
@@ -32343,6 +32613,180 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "services/catalog-promotion/axes.js",
+      "type": "depends",
+      "label": "services/catalog-promotion/axes.js"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "services/catalog-promotion/sku.js",
+      "type": "depends",
+      "label": "services/catalog-promotion/sku.js"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "services/catalog-promotion/sku-media.js",
+      "type": "depends",
+      "label": "services/catalog-promotion/sku-media.js"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "services/suppliers/normalized-product.js",
+      "type": "depends",
+      "label": "services/suppliers/normalized-product.js"
+    },
+    {
+      "from": "routes/sourcing-scanner.js (POST /candidates/:id/import-product)",
+      "to": "services/catalog-promotion.js",
+      "type": "uses",
+      "label": "routes/sourcing-scanner.js (POST /candidates/:id/import-product)"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "db:catalog_media",
+      "type": "db-write",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "db:product_sku_media",
+      "type": "db-write",
+      "label": "product_sku_media"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "db:product_skus",
+      "type": "db-write",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "db:product_variants",
+      "type": "db-write",
+      "label": "product_variants"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "doctrine:PDC-8 (tous lots)",
+      "type": "doctrine",
+      "label": "PDC-8 (tous lots)"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "doctrine:DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-promotion/axes.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/catalog-promotion.js (Lot 6)",
+      "to": "services/catalog-promotion/axes.js",
+      "type": "uses",
+      "label": "services/catalog-promotion.js (Lot 6)"
+    },
+    {
+      "from": "services/catalog-promotion/axes.js",
+      "to": "doctrine:PDC-8 §OPTION AXES",
+      "type": "doctrine",
+      "label": "PDC-8 §OPTION AXES"
+    },
+    {
+      "from": "services/catalog-promotion/axes.js",
+      "to": "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+      "type": "doctrine",
+      "label": "§DOCTRINE ZÉRO HEURISTIQUE"
+    },
+    {
+      "from": "services/catalog-promotion/axes.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-promotion/sku-media.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/catalog-promotion.js (Lot 6)",
+      "to": "services/catalog-promotion/sku-media.js",
+      "type": "uses",
+      "label": "services/catalog-promotion.js (Lot 6)"
+    },
+    {
+      "from": "services/catalog-promotion/sku-media.js",
+      "to": "doctrine:PDC-8 §RELATION SKU ↔ MEDIA",
+      "type": "doctrine",
+      "label": "PDC-8 §RELATION SKU ↔ MEDIA"
+    },
+    {
+      "from": "services/catalog-promotion/sku-media.js",
+      "to": "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+      "type": "doctrine",
+      "label": "§DOCTRINE ZÉRO HEURISTIQUE"
+    },
+    {
+      "from": "services/catalog-promotion/sku-media.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-promotion/sku.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/catalog-promotion.js (Lot 6)",
+      "to": "services/catalog-promotion/sku.js",
+      "type": "uses",
+      "label": "services/catalog-promotion.js (Lot 6)"
+    },
+    {
+      "from": "services/catalog-promotion/sku.js",
+      "to": "doctrine:PDC-8 §SKU — IDENTITÉ SOURCE STABLE",
+      "type": "doctrine",
+      "label": "PDC-8 §SKU — IDENTITÉ SOURCE STABLE"
+    },
+    {
+      "from": "services/catalog-promotion/sku.js",
+      "to": "doctrine:§STOCK",
+      "type": "doctrine",
+      "label": "§STOCK"
+    },
+    {
+      "from": "services/catalog-promotion/sku.js",
+      "to": "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+      "type": "doctrine",
+      "label": "§DOCTRINE ZÉRO HEURISTIQUE"
+    },
+    {
+      "from": "services/catalog-promotion/sku.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
     },
     {
       "from": "routes/products.js",
@@ -52813,18 +53257,24 @@
         "db.js",
         "middleware/auth.js",
         "services/*",
-        "services/suppliers/catalog-import-orchestrator.js"
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/catalog-promotion.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
       "dbRead": [
+        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
         "supplier_catalog_imports"
       ],
       "dbWrite": [
+        "catalog_media",
+        "product_sku_media",
+        "product_skus",
+        "product_variants",
         "products",
         "sourcing_candidate_events",
         "sourcing_candidates"
@@ -52838,21 +53288,30 @@
         }
       ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "PDC-8 Lot 6",
+        "DOCTRINE_INGESTION_CATALOGUE.md"
       ],
       "impactAreas": [
-        "sourcing"
+        "sourcing",
+        "catalog"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:catalog_media",
+        "db:product_sku_media",
+        "db:product_skus",
+        "db:product_variants",
         "db:products",
         "db:sourcing_candidate_events",
         "db:sourcing_candidates",
         "db:supplier_catalog_imports",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:DOCTRINE_INGESTION_CATALOGUE.md",
+        "doctrine:PDC-8 Lot 6",
+        "impact:catalog",
         "impact:sourcing",
         "middleware/auth.js",
         "services/catalog-enrichment.js",
+        "services/catalog-promotion.js",
         "services/pricing-engine.js",
         "services/supplier-catalog-scanner.js",
         "services/suppliers/catalog-import-orchestrator.js",
@@ -53883,6 +54342,150 @@
         "impact:product-detail",
         "routes/catalog-product-detail.js",
         "services/transport-rails.js"
+      ]
+    },
+    "services/catalog-promotion.js": {
+      "role": "catalog-promotion-orchestrator",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/catalog-promotion/axes.js",
+        "services/catalog-promotion/sku.js",
+        "services/catalog-promotion/sku-media.js",
+        "services/suppliers/normalized-product.js"
+      ],
+      "directUsedBy": [
+        "routes/sourcing-scanner.js (POST /candidates/:id/import-product)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_skus"
+      ],
+      "dbWrite": [
+        "catalog_media",
+        "product_sku_media",
+        "product_skus",
+        "product_variants"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "PDC-8 (tous lots)",
+        "DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "mustCheck": [
+        "db:catalog_media",
+        "db:product_sku_media",
+        "db:product_skus",
+        "db:product_variants",
+        "doctrine:DOCTRINE_INGESTION_CATALOGUE.md",
+        "doctrine:PDC-8 (tous lots)",
+        "impact:catalog",
+        "routes/sourcing-scanner.js",
+        "services/catalog-promotion/axes.js",
+        "services/catalog-promotion/sku-media.js",
+        "services/catalog-promotion/sku.js",
+        "services/suppliers/normalized-product.js"
+      ]
+    },
+    "services/catalog-promotion/axes.js": {
+      "role": "catalog-promotion-axes-mapping",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "@none"
+      ],
+      "directUsedBy": [
+        "services/catalog-promotion.js (Lot 6)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "PDC-8 §OPTION AXES",
+        "§DOCTRINE ZÉRO HEURISTIQUE"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "mustCheck": [
+        "doctrine:PDC-8 §OPTION AXES",
+        "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+        "impact:catalog",
+        "services/catalog-promotion.js"
+      ]
+    },
+    "services/catalog-promotion/sku-media.js": {
+      "role": "catalog-promotion-sku-media-linking",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "@none"
+      ],
+      "directUsedBy": [
+        "services/catalog-promotion.js (Lot 6)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "PDC-8 §RELATION SKU ↔ MEDIA",
+        "§DOCTRINE ZÉRO HEURISTIQUE"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "mustCheck": [
+        "doctrine:PDC-8 §RELATION SKU ↔ MEDIA",
+        "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+        "impact:catalog",
+        "services/catalog-promotion.js"
+      ]
+    },
+    "services/catalog-promotion/sku.js": {
+      "role": "catalog-promotion-sku-reconciliation",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "@none"
+      ],
+      "directUsedBy": [
+        "services/catalog-promotion.js (Lot 6)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "PDC-8 §SKU — IDENTITÉ SOURCE STABLE",
+        "§STOCK",
+        "§DOCTRINE ZÉRO HEURISTIQUE"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "mustCheck": [
+        "doctrine:PDC-8 §SKU — IDENTITÉ SOURCE STABLE",
+        "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+        "doctrine:§STOCK",
+        "impact:catalog",
+        "services/catalog-promotion.js"
       ]
     },
     "services/catalog-public-view.js": {
@@ -60216,6 +60819,7 @@
         "impact:catalog",
         "impact:product-detail",
         "impact:product-discovery",
+        "services/catalog-promotion.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/suppliers/connectors/api-connector.base.js",
         "services/suppliers/connectors/csv-connector.js",
@@ -61963,6 +62567,16 @@
       ]
     },
     {
+      "table": "product_variants",
+      "writerCount": 4,
+      "writers": [
+        "routes/sourcing-scanner.js",
+        "services/catalog-promotion.js",
+        "services/product-admin-service.js",
+        "services/sourcing-mutations.js"
+      ]
+    },
+    {
       "table": "recipients",
       "writerCount": 4,
       "writers": [
@@ -62075,6 +62689,15 @@
       ]
     },
     {
+      "table": "product_skus",
+      "writerCount": 3,
+      "writers": [
+        "routes/sourcing-scanner.js",
+        "services/catalog-promotion.js",
+        "services/product-admin-service.js"
+      ]
+    },
+    {
       "table": "sms_log",
       "writerCount": 3,
       "writers": [
@@ -62105,6 +62728,14 @@
       "writers": [
         "services/catalog-overrides.js",
         "services/product-admin-service.js"
+      ]
+    },
+    {
+      "table": "catalog_media",
+      "writerCount": 2,
+      "writers": [
+        "routes/sourcing-scanner.js",
+        "services/catalog-promotion.js"
       ]
     },
     {
@@ -62204,19 +62835,19 @@
       ]
     },
     {
+      "table": "product_sku_media",
+      "writerCount": 2,
+      "writers": [
+        "routes/sourcing-scanner.js",
+        "services/catalog-promotion.js"
+      ]
+    },
+    {
       "table": "product_suppliers",
       "writerCount": 2,
       "writers": [
         "routes/purchasing.js",
         "services/purchasing-admin-service.js"
-      ]
-    },
-    {
-      "table": "product_variants",
-      "writerCount": 2,
-      "writers": [
-        "services/product-admin-service.js",
-        "services/sourcing-mutations.js"
       ]
     },
     {
@@ -63770,6 +64401,48 @@
       "to": "schemas/catalog/product-detail.v1.schema.json",
       "type": "depends",
       "label": "schemas/catalog/product-detail.v1.schema.json"
+    },
+    {
+      "from": "routes/sourcing-scanner.js (POST /candidates/:id/import-product)",
+      "to": "services/catalog-promotion.js",
+      "type": "uses",
+      "label": "routes/sourcing-scanner.js (POST /candidates/:id/import-product)"
+    },
+    {
+      "from": "services/catalog-promotion/axes.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/catalog-promotion.js (Lot 6)",
+      "to": "services/catalog-promotion/axes.js",
+      "type": "uses",
+      "label": "services/catalog-promotion.js (Lot 6)"
+    },
+    {
+      "from": "services/catalog-promotion/sku-media.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/catalog-promotion.js (Lot 6)",
+      "to": "services/catalog-promotion/sku-media.js",
+      "type": "uses",
+      "label": "services/catalog-promotion.js (Lot 6)"
+    },
+    {
+      "from": "services/catalog-promotion/sku.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/catalog-promotion.js (Lot 6)",
+      "to": "services/catalog-promotion/sku.js",
+      "type": "uses",
+      "label": "services/catalog-promotion.js (Lot 6)"
     },
     {
       "from": "services/collective-stock-reservation-service.js",

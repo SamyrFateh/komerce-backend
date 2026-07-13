@@ -22,8 +22,14 @@ jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = req.user || { id: 'admin-1', role: 'admin' }; next(); },
 }));
 
+const { makeClient } = require('../integration/test-harness/mock-db');
+
 const mockQuery = jest.fn();
-jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
+const mockGetClient = jest.fn();
+jest.mock('../../db', () => ({
+  query: (...args) => mockQuery(...args),
+  getClient: (...args) => mockGetClient(...args),
+}));
 
 const mockScanCandidate = jest.fn();
 const mockConvertToKMF = jest.fn();
@@ -195,14 +201,23 @@ describe('sourcing-scanner — POST /candidates/scan-batch', () => {
 });
 
 describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
+  // Lot 6 (PDC-8) — la route ouvre une transaction dédiée (db.getClient()) :
+  // toute la séquence (SELECT candidat inclus) passe désormais par client.query,
+  // plus par db.query. `client.calls` sert de trace pour les assertions.
+
   it('404 si le candidat est introuvable', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const client = makeClient([{ rows: [] }]);
+    mockGetClient.mockResolvedValue(client);
+
     const res = await request(app).post('/api/admin/sourcing/candidates/c-404/import-product');
     expect(res.status).toBe(404);
+    expect(client.release).toHaveBeenCalled();
   });
 
   it('409 si déjà importé avec un product_id', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ state: 'imported_to_catalog', product_id: 'p1' }] });
+    const client = makeClient([{ rows: [{ state: 'imported_to_catalog', product_id: 'p1' }] }]);
+    mockGetClient.mockResolvedValue(client);
+
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
     expect(res.status).toBe(409);
     expect(res.body.product_id).toBe('p1');
@@ -210,32 +225,38 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
 
   // ING-5 (verrou 1, doctrine ING-I5) — une exclusion absolue est terminale partout.
   it('409 si le candidat est à l\'état "rejected" (rejet manuel ou auto-exclusion)', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ state: 'rejected', scan_result: {} }] });
+    const client = makeClient([{ rows: [{ state: 'rejected', scan_result: {} }] }]);
+    mockGetClient.mockResolvedValue(client);
+
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
     expect(res.status).toBe(409);
     expect(mockScanCandidate).not.toHaveBeenCalled();
   });
 
   it('409 si scan_result.sourcing_decision vaut "EXCLUDED" même si le state n\'est pas "rejected"', async () => {
-    mockQuery.mockResolvedValueOnce({
-      rows: [{ state: 'scanned', scan_result: { sourcing_decision: 'EXCLUDED' } }],
-    });
+    const client = makeClient([{ rows: [{ state: 'scanned', scan_result: { sourcing_decision: 'EXCLUDED' } }] }]);
+    mockGetClient.mockResolvedValue(client);
+
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
     expect(res.status).toBe(409);
   });
 
   it('400 si aucun prix calculable', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ state: 'scanned', scan_result: {} }] });
+    const client = makeClient([{ rows: [{ state: 'scanned', scan_result: {} }] }]);
+    mockGetClient.mockResolvedValue(client);
+
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
     expect(res.status).toBe(400);
   });
 
   it('crée le produit toujours en is_active=FALSE même avec un prix fourni explicitement', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ state: 'scanned', scan_result: {}, product_name: 'X', description: 'desc EN', komerce_category: 'mode', purchase_price_kmf: 1000 }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'prod-1' }] }) // INSERT products
-      .mockResolvedValueOnce({ rows: [] })                  // UPDATE candidate
-      .mockResolvedValueOnce({ rows: [] });                 // INSERT event
+    const client = makeClient([
+      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'X', description: 'desc EN', komerce_category: 'mode', purchase_price_kmf: 1000, normalized_source_contract: null }] },
+      { rows: [{ id: 'prod-1' }] }, // INSERT products
+      { rows: [] },                 // UPDATE candidate
+      { rows: [] },                 // INSERT event
+    ]);
+    mockGetClient.mockResolvedValue(client);
     mockEnrichAndApply.mockResolvedValue({ status: 'ok', confidence: 0.9 });
 
     const res = await request(app)
@@ -244,16 +265,21 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.product_id).toBe('prod-1');
-    const insertSql = mockQuery.mock.calls[1][0];
+    expect(res.body.promotion).toEqual({ promoted: false, reason: 'v1_legacy' });
+    const insertSql = client.calls.find((c) => /INSERT INTO products/.test(c.sql)).sql;
     expect(insertSql).toMatch(/FALSE, 'candidate'/);
+    expect(client.calls.map((c) => c.sql.trim())).toContain('COMMIT');
+    expect(client.release).toHaveBeenCalled();
   });
 
   it('persiste la donnée source à l\'import (DOCTRINE_CATALOGUE §7) et câble l\'étage ⑤', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ state: 'scanned', scan_result: {}, product_name: 'Power Bank EN', description: 'desc EN', komerce_category: 'tech', purchase_price_kmf: 1000 }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'prod-2' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    const client = makeClient([
+      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Power Bank EN', description: 'desc EN', komerce_category: 'tech', purchase_price_kmf: 1000, normalized_source_contract: null }] },
+      { rows: [{ id: 'prod-2' }] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    mockGetClient.mockResolvedValue(client);
     mockEnrichAndApply.mockResolvedValue({ status: 'low_confidence', confidence: 0.6, needsReview: true });
 
     const res = await request(app)
@@ -261,13 +287,62 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
       .send({ price_kmf: 5000 });
 
     expect(res.status).toBe(200);
-    const [insertSql, insertParams] = mockQuery.mock.calls[1];
-    expect(insertSql).toContain('name_source');
-    expect(insertSql).toContain("'connector_raw'");
-    expect(insertParams).toEqual(expect.arrayContaining(['Power Bank EN', 'desc EN', 'en']));
-    // câblage étage ⑤ : appelé avec le produit créé, résultat exposé au client
+    const insertCall = client.calls.find((c) => /INSERT INTO products/.test(c.sql));
+    expect(insertCall.sql).toContain('name_source');
+    expect(insertCall.sql).toContain("'connector_raw'");
+    expect(insertCall.params).toEqual(expect.arrayContaining(['Power Bank EN', 'desc EN', 'en']));
+    // câblage étage ⑤ : appelé avec le produit créé, résultat exposé au client, APRÈS le commit
     expect(mockEnrichAndApply).toHaveBeenCalledWith('prod-2');
     expect(res.body.enrichment).toEqual(expect.objectContaining({ status: 'low_confidence' }));
+  });
+
+  it('PDC-8 Lot 6 : normalized_source_contract V2 présent → promotion appelée dans la même transaction', async () => {
+    const contract = {
+      schema_version: '2',
+      media: [],
+      option_axes: [],
+      sellable_units: [],
+    };
+    // sellable_units: [] serait rejeté par promoteCatalog (aucune sellable_unit
+    // exploitable) — on utilise ici un contrat sans sellable_units du tout
+    // (undefined) pour rester V2 valide sans SKU, et vérifier le câblage.
+    delete contract.sellable_units;
+
+    const client = makeClient([
+      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Robe', purchase_price_kmf: 1000, normalized_source_contract: contract }] },
+      { rows: [{ id: 'prod-5' }] }, // INSERT products
+      { rows: [] },                  // SELECT product_skus existants (Lot 6, aucun)
+      { rows: [] },                  // UPDATE candidate
+      { rows: [] },                  // INSERT event
+    ]);
+    mockGetClient.mockResolvedValue(client);
+    mockEnrichAndApply.mockResolvedValue({ status: 'ok' });
+
+    const res = await request(app)
+      .post('/api/admin/sourcing/candidates/c1/import-product')
+      .send({ price_kmf: 5000 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.promotion).toEqual({ promoted: true, media: 0, variants: 0, skus: { count: 0 }, skuMediaLinks: 0 });
+  });
+
+  it('rollback si la promotion catalogue échoue (contrat invalide) — produit non commité', async () => {
+    const contract = { schema_version: '2', media: [], option_axes: [], sellable_units: [] }; // rejeté : vide explicite
+    const client = makeClient([
+      { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Robe', purchase_price_kmf: 1000, normalized_source_contract: contract }] },
+      { rows: [{ id: 'prod-6' }] }, // INSERT products
+    ]);
+    mockGetClient.mockResolvedValue(client);
+
+    const res = await request(app)
+      .post('/api/admin/sourcing/candidates/c1/import-product')
+      .send({ price_kmf: 5000 });
+
+    expect([422, 500]).toContain(res.status);
+    expect(client.calls.map((c) => c.sql.trim())).toContain('ROLLBACK');
+    expect(client.calls.map((c) => c.sql.trim())).not.toContain('COMMIT');
+    expect(mockEnrichAndApply).not.toHaveBeenCalled();
+    expect(client.release).toHaveBeenCalled();
   });
 });
 
@@ -579,9 +654,11 @@ describe('sourcing-scanner — POST /candidates/scan-batch (exécution)', () => 
 
 describe('sourcing-scanner — POST /candidates/:id/import-product (erreur)', () => {
   it('erreur DB → next(err) → 500', async () => {
-    mockQuery.mockRejectedValueOnce(new Error('db down'));
+    const client = makeClient([{ error: new Error('db down') }]);
+    mockGetClient.mockResolvedValue(client);
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
     expect(res.status).toBe(500);
+    expect(client.release).toHaveBeenCalled();
   });
 });
 
@@ -626,7 +703,7 @@ describe('sourcing-scanner — dispatchToConnector — api actif mais non câbl�
     jest.doMock('../../middleware/auth', () => ({
       authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
     }));
-    jest.doMock('../../db', () => ({ query: (...a) => mockQuery(...a) }));
+    jest.doMock('../../db', () => ({ query: (...a) => mockQuery(...a), getClient: (...a) => mockGetClient(...a) }));
     jest.doMock('../../services/pricing-engine', () => ({ loadGlobalConfig: (...a) => mockLoadGlobalConfig(...a) }));
     jest.doMock('../../services/suppliers/catalog-import-orchestrator', () => ({ importCatalog: (...a) => mockImportCatalog(...a) }));
     jest.doMock('../../services/supplier-catalog-scanner', () => ({ scanCandidate: (...a) => mockScanCandidate(...a), convertToKMF: (...a) => mockConvertToKMF(...a) }));
@@ -662,7 +739,7 @@ describe('sourcing-scanner — dispatchToConnector — api actif mais non câbl�
     jest.doMock('../../middleware/auth', () => ({
       authenticate: (req, res, next) => { req.user = req.user || { id: 'admin-1', role: 'admin' }; next(); },
     }));
-    jest.doMock('../../db', () => ({ query: (...a) => mockQuery(...a) }));
+    jest.doMock('../../db', () => ({ query: (...a) => mockQuery(...a), getClient: (...a) => mockGetClient(...a) }));
     jest.doMock('../../services/pricing-engine', () => ({ loadGlobalConfig: (...a) => mockLoadGlobalConfig(...a) }));
     jest.doMock('../../services/suppliers/catalog-import-orchestrator', () => ({ importCatalog: (...a) => mockImportCatalog(...a) }));
     jest.doMock('../../services/supplier-catalog-scanner', () => ({ scanCandidate: (...a) => mockScanCandidate(...a), convertToKMF: (...a) => mockConvertToKMF(...a) }));
@@ -678,7 +755,7 @@ describe('sourcing-scanner — dispatchToConnector — api actif mais non câbl�
     jest.doMock('../../middleware/auth', () => ({
       authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
     }));
-    jest.doMock('../../db', () => ({ query: (...a) => mockQuery(...a) }));
+    jest.doMock('../../db', () => ({ query: (...a) => mockQuery(...a), getClient: (...a) => mockGetClient(...a) }));
     jest.doMock('../../services/pricing-engine', () => ({ loadGlobalConfig: (...a) => mockLoadGlobalConfig(...a) }));
     jest.doMock('../../services/suppliers/catalog-import-orchestrator', () => ({ importCatalog: (...a) => mockImportCatalog(...a) }));
     jest.doMock('../../services/supplier-catalog-scanner', () => ({ scanCandidate: (...a) => mockScanCandidate(...a), convertToKMF: (...a) => mockConvertToKMF(...a) }));
@@ -706,7 +783,7 @@ describe('sourcing-scanner — dispatchToConnector — api actif mais non câbl�
     jest.doMock('../../middleware/auth', () => ({
       authenticate: (req, res, next) => { req.user = req.user || { id: 'admin-1', role: 'admin' }; next(); },
     }));
-    jest.doMock('../../db', () => ({ query: (...a) => mockQuery(...a) }));
+    jest.doMock('../../db', () => ({ query: (...a) => mockQuery(...a), getClient: (...a) => mockGetClient(...a) }));
     jest.doMock('../../services/pricing-engine', () => ({ loadGlobalConfig: (...a) => mockLoadGlobalConfig(...a) }));
     jest.doMock('../../services/suppliers/catalog-import-orchestrator', () => ({ importCatalog: (...a) => mockImportCatalog(...a) }));
     jest.doMock('../../services/supplier-catalog-scanner', () => ({ scanCandidate: (...a) => mockScanCandidate(...a), convertToKMF: (...a) => mockConvertToKMF(...a) }));
@@ -783,43 +860,48 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
   });
 
   it('POST /candidates/:id/import-product : scan_result absent (candidat jamais scanné) → 400 pas de prix', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ state: 'raw_imported' }] }); // pas de scan_result du tout
+    const client = makeClient([{ rows: [{ state: 'raw_imported' }] }]); // pas de scan_result du tout
+    mockGetClient.mockResolvedValue(client);
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
     expect(res.status).toBe(400);
   });
 
   it('POST /candidates/:id/import-product : price_kmf absent du body, utilise test_price_kmf du scan', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ state: 'scanned', scan_result: { test_price_kmf: 7000 }, product_name: 'X' } ] })
-      .mockResolvedValueOnce({ rows: [{ id: 'prod-3' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    const client = makeClient([
+      { rows: [{ state: 'scanned', scan_result: { test_price_kmf: 7000 }, product_name: 'X', normalized_source_contract: null }] },
+      { rows: [{ id: 'prod-3' }] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    mockGetClient.mockResolvedValue(client);
     mockEnrichAndApply.mockResolvedValue({ status: 'ok' });
 
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({});
 
     expect(res.status).toBe(200);
-    const insertParams = mockQuery.mock.calls[1][1];
+    const insertParams = client.calls.find((c) => /INSERT INTO products/.test(c.sql)).params;
     expect(insertParams).toContain(7000); // initialPrice via test_price_kmf
   });
 
   it('POST /candidates/:id/import-product : komerce_category/purchase_price_kmf/description/weight absents → replis appliqués', async () => {
     currentUser = { role: 'admin' }; // pas d'id non plus, pour couvrir le fallback updated_by/triggered_by
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ state: 'scanned', scan_result: { recommended_price_kmf: 3000 }, product_name: 'X' }] }) // pas de category/prix/description/weight
-      .mockResolvedValueOnce({ rows: [{ id: 'prod-4' }] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+    const client = makeClient([
+      { rows: [{ state: 'scanned', scan_result: { recommended_price_kmf: 3000 }, product_name: 'X', normalized_source_contract: null }] }, // pas de category/prix/description/weight
+      { rows: [{ id: 'prod-4' }] },
+      { rows: [] },
+      { rows: [] },
+    ]);
+    mockGetClient.mockResolvedValue(client);
     mockEnrichAndApply.mockResolvedValue({ status: 'ok' });
 
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
 
     expect(res.status).toBe(200);
-    const insertParams = mockQuery.mock.calls[1][1];
+    const insertParams = client.calls.find((c) => /INSERT INTO products/.test(c.sql)).params;
     expect(insertParams).toContain('autre');  // komerce_category fallback
     expect(insertParams).toContain(0);        // purchase_price_kmf fallback
     expect(insertParams).toContain(null);     // description / weightKg fallback
-    const updateCandParams = mockQuery.mock.calls[2][1];
+    const updateCandParams = client.calls.find((c) => /UPDATE sourcing_candidates/.test(c.sql)).params;
     expect(updateCandParams).toContain(null); // updated_by fallback
   });
 

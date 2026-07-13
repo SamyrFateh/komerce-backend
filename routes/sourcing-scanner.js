@@ -6,15 +6,15 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*, services/suppliers/catalog-import-orchestrator.js
+ * @depends       db.js, middleware/auth.js, services/*, services/suppliers/catalog-import-orchestrator.js, services/catalog-promotion.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
- * @db-write      products, sourcing_candidate_events, sourcing_candidates
+ * @db-read       product_skus, sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
+ * @db-write      catalog_media, product_sku_media, product_skus, product_variants, products, sourcing_candidate_events, sourcing_candidates
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  sourcing
- * @version       2026-07 (Lot O1.3 — @domain corrigé logistics → sourcing, @role précisé)
+ * @db-txn        import-product : transaction dédiée (db.getClient/BEGIN..COMMIT), promotion catalogue incluse ; reste des routes : query_direct
+ * @doctrine      PDC-8 Lot 6, DOCTRINE_INGESTION_CATALOGUE.md
+ * @impact-areas  sourcing, catalog
+ * @version       2026-07 (PDC-8 Lot 6 — import-product transactionnel + promotion catalogue câblée)
  */
 
 /**
@@ -62,6 +62,7 @@ const scanner = require('../services/supplier-catalog-scanner');
 const pricingEngine = require('../services/pricing-engine');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const catalogEnrichment = require('../services/catalog-enrichment');
+const { promoteCatalog } = require('../services/catalog-promotion');
 const { authenticate } = require('../middleware/auth');
 
 // ── Connecteurs ──
@@ -442,13 +443,26 @@ router.post('/candidates/scan-batch', authenticate, requireAdminOrFounder, async
 // ═══════════════════════════════════════════════════════════════════════
 // POST /api/admin/sourcing/candidates/:id/import-product
 // ═══════════════════════════════════════════════════════════════════════
+// PDC-8 Lot 6 : la route ouvre désormais une transaction dédiée. Le produit,
+// la promotion catalogue (media/axes/SKU/couture SKU↔media) et la mise à
+// jour du candidat forment une seule unité atomique — soit tout est commité,
+// soit rien ne l'est. L'enrichissement FR (étage ⑤) reste hors transaction
+// et best-effort : il s'exécute APRÈS le commit et ne fait jamais échouer
+// une promotion déjà actée.
 router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounder, async (req, res, next) => {
+  const client = await db.getClient();
   try {
-    const r0 = await db.query('SELECT * FROM sourcing_candidates WHERE id = $1', [req.params.id]);
-    if (!r0.rows.length) return res.status(404).json({ error: 'Candidat introuvable' });
+    await client.query('BEGIN');
+
+    const r0 = await client.query('SELECT * FROM sourcing_candidates WHERE id = $1', [req.params.id]);
+    if (!r0.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Candidat introuvable' });
+    }
     const c = r0.rows[0];
 
     if (c.state === 'imported_to_catalog' && c.product_id) {
+      await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Déjà importé', product_id: c.product_id });
     }
 
@@ -456,6 +470,7 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
     // Un candidat rejeté (rejet manuel OU auto-exclusion douane/légale) n'est
     // JAMAIS ré-importable, quel que soit le chemin emprunté par la route.
     if (c.state === 'rejected' || c.scan_result?.sourcing_decision === 'EXCLUDED') {
+      await client.query('ROLLBACK');
       return res.status(409).json({
         error: 'Candidat exclu (douane/légal) — import interdit, non ré-évaluable.',
       });
@@ -469,6 +484,7 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
       || 0;
 
     if (!initialPrice) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Pas de prix calculé. Re-scannez le candidat avant import.' });
     }
 
@@ -478,7 +494,7 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
     // écrite ici, à l'entrée du catalogue (retraduction + litiges fournisseur).
     // La locale des connecteurs actuels est l'anglais (Dubaï) ; les futurs
     // connecteurs porteront leur locale dans NormalizedSupplierProduct.
-    const prodRes = await db.query(
+    const prodRes = await client.query(
       `INSERT INTO products (
          name, category,
          cost_kmf,
@@ -501,34 +517,52 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
     );
     const productId = prodRes.rows[0].id;
 
-    // Étage ⑤ — enrichissement FR (K-3), best-effort : un hoquet du modèle
-    // ne fait pas échouer l'import. En échec, la fiche reste en donnée
-    // connecteur, marquée needs_review, run tracé (catalog_enrichment_runs).
-    const enrichment = await catalogEnrichment.enrichAndApply(productId);
+    // PDC-8 Lot 6 — promotion du normalized_source_contract V2 (media, axes,
+    // SKU, couture SKU↔media) dans la même transaction. Un contrat V1
+    // (absent/null) est un no-op explicite (promoted:false), pas une erreur.
+    // Une promotion invalide (422) fait échouer tout l'import (rollback).
+    const promotion = await promoteCatalog(client, {
+      productId,
+      normalizedSourceContract: c.normalized_source_contract || null,
+    });
 
-    await db.query(
+    await client.query(
       `UPDATE sourcing_candidates
           SET state = 'imported_to_catalog', product_id = $1, updated_by = $2
         WHERE id = $3`,
       [productId, req.user?.id || null, req.params.id]
     );
 
-    await db.query(
+    await client.query(
       `INSERT INTO sourcing_candidate_events
          (candidate_id, event_type, old_state, new_state, changes, triggered_by)
          VALUES ($1, 'imported', $2, 'imported_to_catalog', $3, $4)`,
       [req.params.id, c.state, JSON.stringify({ product_id: productId, price_kmf: initialPrice }), req.user?.id || null]
     );
 
+    await client.query('COMMIT');
+
+    // Étage ⑤ — enrichissement FR (K-3), best-effort, HORS transaction et
+    // APRÈS le commit : un hoquet du modèle ne fait pas échouer un import déjà
+    // acté. En échec, la fiche reste en donnée connecteur, marquée
+    // needs_review, run tracé (catalog_enrichment_runs).
+    const enrichment = await catalogEnrichment.enrichAndApply(productId);
+
     res.json({
       product_id: productId,
       candidate_id: req.params.id,
+      promotion, // { promoted: bool, reason?, media?, variants?, skus?, skuMediaLinks? }
       enrichment, // { status: ok|low_confidence|invalid_output|failed, confidence?, error? }
       message: enrichment.status === 'ok'
         ? 'Produit créé en mode inactif, fiche FR générée. Approuvez-la quand prête.'
         : 'Produit créé en mode inactif — fiche à relire (needs_review). Activez-le manuellement quand prêt.',
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════

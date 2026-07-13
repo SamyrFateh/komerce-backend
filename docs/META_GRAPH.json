@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-13T21:36:37.875Z",
+  "generatedAt": "2026-07-13T22:06:37.329Z",
   "sources": {
     "backend": {
-      "nodes": 742
+      "nodes": 756
     },
     "boutique": {
       "modules": 69,
@@ -1303,12 +1303,17 @@
       "routeFile": "routes/sourcing-scanner.js",
       "services": [
         "services/*",
-        "services/suppliers/catalog-import-orchestrator.js"
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/catalog-promotion.js"
       ],
       "tables": [
+        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
         "supplier_catalog_imports",
+        "catalog_media",
+        "product_sku_media",
+        "product_variants",
         "products"
       ]
     },
@@ -1322,12 +1327,17 @@
       "routeFile": "routes/sourcing-scanner.js",
       "services": [
         "services/*",
-        "services/suppliers/catalog-import-orchestrator.js"
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/catalog-promotion.js"
       ],
       "tables": [
+        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
         "supplier_catalog_imports",
+        "catalog_media",
+        "product_sku_media",
+        "product_variants",
         "products"
       ]
     },
@@ -1356,12 +1366,17 @@
       "routeFile": "routes/sourcing-scanner.js",
       "services": [
         "services/*",
-        "services/suppliers/catalog-import-orchestrator.js"
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/catalog-promotion.js"
       ],
       "tables": [
+        "product_skus",
         "sourcing_candidate_events",
         "sourcing_candidates",
         "supplier_catalog_imports",
+        "catalog_media",
+        "product_sku_media",
+        "product_variants",
         "products"
       ]
     },
@@ -1727,7 +1742,8 @@
     "product_skus": {
       "routes": [
         "routes/orders/create.js",
-        "routes/products.js"
+        "routes/products.js",
+        "routes/sourcing-scanner.js"
       ],
       "boutique": [
         "b-checkout",
@@ -1738,13 +1754,15 @@
         "EconomicFlowView",
         "OrdersLogisticsView",
         "PricingStrategyView",
-        "ProblemsView"
+        "ProblemsView",
+        "SourcingScannerView"
       ]
     },
     "product_variants": {
       "routes": [
         "routes/orders/create.js",
         "routes/products.js",
+        "routes/sourcing-scanner.js",
         "routes/sourcing.js"
       ],
       "boutique": [
@@ -1757,6 +1775,7 @@
         "OrdersLogisticsView",
         "PricingStrategyView",
         "ProblemsView",
+        "SourcingScannerView",
         "SourcingView"
       ]
     },
@@ -2222,6 +2241,24 @@
       ]
     },
     "supplier_catalog_imports": {
+      "routes": [
+        "routes/sourcing-scanner.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "SourcingScannerView"
+      ]
+    },
+    "catalog_media": {
+      "routes": [
+        "routes/sourcing-scanner.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "SourcingScannerView"
+      ]
+    },
+    "product_sku_media": {
       "routes": [
         "routes/sourcing-scanner.js"
       ],
