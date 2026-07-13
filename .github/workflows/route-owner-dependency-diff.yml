@@ -42,7 +42,7 @@ jobs:
           def refs(graph):
               return {
                   warning['ref']: warning['msg']
-                  for warning in graph.get('diagnostics', {}).get('warnings', graph.get('warnings', []))
+                  for warning in graph.get('drifts', {}).get('warn', [])
                   if warning.get('type') == 'OBSERVED-UNDECLARED-FEATURE-DEPENDENCY'
               }
 
