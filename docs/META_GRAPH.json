@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T08:14:37.745Z",
+  "generatedAt": "2026-07-13T10:50:54.638Z",
   "sources": {
     "backend": {
       "nodes": 727
@@ -13,14 +13,14 @@
       "callEdges": 112
     },
     "contract": {
-      "endpoints": 433
+      "endpoints": 437
     }
   },
   "summary": {
     "endpointsConsumed": 85,
     "sharedEndpoints": 2,
     "phantomSeams": 0,
-    "sharedTables": 11
+    "sharedTables": 14
   },
   "endpoints": {
     "/api/shares": {
@@ -49,7 +49,7 @@
       "dashboards": [],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/public.js",
+      "routeFile": "server.js",
       "services": [],
       "tables": []
     },
@@ -101,14 +101,22 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/orders.js",
+      "routeFile": "routes/orders/create.js",
       "services": [
-        "services/order-service.js",
-        "services/order-status-machine.js",
-        "services/inventory-service.js",
-        "services/notification-service.js"
+        "services/*",
+        "services/product-admin-service.js"
       ],
-      "tables": []
+      "tables": [
+        "orders",
+        "product_skus",
+        "product_variants",
+        "products",
+        "recipients",
+        "relais",
+        "cart_shares",
+        "order_items",
+        "order_status_history"
+      ]
     },
     "/api/payments/stripe/intent": {
       "boutique": [
@@ -232,9 +240,14 @@
       "dashboards": [],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/shared-cart-cash.js",
+      "routeFile": "routes/shared-cart.js",
       "services": [
-        "services/*"
+        "services/shared-cart-engine.js",
+        "services/shared-cart-estimation-service.js",
+        "services/shared-cart-financial-guard.js",
+        "services/shared-cart-items-service.js",
+        "services/shared-cart-v41-transitions.js",
+        "services/shared-cart-queries.js"
       ],
       "tables": []
     },
@@ -246,9 +259,14 @@
       "dashboards": [],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/shared-cart-cash.js",
+      "routeFile": "routes/shared-cart.js",
       "services": [
-        "services/*"
+        "services/shared-cart-engine.js",
+        "services/shared-cart-estimation-service.js",
+        "services/shared-cart-financial-guard.js",
+        "services/shared-cart-items-service.js",
+        "services/shared-cart-v41-transitions.js",
+        "services/shared-cart-queries.js"
       ],
       "tables": []
     },
@@ -300,15 +318,9 @@
       "dashboards": [],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/health.js",
-      "services": [
-        "services/*"
-      ],
-      "tables": [
-        "orders",
-        "parcels",
-        "products"
-      ]
+      "routeFile": "server.js",
+      "services": [],
+      "tables": []
     },
     "/api/auth/login": {
       "boutique": [
@@ -559,7 +571,7 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/dashboard.js",
+      "routeFile": "routes/dashboard-finance.js",
       "services": [
         "services/*"
       ],
@@ -672,7 +684,7 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/dashboard.js",
+      "routeFile": "routes/dashboard-clients.js",
       "services": [
         "services/*"
       ],
@@ -685,7 +697,7 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/dashboard.js",
+      "routeFile": "routes/dashboard-clients.js",
       "services": [
         "services/*"
       ],
@@ -698,7 +710,7 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/dashboard.js",
+      "routeFile": "routes/dashboard-clients.js",
       "services": [
         "services/*"
       ],
@@ -734,7 +746,7 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/dashboard.js",
+      "routeFile": "routes/dashboard-ops.js",
       "services": [
         "services/*"
       ],
@@ -878,11 +890,16 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin.js",
+      "routeFile": "routes/admin/partners.js",
       "services": [
         "services/*"
       ],
-      "tables": []
+      "tables": [
+        "customs_shipments",
+        "orders",
+        "partners",
+        "suppliers_stats"
+      ]
     },
     "/api/pricing/flow": {
       "boutique": [],
@@ -975,7 +992,7 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/dashboard.js",
+      "routeFile": "routes/dashboard-ops.js",
       "services": [
         "services/*"
       ],
@@ -988,11 +1005,21 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/parcel-api-v2.js",
+      "routeFile": "routes/parcel-api-v2/read.js",
       "services": [
         "services/*"
       ],
-      "tables": []
+      "tables": [
+        "incidents",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "products",
+        "relais",
+        "scan_events",
+        "users"
+      ]
     },
     "/api/hub/orders/mark-ordered": {
       "boutique": [],
@@ -1001,15 +1028,13 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/hub.js",
+      "routeFile": "routes/hub-mark-ordered.js",
       "services": [
         "services/*"
       ],
       "tables": [
         "orders",
-        "parcel_items",
-        "parcels",
-        "users"
+        "order_comments"
       ]
     },
     "/api/hub/auto-distribute": {
@@ -1019,16 +1044,11 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/hub.js",
+      "routeFile": "routes/auto-distribute-api.js",
       "services": [
         "services/*"
       ],
-      "tables": [
-        "orders",
-        "parcel_items",
-        "parcels",
-        "users"
-      ]
+      "tables": []
     },
     "/api/hub/inventory/scan-assign": {
       "boutique": [],
@@ -1227,11 +1247,21 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/parcel-api-v2.js",
+      "routeFile": "routes/parcel-api-v2/read.js",
       "services": [
         "services/*"
       ],
-      "tables": []
+      "tables": [
+        "incidents",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "products",
+        "relais",
+        "scan_events",
+        "users"
+      ]
     },
     "/api/dashboard/sales": {
       "boutique": [],
@@ -1241,7 +1271,7 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/dashboard.js",
+      "routeFile": "routes/dashboard-finance.js",
       "services": [
         "services/*"
       ],
@@ -1270,12 +1300,15 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/sourcing.js",
+      "routeFile": "routes/sourcing-scanner.js",
       "services": [
-        "services/*"
+        "services/*",
+        "services/suppliers/catalog-import-orchestrator.js"
       ],
       "tables": [
-        "product_variants",
+        "sourcing_candidate_events",
+        "sourcing_candidates",
+        "supplier_catalog_imports",
         "products"
       ]
     },
@@ -1286,12 +1319,15 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/sourcing.js",
+      "routeFile": "routes/sourcing-scanner.js",
       "services": [
-        "services/*"
+        "services/*",
+        "services/suppliers/catalog-import-orchestrator.js"
       ],
       "tables": [
-        "product_variants",
+        "sourcing_candidate_events",
+        "sourcing_candidates",
+        "supplier_catalog_imports",
         "products"
       ]
     },
@@ -1317,12 +1353,15 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/sourcing.js",
+      "routeFile": "routes/sourcing-scanner.js",
       "services": [
-        "services/*"
+        "services/*",
+        "services/suppliers/catalog-import-orchestrator.js"
       ],
       "tables": [
-        "product_variants",
+        "sourcing_candidate_events",
+        "sourcing_candidates",
+        "supplier_catalog_imports",
         "products"
       ]
     },
@@ -1365,11 +1404,16 @@
       ],
       "inContract": true,
       "status": "UNKNOWN",
-      "routeFile": "routes/admin.js",
+      "routeFile": "routes/admin/partners.js",
       "services": [
         "services/*"
       ],
-      "tables": []
+      "tables": [
+        "customs_shipments",
+        "orders",
+        "partners",
+        "suppliers_stats"
+      ]
     },
     "/api/transitaire/ship": {
       "boutique": [],
@@ -1459,14 +1503,17 @@
     ],
     "phantomSeams": [],
     "sharedTables": [
+      "cart_shares",
       "invoices",
       "order_items",
+      "order_status_history",
       "orders",
       "parcel_items",
       "parcels",
       "product_skus",
       "product_variants",
       "products",
+      "recipients",
       "relais",
       "scan_events",
       "users"
@@ -1485,28 +1532,38 @@
     },
     "cart_shares": {
       "routes": [
+        "routes/orders/create.js",
         "routes/shares.js"
       ],
       "boutique": [
         "b-cart",
-        "b-favs"
+        "b-checkout",
+        "b-favs",
+        "b-tracking",
+        "komerce-api"
       ],
-      "dashboards": []
+      "dashboards": [
+        "OrdersLogisticsView",
+        "ProblemsView"
+      ]
     },
     "products": {
       "routes": [
         "routes/admin-costing.js",
         "routes/client-tracking.js",
-        "routes/health.js",
+        "routes/orders/create.js",
+        "routes/parcel-api-v2/read.js",
         "routes/parcels.js",
         "routes/pricing.js",
         "routes/products.js",
         "routes/scans.js",
         "routes/shares.js",
+        "routes/sourcing-scanner.js",
         "routes/sourcing.js"
       ],
       "boutique": [
         "b-cart",
+        "b-checkout",
         "b-favs",
         "b-tracking",
         "komerce-api"
@@ -1515,7 +1572,10 @@
         "CostingView",
         "EconomicFlowView",
         "EconomicView",
+        "HubRelaisView",
+        "OrdersLogisticsView",
         "PricingStrategyView",
+        "ProblemsView",
         "SourcingScannerView",
         "SourcingView"
       ]
@@ -1526,6 +1586,8 @@
         "routes/admin-dashboard.js",
         "routes/client-tracking.js",
         "routes/logistics.js",
+        "routes/orders/create.js",
+        "routes/parcel-api-v2/read.js",
         "routes/parcels.js",
         "routes/relais.js",
         "routes/transitaire-api.js"
@@ -1540,8 +1602,10 @@
         "ControlTowerView",
         "CostingView",
         "EventWorkspacesView",
+        "HubRelaisView",
         "OrdersLogisticsView",
         "PilotageView",
+        "ProblemsView",
         "TransitaireView"
       ]
     },
@@ -1550,12 +1614,15 @@
         "routes/admin-costing.js",
         "routes/admin-customs-shipments.js",
         "routes/admin-dashboard.js",
+        "routes/admin/partners.js",
         "routes/cash.js",
         "routes/client-tracking.js",
-        "routes/health.js",
+        "routes/hub-mark-ordered.js",
         "routes/hub.js",
         "routes/invoices.js",
         "routes/logistics.js",
+        "routes/orders/create.js",
+        "routes/parcel-api-v2/read.js",
         "routes/parcels.js",
         "routes/payments-paypal.js",
         "routes/payments.js",
@@ -1581,7 +1648,9 @@
         "InvoicesView",
         "OrdersLogisticsView",
         "PilotageView",
+        "ProblemsView",
         "SanteView",
+        "SuppliersView",
         "TransitaireView"
       ]
     },
@@ -1592,6 +1661,7 @@
         "routes/hub.js",
         "routes/logistics.js",
         "routes/otp.js",
+        "routes/parcel-api-v2/read.js",
         "routes/parcels.js",
         "routes/scans.js",
         "routes/transitaire-api.js",
@@ -1609,6 +1679,7 @@
         "AccountingView",
         "HubRelaisView",
         "InvoicesView",
+        "ProblemsView",
         "SanteView",
         "TransitaireView"
       ]
@@ -1652,6 +1723,91 @@
         "b-wallet"
       ],
       "dashboards": []
+    },
+    "product_skus": {
+      "routes": [
+        "routes/orders/create.js",
+        "routes/products.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "EconomicFlowView",
+        "OrdersLogisticsView",
+        "PricingStrategyView",
+        "ProblemsView"
+      ]
+    },
+    "product_variants": {
+      "routes": [
+        "routes/orders/create.js",
+        "routes/products.js",
+        "routes/sourcing.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "EconomicFlowView",
+        "OrdersLogisticsView",
+        "PricingStrategyView",
+        "ProblemsView",
+        "SourcingView"
+      ]
+    },
+    "recipients": {
+      "routes": [
+        "routes/orders/create.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "OrdersLogisticsView",
+        "ProblemsView"
+      ]
+    },
+    "order_items": {
+      "routes": [
+        "routes/admin-costing.js",
+        "routes/client-tracking.js",
+        "routes/logistics.js",
+        "routes/orders/create.js",
+        "routes/parcel-api-v2/read.js",
+        "routes/parcels.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "CostingView",
+        "HubRelaisView",
+        "OrdersLogisticsView",
+        "ProblemsView"
+      ]
+    },
+    "order_status_history": {
+      "routes": [
+        "routes/orders/create.js"
+      ],
+      "boutique": [
+        "b-checkout",
+        "b-tracking",
+        "komerce-api"
+      ],
+      "dashboards": [
+        "OrdersLogisticsView",
+        "ProblemsView"
+      ]
     },
     "stripe_events_processed": {
       "routes": [
@@ -1704,21 +1860,6 @@
         "InvoicesView"
       ]
     },
-    "order_items": {
-      "routes": [
-        "routes/admin-costing.js",
-        "routes/client-tracking.js",
-        "routes/logistics.js",
-        "routes/parcels.js"
-      ],
-      "boutique": [
-        "b-tracking",
-        "komerce-api"
-      ],
-      "dashboards": [
-        "CostingView"
-      ]
-    },
     "parcels": {
       "routes": [
         "routes/admin-costing.js",
@@ -1726,9 +1867,9 @@
         "routes/admin-dashboard.js",
         "routes/carriers.js",
         "routes/client-tracking.js",
-        "routes/health.js",
         "routes/hub.js",
         "routes/logistics.js",
+        "routes/parcel-api-v2/read.js",
         "routes/parcels.js",
         "routes/transitaire-api.js"
       ],
@@ -1744,6 +1885,7 @@
         "HubRelaisView",
         "OrdersLogisticsView",
         "PilotageView",
+        "ProblemsView",
         "SanteView",
         "TransitaireView"
       ]
@@ -1751,12 +1893,15 @@
     "scan_events": {
       "routes": [
         "routes/client-tracking.js",
+        "routes/parcel-api-v2/read.js",
         "routes/transitaire-api.js"
       ],
       "boutique": [
         "b-tracking"
       ],
       "dashboards": [
+        "HubRelaisView",
+        "ProblemsView",
         "TransitaireView"
       ]
     },
@@ -1772,6 +1917,7 @@
     "parcel_items": {
       "routes": [
         "routes/hub.js",
+        "routes/parcel-api-v2/read.js",
         "routes/parcels.js",
         "routes/transitaire-api.js"
       ],
@@ -1780,6 +1926,7 @@
       ],
       "dashboards": [
         "HubRelaisView",
+        "ProblemsView",
         "TransitaireView"
       ]
     },
@@ -1829,33 +1976,6 @@
         "komerce-api"
       ],
       "dashboards": []
-    },
-    "product_skus": {
-      "routes": [
-        "routes/products.js"
-      ],
-      "boutique": [
-        "komerce-api"
-      ],
-      "dashboards": [
-        "EconomicFlowView",
-        "PricingStrategyView"
-      ]
-    },
-    "product_variants": {
-      "routes": [
-        "routes/products.js",
-        "routes/sourcing.js"
-      ],
-      "boutique": [
-        "komerce-api"
-      ],
-      "dashboards": [
-        "EconomicFlowView",
-        "PricingStrategyView",
-        "SourcingScannerView",
-        "SourcingView"
-      ]
     },
     "suppliers": {
       "routes": [
@@ -1938,7 +2058,8 @@
       "routes": [
         "routes/admin-costing.js",
         "routes/admin-customs-shipments.js",
-        "routes/admin-dashboard.js"
+        "routes/admin-dashboard.js",
+        "routes/admin/partners.js"
       ],
       "boutique": [],
       "dashboards": [
@@ -1948,7 +2069,8 @@
         "EventWorkspacesView",
         "OrdersLogisticsView",
         "PilotageView",
-        "SanteView"
+        "SanteView",
+        "SuppliersView"
       ]
     },
     "order_item_cost_imputations": {
@@ -2003,6 +2125,26 @@
         "SanteView"
       ]
     },
+    "partners": {
+      "routes": [
+        "routes/admin/partners.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "CustomsView",
+        "SuppliersView"
+      ]
+    },
+    "suppliers_stats": {
+      "routes": [
+        "routes/admin/partners.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "CustomsView",
+        "SuppliersView"
+      ]
+    },
     "cost_benchmarks": {
       "routes": [
         "routes/pricing.js"
@@ -2033,6 +2175,25 @@
         "EconomicView"
       ]
     },
+    "incidents": {
+      "routes": [
+        "routes/parcel-api-v2/read.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "HubRelaisView",
+        "ProblemsView"
+      ]
+    },
+    "order_comments": {
+      "routes": [
+        "routes/hub-mark-ordered.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "HubRelaisView"
+      ]
+    },
     "exchange_rates": {
       "routes": [
         "routes/admin-finance-config.js"
@@ -2040,6 +2201,33 @@
       "boutique": [],
       "dashboards": [
         "SanteView"
+      ]
+    },
+    "sourcing_candidate_events": {
+      "routes": [
+        "routes/sourcing-scanner.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "SourcingScannerView"
+      ]
+    },
+    "sourcing_candidates": {
+      "routes": [
+        "routes/sourcing-scanner.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "SourcingScannerView"
+      ]
+    },
+    "supplier_catalog_imports": {
+      "routes": [
+        "routes/sourcing-scanner.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "SourcingScannerView"
       ]
     },
     "customs_categories": {
