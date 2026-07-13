@@ -63,22 +63,25 @@ jobs:
         shell: bash
         run: |
           set +e
-          mkdir -p validation-logs
-          : > validation-summary.txt
+          validation_dir="$RUNNER_TEMP/pdc-validation"
+          logs_dir="$validation_dir/logs"
+          summary="$validation_dir/validation-summary.txt"
+          mkdir -p "$logs_dir"
+          : > "$summary"
           overall=0
 
           run_check() {
             name="$1"
             shift
-            echo "=== $name ===" | tee -a validation-summary.txt
-            "$@" >"validation-logs/$name.log" 2>&1
+            echo "=== $name ===" | tee -a "$summary"
+            "$@" >"$logs_dir/$name.log" 2>&1
             rc=$?
-            echo "$name=$rc" | tee -a validation-summary.txt
+            echo "$name=$rc" | tee -a "$summary"
             if [ "$rc" -ne 0 ]; then
               overall=1
-              echo "--- tail $name ---" >> validation-summary.txt
-              tail -120 "validation-logs/$name.log" >> validation-summary.txt
-              echo "--- end tail $name ---" >> validation-summary.txt
+              echo "--- tail $name ---" >> "$summary"
+              tail -120 "$logs_dir/$name.log" >> "$summary"
+              echo "--- end tail $name ---" >> "$summary"
             fi
           }
 
@@ -90,17 +93,18 @@ jobs:
           run_check map-check npm run map:check
 
           legacy_rc=0
-          grep -n "_renderVariants" public/boutique/js/b-modal-core.js public/boutique/js/b-modal-product.js >validation-logs/pdc6-legacy.log 2>&1 && legacy_rc=1
-          grep -nE "fetch\([^\n]*api/products/.+[^/]detail" public/boutique/js/b-modal-core.js >>validation-logs/pdc6-legacy.log 2>&1 && legacy_rc=1
+          : > "$logs_dir/pdc6-legacy.log"
+          grep -n "_renderVariants" public/boutique/js/b-modal-core.js public/boutique/js/b-modal-product.js >>"$logs_dir/pdc6-legacy.log" 2>&1 && legacy_rc=1
+          grep -nE "fetch\([^\n]*api/products/.+[^/]detail" public/boutique/js/b-modal-core.js >>"$logs_dir/pdc6-legacy.log" 2>&1 && legacy_rc=1
           test ! -e public/boutique/js/view-models/modal-view-model.js || legacy_rc=1
           test ! -e public/boutique/js/b-modal-mobile-product-bootstrap.js || legacy_rc=1
-          echo "pdc6-legacy-extinction=$legacy_rc" | tee -a validation-summary.txt
+          echo "pdc6-legacy-extinction=$legacy_rc" | tee -a "$summary"
           if [ "$legacy_rc" -ne 0 ]; then
             overall=1
-            cat validation-logs/pdc6-legacy.log >> validation-summary.txt
+            cat "$logs_dir/pdc6-legacy.log" >> "$summary"
           fi
 
-          echo "overall=$overall" | tee -a validation-summary.txt
+          echo "overall=$overall" | tee -a "$summary"
           echo "overall=$overall" >> "$GITHUB_OUTPUT"
 
       - name: Commit merged tree and generated artifacts to integration branch
@@ -117,13 +121,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pdc1-pdc6-integration-validation
-          path: |
-            validation-summary.txt
-            validation-logs/
+          path: ${{ runner.temp }}/pdc-validation/
           retention-days: 7
 
       - name: Enforce validation result
         if: steps.validate.outputs.overall != '0'
         run: |
-          cat validation-summary.txt
+          cat "$RUNNER_TEMP/pdc-validation/validation-summary.txt"
           exit 1
