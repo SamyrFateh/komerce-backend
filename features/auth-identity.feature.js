@@ -41,7 +41,12 @@ module.exports = {
   files: {
     services: [
       'services/otp-test-mode.js',
-      'services/authkey-client.js',
+      // services/authkey-client.js retiré (O7.1, REHOME_CONSUMER) — "AuthKey" est
+      // le fournisseur tiers d'API WhatsApp (authkey.io), collision de nom avec
+      // "auth". Le fichier n'a aucune logique d'authentification/identité ; c'est
+      // un adaptateur de notification sortante, 100% consommé par
+      // services/notifications/*. Rattaché à features/notifications.feature.js.
+      // Voir docs/O7_1_OWNERSHIP_ANALYSIS.md, CAS A.
     ],
     routes: [
       'routes/client-auth.js',
@@ -58,7 +63,7 @@ module.exports = {
       tests: [
       'tests/integration/admin-authz-probe.test.js',
       'tests/integration/otp-no-guest.test.js',
-      'tests/unit/authkey-client.test.js',
+      // tests/unit/authkey-client.test.js retiré (O7.1) — suit services/authkey-client.js vers notifications.
       'tests/unit/otp-test-mode.test.js',
       'tests/unit/client-auth.test.js',
     ],

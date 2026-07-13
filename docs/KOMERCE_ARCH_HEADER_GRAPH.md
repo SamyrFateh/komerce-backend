@@ -14,7 +14,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 741
-- Edges: 4245
+- Edges: 4249
 - DB tables: 110
 - Doctrines: 139
 - Impact areas: 125
@@ -25,7 +25,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Domains
 
 - auth: 8
-- auth-identity: 5
+- auth-identity: 4
 - bootstrap: 1
 - boutique: 36
 - catalog: 42
@@ -40,7 +40,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - inventory: 2
 - logistics: 35
 - loyalty: 2
-- notification: 15
+- notification: 16
 - operations: 11
 - orders: 23
 - payment: 16
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - cron: 1
 - data-service: 1
 - entrypoint: 1
-- external-adapter: 1
+- external-adapter: 2
 - machine: 2
 - manual-test: 1
 - middleware: 11
@@ -69,7 +69,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 100
 - route-manifest: 1
 - schema: 1
-- service: 147
+- service: 146
 - state: 1
 - state-store: 1
 - ui-component: 38
@@ -245,7 +245,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/transit-dashboard.js — logistics-transit-dashboard (logistics, high, full)
 - routes/wallet.js — wallet-http-facade (wallet, high, full)
 - services/apply-pricing-updates.js — economic-engine-apply-pricing-updates (economic-engine, high, full)
-- services/authkey-client.js — auth-authkey-client (auth-identity, high, full)
+- services/authkey-client.js — authkey-whatsapp-adapter (notification, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
 - services/catalog-approval.js — catalog-approval-queue (catalog, high, full)
 - services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)

@@ -127,10 +127,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Authentifier un utilisateur et gérer son identité active (OTP, login/register, magic-link, guest-checkout, profil) via les routes exposées.
 
-- services: 2
+- services: 1
 - routes: 3
 - boutique: 3
-- tests: 5
+- tests: 4
 - tables owned (lifecycle): 1 — `otp_codes`
 - tables written: 3
 - interfaces exposed: 20
@@ -338,10 +338,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Emettre une alerte ou un message sortant (WhatsApp, notification interne) declenche par une autre feature.
 
-- tests: 15
+- tests: 16
 - migrations: 5
 - utils: 1
-- services: 10
+- services: 11
 - routes: 3
 - tables owned (lifecycle): 0
 - tables written: 3
@@ -1251,7 +1251,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### WARN / DEBT (155)
+### WARN / DEBT (154)
 
 Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
 
@@ -1293,10 +1293,9 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth" vers "notifications"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> auth — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "auth"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 11 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> notifications — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> orders — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "orders"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ customs -> infrastructure — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "customs" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> catalog — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "catalog"
@@ -1331,9 +1330,9 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ loyalty -> infrastructure — dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ loyalty -> notifications — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "notifications"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> auth — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "auth"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> decision-signals — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "decision-signals"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> infrastructure — dépendance cross-feature observée (canal: static-code, 11 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> infrastructure — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> orders — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "orders"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> infrastructure — dépendance cross-feature observée (canal: static-code, 63 preuve(s)) sans contract.consumes déclaré chez "orders" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> loyalty — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "orders" vers "loyalty"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> notifications — dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez "orders" vers "notifications"
@@ -1448,10 +1447,9 @@ Meta Graph monté : oui.
 | auth | infrastructure | static-code | 13 | **OBSERVED_UNDECLARED** |
 | auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
 | auth-identity | auth | static-code | 2 | **OBSERVED_UNDECLARED** |
-| auth-identity | infrastructure | static-code | 12 | **OBSERVED_UNDECLARED** |
+| auth-identity | infrastructure | static-code | 11 | **OBSERVED_UNDECLARED** |
 | auth-identity | logistics | static-code | 2 | **OBSERVED_UNDECLARED** |
 | auth-identity | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
-| auth-identity | orders | static-code | 1 | **OBSERVED_UNDECLARED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | infrastructure | static-code | 37 | **OBSERVED_UNDECLARED** |
@@ -1520,9 +1518,9 @@ Meta Graph monté : oui.
 | loyalty | infrastructure | static-code | 5 | **OBSERVED_UNDECLARED** |
 | loyalty | notifications | static-code | 3 | **OBSERVED_UNDECLARED** |
 | notifications | auth | static-code | 2 | **OBSERVED_UNDECLARED** |
-| notifications | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
 | notifications | decision-signals | static-code | 2 | **OBSERVED_UNDECLARED** |
-| notifications | infrastructure | static-code | 11 | **OBSERVED_UNDECLARED** |
+| notifications | infrastructure | static-code | 12 | **OBSERVED_UNDECLARED** |
+| notifications | orders | static-code | 1 | **OBSERVED_UNDECLARED** |
 | orders | auth | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | orders | catalog | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | customs | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -1606,7 +1604,6 @@ Meta Graph monté : oui.
 - `auth-identity` → `infrastructure` (canaux: static-code)
 - `auth-identity` → `logistics` (canaux: static-code)
 - `auth-identity` → `notifications` (canaux: static-code)
-- `auth-identity` → `orders` (canaux: static-code)
 - `catalog` → `infrastructure` (canaux: static-code)
 - `customs` → `infrastructure` (canaux: static-code)
 - `dashboard` → `catalog` (canaux: static-code)
@@ -1641,9 +1638,9 @@ Meta Graph monté : oui.
 - `loyalty` → `infrastructure` (canaux: static-code)
 - `loyalty` → `notifications` (canaux: static-code)
 - `notifications` → `auth` (canaux: static-code)
-- `notifications` → `auth-identity` (canaux: static-code)
 - `notifications` → `decision-signals` (canaux: static-code)
 - `notifications` → `infrastructure` (canaux: static-code)
+- `notifications` → `orders` (canaux: static-code)
 - `orders` → `infrastructure` (canaux: static-code)
 - `orders` → `loyalty` (canaux: static-code)
 - `orders` → `notifications` (canaux: static-code)
@@ -1752,13 +1749,13 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 | PROJECTION | 9 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 9 | application-wiring-not-consumption |
 | NON_RUNTIME_TEST | 9 | non-runtime-evidence |
-| TECHNICAL_PRIMITIVE | 33 | technical-dependency-policy |
+| TECHNICAL_PRIMITIVE | 32 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 11 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 18 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 3 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 2 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **94** | |
+| **TOTAL** | **93** | |
 
 ### Projection dependencies
 
@@ -1822,7 +1819,6 @@ Usage de db.js / middleware / logger / utils / validators d'un transversal techn
 - `loyalty` → `auth` — technical-primitive, RUNTIME_ONLY
 - `loyalty` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `notifications` → `auth` — technical-primitive, RUNTIME_ONLY
-- `notifications` → `auth-identity` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
 - `notifications` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `orders` → `infrastructure` — technical-primitive, RUNTIME_AND_TEST
 - `payments` → `auth` — technical-primitive, RUNTIME_ONLY
@@ -1844,10 +1840,10 @@ Usage de db.js / middleware / logger / utils / validators d'un transversal techn
 
 Consommation réelle d'un service transversal métier — candidat `contract.consumes` (internal API préférée).
 
-- `auth-identity` → `notifications` — business-file-import, RUNTIME_ONLY _(exception: runtime-cycle)_
+- `auth-identity` → `notifications` — business-file-import, RUNTIME_ONLY
 - `logistics` → `notifications` — business-file-import, RUNTIME_AND_TEST
 - `loyalty` → `notifications` — business-file-import, RUNTIME_AND_TEST
-- `orders` → `notifications` — business-file-import, RUNTIME_AND_TEST
+- `orders` → `notifications` — business-file-import, RUNTIME_AND_TEST _(exception: runtime-cycle)_
 - `payments` → `documents` — business-file-import, RUNTIME_AND_TEST
 - `payments` → `notifications` — business-file-import, RUNTIME_AND_TEST
 - `payments` → `refunds` — business-file-import, RUNTIME_AND_TEST
@@ -1860,13 +1856,13 @@ Consommation réelle d'un service transversal métier — candidat `contract.con
 
 require() direct d'un fichier d'une autre business-feature — couture à casser AVANT déclaration.
 
-- `auth-identity` → `orders` — business-file-import, RUNTIME_ONLY _(exception: direct-import, ownership-suspect)_
 - `dashboard` → `catalog` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
 - `dashboard` → `purchasing` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `economic-engine` → `loyalty` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
 - `logistics` → `loyalty` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `logistics` → `payments` — business-file-import, RUNTIME_ONLY _(exception: direct-import, runtime-cycle)_
 - `logistics` → `purchasing` — business-file-import, RUNTIME_ONLY _(exception: direct-import, runtime-cycle)_
+- `notifications` → `orders` — business-file-import, RUNTIME_ONLY _(exception: direct-import, runtime-cycle)_
 - `orders` → `loyalty` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `orders` → `payments` — business-file-import, RUNTIME_AND_TEST _(exception: direct-import)_
 - `payments` → `loyalty` — business-file-import, RUNTIME_ONLY _(exception: direct-import)_
@@ -1898,24 +1894,23 @@ Consommation de decision-signals (capacité de pilotage).
 
 Ledger `governance/feature-dependency-exceptions.json` — uniquement les paires dont la politique de famille ne suffit pas (imports directs, cycles, ownership suspects). Une entrée dont la paire disparaît d'O5 devient stale (bloquant).
 
-- `auth-identity` → `notifications` — **boundary-to-break** — BUSINESS_TRANSVERSAL_SERVICE — preuve: routes/client-auth.js -> services/notification-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
-- `auth-identity` → `orders` — **ownership-review** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/authkey-client.js -> services/invoice-public-token.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration.
 - `dashboard` → `catalog` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin/index.js -> routes/admin/catalog-approval.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
 - `dashboard` → `purchasing` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin/system.js -> services/repair-ordered-without-purchase-orders.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
 - `economic-engine` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/admin-finance-config.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
 - `logistics` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/scan-operations.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
 - `logistics` → `payments` — **boundary-to-break** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/parcel-auto-create-service.js -> services/payment-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
 - `logistics` → `purchasing` — **boundary-to-break** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/pickup-secret.js -> routes/purchasing.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
-- `notifications` → `auth-identity` — **boundary-to-break** — TECHNICAL_PRIMITIVE — preuve: services/notifications/internals.js -> services/authkey-client.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
+- `notifications` → `orders` — **boundary-to-break** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/authkey-client.js -> services/invoice-public-token.js (rehomé O7.1 CAS A, ex auth-identity -> orders). Direction d'un cycle runtime réel (notifications<->orders) : couture à casser ou dépendance à inverser avant déclaration. Voir docs/O7_1_OWNERSHIP_ANALYSIS.md.
 - `orders` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/verify-qr-collection.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
+- `orders` → `notifications` — **boundary-to-break** — BUSINESS_TRANSVERSAL_SERVICE — consommation légitime du service de notification par orders (envoi de notifications commande). Direction d'un cycle runtime réel (notifications<->orders, apparu après le rehome O7.1 de services/authkey-client.js) : couture à casser ou dépendance à inverser avant déclaration.
 - `orders` → `payments` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/admin-order-refund.js -> services/payment-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
 - `payments` → `logistics` — **boundary-to-break** — BUSINESS_FEATURE_INTERFACE — preuve: services/payment-paypal.js -> routes/pickup-secret.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
 - `payments` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/payment-cash-confirm.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
 - `payments` → `purchasing` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/cash.js -> services/purchasing-trigger-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
 - `payments` → `wallet` — **boundary-to-break** — BUSINESS_FEATURE_INTERFACE — preuve: public/boutique/js/b-checkout.js -> /api/wallet. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
-- `platform-ops` → `economic-engine` — **ownership-review** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/modules.js -> services/pricing-engine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration.
-- `platform-ops` → `logistics` — **ownership-review** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/parcel-operations.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration.
-- `platform-ops` → `orders` — **ownership-review** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/order-status-machine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration.
+- `platform-ops` → `economic-engine` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/modules.js -> services/pricing-engine.js. O7.1 CAS B : OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED — routes/modules.js fait du CRUD/logique métier propre (couture, lunettes, construction) et délègue à pricing-engine.recommend() pour un calcul de prix ponctuel dans un seul sous-cas ; consommation métier réelle et légitime, pas un fichier mal rattaché à economic-engine. (La frontière platform-ops/catalog sur ce même fichier est une dette distincte, déjà documentée et délibérément différée depuis le Lot O2 — hors scope O7.1.) Voir docs/O7_1_OWNERSHIP_ANALYSIS.md.
+- `platform-ops` → `logistics` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/parcel-operations.js. O7.1 CAS C : OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED — le simulateur (surface admin /api/simulator/*, déjà documentée et acceptée dans platform-ops.feature.js) ne revendique jamais l'autorité du lifecycle colis : chaque transition passe par transitionParcelStatus(), la fonction SSOT logistics, avec un flag skipValidation explicite. Doctrine WRITER != LIFECYCLE OWNER vérifiée ligne par ligne. Voir docs/O7_1_OWNERSHIP_ANALYSIS.md.
+- `platform-ops` → `orders` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/order-status-machine.js. O7.1 CAS D : OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED — même raisonnement que CAS C : orders.status n'est jamais écrit directement, toujours via transitionOrderStatus(). Les écritures directes de payment_status (chaos desync_payment + confirmPayment) sont cohérentes avec l'usage établi ailleurs dans le code (colonne à écriture partagée, pas un lifecycle SSOT) et ne constituent pas une prise d'autorité. Voir docs/O7_1_OWNERSHIP_ANALYSIS.md.
 - `purchasing` → `logistics` — **boundary-to-break** — CROSS_FEATURE_DIRECT_IMPORT — preuve: services/purchasing-receive-service.js -> routes/scans.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration.
 - `shared-cart` → `loyalty` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/shared-cart.js -> services/loyalty-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
 - `shared-cart` → `payments` — **internal-api-required** — CROSS_FEATURE_DIRECT_IMPORT — preuve: public/boutique/js/b-share-cart.js -> public/boutique/js/b-checkout.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes.
@@ -1925,9 +1920,9 @@ Ledger `governance/feature-dependency-exceptions.json` — uniquement les paires
 
 Cycles runtime réels (après exclusion test-only + composition-root). Chaque direction porte une décision dans le ledger.
 
-- `auth-identity` ↔ `notifications` — auth-identity→notifications (BUSINESS_TRANSVERSAL_SERVICE) ; notifications→auth-identity (TECHNICAL_PRIMITIVE)
 - `logistics` ↔ `payments` — logistics→payments (CROSS_FEATURE_DIRECT_IMPORT) ; payments→logistics (BUSINESS_FEATURE_INTERFACE)
 - `logistics` ↔ `purchasing` — logistics→purchasing (CROSS_FEATURE_DIRECT_IMPORT) ; purchasing→logistics (CROSS_FEATURE_DIRECT_IMPORT)
+- `notifications` ↔ `orders` — notifications→orders (CROSS_FEATURE_DIRECT_IMPORT) ; orders→notifications (BUSINESS_TRANSVERSAL_SERVICE)
 - `payments` ↔ `wallet` — payments→wallet (BUSINESS_FEATURE_INTERFACE) ; wallet→payments (CROSS_FEATURE_DIRECT_IMPORT)
 
 ### Ontology gap coverage (flux local-manifest séparé, hors paires)

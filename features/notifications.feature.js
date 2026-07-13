@@ -41,6 +41,8 @@ module.exports = {
   files: {
     tests: [
       'core/test-whatsapp-notifications.js',
+      // tests/unit/authkey-client.test.js rehomé depuis auth-identity (O7.1)
+      'tests/unit/authkey-client.test.js',
       'tests/notifications/notification-service-internals.test.js',
       'tests/notifications/notification-service-order-parcel-otp-auth-loyalty-misc.test.js',
       'tests/notifications/whatsapp-meta-alert-engine.test.js',
@@ -73,6 +75,11 @@ module.exports = {
     ],
     services: [
       'services/whatsapp-meta.js',
+      // services/authkey-client.js rehomé depuis auth-identity (O7.1,
+      // REHOME_CONSUMER, docs/O7_1_OWNERSHIP_ANALYSIS.md CAS A) — adaptateur
+      // externe WhatsApp du fournisseur authkey.io, 100% consommé par
+      // services/notifications/*, aucune logique d'authentification.
+      'services/authkey-client.js',
       'services/notification-service.js',        // barrel historique
       'services/notifications/notification-service.js', // barrel interne — Lot C2 2026-06-28
       'services/notifications/internals.js',     // helpers partagés, logNotification

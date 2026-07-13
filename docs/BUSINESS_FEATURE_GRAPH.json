@@ -732,13 +732,6 @@
       },
       {
         "feature": "auth-identity",
-        "category": "services",
-        "declared": "services/authkey-client.js",
-        "resolvedPath": "services/authkey-client.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "auth-identity",
         "category": "routes",
         "declared": "routes/client-auth.js",
         "resolvedPath": "routes/client-auth.js",
@@ -791,13 +784,6 @@
         "category": "tests",
         "declared": "tests/integration/otp-no-guest.test.js",
         "resolvedPath": "tests/integration/otp-no-guest.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "auth-identity",
-        "category": "tests",
-        "declared": "tests/unit/authkey-client.test.js",
-        "resolvedPath": "tests/unit/authkey-client.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6949,6 +6935,13 @@
       {
         "feature": "notifications",
         "category": "tests",
+        "declared": "tests/unit/authkey-client.test.js",
+        "resolvedPath": "tests/unit/authkey-client.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "notifications",
+        "category": "tests",
         "declared": "tests/notifications/notification-service-internals.test.js",
         "resolvedPath": "tests/notifications/notification-service-internals.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7091,6 +7084,13 @@
         "category": "services",
         "declared": "services/whatsapp-meta.js",
         "resolvedPath": "services/whatsapp-meta.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "notifications",
+        "category": "services",
+        "declared": "services/authkey-client.js",
+        "resolvedPath": "services/authkey-client.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -15769,10 +15769,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/authkey-client.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
                 "sourceFileId": "routes/client-auth.js",
                 "targetFile": "db.js"
               },
@@ -15855,22 +15851,6 @@
               {
                 "sourceFileId": "routes/otp.js",
                 "targetFile": "services/notification-service.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
-        "from": "auth-identity",
-        "to": "orders",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/authkey-client.js",
-                "targetFile": "services/invoice-public-token.js"
               }
             ]
           }
@@ -18667,30 +18647,6 @@
       },
       {
         "from": "notifications",
-        "to": "auth-identity",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "tests/unit/notification-internals.test.js",
-                "targetFile": "services/authkey-client.js"
-              },
-              {
-                "sourceFileId": "tests/unit/notification-service.test.js",
-                "targetFile": "services/authkey-client.js"
-              },
-              {
-                "sourceFileId": "services/notifications/internals.js",
-                "targetFile": "services/authkey-client.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
-        "from": "notifications",
         "to": "decision-signals",
         "channels": [
           {
@@ -18741,6 +18697,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/authkey-client.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "services/notifications/internals.js",
                 "targetFile": "db.js"
               },
@@ -18759,6 +18719,22 @@
               {
                 "sourceFileId": "routes/meta-whatsapp.js",
                 "targetFile": "utils/logger.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "notifications",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/authkey-client.js",
+                "targetFile": "services/invoice-public-token.js"
               }
             ]
           }
@@ -21716,7 +21692,7 @@
       "PROJECTION": 9,
       "COMPOSITION_ROOT_WIRING": 9,
       "NON_RUNTIME_TEST": 9,
-      "TECHNICAL_PRIMITIVE": 33,
+      "TECHNICAL_PRIMITIVE": 32,
       "BUSINESS_TRANSVERSAL_SERVICE": 11,
       "CROSS_FEATURE_DIRECT_IMPORT": 18,
       "BUSINESS_FEATURE_INTERFACE": 3,
@@ -21961,28 +21937,8 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
-      },
-      {
-        "from": "auth-identity",
-        "to": "orders",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "ownership-suspect"
-        ]
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "catalog",
@@ -22510,23 +22466,6 @@
       },
       {
         "from": "notifications",
-        "to": "auth-identity",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-transversal",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
-      },
-      {
-        "from": "notifications",
         "to": "decision-signals",
         "family": "PILOTING_CAPABILITY",
         "evidenceRole": "RUNTIME_AND_TEST",
@@ -22554,6 +22493,24 @@
         "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
+      },
+      {
+        "from": "notifications",
+        "to": "orders",
+        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "boundary-remediation-required",
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "direct-import",
+          "runtime-cycle"
+        ]
       },
       {
         "from": "orders",
@@ -22599,8 +22556,10 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
+        "exceptionRequired": true,
+        "exceptionReasons": [
+          "runtime-cycle"
+        ]
       },
       {
         "from": "orders",
@@ -23199,10 +23158,9 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|technical-transversal|technical-transversal|technical-primitive": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 5,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|technical-primitive": 10,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|technical-primitive": 7,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-transversal|business-feature|business-file-import": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-transversal|business-feature|business-file-import": 2,
       "PILOTING_CAPABILITY|RUNTIME_AND_TEST|business-transversal|piloting-capability|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-transversal|technical-primitive": 5,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-transversal|business-feature|business-file-import": 1,
@@ -23218,33 +23176,14 @@
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 5,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 9,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-transversal|business-file-import": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 2,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 2,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|business-feature|business-transversal|business-file-import": 1
     },
     "runtimeCycles": [
-      {
-        "nodes": [
-          "auth-identity",
-          "notifications"
-        ],
-        "key": "auth-identity<->notifications",
-        "directions": [
-          {
-            "from": "auth-identity",
-            "to": "notifications",
-            "family": "BUSINESS_TRANSVERSAL_SERVICE"
-          },
-          {
-            "from": "notifications",
-            "to": "auth-identity",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
-      },
       {
         "nodes": [
           "logistics",
@@ -23285,6 +23224,25 @@
       },
       {
         "nodes": [
+          "notifications",
+          "orders"
+        ],
+        "key": "notifications<->orders",
+        "directions": [
+          {
+            "from": "notifications",
+            "to": "orders",
+            "family": "CROSS_FEATURE_DIRECT_IMPORT"
+          },
+          {
+            "from": "orders",
+            "to": "notifications",
+            "family": "BUSINESS_TRANSVERSAL_SERVICE"
+          }
+        ]
+      },
+      {
+        "nodes": [
           "payments",
           "wallet"
         ],
@@ -23304,18 +23262,6 @@
       }
     ],
     "exceptions": [
-      {
-        "from": "auth-identity",
-        "to": "notifications",
-        "decision": "boundary-to-break",
-        "rationale": "BUSINESS_TRANSVERSAL_SERVICE — preuve: routes/client-auth.js -> services/notification-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
-      },
-      {
-        "from": "auth-identity",
-        "to": "orders",
-        "decision": "ownership-review",
-        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/authkey-client.js -> services/invoice-public-token.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
-      },
       {
         "from": "dashboard",
         "to": "catalog",
@@ -23354,15 +23300,21 @@
       },
       {
         "from": "notifications",
-        "to": "auth-identity",
+        "to": "orders",
         "decision": "boundary-to-break",
-        "rationale": "TECHNICAL_PRIMITIVE — preuve: services/notifications/internals.js -> services/authkey-client.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/authkey-client.js -> services/invoice-public-token.js (rehomé O7.1 CAS A, ex auth-identity -> orders). Direction d'un cycle runtime réel (notifications<->orders) : couture à casser ou dépendance à inverser avant déclaration. Voir docs/O7_1_OWNERSHIP_ANALYSIS.md."
       },
       {
         "from": "orders",
         "to": "loyalty",
         "decision": "internal-api-required",
         "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/verify-qr-collection.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
+      },
+      {
+        "from": "orders",
+        "to": "notifications",
+        "decision": "boundary-to-break",
+        "rationale": "BUSINESS_TRANSVERSAL_SERVICE — consommation légitime du service de notification par orders (envoi de notifications commande). Direction d'un cycle runtime réel (notifications<->orders, apparu après le rehome O7.1 de services/authkey-client.js) : couture à casser ou dépendance à inverser avant déclaration."
       },
       {
         "from": "orders",
@@ -23397,20 +23349,20 @@
       {
         "from": "platform-ops",
         "to": "economic-engine",
-        "decision": "ownership-review",
-        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/modules.js -> services/pricing-engine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/modules.js -> services/pricing-engine.js. O7.1 CAS B : OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED — routes/modules.js fait du CRUD/logique métier propre (couture, lunettes, construction) et délègue à pricing-engine.recommend() pour un calcul de prix ponctuel dans un seul sous-cas ; consommation métier réelle et légitime, pas un fichier mal rattaché à economic-engine. (La frontière platform-ops/catalog sur ce même fichier est une dette distincte, déjà documentée et délibérément différée depuis le Lot O2 — hors scope O7.1.) Voir docs/O7_1_OWNERSHIP_ANALYSIS.md."
       },
       {
         "from": "platform-ops",
         "to": "logistics",
-        "decision": "ownership-review",
-        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/parcel-operations.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/parcel-operations.js. O7.1 CAS C : OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED — le simulateur (surface admin /api/simulator/*, déjà documentée et acceptée dans platform-ops.feature.js) ne revendique jamais l'autorité du lifecycle colis : chaque transition passe par transitionParcelStatus(), la fonction SSOT logistics, avec un flag skipValidation explicite. Doctrine WRITER != LIFECYCLE OWNER vérifiée ligne par ligne. Voir docs/O7_1_OWNERSHIP_ANALYSIS.md."
       },
       {
         "from": "platform-ops",
         "to": "orders",
-        "decision": "ownership-review",
-        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/order-status-machine.js. Transversal technique important directement un fichier de business-feature : revoir l'ownership avant toute déclaration."
+        "decision": "internal-api-required",
+        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/order-status-machine.js. O7.1 CAS D : OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED — même raisonnement que CAS C : orders.status n'est jamais écrit directement, toujours via transitionOrderStatus(). Les écritures directes de payment_status (chaos desync_payment + confirmPayment) sont cohérentes avec l'usage établi ailleurs dans le code (colonne à écriture partagée, pas un lifecycle SSOT) et ne constituent pas une prise d'autorité. Voir docs/O7_1_OWNERSHIP_ANALYSIS.md."
       },
       {
         "from": "purchasing",
@@ -25331,7 +25283,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 11 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25342,11 +25294,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> notifications",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"orders\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25520,18 +25467,18 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "notifications -> auth-identity",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"auth-identity\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "notifications -> decision-signals",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"decision-signals\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "notifications -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 11 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "notifications -> orders",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"orders\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

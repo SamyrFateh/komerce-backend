@@ -1,7 +1,6 @@
 {
   "orphanEmit": [
-    "sidebar:built",
-    "toast"
+    "sidebar:built"
   ],
   "orphanListen": [
     "modal:product-changed"
@@ -11,11 +10,9 @@
     "modal:closed",
     "modal:opened",
     "modal:product-changed",
-    "modal:suggestions-rendered",
     "sidebar:built",
-    "toast",
     "view:changed"
   ],
   "notFoundEndpoints": [],
-  "savedAt": "2026-06-28T13:56:08.983Z"
+  "savedAt": "2026-07-13T11:29:29.977Z"
 }

@@ -1,10 +1,8 @@
 {
-  "phantomSeams": [
-    "/api/v2/scan"
-  ],
+  "phantomSeams": [],
   "sharedEndpoints": [
     "/api/orders",
     "/api/products"
   ],
-  "savedAt": "2026-06-20T14:00:53.285Z"
+  "savedAt": "2026-07-13T11:29:21.734Z"
 }

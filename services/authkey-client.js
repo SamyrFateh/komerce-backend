@@ -1,8 +1,8 @@
 /**
  * @komerce-arch
- * @role          auth-authkey-client
- * @domain        auth-identity
- * @layer         service
+ * @role          authkey-whatsapp-adapter
+ * @domain        notification
+ * @layer         external-adapter
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
@@ -12,8 +12,12 @@
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  auth
- * @version       2026-06
+ * @impact-areas  whatsapp, otp, notifications, orders, invoices
+ * @version       2026-07
+ * @rehomed       O7.1 (2026-07) — depuis auth-identity ; "AuthKey" est le
+ *                fournisseur tiers d'API WhatsApp (authkey.io), collision de
+ *                nom avec "auth". Aucune logique d'authentification. Voir
+ *                docs/O7_1_OWNERSHIP_ANALYSIS.md, CAS A.
  */
 
 'use strict';

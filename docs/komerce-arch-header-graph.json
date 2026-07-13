@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 741,
-    "edges": 4245,
+    "edges": 4249,
     "dbTables": 110,
     "doctrines": 139,
     "impactAreas": 125,
@@ -31,7 +31,7 @@
   },
   "byDomain": {
     "infrastructure": 20,
-    "notification": 15,
+    "notification": 16,
     "auth": 8,
     "logistics": 35,
     "boutique": 36,
@@ -47,7 +47,7 @@
     "dashboard": 28,
     "orders": 23,
     "documents": 11,
-    "auth-identity": 5,
+    "auth-identity": 4,
     "operations": 11,
     "inventory": 2,
     "loyalty": 2,
@@ -84,11 +84,11 @@
     "view-model": 3,
     "route": 100,
     "entrypoint": 1,
-    "service": 147,
+    "service": 146,
+    "external-adapter": 2,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
-    "external-adapter": 1,
     "validators": 1
   },
   "byCriticality": {
@@ -8796,9 +8796,9 @@
       "file": "services/authkey-client.js",
       "type": "file",
       "headerType": "full",
-      "role": "auth-authkey-client",
-      "domain": "auth-identity",
-      "layer": "service",
+      "role": "authkey-whatsapp-adapter",
+      "domain": "notification",
+      "layer": "external-adapter",
       "criticality": "high",
       "owner": null,
       "purpose": null,
@@ -8827,9 +8827,13 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "auth"
+        "whatsapp",
+        "otp",
+        "notifications",
+        "orders",
+        "invoices"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "services/auto-parcel.js",
@@ -19087,6 +19091,11 @@
       "area": "crons"
     },
     {
+      "id": "impact:invoices",
+      "type": "impact-area",
+      "area": "invoices"
+    },
+    {
       "id": "impact:customs",
       "type": "impact-area",
       "area": "customs"
@@ -19125,11 +19134,6 @@
       "id": "impact:finance-config",
       "type": "impact-area",
       "area": "finance-config"
-    },
-    {
-      "id": "impact:invoices",
-      "type": "impact-area",
-      "area": "invoices"
     },
     {
       "id": "impact:dashboards",
@@ -31610,9 +31614,33 @@
     },
     {
       "from": "services/authkey-client.js",
-      "to": "impact:auth",
+      "to": "impact:whatsapp",
       "type": "impact",
-      "label": "auth"
+      "label": "whatsapp"
+    },
+    {
+      "from": "services/authkey-client.js",
+      "to": "impact:otp",
+      "type": "impact",
+      "label": "otp"
+    },
+    {
+      "from": "services/authkey-client.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
+    },
+    {
+      "from": "services/authkey-client.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/authkey-client.js",
+      "to": "impact:invoices",
+      "type": "impact",
+      "label": "invoices"
     },
     {
       "from": "services/auto-parcel.js",
@@ -53326,8 +53354,8 @@
       ]
     },
     "services/authkey-client.js": {
-      "role": "auth-authkey-client",
-      "domain": "auth-identity",
+      "role": "authkey-whatsapp-adapter",
+      "domain": "notification",
       "criticality": "high",
       "headerType": "full",
       "owner": null,
@@ -53347,11 +53375,19 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "auth"
+        "whatsapp",
+        "otp",
+        "notifications",
+        "orders",
+        "invoices"
       ],
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
-        "impact:auth",
+        "impact:invoices",
+        "impact:notifications",
+        "impact:orders",
+        "impact:otp",
+        "impact:whatsapp",
         "services/invoice-public-token.js",
         "services/notifications/internals.js",
         "services/notifications/loyalty.js",
