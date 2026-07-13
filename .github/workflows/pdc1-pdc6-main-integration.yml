@@ -36,57 +36,78 @@ jobs:
           test "$(git rev-parse origin/feat/pdc6-legacy-modal-extinction-final)" = "1cf302c482f2c76ed4a10028e241006324998c48"
 
       - name: Merge cumulative PDC-1 to PDC-6
-        id: merge
         run: |
           set -euo pipefail
-          if git merge-base --is-ancestor 1cf302c482f2c76ed4a10028e241006324998c48 HEAD; then
-            echo "already_integrated=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          if ! git merge-base --is-ancestor 1cf302c482f2c76ed4a10028e241006324998c48 HEAD; then
+            if ! git merge --no-ff -X ours 1cf302c482f2c76ed4a10028e241006324998c48 \
+              -m "integration(pdc): merge PDC-1→PDC-6 into main"; then
+              echo "Automatic conservative merge did not resolve every conflict."
+              git diff --name-only --diff-filter=U
+              exit 1
+            fi
           fi
-
-          if ! git merge --no-ff -X ours 1cf302c482f2c76ed4a10028e241006324998c48 \
-            -m "integration(pdc): merge PDC-1→PDC-6 into main"; then
-            echo "Automatic conservative merge did not resolve every conflict."
-            echo "Unmerged paths:"
-            git diff --name-only --diff-filter=U
-            exit 1
-          fi
-
-          echo "already_integrated=false" >> "$GITHUB_OUTPUT"
+          rm -f .github/pdc1-pdc6-main.trigger
 
       - name: Install dependencies
-        if: steps.merge.outputs.already_integrated != 'true'
         run: npm ci
 
       - name: Regenerate canonical architecture artifacts
-        if: steps.merge.outputs.already_integrated != 'true'
         run: |
           npm run arch:gen
           npm run dashboards:360
           npm run boutique:360
           npm run meta:graph
 
-      - name: Validate PDC and governance
-        if: steps.merge.outputs.already_integrated != 'true'
+      - name: Run integration validations with exact diagnostics
+        id: validate
+        shell: bash
         run: |
-          npm --prefix public/boutique run check:fast
-          npm run feature:registry
-          npm run gate:schema
-          npm run gate:docs-lint
-          npm run gate:boutique-ownership
-          npm run map:check
+          set +e
+          validation_dir="$RUNNER_TEMP/pdc-validation"
+          logs_dir="$validation_dir/logs"
+          summary="$validation_dir/validation-summary.txt"
+          mkdir -p "$logs_dir"
+          : > "$summary"
+          overall=0
 
-      - name: Prove PDC-6 legacy extinction
-        if: steps.merge.outputs.already_integrated != 'true'
-        run: |
-          set -euo pipefail
-          ! grep -n "_renderVariants" public/boutique/js/b-modal-core.js public/boutique/js/b-modal-product.js
-          ! grep -nE "fetch\([^\n]*api/products/.+[^/]detail" public/boutique/js/b-modal-core.js
-          test ! -e public/boutique/js/view-models/modal-view-model.js
-          test ! -e public/boutique/js/b-modal-mobile-product-bootstrap.js
+          run_check() {
+            name="$1"
+            shift
+            echo "=== $name ===" | tee -a "$summary"
+            "$@" >"$logs_dir/$name.log" 2>&1
+            rc=$?
+            echo "$name=$rc" | tee -a "$summary"
+            if [ "$rc" -ne 0 ]; then
+              overall=1
+              echo "--- tail $name ---" >> "$summary"
+              tail -120 "$logs_dir/$name.log" >> "$summary"
+              echo "--- end tail $name ---" >> "$summary"
+            fi
+          }
 
-      - name: Commit generated artifacts and push integration
-        if: steps.merge.outputs.already_integrated != 'true'
+          run_check boutique-fast npm --prefix public/boutique run check:fast
+          run_check feature-registry npm run feature:registry
+          run_check gate-schema npm run gate:schema
+          run_check docs-lint npm run gate:docs-lint
+          run_check boutique-ownership npm run gate:boutique-ownership
+          run_check map-check npm run map:check
+
+          legacy_rc=0
+          : > "$logs_dir/pdc6-legacy.log"
+          grep -n "_renderVariants" public/boutique/js/b-modal-core.js public/boutique/js/b-modal-product.js >>"$logs_dir/pdc6-legacy.log" 2>&1 && legacy_rc=1
+          grep -nE "fetch\([^\n]*api/products/.+[^/]detail" public/boutique/js/b-modal-core.js >>"$logs_dir/pdc6-legacy.log" 2>&1 && legacy_rc=1
+          test ! -e public/boutique/js/view-models/modal-view-model.js || legacy_rc=1
+          test ! -e public/boutique/js/b-modal-mobile-product-bootstrap.js || legacy_rc=1
+          echo "pdc6-legacy-extinction=$legacy_rc" | tee -a "$summary"
+          if [ "$legacy_rc" -ne 0 ]; then
+            overall=1
+            cat "$logs_dir/pdc6-legacy.log" >> "$summary"
+          fi
+
+          echo "overall=$overall" | tee -a "$summary"
+          echo "overall=$overall" >> "$GITHUB_OUTPUT"
+
+      - name: Commit merged tree and generated artifacts to integration branch
         run: |
           git add -A
           if ! git diff --cached --quiet; then
@@ -94,3 +115,17 @@ jobs:
           fi
           git status --short
           git push origin HEAD:integration/pdc1-pdc6-main
+
+      - name: Upload validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdc1-pdc6-integration-validation
+          path: ${{ runner.temp }}/pdc-validation/
+          retention-days: 7
+
+      - name: Enforce validation result
+        if: steps.validate.outputs.overall != '0'
+        run: |
+          cat "$RUNNER_TEMP/pdc-validation/validation-summary.txt"
+          exit 1
