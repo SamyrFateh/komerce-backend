@@ -56,17 +56,17 @@
 
 Synthèse de couverture par scope et identités métier cross-scope. Voir mission O4 §13.
 
-> **Note de terminologie (Lot O4-2, point 9)** — "cross-repo" dans les livrables O4 précédents désignait en réalité un franchissement de **scope** (frontière de gouvernance : manifests/registre/autorité propres à backend, dash, boutique), pas nécessairement un franchissement de **dépôt Git séparé**. Le tableau ci-dessous constate la relation réelle par scope. Tant qu'une ligne n'affiche pas `separate-git-checkout`, "cross-repo" doit se lire "cross-scope" — un franchissement de frontière de gouvernance à l'intérieur du même arbre versionné.
+> **Note de terminologie (Lot O4-2, point 9)** — "cross-repo" dans les livrables O4 précédents désignait en réalité un franchissement de **scope** (frontière de gouvernance : manifests/registre/autorité propres à backend, dash, boutique), pas nécessairement un franchissement d'**arbre** séparé. Le tableau ci-dessous constate la relation réelle par scope, dérivée uniquement des chemins configurés (déterministe, indépendante de la présence de `.git`). Tant qu'une ligne n'affiche pas `external-path-scope`, "cross-repo" doit se lire "cross-scope" — un franchissement de frontière de gouvernance à l'intérieur du même arbre.
 
-### Topologie des scopes (relation Git réelle)
+### Topologie des scopes (relation de chemin constatée)
 
-| Scope | Chemin monté | Relation constatée | Sous ROOT ? | .git propre ? |
-|---|---|---|---|---|
-| backend | `.` | `self` | — | — |
-| dash | `public` | `same-repository-subdirectory` | oui | non |
-| boutique | `public\boutique` | `same-repository-subdirectory` | oui | non |
+| Scope | Chemin monté | Relation constatée | Sous ROOT ? |
+|---|---|---|---|
+| backend | `.` | `self` | — |
+| dash | `public` | `same-tree-scope` | oui |
+| boutique | `public/boutique` | `same-tree-scope` | oui |
 
-_"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="separate-git-checkout" ci-dessus pour le scope concerné._
+_"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="external-path-scope" ci-dessus pour le scope concerné._
 
 ### Par dépôt
 

@@ -2,38 +2,38 @@
   "version": "O5-1.0",
   "generatedFrom": {
     "featureManifests": [
-      "features\\auth.feature.js",
-      "features\\auth-identity.feature.js",
-      "features\\catalog.feature.js",
-      "features\\customs.feature.js",
-      "features\\dashboard.feature.js",
-      "features\\documents.feature.js",
-      "features\\economic-engine.feature.js",
-      "features\\incident-management.feature.js",
-      "features\\infrastructure.feature.js",
-      "features\\inventory.feature.js",
-      "features\\logistics.feature.js",
-      "features\\loyalty.feature.js",
-      "features\\notifications.feature.js",
-      "features\\orders.feature.js",
-      "features\\payments.feature.js",
-      "features\\platform-ops.feature.js",
-      "features\\purchasing.feature.js",
-      "features\\recommendations.feature.js",
-      "features\\refunds.feature.js",
-      "features\\shared-cart.feature.js",
-      "features\\sourcing.feature.js",
-      "features\\unsold-resolution.feature.js",
-      "features\\wallet.feature.js",
-      "features\\wallet-loyalty.feature.js",
+      "features/auth.feature.js",
+      "features/auth-identity.feature.js",
+      "features/catalog.feature.js",
+      "features/customs.feature.js",
+      "features/dashboard.feature.js",
+      "features/documents.feature.js",
+      "features/economic-engine.feature.js",
+      "features/incident-management.feature.js",
+      "features/infrastructure.feature.js",
+      "features/inventory.feature.js",
+      "features/logistics.feature.js",
+      "features/loyalty.feature.js",
+      "features/notifications.feature.js",
+      "features/orders.feature.js",
+      "features/payments.feature.js",
+      "features/platform-ops.feature.js",
+      "features/purchasing.feature.js",
+      "features/recommendations.feature.js",
+      "features/refunds.feature.js",
+      "features/shared-cart.feature.js",
+      "features/sourcing.feature.js",
+      "features/unsold-resolution.feature.js",
+      "features/wallet.feature.js",
+      "features/wallet-loyalty.feature.js",
       "dash:dashboards/features/admin-dashboard.feature.js",
       "dash:dashboards/features/legacy-control-tower.feature.js",
       "dash:features/platform.feature.js",
-      "capabilities\\decision-signals.capability.js"
+      "capabilities/decision-signals.capability.js"
     ],
-    "technicalArchitectureGraph": "docs\\komerce-arch-header-graph.json",
-    "openapiContract": "docs\\contract\\openapi.json",
-    "boutiqueRoot": "public\\boutique",
+    "technicalArchitectureGraph": "docs/komerce-arch-header-graph.json",
+    "openapiContract": "docs/contract/openapi.json",
+    "boutiqueRoot": "public/boutique",
     "dashRoot": "public"
   },
   "scope": {
@@ -70,7 +70,7 @@
       {
         "id": "feature:auth",
         "name": "auth",
-        "file": "features\\auth.feature.js",
+        "file": "features/auth.feature.js",
         "legacyType": "transversal",
         "status": "production",
         "owner": "backend-core",
@@ -86,7 +86,7 @@
       {
         "id": "feature:auth-identity",
         "name": "auth-identity",
-        "file": "features\\auth-identity.feature.js",
+        "file": "features/auth-identity.feature.js",
         "legacyType": "transversal",
         "status": "production",
         "owner": "backend-core",
@@ -102,7 +102,7 @@
       {
         "id": "feature:catalog",
         "name": "catalog",
-        "file": "features\\catalog.feature.js",
+        "file": "features/catalog.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -118,7 +118,7 @@
       {
         "id": "feature:customs",
         "name": "customs",
-        "file": "features\\customs.feature.js",
+        "file": "features/customs.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -134,7 +134,7 @@
       {
         "id": "feature:dashboard",
         "name": "dashboard",
-        "file": "features\\dashboard.feature.js",
+        "file": "features/dashboard.feature.js",
         "legacyType": "transversal",
         "status": "production",
         "owner": "backend-core",
@@ -150,7 +150,7 @@
       {
         "id": "feature:documents",
         "name": "documents",
-        "file": "features\\documents.feature.js",
+        "file": "features/documents.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -166,7 +166,7 @@
       {
         "id": "feature:economic-engine",
         "name": "economic-engine",
-        "file": "features\\economic-engine.feature.js",
+        "file": "features/economic-engine.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -182,7 +182,7 @@
       {
         "id": "feature:incident-management",
         "name": "incident-management",
-        "file": "features\\incident-management.feature.js",
+        "file": "features/incident-management.feature.js",
         "legacyType": "transversal",
         "status": "production",
         "owner": "backend-core",
@@ -198,7 +198,7 @@
       {
         "id": "feature:infrastructure",
         "name": "infrastructure",
-        "file": "features\\infrastructure.feature.js",
+        "file": "features/infrastructure.feature.js",
         "legacyType": "transversal",
         "status": "production",
         "owner": "backend",
@@ -214,7 +214,7 @@
       {
         "id": "feature:inventory",
         "name": "inventory",
-        "file": "features\\inventory.feature.js",
+        "file": "features/inventory.feature.js",
         "legacyType": "feature",
         "status": "staging",
         "owner": "backend-core",
@@ -230,7 +230,7 @@
       {
         "id": "feature:logistics",
         "name": "logistics",
-        "file": "features\\logistics.feature.js",
+        "file": "features/logistics.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -246,7 +246,7 @@
       {
         "id": "feature:loyalty",
         "name": "loyalty",
-        "file": "features\\loyalty.feature.js",
+        "file": "features/loyalty.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -262,7 +262,7 @@
       {
         "id": "feature:notifications",
         "name": "notifications",
-        "file": "features\\notifications.feature.js",
+        "file": "features/notifications.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -278,7 +278,7 @@
       {
         "id": "feature:orders",
         "name": "orders",
-        "file": "features\\orders.feature.js",
+        "file": "features/orders.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -294,7 +294,7 @@
       {
         "id": "feature:payments",
         "name": "payments",
-        "file": "features\\payments.feature.js",
+        "file": "features/payments.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -310,7 +310,7 @@
       {
         "id": "feature:platform-ops",
         "name": "platform-ops",
-        "file": "features\\platform-ops.feature.js",
+        "file": "features/platform-ops.feature.js",
         "legacyType": "transversal",
         "status": "production",
         "owner": "backend-core",
@@ -326,7 +326,7 @@
       {
         "id": "feature:purchasing",
         "name": "purchasing",
-        "file": "features\\purchasing.feature.js",
+        "file": "features/purchasing.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -342,7 +342,7 @@
       {
         "id": "feature:recommendations",
         "name": "recommendations",
-        "file": "features\\recommendations.feature.js",
+        "file": "features/recommendations.feature.js",
         "legacyType": "feature",
         "status": "staging",
         "owner": "backend-core",
@@ -358,7 +358,7 @@
       {
         "id": "feature:refunds",
         "name": "refunds",
-        "file": "features\\refunds.feature.js",
+        "file": "features/refunds.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -374,7 +374,7 @@
       {
         "id": "feature:shared-cart",
         "name": "shared-cart",
-        "file": "features\\shared-cart.feature.js",
+        "file": "features/shared-cart.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -390,7 +390,7 @@
       {
         "id": "feature:sourcing",
         "name": "sourcing",
-        "file": "features\\sourcing.feature.js",
+        "file": "features/sourcing.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -406,7 +406,7 @@
       {
         "id": "feature:unsold-resolution",
         "name": "unsold-resolution",
-        "file": "features\\unsold-resolution.feature.js",
+        "file": "features/unsold-resolution.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -422,7 +422,7 @@
       {
         "id": "feature:wallet",
         "name": "wallet",
-        "file": "features\\wallet.feature.js",
+        "file": "features/wallet.feature.js",
         "legacyType": "feature",
         "status": "production",
         "owner": "backend-core",
@@ -438,7 +438,7 @@
       {
         "id": "feature:wallet-loyalty",
         "name": "wallet-loyalty",
-        "file": "features\\wallet-loyalty.feature.js",
+        "file": "features/wallet-loyalty.feature.js",
         "legacyType": "feature",
         "status": "deprecated",
         "owner": "backend-core",
@@ -502,7 +502,7 @@
       {
         "id": "feature:decision-signals",
         "name": "decision-signals",
-        "file": "capabilities\\decision-signals.capability.js",
+        "file": "capabilities/decision-signals.capability.js",
         "legacyType": null,
         "status": "staging",
         "owner": "backend-core",
@@ -23122,20 +23122,16 @@
     "dash": {
       "mountPath": "public",
       "mounted": true,
-      "relation": "same-repository-subdirectory",
-      "hasOwnGitDir": false,
-      "rootHasGitDir": true,
+      "relation": "same-tree-scope",
       "isNestedUnderRoot": true
     },
     "boutique": {
-      "mountPath": "public\\boutique",
+      "mountPath": "public/boutique",
       "mounted": true,
-      "relation": "same-repository-subdirectory",
-      "hasOwnGitDir": false,
-      "rootHasGitDir": true,
+      "relation": "same-tree-scope",
       "isNestedUnderRoot": true
     },
-    "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation=\"separate-git-checkout\" ci-dessus pour le scope concerné."
+    "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation=\"external-path-scope\" ci-dessus pour le scope concerné."
   },
   "drifts": {
     "error": [],
