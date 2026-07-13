@@ -4,17 +4,19 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
+  push:
+    branches: [integration/pdc1-pdc6-main]
 
 permissions:
   contents: write
 
 concurrency:
-  group: pdc1-pdc6-main-integration-${{ github.event.pull_request.number }}
+  group: pdc1-pdc6-main-integration-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   integrate:
-    if: github.head_ref == 'integration/pdc1-pdc6-main'
+    if: github.ref_name == 'integration/pdc1-pdc6-main' || github.head_ref == 'integration/pdc1-pdc6-main'
     runs-on: ubuntu-latest
 
     steps:
