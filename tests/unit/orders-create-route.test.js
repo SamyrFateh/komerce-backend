@@ -40,8 +40,12 @@ jest.mock('../../middleware/validate', () => ({
   validate: () => (req, _res, next) => next(),
 }));
 
-jest.mock('../../routes/loyalty', () => ({
+// O7.3 (provider loyalty) : fusion des deux mocks loyalty-service (getLoyaltyDiscount
+// venait auparavant de routes/loyalty.js, désormais du même module que
+// handleOrderConfirmed). Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+jest.mock('../../services/loyalty-service', () => ({
   getLoyaltyDiscount: jest.fn(),
+  handleOrderConfirmed: jest.fn().mockResolvedValue({ skipped: true }),
 }));
 
 jest.mock('../../utils/rules', () => ({
@@ -87,16 +91,14 @@ jest.mock('../../services/order-cost-snapshot', () => ({
   lockEstimatedCostsForOrder: jest.fn(),
 }));
 
-jest.mock('../../services/loyalty-service', () => ({
-  handleOrderConfirmed: jest.fn().mockResolvedValue({ skipped: true }),
-}));
+// handleOrderConfirmed mocké dans le jest.mock('../../services/loyalty-service', ...) plus haut
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
 const db = require('../../db');
-const { getLoyaltyDiscount } = require('../../routes/loyalty');
+const { getLoyaltyDiscount } = require('../../services/loyalty-service');
 const { getRule } = require('../../utils/rules');
 const { getRates } = require('../../utils/rates');
 const { getUniqueRef, generateCashCode, generatePickupCode } = require('../../services/order-service');

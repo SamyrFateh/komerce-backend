@@ -32,6 +32,16 @@ jest.mock('../../js/b-phone.js', () => ({
   buildE164: jest.fn((value) => value),
   digitsOnly: jest.fn((value) => String(value || '').replace(/\D/g, '')),
   prettifyLocal: jest.fn((value) => value),
+  // O7.3 (provider payments) : makeIntlPhoneInput mocké ici désormais —
+  // b-share-cart.js l'importe directement depuis b-phone.js (son vrai
+  // propriétaire, auth-identity), plus via b-checkout.js. Voir
+  // docs/O7_3_BOUNDARY_ANALYSIS.md.
+  makeIntlPhoneInput: jest.fn(() => {
+    const group = global.document.createElement('div');
+    group.className = 'k-ck-group';
+    group.innerHTML = '<label class="k-ck-label"></label><div class="k-ck-phone-wrap"><select class="k-ck-phone-select"></select><input id="k-sm-ph" class="k-ck-phone-input"></div>';
+    return group;
+  }),
 }));
 
 jest.mock('../../js/b-checkout.js', () => ({
@@ -47,12 +57,6 @@ jest.mock('../../js/b-checkout.js', () => ({
     input.placeholder = placeholder || '';
     input.addEventListener('input', () => { data[key] = input.value; });
     group.append(labelEl, input);
-    return group;
-  }),
-  makeIntlPhoneInput: jest.fn(() => {
-    const group = global.document.createElement('div');
-    group.className = 'k-ck-group';
-    group.innerHTML = '<label class="k-ck-label"></label><div class="k-ck-phone-wrap"><select class="k-ck-phone-select"></select><input id="k-sm-ph" class="k-ck-phone-input"></div>';
     return group;
   }),
 }));

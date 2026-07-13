@@ -174,7 +174,9 @@ async function verifyQrCollection({ token, orderId, user }) {
 
     if (order.user_id) {
       try {
-        const { recalculateLoyalty } = require('../routes/loyalty');
+        // O7.3 (provider loyalty) : importait auparavant routes/loyalty.js
+        // (une route, pas une boundary de feature). Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+        const { recalculateLoyalty } = require('./loyalty-service');
         recalculateLoyalty(db, order.user_id)
           .catch(e => log.error({ err: e }, '[LOYALTY] recalculate error:'));
       } catch (_) { /* non-bloquant */ }

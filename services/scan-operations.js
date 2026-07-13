@@ -453,7 +453,9 @@ async function verifyQr(body, user) {
 
     // Recalculer fidélité (non bloquant)
     if (order.user_id) {
-      const { recalculateLoyalty } = require('../routes/loyalty');
+      // O7.3 (provider loyalty) : importait auparavant routes/loyalty.js
+      // (une route, pas une boundary de feature). Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+      const { recalculateLoyalty } = require('./loyalty-service');
       recalculateLoyalty(db, order.user_id)
         .catch(e => log.error({ err: e }, '[LOYALTY] recalculate error:'));
     }

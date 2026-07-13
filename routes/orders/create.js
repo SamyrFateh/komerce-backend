@@ -30,7 +30,9 @@ const { randomUUID: uuidv4 } = require('crypto');
 const db      = require('../../db');
 const { authenticate }                   = require('../../middleware/auth');
 const { authenticateOrCreateGuest }      = require('../../middleware/auth-guest');
-const { getLoyaltyDiscount }             = require('../loyalty');
+// O7.3 (provider loyalty) : importait auparavant '../loyalty' (routes/loyalty.js,
+// une route — pas une boundary de feature). Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+const { getLoyaltyDiscount }             = require('../../services/loyalty-service');
 const { getRule }                        = require('../../utils/rules');
 const { appendOrderHistoryNote }         = require('../../services/order-status-machine');
 const { getRates }                       = require('../../utils/rates');

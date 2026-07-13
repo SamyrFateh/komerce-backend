@@ -277,6 +277,15 @@ module.exports = {
       'GET /api/v2/parcels/kpis',
       'GET /api/v2/parcels/reconciliation',
     ],
+    // O7.3 (provider logistics) : formalise transitionParcelStatus() comme
+    // capacité exposée cross-feature. Ownership confirmé O7.1 (WRITER !=
+    // LIFECYCLE OWNER — logistics reste seul lifecycle owner du colis, le
+    // simulateur ne fait que déclencher via cette fonction, jamais
+    // d'écriture directe). skipValidation reste un paramètre explicite de
+    // l'appelant, pas un contournement caché. Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+    internalApi: [
+      { fn: 'transitionParcelStatus', file: 'services/parcel-operations.js' },
+    ],
     consumes: ['orders (commande rattachee au colis)',
       'customs (statut declaration)',
       'auth',
@@ -287,6 +296,7 @@ module.exports = {
       'refunds',
       'wallet',
       'purchasing (declenche verification/reapprovisionnement apres collecte cash relais — services/purchasing-trigger-service.js, O7.2 Cycle C)',
+      'loyalty (recalcul de palier apres collecte cash relais / scan preparation — services/loyalty-service.js recalculateLoyalty/handleOrderConfirmed, O7.3 provider loyalty)',
     ],
   },
 

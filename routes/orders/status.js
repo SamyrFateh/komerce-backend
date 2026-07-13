@@ -35,7 +35,9 @@ const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate }                  = require('../../middleware/validate');
 const { orders }                    = require('../../validators');
-const { recalculateLoyalty }        = require('../loyalty');
+// O7.3 (provider loyalty) : importait auparavant '../loyalty' (routes/loyalty.js,
+// une route — pas une boundary de feature). Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+const { recalculateLoyalty }        = require('../../services/loyalty-service');
 const { notifyStatusChange }        = require('../../services/notification-service');
 const { transitionOrderStatus }     = require('../../services/order-status-machine');
 const log = require('../../utils/logger').child({ module: 'status' });

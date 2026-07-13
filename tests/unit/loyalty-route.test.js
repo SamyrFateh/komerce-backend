@@ -37,7 +37,6 @@ jest.mock('../../middleware/auth', () => ({
 }));
 
 const loyaltyRouter = require('../../routes/loyalty');
-const { getLoyaltyDiscount, recalculateLoyalty } = require('../../routes/loyalty');
 
 function buildApp() {
   const app = express();
@@ -193,40 +192,8 @@ describe('routes/loyalty', () => {
     expect(res.status).toBe(403);
   });
 
-  describe('getLoyaltyDiscount (utilitaire exporté)', () => {
-    test('retourne 0/null si aucune ligne trouvée', async () => {
-      const fakeDb = { query: jest.fn().mockResolvedValue({ rows: [] }) };
-      const result = await getLoyaltyDiscount(fakeDb, 'user-1');
-      expect(result).toEqual({ discountPct: 0, discountLabel: null });
-    });
-
-    test('retourne le palier et la remise', async () => {
-      const fakeDb = {
-        query: jest.fn().mockResolvedValue({
-          rows: [{ discount_pct: '7.5', tier_label: 'Gold' }],
-        }),
-      };
-      const result = await getLoyaltyDiscount(fakeDb, 'user-1');
-      expect(result).toEqual({ discountPct: 7.5, discountLabel: 'Gold' });
-    });
-
-    test('ne bloque pas la commande en cas d\'erreur DB (remise = 0)', async () => {
-      const fakeDb = { query: jest.fn().mockRejectedValue(new Error('db down')) };
-      const result = await getLoyaltyDiscount(fakeDb, 'user-1');
-      expect(result).toEqual({ discountPct: 0, discountLabel: null });
-    });
-  });
-
-  describe('recalculateLoyalty (utilitaire exporté)', () => {
-    test('appelle la fonction SQL recalculate_loyalty', async () => {
-      const fakeDb = { query: jest.fn().mockResolvedValue({}) };
-      await recalculateLoyalty(fakeDb, 'user-1');
-      expect(fakeDb.query).toHaveBeenCalledWith('SELECT recalculate_loyalty($1)', ['user-1']);
-    });
-
-    test('avale les erreurs sans les propager (fire-and-forget)', async () => {
-      const fakeDb = { query: jest.fn().mockRejectedValue(new Error('db down')) };
-      await expect(recalculateLoyalty(fakeDb, 'user-1')).resolves.toBeUndefined();
-    });
-  });
+  // O7.3 (provider loyalty) : getLoyaltyDiscount / recalculateLoyalty ont été
+  // retirées de cette route (elles vivent désormais dans services/loyalty-service.js).
+  // Couverture déplacée vers tests/unit/loyalty-service.test.js. Voir
+  // docs/O7_3_BOUNDARY_ANALYSIS.md.
 });

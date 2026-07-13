@@ -61,6 +61,13 @@ function mountApiRoutesBeforeStripeOwnedBlocks(app) {
 
 function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const adminRouter      = require('../routes/admin');
+  // O7.3 (provider catalog) : mounté directement ici, plus via routes/admin/index.js
+  // (dashboard). routes/admin/index.js ne faisait que router.use('/', require('./catalog-approval'))
+  // — un montage de router, pas une consommation de service. Le composition
+  // root (ici, pas dashboard) doit posséder ce câblage. Chemins HTTP finaux
+  // inchangés (/api/admin + /catalog/approval-queue*). Voir
+  // docs/O7_3_BOUNDARY_ANALYSIS.md, provider catalog.
+  const catalogApprovalRouter = require('../routes/admin/catalog-approval');
   const adminRulesRouter = require('../routes/admin-rules');
   const adminPricingMatricesRouter = require('../routes/admin-pricing-matrices');
   const dashboardRouter  = require('../routes/dashboard');
@@ -118,6 +125,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
   app.use('/api/admin/dashboard',   require('../routes/admin-dashboard'));
   app.use('/api/admin/costing',     require('../routes/admin-costing'));
+  app.use('/api/admin',      catalogApprovalRouter);
   app.use('/api/admin',      adminRouter);
   app.use('/api/admin/rules', adminRulesRouter);
   app.use('/api/admin/radar', adminRadarRouter);

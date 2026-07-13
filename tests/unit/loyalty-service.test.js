@@ -17,6 +17,8 @@ const {
   getUserLoyaltyStatus,
   getFinanceConfig,
   invalidateConfigCache,
+  getLoyaltyDiscount,
+  recalculateLoyalty,
 } = require('../../services/loyalty-service');
 
 describe('loyalty-service', () => {
@@ -239,5 +241,47 @@ describe('loyalty-service', () => {
 
     expect(result.remaining_to_next_tier).toBe(2);
     expect(result.status).toBe('active');
+  });
+
+  // O7.3 (provider loyalty) : migré depuis tests/unit/loyalty-route.test.js —
+  // les fonctions vivent désormais ici (routes/loyalty.js n'est plus qu'une
+  // route HTTP). Signature (db, userId) préservée à l'identique : les
+  // appelants passent parfois un client de transaction, jamais db mocké
+  // module-level de ce fichier de test. Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+  describe('getLoyaltyDiscount', () => {
+    it('retourne 0/null si aucune ligne trouvée', async () => {
+      const fakeDb = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      const result = await getLoyaltyDiscount(fakeDb, 'user-1');
+      expect(result).toEqual({ discountPct: 0, discountLabel: null });
+    });
+
+    it('retourne le palier et la remise', async () => {
+      const fakeDb = {
+        query: jest.fn().mockResolvedValue({
+          rows: [{ discount_pct: '7.5', tier_label: 'Gold' }],
+        }),
+      };
+      const result = await getLoyaltyDiscount(fakeDb, 'user-1');
+      expect(result).toEqual({ discountPct: 7.5, discountLabel: 'Gold' });
+    });
+
+    it("ne bloque pas la commande en cas d'erreur DB (remise = 0)", async () => {
+      const fakeDb = { query: jest.fn().mockRejectedValue(new Error('db down')) };
+      const result = await getLoyaltyDiscount(fakeDb, 'user-1');
+      expect(result).toEqual({ discountPct: 0, discountLabel: null });
+    });
+  });
+
+  describe('recalculateLoyalty', () => {
+    it('appelle la fonction SQL recalculate_loyalty', async () => {
+      const fakeDb = { query: jest.fn().mockResolvedValue({}) };
+      await recalculateLoyalty(fakeDb, 'user-1');
+      expect(fakeDb.query).toHaveBeenCalledWith('SELECT recalculate_loyalty($1)', ['user-1']);
+    });
+
+    it('avale les erreurs sans les propager (fire-and-forget)', async () => {
+      const fakeDb = { query: jest.fn().mockRejectedValue(new Error('db down')) };
+      await expect(recalculateLoyalty(fakeDb, 'user-1')).resolves.toBeUndefined();
+    });
   });
 });

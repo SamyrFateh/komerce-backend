@@ -168,7 +168,11 @@ module.exports = {
       'GET /health/ready',
       'GET /health/version',
     ],
-    consumes: [],
+    consumes: [
+      'economic-engine (calcul de prix ponctuel pour modules sur-mesure — services/pricing-engine.js recommend, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)',
+      'logistics (simulateur declenche une transition colis via transitionParcelStatus — services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)',
+      'orders (simulateur declenche une transition commande via transitionOrderStatus — services/order-status-machine.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)',
+    ],
   },
 
   // ── Dette assumée / documentée ────────────────────────────────────────────

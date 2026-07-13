@@ -198,6 +198,7 @@ module.exports = {
       'customs',
       'documents',
       'recommendations',
+      'purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)',
     ],
   },
 

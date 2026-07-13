@@ -15,7 +15,7 @@ jest.mock('../../db');
 jest.mock('../../utils/parcelSync');
 jest.mock('../../services/notification-service');
 jest.mock('../../services/order-status-machine');
-jest.mock('../../routes/loyalty', () => ({ recalculateLoyalty: jest.fn().mockResolvedValue() }), { virtual: true });
+jest.mock('../../services/loyalty-service', () => ({ recalculateLoyalty: jest.fn().mockResolvedValue() }), { virtual: true });
 
 const db                       = require('../../db');
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../../utils/parcelSync');
@@ -570,7 +570,7 @@ describe('verifyQr', () => {
   });
 
   test('recalcule la fidélité si order.user_id est présent (non bloquant)', async () => {
-    const { recalculateLoyalty } = require('../../routes/loyalty');
+    const { recalculateLoyalty } = require('../../services/loyalty-service');
     const client = makeClient([
       {}, { rows: [order] }, {}, { rows: [{ id: 'sc1' }] }, {},
     ]);
@@ -610,7 +610,7 @@ describe('verifyQr', () => {
   });
 
   test('échec du recalcul de fidélité → catch géré silencieusement', async () => {
-    const { recalculateLoyalty } = require('../../routes/loyalty');
+    const { recalculateLoyalty } = require('../../services/loyalty-service');
     recalculateLoyalty.mockRejectedValueOnce(new Error('loyalty engine down'));
     const client = makeClient([
       {}, { rows: [order] }, {}, { rows: [{ id: 'sc1' }] }, {},

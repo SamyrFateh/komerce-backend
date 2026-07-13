@@ -24,6 +24,9 @@ const ROUTE_MODULE_NAMES = [
   'admin-customs-categories', 'admin-customs-shipments', 'admin-dashboard',
   'admin-finance-config', 'admin-loyalty', 'admin-pricing-components',
   'admin-pricing-matrices', 'admin-radar', 'admin-risk-provisions', 'admin-rules',
+  // O7.3 (provider catalog) : mounté directement par bootstrap/api-routes.js
+  // depuis ce lot (plus via routes/admin/index.js). Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+  'admin/catalog-approval',
   'auth', 'auto-distribute-api', 'baskets', 'boutique-suggestions', 'carriers',
   'cash', 'categories', 'client-auth', 'client-tracking', 'dashboard', 'economic',
   'finance', 'health', 'hub', 'hub-dashboard', 'hub-mark-ordered', 'inventory-api',
@@ -119,6 +122,8 @@ describe('bootstrap/api-routes', () => {
       apiRoutes.mountApiRoutesAfterStripeOwnedBlocks(app);
 
       expect(app.use).toHaveBeenCalledWith('/api/admin', mockMarkers['admin']);
+      // O7.3 (provider catalog) : mounté directement, plus via routes/admin/index.js.
+      expect(app.use).toHaveBeenCalledWith('/api/admin', mockMarkers['admin/catalog-approval']);
       expect(app.use).toHaveBeenCalledWith('/api/admin/rules', mockMarkers['admin-rules']);
       expect(app.use).toHaveBeenCalledWith('/api/admin/radar', mockMarkers['admin-radar']);
       expect(app.use).toHaveBeenCalledWith('/api/admin/risk-provisions', mockMarkers['admin-risk-provisions']);

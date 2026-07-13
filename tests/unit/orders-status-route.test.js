@@ -42,7 +42,7 @@ jest.mock('../../middleware/validate', () => ({
   validate: () => (req, _res, next) => next(),
 }));
 
-jest.mock('../../routes/loyalty', () => ({
+jest.mock('../../services/loyalty-service', () => ({
   recalculateLoyalty: jest.fn().mockResolvedValue(undefined),
 }));
 
@@ -63,7 +63,7 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 const db = require('../../db');
-const { recalculateLoyalty } = require('../../routes/loyalty');
+const { recalculateLoyalty } = require('../../services/loyalty-service');
 const { notifyStatusChange } = require('../../services/notification-service');
 const { transitionOrderStatus } = require('../../services/order-status-machine');
 const pickupProofService = require('../../services/documents/pickup-proof');

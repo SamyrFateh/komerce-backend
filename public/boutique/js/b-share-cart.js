@@ -37,9 +37,17 @@ import {
   buildE164,
   digitsOnly,
   prettifyLocal,
+  makeIntlPhoneInput,
 } from './b-phone.js';
+// O7.3 (provider payments) : makeIntlPhoneInput déplacé vers l'import
+// b-phone.js ci-dessus — b-checkout.js ne faisait que le ré-exporter
+// "pour compatibilité" (commentaire déjà présent dans b-checkout.js,
+// héritage d'un fix antérieur qui avait déplacé l'implémentation vers
+// b-phone.js pour casser un autre cycle, b-checkout<->b-identity). Le vrai
+// propriétaire est auth-identity, pas payments — voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+// makeInput reste un import réel et légitime de payments (b-checkout-render.js).
 // FIX UX — Réutiliser les helpers checkout pour un style uniforme (padding, indicatifs)
-import { makeInput, makeIntlPhoneInput } from './b-checkout.js';
+import { makeInput } from './b-checkout.js';
 import { requireIdentity } from './b-identity.js';
 import { sanitize } from './b-utils.js'; // GOV-10-B2
 // FIX 2026-07-10-b — restoreSharedCartFromBackend() utilisait un fetch() nu

@@ -126,6 +126,14 @@ module.exports = {
       'GET /api/client/magic-link/validate',
       'GET /api/client/orders',
     ],
+    // O7.3 (provider auth-identity) : makeIntlPhoneInput (public/boutique/js/b-phone.js)
+    // est consommé par shared-cart (b-share-cart.js) — corrigé depuis une
+    // couture artificielle via payments/b-checkout.js (simple ré-export
+    // historique). Scope boutique/frontend, pas un service backend. Voir
+    // docs/O7_3_BOUNDARY_ANALYSIS.md, provider payments (analyse de la paire).
+    internalApi: [
+      { fn: 'makeIntlPhoneInput', file: 'public/boutique/js/b-phone.js' },
+    ],
     consumes: [],
   },
 

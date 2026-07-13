@@ -28,7 +28,7 @@ const mockPickupProofIssue = jest.fn();
 jest.mock('../../services/documents/pickup-proof', () => ({ issue: (...args) => mockPickupProofIssue(...args) }));
 
 const mockRecalculateLoyalty = jest.fn();
-jest.mock('../../routes/loyalty', () => ({ recalculateLoyalty: (...args) => mockRecalculateLoyalty(...args) }));
+jest.mock('../../services/loyalty-service', () => ({ recalculateLoyalty: (...args) => mockRecalculateLoyalty(...args) }));
 
 jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() })),

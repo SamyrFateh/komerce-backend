@@ -289,6 +289,9 @@ module.exports = {
       'customs',
       'documents',
       'logistics',
+      'loyalty (declenche le recalcul de palier apres commande group panier confirmee — services/loyalty-service.js handleOrderConfirmed, O7.3 provider loyalty)',
+      'payments (reutilise makeInput pour un style de champ uniforme au checkout — public/boutique/js/b-checkout.js, scope boutique, O7.3 provider payments)',
+      'auth-identity (reutilise makeIntlPhoneInput — public/boutique/js/b-phone.js, scope boutique, O7.3 provider payments : couture initialement artificielle via b-checkout.js, corrigee vers le vrai proprietaire)',
     ],
   },
 

@@ -324,11 +324,21 @@ module.exports = {
       'DELETE /api/pricing/strategy/competitors/:id',
       'GET /api/pricing/strategy/history',
     ],
+    // O7.3 (provider economic-engine) : formalise recommend() comme unique
+    // capacité exposée cross-feature (ownership confirmé O7.1, boundary
+    // formalisée ici). pricing-engine.js a d'autres exports internes
+    // (computeCDR, computePrices, buildAlerts...), tous restent internes à
+    // economic-engine — seul recommend() a un consumer cross-feature réel.
+    // Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+    internalApi: [
+      { fn: 'recommend', file: 'services/pricing-engine.js' },
+    ],
     consumes: ['catalog (donnees produit source)',
       'auth',
       'dashboard',
       'orders',
       'wallet',
+      'loyalty (invalidation du cache de configuration finance apres modification admin — services/loyalty-service.js invalidateConfigCache, O7.3 provider loyalty)',
     ],
   },
 

@@ -167,11 +167,31 @@ module.exports = {
       'GET /api/payments/rates',
       'POST /api/payments/stripe/webhook',
     ],
+    // O7.3 (provider payments) : surface unique regroupant TOUS les
+    // consumers cross-feature de payments (mission §7 — un provider, une
+    // surface, pas une par consumer) :
+    //   - markPaid : consommé par logistics (parcel-auto-create-service.js)
+    //     et wallet (wallet-service.js), déclaré depuis O7.2 Cycle B/D.
+    //   - markRefunded : consommé par orders (admin-order-refund.js), O7.3.
+    //   - makeInput (frontend, b-checkout-render.js via b-checkout.js) :
+    //     consommé par shared-cart (b-share-cart.js) pour un style de champ
+    //     uniforme — réutilisation d'utilitaire UI, scope boutique, pas un
+    //     service métier backend. Reste un import ES nommé simple (pas un
+    //     barrel), déjà minimal. makeIntlPhoneInput a été retiré de ce
+    //     périmètre (appartenait réellement à auth-identity, via b-phone.js —
+    //     voir docs/O7_3_BOUNDARY_ANALYSIS.md).
+    internalApi: [
+      { fn: 'markPaid', file: 'services/payment-service.js' },
+      { fn: 'markRefunded', file: 'services/payment-service.js' },
+      { fn: 'makeInput', file: 'public/boutique/js/b-checkout.js' },
+    ],
     consumes: [
       'orders (commande a payer)',
       'auth-identity (verification du payeur)',
       'logistics (generation du code retrait pickup au moment du paiement — services/pickup-secret-service.js ; lecture du statut agrege colis pour reconciliation — utils/parcels.js ; O7.2 Cycle B)',
       'wallet (checkout consulte le solde applicable via /api/wallet — public/boutique/js/b-checkout.js, O7.2 Cycle D)',
+      'loyalty (declenche le recalcul de palier apres paiement confirme — services/loyalty-service.js handleOrderConfirmed, O7.3 provider loyalty)',
+      'purchasing (declenche verification/reapprovisionnement apres encaissement — services/purchasing-trigger-service.js triggerPurchasing, O7.3 provider purchasing)',
     ],
   },
 

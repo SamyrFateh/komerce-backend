@@ -33,8 +33,9 @@ const router  = express.Router();
 // Groupe Documents — visibilité transaction_documents (diagnostic + admin)
 router.use('/', require('./documents'));
 
-// Groupe K-4 — file d'approbation catalogue (étage ⑥, DOCTRINE_CATALOGUE.md §6)
-router.use('/', require('./catalog-approval'));
+// Groupe K-4 — file d'approbation catalogue : monté directement par
+// bootstrap/api-routes.js (composition root), plus ici. Voir O7.3,
+// docs/O7_3_BOUNDARY_ANALYSIS.md, provider catalog.
 
 // Groupe B — douane (stub)
 router.use('/', require('./customs'));

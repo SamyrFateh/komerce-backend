@@ -203,11 +203,24 @@ module.exports = {
       'GET /api/v2/orders/pending-cash',
       'GET /api/v2/orders/ready-for-parcel',
     ],
+    // O7.3 (provider orders) : formalise transitionOrderStatus() comme
+    // capacité exposée cross-feature. Ownership déjà confirmé O7.1 (WRITER !=
+    // LIFECYCLE OWNER — orders reste seul lifecycle owner, le simulateur ne
+    // fait que déclencher via cette fonction, jamais d'écriture directe sur
+    // orders.status). Le reste de la state machine (ORDER_STATUSES,
+    // VALID_TRANSITIONS, TRANSITION_ROLES, STATUS_RANK, STATUS_TIMESTAMP,
+    // isForwardTransition, appendOrderHistoryNote) reste interne à orders,
+    // non exposé cross-feature. Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+    internalApi: [
+      { fn: 'transitionOrderStatus', file: 'services/order-status-machine.js' },
+    ],
     consumes: ['wallet (application credit)',
       'economic-engine (cout figure a la commande)',
       'logistics (rattachement colis)',
       'catalog (lecture produit)',
       'purchasing (lecture — engagement fournisseur déclenché par une commande ; scindée d\'orders au Lot O1.4)',
+      'loyalty (remise palier au checkout + recalcul apres commande — services/loyalty-service.js getLoyaltyDiscount/recalculateLoyalty, O7.3 provider loyalty)',
+      'payments (marque un remboursement — services/payment-service.js markRefunded, O7.3 provider payments)',
       'auth',
       'customs',
       'dashboard',

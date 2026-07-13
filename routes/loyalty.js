@@ -112,45 +112,6 @@ router.post('/recalculate-all', authenticate, requireAdmin, async (req, res, nex
   } catch(err) { next(err); }
 });
 
-// ── FONCTIONS UTILITAIRES exportées (utilisées par orders.js) ──────────────────
-
-/**
- * getLoyaltyDiscount(db, userId)
- * Retourne { discountPct, discountLabel } pour un client donné.
- * discountPct  = 0 si aucun palier actif
- * discountLabel = label du palier (ex: "Bronze", "Silver") ou null
- */
-async function getLoyaltyDiscount(db, userId) {
-  try {
-    const { rows } = await db.query(
-      `SELECT discount_pct, tier_label FROM v_loyalty_summary WHERE id = $1`,
-      [userId]
-    );
-    if (!rows.length) return { discountPct: 0, discountLabel: null };
-    return {
-      discountPct:   parseFloat(rows[0].discount_pct)  || 0,
-      discountLabel: rows[0].tier_label || null
-    };
-  } catch (err) {
-    // En cas d'erreur DB, on ne bloque pas la commande — remise = 0
-    log.error({ err }, '[LOYALTY] getLoyaltyDiscount error:');
-    return { discountPct: 0, discountLabel: null };
-  }
-}
-
-/**
- * recalculateLoyalty(db, userId)
- * Recalcule le palier d'un client après une commande.
- * Fire-and-forget : les erreurs sont loguées mais n'interrompent pas le flux.
- */
-async function recalculateLoyalty(db, userId) {
-  try {
-    await db.query('SELECT recalculate_loyalty($1)', [userId]);
-  } catch (err) {
-    log.error({ err }, '[LOYALTY] recalculateLoyalty error:');
-  }
-}
+// getLoyaltyDiscount / recalculateLoyalty : voir services/loyalty-service.js (O7.3, provider loyalty)
 
 module.exports = router;
-module.exports.getLoyaltyDiscount  = getLoyaltyDiscount;
-module.exports.recalculateLoyalty  = recalculateLoyalty;

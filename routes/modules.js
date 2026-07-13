@@ -337,8 +337,11 @@ router.post('/price', validate(modules.calculatePrice), async (req, res, next) =
         const prixAchatAed = parseFloat(fabric.price_per_meter_aed) * parseFloat(model.fabric_meters)
           + parseFloat(model.making_cost_aed);
         const channel = is_diaspora ? 'diaspora' : 'cash_relais';
-        const pricingEngine = require('../services/pricing-engine');
-        const result = await pricingEngine.recommend({
+        // O7.3 (provider economic-engine) : import nommé minimal — seule
+        // recommend() est consommée (ownership confirmé O7.1, boundary
+        // formalisée O7.3). Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+        const { recommend } = require('../services/pricing-engine');
+        const result = await recommend({
           virtual:   true,
           price_aed: prixAchatAed,
           category:  'couture',

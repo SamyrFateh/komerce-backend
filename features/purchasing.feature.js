@@ -114,6 +114,13 @@ module.exports = {
       'POST /api/purchasing/:id/receive',
       'DELETE /api/purchasing/po/:po_id',
     ],
+    // O7.3 (provider purchasing) : formalise deux services déjà propres
+    // (service-à-service, aucune route utilisée comme API interne) mais
+    // jamais déclarés. Aucun wrapper créé. Voir docs/O7_3_BOUNDARY_ANALYSIS.md.
+    internalApi: [
+      { fn: 'triggerPurchasing', file: 'services/purchasing-trigger-service.js' },
+      { fn: 'repairOrderedWithoutPurchaseOrders', file: 'services/repair-ordered-without-purchase-orders.js' },
+    ],
     consumes: [
       'orders (lecture : order_items, orders — le besoin d\'achat naît d\'une commande client)',
       'auth (garde admin)',

@@ -250,4 +250,53 @@ module.exports = {
   getUserLoyaltyStatus,
   getFinanceConfig,
   invalidateConfigCache,
+  getLoyaltyDiscount,
+  recalculateLoyalty,
 };
+
+// ══════════════════════════════════════════════════════════════════════════
+// getLoyaltyDiscount / recalculateLoyalty
+// ══════════════════════════════════════════════════════════════════════════
+// O7.3 (provider loyalty) : extraites de routes/loyalty.js (une route, pas
+// une boundary de feature — déjà auto-documentée "FONCTIONS UTILITAIRES
+// exportées, utilisées par orders.js"). Comportement repris à l'identique,
+// y compris la signature (db, userId) : les appelants passent parfois un
+// client de transaction, jamais le pool module-level de ce service. Voir
+// docs/O7_3_BOUNDARY_ANALYSIS.md, provider loyalty.
+
+/**
+ * getLoyaltyDiscount(db, userId)
+ * Retourne { discountPct, discountLabel } pour un client donné.
+ * discountPct  = 0 si aucun palier actif
+ * discountLabel = label du palier (ex: "Bronze", "Silver") ou null
+ */
+async function getLoyaltyDiscount(db, userId) {
+  try {
+    const { rows } = await db.query(
+      `SELECT discount_pct, tier_label FROM v_loyalty_summary WHERE id = $1`,
+      [userId]
+    );
+    if (!rows.length) return { discountPct: 0, discountLabel: null };
+    return {
+      discountPct:   parseFloat(rows[0].discount_pct)  || 0,
+      discountLabel: rows[0].tier_label || null
+    };
+  } catch (err) {
+    // En cas d'erreur DB, on ne bloque pas la commande — remise = 0
+    log.error({ err }, '[LOYALTY] getLoyaltyDiscount error:');
+    return { discountPct: 0, discountLabel: null };
+  }
+}
+
+/**
+ * recalculateLoyalty(db, userId)
+ * Recalcule le palier d'un client après une commande.
+ * Fire-and-forget : les erreurs sont loguées mais n'interrompent pas le flux.
+ */
+async function recalculateLoyalty(db, userId) {
+  try {
+    await db.query('SELECT recalculate_loyalty($1)', [userId]);
+  } catch (err) {
+    log.error({ err }, '[LOYALTY] recalculateLoyalty error:');
+  }
+}
