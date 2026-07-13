@@ -1,0 +1,56 @@
+ratchet_rc=1
+map_rc=1
+=== BUSINESS GRAPH RATCHET ===
+
+> komerce-backend@10.6.1 business-graph:ratchet-check
+> node scripts/business-graph-ratchet-check.js
+
+
+[1mbusiness-graph:ratchet-check — Lot O4-2 (ratchet type::catégorie)[0m
+
+  [1mBOUTIQUE-FILE-MULTIPLE-OWNERS[0m
+    [32m✔[0m [2m::[0mACTIONABLE_DRIFT — actuel 0 (baseline 0)
+        [2mstable[0m
+  [1mCONSUMES-REFERENCE-UNRESOLVED[0m
+    [32m✔[0m [2m::[0mGENERATOR_LIMITATION — actuel 2 (baseline 2)
+        [2mstable[0m
+    [32m✔[0m [2m::[0mINVALID_DECLARATION — actuel 12 (baseline 12)
+        [2mstable[0m
+  [1mDASH-MANIFEST-DUPLICATE-COPY[0m
+    [32m✔[0m [2m::[0mEXPECTED_TOPOLOGY — actuel 2 (baseline 2)
+        [2mstable[0m
+  [1mDYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED[0m
+    [32m✔[0m [2m::[0mGENERATOR_LIMITATION — actuel 1 (baseline 1)
+        [2mstable[0m
+  [1mEXPOSE-ENTRY-UNPARSED[0m
+    [32m✔[0m [2m::[0mGENERATOR_LIMITATION — actuel 2 (baseline 2)
+        [2mstable[0m
+  [1mEXPOSED-ROUTE-OWNER-MISMATCH[0m
+    [32m✔[0m [2m::[0mACTIONABLE_DRIFT — actuel 3 (baseline 13)
+        [2mréduction (13 -> 3) — la baseline peut être resserrée manuellement si la dette est vraiment résorbée[0m
+    [32m✔[0m [2m::[0mGENERATOR_LIMITATION — actuel 0 (baseline 13)
+        [2mréduction (13 -> 0) — la baseline peut être resserrée manuellement si la dette est vraiment résorbée[0m
+    [32m✔[0m [2m::[0mKNOWN_DEBT — actuel 0 (baseline 8)
+        [2mréduction (8 -> 0) — la baseline peut être resserrée manuellement si la dette est vraiment résorbée[0m
+  [1mEXPOSED-ROUTE-UNRESOLVED[0m
+    [32m✔[0m [2m::[0mACTIONABLE_DRIFT — actuel 0 (baseline 4)
+        [2mréduction (4 -> 0) — la baseline peut être resserrée manuellement si la dette est vraiment résorbée[0m
+    [32m✔[0m [2m::[0mGENERATOR_LIMITATION — actuel 2 (baseline 4)
+        [2mréduction (4 -> 2) — la baseline peut être resserrée manuellement si la dette est vraiment résorbée[0m
+  [1mLOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER[0m
+    [32m✔[0m [2m::[0mKNOWN_DEBT — actuel 1 (baseline 1)
+        [2mstable[0m
+  [1mOBSERVED-UNDECLARED-FEATURE-DEPENDENCY[0m
+    [31m✖[0m [2m::[0mACTIONABLE_DRIFT — actuel 95 (baseline 94)
+        [2maugmentation (94 -> 95) — nouveau drift non budgétisé, y compris un simple déplacement de catégorie au sein du même type[0m
+  [1mWRITER-NOT-OWNER[0m
+    [32m✔[0m [2m::[0mACTIONABLE_DRIFT — actuel 1 (baseline 1)
+        [2mstable[0m
+    [32m✔[0m [2m::[0mEXPECTED_TOPOLOGY — actuel 5 (baseline 5)
+        [2mstable[0m
+    [32m✔[0m [2m::[0mKNOWN_DEBT — actuel 30 (baseline 30)
+        [2mstable[0m
+
+[2mTotal warnings : 156 (baseline totale 192 — indicatif seulement, le ratchet raisonne par clé type::catégorie, jamais sur ce total)[0m
+
+[31m[1m✖ business-graph:ratchet-check ÉCHEC — nouveau drift au-dessus de la baseline type::catégorie.[0m
