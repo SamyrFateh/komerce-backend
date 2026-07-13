@@ -78,8 +78,6 @@ jest.mock('../../js/b-modal-product.js', () => ({
   openSizeGuide: jest.fn(),
   closeSizeGuide: jest.fn(),
   _syncScrollPadding: jest.fn(),
-  _injectMobileDelivery: jest.fn(),
-  _injectMobileTrust: jest.fn(),
   setupModalFAB: jest.fn(),
   hideModalFAB: jest.fn(),
 }));
@@ -245,10 +243,14 @@ describe('b-modal-core', () => {
       expect(dom.modalQtyVal.textContent).toBe('4');
     });
 
-    it('avec promo_pct → prix barré affiché + badge visible + classe promo sur .modal', () => {
+    it('avec promo_pct → badge visible + classe promo sur .modal, mais prix barré JAMAIS reconstruit ici', () => {
+      // PDC-6 : oldPrice ne vient plus que du contrat détail (pricing.old_price_kmf),
+      // rendu par le renderer PDC. Le paint immédiat de b-modal-core.js ne le
+      // reconstruit plus depuis promo_pct et le laisse donc toujours masqué.
       state.products = [makeProduct({ promo_pct: 20, price_kmf: 4000 })];
       openModal(1);
-      expect(dom.modalOldPrice.classList.contains('u-hidden')).toBe(false);
+      expect(dom.modalOldPrice.classList.contains('u-hidden')).toBe(true);
+      expect(dom.modalOldPrice.textContent).toBe('');
       expect(dom.modalPromoBadge.classList.contains('show')).toBe(true);
       expect(dom.modalPromoBadge.textContent).toBe('-20%');
       expect(dom.modal.classList.contains('k-modal--has-promo')).toBe(true);
@@ -262,15 +264,28 @@ describe('b-modal-core', () => {
       expect(dom.modal.classList.contains('k-modal--has-promo')).toBe(false);
     });
 
-    it.each([
-      [0,  'Rupture',      'k-modal-stock k-modal-stock--out'],
-      [5,  'Plus que 5',   'k-modal-stock k-modal-stock--low'],
-      [50, 'Disponible',   'k-modal-stock k-modal-stock--ok'],
-    ])('stock=%i → texte contient "%s" et classe "%s"', (stock, expectedText, expectedClass) => {
-      state.products = [makeProduct({ stock })];
-      openModal(1);
-      expect(dom.modalStock.textContent).toContain(expectedText);
-      expect(dom.modalStock.className).toBe(expectedClass);
+    it.each([0, 5, 50])(
+      'stock=%i sur le produit liste → n\'a plus aucune influence sur #k-modal-stock (vidé par hygiène)',
+      (stock) => {
+        // PDC-6 : plus aucune interprétation de product.stock dans le chemin
+        // modal. La disponibilité est désormais rendue exclusivement par le
+        // renderer PDC (renderStock), à partir du contrat détail.
+        state.products = [makeProduct({ stock })];
+        openModal(1);
+        expect(dom.modalStock.textContent).toBe('');
+        expect(dom.modalStock.className).toBe('k-modal-stock');
+      }
+    );
+
+    it('PDC-6 : b-modal-core.js ne référence structurellement plus product.stock / product.stock_qty', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const source = fs.readFileSync(
+        path.join(__dirname, '../../js/b-modal-core.js'),
+        'utf8'
+      );
+      expect(source).not.toMatch(/product\.stock_qty/);
+      expect(source).not.toMatch(/product\.stock\b/);
     });
 
     it('pushHistory !== false (défaut) et un produit déjà ouvert → empile l\'ancien id dans modalHistory', () => {

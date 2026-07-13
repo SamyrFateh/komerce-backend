@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-12T19:37:00.979Z.
+> Régénéré le 2026-07-13T07:52:01.330Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **71** (71 headés) · Événements bus : **17** · Bundles CSS : **3**
-- Endpoints appelés : **52** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 25 dynamiques
+- Modules JS : **69** (69 headés) · Événements bus : **17** · Bundles CSS : **3**
+- Endpoints appelés : **52** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -40,7 +40,7 @@
 | `/api/payments/paypal/capture/{id}` | b-paypal | 🔵 dynamique |
 | `/api/payments/paypal/create-order` | b-paypal | ⚪ non prouvé |
 | `/api/payments/stripe/intent` | b-checkout | ⚪ non prouvé |
-| `/api/products` | b-modal-core, komerce-api | 🔵 dynamique |
+| `/api/products` | komerce-api | ⚪ non prouvé |
 | `/api/products/{id}` | komerce-api | 🔵 dynamique |
 | `/api/products/{id}/detail` | b-modal-product-detail-bootstrap | 🔵 dynamique |
 | `/api/public/config` | b-checkout, b-paypal | ⚪ non prouvé |

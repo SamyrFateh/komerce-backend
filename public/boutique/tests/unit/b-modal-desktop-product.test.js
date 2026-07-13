@@ -131,7 +131,9 @@ function installDom() {
         <div id="k-modal-delivery"></div>
       </div>
       <div class="k-modal-actions">
+        <button id="k-qty-minus">−</button>
         <span id="k-qty-val">1</span>
+        <button id="k-qty-plus">+</button>
         <button id="k-add-cart-btn">Ajouter</button>
         <button id="k-buy-now-btn">Acheter</button>
       </div>
@@ -159,7 +161,13 @@ function installDom() {
   dom.modalStock = document.getElementById('k-modal-stock');
   dom.modalPromoBadge = document.getElementById('k-modal-promo-badge');
   dom.modalQtyVal = document.getElementById('k-qty-val');
+  dom.qtyMinus = document.getElementById('k-qty-minus');
+  dom.qtyPlus = document.getElementById('k-qty-plus');
   dom.addCartBtn = document.getElementById('k-add-cart-btn');
+}
+
+function stepperControls() {
+  return [dom.qtyMinus, dom.qtyPlus];
 }
 
 describe('desktop product detail renderer', () => {
@@ -174,6 +182,40 @@ describe('desktop product detail renderer', () => {
 
   afterAll(() => {
     clearDesktopProductDetailState();
+  });
+
+  test('LEGACY_VARIANTS (non-SKU) : CTA actif et stepper autorisé', () => {
+    const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.addCartBtn.disabled).toBe(false);
+    expect(document.getElementById('k-buy-now-btn').disabled).toBe(false);
+    stepperControls().forEach((control) => expect(control.disabled).toBe(false));
+  });
+
+  test('SKU sans selected_sku_id : CTA verrouillé ET stepper verrouillé', () => {
+    const product = detail();
+    const selection = createModalSelection(product);
+    renderDesktopProductDetail(product, selection);
+
+    expect(selection.selected_sku_id).toBeNull();
+    expect(dom.addCartBtn.disabled).toBe(true);
+    expect(document.getElementById('k-buy-now-btn').disabled).toBe(true);
+    stepperControls().forEach((control) => expect(control.disabled).toBe(true));
+  });
+
+  test('SKU résolu : CTA actif, mais stepper TOUJOURS verrouillé', () => {
+    const product = detail();
+    const selection = createModalSelection(product);
+    selection.selected_options = { Couleur: 'Marron', Taille: 'M' };
+    selection.selected_sku_id = SKU_MAR_M;
+    renderDesktopProductDetail(product, selection);
+
+    expect(dom.addCartBtn.disabled).toBe(false);
+    expect(document.getElementById('k-buy-now-btn').disabled).toBe(false);
+    // Preuve PDC-6 : aucune mutation panier product-id-first via le stepper,
+    // même lorsque la sélection canonique a résolu un SKU vendable.
+    stepperControls().forEach((control) => expect(control.disabled).toBe(true));
   });
 
   test('compose galerie gauche / Buy Box depuis le contrat sans vérité legacy', () => {

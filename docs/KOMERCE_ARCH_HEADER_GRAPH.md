@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 369
-- Files with full headers: 342
+- Scanned code files: 367
+- Files with full headers: 340
 - Files with lite headers: 27
-- Files with any headers: 369
+- Files with any headers: 367
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 745
-- Edges: 4262
+- Graph nodes: 740
+- Edges: 4245
 - DB tables: 110
-- Doctrines: 140
-- Impact areas: 126
-- Unresolved code edges: 405
+- Doctrines: 139
+- Impact areas: 124
+- Unresolved code edges: 404
 - Tables multi-écrivains directs (>=2): 62
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -27,8 +27,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 5
 - bootstrap: 1
-- boutique: 37
-- catalog: 43
+- boutique: 36
+- catalog: 42
 - checkout: 2
 - customs: 6
 - dashboard: 30
@@ -51,7 +51,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 - api-client: 2
 - bootstrap: 6
-- compatibility: 1
 - controller: 1
 - cron: 1
 - data-service: 1
@@ -79,7 +78,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - util: 24
 - util-ui: 2
 - validators: 1
-- view-model: 4
+- view-model: 3
 
 ## Critical And High Files
 
@@ -189,7 +188,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/product-store.js — boutique-product-store (catalog, high, full)
 - public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
 - public/boutique/js/view-models/modal-selection-model.js — product-modal-selection-model (catalog, high, full)
-- public/boutique/js/view-models/modal-view-model.js — product-modal-view-model (boutique, high, full)
 - routes/admin-boutique-categories.js — boutique-taxonomy-admin-api (catalog, high, full)
 - routes/admin-cost-components.js — economic-engine-admin-cost-components (economic-engine, high, full)
 - routes/admin-costing.js — economic-engine-admin-costing (economic-engine, high, full)

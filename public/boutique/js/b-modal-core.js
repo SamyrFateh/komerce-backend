@@ -67,7 +67,6 @@ import { setupSocialProof } from './b-modal-social-proof.js';
 import {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
   _syncScrollPadding,
-  _injectMobileDelivery, _injectMobileTrust,
   setupModalFAB, hideModalFAB,
 }                           from './b-modal-product.js';
 import { renderSuggestions }                 from './b-modal-suggestions.js';
@@ -261,17 +260,17 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     dom.modalPrice.textContent = fmtPrice(product.price_kmf);
     dom.modalQtyVal.textContent = state.modalQty;  // FIX: show cart qty, not hardcoded 1
 
+    // PDC-6 : oldPrice n'est plus reconstruit depuis promo_pct ici. Le prix
+    // barré vient exclusivement du contrat détail (pricing.old_price_kmf),
+    // rendu par b-modal-mobile-product.js / b-modal-desktop-product.js après
+    // le fetch /detail. Le paint immédiat le laisse donc toujours masqué.
+    dom.modalOldPrice.classList.add('u-hidden');
     if (product.promo_pct) {
-      const _div = 1 - product.promo_pct / 100;
-      const old = _div > 0 ? Math.round(product.price_kmf / _div) : product.price_kmf;
-      dom.modalOldPrice.textContent = fmtPrice(old);
-      dom.modalOldPrice.classList.remove('u-hidden');
       dom.modalPromoBadge.textContent = `-${product.promo_pct}%`;
       dom.modalPromoBadge.classList.add('show');
       // F1 — prix coral sur mobile (classe lue par modal.css §1)
       dom.modal && dom.modal.classList.add('k-modal--has-promo');
     } else {
-      dom.modalOldPrice.classList.add('u-hidden');
       dom.modalPromoBadge.classList.remove('show');
       dom.modal && dom.modal.classList.remove('k-modal--has-promo');
     }
@@ -285,20 +284,14 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     }
 
     dom.modalCat.textContent = `${product.emoji || ''} ${product.category || ''}`;
-    // Affichage stock intelligent : 3 états seulement
-    // - Stock > 10 : "✓ Disponible"
-    // - Stock 1-10 : "🔥 Plus que X en stock !"
-    // - Stock 0 : "✗ Rupture"
-    const stockVal = Number(product.stock || 0);
-    if (stockVal === 0) {
-      dom.modalStock.textContent = '✗ Rupture';
-      dom.modalStock.className = 'k-modal-stock k-modal-stock--out';
-    } else if (stockVal <= 10) {
-      dom.modalStock.textContent = '🔥 Plus que ' + stockVal + ' en stock';
-      dom.modalStock.className = 'k-modal-stock k-modal-stock--low';
-    } else {
-      dom.modalStock.textContent = '✓ Disponible';
-      dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
+    // PDC-6 : plus aucune interprétation du champ stock du produit liste ici. La disponibilité
+    // vient exclusivement du contrat détail (state.modalSelection), rendu par
+    // le renderer PDC (renderStock dans b-modal-mobile-product.js /
+    // b-modal-desktop-product.js). On vide juste l'affichage précédent par
+    // hygiène, sans réinterpréter aucune donnée produit liste.
+    if (dom.modalStock) {
+      dom.modalStock.textContent = '';
+      dom.modalStock.className = 'k-modal-stock';
     }
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
     updateCartBadge();
@@ -351,9 +344,10 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // PR-3 / PR-4 — modules image UX + social proof
     setupImageUX();
     setupSocialProof();
-    // F3 + F4 — livraison et trust bar mobile (masqués desktop via CSS)
-    _injectMobileDelivery(product);
-    _injectMobileTrust();
+    // PDC-6 : l'encart livraison n'est plus injecté ici en dur depuis
+    // product.delivery_delay. Les options de livraison viennent désormais
+    // exclusivement du contrat détail (delivery_options), rendues par le
+    // renderer PDC après le fetch /detail.
     // Lock body scroll — CSS handles layout via body.modal-open
     state._savedCatalogScrollY = getScrollY();
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);

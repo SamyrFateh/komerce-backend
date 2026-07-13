@@ -15,8 +15,6 @@ const mockSetupSocialProof = jest.fn();
 const mockBuildCarouselSlides = jest.fn();
 const mockGoToSlide = jest.fn();
 const mockSyncScrollPadding = jest.fn();
-const mockInjectMobileDelivery = jest.fn();
-const mockInjectMobileTrust = jest.fn();
 const mockSetupModalFAB = jest.fn();
 const mockHideModalFAB = jest.fn();
 const mockRenderSuggestions = jest.fn();
@@ -71,8 +69,6 @@ jest.mock('../../js/b-modal-product.js', () => ({
   openSizeGuide: jest.fn(),
   closeSizeGuide: jest.fn(),
   _syncScrollPadding: mockSyncScrollPadding,
-  _injectMobileDelivery: mockInjectMobileDelivery,
-  _injectMobileTrust: mockInjectMobileTrust,
   setupModalFAB: mockSetupModalFAB,
   hideModalFAB: mockHideModalFAB,
 }));

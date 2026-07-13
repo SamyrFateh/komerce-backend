@@ -19,7 +19,7 @@
 'use strict';
 
 import { bus } from './b-bus.js';
-import { state } from './b-store.js';
+import { state, dom } from './b-store.js';
 import { createModalSelection } from './view-models/modal-selection-model.js';
 import {
   clearMobileProductDetailState,
@@ -50,6 +50,25 @@ function currentProductId() {
 function clearProductDetailState() {
   clearDesktopProductDetailState();
   clearMobileProductDetailState();
+}
+
+// PDC-6 : le chemin transactionnel (ajout panier, achat direct, stepper) ne
+// doit jamais rester actif sur la seule foi du paint legacy produit liste.
+// Il est donc verrouillé avant même de tenter le fetch /detail, et seul le
+// renderer PDC (renderActions, sur la base du contrat reçu) est habilité à
+// le déverrouiller en cas de succès.
+function transactionalControls() {
+  const buyNow = document.getElementById('k-buy-now-btn');
+  return [dom.addCartBtn, buyNow, dom.qtyMinus, dom.qtyPlus].filter(Boolean);
+}
+
+function lockTransactionalPath() {
+  transactionalControls().forEach((control) => { control.disabled = true; });
+}
+
+function clearLegacyVariantsPaint() {
+  const container = dom.modalVariants || document.getElementById('k-modal-variants');
+  if (container) container.innerHTML = '';
 }
 
 function renderResponsiveProductDetail(detail, selection, forceMedia) {
@@ -86,6 +105,10 @@ async function loadProductDetail(product) {
   clearProductDetailState();
   _viewportMode = null;
 
+  // Verrouillage AVANT le fetch : tant que le contrat détail n'a pas résolu
+  // avec succès, aucune mutation panier SKU n'est permise.
+  lockTransactionalPath();
+
   try {
     const response = await fetch(`/api/products/${productId}/detail`, {
       credentials: 'include',
@@ -102,11 +125,18 @@ async function loadProductDetail(product) {
     const selection = createModalSelection(detail);
     state.modalProductDetail = detail;
     state.modalSelection = selection;
+    // Succès : c'est désormais le renderer PDC (renderActions, à partir du
+    // contrat détail) qui décide de l'état des CTA — jamais le paint legacy.
     renderResponsiveProductDetail(detail, selection, true);
   } catch (error) {
-    // Si le contrat détail est indisponible, la modal reste sur le paint
-    // immédiat legacy de b-modal-core.js (nom/prix/stock du produit liste).
-    // PDC-6 a retiré le fetch variantes legacy ; ce fallback n'en dépend pas.
+    // Échec : fail closed. Le contrat détail n'a pas pu être vérifié, donc
+    // aucune mutation panier SKU ne doit rester possible : on purge le paint
+    // legacy (#k-modal-variants) au lieu de le laisser en place, et le
+    // chemin transactionnel reste verrouillé (jamais déverrouillé ici).
+    if (generation === _generation && state.modalOpen && currentProductId() === productId) {
+      clearLegacyVariantsPaint();
+      lockTransactionalPath();
+    }
     console.warn('[Product Detail] contrat modal indisponible:', error?.message || error);
   }
 }

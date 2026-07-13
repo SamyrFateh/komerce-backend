@@ -136,12 +136,24 @@ function renderStock(selection) {
 }
 
 function renderActions(detail, selection) {
-  const enabled = detail.inventory_model !== 'SKU' || Boolean(selection.selected_sku_id);
+  const isSku = detail.inventory_model === 'SKU';
+  const enabled = !isSku || Boolean(selection.selected_sku_id);
   [dom.addCartBtn, document.getElementById('k-buy-now-btn')].forEach((button) => {
     if (!button) return;
     button.disabled = !enabled;
     if (!enabled) button.setAttribute('aria-describedby', 'k-modal-selection-message');
     else button.removeAttribute('aria-describedby');
+  });
+
+  // PDC-6 : le stepper modal (+/-) mute le panier "product-id first"
+  // (quickAdd/quickRemove résolvent par product.id, jamais par selected_sku_id).
+  // Ce n'est donc jamais une voie de mutation valide pour un produit SKU —
+  // même une fois le SKU résolu et le CTA actif — sous peine de contourner la
+  // sélection SKU. Il n'est réautorisé que pour l'inventaire historique
+  // (LEGACY_VARIANTS / simple), où la mutation product-id first reste valide.
+  [dom.qtyMinus, dom.qtyPlus].forEach((control) => {
+    if (!control) return;
+    control.disabled = isSku;
   });
 }
 

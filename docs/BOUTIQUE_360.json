@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-12T19:37:00.979Z",
+  "generatedAt": "2026-07-13T07:52:01.330Z",
   "summary": {
-    "modules": 71,
-    "withHeader": 71,
+    "modules": 69,
+    "withHeader": 69,
     "events": 17,
     "declaredActive": 12,
     "declaredDead": 5,
@@ -13,7 +13,7 @@
     "undeclared": 6,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 30,
-    "dynamicEndpoints": 25
+    "dynamicEndpoints": 24
   },
   "modules": [
     {
@@ -851,8 +851,7 @@
         "b-modal-suggestions.js",
         "b-modal-nav.js",
         "b-modal-cart.js",
-        "b-modal-image-ux.js",
-        "routes/products.js"
+        "b-modal-image-ux.js"
       ],
       "usedBy": [
         "b-modal.js",
@@ -905,12 +904,10 @@
         "b-bus.js",
         "b-catalog.js",
         "b-modal.js",
-        "b-scroll-owner.js",
-        "view-models/modal-view-model.js"
+        "b-scroll-owner.js"
       ],
       "usedBy": [
-        "b-desktop-upgrade.js",
-        "main.js"
+        "b-desktop-upgrade.js"
       ],
       "emits": [
         "modal:close"
@@ -926,8 +923,7 @@
         "b-modal",
         "b-catalog",
         "shop-schema",
-        "b-scroll-owner",
-        "modal-view-model"
+        "b-scroll-owner"
       ],
       "bodyClasses": []
     },
@@ -996,30 +992,6 @@
       "bodyClasses": []
     },
     {
-      "file": "public/boutique/js/b-modal-mobile-product-bootstrap.js",
-      "id": "b-modal-mobile-product-bootstrap",
-      "hasHeader": true,
-      "role": "mobile-product-detail-bootstrap-compat",
-      "domain": "catalog",
-      "layer": "compatibility",
-      "criticality": "low",
-      "doctrine": [
-        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
-      ],
-      "depends": [
-        "b-modal-product-detail-bootstrap.js"
-      ],
-      "usedBy": [
-        "tests and transitional imports until PDC-6"
-      ],
-      "emits": [],
-      "listens": [],
-      "imports": [
-        "b-modal-product-detail-bootstrap"
-      ],
-      "bodyClasses": []
-    },
-    {
       "file": "public/boutique/js/b-modal-mobile-product.js",
       "id": "b-modal-mobile-product",
       "hasHeader": true,
@@ -1039,7 +1011,7 @@
         "view-models/modal-selection-model.js"
       ],
       "usedBy": [
-        "b-modal-mobile-product-bootstrap.js"
+        "b-modal-product-detail-bootstrap.js"
       ],
       "emits": [],
       "listens": [],
@@ -1908,7 +1880,6 @@
         "b-scroll-owner",
         "b-product-open-contract",
         "b-cart-product-open-style",
-        "b-modal-desktop-enhancers",
         "b-modal-approche-c-hybrid",
         "b-pdp-curation-suggestions",
         "b-home-premium-v1",
@@ -2068,33 +2039,6 @@
       "emits": [],
       "listens": [],
       "imports": [],
-      "bodyClasses": []
-    },
-    {
-      "file": "public/boutique/js/view-models/modal-view-model.js",
-      "id": "modal-view-model",
-      "hasHeader": true,
-      "role": "product-modal-view-model",
-      "domain": "boutique",
-      "layer": "view-model",
-      "criticality": "high",
-      "doctrine": [
-        "fiche_produit_lisible",
-        "modal_contract_stable",
-        "desktop_premium"
-      ],
-      "depends": [
-        "b-utils.js"
-      ],
-      "usedBy": [
-        "b-modal-desktop-enhancers.js",
-        "b-modal-core.js"
-      ],
-      "emits": [],
-      "listens": [],
-      "imports": [
-        "b-utils"
-      ],
       "bodyClasses": []
     },
     {
@@ -2446,13 +2390,6 @@
       "raw": "/api/boutique/suggestions?",
       "dynamic": false,
       "contractStatus": "UNKNOWN"
-    },
-    {
-      "module": "b-modal-core",
-      "route": "/api/products",
-      "raw": "/api/products/",
-      "dynamic": true,
-      "contractStatus": "DYNAMIC"
     },
     {
       "module": "b-modal-product-detail-bootstrap",
@@ -2972,7 +2909,6 @@
       "/api/parcels/{id}",
       "/api/parcels/{id}/items",
       "/api/payments/paypal/capture/{id}",
-      "/api/products",
       "/api/products/{id}",
       "/api/products/{id}/detail",
       "/api/purchasing/suppliers/{id}",

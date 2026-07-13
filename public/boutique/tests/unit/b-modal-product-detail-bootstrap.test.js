@@ -70,10 +70,29 @@ function flush() {
 }
 
 function installDom() {
-  document.body.innerHTML = '<div id="k-modal"><div id="k-modal-variants"></div></div>';
+  document.body.innerHTML =
+    '<div id="k-modal">' +
+      '<div id="k-modal-variants"></div>' +
+      '<button id="k-add-cart-btn"></button>' +
+      '<button id="k-buy-now-btn"></button>' +
+      '<button id="k-qty-minus"></button>' +
+      '<button id="k-qty-plus"></button>' +
+    '</div>';
   window.matchMedia = jest.fn().mockReturnValue({ matches: true });
   dom.modal = document.getElementById('k-modal');
   dom.modalVariants = document.getElementById('k-modal-variants');
+  dom.addCartBtn = document.getElementById('k-add-cart-btn');
+  dom.qtyMinus = document.getElementById('k-qty-minus');
+  dom.qtyPlus = document.getElementById('k-qty-plus');
+}
+
+function transactionalControls() {
+  return [
+    document.getElementById('k-add-cart-btn'),
+    document.getElementById('k-buy-now-btn'),
+    document.getElementById('k-qty-minus'),
+    document.getElementById('k-qty-plus'),
+  ];
 }
 
 describe('product detail modal bootstrap', () => {
@@ -203,7 +222,18 @@ describe('product detail modal bootstrap', () => {
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
   });
 
-  test('un échec HTTP purge les owners PDC et laisse intact le paint immédiat legacy (nom/prix/stock liste, hors périmètre PDC-6)', async () => {
+  test('PDC-6 : le chemin transactionnel (CTA + stepper) est verrouillé avant même la résolution du fetch /detail', () => {
+    fetch.mockReturnValue(new Promise(() => {})); // ne résout jamais dans ce test
+
+    handlers['modal:opened']({ id: PRODUCT_ID });
+
+    // Verrouillage synchrone, posé avant l'await du fetch — pas besoin de flush().
+    transactionalControls().forEach((control) => {
+      expect(control.disabled).toBe(true);
+    });
+  });
+
+  test('PDC-6 : un échec HTTP fail-close — aucun legacy variants préservé, aucune mutation panier SKU possible', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     dom.modalVariants.innerHTML = '<div data-legacy="1">legacy</div>';
     fetch.mockResolvedValue({ ok: false, status: 503 });
@@ -214,10 +244,34 @@ describe('product detail modal bootstrap', () => {
 
     expect(clearDesktopProductDetailState).toHaveBeenCalledTimes(1);
     expect(clearMobileProductDetailState).toHaveBeenCalledTimes(1);
-    expect(dom.modalVariants.querySelector('[data-legacy]')).not.toBeNull();
+    // Inversion PDC-6 : le paint legacy #k-modal-variants n'est plus préservé
+    // en cas d'échec /detail — il est purgé (fail closed), pas conservé.
+    expect(dom.modalVariants.querySelector('[data-legacy]')).toBeNull();
+    expect(dom.modalVariants.innerHTML).toBe('');
+    // Preuve : aucune mutation panier SKU n'est possible tant que le contrat
+    // détail n'a pas résolu avec succès — CTA et stepper restent verrouillés.
+    transactionalControls().forEach((control) => {
+      expect(control.disabled).toBe(true);
+    });
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  test('PDC-6 : une erreur réseau (fetch rejeté) verrouille aussi le chemin transactionnel', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    fetch.mockRejectedValue(new Error('network down'));
+
+    handlers['modal:opened']({ id: PRODUCT_ID });
+    await flush();
+    await flush();
+
+    transactionalControls().forEach((control) => {
+      expect(control.disabled).toBe(true);
+    });
+    expect(renderMobileProductDetail).not.toHaveBeenCalled();
+    expect(renderDesktopProductDetail).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 
