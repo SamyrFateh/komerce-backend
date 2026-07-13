@@ -3,16 +3,20 @@ name: Route File Owner Registry Fix
 on:
   push:
     branches: [fix/route-file-owner-registry]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 concurrency:
-  group: route-file-owner-registry-fix
+  group: route-file-owner-registry-fix-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   patch-and-validate:
+    if: github.ref_name == 'fix/route-file-owner-registry' || github.head_ref == 'fix/route-file-owner-registry'
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
