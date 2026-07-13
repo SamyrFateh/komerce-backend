@@ -159,6 +159,12 @@ jobs:
             echo "=== BUSINESS GRAPH RATCHET ==="
             cat /tmp/business-ratchet.log
           } > "$diagnostic"
+          map_diagnostic=docs/_generated/route-owner-map-check-diagnostic.txt
+          {
+            echo "map_rc=$map_rc"
+            echo "=== MAP CHECK ==="
+            cat /tmp/map-check.log
+          } > "$map_diagnostic"
           cat "$diagnostic"
           echo "=== MAP CHECK TAIL ==="
           tail -220 /tmp/map-check.log
@@ -173,9 +179,9 @@ jobs:
             echo "No tree change to publish."
             exit 0
           fi
-          # Diagnostic branch only: hooks would re-enforce the known red ratchet
-          # before the generated graph can be published for inspection. The same
-          # ratchet remains enforced explicitly in the final workflow step.
+          # Diagnostic branch only: hooks would re-enforce the known red map gate
+          # before the generated diagnostics can be published for inspection. The
+          # same map gate remains enforced explicitly in the final workflow step.
           git commit --no-verify -m "fix(governance): source OpenAPI route owners from recursive registry"
           git push origin HEAD:fix/route-file-owner-registry
 
