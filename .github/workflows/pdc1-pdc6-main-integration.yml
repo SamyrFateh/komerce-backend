@@ -25,10 +25,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Configure Git
+      - name: Configure Git and record branch lease
+        id: branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "start_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Fetch canonical PDC-6 head
         run: |
@@ -39,24 +41,108 @@ jobs:
         run: |
           set -euo pipefail
           if ! git merge-base --is-ancestor 1cf302c482f2c76ed4a10028e241006324998c48 HEAD; then
-            if ! git merge --no-ff -X ours 1cf302c482f2c76ed4a10028e241006324998c48 \
-              -m "integration(pdc): merge PDC-1→PDC-6 into main"; then
-              echo "Automatic conservative merge did not resolve every conflict."
-              git diff --name-only --diff-filter=U
-              exit 1
-            fi
+            git merge --no-ff -X ours 1cf302c482f2c76ed4a10028e241006324998c48 \
+              -m "integration(pdc): merge PDC-1→PDC-6 into main"
           fi
           rm -f .github/pdc1-pdc6-main.trigger
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Regenerate canonical architecture artifacts
+      - name: Reconcile PDC ownership and canonical products mount
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, content):
+              Path(path).write_text(content, encoding='utf-8')
+
+          def remove_exact_lines(path, lines):
+              content = read(path)
+              for line in lines:
+                  if line not in content:
+                      raise SystemExit(f'Expected ownership line missing in {path}: {line.rstrip()}')
+                  content = content.replace(line, '', 1)
+              write(path, content)
+
+          # modal-product is the sole Boutique slice owner of PDC modal runtime/tests.
+          remove_exact_lines('public/boutique/features/catalog.feature.js', [
+              "      '../js/b-modal-desktop-product.js',\n",
+              "      '../js/b-modal-mobile-product.js',\n",
+              "      '../js/b-modal-product-detail-bootstrap.js',\n",
+              "      '../js/view-models/modal-selection-model.js',\n",
+              "      '../tests/unit/modal-selection-model.test.js',\n",
+              "      '../tests/unit/b-modal-mobile-product.test.js',\n",
+              "      '../tests/unit/b-modal-desktop-product.test.js',\n",
+              "      '../tests/unit/b-modal-product-detail-bootstrap.test.js',\n",
+          ])
+          remove_exact_lines('public/boutique/features/boutique.feature.js', [
+              "      '../js/b-modal-approche-c-hybrid.js',\n",
+              "      '../js/b-modal-desktop-enhancers.js',\n",
+          ])
+
+          # Compose Product Detail under the canonical products router. The route
+          # registry recursively follows inline require() mounts and retains all
+          # existing SKU routes from routes/products.js under one /api/products mount.
+          products = read('routes/products.js')
+          marker = '// ─── GET /api/products/:id ───────────────────────────────────\n'
+          mount = (
+              '// ─── Product Detail Contract v1 ───────────────────────────────────\n'
+              "router.use(require('./catalog-product-detail'));\n\n"
+          )
+          if mount not in products:
+              if marker not in products:
+                  raise SystemExit('Canonical products detail insertion marker missing')
+              products = products.replace(marker, mount + marker, 1)
+          write('routes/products.js', products)
+
+          # Remove the competing top-level /api/products mount if the PDC side won
+          # these hunks despite the conservative merge strategy.
+          bootstrap = read('bootstrap/api-routes.js')
+          bootstrap = bootstrap.replace("  const productDetailRouter = require('../routes/catalog-product-detail');\n", '')
+          bootstrap = bootstrap.replace("  app.use('/api/products',   productDetailRouter);\n", '')
+          write('bootstrap/api-routes.js', bootstrap)
+
+          route = read('routes/catalog-product-detail.js')
+          route = route.replace(
+              '@used-by       bootstrap/api-routes.js, future public/boutique/js/b-modal-core.js',
+              '@used-by       routes/products.js, public/boutique/js/b-modal-product-detail-bootstrap.js',
+          )
+          write('routes/catalog-product-detail.js', route)
+          PY
+
+      - name: Install backend and Boutique dependencies
+        run: |
+          npm ci
+          npm --prefix public/boutique ci
+
+      - name: Regenerate canonical artifacts
+        run: |
+          node scripts/gen-route-registry.js
           npm run arch:gen
           npm run dashboards:360
           npm run boutique:360
+          npm run business-graph:gen
           npm run meta:graph
+
+      - name: Register the single intended public Product Detail security surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          security_log="$RUNNER_TEMP/security-before-save.log"
+          set +e
+          npm run security:360:check >"$security_log" 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            clean_log="$RUNNER_TEMP/security-before-save.clean.log"
+            sed -E 's/\x1B\[[0-9;]*[mK]//g' "$security_log" > "$clean_log"
+            count=$(grep -c '^   ↑ ' "$clean_log" || true)
+            test "$count" -eq 1
+            grep -Fq 'GET /api/products/{id}/detail — UNPROTECTED' "$clean_log"
+            npm run security:360:save
+          fi
+          npm run security:360:check
 
       - name: Run integration validations with exact diagnostics
         id: validate
@@ -80,7 +166,7 @@ jobs:
             if [ "$rc" -ne 0 ]; then
               overall=1
               echo "--- tail $name ---" >> "$summary"
-              tail -120 "$logs_dir/$name.log" >> "$summary"
+              tail -160 "$logs_dir/$name.log" >> "$summary"
               echo "--- end tail $name ---" >> "$summary"
             fi
           }
@@ -92,12 +178,27 @@ jobs:
           run_check boutique-ownership npm run gate:boutique-ownership
           run_check map-check npm run map:check
 
-          legacy_rc=0
-          : > "$logs_dir/pdc6-legacy.log"
-          grep -n "_renderVariants" public/boutique/js/b-modal-core.js public/boutique/js/b-modal-product.js >>"$logs_dir/pdc6-legacy.log" 2>&1 && legacy_rc=1
-          grep -nE "fetch\([^\n]*api/products/.+[^/]detail" public/boutique/js/b-modal-core.js >>"$logs_dir/pdc6-legacy.log" 2>&1 && legacy_rc=1
-          test ! -e public/boutique/js/view-models/modal-view-model.js || legacy_rc=1
-          test ! -e public/boutique/js/b-modal-mobile-product-bootstrap.js || legacy_rc=1
+          node >"$logs_dir/pdc6-legacy.log" 2>&1 <<'NODE'
+          const fs = require('fs');
+          const stripComments = source => source
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+          const core = stripComments(fs.readFileSync('public/boutique/js/b-modal-core.js', 'utf8'));
+          const product = stripComments(fs.readFileSync('public/boutique/js/b-modal-product.js', 'utf8'));
+          if (core.includes('_renderVariants') || product.includes('_renderVariants')) {
+            throw new Error('_renderVariants remains in executable modal source');
+          }
+          if (core.includes('/api/products/')) {
+            throw new Error('legacy /api/products product fetch remains in modal core executable source');
+          }
+          for (const dead of [
+            'public/boutique/js/view-models/modal-view-model.js',
+            'public/boutique/js/b-modal-mobile-product-bootstrap.js',
+          ]) {
+            if (fs.existsSync(dead)) throw new Error(`legacy owner still exists: ${dead}`);
+          }
+          NODE
+          legacy_rc=$?
           echo "pdc6-legacy-extinction=$legacy_rc" | tee -a "$summary"
           if [ "$legacy_rc" -ne 0 ]; then
             overall=1
@@ -107,14 +208,37 @@ jobs:
           echo "overall=$overall" | tee -a "$summary"
           echo "overall=$overall" >> "$GITHUB_OUTPUT"
 
-      - name: Commit merged tree and generated artifacts to integration branch
+      - name: Commit and publish validated integration tree
+        if: steps.validate.outputs.overall == '0'
+        shell: bash
         run: |
+          set -euo pipefail
+          validation_dir="$RUNNER_TEMP/pdc-validation"
+          summary="$validation_dir/validation-summary.txt"
+          push_log="$validation_dir/logs/push.log"
+          start_sha='${{ steps.branch.outputs.start_sha }}'
+
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "chore(governance): regenerate artifacts after PDC integration"
+            git commit -m "integration(pdc): reconcile PDC-1→PDC-6 with Feature First main"
           fi
-          git status --short
-          git push origin HEAD:integration/pdc1-pdc6-main
+
+          git fetch origin integration/pdc1-pdc6-main
+          remote_sha=$(git rev-parse origin/integration/pdc1-pdc6-main)
+          if [ "$remote_sha" != "$start_sha" ]; then
+            echo "push=1" >> "$summary"
+            echo "integration branch moved: expected $start_sha, got $remote_sha" | tee "$push_log"
+            exit 1
+          fi
+
+          set +e
+          git push --force-with-lease=refs/heads/integration/pdc1-pdc6-main:$start_sha \
+            origin HEAD:refs/heads/integration/pdc1-pdc6-main >"$push_log" 2>&1
+          push_rc=$?
+          set -e
+          echo "push=$push_rc" >> "$summary"
+          cat "$push_log"
+          exit "$push_rc"
 
       - name: Upload validation diagnostics
         if: always()
