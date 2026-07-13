@@ -157,10 +157,8 @@ jobs:
           echo "=== MAP CHECK ==="
           tail -220 /tmp/map-check.log
 
-      - name: Remove one-shot workflow and trigger from proposed tree
-        run: |
-          rm -f .github/workflows/route-file-owner-registry-fix.yml
-          rm -f .github/route-file-owner-registry.trigger
+      - name: Remove trigger from proposed tree
+        run: rm -f .github/route-file-owner-registry.trigger
 
       - name: Publish generated diagnostic tree to fix branch
         run: |
