@@ -156,7 +156,7 @@ Aucun dans ce sous-lot. La frontière `recommendations` / `decision-signals`
 | Registre features | `npm run feature:registry` | ✔ 0 erreur, 2 orphelins pré-existants (`.github/workflows/*.yml`, non liés à ce lot) |
 | Schéma cartes | `npm run gate:schema` | ✔ 18 cartes, 0 cassée |
 | Fichiers touchés | `node scripts/touched-files-feature-gate.js --files <fichiers O1.1>` | ✔ (pas de dépôt git dans ce conteneur — testé en mode `--files` explicite) |
-| Docs lint | `npm run gate:docs-lint` | ✖ 1 violation — **pré-existante**, `docs/rex/REX_2026-07-10_PR563_ALERTS_DB_POOL.md`, non créée par ce lot, non liée à O1 |
+| Docs lint | `npm run gate:docs-lint` | ✖ 1 violation — **pré-existante**, `docs/_archive/rex/REX_2026-07-10_PR563_ALERTS_DB_POOL.md`, non créée par ce lot, non liée à O1 |
 | Classification | `node scripts/feature-classification-check.js --strict --feature recommendations` | ✔ classifiée `business-feature` |
 | Arch/DB | `npm run arch:check` | ✔ 295 headers, 0 violation bloquante |
 
