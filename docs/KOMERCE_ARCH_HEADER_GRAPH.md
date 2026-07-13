@@ -14,11 +14,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 756
-- Edges: 4292
+- Edges: 4286
 - DB tables: 112
 - Doctrines: 148
 - Impact areas: 125
-- Unresolved code edges: 414
+- Unresolved code edges: 411
 - Tables multi-écrivains directs (>=2): 65
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -637,7 +637,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/product-store.js -> localStorage (localStorage)
 - uses: railway-runtime -> server.js (railway-runtime)
 - uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
-- uses: reminders -> services/notification-service.js (reminders)
 - uses: reminders -> services/notifications/notification-service.js (reminders)
 - uses: renderers -> public/boutique/js/shop-schema.js (renderers)
 - uses: routes/* -> validators/index.js (routes/*)
@@ -706,6 +705,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/categories.js -> db.js (db.js)
 - depends: routes/categories.js -> services/* (services/*)
 - depends: routes/client-auth.js -> db.js (db.js)
+- depends: routes/client-auth.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 
