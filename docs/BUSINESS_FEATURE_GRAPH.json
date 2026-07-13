@@ -14089,6 +14089,12 @@
         "to": "auth-identity",
         "raw": "auth-identity (identification du client)",
         "resolved": true
+      },
+      {
+        "from": "admin-dashboard",
+        "to": "sourcing",
+        "raw": "sourcing",
+        "resolved": true
       }
     ],
     "implementedIn": [
@@ -15444,7 +15450,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth",
@@ -23212,9 +23218,9 @@
         "msg": "contract.consumes de shared-cart référence \"products\", ne correspond à aucun nom de feature connu"
       },
       {
-        "type": "DASH-MANIFEST-DUPLICATE-COPY",
+        "type": "DASH-MANIFEST-COPY-DIVERGES",
         "ref": "admin-dashboard",
-        "msg": "\"public/features/admin-dashboard.feature.js\" est une copie déclarée de \"public/dashboards/features/admin-dashboard.feature.js\" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique"
+        "msg": "\"public/features/admin-dashboard.feature.js\" diverge de \"public/dashboards/features/admin-dashboard.feature.js\" au-delà de la divergence déjà documentée (APP_FEATURE_REGISTRY.md) : 1 ligne(s) inattendue(s)"
       },
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -23310,11 +23316,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "admin-dashboard -> payments",
         "msg": "dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "admin-dashboard -> sourcing",
-        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"admin-dashboard\" vers \"sourcing\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

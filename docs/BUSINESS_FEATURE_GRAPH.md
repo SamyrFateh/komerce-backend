@@ -106,7 +106,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 0
 - interfaces exposed: 0
 - internal APIs: 0
-- dependencies (consumes): 0
+- dependencies (consumes): 1 — sourcing
 - consumers: 0
 
 ### auth _(technical-transversal)_
@@ -478,7 +478,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 11
 - internal APIs: 0
 - dependencies (consumes): 3 — catalog, economic-engine, auth
-- consumers: 0
+- consumers: 1 — admin-dashboard
 
 ### unsold-resolution _(business-feature)_
 
@@ -1241,6 +1241,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | unsold-resolution | catalog (`catalog (produit concerné)`) | ✔ |
 | unsold-resolution | auth (`auth`) | ✔ |
 | wallet | auth-identity (`auth-identity (identification du client)`) | ✔ |
+| admin-dashboard | sourcing (`sourcing`) | ✔ |
 
 ## Drifts
 
@@ -1248,7 +1249,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### WARN / DEBT (156)
+### WARN / DEBT (155)
 
 Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
 
@@ -1266,7 +1267,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ purchasing -> "notification" (entrée: "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)") — contract.consumes de purchasing référence "notification", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "notification" (entrée: "notification") — contract.consumes de shared-cart référence "notification", ne correspond à aucun nom de feature connu
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "products" (entrée: "products") — contract.consumes de shared-cart référence "products", ne correspond à aucun nom de feature connu
-- **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
+- **[DASH-MANIFEST-COPY-DIVERGES]** _[ACTIONABLE_DRIFT]_ admin-dashboard — "public/features/admin-dashboard.feature.js" diverge de "public/dashboards/features/admin-dashboard.feature.js" au-delà de la divergence déjà documentée (APP_FEATURE_REGISTRY.md) : 1 ligne(s) inattendue(s)
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 14 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ... | scripts/feature-audit.js: full) — limitation du modèle statique O5, jamais inventé
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
@@ -1286,7 +1287,6 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> logistics — dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> orders — dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "orders"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> payments — dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "payments"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> sourcing — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "sourcing"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "auth" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth" vers "notifications"
@@ -1441,7 +1441,7 @@ Meta Graph monté : oui.
 | admin-dashboard | logistics | interface | 7 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | orders | interface | 4 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | payments | interface | 6 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | sourcing | interface | 3 | **OBSERVED_UNDECLARED** |
+| admin-dashboard | sourcing | interface | 3 | **DECLARED_AND_OBSERVED** |
 | auth | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
 | auth | infrastructure | static-code | 13 | **OBSERVED_UNDECLARED** |
 | auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
@@ -1596,7 +1596,6 @@ Meta Graph monté : oui.
 - `admin-dashboard` → `logistics` (canaux: interface)
 - `admin-dashboard` → `orders` (canaux: interface)
 - `admin-dashboard` → `payments` (canaux: interface)
-- `admin-dashboard` → `sourcing` (canaux: interface)
 - `auth` → `auth-identity` (canaux: static-code)
 - `auth` → `infrastructure` (canaux: static-code)
 - `auth` → `notifications` (canaux: static-code)
