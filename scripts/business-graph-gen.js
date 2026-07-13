@@ -19,12 +19,20 @@
  * Usage :
  *   node scripts/business-graph-gen.js              (re)génère
  *   node scripts/business-graph-gen.js --check      cliquet — stale ou référence invalide -> exit 1
- *   node scripts/business-graph-gen.js --boutique-root DIR   racine du SCOPE boutique (répertoire ; défaut ../boutique — voir model.scopeTopology pour la relation Git réelle, souvent une sous-arborescence du même dépôt, pas un checkout séparé)
+ *   node scripts/business-graph-gen.js --boutique-root DIR   racine du SCOPE boutique (répertoire ; défaut ../boutique — voir model.scopeTopology pour la relation de chemin réelle, souvent une sous-arborescence du même dépôt, pas un arbre séparé)
  *   node scripts/business-graph-gen.js --root DIR
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// Lot O5-closure (régression O4.1.1) : toute valeur de chemin sérialisée dans
+// le JSON/Markdown généré doit utiliser `/`, indépendamment de l'OS qui a
+// lancé le générateur. path.relative()/path.join() rendent `\` sous Windows —
+// jamais utilisé tel quel dans une sortie sérialisée.
+function toPosixPath(value) {
+  return String(value).replace(/\\/g, '/');
+}
 
 const args = process.argv.slice(2);
 const CHECK = args.includes('--check');
@@ -63,34 +71,28 @@ const DASH_KNOWN_COPY_DIVERGENCES = {
 // Lot O4-2 (point 9) : "cross-repo" dans les livrables O4 précédents
 // désignait en réalité un franchissement de SCOPE (frontière de gouvernance
 // déclarée : manifests/registre/autorité propres à backend, dash, boutique),
-// pas nécessairement un franchissement de dépôt Git séparé. Dans CETTE
-// topologie (vérifié : aucun .git ni sous ROOT ni sous public/boutique ni
-// sous public/dashboards — cf. AGENTS.md/mémoire produit qui décrivent
-// Komerce comme un monorepo backend + boutique + dashboards), boutique et
-// dash sont des SOUS-RÉPERTOIRES du même arbre que le backend, pas des
-// checkouts Git distincts. Les flags --dash-root/--boutique-root et les
-// variables KOMERCE_DASH_ROOT/KOMERCE_BOUTIQUE_ROOT existent pour permettre
-// à ce générateur de fonctionner AUSSI si un jour ces scopes vivent dans des
-// dépôts Git réellement séparés (topologie historique visée par O1.5/O3) —
-// mais ce n'est PAS la topologie observée ici, et le prétendre serait
-// factuellement faux. detectScopeRelation() constate, ne suppose jamais.
+// pas nécessairement un franchissement de dépôt Git séparé. Boutique et dash
+// sont des SOUS-RÉPERTOIRES du même arbre que le backend dans la topologie
+// courante, pas des checkouts Git distincts. Les flags --dash-root/
+// --boutique-root et les variables KOMERCE_DASH_ROOT/KOMERCE_BOUTIQUE_ROOT
+// existent pour permettre à ce générateur de fonctionner AUSSI si un jour ces
+// scopes vivent ailleurs.
+//
+// Lot O5-closure (régression O4.1.1) : detectScopeRelation() constate, ne
+// suppose jamais — et la présence de `.git` n'est PAS un fait déterministe :
+// un clone Git, un ZIP livré sans `.git`, ou un export CI n'ont pas la même
+// présence de `.git` pour un même code source. La classification sérialisée
+// ne doit donc dériver QUE des chemins configurés (ROOT, DASH_ROOT,
+// BOUTIQUE_ROOT) et de leur relation de chemin — jamais de `fs.existsSync`
+// sur `.git`. La présence de `.git` peut rester une info de diagnostic
+// runtime (non sérialisée dans le modèle) si un jour utile, mais ne doit plus
+// influencer `relation`.
 function detectScopeRelation(mountPath) {
   if (!fs.existsSync(mountPath)) return { mounted: false, relation: 'not-mounted' };
   const rel = path.relative(ROOT, mountPath);
   const isNestedUnderRoot = rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
-  const hasOwnGitDir = fs.existsSync(path.join(mountPath, '.git'));
-  const rootHasGitDir = fs.existsSync(path.join(ROOT, '.git'));
-  let relation;
-  if (isNestedUnderRoot && !hasOwnGitDir) {
-    relation = 'same-repository-subdirectory'; // constat direct : pas de .git propre, imbriqué sous ROOT
-  } else if (isNestedUnderRoot && hasOwnGitDir) {
-    relation = 'nested-but-has-own-git-dir'; // cas nested git (submodule-like) — rare, signalé tel quel
-  } else if (!isNestedUnderRoot && hasOwnGitDir) {
-    relation = 'separate-git-checkout'; // chemin externe avec son propre .git — vraiment "cross-repo"
-  } else {
-    relation = 'externally-mounted-path-git-relationship-unverified'; // chemin externe sans .git détecté ici
-  }
-  return { mounted: true, relation, hasOwnGitDir, rootHasGitDir, isNestedUnderRoot };
+  const relation = isNestedUnderRoot ? 'same-tree-scope' : 'external-path-scope';
+  return { mounted: true, relation, isNestedUnderRoot };
 }
 
 const DOCS = path.join(ROOT, 'docs');
@@ -149,7 +151,7 @@ const DASH_REPO_NAMES = new Set(['admin-dashboard', 'legacy-control-tower', 'pla
 // ─────────────────────────────────────────────────────────────────────────
 function loadJSON(f, label, errors) {
   if (!fs.existsSync(f)) {
-    errors.push(`Source manquante : ${label} (${path.relative(ROOT, f)}). Lance le générateur correspondant d'abord.`);
+    errors.push(`Source manquante : ${label} (${toPosixPath(path.relative(ROOT, f))}). Lance le générateur correspondant d'abord.`);
     return null;
   }
   try { return JSON.parse(fs.readFileSync(f, 'utf8')); }
@@ -165,10 +167,10 @@ function loadFeatureManifests() {
     try {
       delete require.cache[require.resolve(full)];
       const m = require(full);
-      m.__file = path.relative(ROOT, full);
+      m.__file = toPosixPath(path.relative(ROOT, full));
       out.push(m);
     } catch (e) {
-      out.push({ name: f.replace(/\.feature\.js$/, ''), __file: path.relative(ROOT, full), __broken: e.message });
+      out.push({ name: f.replace(/\.feature\.js$/, ''), __file: toPosixPath(path.relative(ROOT, full)), __broken: e.message });
     }
   }
   return out.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -200,7 +202,7 @@ function loadDashFeatureManifests(warns) {
       try { m = loadOneManifest(full); }
       catch (e) { out.push({ name: f.replace(/\.feature\.js$/, ''), __repo: 'dash', __file: `dash:dashboards/features/${f}`, __broken: e.message }); continue; }
       m.__repo = 'dash';
-      m.__file = `dash:${path.relative(DASH_ROOT, full).replace(/\\/g, '/')}`;
+      m.__file = `dash:${toPosixPath(path.relative(DASH_ROOT, full))}`;
       m.__manifestDir = path.dirname(full);
       out.push(m);
       canonicalNames.add(m.name);
@@ -241,7 +243,7 @@ function loadDashFeatureManifests(warns) {
       try { m = loadOneManifest(full); }
       catch (e) { out.push({ name, __repo: 'dash', __file: `dash:features/${f}`, __broken: e.message }); continue; }
       m.__repo = 'dash';
-      m.__file = `dash:${path.relative(DASH_ROOT, full).replace(/\\/g, '/')}`;
+      m.__file = `dash:${toPosixPath(path.relative(DASH_ROOT, full))}`;
       m.__manifestDir = path.dirname(full);
       out.push(m);
     }
@@ -250,8 +252,8 @@ function loadDashFeatureManifests(warns) {
 }
 
 // Charge les manifests du SCOPE `boutique` (Lot O4 — voir model.scopeTopology
-// pour la relation Git réelle avec ROOT ; ce n'est pas nécessairement un
-// dépôt Git séparé). Contrairement à `dash`, pas de duplication connue
+// pour la relation de chemin réelle avec ROOT ; ce n'est pas nécessairement un
+// arbre séparé). Contrairement à `dash`, pas de duplication connue
 // backend-side — un seul dossier `features/`.
 // Chaque manifest boutique porte (depuis O4) `canonicalFeature` (nom d'une
 // feature backend/dash existante, ou null) et `sliceKind` ('frontend-slice' |
@@ -270,7 +272,7 @@ function loadBoutiqueFeatureManifests() {
     try {
       const m = loadOneManifest(full);
       m.__repo = 'boutique';
-      m.__file = `boutique:${path.relative(BOUTIQUE_ROOT, full).replace(/\\/g, '/')}`;
+      m.__file = `boutique:${toPosixPath(path.relative(BOUTIQUE_ROOT, full))}`;
       m.__manifestDir = path.dirname(full);
       out.push(m);
     } catch (e) {
@@ -297,11 +299,11 @@ function loadCapabilityManifests() {
     try {
       delete require.cache[require.resolve(full)];
       const m = require(full);
-      m.__file = path.relative(ROOT, full);
+      m.__file = toPosixPath(path.relative(ROOT, full));
       m.__isCapability = true;
       out.push(m);
     } catch (e) {
-      out.push({ name: f.replace(/\.capability\.js$/, ''), __file: path.relative(ROOT, full), __broken: e.message, __isCapability: true });
+      out.push({ name: f.replace(/\.capability\.js$/, ''), __file: toPosixPath(path.relative(ROOT, full)), __broken: e.message, __isCapability: true });
     }
   }
   return out;
@@ -629,7 +631,7 @@ function build() {
         const clean = String(rel || '').replace(/\\/g, '/');
         if (!clean) continue;
         const abs = path.resolve(bm.__manifestDir, clean);
-        const relToBoutiqueRoot = path.relative(BOUTIQUE_ROOT, abs).replace(/\\/g, '/');
+        const relToBoutiqueRoot = toPosixPath(path.relative(BOUTIQUE_ROOT, abs));
         if (relToBoutiqueRoot.startsWith('..')) continue; // hors scope boutique, ignore — pas une edge de ce namespace
         const repoRelPath = `public/boutique/${relToBoutiqueRoot}`;
         const exists = fs.existsSync(abs); // point 7 — vérification réelle sur disque, plus de confiance aveugle
@@ -685,7 +687,7 @@ function build() {
           const clean = String(rel || '').replace(/\\/g, '/');
           if (!clean) continue;
           const absPath = path.resolve(m.__manifestDir, clean);
-          const dashRelPath = path.relative(DASH_ROOT, absPath).replace(/\\/g, '/');
+          const dashRelPath = toPosixPath(path.relative(DASH_ROOT, absPath));
           const displayPath = `dash:${dashRelPath}`;
           const exists = fs.existsSync(absPath);
           const status = exists ? 'resolved-in-dash-repo' : 'missing-on-disk';
@@ -1049,10 +1051,10 @@ function build() {
     version: 'O5-1.0',
     generatedFrom: {
       featureManifests: manifests.map(m => m.__file).filter(Boolean),
-      technicalArchitectureGraph: path.relative(ROOT, ARCH_GRAPH_FILE),
-      openapiContract: openapi ? path.relative(ROOT, OPENAPI_FILE) : null,
-      boutiqueRoot: fs.existsSync(BOUTIQUE_ROOT) ? path.relative(ROOT, BOUTIQUE_ROOT) : null,
-      dashRoot: DASH_ROOT_MOUNTED ? path.relative(ROOT, DASH_ROOT) : null,
+      technicalArchitectureGraph: toPosixPath(path.relative(ROOT, ARCH_GRAPH_FILE)),
+      openapiContract: openapi ? toPosixPath(path.relative(ROOT, OPENAPI_FILE)) : null,
+      boutiqueRoot: fs.existsSync(BOUTIQUE_ROOT) ? toPosixPath(path.relative(ROOT, BOUTIQUE_ROOT)) : null,
+      dashRoot: DASH_ROOT_MOUNTED ? toPosixPath(path.relative(ROOT, DASH_ROOT)) : null,
     },
     scope: {
       businessManifestsResolved: manifests.filter(m => !m.__broken).length,
@@ -1093,16 +1095,19 @@ function build() {
     bigMap,
     // Lot O4-2 (point 9) : constat factuel, pas une doctrine — distingue
     // franchissement de SCOPE (backend/dash/boutique, toujours vrai — chacun
-    // a ses propres manifests/registre/autorité) de franchissement de DÉPÔT
-    // GIT séparé (vrai seulement si relation==='separate-git-checkout').
-    // "cross-repo" dans bigMap.canonical.crossRepoFeatures et dans les
-    // livrables O4 précédents doit se lire "cross-scope" tant que la
-    // relation ci-dessous n'est pas 'separate-git-checkout'.
+    // a ses propres manifests/registre/autorité) de franchissement d'ARBRE
+    // (vrai seulement si relation==='external-path-scope'). "cross-repo" dans
+    // bigMap.canonical.crossRepoFeatures et dans les livrables O4 précédents
+    // doit se lire "cross-scope" tant que la relation ci-dessous n'est pas
+    // 'external-path-scope'.
+    // Lot O5-closure : relation dérive uniquement des chemins configurés
+    // (ROOT/DASH_ROOT/BOUTIQUE_ROOT) — jamais de la présence de `.git`, qui
+    // n'est pas déterministe entre un clone Git et un ZIP livré sans `.git`.
     scopeTopology: {
       backend: { mountPath: '.', relation: 'self', note: 'scope de référence — ce générateur tourne depuis ce dépôt' },
-      dash: { mountPath: path.relative(ROOT, DASH_ROOT) || '.', ...detectScopeRelation(DASH_ROOT) },
-      boutique: { mountPath: path.relative(ROOT, BOUTIQUE_ROOT) || '.', ...detectScopeRelation(BOUTIQUE_ROOT) },
-      note: '"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="separate-git-checkout" ci-dessus pour le scope concerné.',
+      dash: { mountPath: toPosixPath(path.relative(ROOT, DASH_ROOT)) || '.', ...detectScopeRelation(DASH_ROOT) },
+      boutique: { mountPath: toPosixPath(path.relative(ROOT, BOUTIQUE_ROOT)) || '.', ...detectScopeRelation(BOUTIQUE_ROOT) },
+      note: '"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation="external-path-scope" ci-dessus pour le scope concerné.',
     },
     drifts: {
       error: errors.sort((a, b) => a.type.localeCompare(b.type) || String(a.ref).localeCompare(String(b.ref))),
@@ -1160,16 +1165,16 @@ function renderMd(model) {
   L.push('');
   L.push('Synthèse de couverture par scope et identités métier cross-scope. Voir mission O4 §13.');
   L.push('');
-  L.push('> **Note de terminologie (Lot O4-2, point 9)** — "cross-repo" dans les livrables O4 précédents désignait en réalité un franchissement de **scope** (frontière de gouvernance : manifests/registre/autorité propres à backend, dash, boutique), pas nécessairement un franchissement de **dépôt Git séparé**. Le tableau ci-dessous constate la relation réelle par scope. Tant qu\'une ligne n\'affiche pas `separate-git-checkout`, "cross-repo" doit se lire "cross-scope" — un franchissement de frontière de gouvernance à l\'intérieur du même arbre versionné.');
+  L.push('> **Note de terminologie (Lot O4-2, point 9)** — "cross-repo" dans les livrables O4 précédents désignait en réalité un franchissement de **scope** (frontière de gouvernance : manifests/registre/autorité propres à backend, dash, boutique), pas nécessairement un franchissement d\'**arbre** séparé. Le tableau ci-dessous constate la relation réelle par scope, dérivée uniquement des chemins configurés (déterministe, indépendante de la présence de `.git`). Tant qu\'une ligne n\'affiche pas `external-path-scope`, "cross-repo" doit se lire "cross-scope" — un franchissement de frontière de gouvernance à l\'intérieur du même arbre.');
   L.push('');
   if (model.scopeTopology) {
-    L.push('### Topologie des scopes (relation Git réelle)');
+    L.push('### Topologie des scopes (relation de chemin constatée)');
     L.push('');
-    L.push('| Scope | Chemin monté | Relation constatée | Sous ROOT ? | .git propre ? |');
-    L.push('|---|---|---|---|---|');
+    L.push('| Scope | Chemin monté | Relation constatée | Sous ROOT ? |');
+    L.push('|---|---|---|---|');
     for (const [scope, t] of Object.entries(model.scopeTopology)) {
       if (scope === 'note') continue;
-      L.push(`| ${scope} | \`${t.mountPath}\` | \`${t.relation}\` | ${t.isNestedUnderRoot === undefined ? '—' : (t.isNestedUnderRoot ? 'oui' : 'non')} | ${t.hasOwnGitDir === undefined ? '—' : (t.hasOwnGitDir ? 'oui' : 'non')} |`);
+      L.push(`| ${scope} | \`${t.mountPath}\` | \`${t.relation}\` | ${t.isNestedUnderRoot === undefined ? '—' : (t.isNestedUnderRoot ? 'oui' : 'non')} |`);
     }
     L.push('');
     L.push(`_${model.scopeTopology.note}_`);
