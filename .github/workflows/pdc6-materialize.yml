@@ -1,0 +1,84 @@
+name: PDC6 Materialize Final
+
+on:
+  push:
+    branches:
+      - feat/pdc6-legacy-modal-extinction-final
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pdc6-materialize-final
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/pdc6-legacy-modal-extinction-final
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Rebuild exact payloads
+        run: |
+          cat .pdc6-stage/payload.part* | base64 -d > /tmp/pdc6-payload.tar.gz
+          echo "f1139cc9f622317c6af744753177f5b9572055d18638b360231a0c4bfec0bb38  /tmp/pdc6-payload.tar.gz" | sha256sum -c -
+          mkdir -p /tmp/pdc6-payload
+          tar -xzf /tmp/pdc6-payload.tar.gz -C /tmp/pdc6-payload
+          echo "ba1c9bcca9c17f0c986d61bf1f63826be6b8c8cd1638788e5a98bc930a3d5570  /tmp/pdc6-payload/payload/0001-pdc6.patch" | sha256sum -c -
+          echo "66b90e4b8d4a31847f7b8facdfd04e68bfafd9848be180a1c87afca6dbda0efb  /tmp/pdc6-payload/payload/pdc6-corrections.zip" | sha256sum -c -
+          echo "b4eec7484fe9d267f8e9b5ec4c0a3f1676608ef3e9e97b2e490a26a2f777a435  /tmp/pdc6-payload/payload/pdc6-desktop.patch" | sha256sum -c -
+
+      - name: Apply canonical PDC-6 stack
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git am /tmp/pdc6-payload/payload/0001-pdc6.patch
+          rm -rf /tmp/pdc6-overlay
+          mkdir -p /tmp/pdc6-overlay
+          unzip -q /tmp/pdc6-payload/payload/pdc6-corrections.zip -d /tmp/pdc6-overlay
+          cp -R /tmp/pdc6-overlay/pdc6-fichiers-modifies/public/boutique/. public/boutique/
+          git apply /tmp/pdc6-payload/payload/pdc6-desktop.patch
+          git diff --check
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix public/boutique ci
+
+      - name: Validate final PDC-6 Boutique state
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-not-for-prod
+          ADMIN_PASSWORD: ci-test-admin
+          STRIPE_SECRET_KEY: sk_test_dummy
+          STRIPE_WEBHOOK_SECRET: whsec_dummy
+          QR_SECRET: ci-test-qr-secret
+          AUTHKEY_API_KEY: ci-dummy
+          PAYPAL_CLIENT_ID: ci-dummy
+          PAYPAL_CLIENT_SECRET: ci-dummy
+          PAYPAL_WEBHOOK_ID: ci-dummy
+          META_WA_APP_SECRET: ci-dummy
+        run: |
+          npm --prefix public/boutique run check:fast
+          npm run feature:registry
+          npm run gate:schema
+          npm run gate:docs-lint
+          npm run gate:boutique-ownership
+
+      - name: Commit final corrections and remove staging
+        run: |
+          rm -rf .pdc6-stage .pdc6-stage-text
+          rm -f .github/workflows/pdc6-materialize.yml
+          git add -A
+          git commit -m "fix(catalog,boutique): close PDC-6 transaction gaps"
+          git push origin HEAD:feat/pdc6-legacy-modal-extinction-final
