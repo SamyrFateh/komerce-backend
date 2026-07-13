@@ -1,0 +1,70 @@
+map_rc=1
+=== MAP CHECK ===
+
+> komerce-backend@10.6.1 map:check
+> npm run gate:concept-impact && node scripts/map-check.js
+
+
+> komerce-backend@10.6.1 gate:concept-impact
+> node scripts/concept-impact-gate.js
+
+
+Gate concept-impact — 2 concept(s), 18 fichier(s) modifie(s)
+
+· transport-rail@1 — inchange
+· transport-cost-allocation@1 — inchange
+
+✔ concept-impact PASS — tous les concepts modifies ont leurs ACKs de consommation
+
+[1mmap:check — Reconstruction & gouvernance[0m  [2m(16 steps, racine /home/runner/work/komerce-backend/komerce-backend)[0m
+
+  [32m✔[0m  1/16 [36m[reconstruction][0m Registre des features[2m 176ms[0m
+  [32m✔[0m  2/16 [35m[gouvernance][0m Check des features (orphelins, conflits)[2m 364ms[0m
+  [32m✔[0m  3/16 [35m[gouvernance][0m Feature classification check (ratchet phase 1)[2m 154ms[0m
+  [32m✔[0m  4/16 [33m[gate][0m Gate 1 — Fichiers touchés → carte[2m 62ms[0m
+  [32m✔[0m  5/16 [33m[gate][0m Gate 2 — Schéma strict des cartes[2m 50ms[0m
+  [32m✔[0m  6/16 [33m[gate][0m Arch gate (headers + graphe + schema drift)[2m 689ms[0m
+  [32m✔[0m  7/16 [33m[gate][0m Business Feature Graph (Lot O3)[2m 378ms[0m
+  [32m✔[0m  8/16 [33m[gate][0m Business Feature Graph — drift ratchet typé (Lot O4-2, bloquant)[2m 416ms[0m
+  [32m✔[0m  9/16 [36m[reconstruction][0m Dashboard 360 check[2m 189ms[0m
+  [32m✔[0m 10/16 [36m[reconstruction][0m Boutique 360 check[2m 175ms[0m
+  [32m✔[0m 11/16 [33m[gate][0m Boutique ownership check[2m 140ms[0m
+  [32m✔[0m 12/16 [33m[gate][0m Boutique full ownership scan[2m 173ms[0m
+  [32m✔[0m 13/16 [36m[reconstruction][0m Security 360 check[2m 733ms[0m
+  [32m✔[0m 14/16 [36m[reconstruction][0m Meta graph check[2m 165ms[0m
+  [32m✔[0m 15/16 [33m[gate][0m Gate 4 — Feature audit (tests liés aux cartes)[2m 161ms[0m
+  [31m✖[0m 16/16 [33m[gate][0m [1mGate 5 — Linter anti-historique hors archive[0m  [31m(exit 1)[0m
+      [31m[0m
+      [31m[1mGate 5 — Linter anti-historique hors archive[0m  [2m(234 .md scannés)[0m[0m
+      [31m[2mMode : ratchet · baseline : 29 fichier(s)[0m[0m
+      [31m[0m
+      [31m  [33m▲[0m  docs/chantier/ARCH_SCAN_2026-05-19.md  [2m→ date YYYY-MM-DD dans le nom, date YYYY-MM dans le nom (zone chantier — non bloquant)[0m[0m
+      [31m  [33m▲[0m  docs/chantier/AUDIT_FEATURE_FIRST_2026-07-06.md  [2m→ date YYYY-MM-DD dans le nom, date YYYY-MM dans le nom, préfixe AUDIT_ (zone chantier — non bloquant)[0m[0m
+      [31m  [33m▲[0m  docs/chantier/AUDIT_MIGRATIONS_060_061.md  [2m→ préfixe AUDIT_ (zone chantier — non bloquant)[0m[0m
+      [31m  [33m▲[0m  docs/chantier/BLINDAGE_BASE0_2026-06-16.md  [2m→ date YYYY-MM-DD dans le nom, date YYYY-MM dans le nom (zone chantier — non bloquant)[0m[0m
+      [31m  [33m▲[0m  docs/chantier/CHECKPOINT_2026-05-21_H1_COMPLETE.md  [2m→ date YYYY-MM-DD dans le nom, date YYYY-MM dans le nom (zone chantier — non bloquant)[0m[0m
+      [31m  [33m▲[0m  docs/chantier/DETTE_TECHNIQUE_CRUD_2026-07-08.md  [2m→ date YYYY-MM-DD dans le nom, date YYYY-MM dans le nom (zone chantier — non bloquant)[0m[0m
+      [31m  [33m▲[0m  docs/chantier/VALIDATION_STAGING_2026-05-19.md  [2m→ date YYYY-MM-DD dans le nom, date YYYY-MM dans le nom (zone chantier — non bloquant)[0m[0m
+      [31m  [31m✖[0m  [1mdocs/rex/REX_2026-07-10_PR563_ALERTS_DB_POOL.md[0m[0m
+      [31m       [31m↳ date YYYY-MM-DD dans le nom[0m[0m
+      [31m       [31m↳ date YYYY-MM dans le nom[0m[0m
+      [31m       [2m→ déplace vers docs/_archive/ ou renomme sans signal historique.[0m[0m
+      [31m[0m
+      [31m[1mBilan[0m : [32m191 ok[0m · [33m7 avertissement(s)[0m · [33m29 dette(s) baseline[0m · [31m1 violation(s) nouvelle(s)[0m[0m
+      [31m[33m▲ 29 fichier(s) historique(s) restent hors archive mais sont gelés par baseline.[0m[0m
+      [31m[2m  Nettoie-les progressivement, puis lance npm run gate:docs-lint:save pour rétrécir la baseline.[0m[0m
+      [31m[0m
+      [31m[31m[1m✖ Gate 5 ÉCHEC — 1 nouveau(x) fichier(s) historique(s) hors archive :[0m[0m
+      [31m[31m   ↳ docs/rex/REX_2026-07-10_PR563_ALERTS_DB_POOL.md[0m[0m
+      [31m[0m
+      [31m[2mRègle : un fichier à signal historique ne vit que dans docs/_archive/.[0m[0m
+      [31m[2mCheckpoint humain si ambigu : classer "À REVOIR" dans docs/chantier/STATUS.md.[0m[0m
+
+────────────────────────────────────────────────────────────
+[1mBilan[0m : [32m15 ok[0m · [2m0 skippé(s)[0m · [33m0 avertissement(s)[0m · [31m1 échec(s)[0m
+
+[31m[1m✖ map:check ÉCHEC — 1 step(s) bloquant(s) :[0m
+[31m   ↳ Gate 5 — Linter anti-historique hors archive[0m
+
+[2mL'invariant « la big map est reconstructible » n'est pas satisfait.[0m
+[2mCorrige les steps en échec avant tout merge.[0m
