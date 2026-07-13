@@ -1,2 +1,2 @@
-Identify the single newly observed undeclared feature dependency revealed by recursive route ownership.
-Source graph head: 7d7a08423f414748f8fe74a797bf8f8a15e44644
+Identify the single newly observed undeclared feature dependency from drifts.warn.
+Base diagnostic workflow: 8be38ffa47ab3f0f83fb10ef1265081052c275bf
