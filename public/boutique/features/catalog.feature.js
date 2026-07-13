@@ -50,9 +50,6 @@ module.exports = {
       '../js/b-cart-product-open-style.js',
       '../js/b-catalog-desktop-enhancers.js',
       '../js/b-catalog.js',
-      '../js/b-modal-desktop-product.js',
-      '../js/b-modal-mobile-product.js',
-      '../js/b-modal-product-detail-bootstrap.js',
       '../js/b-pager.js',
       '../js/b-product-open-contract.js',
       '../js/b-subcat.js',
@@ -62,7 +59,6 @@ module.exports = {
       '../js/render/render-product-card.js',
       '../js/shop-schema.js',
       '../js/taxonomy-no-hardcode.test.js',
-      '../js/view-models/modal-selection-model.js',
       '../js/view-models/product-card-model.js',
       '../js/view-models/product-card-view-model.js',
     ],
@@ -71,10 +67,6 @@ module.exports = {
     ],
     tests: [
       '../tests/unit/render-home-sections.test.js',
-      '../tests/unit/modal-selection-model.test.js',
-      '../tests/unit/b-modal-mobile-product.test.js',
-      '../tests/unit/b-modal-desktop-product.test.js',
-      '../tests/unit/b-modal-product-detail-bootstrap.test.js',
     ],
   },
 

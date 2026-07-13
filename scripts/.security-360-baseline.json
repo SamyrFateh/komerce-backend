@@ -17,6 +17,7 @@
     "GET /api/products/categories",
     "GET /api/products/subcategories",
     "GET /api/products/{id}",
+    "GET /api/products/{id}/detail",
     "GET /api/relais",
     "GET /api/relais/public",
     "GET /api/relais/{id}",

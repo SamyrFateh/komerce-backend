@@ -72,9 +72,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 24 | 24 | 295 | 295 | 0 |
+| backend | 24 | 24 | 297 | 297 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 10 | 10 | 67 | 67 | 0 |
+| boutique | 10 | 10 | 70 | 70 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -143,16 +143,17 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.
 
 - utils: 1
-- services: 17
-- migrations: 4
-- docs: 3
-- routes: 4
-- boutique: 32
+- services: 18
+- schemas: 3
+- migrations: 5
+- docs: 4
+- routes: 5
+- boutique: 36
 - dash: 4
-- tests: 24
+- tests: 28
 - tables owned (lifecycle): 6 — `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `product_skus`, `supplier_catalog_imports`
 - tables written: 12
-- interfaces exposed: 30
+- interfaces exposed: 31
 - internal APIs: 0
 - dependencies (consumes): 4 — economic-engine, logistics, shared-cart, auth
 - consumers: 8 — economic-engine, infrastructure, inventory, logistics, orders, recommendations, sourcing, unsold-resolution
@@ -661,6 +662,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/client/orders` | auth-identity | `routes/client-auth.js` (resolved-owned) |
 | `GET /api/products` | catalog | `routes/products.js` (resolved-owned) |
 | `GET /api/products/{id}` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}/detail` | catalog | `routes/catalog-product-detail.js` (resolved-owned) |
 | `GET /api/admin/catalog/approval-queue` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
 | `POST /api/admin/catalog/approval-queue/{id}/approve` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
 | `POST /api/admin/catalog/approval-queue/{id}/reject` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
@@ -1295,7 +1297,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> notifications — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "notifications"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> orders — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "orders"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 33 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ customs -> infrastructure — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "customs" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> catalog — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "catalog"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> decision-signals — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "decision-signals"
@@ -1421,8 +1423,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 779 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 91 fichier(s) observés, dont 63 sous manifest non-canonique (canonicalFeature=null)
+- backend : 785 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 100 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
 - dash : 83 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1451,9 +1453,10 @@ Meta Graph monté : oui.
 | auth-identity | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
 | auth-identity | orders | static-code | 1 | **OBSERVED_UNDECLARED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| catalog | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 33 | **OBSERVED_UNDECLARED** |
-| catalog | logistics | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| catalog | economic-engine | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 37 | **OBSERVED_UNDECLARED** |
+| catalog | logistics | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| catalog | shared-cart | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | customs | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1685,7 +1688,6 @@ Meta Graph monté : oui.
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
 
 - `auth` → `orders` (déclaré : `orders`)
-- `catalog` → `shared-cart` (déclaré : `shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)`)
 - `customs` → `logistics` (déclaré : `logistics (colis a classer)`)
 - `dashboard` → `payments` (déclaré : `payments (lecture paiements)`)
 - `dashboard` → `inventory` (déclaré : `inventory (lecture stock)`)

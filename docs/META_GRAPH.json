@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-13T10:50:54.638Z",
+  "generatedAt": "2026-07-13T11:02:29.266Z",
   "sources": {
     "backend": {
-      "nodes": 727
+      "nodes": 741
     },
     "boutique": {
       "modules": 69,
@@ -13,7 +13,7 @@
       "callEdges": 112
     },
     "contract": {
-      "endpoints": 437
+      "endpoints": 438
     }
   },
   "summary": {

@@ -20,12 +20,12 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 727,
-    "edges": 4174,
+    "graphNodes": 741,
+    "edges": 4245,
     "dbTables": 110,
-    "doctrines": 136,
-    "impactAreas": 119,
-    "unresolvedCodeEdges": 398,
+    "doctrines": 139,
+    "impactAreas": 125,
+    "unresolvedCodeEdges": 404,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 62
   },
@@ -34,8 +34,8 @@
     "notification": 15,
     "auth": 8,
     "logistics": 35,
-    "boutique": 37,
-    "catalog": 36,
+    "boutique": 36,
+    "catalog": 42,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 4,
@@ -5316,8 +5316,8 @@
         "services/catalog-product-detail.js"
       ],
       "usedBy": [
-        "bootstrap/api-routes.js",
-        "future public/boutique/js/b-modal-core.js"
+        "routes/products.js",
+        "public/boutique/js/b-modal-product-detail-bootstrap.js"
       ],
       "dbRead": [
         "product_skus",
@@ -26592,16 +26592,16 @@
       "label": "services/catalog-product-detail.js"
     },
     {
-      "from": "bootstrap/api-routes.js",
+      "from": "routes/products.js",
       "to": "routes/catalog-product-detail.js",
       "type": "uses",
-      "label": "bootstrap/api-routes.js"
+      "label": "routes/products.js"
     },
     {
-      "from": "public/boutique/js/b-modal-core.js",
+      "from": "public/boutique/js/b-modal-product-detail-bootstrap.js",
       "to": "routes/catalog-product-detail.js",
       "type": "uses",
-      "label": "future public/boutique/js/b-modal-core.js"
+      "label": "public/boutique/js/b-modal-product-detail-bootstrap.js"
     },
     {
       "from": "routes/catalog-product-detail.js",
@@ -46859,7 +46859,6 @@
         "public/boutique/js/b-product-open-contract.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-subcat.js",
-        "routes/catalog-product-detail.js",
         "routes/products.js"
       ]
     },
@@ -47112,7 +47111,8 @@
         "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/main.js",
-        "public/boutique/js/view-models/modal-selection-model.js"
+        "public/boutique/js/view-models/modal-selection-model.js",
+        "routes/catalog-product-detail.js"
       ]
     },
     "public/boutique/js/b-modal-product.js": {
@@ -49973,8 +49973,8 @@
         "services/catalog-product-detail.js"
       ],
       "directUsedBy": [
-        "bootstrap/api-routes.js",
-        "public/boutique/js/b-modal-core.js"
+        "routes/products.js",
+        "public/boutique/js/b-modal-product-detail-bootstrap.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -50001,7 +50001,8 @@
         "impact:catalog",
         "impact:modal",
         "impact:product-detail",
-        "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-product-detail-bootstrap.js",
+        "routes/products.js",
         "services/catalog-product-detail.js"
       ]
     },
@@ -52248,6 +52249,7 @@
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/komerce-api.js",
+        "routes/catalog-product-detail.js",
         "services/catalog-public-view.js",
         "services/product-admin-service.js",
         "utils/logger.js"

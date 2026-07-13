@@ -7,7 +7,7 @@
  * @inputs        product_id
  * @outputs       public_product_detail_v1
  * @depends       db.js, services/catalog-product-detail.js
- * @used-by       bootstrap/api-routes.js, future public/boutique/js/b-modal-core.js
+ * @used-by       routes/products.js, public/boutique/js/b-modal-product-detail-bootstrap.js
  * @db-read       product_skus, product_variants, products
  * @db-write      none
  * @db-txn        none

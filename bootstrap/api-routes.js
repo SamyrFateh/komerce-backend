@@ -27,7 +27,6 @@
 
 function mountApiRoutesBeforeStripeOwnedBlocks(app) {
   const authRouter       = require('../routes/auth');
-  const productDetailRouter = require('../routes/catalog-product-detail');
   const productsRouter   = require('../routes/products');
   const ordersRouter     = require('../routes/orders');
   const relaisRouter     = require('../routes/relais');
@@ -44,7 +43,6 @@ function mountApiRoutesBeforeStripeOwnedBlocks(app) {
 
   app.use('/api/transit-dashboard', transitDashRouter);
   app.use('/api/auth',       authRouter);
-  app.use('/api/products',   productDetailRouter);
   app.use('/api/products',   productsRouter);
   app.use('/api/orders',     ordersRouter);
   app.use('/api/relais',     relaisRouter);
