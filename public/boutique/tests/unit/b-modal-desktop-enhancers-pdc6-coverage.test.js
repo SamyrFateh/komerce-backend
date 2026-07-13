@@ -38,7 +38,7 @@ describe('b-modal-desktop-enhancers — PDC-6 branch closure', () => {
     const topbar = dom.modal.querySelector('.k-modal-topbar');
     const breadcrumb = topbar.querySelector('.k-modal-breadcrumb');
     expect(breadcrumb).not.toBeNull();
-    expect(breadcrumb.nextElementSibling).toHaveClass('after-back');
+    expect(breadcrumb.nextElementSibling.classList.contains('after-back')).toBe(true);
     expect(dom.modal.querySelector('.k-modal-share-row').textContent).toContain('Copier le lien');
     expect(dom.modal.querySelector('.k-modal-recent')).toBeNull();
 

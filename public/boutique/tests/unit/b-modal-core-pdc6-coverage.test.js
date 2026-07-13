@@ -12,8 +12,8 @@ jest.mock('../../js/b-bus.js', () => ({
 jest.mock('../../js/b-store.js', () => ({
   state: {},
   dom: {},
-  $: jest.fn((selector) => document.querySelector(selector)),
-  $$: jest.fn((selector) => Array.from(document.querySelectorAll(selector))),
+  $: jest.fn((selector) => globalThis.document.querySelector(selector)),
+  $$: jest.fn((selector) => Array.from(globalThis.document.querySelectorAll(selector))),
 }));
 
 jest.mock('../../js/b-utils.js', () => ({

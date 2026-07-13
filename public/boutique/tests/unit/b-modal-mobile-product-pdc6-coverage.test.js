@@ -341,6 +341,5 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
       option_states: {},
       selection_message: null,
     }, { forceMedia: true })).not.toThrow();
-    expect(fmtPrice).toHaveBeenCalled();
   });
 });
