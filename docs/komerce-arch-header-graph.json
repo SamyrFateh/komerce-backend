@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 756,
-    "edges": 4286,
+    "edges": 4292,
     "dbTables": 112,
     "doctrines": 148,
     "impactAreas": 125,
-    "unresolvedCodeEdges": 411,
+    "unresolvedCodeEdges": 414,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 65
   },
@@ -11922,21 +11922,26 @@
       "inputs": [
         "phone",
         "template_context",
-        "notification_event"
+        "notification_event",
+        "channel_preferences"
       ],
       "outputs": [
         "whatsapp_message",
         "sms_fallback",
+        "email_fallback",
         "delivery_log"
       ],
       "depends": [
-        "services/notifications/notification-service.js"
+        "services/whatsapp-meta.js",
+        "providers/authkey",
+        "email-provider"
       ],
       "usedBy": [
         "otp.js",
         "payment-stripe.js",
         "order-status-machine.js",
-        "shared-cart-engine.js"
+        "shared-cart-engine.js",
+        "reminders"
       ],
       "dbRead": [
         "orders",
@@ -11951,17 +11956,21 @@
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "notification_non_blocking"
+        "notification_non_blocking",
+        "failure_logged_not_rolled_back"
       ],
       "doctrine": [
-        "notification_non_bloquante"
+        "notification_non_bloquante",
+        "otp_message_lisible",
+        "fallback_trace"
       ],
       "impactAreas": [
         "otp",
         "checkout",
         "shared-cart",
         "orders",
-        "customer-support"
+        "customer-support",
+        "whatsapp"
       ],
       "version": "2026-06"
     },
@@ -18593,14 +18602,14 @@
       "doctrine": "notification_non_bloquante"
     },
     {
-      "id": "doctrine:fallback_trace",
-      "type": "doctrine",
-      "doctrine": "fallback_trace"
-    },
-    {
       "id": "doctrine:otp_message_lisible",
       "type": "doctrine",
       "doctrine": "otp_message_lisible"
+    },
+    {
+      "id": "doctrine:fallback_trace",
+      "type": "doctrine",
+      "doctrine": "fallback_trace"
     },
     {
       "id": "doctrine:transaction_existante_obligatoire",
@@ -36300,9 +36309,21 @@
     },
     {
       "from": "services/notification-service.js",
-      "to": "services/notifications/notification-service.js",
+      "to": "services/whatsapp-meta.js",
       "type": "depends",
-      "label": "services/notifications/notification-service.js"
+      "label": "services/whatsapp-meta.js"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "providers/authkey",
+      "type": "depends",
+      "label": "providers/authkey"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "email-provider",
+      "type": "depends",
+      "label": "email-provider"
     },
     {
       "from": "routes/otp.js",
@@ -36327,6 +36348,12 @@
       "to": "services/notification-service.js",
       "type": "uses",
       "label": "shared-cart-engine.js"
+    },
+    {
+      "from": "reminders",
+      "to": "services/notification-service.js",
+      "type": "uses",
+      "label": "reminders"
     },
     {
       "from": "services/notification-service.js",
@@ -36378,6 +36405,18 @@
     },
     {
       "from": "services/notification-service.js",
+      "to": "doctrine:otp_message_lisible",
+      "type": "doctrine",
+      "label": "otp_message_lisible"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "doctrine:fallback_trace",
+      "type": "doctrine",
+      "label": "fallback_trace"
+    },
+    {
+      "from": "services/notification-service.js",
       "to": "impact:otp",
       "type": "impact",
       "label": "otp"
@@ -36405,6 +36444,12 @@
       "to": "impact:customer-support",
       "type": "impact",
       "label": "customer-support"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
     },
     {
       "from": "services/notifications/internals.js",
@@ -56768,13 +56813,16 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/notifications/notification-service.js"
+        "services/whatsapp-meta.js",
+        "providers/authkey",
+        "email-provider"
       ],
       "directUsedBy": [
         "routes/otp.js",
         "services/payment-stripe.js",
         "services/order-status-machine.js",
-        "services/shared-cart-engine.js"
+        "services/shared-cart-engine.js",
+        "reminders"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -56790,14 +56838,17 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "notification_non_bloquante"
+        "notification_non_bloquante",
+        "otp_message_lisible",
+        "fallback_trace"
       ],
       "impactAreas": [
         "otp",
         "checkout",
         "shared-cart",
         "orders",
-        "customer-support"
+        "customer-support",
+        "whatsapp"
       ],
       "mustCheck": [
         "db:alerts",
@@ -56807,19 +56858,21 @@
         "db:recipients",
         "db:relais",
         "db:users",
+        "doctrine:fallback_trace",
         "doctrine:notification_non_bloquante",
+        "doctrine:otp_message_lisible",
         "impact:checkout",
         "impact:customer-support",
         "impact:orders",
         "impact:otp",
         "impact:shared-cart",
+        "impact:whatsapp",
         "routes/orders.js",
         "routes/otp.js",
         "services/cash-reminder-service.js",
         "services/loyalty-service.js",
         "services/notifications/loyalty.js",
         "services/notifications/misc.js",
-        "services/notifications/notification-service.js",
         "services/notifications/order.js",
         "services/notifications/otp-auth.js",
         "services/notifications/parcel.js",
@@ -56830,7 +56883,8 @@
         "services/scan-engine.js",
         "services/scan-operations.js",
         "services/shared-cart-engine.js",
-        "services/verify-qr-collection.js"
+        "services/verify-qr-collection.js",
+        "services/whatsapp-meta.js"
       ]
     },
     "services/notifications/internals.js": {
@@ -57026,7 +57080,6 @@
         "impact:shared-cart",
         "impact:whatsapp",
         "routes/otp.js",
-        "services/notification-service.js",
         "services/order-status-machine.js",
         "services/payment-stripe.js",
         "services/shared-cart-engine.js",
@@ -61079,6 +61132,7 @@
         "impact:shared-cart",
         "impact:whatsapp",
         "routes/meta-whatsapp.js",
+        "services/notification-service.js",
         "services/notifications/notification-service.js",
         "services/shared-cart-engine.js",
         "services/shared-cart-lifecycle.js"
@@ -64833,6 +64887,24 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "providers/authkey",
+      "type": "depends",
+      "label": "providers/authkey"
+    },
+    {
+      "from": "services/notification-service.js",
+      "to": "email-provider",
+      "type": "depends",
+      "label": "email-provider"
+    },
+    {
+      "from": "reminders",
+      "to": "services/notification-service.js",
+      "type": "uses",
+      "label": "reminders"
     },
     {
       "from": "services/notifications/internals.js",

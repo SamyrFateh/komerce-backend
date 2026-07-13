@@ -173,8 +173,17 @@ class InvoiceService {
         ? `Komerce : votre paiement est enregistre. Recapitulatif : ${publicUrl}`
         : `Komerce : votre facture est disponible : ${publicUrl}`;
 
-      const { notifyText } = require('./notification-service');
-      const result = await notifyText(phone, msg, 'invoice_ready', orderId);
+      // POST-O8 (INVOICE_AUTHKEY_WID) : route via notifyInvoiceReady au lieu de
+      // notifyText. `orders` construit toujours l'URL publique signée (ci-dessus) ;
+      // `notifications` choisit le transport (template WID si AUTHKEY_WID_INVOICE_READY
+      // est configuré, sinon repli texte libre identique au comportement précédent).
+      // Voir docs/POST_O8_BUSINESS_SEMANTIC_AUDIT.md §INVOICE_AUTHKEY_WID.
+      const { notifyInvoiceReady } = require('./notification-service');
+      const result = await notifyInvoiceReady(
+        phone,
+        { publicUrl, message: msg, invoiceNumber: invoice.invoice_number },
+        orderId,
+      );
 
       if (result && result.ok) {
         log.info({ order_ref: orderReference, invoice_number: invoice.invoice_number }, '[invoice-service] Invoice link sent');
