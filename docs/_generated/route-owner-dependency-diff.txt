@@ -1,8 +1,10 @@
-before=0
-after=0
-added=0
+before=94
+after=95
+added=1
 removed=0
 
 === ADDED ===
+admin-dashboard -> sourcing
+dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "sourcing"
 
 === REMOVED ===
