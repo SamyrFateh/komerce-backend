@@ -31,6 +31,7 @@
  */
 
 const pool = require('../db');
+const log = require('../utils/logger').child({ module: 'invoice-service' });
 
 class InvoiceService {
 
@@ -136,6 +137,57 @@ class InvoiceService {
     invoice._parcel_reference = parcel ? parcel.reference : null;
     invoice._order_reference = order.reference;
     return invoice;
+  }
+
+  /**
+   * Envoie le lien de facture public par WhatsApp (fire-and-forget, non-bloquant).
+   *
+   * O7.2 (Cycle A) : ce service était auparavant déclenché depuis
+   * services/notifications/order.js, qui devait importer invoice-service.js
+   * ET invoice-public-token.js (deux fichiers `orders`) pour construire le
+   * lien — créant la dépendance cross-feature notifications -> orders et
+   * fermant le cycle notifications <-> orders. `orders` possède la
+   * représentation publique de la facture ; `notifications` ne doit que
+   * transporter un message déjà prêt. Voir docs/O7_2_CYCLE_ANALYSIS.md.
+   *
+   * Appelé en post-commit (payment_status déjà 'paid') par les flux de
+   * confirmation de paiement. Ne lève jamais — toute erreur est loggée et
+   * non-fatale pour l'appelant (même contrat que l'ancien code).
+   */
+  async sendInvoiceReadyNotification(orderId, orderReference) {
+    try {
+      const invoice = await this.getOrCreateInvoice(orderId);
+      const phone = invoice.client_phone;
+
+      if (!phone) {
+        log.warn({ order_id: orderId, order_ref: orderReference }, '[invoice-service] invoice ready notification skipped: no phone');
+        return { ok: false, reason: 'no_phone' };
+      }
+
+      const { createInvoicePublicToken } = require('./invoice-public-token');
+      const token = createInvoicePublicToken(orderId);
+      const appUrl = process.env.APP_URL || process.env.PUBLIC_URL || 'https://app.komerce.km';
+      const publicUrl = `${appUrl}/api/invoices/public/${token}`;
+
+      const msg = invoice.payment_mode === 'cash_relais'
+        ? `Komerce : votre paiement est enregistre. Recapitulatif : ${publicUrl}`
+        : `Komerce : votre facture est disponible : ${publicUrl}`;
+
+      const { notifyText } = require('./notification-service');
+      const result = await notifyText(phone, msg, 'invoice_ready', orderId);
+
+      if (result && result.ok) {
+        log.info({ order_ref: orderReference, invoice_number: invoice.invoice_number }, '[invoice-service] Invoice link sent');
+      } else {
+        const reason = (result && (result.reason || result.error)) || 'unknown';
+        log.warn({ order_ref: orderReference, invoice_number: invoice.invoice_number, reason }, '[invoice-service] Invoice link NOT sent');
+      }
+      return result;
+    } catch (err) {
+      // Génération de facture impossible (ex. payment_status pas encore 'paid' — race).
+      log.warn({ err, order_id: orderId, order_ref: orderReference }, '[invoice-service] Invoice ready notification skipped (non-fatal)');
+      return { ok: false, error: err.message };
+    }
   }
 
   /**

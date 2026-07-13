@@ -23,7 +23,9 @@ const router = express.Router();
 
 const { authenticate } = require('../middleware/auth');
 const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
-const { generateAndStoreSecret } = require('./pickup-secret');
+// O7.2 (Cycle B) : importait auparavant './pickup-secret' (routes/pickup-secret.js,
+// une route — pas une boundary de feature). Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
+const { generateAndStoreSecret } = require('../services/pickup-secret-service');
 
 function requireRelaisOrAdmin(req, res, next) {
   const role = req.user && req.user.role;

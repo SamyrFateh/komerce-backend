@@ -170,6 +170,8 @@ module.exports = {
     consumes: [
       'orders (commande a payer)',
       'auth-identity (verification du payeur)',
+      'logistics (generation du code retrait pickup au moment du paiement — services/pickup-secret-service.js ; lecture du statut agrege colis pour reconciliation — utils/parcels.js ; O7.2 Cycle B)',
+      'wallet (checkout consulte le solde applicable via /api/wallet — public/boutique/js/b-checkout.js, O7.2 Cycle D)',
     ],
   },
 

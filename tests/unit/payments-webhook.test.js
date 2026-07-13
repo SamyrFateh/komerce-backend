@@ -46,13 +46,16 @@ jest.mock('../../services/order-payment-confirmation', () => ({
 }));
 
 // ── Mock : pickup-secret ───────────────────────────────────────────────────
-jest.mock('../../routes/pickup-secret', () => ({
+jest.mock('../../services/pickup-secret-service', () => ({
   generateAndStoreSecret: jest.fn().mockResolvedValue({ code: 'TEST-CODE' }),
   cacheCodeForReveal:     jest.fn().mockResolvedValue(undefined),
 }));
 
 // ── Mock : purchasing ──────────────────────────────────────────────────────
-jest.mock('../../routes/purchasing', () => ({
+// O7.2 (Cycle B) : routes/payments.js importe désormais directement le vrai
+// service purchasing-trigger-service.js (plus routes/purchasing.js). Voir
+// docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
+jest.mock('../../services/purchasing-trigger-service', () => ({
   triggerPurchasing: jest.fn().mockResolvedValue({ ok: true }),
 }));
 
@@ -96,8 +99,8 @@ jest.mock('../../services/order-status-machine', () => ({
 }));
 
 // ── Import après mocks ──────────────────────────────────────────────────────
-const { triggerPurchasing } = require('../../routes/purchasing');
-const { generateAndStoreSecret, cacheCodeForReveal } = require('../../routes/pickup-secret');
+const { triggerPurchasing } = require('../../services/purchasing-trigger-service');
+const { generateAndStoreSecret, cacheCodeForReveal } = require('../../services/pickup-secret-service');
 
 // ── Helpers de test ──────────────────────────────────────────────────────────
 
@@ -156,8 +159,8 @@ async function callWebhook(eventObj) {
   jest.mock('../../db', () => ({ query: (...a) => mockDbQuery(...a), pool: { connect: (...a) => mockPoolConnect(...a) } }));
   jest.mock('stripe', () => jest.fn(() => ({ webhooks: { constructEvent: jest.fn((b) => JSON.parse(b.toString())) }, paymentIntents: { create: jest.fn() } })));
   jest.mock('../../services/order-payment-confirmation', () => ({ confirmPaymentCycle: (...a) => mockConfirmPaymentCycle(...a) }));
-  jest.mock('../../routes/pickup-secret', () => ({ generateAndStoreSecret: jest.fn().mockResolvedValue({ code: 'X' }), cacheCodeForReveal: jest.fn().mockResolvedValue(undefined) }));
-  jest.mock('../../routes/purchasing', () => ({ triggerPurchasing: jest.fn().mockResolvedValue({ ok: true }) }));
+  jest.mock('../../services/pickup-secret-service', () => ({ generateAndStoreSecret: jest.fn().mockResolvedValue({ code: 'X' }), cacheCodeForReveal: jest.fn().mockResolvedValue(undefined) }));
+  jest.mock('../../services/purchasing-trigger-service', () => ({ triggerPurchasing: jest.fn().mockResolvedValue({ ok: true }) }));
   jest.mock('../../utils/rates', () => ({ getRates: jest.fn().mockResolvedValue({ eur_kmf: 500, aed_kmf: 136 }) }));
   jest.mock('../../services/notification-service', () => ({ notifyPaymentConfirmed: jest.fn().mockResolvedValue({ invoice: null }) }));
   jest.mock('../../validators', () => ({ payments: { stripeIntent: {}, cashConfirm: {} } }));

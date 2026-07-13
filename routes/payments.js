@@ -37,7 +37,11 @@ const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { getRates }          = require('../utils/rates');
-const { triggerPurchasing } = require('./purchasing');
+// O7.2 (Cycle B) : importait auparavant './purchasing' (routes/purchasing.js,
+// une route — pas une boundary de feature) pour son ré-export de
+// compatibilité. triggerPurchasing est un vrai service purchasing — on le
+// prend directement. Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
+const { triggerPurchasing } = require('../services/purchasing-trigger-service');
 const { validate }          = require('../middleware/validate');
 const { confirmCashByReference } = require('../services/payment-cash-confirm');
 const { payments }          = require('../validators');

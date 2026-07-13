@@ -19,7 +19,7 @@ jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
-jest.mock('../../routes/pickup-secret', () => ({
+jest.mock('../../services/pickup-secret-service', () => ({
   generateAndStoreSecret: jest.fn().mockResolvedValue({ code: 'TEST-CODE' }),
   cacheCodeForReveal: jest.fn().mockResolvedValue(undefined),
 }));
@@ -37,6 +37,12 @@ jest.mock('../../services/loyalty-service', () => ({
 const mockNotifyPaymentConfirmed = jest.fn().mockResolvedValue({ invoice: null });
 jest.mock('../../services/notification-service', () => ({
   notifyPaymentConfirmed: (...args) => mockNotifyPaymentConfirmed(...args),
+}));
+
+// O7.2 (Cycle A) : voir docs/O7_2_CYCLE_ANALYSIS.md.
+const mockSendInvoiceReadyNotification = jest.fn().mockResolvedValue({ ok: true });
+jest.mock('../../services/invoice-service', () => ({
+  sendInvoiceReadyNotification: (...args) => mockSendInvoiceReadyNotification(...args),
 }));
 
 const { makeClient } = require('../integration/test-harness/mock-db');
@@ -356,7 +362,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
     expect(mockHandleOrderConfirmed).not.toHaveBeenCalled();
     expect(triggerPurchasing).not.toHaveBeenCalled();
     // Le code de retrait est quand même généré et mis en cache (post-commit)
-    const { cacheCodeForReveal } = require('../../routes/pickup-secret');
+    const { cacheCodeForReveal } = require('../../services/pickup-secret-service');
     expect(cacheCodeForReveal).toHaveBeenCalledWith('order-sb-1', 'TEST-CODE');
   });
 
@@ -378,7 +384,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
       insufficientItems: [{ product_name: 'Sac à dos', available: 0, needed: 2 }],
     });
 
-    const { cacheCodeForReveal } = require('../../routes/pickup-secret');
+    const { cacheCodeForReveal } = require('../../services/pickup-secret-service');
     cacheCodeForReveal.mockRejectedValueOnce(new Error('cache indisponible'));
 
     const result = await handleStripeSucceeded(event, intent, db);
@@ -442,7 +448,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
       insufficientItems: [{ product_name: 'Y', available: 0, needed: 1 }],
     });
 
-    const { generateAndStoreSecret } = require('../../routes/pickup-secret');
+    const { generateAndStoreSecret } = require('../../services/pickup-secret-service');
     generateAndStoreSecret.mockClear();
 
     await handleStripeSucceeded(event, intent, db, jest.fn());
@@ -474,7 +480,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
       insufficientItems: [{ product_name: 'Z', available: 0, needed: 1 }],
     });
 
-    const { generateAndStoreSecret, cacheCodeForReveal } = require('../../routes/pickup-secret');
+    const { generateAndStoreSecret, cacheCodeForReveal } = require('../../services/pickup-secret-service');
     generateAndStoreSecret.mockRejectedValueOnce(new Error('gen failed'));
     cacheCodeForReveal.mockClear();
 
@@ -488,7 +494,7 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
 describe('handleStripeSucceeded — chemin 7 : nominal (processedOk=true)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    const { generateAndStoreSecret, cacheCodeForReveal } = require('../../routes/pickup-secret');
+    const { generateAndStoreSecret, cacheCodeForReveal } = require('../../services/pickup-secret-service');
     generateAndStoreSecret.mockResolvedValue({ code: 'TEST-CODE' });
     cacheCodeForReveal.mockResolvedValue(undefined);
   });

@@ -17,6 +17,13 @@
  * Correctif : `notifyText` a été centralisée dans internals.js (partagée,
  * exportée — cf. notification-internals.test.js) et importée ici.
  *
+ * O7.2 (Cycle A, 2026-07) : le bloc "lien facture post-paiement" a été retiré
+ * de notifyPaymentConfirmed() et déplacé vers services/invoice-service.js
+ * (orders) — voir tests/unit/invoice-service.test.js pour sa couverture, et
+ * docs/O7_2_CYCLE_ANALYSIS.md pour le rationale (cassait le cycle runtime
+ * notifications<->orders). notifyPaymentConfirmed() n'envoie plus désormais
+ * que la notification "paiement confirmé" — son périmètre d'origine.
+ *
  * Couverture :
  *   notifyOrderCreated :
  *     ✓ envoie à chaque destinataire (payeur + bénéficiaire), log 'sent'
@@ -27,9 +34,7 @@
  *   notifyPaymentConfirmed :
  *     ✓ order introuvable en DB → skip silencieux
  *     ✓ pas de téléphone → log 'skipped'
- *     ✓ succès complet : notif paiement + lien facture (notifyText ok)
- *     ✓ lien facture : notifyText renvoie ok:false → alerte radar avec la raison
- *     ✓ génération de facture échoue (invoiceService rejette) → alerte radar, non-bloquant
+ *     ✓ succès : notif paiement envoyée, aucun appel invoice-service (O7.2)
  *     ✓ exception globale (db.query rejette) → catch général, alerte radar
  *   notifyStatusChange :
  *     ✓ statut non mappé (paid, processing...) → no-op silencieux
@@ -214,12 +219,10 @@ describe('notifyPaymentConfirmed', () => {
     expect(mockWaPaymentConfirmed).not.toHaveBeenCalled();
   });
 
-  it('journalise "failed" (sans throw) si waPaymentConfirmed répond ok:false — le flux facture continue quand même', async () => {
+  it('journalise "failed" (sans throw) si waPaymentConfirmed répond ok:false', async () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [orderRow] });
     mockPickPhone.mockReturnValueOnce('+269111');
     mockWaPaymentConfirmed.mockResolvedValueOnce({ ok: false, error: 'invalid_number' });
-    mockGetOrCreateInvoice.mockResolvedValueOnce({ invoice_number: 'INV-006' });
-    mockNotifyText.mockResolvedValueOnce({ ok: true });
 
     await notifyPaymentConfirmed('order-1', 'CMD-1');
 
@@ -228,85 +231,20 @@ describe('notifyPaymentConfirmed', () => {
     }));
   });
 
-  it('succès complet : notif paiement envoyée + lien facture envoyé (notifyText ok)', async () => {
+  it('succès complet : notif paiement envoyée et journalisée "sent"', async () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [orderRow] });
     mockPickPhone.mockReturnValueOnce('+269111');
     mockWaPaymentConfirmed.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
-    mockGetOrCreateInvoice.mockResolvedValueOnce({ invoice_number: 'INV-001' });
-    mockNotifyText.mockResolvedValueOnce({ ok: true, messageId: 'm2' });
 
     await notifyPaymentConfirmed('order-1', 'CMD-1');
 
     expect(mockWaPaymentConfirmed).toHaveBeenCalledWith(expect.objectContaining({ mobile: '+269111', orderRef: 'CMD-1' }));
     expect(mockLogNotification).toHaveBeenCalledWith(expect.objectContaining({ event: 'payment_confirmed', status: 'sent' }));
-    expect(mockNotifyText).toHaveBeenCalledWith('+269111', expect.stringContaining('facture'), 'invoice_ready', 'order-1');
-    expect(mockLog.info).toHaveBeenCalledWith(expect.objectContaining({ invoice_number: 'INV-001' }), expect.stringContaining('Invoice link sent'));
     expect(mockAlertNotificationFailure).not.toHaveBeenCalled();
-  });
-
-  it('utilise le message "paiement enregistré" pour cash_relais (au lieu de "facture disponible")', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ ...orderRow, payment_mode: 'cash_relais' }] });
-    mockPickPhone.mockReturnValueOnce('+269111');
-    mockWaPaymentConfirmed.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
-    mockGetOrCreateInvoice.mockResolvedValueOnce({ invoice_number: 'INV-002' });
-    mockNotifyText.mockResolvedValueOnce({ ok: true });
-
-    await notifyPaymentConfirmed('order-1', 'CMD-1');
-
-    expect(mockNotifyText).toHaveBeenCalledWith('+269111', expect.stringContaining('enregistre'), 'invoice_ready', 'order-1');
-  });
-
-  it("lien facture : notifyText renvoie ok:false → alerte radar avec la raison (reason)", async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [orderRow] });
-    mockPickPhone.mockReturnValueOnce('+269111');
-    mockWaPaymentConfirmed.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
-    mockGetOrCreateInvoice.mockResolvedValueOnce({ invoice_number: 'INV-003' });
-    mockNotifyText.mockResolvedValueOnce({ ok: false, reason: 'no_phone_or_message' });
-
-    await notifyPaymentConfirmed('order-1', 'CMD-1');
-
-    expect(mockLog.warn).toHaveBeenCalledWith(expect.objectContaining({ reason: 'no_phone_or_message' }), expect.stringContaining('NOT sent'));
-    expect(mockAlertNotificationFailure).toHaveBeenCalledWith(expect.objectContaining({
-      event: 'invoice_ready', orderId: 'order-1', error: 'no_phone_or_message',
-    }));
-  });
-
-  it("lien facture : notifyText renvoie ok:false avec 'error' (pas 'reason') → alerte avec error", async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [orderRow] });
-    mockPickPhone.mockReturnValueOnce('+269111');
-    mockWaPaymentConfirmed.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
-    mockGetOrCreateInvoice.mockResolvedValueOnce({ invoice_number: 'INV-004' });
-    mockNotifyText.mockResolvedValueOnce({ ok: false, error: 'provider_down' });
-
-    await notifyPaymentConfirmed('order-1', 'CMD-1');
-
-    expect(mockAlertNotificationFailure).toHaveBeenCalledWith(expect.objectContaining({ error: 'provider_down' }));
-  });
-
-  it("lien facture : sendResult falsy (undefined) → traité comme échec avec reason 'unknown'", async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [orderRow] });
-    mockPickPhone.mockReturnValueOnce('+269111');
-    mockWaPaymentConfirmed.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
-    mockGetOrCreateInvoice.mockResolvedValueOnce({ invoice_number: 'INV-005' });
-    mockNotifyText.mockResolvedValueOnce(undefined);
-
-    await notifyPaymentConfirmed('order-1', 'CMD-1');
-
-    expect(mockAlertNotificationFailure).toHaveBeenCalledWith(expect.objectContaining({ error: 'unknown' }));
-  });
-
-  it('génération de facture impossible (invoiceService rejette) → alerte radar, non-bloquant', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [orderRow] });
-    mockPickPhone.mockReturnValueOnce('+269111');
-    mockWaPaymentConfirmed.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
-    mockGetOrCreateInvoice.mockRejectedValueOnce(new Error('payment_status pas encore paid'));
-
-    await expect(notifyPaymentConfirmed('order-1', 'CMD-1')).resolves.toBeUndefined();
-
-    expect(mockLog.warn).toHaveBeenCalledWith(expect.objectContaining({ err: expect.any(Error) }), expect.stringContaining('non-fatal'));
-    expect(mockAlertNotificationFailure).toHaveBeenCalledWith(expect.objectContaining({
-      event: 'invoice_ready', error: 'payment_status pas encore paid',
-    }));
+    // O7.2 (Cycle A) : le lien facture n'est plus construit/envoyé ici — voir
+    // tests/unit/invoice-service.test.js (services/invoice-service.js, orders).
+    expect(mockNotifyText).not.toHaveBeenCalled();
+    expect(mockGetOrCreateInvoice).not.toHaveBeenCalled();
   });
 
   it('exception globale (db.query rejette) → catch général, alerte radar, ne relance pas', async () => {

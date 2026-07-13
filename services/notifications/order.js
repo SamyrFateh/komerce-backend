@@ -21,7 +21,7 @@
 const {
   db, log,
   waOrderCreated, waPaymentConfirmed, waOrderShipped, waOrderDelivered, waOrderCancelled,
-  callAuthKey, callAuthKeyText, notifyText,
+  callAuthKey, callAuthKeyText,
   _alertNotificationFailure, logNotification,
   firstName, formatAmount, pickPhone, pickRecipients,
 } = require('./internals');
@@ -131,38 +131,13 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
       detail: result.ok ? { messageId: result.messageId } : { error: result.error },
     });
 
-    // ── Lien facture post-paiement (fire-and-forget, non-bloquant) ─────────
-    // stripe_eur  → facture disponible immédiatement (paiement déjà encaissé)
-    // cash_relais → facture disponible après confirmPaymentCycle (payment_status='paid')
-    // Dans les deux cas, on est appelé POST-COMMIT : payment_status est déjà 'paid'.
-    try {
-      const invoiceService = require('./invoice-service');
-      const invoice = await invoiceService.getOrCreateInvoice(orderId);
-      const appUrl = process.env.APP_URL || process.env.PUBLIC_URL || 'https://app.komerce.km';
-      const invoiceUrl = `${appUrl}/api/invoices/${orderId}`;
-
-      const msg = order.payment_mode === 'cash_relais'
-        ? `Komerce : votre paiement est enregistre. Recapitulatif : ${invoiceUrl}`
-        : `Komerce : votre facture est disponible : ${invoiceUrl}`;
-
-      // FIX : notifyText ne LÈVE PAS sur un envoi bloqué/refusé — il RETOURNE
-      // { ok:false, reason/error }. Avant, on loggait « sent » sans regarder.
-      // On vérifie le résultat et on remonte une alerte radar comme pour le paiement.
-      const sendResult = await notifyText(phone, msg, 'invoice_ready', orderId);
-      if (sendResult && sendResult.ok) {
-        log.info({ order_ref: orderReference, invoice_number: invoice.invoice_number }, '🧾 Invoice link sent');
-      } else {
-        const reason = (sendResult && (sendResult.reason || sendResult.error)) || 'unknown';
-        log.warn({ order_ref: orderReference, invoice_number: invoice.invoice_number, reason },
-          '🧾 Invoice link NOT sent');
-        _alertNotificationFailure({ event: 'invoice_ready', orderRef: orderReference, orderId, error: reason });
-      }
-    } catch (invErr) {
-      // Génération de facture impossible (ex. payment_status pas encore 'paid' — race).
-      // Non-bloquant pour le flux paiement, mais désormais VISIBLE dans le radar.
-      log.warn({ err: invErr, order_ref: orderReference }, '🧾 Invoice notification skipped (non-fatal)');
-      _alertNotificationFailure({ event: 'invoice_ready', orderRef: orderReference, orderId, error: invErr.message });
-    }
+    // ── Lien facture post-paiement ──────────────────────────────────────────
+    // O7.2 (Cycle A) : déplacé vers services/invoice-service.js (orders),
+    // déclenché directement par les callers de payment confirmation
+    // (payment-cash-confirm.js, payment-stripe.js, routes/cash.js,
+    // routes/order-api-v2.js), en parallèle de cet appel notifyPaymentConfirmed.
+    // `notifications` ne construit plus de lien facture — voir
+    // docs/O7_2_CYCLE_ANALYSIS.md, Cycle A.
   } catch (err) {
     log.error({ err, order_id: orderId, order_ref: orderReference }, 'Payment confirmed notification failed');
     // D4 FIX — remonter dans alerts pour visibilité radar

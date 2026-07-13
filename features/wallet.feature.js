@@ -111,6 +111,7 @@ module.exports = {
     ],
     consumes: [
       'auth-identity (identification du client)',
+      'payments (finalise le paiement — payment-service.js markPaid, transactionnel, quand le debit wallet couvre integralement la commande ; invariant D-02, payment-service reste seul proprietaire de payment_status — O7.2 Cycle D)',
     ],
   },
 

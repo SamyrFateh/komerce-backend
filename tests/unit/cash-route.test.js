@@ -41,6 +41,11 @@ jest.mock('../../services/notification-service', () => ({
   notifyPaymentConfirmed: jest.fn().mockResolvedValue(undefined),
 }));
 
+// O7.2 (Cycle A) : voir docs/O7_2_CYCLE_ANALYSIS.md.
+jest.mock('../../services/invoice-service', () => ({
+  sendInvoiceReadyNotification: jest.fn().mockResolvedValue({ ok: true }),
+}));
+
 jest.mock('../../services/loyalty-service', () => ({
   handleOrderConfirmed: jest.fn().mockResolvedValue({ skipped: true }),
 }));

@@ -13929,15 +13929,15 @@
       },
       {
         "from": "logistics",
-        "to": "notification",
-        "raw": "notification",
-        "resolved": false
+        "to": "notifications",
+        "raw": "notifications",
+        "resolved": true
       },
       {
         "from": "logistics",
-        "to": "payment",
-        "raw": "payment",
-        "resolved": false
+        "to": "payments",
+        "raw": "payments (marque une commande payee — services/payment-service.js ; confirme un paiement cash pickup transactionnel — services/confirm-pickup-cash-payment.js ; O7.2 Cycle B)",
+        "resolved": true
       },
       {
         "from": "logistics",
@@ -13949,6 +13949,12 @@
         "from": "logistics",
         "to": "wallet",
         "raw": "wallet",
+        "resolved": true
+      },
+      {
+        "from": "logistics",
+        "to": "purchasing",
+        "raw": "purchasing (declenche verification/reapprovisionnement apres collecte cash relais — services/purchasing-trigger-service.js, O7.2 Cycle C)",
         "resolved": true
       },
       {
@@ -14054,6 +14060,18 @@
         "resolved": true
       },
       {
+        "from": "payments",
+        "to": "logistics",
+        "raw": "logistics (generation du code retrait pickup au moment du paiement — services/pickup-secret-service.js ; lecture du statut agrege colis pour reconciliation — utils/parcels.js ; O7.2 Cycle B)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "wallet",
+        "raw": "wallet (checkout consulte le solde applicable via /api/wallet — public/boutique/js/b-checkout.js, O7.2 Cycle D)",
+        "resolved": true
+      },
+      {
         "from": "purchasing",
         "to": "orders",
         "raw": "orders (lecture : order_items, orders — le besoin d'achat naît d'une commande client)",
@@ -14070,6 +14088,12 @@
         "to": "notification",
         "raw": "notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)",
         "resolved": false
+      },
+      {
+        "from": "purchasing",
+        "to": "logistics",
+        "raw": "logistics (declenche scan preparation + notification client apres reception hub complete — services/scan-operations.js triggerScan3, O7.2 Cycle C)",
+        "resolved": true
       },
       {
         "from": "recommendations",
@@ -14201,6 +14225,12 @@
         "from": "wallet",
         "to": "auth-identity",
         "raw": "auth-identity (identification du client)",
+        "resolved": true
+      },
+      {
+        "from": "wallet",
+        "to": "payments",
+        "raw": "payments (finalise le paiement — payment-service.js markPaid, transactionnel, quand le debit wallet couvre integralement la commande ; invariant D-02, payment-service reste seul proprietaire de payment_status — O7.2 Cycle D)",
         "resolved": true
       },
       {
@@ -18431,7 +18461,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "logistics",
@@ -18519,7 +18549,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "logistics",
@@ -18530,12 +18560,12 @@
             "evidence": [
               {
                 "sourceFileId": "routes/pickup-secret.js",
-                "targetFile": "routes/purchasing.js"
+                "targetFile": "services/purchasing-trigger-service.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "logistics",
@@ -18719,22 +18749,6 @@
               {
                 "sourceFileId": "routes/meta-whatsapp.js",
                 "targetFile": "utils/logger.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
-        "from": "notifications",
-        "to": "orders",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/authkey-client.js",
-                "targetFile": "services/invoice-public-token.js"
               }
             ]
           }
@@ -18935,6 +18949,10 @@
               {
                 "sourceFileId": "services/invoice-service.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/invoice-service.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/order-cost-snapshot.js",
@@ -19270,6 +19288,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/verify-qr-collection.js",
+                "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "services/invoice-service.js",
                 "targetFile": "services/notification-service.js"
               },
               {
@@ -19654,11 +19676,11 @@
             "evidence": [
               {
                 "sourceFileId": "services/payment-paypal.js",
-                "targetFile": "routes/pickup-secret.js"
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "services/payment-stripe.js",
-                "targetFile": "routes/pickup-secret.js"
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "services/reconciliation-service.js",
@@ -19666,19 +19688,19 @@
               },
               {
                 "sourceFileId": "routes/pickup-pay-cash.js",
-                "targetFile": "routes/pickup-secret.js"
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "tests/unit/payment-paypal.test.js",
-                "targetFile": "routes/pickup-secret.js"
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "tests/unit/payment-stripe.test.js",
-                "targetFile": "routes/pickup-secret.js"
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "tests/unit/payments-webhook.test.js",
-                "targetFile": "routes/pickup-secret.js"
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "tests/unit/reconciliation-service.test.js",
@@ -19697,7 +19719,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "payments",
@@ -19783,8 +19805,16 @@
                 "targetFile": "services/order-payment-confirmation.js"
               },
               {
+                "sourceFileId": "services/payment-cash-confirm.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
                 "sourceFileId": "services/payment-stripe.js",
                 "targetFile": "services/order-payment-confirmation.js"
+              },
+              {
+                "sourceFileId": "services/payment-stripe.js",
+                "targetFile": "services/invoice-service.js"
               },
               {
                 "sourceFileId": "services/confirm-pickup-cash-payment.js",
@@ -19793,6 +19823,10 @@
               {
                 "sourceFileId": "services/cash-operations.js",
                 "targetFile": "services/order-payment-confirmation.js"
+              },
+              {
+                "sourceFileId": "routes/cash.js",
+                "targetFile": "services/invoice-service.js"
               },
               {
                 "sourceFileId": "tests/unit/payment-paypal.test.js",
@@ -19862,11 +19896,11 @@
               },
               {
                 "sourceFileId": "routes/payments.js",
-                "targetFile": "routes/purchasing.js"
+                "targetFile": "services/purchasing-trigger-service.js"
               },
               {
                 "sourceFileId": "tests/unit/payments-webhook.test.js",
-                "targetFile": "routes/purchasing.js"
+                "targetFile": "services/purchasing-trigger-service.js"
               },
               {
                 "sourceFileId": "tests/unit/cash-route.test.js",
@@ -19912,7 +19946,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "platform-ops",
@@ -20319,12 +20353,12 @@
             "evidence": [
               {
                 "sourceFileId": "services/purchasing-receive-service.js",
-                "targetFile": "routes/scans.js"
+                "targetFile": "services/scan-operations.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "purchasing",
@@ -21204,7 +21238,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       }
     ],
     "transversalTopology": [
@@ -21693,9 +21727,9 @@
       "COMPOSITION_ROOT_WIRING": 9,
       "NON_RUNTIME_TEST": 9,
       "TECHNICAL_PRIMITIVE": 32,
-      "BUSINESS_TRANSVERSAL_SERVICE": 11,
-      "CROSS_FEATURE_DIRECT_IMPORT": 18,
-      "BUSINESS_FEATURE_INTERFACE": 3,
+      "BUSINESS_TRANSVERSAL_SERVICE": 10,
+      "CROSS_FEATURE_DIRECT_IMPORT": 13,
+      "BUSINESS_FEATURE_INTERFACE": 1,
       "PILOTING_CAPABILITY": 2,
       "UNCLASSIFIED": 0
     },
@@ -22354,57 +22388,6 @@
         ]
       },
       {
-        "from": "logistics",
-        "to": "notifications",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "logistics",
-        "to": "payments",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle"
-        ]
-      },
-      {
-        "from": "logistics",
-        "to": "purchasing",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle"
-        ]
-      },
-      {
         "from": "loyalty",
         "to": "auth",
         "family": "TECHNICAL_PRIMITIVE",
@@ -22495,24 +22478,6 @@
         "exceptionReasons": []
       },
       {
-        "from": "notifications",
-        "to": "orders",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-transversal",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle"
-        ]
-      },
-      {
         "from": "orders",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
@@ -22556,10 +22521,8 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "orders",
@@ -22622,24 +22585,6 @@
         "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
-      },
-      {
-        "from": "payments",
-        "to": "logistics",
-        "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface",
-          "static-code"
-        ],
-        "couplingObserved": "mixed",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
       },
       {
         "from": "payments",
@@ -22719,23 +22664,6 @@
         "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
-      },
-      {
-        "from": "payments",
-        "to": "wallet",
-        "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "interface"
-        ],
-        "couplingObserved": "interface",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
       },
       {
         "from": "platform-ops",
@@ -22895,24 +22823,6 @@
         "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
-      },
-      {
-        "from": "purchasing",
-        "to": "logistics",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle"
-        ]
       },
       {
         "from": "purchasing",
@@ -23127,24 +23037,6 @@
         "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
-      },
-      {
-        "from": "wallet",
-        "to": "payments",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle"
-        ]
       }
     ],
     "unclassified": [],
@@ -23160,7 +23052,7 @@
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|technical-primitive": 10,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|technical-primitive": 7,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-transversal|business-feature|business-file-import": 2,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-transversal|business-feature|business-file-import": 1,
       "PILOTING_CAPABILITY|RUNTIME_AND_TEST|business-transversal|piloting-capability|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-transversal|technical-primitive": 5,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-transversal|business-feature|business-file-import": 1,
@@ -23168,99 +23060,20 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-transversal|technical-primitive": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|piloting-capability|business-feature|technical-primitive": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 7,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 3,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|technical-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 5,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 5,
-      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 9,
+      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 8,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 2,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 2,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|business-feature|business-transversal|business-file-import": 1
     },
-    "runtimeCycles": [
-      {
-        "nodes": [
-          "logistics",
-          "payments"
-        ],
-        "key": "logistics<->payments",
-        "directions": [
-          {
-            "from": "logistics",
-            "to": "payments",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          },
-          {
-            "from": "payments",
-            "to": "logistics",
-            "family": "BUSINESS_FEATURE_INTERFACE"
-          }
-        ]
-      },
-      {
-        "nodes": [
-          "logistics",
-          "purchasing"
-        ],
-        "key": "logistics<->purchasing",
-        "directions": [
-          {
-            "from": "logistics",
-            "to": "purchasing",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          },
-          {
-            "from": "purchasing",
-            "to": "logistics",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          }
-        ]
-      },
-      {
-        "nodes": [
-          "notifications",
-          "orders"
-        ],
-        "key": "notifications<->orders",
-        "directions": [
-          {
-            "from": "notifications",
-            "to": "orders",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          },
-          {
-            "from": "orders",
-            "to": "notifications",
-            "family": "BUSINESS_TRANSVERSAL_SERVICE"
-          }
-        ]
-      },
-      {
-        "nodes": [
-          "payments",
-          "wallet"
-        ],
-        "key": "payments<->wallet",
-        "directions": [
-          {
-            "from": "payments",
-            "to": "wallet",
-            "family": "BUSINESS_FEATURE_INTERFACE"
-          },
-          {
-            "from": "wallet",
-            "to": "payments",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          }
-        ]
-      }
-    ],
+    "runtimeCycles": [],
     "exceptions": [
       {
         "from": "dashboard",
@@ -23287,24 +23100,6 @@
         "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/scan-operations.js -> routes/loyalty.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
       },
       {
-        "from": "logistics",
-        "to": "payments",
-        "decision": "boundary-to-break",
-        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/parcel-auto-create-service.js -> services/payment-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
-      },
-      {
-        "from": "logistics",
-        "to": "purchasing",
-        "decision": "boundary-to-break",
-        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/pickup-secret.js -> routes/purchasing.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
-      },
-      {
-        "from": "notifications",
-        "to": "orders",
-        "decision": "boundary-to-break",
-        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/authkey-client.js -> services/invoice-public-token.js (rehomé O7.1 CAS A, ex auth-identity -> orders). Direction d'un cycle runtime réel (notifications<->orders) : couture à casser ou dépendance à inverser avant déclaration. Voir docs/O7_1_OWNERSHIP_ANALYSIS.md."
-      },
-      {
         "from": "orders",
         "to": "loyalty",
         "decision": "internal-api-required",
@@ -23312,21 +23107,9 @@
       },
       {
         "from": "orders",
-        "to": "notifications",
-        "decision": "boundary-to-break",
-        "rationale": "BUSINESS_TRANSVERSAL_SERVICE — consommation légitime du service de notification par orders (envoi de notifications commande). Direction d'un cycle runtime réel (notifications<->orders, apparu après le rehome O7.1 de services/authkey-client.js) : couture à casser ou dépendance à inverser avant déclaration."
-      },
-      {
-        "from": "orders",
         "to": "payments",
         "decision": "internal-api-required",
         "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/admin-order-refund.js -> services/payment-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
-      },
-      {
-        "from": "payments",
-        "to": "logistics",
-        "decision": "boundary-to-break",
-        "rationale": "BUSINESS_FEATURE_INTERFACE — preuve: services/payment-paypal.js -> routes/pickup-secret.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
       },
       {
         "from": "payments",
@@ -23339,12 +23122,6 @@
         "to": "purchasing",
         "decision": "internal-api-required",
         "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: routes/cash.js -> services/purchasing-trigger-service.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
-      },
-      {
-        "from": "payments",
-        "to": "wallet",
-        "decision": "boundary-to-break",
-        "rationale": "BUSINESS_FEATURE_INTERFACE — preuve: public/boutique/js/b-checkout.js -> /api/wallet. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
       },
       {
         "from": "platform-ops",
@@ -23365,12 +23142,6 @@
         "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/simulator/state-advancer.js -> services/order-status-machine.js. O7.1 CAS D : OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED — même raisonnement que CAS C : orders.status n'est jamais écrit directement, toujours via transitionOrderStatus(). Les écritures directes de payment_status (chaos desync_payment + confirmPayment) sont cohérentes avec l'usage établi ailleurs dans le code (colonne à écriture partagée, pas un lifecycle SSOT) et ne constituent pas une prise d'autorité. Voir docs/O7_1_OWNERSHIP_ANALYSIS.md."
       },
       {
-        "from": "purchasing",
-        "to": "logistics",
-        "decision": "boundary-to-break",
-        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/purchasing-receive-service.js -> routes/scans.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
-      },
-      {
         "from": "shared-cart",
         "to": "loyalty",
         "decision": "internal-api-required",
@@ -23381,12 +23152,6 @@
         "to": "payments",
         "decision": "internal-api-required",
         "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: public/boutique/js/b-share-cart.js -> public/boutique/js/b-checkout.js. Import direct cross-feature : exposer une internal API / interface avant de déclarer contract.consumes."
-      },
-      {
-        "from": "wallet",
-        "to": "payments",
-        "decision": "boundary-to-break",
-        "rationale": "CROSS_FEATURE_DIRECT_IMPORT — preuve: services/wallet-service.js -> services/payment-service.js. Direction d'un cycle runtime réel : couture à casser ou dépendance à inverser avant déclaration."
       }
     ],
     "staleExceptions": [],
@@ -25122,16 +24887,6 @@
       },
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "logistics -> \"notification\" (entrée: \"notification\")",
-        "msg": "contract.consumes de logistics référence \"notification\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
-        "ref": "logistics -> \"payment\" (entrée: \"payment\")",
-        "msg": "contract.consumes de logistics référence \"payment\", ne correspond à aucun nom de feature connu"
-      },
-      {
-        "type": "CONSUMES-REFERENCE-UNRESOLVED",
         "ref": "notifications -> \"toutes les features emettrices\" (entrée: \"toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement\")",
         "msg": "contract.consumes de notifications référence \"toutes les features emettrices\", ne correspond à aucun nom de feature connu"
       },
@@ -25432,21 +25187,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "logistics -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "logistics -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"payments\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "logistics -> purchasing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"purchasing\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "loyalty -> auth",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"loyalty\" vers \"auth\""
       },
@@ -25477,13 +25217,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "notifications -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 63 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 64 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25493,7 +25228,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"notifications\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 9 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25514,11 +25249,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "payments -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 39 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "payments -> logistics",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 9 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"logistics\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25544,11 +25274,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "payments -> refunds",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"refunds\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "payments -> wallet",
-        "msg": "dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"wallet\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25599,11 +25324,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "purchasing -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 18 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "purchasing -> logistics",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"logistics\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25674,11 +25394,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "wallet -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "wallet -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"payments\""
       },
       {
         "type": "WRITER-NOT-OWNER",

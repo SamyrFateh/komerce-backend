@@ -46,7 +46,9 @@ const { confirmPaymentCycle }    = require('./order-payment-confirmation');
 const { markRefunded }           = require('./payment-service');
 const { recordExternalRefund }   = require('./refund-service');
 const { appendOrderHistoryNote, transitionOrderStatus } = require('./order-status-machine');
-const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
+// O7.2 (Cycle B) : importait auparavant routes/pickup-secret.js (une route,
+// pas une boundary de feature). Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
+const { generateAndStoreSecret, cacheCodeForReveal } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'payment-paypal' });
 
 // ─── createPaypalOrder ────────────────────────────────────────────────────────

@@ -46,43 +46,24 @@ const { transitionOrderStatus } = require('../services/order-status-machine');
 const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
 const log = require('../utils/logger').child({ module: 'pickup-secret' });
 const { buildReceiptHTML, escapeHTML } = require('../utils/pickup-receipt-html');
+// O7.2 (Cycle B) : generatePickupCode/hashCode/generateAndStoreSecret/
+// cacheCodeForReveal étaient dupliqués ici alors qu'un service équivalent,
+// déjà testé, existait sans être câblé (services/pickup-secret-service.js,
+// logistics). On délègue désormais à ce service — comportement runtime
+// identique (code repris à l'identique dans le service). C'est aussi ce qui
+// permet à services/payment-paypal.js et services/payment-stripe.js
+// (payments) de ne plus importer un fichier ROUTE pour générer un code
+// retrait au moment du paiement. Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
+const {
+  generatePickupCode, hashCode, normalizeCode,
+  generateAndStoreSecret, cacheCodeForReveal,
+} = require('../services/pickup-secret-service');
 
 // ══════════════════════════════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Alphabet sans confusion visuelle : pas de 0/O/I/1/l
-const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const CODE_LENGTH   = 8;
-
-/**
- * Génère un code secret de 8 caractères groupés par 3 : "A7K-3M9-P2"
- * Espace de code : 32^8 = 1.1e12 combinaisons
- */
-function generatePickupCode() {
-  const bytes = crypto.randomBytes(CODE_LENGTH);
-  let raw = '';
-  for (let i = 0; i < CODE_LENGTH; i++) {
-    raw += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
-  }
-  // Formatter : A7K-3M9-P2 (groupes 3-3-2)
-  return raw.slice(0, 3) + '-' + raw.slice(3, 6) + '-' + raw.slice(6, 8);
-}
-
-/**
- * Hash un code avec salt (sha256)
- */
-function hashCode(code, salt) {
-  const normalized = String(code).replace(/[-\s]/g, '').toUpperCase();
-  return crypto.createHash('sha256').update(normalized + salt).digest('hex');
-}
-
-/**
- * Normalise un code saisi (retire tirets et espaces, upper-case)
- */
-function normalizeCode(input) {
-  return String(input || '').replace(/[-\s]/g, '').toUpperCase();
-}
+// generatePickupCode / hashCode / normalizeCode : voir services/pickup-secret-service.js (O7.2 Cycle B)
 
 // Helper : rôle agent relais ou admin
 function isRelaisOrAdmin(req) {
@@ -106,93 +87,7 @@ function requireRelaisOrAdmin(req, res, next) {
 //   • Callback Mobile Money               → channel = 'mobile_money'
 //   • Validation Wallet                   → channel = 'wallet'
 //   • Regenerate admin (perte)            → channel = passé en paramètre
-//
-// Renvoie { code, last4 } — le code CLAIR ne doit être utilisé qu'UNE FOIS
-// (affichage écran ou impression), jamais stocké ailleurs que dans le hash.
-//
-// dbClient : optionnel, si fourni utilise cette connexion (pour transaction)
-//            sinon utilise le pool global
-// excludeOrderId : pour regenerate, ignore la commande elle-même dans l'anti-collision
-
-async function generateAndStoreSecret({
-  orderId,
-  relaisId = null,
-  channel,
-  dbClient = null,
-  excludeOrderId = null,
-  extraUpdates = {},  // colonnes additionnelles à updater au même moment (métadonnées canal)
-}) {
-  if (!orderId) throw new Error('generateAndStoreSecret: orderId requis');
-  if (!channel) throw new Error('generateAndStoreSecret: channel requis');
-
-  const dbHandle = dbClient || db;
-
-  // Génération anti-collision au niveau du relais
-  let code, last4, hash;
-  const salt = crypto.randomBytes(16).toString('hex');
-  const MAX_GEN_ATTEMPTS = 50;
-  let attempts = 0;
-
-  while (attempts < MAX_GEN_ATTEMPTS) {
-    code  = generatePickupCode();
-    last4 = code.replace(/-/g, '').slice(-4);
-
-    // Vérifier unicité du last4 parmi les codes ACTIFS du même relais
-    const params = [last4, relaisId];
-    let query = `
-      SELECT id FROM orders
-      WHERE pickup_secret_last4 = $1
-        AND relais_id IS NOT DISTINCT FROM $2
-        AND status NOT IN ('collected', 'cancelled', 'refunded')
-        AND (pickup_secret_expires_at IS NULL OR pickup_secret_expires_at > NOW())
-    `;
-    if (excludeOrderId) {
-      query += ` AND id <> $3`;
-      params.push(excludeOrderId);
-    }
-    query += ` LIMIT 1`;
-
-    const { rows: [dup] } = await dbHandle.query(query, params);
-    if (!dup) break;
-    attempts++;
-  }
-
-  if (attempts >= MAX_GEN_ATTEMPTS) {
-    log.error(`[PICKUP-SECRET] Saturation anti-collision relais=${relaisId} channel=${channel}`);
-    throw new Error('Génération du code impossible (saturation)');
-  }
-
-  hash = hashCode(code, salt);
-  const now     = new Date();
-  const expires = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // +60 jours
-
-  // Construire l'UPDATE avec les colonnes de base + extras (stripe metadata, etc.)
-  const baseCols = {
-    pickup_secret_hash:            hash,
-    pickup_secret_salt:            salt,
-    pickup_secret_last4:           last4,
-    pickup_secret_created_at:      now,
-    pickup_secret_expires_at:      expires,
-    pickup_secret_attempts:        0,
-    pickup_secret_blocked_until:   null,
-    pickup_secret_channel:         channel,
-    pickup_secret_emitted_at:      now,
-  };
-  const allCols = Object.assign({}, baseCols, extraUpdates || {});
-  const colNames = Object.keys(allCols);
-  const setClauses = colNames.map((c, i) => `${c} = $${i + 1}`).join(', ');
-  const values = colNames.map(c => allCols[c]);
-  values.push(orderId);
-
-  await dbHandle.query(
-    `UPDATE orders SET ${setClauses}, updated_at = NOW() WHERE id = $${values.length}`,
-    values
-  );
-
-  log.info(`[PICKUP-SECRET] ✅ Code généré channel=${channel} order=${orderId} last4=${last4}`);
-
-  return { code, last4 };
-}
+// generateAndStoreSecret : voir services/pickup-secret-service.js (O7.2 Cycle B)
 
 // ══════════════════════════════════════════════════════════════════════════════
 // 1. POST /pay-cash/:orderId — Encaissement cash, génère le code secret
@@ -240,7 +135,11 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
     } catch (_) { /* non-bloquant */ }
 
     try {
-      const { triggerPurchasing } = require('./purchasing');
+      // O7.2 (Cycle B) : importait auparavant routes/purchasing.js (une route,
+      // pas une boundary de feature) pour son ré-export de compatibilité.
+      // triggerPurchasing est un vrai service purchasing — on le prend
+      // directement. Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
+      const { triggerPurchasing } = require('../services/purchasing-trigger-service');
       triggerPurchasing(result.body.order_id)
         .then(r => log.info('[PURCHASING] Pickup cash trigger OK:', result.body.order_ref, r))
         .catch(e => log.error('[PURCHASING] Pickup cash trigger error:', result.body.order_ref, e.message));
@@ -745,26 +644,6 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// cacheCodeForReveal — persistance DB du code en attente de révélation (SEC-1)
-// ══════════════════════════════════════════════════════════════════════════════
-// Remplace la Map REVEAL_CACHE in-memory par la table pickup_reveal_codes
-// (migration 070). Survit aux redémarrages et fonctionne en multi-instance.
-//
-// TTL 30 min : si le client ne revient pas (navigateur fermé, timeout),
-// le cron startPickupTokenCleanupCron() purge les lignes expirées toutes les 5 min.
-// → procédure de perte obligatoire passé ce délai.
-
-async function cacheCodeForReveal(orderId, code) {
-  await db.query(
-    `INSERT INTO pickup_reveal_codes (order_id, code, expires_at)
-     VALUES ($1, $2, NOW() + INTERVAL '30 minutes')
-     ON CONFLICT (order_id) DO UPDATE
-       SET code = EXCLUDED.code, expires_at = EXCLUDED.expires_at`,
-    [orderId, code]
-  );
-}
+// cacheCodeForReveal : voir services/pickup-secret-service.js (O7.2 Cycle B)
 
 module.exports = router;
-module.exports.generateAndStoreSecret = generateAndStoreSecret;
-module.exports.cacheCodeForReveal = cacheCodeForReveal;

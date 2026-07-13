@@ -245,6 +245,9 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
     notif.notifyPaymentConfirmed(order.id, order.reference)
       .then(r => { if (r?.invoice) log.info(`🧾 Invoice ${r.invoice} sent for ${order.reference}`); })
       .catch(e => log.error({ err: e }, '[CONFIRM-NOTIF]'));
+    // O7.2 (Cycle A) : lien facture désormais construit/envoyé par orders lui-même.
+    require('../services/invoice-service').sendInvoiceReadyNotification(order.id, order.reference)
+      .catch(e => log.error({ err: e }, '[CONFIRM-INVOICE-NOTIF]'));
 
     if (parcelResult.success) {
       notif.notifyParcelCreated(parcelResult.parcel.reference, order.id, order.reference)

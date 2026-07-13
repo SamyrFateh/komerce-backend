@@ -40,7 +40,10 @@ jest.mock('../../services/order-status-machine', () => ({
 }));
 
 const mockTriggerScan3 = jest.fn().mockResolvedValue({});
-jest.mock('../../routes/scans', () => ({ triggerScan3: (...args) => mockTriggerScan3(...args) }), { virtual: true });
+// O7.2 (Cycle C) : le service importe désormais directement
+// services/scan-operations.js (plus routes/scans.js). Voir
+// docs/O7_2_CYCLE_ANALYSIS.md, Cycle C.
+jest.mock('../../services/scan-operations', () => ({ triggerScan3: (...args) => mockTriggerScan3(...args) }), { virtual: true });
 
 // ─── Require service après les mocks ─────────────────────────────────────────
 const { processReceive } = require('../../services/purchasing-receive-service');

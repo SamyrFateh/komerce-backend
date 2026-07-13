@@ -34,6 +34,12 @@ jest.mock('../../services/notification-service', () => ({
   notifyParcelCreated: (...args) => mockNotifyParcelCreated(...args),
 }));
 
+// O7.2 (Cycle A) : voir docs/O7_2_CYCLE_ANALYSIS.md.
+const mockSendInvoiceReadyNotification = jest.fn().mockResolvedValue({ ok: true });
+jest.mock('../../services/invoice-service', () => ({
+  sendInvoiceReadyNotification: (...args) => mockSendInvoiceReadyNotification(...args),
+}));
+
 jest.mock('../../utils/logger', () => ({ child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })) }));
 
 const router = require('../../routes/order-api-v2');

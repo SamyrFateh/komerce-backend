@@ -118,6 +118,7 @@ module.exports = {
       'orders (lecture : order_items, orders — le besoin d\'achat naît d\'une commande client)',
       'auth (garde admin)',
       'notification (notifyLoyaltyEarned-like : notification fournisseur WhatsApp, via services/notification-service.js)',
+      'logistics (declenche scan preparation + notification client apres reception hub complete — services/scan-operations.js triggerScan3, O7.2 Cycle C)',
     ],
   },
 

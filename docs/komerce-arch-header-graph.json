@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 742,
-    "edges": 4252,
+    "edges": 4249,
     "dbTables": 110,
     "doctrines": 140,
     "impactAreas": 125,
@@ -8811,7 +8811,6 @@
         "side_effects"
       ],
       "depends": [
-        "services/invoice-public-token.js",
         "utils/logger.js"
       ],
       "usedBy": [
@@ -8829,9 +8828,7 @@
       "impactAreas": [
         "whatsapp",
         "otp",
-        "notifications",
-        "orders",
-        "invoices"
+        "notifications"
       ],
       "version": "2026-07"
     },
@@ -13815,7 +13812,7 @@
       ],
       "depends": [
         "db",
-        "routes/scans.js",
+        "services/scan-operations.js",
         "services/order-status-machine.js",
         "utils/logger.js"
       ],
@@ -19099,11 +19096,6 @@
       "area": "crons"
     },
     {
-      "id": "impact:invoices",
-      "type": "impact-area",
-      "area": "invoices"
-    },
-    {
       "id": "impact:customs",
       "type": "impact-area",
       "area": "customs"
@@ -19142,6 +19134,11 @@
       "id": "impact:finance-config",
       "type": "impact-area",
       "area": "finance-config"
+    },
+    {
+      "id": "impact:invoices",
+      "type": "impact-area",
+      "area": "invoices"
     },
     {
       "id": "impact:dashboards",
@@ -31598,12 +31595,6 @@
     },
     {
       "from": "services/authkey-client.js",
-      "to": "services/invoice-public-token.js",
-      "type": "depends",
-      "label": "services/invoice-public-token.js"
-    },
-    {
-      "from": "services/authkey-client.js",
       "to": "utils/logger.js",
       "type": "depends",
       "label": "utils/logger.js"
@@ -31637,18 +31628,6 @@
       "to": "impact:notifications",
       "type": "impact",
       "label": "notifications"
-    },
-    {
-      "from": "services/authkey-client.js",
-      "to": "impact:orders",
-      "type": "impact",
-      "label": "orders"
-    },
-    {
-      "from": "services/authkey-client.js",
-      "to": "impact:invoices",
-      "type": "impact",
-      "label": "invoices"
     },
     {
       "from": "services/auto-parcel.js",
@@ -38996,9 +38975,9 @@
     },
     {
       "from": "services/purchasing-receive-service.js",
-      "to": "routes/scans.js",
+      "to": "services/scan-operations.js",
       "type": "depends",
-      "label": "routes/scans.js"
+      "label": "services/scan-operations.js"
     },
     {
       "from": "services/purchasing-receive-service.js",
@@ -52483,7 +52462,6 @@
         "impact:logistics",
         "middleware/auth.js",
         "middleware/validate.js",
-        "services/purchasing-receive-service.js",
         "services/scan-operations.js"
       ]
     },
@@ -53388,7 +53366,6 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/invoice-public-token.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
@@ -53404,15 +53381,11 @@
       "impactAreas": [
         "whatsapp",
         "otp",
-        "notifications",
-        "orders",
-        "invoices"
+        "notifications"
       ],
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
-        "impact:invoices",
         "impact:notifications",
-        "impact:orders",
         "impact:otp",
         "impact:whatsapp",
         "services/invoice-public-token.js",
@@ -58185,7 +58158,7 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "routes/scans.js",
+        "services/scan-operations.js",
         "services/order-status-machine.js",
         "utils/logger.js"
       ],
@@ -58211,8 +58184,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
         "routes/purchasing.js",
-        "routes/scans.js",
         "services/order-status-machine.js",
+        "services/scan-operations.js",
         "utils/logger.js"
       ]
     },
@@ -58847,6 +58820,7 @@
         "routes/scans.js",
         "services/notification-service.js",
         "services/order-status-machine.js",
+        "services/purchasing-receive-service.js",
         "utils/logger.js",
         "utils/parcelSync.js"
       ]

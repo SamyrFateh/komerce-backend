@@ -26,7 +26,9 @@ jest.mock('../../services/confirm-pickup-cash-payment', () => ({
   confirmPickupCashPayment: (...args) => mockConfirmPickupCashPayment(...args),
 }));
 
-jest.mock('../../routes/pickup-secret', () => ({
+// O7.2 (Cycle B) : routes/pickup-pay-cash.js importe désormais directement
+// services/pickup-secret-service.js (plus routes/pickup-secret.js).
+jest.mock('../../services/pickup-secret-service', () => ({
   generateAndStoreSecret: jest.fn().mockResolvedValue({ code: 'TEST-CODE' }),
 }));
 

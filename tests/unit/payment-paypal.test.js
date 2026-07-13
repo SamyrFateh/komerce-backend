@@ -21,7 +21,7 @@ jest.mock('../../services/order-payment-confirmation', () => ({
   confirmPaymentCycle: jest.fn(),
 }));
 
-jest.mock('../../routes/pickup-secret', () => ({
+jest.mock('../../services/pickup-secret-service', () => ({
   generateAndStoreSecret: jest.fn().mockResolvedValue({ code: 'TEST-CODE' }),
   cacheCodeForReveal: jest.fn().mockResolvedValue(undefined),
 }));
@@ -49,7 +49,7 @@ jest.mock('../../services/refund-service', () => ({
 }));
 
 const { confirmPaymentCycle } = require('../../services/order-payment-confirmation');
-const { generateAndStoreSecret, cacheCodeForReveal } = require('../../routes/pickup-secret');
+const { generateAndStoreSecret, cacheCodeForReveal } = require('../../services/pickup-secret-service');
 const refundReceiptService = require('../../services/documents/refund-receipt');
 
 const {

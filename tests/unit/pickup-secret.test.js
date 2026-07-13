@@ -436,40 +436,9 @@ describe('GET /api/pickup/reveal-once/:orderId', () => {
   });
 });
 
-describe('generateAndStoreSecret (export interne)', () => {
-  test('retourne un code unique après anti-collision, stocke le hash', async () => {
-    let router;
-    jest.isolateModules(() => {
-      router = require('../../routes/pickup-secret');
-    });
-
-    mockQuery
-      .mockResolvedValueOnce({ rows: [] }) // anti-collision : pas de doublon au 1er essai
-      .mockResolvedValueOnce({ rows: [] }); // UPDATE orders
-
-    const result = await router.generateAndStoreSecret({ orderId: 'O1', relaisId: 'R1', channel: 'cash_relais' });
-
-    expect(result.code).toMatch(/^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{2}$/);
-    expect(result.last4).toHaveLength(4);
-
-    const updateCall = mockQuery.mock.calls[1];
-    expect(updateCall[0]).toContain('UPDATE orders SET');
-    expect(updateCall[0]).toContain('pickup_secret_channel');
-  });
-
-  test('relance la génération en cas de collision puis réussit', async () => {
-    let router;
-    jest.isolateModules(() => {
-      router = require('../../routes/pickup-secret');
-    });
-
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'dup' }] }) // collision au 1er essai
-      .mockResolvedValueOnce({ rows: [] }) // pas de collision au 2e essai
-      .mockResolvedValueOnce({ rows: [] }); // UPDATE orders
-
-    const result = await router.generateAndStoreSecret({ orderId: 'O1', channel: 'stripe' });
-    expect(result.code).toBeDefined();
-    expect(mockQuery).toHaveBeenCalledTimes(3);
-  });
-});
+// O7.2 (Cycle B) : le describe 'generateAndStoreSecret (export interne)' a
+// été retiré — la fonction n'est plus définie/exportée par cette route (elle
+// vit dans services/pickup-secret-service.js, dont la couverture équivalente
+// et plus complète — anti-collision, saturation, extraUpdates — se trouve
+// dans tests/unit/pickup-secret-service.test.js). Voir
+// docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.

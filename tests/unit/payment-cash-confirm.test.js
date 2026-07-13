@@ -33,6 +33,13 @@ jest.mock('../../services/loyalty-service', () => ({
   handleOrderConfirmed: (...args) => mockHandleOrderConfirmed(...args),
 }));
 
+// O7.2 (Cycle A) : services/invoice-service.js construit et envoie désormais
+// le lien de facture publique lui-même (voir docs/O7_2_CYCLE_ANALYSIS.md).
+const mockSendInvoiceReadyNotification = jest.fn().mockResolvedValue({ ok: true });
+jest.mock('../../services/invoice-service', () => ({
+  sendInvoiceReadyNotification: (...args) => mockSendInvoiceReadyNotification(...args),
+}));
+
 const { confirmCashByReference } = require('../../services/payment-cash-confirm');
 
 const triggerPurchasing = jest.fn().mockResolvedValue({ ok: true });

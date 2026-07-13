@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, routes/scans.js, services/order-status-machine.js, utils/logger.js
+ * @depends       db, services/scan-operations.js, services/order-status-machine.js, utils/logger.js
  * @used-by       routes/purchasing.js
  * @db-read       purchase_orders
  * @db-write      purchase_orders
@@ -33,10 +33,14 @@ const db = require('../db');
 const { transitionOrderStatus } = require('./order-status-machine');
 const log = require('../utils/logger').child({ module: 'purchasing-receive' });
 
-// ─── Import triggerScan3 depuis scans.js ──────────────────────────────────────
+// ─── Import triggerScan3 depuis le vrai service logistics ─────────────────────
+// O7.2 (Cycle B) : importait auparavant routes/scans.js (une route, pas une
+// boundary de feature) pour son ré-export de compatibilité. triggerScan3 est
+// un vrai service logistics — on le prend directement. Voir
+// docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
 let triggerScan3;
 try {
-  triggerScan3 = require('../routes/scans').triggerScan3;
+  triggerScan3 = require('./scan-operations').triggerScan3;
 } catch (e) {
   log.warn({ err: e }, '[purchasing-receive] triggerScan3 non disponible:');
   triggerScan3 = async () => {};

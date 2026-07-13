@@ -41,7 +41,9 @@
 
 const { confirmPaymentCycle }    = require('./order-payment-confirmation');
 const { markFailed }             = require('./payment-service');
-const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
+// O7.2 (Cycle B) : importait auparavant routes/pickup-secret.js (une route,
+// pas une boundary de feature). Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
+const { generateAndStoreSecret, cacheCodeForReveal } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'payment-stripe' });
 
 // ─── createStripeIntent ───────────────────────────────────────────────────────
@@ -298,6 +300,9 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
         const notifSvc = require('./notification-service');
         notifSvc.notifyPaymentConfirmed(smsContext.order_id, smsContext.order_reference)
           .catch(e => log.error({ err: e }, '[STRIPE-NOTIF] notification failed'));
+        // O7.2 (Cycle A) : lien facture désormais construit/envoyé par orders.
+        require('./invoice-service').sendInvoiceReadyNotification(smsContext.order_id, smsContext.order_reference)
+          .catch(e => log.error({ err: e }, '[STRIPE-INVOICE-NOTIF] notification failed'));
       } catch (e) { log.error({ err: e }, '[STRIPE-NOTIF] require error'); }
     }
   }

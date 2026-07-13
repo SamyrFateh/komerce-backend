@@ -282,10 +282,11 @@ module.exports = {
       'auth',
       'catalog',
       'economic-engine',
-      'notification',
-      'payment',
+      'notifications',
+      'payments (marque une commande payee — services/payment-service.js ; confirme un paiement cash pickup transactionnel — services/confirm-pickup-cash-payment.js ; O7.2 Cycle B)',
       'refunds',
       'wallet',
+      'purchasing (declenche verification/reapprovisionnement apres collecte cash relais — services/purchasing-trigger-service.js, O7.2 Cycle C)',
     ],
   },
 

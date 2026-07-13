@@ -263,3 +263,94 @@ describe('getOrCreateInvoice — calcul items FACT-01', () => {
     expect(params[9]).toBe(64000);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+// O7.2 (Cycle A) — sendInvoiceReadyNotification
+//
+// Déplacé depuis services/notifications/order.js pour casser le cycle
+// runtime notifications<->orders (voir docs/O7_2_CYCLE_ANALYSIS.md). Cette
+// méthode construit désormais le lien de facture publique ET l'envoie —
+// `notifications` ne fait plus que transporter un message déjà prêt.
+// ═══════════════════════════════════════════════════════════════════════
+describe('sendInvoiceReadyNotification', () => {
+  const mockCreateToken = jest.fn();
+  const mockNotifyText = jest.fn();
+
+  jest.mock('../../services/invoice-public-token', () => ({
+    createInvoicePublicToken: (...a) => mockCreateToken(...a),
+  }), { virtual: true });
+  jest.mock('../../services/notification-service', () => ({
+    notifyText: (...a) => mockNotifyText(...a),
+  }), { virtual: true });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCreateToken.mockReturnValue('signed-token-abc');
+  });
+
+  function mockExistingInvoice(overrides = {}) {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        invoice_number: 'KOM-INV-2026-000042',
+        client_phone: '+269111',
+        payment_mode: 'stripe_eur',
+        ...overrides,
+      }],
+    });
+  }
+
+  it('construit un lien public signé et envoie via notifyText (stripe_eur → "facture disponible")', async () => {
+    mockExistingInvoice();
+    mockNotifyText.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
+
+    const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+
+    expect(mockCreateToken).toHaveBeenCalledWith('order-1');
+    expect(mockNotifyText).toHaveBeenCalledWith(
+      '+269111',
+      expect.stringContaining('facture'),
+      'invoice_ready',
+      'order-1',
+    );
+    const [, message] = mockNotifyText.mock.calls[0];
+    expect(message).toContain('/api/invoices/public/signed-token-abc');
+    expect(result).toEqual({ ok: true, messageId: 'm1' });
+  });
+
+  it('utilise le message "paiement enregistré" pour cash_relais', async () => {
+    mockExistingInvoice({ payment_mode: 'cash_relais' });
+    mockNotifyText.mockResolvedValueOnce({ ok: true });
+
+    await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+
+    expect(mockNotifyText).toHaveBeenCalledWith('+269111', expect.stringContaining('enregistre'), 'invoice_ready', 'order-1');
+  });
+
+  it('skip proprement si aucun téléphone sur la facture', async () => {
+    mockExistingInvoice({ client_phone: null });
+
+    const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+
+    expect(result).toEqual({ ok: false, reason: 'no_phone' });
+    expect(mockNotifyText).not.toHaveBeenCalled();
+  });
+
+  it('non-bloquant si getOrCreateInvoice rejette (ex. paiement pas encore confirmé)', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('Commande CMD-1 non payée (status: pending)'));
+
+    const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('non payée');
+    expect(mockNotifyText).not.toHaveBeenCalled();
+  });
+
+  it('propage un résultat ok:false sans lever si notifyText échoue', async () => {
+    mockExistingInvoice();
+    mockNotifyText.mockResolvedValueOnce({ ok: false, reason: 'no_phone_or_message' });
+
+    const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+
+    expect(result).toEqual({ ok: false, reason: 'no_phone_or_message' });
+  });
+});

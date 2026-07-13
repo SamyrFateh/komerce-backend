@@ -442,47 +442,11 @@ describe('authkey-client — callAuthKeyText', () => {
     expect(result).toEqual({ ok: false, error: 'invalid_mobile', raw: '' });
   });
 
-  it('bascule vers le template facture (callAuthKey) quand le message ressemble à une facture et contient une URL', async () => {
-    process.env.AUTHKEY_WID_INVOICE_READY = 'wid-invoice';
-    mockFetchOnce({ Status: 'success', MessageID: 'inv-1' });
-    const { callAuthKeyText } = require('../../services/authkey-client');
-    const result = await callAuthKeyText({
-      mobile: '+33612345678',
-      message: 'Votre facture est disponible : https://komerce.io/api/invoices/3f1a9b2c-1234-4abc-89ab-1234567890ab',
-    });
-    expect(result.ok).toBe(true);
-    const [, opts] = global.fetch.mock.calls[0];
-    const sentBody = JSON.parse(opts.body);
-    expect(sentBody.wid).toBe('wid-invoice');
-    expect(sentBody.bodyValues.var1).toBeTruthy();
-  });
-
-  it('n\'utilise pas le template facture si USE_INVOICE_READY_TEMPLATE=false', async () => {
-    process.env.AUTHKEY_WID_INVOICE_READY = 'wid-invoice';
-    process.env.AUTHKEY_USE_INVOICE_READY_TEMPLATE = 'false';
-    mockFetchOnce({ Status: 'success', MessageID: 'txt-1' });
-    const { callAuthKeyText } = require('../../services/authkey-client');
-    const result = await callAuthKeyText({
-      mobile: '+33612345678',
-      message: 'Votre facture est disponible : https://komerce.io/api/invoices/3f1a9b2c-1234-4abc-89ab-1234567890ab',
-    });
-    expect(result.ok).toBe(true);
-    const [, opts] = global.fetch.mock.calls[0];
-    const sentBody = JSON.parse(opts.body);
-    expect(sentBody.type).toBe('text');
-    expect(sentBody.wid).toBeUndefined();
-  });
-
-  it('continue en texte libre si le message ressemble à une facture mais ne contient aucune URL', async () => {
-    process.env.AUTHKEY_WID_INVOICE_READY = 'wid-invoice';
-    mockFetchOnce({ Status: 'success', MessageID: 'txt-2' });
-    const { callAuthKeyText } = require('../../services/authkey-client');
-    const result = await callAuthKeyText({ mobile: '+33612345678', message: 'Votre facture est prête, contactez-nous.' });
-    expect(result.ok).toBe(true);
-    const [, opts] = global.fetch.mock.calls[0];
-    const sentBody = JSON.parse(opts.body);
-    expect(sentBody.type).toBe('text');
-  });
+  // O7.2 (Cycle A) : les 3 tests de détection/signature d'URL de facture dans
+  // callAuthKeyText ont été retirés — cette logique n'existe plus (voir
+  // services/authkey-client.js). Le lien de facture publique est désormais
+  // construit par services/invoice-service.js (orders) avant l'appel ; ce
+  // module envoie le message texte tel quel, sans inspection de contenu.
 
   it('bloque en staging si le numéro n\'est pas whitelisté', async () => {
     jest.resetModules();
@@ -598,46 +562,9 @@ describe('authkey-client — notify* wrappers', () => {
     expect(sentBody().bodyValues).toEqual({ name: 'Ali', item_count: '3' });
   });
 
-  it('notifyInvoiceReady retourne missing_wid_invoice_ready si WID.invoiceready est absent', async () => {
-    // Pas de AUTHKEY_WID_INVOICE_READY configuré dans cet environnement de test.
-    const { notifyInvoiceReady } = require('../../services/authkey-client');
-    const result = await notifyInvoiceReady({ mobile: '+33612345678', invoiceUrl: 'https://komerce.io/api/invoices/3f1a9b2c-1234-4abc-89ab-1234567890ab' });
-    expect(result).toEqual({ ok: false, error: 'missing_wid_invoice_ready' });
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it('notifyInvoiceReady signe l\'URL de facture publique quand WID.invoiceready est configuré', async () => {
-    jest.resetModules();
-    process.env.NODE_ENV = 'production';
-    process.env.AUTHKEY_API_KEY = 'test-key';
-    process.env.AUTHKEY_WID_INVOICE_READY = 'wid-invoice';
-    process.env.INVOICE_PUBLIC_LINK_SECRET = 'test-secret';
-    mockFetchOnce({ Status: 'success', MessageID: 'inv-2' });
-    const { notifyInvoiceReady, WID } = require('../../services/authkey-client');
-    const result = await notifyInvoiceReady({
-      mobile: '+33612345678',
-      invoiceUrl: 'https://komerce.io/api/invoices/3f1a9b2c-1234-4abc-89ab-1234567890ab',
-    });
-    expect(result.ok).toBe(true);
-    expect(sentBody().wid).toBe(WID.invoiceready);
-    expect(sentBody().bodyValues.var1).toContain('/api/invoices/public/');
-  });
-
-  it('notifyInvoiceReady retombe sur l\'URL d\'origine si la signature échoue', async () => {
-    jest.resetModules();
-    process.env.NODE_ENV = 'production';
-    process.env.AUTHKEY_API_KEY = 'test-key';
-    process.env.AUTHKEY_WID_INVOICE_READY = 'wid-invoice';
-    // Aucun secret configuré → publicInvoiceUrlFromOrderUrl lève une erreur,
-    // le module doit alors retomber sur l'URL brute (toPublicInvoiceUrl catch).
-    delete process.env.INVOICE_PUBLIC_LINK_SECRET;
-    delete process.env.JWT_SECRET;
-    delete process.env.SESSION_SECRET;
-    mockFetchOnce({ Status: 'success', MessageID: 'inv-3' });
-    const { notifyInvoiceReady } = require('../../services/authkey-client');
-    const rawUrl = 'https://komerce.io/api/invoices/3f1a9b2c-1234-4abc-89ab-1234567890ab';
-    const result = await notifyInvoiceReady({ mobile: '+33612345678', invoiceUrl: rawUrl });
-    expect(result.ok).toBe(true);
-    expect(sentBody().bodyValues.var1).toBe(rawUrl);
-  });
+  // O7.2 (Cycle A) : les 3 tests notifyInvoiceReady ont été retirés — la
+  // fonction a été supprimée (zéro appelant réel dans le repo). Le lien de
+  // facture publique est désormais construit et testé côté
+  // services/invoice-service.js (tests/unit/invoice-service.test.js), qui
+  // possède déjà la logique de signature via invoice-public-token.js.
 });

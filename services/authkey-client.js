@@ -6,18 +6,24 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/invoice-public-token.js, utils/logger.js
+ * @depends       utils/logger.js
  * @used-by       services/notifications/internals.js
  * @db-read       none
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  whatsapp, otp, notifications, orders, invoices
+ * @impact-areas  whatsapp, otp, notifications
  * @version       2026-07
  * @rehomed       O7.1 (2026-07) — depuis auth-identity ; "AuthKey" est le
  *                fournisseur tiers d'API WhatsApp (authkey.io), collision de
  *                nom avec "auth". Aucune logique d'authentification. Voir
  *                docs/O7_1_OWNERSHIP_ANALYSIS.md, CAS A.
+ * @o7_2          Cycle A (2026-07) — la construction du lien de facture
+ *                publique a été déplacée vers services/invoice-service.js
+ *                (orders), qui envoie désormais un message déjà prêt via
+ *                notifyText. Ce fichier ne dépend plus d'invoice-public-token.js
+ *                — cycle runtime notifications<->orders cassé côté notifications.
+ *                Voir docs/O7_2_CYCLE_ANALYSIS.md.
  */
 
 'use strict';
@@ -35,7 +41,8 @@
 const AUTHKEY_URL = 'https://authkey.io/restapi/requestjson.php';
 const API_KEY = process.env.AUTHKEY_API_KEY;
 const log = require('../utils/logger').child({ module: 'authkey-client' });
-const { publicInvoiceUrlFromOrderUrl } = require('./invoice-public-token');
+// O7.2 (Cycle A) : l'import de invoice-public-token.js a été retiré — c'était la
+// seule preuve cross-feature notifications -> orders. Voir docs/O7_2_CYCLE_ANALYSIS.md.
 
 // ── Staging whitelist guard ────────────────────────────────────────────────
 // En dehors de production, les notifications WhatsApp ne partent que vers
@@ -118,11 +125,8 @@ const WID = {
   ),
 };
 
-// Le template facture est le canal attendu quand il existe. On garde un opt-out
-// explicite pour diagnostic si le template AuthKey est cassé en production.
-const USE_INVOICE_READY_TEMPLATE = String(process.env.AUTHKEY_USE_INVOICE_READY_TEMPLATE || 'true')
-  .trim()
-  .toLowerCase() !== 'false';
+// O7.2 (Cycle A) : USE_INVOICE_READY_TEMPLATE retiré — ne pilotait plus que
+// la détection d'URL de facture supprimée ci-dessous (zéro appelant réel).
 
 // ─── Détection automatique de l'indicatif pays ──────────────────────────
 // Komerce sert les Comores (269) ET la diaspora (France 33, etc.)
@@ -230,24 +234,15 @@ function toBodyValues(variables = {}) {
   return bodyValues;
 }
 
-function extractFirstUrl(text) {
-  const match = String(text || '').match(/https?:\/\/\S+/i);
-  if (!match) return null;
-  return match[0].replace(/[).,;]+$/, '');
-}
-
-function looksLikeInvoiceMessage(message) {
-  return /facture|recapitulatif|invoice|\/api\/invoices\//i.test(String(message || ''));
-}
-
-function toPublicInvoiceUrl(invoiceUrl) {
-  try {
-    return publicInvoiceUrlFromOrderUrl(invoiceUrl);
-  } catch (err) {
-    log.warn({ err, invoice_url: invoiceUrl }, '[authkey] invoice public URL signing failed; using original URL');
-    return invoiceUrl;
-  }
-}
+// O7.2 (Cycle A) : extractFirstUrl / looksLikeInvoiceMessage / toPublicInvoiceUrl
+// retirés — cette détection/signature d'URL de facture n'avait plus aucun
+// appelant réel depuis que services/notifications/order.js construit et
+// envoie désormais un lien de facture déjà public (services/invoice-service.js,
+// orders). Les conserver aurait maintenu l'import de invoice-public-token.js
+// (dépendance cross-feature notifications -> orders) pour du code mort, et
+// une éventuelle réactivation future enverrait une URL non signée en clair
+// (contraire à la doctrine lien_facture_public_non_devinable). Voir
+// docs/O7_2_CYCLE_ANALYSIS.md, Cycle A.
 
 async function callAuthKeyText({ mobile, message }) {
   if (!API_KEY) {
@@ -262,21 +257,6 @@ async function callAuthKeyText({ mobile, message }) {
 
   if (!cleanMobile || !country_code) {
     return { ok: false, error: 'invalid_mobile', raw: mobile };
-  }
-
-  if (USE_INVOICE_READY_TEMPLATE && WID.invoiceready && looksLikeInvoiceMessage(message)) {
-    const invoiceUrl = extractFirstUrl(message);
-    if (invoiceUrl) {
-      return callAuthKey({
-        wid: WID.invoiceready,
-        mobile,
-        variables: {
-          bodyValues: {
-            var1: toPublicInvoiceUrl(invoiceUrl),
-          },
-        },
-      });
-    }
   }
 
   if (!_isStagingAllowed(mobile)) {
@@ -493,20 +473,10 @@ async function notifyAbandonedCart({ mobile, name, itemCount }) {
   });
 }
 
-async function notifyInvoiceReady({ mobile, invoiceUrl }) {
-  if (!WID.invoiceready) {
-    return { ok: false, error: 'missing_wid_invoice_ready' };
-  }
-  return callAuthKey({
-    wid: WID.invoiceready,
-    mobile,
-    variables: {
-      bodyValues: {
-        var1: toPublicInvoiceUrl(invoiceUrl),
-      },
-    },
-  });
-}
+// O7.2 (Cycle A) : notifyInvoiceReady retiré — zéro appelant réel dans le
+// repo (services/notifications/order.js construit désormais le message
+// facture lui-même via services/invoice-service.js/notifyText). Le conserver
+// aurait maintenu l'import de invoice-public-token.js pour du code mort.
 
 module.exports = {
   callAuthKey,
@@ -517,7 +487,6 @@ module.exports = {
   notifyOrderDelivered,
   notifyOrderCancelled,
   notifyAbandonedCart,
-  notifyInvoiceReady,
   parseMobile,
   WID,
 };
