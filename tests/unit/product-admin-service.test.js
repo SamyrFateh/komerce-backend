@@ -334,10 +334,10 @@ describe('product-admin-service', () => {
     });
   });
 
-  describe('adjustStock (Lot 2)', () => {
-    it('chemin sku_id : un seul UPDATE sur product_skus, aucune touche a products/product_variants', async () => {
-      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
-      await svc.adjustStock(db, [{ product_id: 'prod-001', sku_id: 'sku-001', quantity: 2 }], 'decrement');
+  describe('adjustStock (Lot 2 + PDC-7)', () => {
+    it('chemin SKU : inventory_model=SKU + sku_id -> un seul UPDATE sur product_skus, aucune touche a products/product_variants', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'sku-001' }] }) };
+      await svc.adjustStock(db, [{ product_id: 'prod-001', sku_id: 'sku-001', inventory_model: 'SKU', quantity: 2 }], 'decrement');
 
       expect(db.query).toHaveBeenCalledTimes(1);
       expect(db.query).toHaveBeenCalledWith(
@@ -346,14 +346,31 @@ describe('product-admin-service', () => {
       );
     });
 
-    it('chemin sku_id : increment utilise le signe +', async () => {
-      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
-      await svc.adjustStock(db, [{ product_id: 'prod-001', sku_id: 'sku-001', quantity: 1 }], 'increment');
+    it('chemin SKU : increment utilise le signe +', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'sku-001' }] }) };
+      await svc.adjustStock(db, [{ product_id: 'prod-001', sku_id: 'sku-001', inventory_model: 'SKU', quantity: 1 }], 'increment');
 
       expect(db.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE product_skus SET stock = stock + $1'),
         [1, 'sku-001', 'prod-001']
       );
+    });
+
+    it('PDC-7 : inventory_model=SKU sans sku_id -> echec bloquant, jamais de fallback vers products.stock', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      await expect(svc.adjustStock(db, [{ product_id: 'prod-001', inventory_model: 'SKU', quantity: 2 }], 'decrement'))
+        .rejects.toThrow();
+      expect(db.query).not.toHaveBeenCalled();
+    });
+
+    it('PDC-7 : la seule presence de sku_id ne suffit plus a router vers product_skus (dispatch gouverne par inventory_model)', async () => {
+      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      // sku_id renseigne mais inventory_model absent/LEGACY_VARIANTS -> chemin legacy, jamais product_skus
+      await svc.adjustStock(db, [{ product_id: 'prod-001', sku_id: 'sku-001', quantity: 2, has_variants: false }], 'decrement');
+
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(db.query.mock.calls[0][0]).toContain('UPDATE products SET stock');
+      expect(db.query.mock.calls[0][0]).not.toContain('product_skus');
     });
 
     it('chemin legacy : sans sku_id, decremente products.stock puis chaque axe de variant_combo', async () => {
@@ -378,10 +395,12 @@ describe('product-admin-service', () => {
       expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE products SET stock = stock + $1'), [3, 'prod-001']);
     });
 
-    it('items mixtes : certains avec sku_id (chemin SKU), d autres sans (chemin legacy), dans le meme appel', async () => {
-      const db = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    it('items mixtes : certains inventory_model=SKU (chemin SKU), d autres LEGACY_VARIANTS (chemin legacy), dans le meme appel', async () => {
+      const db = { query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'sku-001' }] })
+        .mockResolvedValue({ rows: [] }) };
       await svc.adjustStock(db, [
-        { product_id: 'prod-sku', sku_id: 'sku-001', quantity: 1 },
+        { product_id: 'prod-sku', sku_id: 'sku-001', inventory_model: 'SKU', quantity: 1 },
         { product_id: 'prod-legacy', quantity: 2, has_variants: false },
       ], 'decrement');
 

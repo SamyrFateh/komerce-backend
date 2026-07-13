@@ -8,11 +8,11 @@
  * @outputs       confirmed_order, ordered_transition, stock_decrement, stockBlocked
  * @depends       services/order-status-machine.js, db.js
  * @used-by       services/payment-stripe.js, services/payment-cash-confirm.js, services/shared-cart-engine.js, paypal-flows, wallet-full-order-flows
- * @db-read       order_items, product_variants, products
+ * @db-read       order_items, product_skus, product_variants, products
  * @db-write      alerts
- * @db-write-via:product-admin-service products, product_variants
+ * @db-write-via:product-admin-service products, product_variants, product_skus
  * @db-txn        caller_transaction_required, stock_for_update, confirmPaymentCycle_unique
- * @doctrine      transaction_existante_obligatoire, confirmPaymentCycle_unique, stock_for_update, cash_rollback_vs_stripe_alert
+ * @doctrine      transaction_existante_obligatoire, confirmPaymentCycle_unique, stock_for_update, cash_rollback_vs_stripe_alert, inventory_model_dispatch_no_fallback
  * @impact-areas  orders, stock, payments, shared-cart, wallet, sourcing, loyalty
  * @version       2026-06
  */
@@ -145,42 +145,69 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   // Une seule requête JOIN avec FOR UPDATE OF p pour verrouiller tous les
   // produits concernés en une fois (évite les deadlocks par acquisition séquentielle).
   //
-  // Produits avec stock IS NULL = stock non géré = on ne les vérifie pas.
-  //
-  // VAGUE 3 — Variantes :
-  //   Si oi.variant_combo est présent ET p.has_variants=true, on vérifie ET
-  //   décrémente aussi le stock des variantes constituantes, dans la MÊME
-  //   transaction (R5 préservé). Les variantes sont locked via FOR UPDATE.
+  // PDC-7 (Lot 7) — Deux moteurs de stock STRICTEMENT séparés par
+  // p.inventory_model, jamais mélangés pour un même item :
+  //   • inventory_model = 'SKU'            → verrouillage + validation
+  //     exclusivement sur product_skus, via oi.sku_id. products.stock et
+  //     product_variants.stock ne sont jamais lus ni écrits pour ces items.
+  //     oi.sku_id absent = erreur bloquante immédiate (jamais de fallback legacy).
+  //   • inventory_model = 'LEGACY_VARIANTS' → chemin historique inchangé
+  //     (products.stock, puis product_variants.stock si has_variants + combo).
+  //     Produits avec stock IS NULL = stock non géré = on ne les vérifie pas.
   const { rows: items } = await dbClient.query(
     `SELECT
        oi.product_id,
        oi.quantity,
        oi.variant_combo,
+       oi.sku_id,
        p.stock,
        p.has_variants,
+       p.inventory_model,
        p.name AS product_name
      FROM order_items oi
      JOIN products p ON p.id = oi.product_id
      WHERE oi.order_id = $1
-       AND p.stock IS NOT NULL
      FOR UPDATE OF p`,
     [orderId]
   );
 
-  // Identifier les produits en rupture (stock global)
-  const insufficientItems = items
-    .filter(i => i.stock < i.quantity)
-    .map(i => ({
-      product_id:   i.product_id,
-      product_name: i.product_name,
-      available:    i.stock,
-      needed:       i.quantity,
-    }));
+  const insufficientItems = [];
+  const legacyItems = [];
+  const skuItems = [];
 
-  // VAGUE 3 — Vérification stock par variante.
-  // Pour chaque item avec combo, on lock + vérifie chaque ligne product_variants.
-  // On ne fait cette boucle que si le produit est concerné (économie côté DB).
   for (const item of items) {
+    if (item.inventory_model === 'SKU') {
+      if (!item.sku_id) {
+        // Bug de résolution en amont (création de commande) — jamais un
+        // fallback silencieux vers products.stock. On arrête tout net.
+        throw new Error(
+          `[confirmPaymentCycle] Produit "${item.product_name}" (${item.product_id}) est en ` +
+          `inventory_model='SKU' mais order_items.sku_id est absent — order=${orderId}. ` +
+          `Aucune lecture/écriture de products.stock ou product_variants.stock n'est autorisée pour cet item.`
+        );
+      }
+      skuItems.push(item);
+    } else {
+      legacyItems.push(item);
+    }
+  }
+
+  // ── Chemin legacy : vérification stock global (produits gérés uniquement) ──
+  for (const item of legacyItems) {
+    if (item.stock === null || item.stock === undefined) continue; // non géré
+    if (item.stock < item.quantity) {
+      insufficientItems.push({
+        product_id:   item.product_id,
+        product_name: item.product_name,
+        available:    item.stock,
+        needed:       item.quantity,
+      });
+    }
+  }
+
+  // Vérification stock par variante (legacy uniquement — VAGUE 3).
+  // Pour chaque item avec combo, on lock + vérifie chaque ligne product_variants.
+  for (const item of legacyItems) {
     if (!item.has_variants || !item.variant_combo) continue;
     for (const [vType, vValue] of Object.entries(item.variant_combo)) {
       const { rows: [variant] } = await dbClient.query(
@@ -205,6 +232,30 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
           needed:       item.quantity,
         });
       }
+    }
+  }
+
+  // ── Chemin SKU : verrouillage + validation sur le SKU exact uniquement ──
+  for (const item of skuItems) {
+    const { rows: [sku] } = await dbClient.query(
+      `SELECT id, stock
+         FROM product_skus
+        WHERE id = $1 AND product_id = $2
+        FOR UPDATE`,
+      [item.sku_id, item.product_id]
+    );
+    if (!sku) {
+      throw new Error(
+        `[confirmPaymentCycle] SKU introuvable (sku_id=${item.sku_id}, product_id=${item.product_id}) — order=${orderId}`
+      );
+    }
+    if (sku.stock < item.quantity) {
+      insufficientItems.push({
+        product_id:   item.product_id,
+        product_name: item.product_name,
+        available:    sku.stock,
+        needed:       item.quantity,
+      });
     }
   }
 

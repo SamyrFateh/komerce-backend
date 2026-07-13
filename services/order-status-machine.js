@@ -362,8 +362,15 @@ async function transitionOrderStatus({
     const stockWasDecremented = STATUS_RANK[previousStatus] >= STATUS_RANK.confirmed;
     if (stockWasDecremented) {
       // Symétrie avec le décrément : restaurer stock produit ET stock variantes.
+      // PDC-7 (Lot 7) — même correctif que parcel-operations.js:497-523 : oi.sku_id
+      // et p.inventory_model sont OBLIGATOIRES ici. Sans eux, adjustStock() route
+      // tout item sur le chemin legacy quel que soit son vrai modèle, et un produit
+      // inventory_model='SKU' ne voit jamais son stock product_skus restauré à
+      // l'annulation générale (bug historique documenté, corrigé uniquement côté
+      // backorder jusqu'ici — ce chemin de restauration générale était le deuxième
+      // moteur non corrigé).
       const { rows: items } = await q.query(
-        `SELECT oi.product_id, oi.quantity, oi.variant_combo, p.has_variants
+        `SELECT oi.product_id, oi.quantity, oi.variant_combo, oi.sku_id, p.has_variants, p.inventory_model
            FROM order_items oi
            JOIN products p ON p.id = oi.product_id
           WHERE oi.order_id = $1`,

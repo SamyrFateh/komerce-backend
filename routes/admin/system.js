@@ -157,7 +157,18 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
     }
 
     if (mode !== 'factory') {
-      const restocked = await client.query('UPDATE products SET stock = 15 WHERE stock < 5 RETURNING id');
+      // PDC-7 (Lot 7) — Le restock global ne concerne que les produits
+      // LEGACY_VARIANTS. Un produit inventory_model='SKU' n'est jamais géré
+      // via products.stock (voir product-admin-service.adjustStock) ; ce
+      // restock ne doit donc jamais réécrire sa colonne stock, même si elle
+      // est < 5 pour une raison quelconque (résidu historique, non gérée).
+      const restocked = await client.query(
+        `UPDATE products
+            SET stock = 15
+          WHERE stock < 5
+            AND inventory_model = 'LEGACY_VARIANTS'
+          RETURNING id`
+      );
       if (restocked.rowCount > 0) report.restocked = restocked.rowCount;
     }
 

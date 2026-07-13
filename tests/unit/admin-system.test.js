@@ -237,7 +237,7 @@ describe('admin/system — POST /reset', () => {
       [/DELETE FROM basket_items/, { rowCount: 3 }],
       [/DELETE FROM baskets/, { rowCount: 1 }],
       [/DELETE FROM recipients/, { rowCount: 0 }],
-      ['UPDATE products SET stock = 15', { rowCount: 5, rows: [{ id: '1' }] }],
+      ['SET stock = 15', { rowCount: 5, rows: [{ id: '1' }] }],
     ]);
     mockGetClient.mockResolvedValueOnce(client);
 
@@ -290,7 +290,7 @@ describe('admin/system — POST /reset', () => {
     // toutes les 13 requêtes user-deps ont réussi
     expect(res.body.deleted.user_deps_cleaned).toBe(13);
     // mode !== factory → restock exécuté
-    expect(client.calls).toContain('UPDATE products SET stock = 15 WHERE stock < 5 RETURNING id');
+    expect(client.calls.some(c => c.includes('UPDATE products') && c.includes("inventory_model = 'LEGACY_VARIANTS'"))).toBe(true);
   });
 
   it('mode=users : branche catch sp_udep_i quand une dépendance échoue', async () => {
@@ -322,8 +322,28 @@ describe('admin/system — POST /reset', () => {
     expect(client.calls).toContain('DELETE FROM relais');
     expect(client.calls).toContain('DELETE FROM partners');
     // mode === factory → pas de restock
-    expect(client.calls).not.toContain('UPDATE products SET stock = 15 WHERE stock < 5 RETURNING id');
+    expect(client.calls.some(c => c.includes('SET stock = 15'))).toBe(false);
     expect(res.body.restocked).toBeUndefined();
+  });
+
+  it('PDC-7 : le restock global ne cible que inventory_model = LEGACY_VARIANTS (jamais les produits SKU)', async () => {
+    const client = makeClient([
+      ['SELECT COUNT(*)::int AS count FROM orders', { rows: [{ count: '0' }] }],
+      [/DELETE FROM users WHERE role/, { rowCount: 0 }],
+      ['SET stock = 15', { rowCount: 3, rows: [{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }] }],
+    ]);
+    mockGetClient.mockResolvedValueOnce(client);
+
+    const res = await request(app).post('/api/admin/reset').send({ mode: 'users', confirm: true });
+    expect(res.status).toBe(200);
+    expect(res.body.restocked).toBe(3);
+
+    const restockCall = client.calls.find(c => c.includes('UPDATE products') && c.includes('stock = 15'));
+    expect(restockCall).toBeDefined();
+    expect(restockCall).toMatch(/inventory_model\s*=\s*'LEGACY_VARIANTS'/);
+    // Non-régression : la requête ne doit jamais retomber sur l'ancienne
+    // forme sans filtre de modèle (qui toucherait aussi les produits SKU).
+    expect(restockCall).not.toBe('UPDATE products SET stock = 15 WHERE stock < 5 RETURNING id');
   });
 
   it('mode=factory : DELETE FROM partners peut échouer silencieusement (catch vide)', async () => {
@@ -341,7 +361,7 @@ describe('admin/system — POST /reset', () => {
   it('restock non appliqué si aucun produit sous le seuil (rowCount=0)', async () => {
     const client = makeClient([
       ['SELECT COUNT(*)::int AS count FROM orders', { rows: [{ count: '0' }] }],
-      ['UPDATE products SET stock = 15', { rowCount: 0, rows: [] }],
+      ['SET stock = 15', { rowCount: 0, rows: [] }],
     ]);
     mockGetClient.mockResolvedValueOnce(client);
 

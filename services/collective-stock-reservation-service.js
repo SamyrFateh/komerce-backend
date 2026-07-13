@@ -68,12 +68,31 @@ async function reserveForWorkspace(workspaceId, opts = {}) {
 
     for (const item of items) {
       const product = (await client.query(
-        'SELECT id, name, stock FROM products WHERE id = $1 FOR UPDATE',
+        'SELECT id, name, stock, inventory_model FROM products WHERE id = $1 FOR UPDATE',
         [item.product_id]
       )).rows[0];
 
       if (!product) {
         shortages.push({ product_id: item.product_id, reason: 'product_not_found' });
+        continue;
+      }
+
+      // PDC-7 (Lot 7) — collective_workspace_items ne porte que product_id +
+      // quantity, jamais sku_id : la réservation collective n'a donc pas
+      // l'identité exacte requise pour verrouiller un product_skus précis.
+      // INTERDIT (doctrine) : réserver via products.stock pour un produit
+      // SKU, répartir une quantité produit entre SKU, ou inventer un sku_id
+      // depuis les axes de variante. Chemin fermé explicitement — échec
+      // métier clair plutôt qu'un contournement silencieux. La propagation
+      // de l'identité SKU dans le modèle collectif est un chantier
+      // shared-cart séparé, hors périmètre PDC-7.
+      if (product.inventory_model === 'SKU') {
+        shortages.push({
+          product_id: item.product_id,
+          product_name: product.name,
+          reason: 'sku_reservation_unsupported',
+          detail: 'collective_workspace_items ne porte pas sku_id — réservation collective impossible pour un produit inventory_model=SKU sans identité SKU exacte',
+        });
         continue;
       }
 

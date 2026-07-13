@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 741,
-    "edges": 4249,
+    "graphNodes": 742,
+    "edges": 4252,
     "dbTables": 110,
-    "doctrines": 139,
+    "doctrines": 140,
     "impactAreas": 125,
     "unresolvedCodeEdges": 404,
     "dbWriteViaOverlapWarnings": 0,
@@ -12251,6 +12251,7 @@
       ],
       "dbRead": [
         "order_items",
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -12262,7 +12263,8 @@
           "via": "product-admin-service",
           "tables": [
             "products",
-            "product_variants"
+            "product_variants",
+            "product_skus"
           ]
         }
       ],
@@ -12275,7 +12277,8 @@
         "transaction_existante_obligatoire",
         "confirmPaymentCycle_unique",
         "stock_for_update",
-        "cash_rollback_vs_stripe_alert"
+        "cash_rollback_vs_stripe_alert",
+        "inventory_model_dispatch_no_fallback"
       ],
       "impactAreas": [
         "orders",
@@ -18399,6 +18402,11 @@
       "id": "doctrine:cash_rollback_vs_stripe_alert",
       "type": "doctrine",
       "doctrine": "cash_rollback_vs_stripe_alert"
+    },
+    {
+      "id": "doctrine:inventory_model_dispatch_no_fallback",
+      "type": "doctrine",
+      "doctrine": "inventory_model_dispatch_no_fallback"
     },
     {
       "id": "doctrine:wallet_applique_une_fois",
@@ -36685,6 +36693,12 @@
     },
     {
       "from": "services/order-payment-confirmation.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/order-payment-confirmation.js",
       "to": "db:product_variants",
       "type": "db-read",
       "label": "product_variants"
@@ -36717,6 +36731,13 @@
     },
     {
       "from": "services/order-payment-confirmation.js",
+      "to": "db:product_skus",
+      "type": "db-write-via",
+      "label": "product_skus",
+      "via": "product-admin-service"
+    },
+    {
+      "from": "services/order-payment-confirmation.js",
       "to": "doctrine:transaction_existante_obligatoire",
       "type": "doctrine",
       "label": "transaction_existante_obligatoire"
@@ -36738,6 +36759,12 @@
       "to": "doctrine:cash_rollback_vs_stripe_alert",
       "type": "doctrine",
       "label": "cash_rollback_vs_stripe_alert"
+    },
+    {
+      "from": "services/order-payment-confirmation.js",
+      "to": "doctrine:inventory_model_dispatch_no_fallback",
+      "type": "doctrine",
+      "label": "inventory_model_dispatch_no_fallback"
     },
     {
       "from": "services/order-payment-confirmation.js",
@@ -56655,6 +56682,7 @@
       "ownedFiles": [],
       "dbRead": [
         "order_items",
+        "product_skus",
         "product_variants",
         "products"
       ],
@@ -56666,7 +56694,8 @@
           "via": "product-admin-service",
           "tables": [
             "products",
-            "product_variants"
+            "product_variants",
+            "product_skus"
           ]
         }
       ],
@@ -56674,7 +56703,8 @@
         "transaction_existante_obligatoire",
         "confirmPaymentCycle_unique",
         "stock_for_update",
-        "cash_rollback_vs_stripe_alert"
+        "cash_rollback_vs_stripe_alert",
+        "inventory_model_dispatch_no_fallback"
       ],
       "impactAreas": [
         "orders",
@@ -56688,10 +56718,12 @@
       "mustCheck": [
         "db:alerts",
         "db:order_items",
+        "db:product_skus",
         "db:product_variants",
         "db:products",
         "doctrine:cash_rollback_vs_stripe_alert",
         "doctrine:confirmPaymentCycle_unique",
+        "doctrine:inventory_model_dispatch_no_fallback",
         "doctrine:stock_for_update",
         "doctrine:transaction_existante_obligatoire",
         "impact:loyalty",

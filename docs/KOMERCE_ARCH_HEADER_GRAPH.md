@@ -13,10 +13,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 741
-- Edges: 4249
+- Graph nodes: 742
+- Edges: 4252
 - DB tables: 110
-- Doctrines: 139
+- Doctrines: 140
 - Impact areas: 125
 - Unresolved code edges: 404
 - Tables multi-écrivains directs (>=2): 62
@@ -483,6 +483,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/scan-engine.js -> order_status_history (via order-status-machine)
 - WRITE services/scan-operations.js -> order_status_history (via order-status-machine)
 - WRITE utils/parcelSync.js -> order_status_history (via order-status-machine)
+- WRITE services/order-payment-confirmation.js -> product_skus (via product-admin-service)
 - WRITE services/order-payment-confirmation.js -> product_variants (via product-admin-service)
 - WRITE services/order-status-machine.js -> product_variants (via product-admin-service)
 - WRITE services/parcel-auto-create-service.js -> product_variants (via order-status-machine)

@@ -501,8 +501,14 @@ async function cancelBackorder(orderId, body, user) {
     // couleur/taille (ou SKU) reste silencieusement jamais restauré à
     // l'annulation d'un backorder. Le bug était un oubli de SELECT, pas un
     // problème du moteur adjustStock lui-même.
+    // PDC-7 : p.inventory_model est OBLIGATOIRE ici aussi — sans lui,
+    // adjustStock() (dispatch strict par inventory_model, jamais par la
+    // seule présence de sku_id) route silencieusement tout item vers le
+    // chemin LEGACY_VARIANTS, y compris les produits inventory_model='SKU'.
+    // Régression directe sinon : restauration backorder d'un produit SKU
+    // retomberait sur products.stock au lieu de product_skus.
     const { rows: boItems } = await client.query(
-      `SELECT pi.*, oi.price_kmf, oi.variant_combo, oi.sku_id, p.name AS product_name, p.has_variants
+      `SELECT pi.*, oi.price_kmf, oi.variant_combo, oi.sku_id, p.name AS product_name, p.has_variants, p.inventory_model
        FROM parcel_items pi
        JOIN products p ON p.id = pi.product_id
        JOIN order_items oi ON oi.id = pi.order_item_id

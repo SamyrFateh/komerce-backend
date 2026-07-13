@@ -455,6 +455,9 @@ describe('cancelBackorder', () => {
   // Lot 4 — régression bug backorder : le SELECT parcel_items doit ramener
   // variant_combo/sku_id/has_variants, sinon adjustStock() ne restaure que
   // products.stock et le stock variante/SKU reste silencieusement perdu.
+  // PDC-7 (Lot 7) — inventory_model est désormais également requis : le
+  // dispatch d'adjustStock() est gouverné exclusivement par inventory_model,
+  // plus par la seule présence de sku_id.
 
   test('restaure aussi product_variants quand l\'article a un variant_combo (chemin legacy 2 axes)', async () => {
     const order  = makeOrder();
@@ -463,6 +466,7 @@ describe('cancelBackorder', () => {
       id: 'pi-001', product_id: 'prod-001', product_name: 'Robe',
       quantity: 2, price_kmf: 5000, order_item_id: 'oi-001',
       has_variants: true, variant_combo: { color: 'Rouge' }, sku_id: null,
+      inventory_model: 'LEGACY_VARIANTS',
     }];
     const client = makeClient([
       { rows: [order] },          // SELECT order
@@ -491,13 +495,14 @@ describe('cancelBackorder', () => {
       id: 'pi-001', product_id: 'prod-001', product_name: 'Robe',
       quantity: 1, price_kmf: 5000, order_item_id: 'oi-001',
       has_variants: true, variant_combo: { color: 'Rouge', size: 'M' }, sku_id: 'sku-001',
+      inventory_model: 'SKU',
     }];
     const client = makeClient([
       { rows: [order] },          // SELECT order
       { rows: [parcel] },         // SELECT parcel backorder
-      { rows: items },            // SELECT parcel_items (avec sku_id)
+      { rows: items },            // SELECT parcel_items (avec sku_id + inventory_model)
       { rows: [], rowCount: 1 },  // UPDATE parcels cancelled
-      { rows: [], rowCount: 1 },  // adjustStock: UPDATE product_skus (chemin exclusif)
+      { rows: [{ id: 'sku-001' }], rowCount: 1 },  // adjustStock: UPDATE product_skus (chemin exclusif, RETURNING id)
       { rows: [], rowCount: 1 },  // INSERT order_status_history
     ]);
     pool.getClient.mockResolvedValue(client);

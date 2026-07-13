@@ -1367,3 +1367,74 @@ suppression ou réécriture propre.
 - Aucune vérification GitHub Actions (check-runs / combined status) effectuée
   cette session — le dernier état confirmé côté CI reste celui documenté en §17-18
   (2026-06-24), potentiellement obsolète.
+
+## 22. Session — PDC-7 : dispatch stock strict par inventory_model (2026-07-13)
+
+### Périmètre traité
+
+Séparation stricte des deux moteurs de stock (`SKU` vs `LEGACY_VARIANTS`),
+gouvernée exclusivement par `products.inventory_model` — jamais par la seule
+présence de `sku_id` (cf. `docs/specs/DECISION_MODELE_STOCK_SKU.md`).
+
+1. **`order-payment-confirmation.js`** — requête verrouillage/vérification stock
+   au paiement propage `oi.sku_id` + `p.inventory_model`. Chemin SKU exclusif
+   sur `product_skus` (jamais `products.stock` ni `product_variants.stock`
+   en lecture décisionnelle) ; `sku_id` absent sur un item `SKU` = erreur
+   bloquante immédiate, aucun fallback legacy.
+2. **`order-status-machine.js`** — restauration symétrique au décrément,
+   même principe de propagation et de séparation stricte.
+3. **`adjustStock()` (`product-admin-service.js`)** — dispatch réécrit :
+   `item.inventory_model === 'SKU'` → `adjustSkuStock` (require `sku_id`,
+   échec bruyant sinon) ; sinon → `adjustLegacyStock`. Le dispatch ne lit
+   plus jamais `sku_id` seul pour décider du moteur.
+4. **`routes/admin/system.js`** — restock global admin (`products.stock = 15`)
+   restreint explicitement aux produits `inventory_model = 'LEGACY_VARIANTS'`.
+   Preuve ciblée ajoutée (`tests/unit/admin-system.test.js`).
+5. **Bascule `inventory_model`** — **hors périmètre PDC-7, volontairement**.
+   État réel du repo :
+   - la préparation SKU (`product_skus`, déclaration/activation) et l'audit
+     de readiness (`scripts/check-sku-coverage.js`, §10 de
+     `DECISION_MODELE_STOCK_SKU.md`) existent ;
+   - il n'existe **aucune commande ni route canonique** qui bascule un
+     produit `LEGACY_VARIANTS → SKU` en écrivant `products.inventory_model`.
+     Ce basculement reste aujourd'hui un acte manuel (ou hors code applicatif) ;
+   - PDC-7 gouverne correctement tout produit **déjà** marqué `SKU` — il ne
+     traite pas comment un produit y arrive ;
+   - ce mode ne doit jamais être dérivé de la simple présence de lignes
+     `product_skus` (cf. §4 du doc de décision) ;
+   - la construction de cette route de bascule (avec ses propres garde-fous
+     de readiness) est un chantier distinct, non ouvert dans ce lot.
+6. **`collective-stock-reservation-service.js`** — fail-loud borné. Le modèle
+   collectif (`collective_workspace_items` / `collective_stock_reservations`)
+   ne porte que `product_id` + `quantity`, jamais `sku_id` : il n'a donc pas
+   l'identité nécessaire pour réserver une unité SKU précise. Pour un produit
+   `inventory_model = 'SKU'`, le chemin est fermé explicitement (shortage
+   `sku_reservation_unsupported`) plutôt que de réserver via `products.stock`.
+   Aucune migration de propagation `sku_id` dans le collectif n'a été faite
+   ici — chantier shared-cart séparé. Test dédié ajouté prouvant qu'un produit
+   SKU ne peut pas être réservé collectivement via `products.stock`.
+
+### Régression détectée et corrigée hors liste initiale
+
+`parcel-operations.js` (restauration de stock à l'annulation d'un backorder)
+ne sélectionnait pas `p.inventory_model` dans sa requête de chargement des
+`parcel_items`. Conséquence directe du nouveau dispatch strict de l'item 3 :
+sans ce champ, tout item — y compris un produit `inventory_model = 'SKU'` —
+retombait silencieusement sur le chemin `LEGACY_VARIANTS` (donc sur
+`products.stock`) au moment de la restauration. Corrigé par ajout de
+`p.inventory_model` au `SELECT` ; tests mis à jour en conséquence
+(fixtures avec `inventory_model` explicite au lieu de la seule présence de
+`sku_id`).
+
+### Suite complète
+
+`tests/unit` : **328/329 suites, 5844/5858 tests verts** (3 skip / 11 todo
+pré-existants, non liés à PDC-7). Aucune régression introduite sur les
+suites non touchées.
+
+### Dettes / suite
+
+- Ouverture de la route de bascule `inventory_model` (item 5) reste à
+  planifier séparément — non commencée ici par décision explicite de
+  périmètre.
+- PDC-8 non entamé — clôture technique PDC-7 complète sur le périmètre ci-dessus.

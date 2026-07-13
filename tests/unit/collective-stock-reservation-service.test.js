@@ -187,6 +187,31 @@ describe('reserveForWorkspace', () => {
 
     await expect(reserveForWorkspace('ws-1')).rejects.toThrow('stock_reservation_shortage');
   });
+
+  test('PDC-7 : un produit inventory_model=SKU ne peut pas être réservé via products.stock — shortage explicite, jamais de fallback', async () => {
+    const { client } = makeClient([
+      {}, // BEGIN
+      { rows: [{ id: 'ws-1', status: 'conception' }] }, // workspace
+      {}, // release previous
+      { rows: [{ product_id: 'p-sku', quantity: 2 }] }, // items (product_id + quantity seulement, pas de sku_id)
+      { rows: [{ id: 'p-sku', name: 'Produit SKU', stock: 999, inventory_model: 'SKU' }] }, // product FOR UPDATE — stock élevé, ne doit jamais être utilisé
+      {}, // ROLLBACK
+    ]);
+    mockPoolConnect.mockResolvedValueOnce(client);
+
+    await expect(reserveForWorkspace('ws-1')).rejects.toThrow('stock_reservation_shortage');
+
+    // Aucune requête active_reserved ni INSERT reservation ne doit avoir été
+    // tentée pour ce produit : le chemin est fermé avant toute décision basée
+    // sur products.stock (collective_workspace_items n'a pas de sku_id).
+    expect(client.query).not.toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO collective_stock_reservations'),
+      expect.anything()
+    );
+    const rollbackCalls = client.query.mock.calls.filter(([sql]) => sql === 'ROLLBACK');
+    expect(rollbackCalls.length).toBe(1);
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('releaseForWorkspace', () => {

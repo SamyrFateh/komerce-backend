@@ -871,19 +871,21 @@ async function auditProductSkuReadiness(dbPool, productId) {
  * et `product_skus.stock` pour les features externes (orders, logistics).
  * Feature catalog = owner.
  *
- * Lot 2 (cf. docs/specs/DECISION_MODELE_STOCK_SKU.md) : deux chemins coexistent,
- * choisis PAR ITEM selon la présence explicite de `item.sku_id` — jamais déduit
- * de l'existence de lignes dans product_skus, jamais déduit de inventory_model
- * ici (la résolution combo → sku_id est un acte de l'appelant, Lot 3 pour la
- * création de commande). Un item sans sku_id retombe sur l'ancien chemin à
- * deux axes : aucun appelant existant n'est cassé tant qu'il ne peuple pas
- * ce champ lui-même.
+ * Lot 7 (PDC-7, cf. docs/specs/DECISION_MODELE_STOCK_SKU.md) : le moteur choisi
+ * PAR ITEM est gouverné EXCLUSIVEMENT par `item.inventory_model`
+ * ('SKU' | 'LEGACY_VARIANTS'), jamais par la seule présence de `item.sku_id`.
+ * Un produit `inventory_model = 'SKU'` sans `sku_id` renseigné n'est PAS un
+ * item legacy déguisé — c'est un bug de l'appelant (résolution SKU manquée
+ * en amont), et adjustStock() échoue bruyamment plutôt que de retomber sur
+ * `products.stock` / `product_variants.stock`. Aucun fallback silencieux.
  *
  * @param {object}  dbClient    Client de transaction actif
  * @param {Array}   items       Articles à ajuster :
- *   [{ product_id, quantity, sku_id?, has_variants?, variant_combo? }]
- *   sku_id présent → chemin SKU (UPDATE product_skus uniquement).
- *   sku_id absent  → chemin legacy (products.stock + product_variants.stock).
+ *   [{ product_id, quantity, inventory_model?, sku_id?, has_variants?, variant_combo? }]
+ *   inventory_model === 'SKU'  → chemin SKU (UPDATE product_skus uniquement),
+ *                                sku_id obligatoire, erreur bloquante sinon.
+ *   inventory_model === autre chose (ou absent, compat appelants historiques)
+ *                              → chemin legacy (products.stock + product_variants.stock).
  * @param {'increment'|'decrement'} direction
  *   'decrement' → stock - quantity  (paiement confirmé)
  *   'increment' → stock + quantity  (annulation, restauration backorder)
@@ -892,35 +894,66 @@ async function adjustStock(dbClient, items, direction) {
   const op = direction === 'decrement' ? '-' : '+';
 
   for (const item of items) {
-    if (item.sku_id) {
-      // Chemin SKU (Lot 2) : un seul UPDATE, une seule table. Le CHECK
-      // stock >= 0 (migration 104) transforme tout dépassement en erreur
-      // bloquante plutôt qu'un silence — comportement voulu (§6 decision doc).
-      await dbClient.query(
-        `UPDATE product_skus SET stock = stock ${op} $1 WHERE id = $2 AND product_id = $3`,
-        [item.quantity, item.sku_id, item.product_id]
-      );
+    if (item.inventory_model === 'SKU') {
+      await adjustSkuStock(dbClient, item, op);
       continue;
     }
+    await adjustLegacyStock(dbClient, item, op);
+  }
+}
 
-    // Chemin legacy (deux axes indépendants — cf. DECISION_MODELE_STOCK_SKU.md §A).
-    await dbClient.query(
-      `UPDATE products SET stock = stock ${op} $1 WHERE id = $2`,
-      [item.quantity, item.product_id]
+/**
+ * Chemin SKU (Lot 7) : un seul UPDATE, une seule table, jamais de lecture ni
+ * d'écriture sur products.stock / product_variants.stock pour cet item.
+ * Le CHECK stock >= 0 (migration 104) transforme tout dépassement en erreur
+ * bloquante plutôt qu'un silence — comportement voulu (§6 decision doc).
+ */
+async function adjustSkuStock(dbClient, item, op) {
+  if (!item.sku_id) {
+    const e = new Error(
+      `[adjustStock] Produit ${item.product_id} déclaré inventory_model='SKU' sans sku_id — ` +
+      `refus explicite, aucun fallback vers products.stock/product_variants.stock`
     );
+    e.status = 500;
+    throw e;
+  }
 
-    if (item.has_variants && item.variant_combo) {
-      for (const [vType, vValue] of Object.entries(item.variant_combo)) {
-        await dbClient.query(
-          `UPDATE product_variants
-              SET stock = stock ${op} $1
-            WHERE product_id = $2
-              AND variant_type = $3
-              AND variant_value = $4
-              AND stock IS NOT NULL`,
-          [item.quantity, item.product_id, vType, vValue]
-        );
-      }
+  const { rows: [row] } = await dbClient.query(
+    `UPDATE product_skus SET stock = stock ${op} $1
+      WHERE id = $2 AND product_id = $3
+      RETURNING id`,
+    [item.quantity, item.sku_id, item.product_id]
+  );
+
+  if (!row) {
+    const e = new Error(
+      `[adjustStock] SKU introuvable pour cet ajustement (sku_id=${item.sku_id}, product_id=${item.product_id})`
+    );
+    e.status = 500;
+    throw e;
+  }
+}
+
+/**
+ * Chemin legacy (deux axes indépendants — cf. DECISION_MODELE_STOCK_SKU.md §A).
+ */
+async function adjustLegacyStock(dbClient, item, op) {
+  await dbClient.query(
+    `UPDATE products SET stock = stock ${op} $1 WHERE id = $2`,
+    [item.quantity, item.product_id]
+  );
+
+  if (item.has_variants && item.variant_combo) {
+    for (const [vType, vValue] of Object.entries(item.variant_combo)) {
+      await dbClient.query(
+        `UPDATE product_variants
+            SET stock = stock ${op} $1
+          WHERE product_id = $2
+            AND variant_type = $3
+            AND variant_value = $4
+            AND stock IS NOT NULL`,
+        [item.quantity, item.product_id, vType, vValue]
+      );
     }
   }
 }
