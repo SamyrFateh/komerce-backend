@@ -1,4 +1,4 @@
-ratchet_rc=1
+ratchet_rc=0
 map_rc=1
 === BUSINESS GRAPH RATCHET ===
 
@@ -16,12 +16,9 @@ map_rc=1
         [2mstable[0m
     [32m✔[0m [2m::[0mINVALID_DECLARATION — actuel 12 (baseline 12)
         [2mstable[0m
-  [1mDASH-MANIFEST-COPY-DIVERGES[0m
-    [31m✖[0m [2m::[0mACTIONABLE_DRIFT — actuel 1 ([33mabsent de la baseline[0m)
-        [2mnouvelle clé type::catégorie, absente de governance/business-graph-drift-baseline.json — ajoute-la explicitement après revue, ne laisse jamais une nouvelle catégorie passer silencieusement[0m
   [1mDASH-MANIFEST-DUPLICATE-COPY[0m
-    [32m✔[0m [2m::[0mEXPECTED_TOPOLOGY — actuel 1 (baseline 2)
-        [2mréduction (2 -> 1) — la baseline peut être resserrée manuellement si la dette est vraiment résorbée[0m
+    [32m✔[0m [2m::[0mEXPECTED_TOPOLOGY — actuel 2 (baseline 2)
+        [2mstable[0m
   [1mDYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED[0m
     [32m✔[0m [2m::[0mGENERATOR_LIMITATION — actuel 1 (baseline 1)
         [2mstable[0m
@@ -56,4 +53,4 @@ map_rc=1
 
 [2mTotal warnings : 155 (baseline totale 192 — indicatif seulement, le ratchet raisonne par clé type::catégorie, jamais sur ce total)[0m
 
-[31m[1m✖ business-graph:ratchet-check ÉCHEC — nouveau drift au-dessus de la baseline type::catégorie.[0m
+[32m[1m✔ business-graph:ratchet-check OK — aucune dette nouvelle au-dessus de la baseline type::catégorie.[0m

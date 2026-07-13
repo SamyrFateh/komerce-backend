@@ -23218,9 +23218,9 @@
         "msg": "contract.consumes de shared-cart référence \"products\", ne correspond à aucun nom de feature connu"
       },
       {
-        "type": "DASH-MANIFEST-COPY-DIVERGES",
+        "type": "DASH-MANIFEST-DUPLICATE-COPY",
         "ref": "admin-dashboard",
-        "msg": "\"public/features/admin-dashboard.feature.js\" diverge de \"public/dashboards/features/admin-dashboard.feature.js\" au-delà de la divergence déjà documentée (APP_FEATURE_REGISTRY.md) : 1 ligne(s) inattendue(s)"
+        "msg": "\"public/features/admin-dashboard.feature.js\" est une copie déclarée de \"public/dashboards/features/admin-dashboard.feature.js\" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique"
       },
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",

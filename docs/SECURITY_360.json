@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T10:41:49.597Z",
+  "generatedAt": "2026-07-13T10:43:23.685Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
     "total": 485,
