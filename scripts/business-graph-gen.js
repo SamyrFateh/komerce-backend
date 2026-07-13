@@ -1041,7 +1041,12 @@ function build() {
     // gouvernance boutique désormais stricte (CANONICAL-FEATURE-GOVERNANCE-INVALID),
     // ratchet typé par type+catégorie sémantique, model.scopeTopology. Un
     // consommateur qui lisait O3-1.0 doit être revérifié avant de lire O4-1.0.
-    version: 'O4-1.0',
+    // Lot O5 closure : bump O4-1.0 -> O5-1.0 — le format racine porte
+    // désormais nativement les edges O5 (OBSERVED_CODE_DEPENDENCY,
+    // OBSERVED_INTERFACE_DEPENDENCY) et la section model.o5, pas seulement
+    // model.o5.version. Un consommateur qui lisait O4-1.0 doit être
+    // revérifié avant de lire O5-1.0.
+    version: 'O5-1.0',
     generatedFrom: {
       featureManifests: manifests.map(m => m.__file).filter(Boolean),
       technicalArchitectureGraph: path.relative(ROOT, ARCH_GRAPH_FILE),

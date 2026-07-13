@@ -1,6 +1,6 @@
 # Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate — Livrable
 
-Statut : **codé, câblé, vérifié de bout en bout sur ce dépôt**. 0 error, ratchet stable, déterminisme confirmé, tests négatifs A-J au vert (10/10).
+Statut : **fermé — codé, câblé, vérifié de bout en bout sur ce dépôt**. `model.version = O5-1.0` (bump depuis O4-1.0, cf. §4bis), 0 error, 192 warn, ratchet stable, déterminisme confirmé, tests négatifs A-K au vert (11/11). Dash interface bridge câblé (`INTERFACE-CONSUMER-FILE-UNRESOLVED` = 0, `OBSERVED-UNDECLARED-FEATURE-DEPENDENCY` = 94).
 
 ## 1. Ce qui a été livré
 
@@ -100,6 +100,5 @@ Chaque paire est une vue admin réelle dont l'appel API résout (via META_GRAPH 
 
 ## 5. Limitations connues (documentées, pas des échecs)
 
-- **`npm run map:check`** échoue sur `gate:concept-impact` : `git diff --name-only origin/main...HEAD` échoue car ce zip ne contient aucun `.git`. Contrainte environnementale du zip, sans rapport avec O5 (confirmé : `git status` → "not a git repository").
-- **Dash — canal interface** : aucun bridge module→fileId équivalent à la boutique n'est câblé pour les manifests dash dans ce lot ; tous les consumers dash côté interface tombent en `INTERFACE-CONSUMER-FILE-UNRESOLVED` (71 cas). Documenté, pas deviné.
+- **Dash — canal interface** : bridge module→fileId câblé (`buildDashViewToFileId`, cf. §4bis) — `INTERFACE-CONSUMER-FILE-UNRESOLVED` = 0. Un module dashboards référencé par META_GRAPH sans entrée `views/` gouvernée correspondante retomberait dans ce type (0 cas sur ce dépôt à date, chemin exercé par le test négatif K) ; un basename ambigu entre deux fichiers `views/` distincts tomberait en `INTERFACE-CONSUMER-FILE-AMBIGUOUS`, jamais résolu arbitrairement.
 - **Modèle statique** : aucune preuve de dynamic import, registry lookup, dependency injection ou dépendance event-driven — uniquement des require()/import() à cible littérale ou physiquement résolvable. Les appels `require()`/`import()` avec parenthèses imbriquées dans l'argument (ex. `require(path.join(a, b))`) sont capturés jusqu'à la première parenthèse fermante puis traités comme dynamiques — limitation assumée du scanner regex, jamais une reconstruction devinée.
