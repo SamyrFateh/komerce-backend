@@ -152,9 +152,15 @@ jobs:
           set -e
           echo "ratchet_rc=$ratchet_rc" >> "$GITHUB_OUTPUT"
           echo "map_rc=$map_rc" >> "$GITHUB_OUTPUT"
-          echo "=== BUSINESS GRAPH RATCHET ==="
-          tail -160 /tmp/business-ratchet.log
-          echo "=== MAP CHECK ==="
+          diagnostic=docs/_generated/route-owner-ratchet-diagnostic.txt
+          {
+            echo "ratchet_rc=$ratchet_rc"
+            echo "map_rc=$map_rc"
+            echo "=== BUSINESS GRAPH RATCHET ==="
+            cat /tmp/business-ratchet.log
+          } > "$diagnostic"
+          cat "$diagnostic"
+          echo "=== MAP CHECK TAIL ==="
           tail -220 /tmp/map-check.log
 
       - name: Remove trigger from proposed tree
