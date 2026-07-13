@@ -119,6 +119,7 @@ jobs:
       - name: Regenerate canonical artifacts
         run: |
           node scripts/gen-route-registry.js
+          npm run contract:generate
           npm run arch:gen
           npm run dashboards:360
           npm run boutique:360
