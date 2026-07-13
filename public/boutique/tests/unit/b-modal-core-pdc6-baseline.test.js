@@ -177,4 +177,33 @@ describe('b-modal-core — PDC-6 measured baseline closure', () => {
     expect(card.classList.contains('search-hidden')).toBe(false);
     expect(dropdown.classList.contains('open')).toBe(false);
   });
+
+  test('panier, promo, favori, historique et liste filtrée suivent leurs branches positives', () => {
+    const product = {
+      ...state.products[0],
+      sku: 'REF-1',
+      promo_pct: 15,
+    };
+    state.products = [product];
+    state.filtered = [product];
+    state.cart = [{ product: { id: 1 }, qty: 3 }];
+    state.favs = [1];
+    state.modalHistory = [99];
+
+    const fav = document.createElement('button');
+    fav.id = 'k-modal-fav-btn';
+    document.body.appendChild(fav);
+
+    openModal(1, false);
+
+    expect(state.modalQty).toBe(3);
+    expect(dom.modalQtyVal.textContent).toBe('3');
+    expect(dom.modalSku.textContent).toBe('Réf. REF-1');
+    expect(dom.modalPromoBadge.textContent).toBe('-15%');
+    expect(dom.modalPromoBadge.classList.contains('show')).toBe(true);
+    expect(dom.modal.classList.contains('k-modal--has-promo')).toBe(true);
+    expect(fav.classList.contains('liked')).toBe(true);
+    expect(fav.innerHTML).toBe('❤️');
+    expect(dom.modalBackLabel.textContent).toBe('Retour');
+  });
 });
