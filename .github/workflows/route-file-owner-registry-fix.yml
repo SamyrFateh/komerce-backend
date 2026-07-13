@@ -1,8 +1,6 @@
 name: Route File Owner Registry Fix
 
 on:
-  push:
-    branches: [fix/route-file-owner-registry]
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
@@ -11,12 +9,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: route-file-owner-registry-fix-${{ github.ref }}
+  group: route-file-owner-registry-fix-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  patch-and-validate:
-    if: github.ref_name == 'fix/route-file-owner-registry' || github.head_ref == 'fix/route-file-owner-registry'
+  patch-and-publish-diagnostics:
+    if: github.head_ref == 'fix/route-file-owner-registry'
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
@@ -61,6 +59,9 @@ jobs:
 
           path = Path('scripts/contract-generate.js')
           src = path.read_text(encoding='utf-8')
+          if 'const recursiveRouteFiles = buildRecursiveRouteFileIndex();' in src:
+              print('recursive route-file attribution already installed')
+              raise SystemExit(0)
 
           old_inventory = """const inventory   = listMountedRoutes();
           const routeFiles  = buildRouteFileMap();
@@ -131,23 +132,46 @@ jobs:
           }
           NODE
 
-      - name: Validate Business Graph ratchet and map
+      - name: Regenerate Business Graph inputs
         run: |
           npm run arch:gen
           npm run dashboards:360
           npm run boutique:360
           npm run business-graph:gen
           npm run meta:graph
-          npm run business-graph:ratchet-check
-          npm run map:check
 
-      - name: Remove one-shot workflow and trigger
+      - name: Capture validation result
+        id: validate
+        shell: bash
+        run: |
+          set +e
+          npm run business-graph:ratchet-check > /tmp/business-ratchet.log 2>&1
+          ratchet_rc=$?
+          npm run map:check > /tmp/map-check.log 2>&1
+          map_rc=$?
+          set -e
+          echo "ratchet_rc=$ratchet_rc" >> "$GITHUB_OUTPUT"
+          echo "map_rc=$map_rc" >> "$GITHUB_OUTPUT"
+          echo "=== BUSINESS GRAPH RATCHET ==="
+          tail -160 /tmp/business-ratchet.log
+          echo "=== MAP CHECK ==="
+          tail -220 /tmp/map-check.log
+
+      - name: Remove one-shot workflow and trigger from proposed tree
         run: |
           rm -f .github/workflows/route-file-owner-registry-fix.yml
           rm -f .github/route-file-owner-registry.trigger
 
-      - name: Commit validated generic fix
+      - name: Publish generated diagnostic tree to fix branch
         run: |
           git add -A
+          if git diff --cached --quiet; then
+            echo "No tree change to publish."
+            exit 0
+          fi
           git commit -m "fix(governance): source OpenAPI route owners from recursive registry"
           git push origin HEAD:fix/route-file-owner-registry
+
+      - name: Enforce ratchet and map result
+        if: steps.validate.outputs.ratchet_rc != '0' || steps.validate.outputs.map_rc != '0'
+        run: exit 1
