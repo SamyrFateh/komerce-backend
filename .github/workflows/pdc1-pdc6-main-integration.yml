@@ -116,15 +116,36 @@ jobs:
           npm ci
           npm --prefix public/boutique ci
 
-      - name: Regenerate canonical artifacts
+      - name: Regenerate canonical artifacts with exact diagnostics
+        shell: bash
         run: |
-          node scripts/gen-route-registry.js
-          npm run contract:generate
-          npm run arch:gen
-          npm run dashboards:360
-          npm run boutique:360
-          npm run business-graph:gen
-          npm run meta:graph
+          set -euo pipefail
+          validation_dir="$RUNNER_TEMP/pdc-validation"
+          logs_dir="$validation_dir/logs"
+          mkdir -p "$logs_dir"
+
+          run_gen() {
+            name="$1"
+            shift
+            echo "=== generator:$name ==="
+            set +e
+            "$@" >"$logs_dir/generator-$name.log" 2>&1
+            rc=$?
+            set -e
+            if [ "$rc" -ne 0 ]; then
+              echo "generator:$name=$rc" > "$validation_dir/generator-failure.txt"
+              tail -200 "$logs_dir/generator-$name.log"
+              exit "$rc"
+            fi
+          }
+
+          run_gen route-registry node scripts/gen-route-registry.js
+          run_gen openapi npm run contract:generate
+          run_gen arch npm run arch:gen
+          run_gen dashboards-360 npm run dashboards:360
+          run_gen boutique-360 npm run boutique:360
+          run_gen business-graph npm run business-graph:gen
+          run_gen meta-graph npm run meta:graph
 
       - name: Register the single intended public Product Detail security surface
         shell: bash
