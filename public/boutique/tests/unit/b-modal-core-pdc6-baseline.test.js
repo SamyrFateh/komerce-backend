@@ -178,6 +178,18 @@ describe('b-modal-core — PDC-6 measured baseline closure', () => {
     expect(dropdown.classList.contains('open')).toBe(false);
   });
 
+  test('le reset recherche reste fail-safe sans wrapper, rail ni dropdown', () => {
+    const input = document.createElement('input');
+    input.value = 'robe';
+    document.body.appendChild(input);
+    state._modalSearchInput = input;
+
+    openModal(1, false);
+
+    expect(input.value).toBe('');
+    expect(state.modalProduct.id).toBe(1);
+  });
+
   test('panier, promo, favori, historique et liste filtrée suivent leurs branches positives', () => {
     const product = {
       ...state.products[0],
