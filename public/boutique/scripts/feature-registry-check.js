@@ -63,26 +63,32 @@ function loadManifests() {
 
 // ─── Collecte des fichiers déclarés ───────────────────────────────────────
 
-// Komerce est multi-dépôt (backend / boutique / dash). Ce script tourne dans
-// le contexte du dépôt boutique : il ne vérifie que le groupe 'js' (le CSS a
-// son propre outillage, voir plus haut) et ignore en silence tout autre
-// groupe (ex. 'dist', utilisé par modal-product.feature.js pour ses
-// contrats render-static — pas un manifest fichier↔feature).
-const BOUTIQUE_FILE_GROUPS = new Set(['js']);
-
+/**
+ * Le registre audite le scope source `js/`, pas un nom de groupe de manifeste.
+ *
+ * Historiquement il ne lisait que `files.js`. La doctrine O4 a introduit des
+ * slices frontend canoniques qui peuvent regrouper leur runtime sous un nom de
+ * couche sémantique (`files.boutique`, par exemple) tout en pointant vers les
+ * mêmes fichiers réels `js/*.js`. Ignorer le groupe revenait à déclarer le
+ * manifest valide dans le Business Graph puis à recréer artificiellement des
+ * DOMAIN-MISMATCH dans le registre local.
+ *
+ * Source de vérité ici : le chemin résolu est-il un fichier JS sous ROOT/js ?
+ * Le nom du groupe n'a aucune causalité sur l'ownership fichier↔feature.
+ */
 function declaredFiles(manifests) {
   const declared = new Map(); // file (ROOT-relatif, normalisé) → feature name
   for (const m of manifests) {
     if (m._loadError) continue;
     const categories = m.files || {};
-    for (const [group, files] of Object.entries(categories)) {
-      if (!BOUTIQUE_FILE_GROUPS.has(group)) continue; // ex. 'dist' (contrats render-static) — non vérifié ici
+    for (const files of Object.values(categories)) {
       if (!Array.isArray(files)) continue;
       for (const f of files) {
         if (!f || f.endsWith('/')) continue;
         // Les chemins de manifest sont relatifs à features/ (ex. '../js/foo.js').
         const abs = path.resolve(FEATURES_DIR, f);
         const rootRelative = path.relative(ROOT, abs).replace(/\\/g, '/');
+        if (!rootRelative.startsWith('js/') || !rootRelative.endsWith('.js')) continue;
         declared.set(rootRelative, m.name);
       }
     }
@@ -183,7 +189,7 @@ function run() {
     const domain = readDomain(normalized);
     if (domain && featureNames.has(domain)) {
       errors.push({ type: 'DOMAIN-MISMATCH', feature: domain, file: normalized,
-        msg: '@domain ' + domain + ' mais absent du manifest ' + domain + '.feature.js — ajouter le fichier au manifest ou corriger le header' });
+        msg: '@domain ' + domain + ' mais absent de tout manifest possédant ce fichier — ajouter le fichier au bon manifest/slice ou corriger le header' });
       summary.mismatch = (summary.mismatch || 0) + 1;
     } else {
       warnings.push({ type: 'ORPHAN', file: normalized, domain: domain || 'unknown',

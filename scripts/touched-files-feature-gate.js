@@ -114,7 +114,9 @@ function touched() {
   if (explicit) return explicit.split(',').map(s => s.trim()).filter(Boolean);
   const base = argVal('--base') || 'origin/main';
   try {
-    const out = cp.execSync(`git diff --name-only ${base}...HEAD`, { cwd: ROOT, encoding: 'utf8' });
+    // Un fichier supprimé n'a plus à être revendiqué par une carte courante :
+    // le gate gouverne les artefacts encore présents après le changement.
+    const out = cp.execSync(`git diff --name-only --diff-filter=ACMRTUXB ${base}...HEAD`, { cwd: ROOT, encoding: 'utf8' });
     return out.split('\n').map(s => s.trim()).filter(Boolean);
   } catch (e) {
     console.error(`${C.ylw}⚠ git diff impossible (${e.message.split('\n')[0]}). Utilise --files pour tester.${C.r}`);

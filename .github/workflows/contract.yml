@@ -20,6 +20,8 @@ on:
       - 'bootstrap/**'
       - 'server.js'
       - 'scripts/contract-generate.js'
+      - 'scripts/gen-route-registry.js'
+      - 'docs/_generated/route-registry.json'
       - 'docs/contract/**'
   push:
     branches: [main]
@@ -70,19 +72,25 @@ jobs:
           cache: 'npm'
       - run: npm ci
 
-      # 1. Régénère le contrat par introspection runtime (vérité terrain).
+      # 1. Reconstruit d'abord la table récursive route -> vrai fichier owner.
+      #    Le contrat OpenAPI l'utilise pour x-route-file ; un simple mapping par
+      #    préfixe top-level perd l'owner des sous-routers imbriqués.
+      - name: Régénérer le registre récursif des routes
+        run: node scripts/gen-route-registry.js
+
+      # 2. Régénère le contrat par introspection runtime (vérité terrain).
       - name: Générer le contrat
         run: npm run contract:generate
 
-      # 2. BLOQUANT — maillon faible fermé : le contrat committé doit être à jour.
+      # 3. BLOQUANT — maillon faible fermé : le contrat committé doit être à jour.
       #    Si une route a changé sans régénération, le diff n'est pas vide => échec
       #    avec le remède exact. (Même logique que le "drift" du graphe dans governance.yml.)
       - name: Contrat à jour dans la PR (drift)
         run: |
-          git diff --exit-code -- docs/contract/openapi.json \
-          || (echo "::error::Contrat périmé. Lance 'npm run contract:generate' et commit docs/contract/openapi.json" && exit 1)
+          git diff --exit-code -- docs/_generated/route-registry.json docs/contract/openapi.json \
+          || (echo "::error::Registre/contrat périmé. Régénère le route registry puis lance 'npm run contract:generate' et commit les artefacts" && exit 1)
 
-      # 3. BLOQUANT — coutures front -> contrat (boutique + dashboards + meta),
+      # 4. BLOQUANT — coutures front -> contrat (boutique + dashboards + meta),
       #    résolues contre le contrat FRAÎCHEMENT régénéré ci-dessus.
       - name: Boutique 360 (couture -> contrat)
         run: npm run boutique:360:check
@@ -91,7 +99,7 @@ jobs:
       - name: Meta-graphe (coutures fantômes)
         run: npm run meta:graph:check
 
-      # 4. BLOQUANT — couverture des gardes : aucune NOUVELLE route admin sans
+      # 5. BLOQUANT — couverture des gardes : aucune NOUVELLE route admin sans
       #    garde / non protégée / non classable hors baseline.
       - name: Security 360 (gardes)
         run: npm run security:360:check

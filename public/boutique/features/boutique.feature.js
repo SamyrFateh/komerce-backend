@@ -60,10 +60,8 @@ module.exports = {
       '../js/b-mini-cart.js',
       '../js/b-mobile-modal-v1.js',
       '../js/b-mobile-premium-v1.js',
-      '../js/b-modal-approche-c-hybrid.js',
       '../js/b-modal-cart.js',
       '../js/b-modal-core.js',
-      '../js/b-modal-desktop-enhancers.js',
       '../js/b-modal-image-ux.js',
       '../js/b-modal-nav.js',
       '../js/b-modal-product.js',
@@ -79,7 +77,6 @@ module.exports = {
       '../js/komerce-api.js',
       '../js/main.js',
       '../js/render/render-categories.js',
-      '../js/view-models/modal-view-model.js',
     ],
     css: [
       '../css/tokens.css',

@@ -176,6 +176,9 @@ router.get('/subcategories', async (req, res, next) => {
   }
 });
 
+// ─── Product Detail Contract v1 ───────────────────────────────────
+router.use(require('./catalog-product-detail'));
+
 // ─── GET /api/products/:id ───────────────────────────────────
 // P0-003 fix: UUID validation + next(err)
 // VAGUE 3: charge product_variants si product.has_variants = true

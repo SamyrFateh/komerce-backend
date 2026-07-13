@@ -72,9 +72,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 24 | 24 | 295 | 295 | 0 |
+| backend | 24 | 24 | 297 | 297 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 10 | 10 | 67 | 67 | 0 |
+| boutique | 10 | 10 | 70 | 70 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -106,7 +106,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 0
 - interfaces exposed: 0
 - internal APIs: 0
-- dependencies (consumes): 0
+- dependencies (consumes): 1 — sourcing
 - consumers: 0
 
 ### auth _(technical-transversal)_
@@ -143,16 +143,17 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.
 
 - utils: 1
-- services: 17
-- migrations: 4
-- docs: 3
-- routes: 4
-- boutique: 32
+- services: 18
+- schemas: 3
+- migrations: 5
+- docs: 4
+- routes: 5
+- boutique: 36
 - dash: 4
-- tests: 24
+- tests: 28
 - tables owned (lifecycle): 6 — `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `product_skus`, `supplier_catalog_imports`
 - tables written: 12
-- interfaces exposed: 30
+- interfaces exposed: 31
 - internal APIs: 0
 - dependencies (consumes): 4 — economic-engine, logistics, shared-cart, auth
 - consumers: 8 — economic-engine, infrastructure, inventory, logistics, orders, recommendations, sourcing, unsold-resolution
@@ -478,7 +479,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 11
 - internal APIs: 0
 - dependencies (consumes): 3 — catalog, economic-engine, auth
-- consumers: 0
+- consumers: 1 — admin-dashboard
 
 ### unsold-resolution _(business-feature)_
 
@@ -645,14 +646,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/auth/admin-reset` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `POST /api/auth/auto-register` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `POST /api/auth/guest-checkout` | auth-identity | `routes/auth.js` (resolved-owned) |
-| `GET /api/auth/invoices` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `GET /api/auth/invoices` | auth-identity | `routes/client-auth.js` (resolved-owned) |
 | `POST /api/auth/login` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `POST /api/auth/logout` | auth-identity | `routes/auth.js` (resolved-owned) |
-| `POST /api/auth/magic-link` | auth-identity | `routes/auth.js` (resolved-owned) |
-| `GET /api/auth/magic-link/validate` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/magic-link` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/auth/magic-link/validate` | auth-identity | `routes/client-auth.js` (resolved-owned) |
 | `GET /api/auth/me` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `PUT /api/auth/me` | auth-identity | `routes/auth.js` (resolved-owned) |
-| `GET /api/auth/orders` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `GET /api/auth/orders` | auth-identity | `routes/client-auth.js` (resolved-owned) |
 | `POST /api/auth/orders-by-phone` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `POST /api/auth/register` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `GET /api/client/invoices` | auth-identity | `routes/client-auth.js` (resolved-owned) |
@@ -661,6 +662,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/client/orders` | auth-identity | `routes/client-auth.js` (resolved-owned) |
 | `GET /api/products` | catalog | `routes/products.js` (resolved-owned) |
 | `GET /api/products/{id}` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}/detail` | catalog | `routes/catalog-product-detail.js` (resolved-owned) |
 | `GET /api/admin/catalog/approval-queue` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
 | `POST /api/admin/catalog/approval-queue/{id}/approve` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
 | `POST /api/admin/catalog/approval-queue/{id}/reject` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
@@ -683,14 +685,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/products/{id}/variants` | catalog | `routes/products.js` (resolved-owned) |
 | `PUT /api/products/{id}/variants` | catalog | `routes/products.js` (resolved-owned) |
 | `DELETE /api/products/{id}/variants/{id}` | catalog | `routes/products.js` (resolved-owned) |
-| `GET /api/products/{id}/skus` | catalog | — (not-in-openapi-contract) |
-| `GET /api/products/{id}/skus/readiness` | catalog | — (not-in-openapi-contract) |
-| `POST /api/products/{id}/skus` | catalog | — (not-in-openapi-contract) |
-| `DELETE /api/products/{id}/skus/{id}` | catalog | — (not-in-openapi-contract) |
+| `GET /api/products/{id}/skus` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}/skus/readiness` | catalog | `routes/products.js` (resolved-owned) |
+| `POST /api/products/{id}/skus` | catalog | `routes/products.js` (resolved-owned) |
+| `DELETE /api/products/{id}/skus/{id}` | catalog | `routes/products.js` (resolved-owned) |
 | `GET /api/products/categories` | catalog | `routes/products.js` (resolved-owned) |
 | `GET /api/products/subcategories` | catalog | `routes/products.js` (resolved-owned) |
 | `GET /api/admin/customs-shipments` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
-| `GET /api/admin/customs` | customs | `routes/admin.js` (resolved-different-owner) |
+| `GET /api/admin/customs` | customs | `routes/admin/customs.js` (resolved-owned) |
 | `GET /api/admin/customs-categories` | customs | `routes/admin-customs-categories.js` (resolved-owned) |
 | `POST /api/admin/customs-categories` | customs | `routes/admin-customs-categories.js` (resolved-owned) |
 | `DELETE /api/admin/customs-categories/{id}` | customs | `routes/admin-customs-categories.js` (resolved-owned) |
@@ -709,32 +711,32 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/admin/customs-shipments/analytics/trends` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
 | `GET /api/admin/customs-shipments/rates/effective` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
 | `GET /api/admin/customs-shipments/status/pending` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
-| `GET /api/admin/dashboard` | dashboard | `routes/admin-dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/clients` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/ops` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/hub` | dashboard | `routes/dashboard.js` (resolved-owned) |
+| `GET /api/admin/dashboard` | dashboard | `routes/admin/dashboard.js` (resolved-owned) |
+| `GET /api/dashboard/clients` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/dashboard/ops` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/hub` | dashboard | `routes/dashboard-hub.js` (resolved-owned) |
 | `GET /api/hub-dash/dashboard` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
 | `GET /api/relay/dashboard` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
 | `GET /api/admin/radar` | dashboard | `routes/admin-radar.js` (resolved-owned) |
 | `GET /api/admin/rules` | dashboard | `routes/admin-rules.js` (resolved-owned) |
 | `GET /api/admin/loyalty/pending` | dashboard | `routes/admin-loyalty.js` (resolved-owned) |
-| `GET /api/admin/partners` | dashboard | `routes/admin.js` (resolved-owned) |
-| `GET /api/admin/users` | dashboard | `routes/admin.js` (resolved-owned) |
-| `GET /api/admin/counts` | dashboard | `routes/admin.js` (resolved-owned) |
-| `POST /api/admin/reset` | dashboard | `routes/admin.js` (resolved-owned) |
-| `POST /api/admin/seed-test` | dashboard | `routes/admin.js` (resolved-owned) |
-| `POST /api/admin/purchasing/repair-ordered-without-pos` | dashboard | `routes/admin.js` (resolved-owned) |
-| `GET /api/admin/alerts` | dashboard | `routes/admin.js` (resolved-owned) |
+| `GET /api/admin/partners` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `GET /api/admin/users` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `GET /api/admin/counts` | dashboard | `routes/admin/system.js` (resolved-owned) |
+| `POST /api/admin/reset` | dashboard | `routes/admin/system.js` (resolved-owned) |
+| `POST /api/admin/seed-test` | dashboard | `routes/admin/system.js` (resolved-owned) |
+| `POST /api/admin/purchasing/repair-ordered-without-pos` | dashboard | `routes/admin/system.js` (resolved-owned) |
+| `GET /api/admin/alerts` | dashboard | `routes/admin/dashboard.js` (resolved-owned) |
 | `GET /api/admin/loyalty/history` | dashboard | `routes/admin-loyalty.js` (resolved-owned) |
 | `POST /api/admin/loyalty/reward/{id}` | dashboard | `routes/admin-loyalty.js` (resolved-owned) |
 | `POST /api/admin/loyalty/skip/{id}` | dashboard | `routes/admin-loyalty.js` (resolved-owned) |
 | `GET /api/admin/loyalty/stats` | dashboard | `routes/admin-loyalty.js` (resolved-owned) |
-| `GET /api/admin/margins` | dashboard | `routes/admin.js` (resolved-owned) |
-| `POST /api/admin/partners` | dashboard | `routes/admin.js` (resolved-owned) |
-| `DELETE /api/admin/partners/{id}` | dashboard | `routes/admin.js` (resolved-owned) |
-| `GET /api/admin/partners/{id}` | dashboard | `routes/admin.js` (resolved-owned) |
-| `PUT /api/admin/partners/{id}` | dashboard | `routes/admin.js` (resolved-owned) |
-| `GET /api/admin/partners/stats` | dashboard | `routes/admin.js` (resolved-owned) |
+| `GET /api/admin/margins` | dashboard | `routes/admin/dashboard.js` (resolved-owned) |
+| `POST /api/admin/partners` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `DELETE /api/admin/partners/{id}` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `GET /api/admin/partners/{id}` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `PUT /api/admin/partners/{id}` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `GET /api/admin/partners/stats` | dashboard | `routes/admin/partners.js` (resolved-owned) |
 | `GET /api/admin/radar/alerts` | dashboard | `routes/admin-radar.js` (resolved-owned) |
 | `POST /api/admin/radar/cache/invalidate` | dashboard | `routes/admin-radar.js` (resolved-owned) |
 | `GET /api/admin/radar/money` | dashboard | `routes/admin-radar.js` (resolved-owned) |
@@ -744,21 +746,21 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `PATCH /api/admin/rules/{id}` | dashboard | `routes/admin-rules.js` (resolved-owned) |
 | `POST /api/admin/rules/{id}/reset` | dashboard | `routes/admin-rules.js` (resolved-owned) |
 | `GET /api/admin/rules/audit` | dashboard | `routes/admin-rules.js` (resolved-owned) |
-| `POST /api/admin/users` | dashboard | `routes/admin.js` (resolved-owned) |
-| `DELETE /api/admin/users/{id}` | dashboard | `routes/admin.js` (resolved-owned) |
-| `PUT /api/admin/users/{id}/password` | dashboard | `routes/admin.js` (resolved-owned) |
-| `PUT /api/admin/users/{id}/role` | dashboard | `routes/admin.js` (resolved-owned) |
-| `GET /api/dashboard/clients/detail` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/clients/list` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/forecast` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/global` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/history` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/hub-dubai` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/pilotage` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/pipeline` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/relais` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/retards` | dashboard | `routes/dashboard.js` (resolved-owned) |
-| `GET /api/dashboard/stats` | dashboard | `routes/dashboard.js` (resolved-owned) |
+| `POST /api/admin/users` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `DELETE /api/admin/users/{id}` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `PUT /api/admin/users/{id}/password` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `PUT /api/admin/users/{id}/role` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `GET /api/dashboard/clients/detail` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/dashboard/clients/list` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/dashboard/forecast` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/global` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/history` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/dashboard/hub-dubai` | dashboard | `routes/dashboard-hub.js` (resolved-owned) |
+| `GET /api/dashboard/pilotage` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/pipeline` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/relais` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/dashboard/retards` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/stats` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
 | `GET /api/hub-dash/orders/{id}` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
 | `POST /api/hub-dash/orders/{id}/auto-prepare` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
 | `POST /api/hub-dash/orders/{id}/backorder` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
@@ -779,9 +781,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/relay/orders/{id}/comment` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
 | `POST /api/relay/orders/{id}/escalate` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
 | `POST /api/relay/orders/{id}/incident` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
-| `GET /api/admin/documents` | documents | `routes/admin.js` (resolved-different-owner) |
-| `GET /api/admin/documents/summary` | documents | `routes/admin.js` (resolved-different-owner) |
-| `GET /api/admin/documents/{id}` | documents | `routes/admin.js` (resolved-different-owner) |
+| `GET /api/admin/documents` | documents | `routes/admin/documents.js` (resolved-owned) |
+| `GET /api/admin/documents/summary` | documents | `routes/admin/documents.js` (resolved-owned) |
+| `GET /api/admin/documents/{id}` | documents | `routes/admin/documents.js` (resolved-owned) |
 | `POST /api/pricing/recommend` | economic-engine | `routes/pricing.js` (resolved-owned) |
 | `GET /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
 | `POST /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
@@ -832,10 +834,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/admin/risk-provisions/{id}` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
 | `PUT /api/admin/risk-provisions/{id}` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
 | `PUT /api/admin/risk-provisions/{id}/toggle` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
-| `GET /api/dashboard/annulations-parcels` | economic-engine | `routes/dashboard.js` (resolved-different-owner) |
-| `GET /api/dashboard/finance` | economic-engine | `routes/dashboard.js` (resolved-different-owner) |
-| `GET /api/dashboard/payments` | economic-engine | `routes/dashboard.js` (resolved-different-owner) |
-| `GET /api/dashboard/sales` | economic-engine | `routes/dashboard.js` (resolved-different-owner) |
+| `GET /api/dashboard/annulations-parcels` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `GET /api/dashboard/finance` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `GET /api/dashboard/payments` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `GET /api/dashboard/sales` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
 | `PUT /api/pricing/apply-all` | economic-engine | `routes/pricing.js` (resolved-owned) |
 | `PUT /api/pricing/apply-price/{id}` | economic-engine | `routes/pricing.js` (resolved-owned) |
 | `GET /api/pricing/benchmarks` | economic-engine | `routes/pricing.js` (resolved-owned) |
@@ -855,10 +857,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/pricing/strategy/competitors` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
 | `DELETE /api/pricing/strategy/competitors/{id}` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
 | `GET /api/pricing/strategy/history` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
-| `GET /api/health` | infrastructure | `routes/health.js` (resolved-different-owner) |
-| `GET /api/public/config` | infrastructure | `routes/public.js` (resolved-different-owner) |
+| `GET /api/health` | infrastructure | `server.js` (resolved-different-owner) |
+| `GET /api/public/config` | infrastructure | `server.js` (resolved-different-owner) |
 | `GET /webhook/authkey-whatsapp` | infrastructure | — (not-in-openapi-contract) |
-| `POST /api/shared-carts/stripe/webhook` | infrastructure | `routes/shared-cart-cash.js` (resolved-different-owner) |
+| `POST /api/shared-carts/stripe/webhook` | infrastructure | `server.js` (resolved-different-owner) |
 | `GET /*.html` | infrastructure | — (not-in-openapi-contract) |
 | `GET /api/hub/inventory/buffer` | inventory | `routes/inventory-api.js` (resolved-owned) |
 | `GET /api/hub/inventory/open-parcels` | inventory | `routes/inventory-api.js` (resolved-owned) |
@@ -868,7 +870,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/hub/inventory/receive` | inventory | `routes/inventory-api.js` (resolved-owned) |
 | `POST /api/hub/inventory/scan-assign` | inventory | `routes/inventory-api.js` (resolved-owned) |
 | `GET /api/hub/inventory/stats` | inventory | `routes/inventory-api.js` (resolved-owned) |
-| `POST /api/v2/parcels/{id}/scan` | logistics | `routes/parcel-api-v2.js` (resolved-owned) |
+| `POST /api/v2/parcels/{id}/scan` | logistics | `routes/parcel-api-v2/scans.js` (resolved-owned) |
 | `GET /api/tracking/{id}` | logistics | `routes/tracking.js` (resolved-owned) |
 | `GET /api/carriers` | logistics | `routes/carriers.js` (resolved-owned) |
 | `POST /api/carriers` | logistics | `routes/carriers.js` (resolved-owned) |
@@ -876,19 +878,19 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `PATCH /api/carriers/{id}` | logistics | `routes/carriers.js` (resolved-owned) |
 | `PATCH /api/carriers/customs/{id}` | logistics | `routes/carriers.js` (resolved-owned) |
 | `GET /api/client/tracking` | logistics | `routes/client-tracking.js` (resolved-owned) |
-| `GET /api/hub/auto-distribute` | logistics | `routes/hub.js` (resolved-owned) |
-| `POST /api/hub/auto-distribute` | logistics | `routes/hub.js` (resolved-owned) |
-| `POST /api/hub/auto-distribute/cleanup` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/hub/auto-distribute` | logistics | `routes/auto-distribute-api.js` (resolved-owned) |
+| `POST /api/hub/auto-distribute` | logistics | `routes/auto-distribute-api.js` (resolved-owned) |
+| `POST /api/hub/auto-distribute/cleanup` | logistics | `routes/auto-distribute-api.js` (resolved-owned) |
 | `POST /api/hub/batch-scan` | logistics | `routes/hub.js` (resolved-owned) |
 | `POST /api/hub/pack` | logistics | `routes/hub.js` (resolved-owned) |
 | `GET /api/hub/pending` | logistics | `routes/hub.js` (resolved-owned) |
-| `POST /api/hub/photo` | logistics | — (not-in-openapi-contract) |
+| `POST /api/hub/photo` | logistics | `routes/hub.js` (resolved-owned) |
 | `POST /api/hub/scan` | logistics | `routes/hub.js` (resolved-owned) |
 | `POST /api/hub/seal` | logistics | `routes/hub.js` (resolved-owned) |
 | `GET /api/hub/search` | logistics | `routes/hub.js` (resolved-owned) |
 | `GET /api/hub/stats/week` | logistics | `routes/hub.js` (resolved-owned) |
 | `GET /api/hub/today` | logistics | `routes/hub.js` (resolved-owned) |
-| `POST /api/hub/volume` | logistics | — (not-in-openapi-contract) |
+| `POST /api/hub/volume` | logistics | `routes/hub.js` (resolved-owned) |
 | `GET /api/logistics/labels/{id}` | logistics | `routes/logistics.js` (resolved-owned) |
 | `GET /api/logistics/manifest/{id}` | logistics | `routes/logistics.js` (resolved-owned) |
 | `GET /api/logistics/shipments` | logistics | `routes/logistics.js` (resolved-owned) |
@@ -928,14 +930,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/transitaire/parcels` | logistics | `routes/transitaire-api.js` (resolved-owned) |
 | `POST /api/transitaire/ship` | logistics | `routes/transitaire-api.js` (resolved-owned) |
 | `GET /api/transitaire/stats` | logistics | `routes/transitaire-api.js` (resolved-owned) |
-| `GET /api/v2/parcels` | logistics | `routes/parcel-api-v2.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}` | logistics | `routes/parcel-api-v2.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}/label` | logistics | `routes/parcel-api-v2.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}/timeline` | logistics | `routes/parcel-api-v2.js` (resolved-owned) |
-| `GET /api/v2/parcels/alerts` | logistics | `routes/parcel-api-v2.js` (resolved-owned) |
-| `GET /api/v2/parcels/critical` | logistics | `routes/parcel-api-v2.js` (resolved-owned) |
-| `GET /api/v2/parcels/kpis` | logistics | `routes/parcel-api-v2.js` (resolved-owned) |
-| `GET /api/v2/parcels/reconciliation` | logistics | `routes/parcel-api-v2.js` (resolved-owned) |
+| `GET /api/v2/parcels` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/label` | logistics | `routes/parcel-label.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/timeline` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/alerts` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/critical` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/kpis` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/reconciliation` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
 | `GET /api/loyalty/tiers` | loyalty | `routes/loyalty.js` (resolved-owned) |
 | `GET /api/loyalty/me` | loyalty | `routes/loyalty.js` (resolved-owned) |
 | `GET /api/loyalty/users` | loyalty | `routes/loyalty.js` (resolved-owned) |
@@ -947,33 +949,33 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/v2/notifications/stats` | notifications | `routes/notification-api.js` (resolved-owned) |
 | `GET /webhook/meta-whatsapp` | notifications | `routes/meta-whatsapp.js` (resolved-owned) |
 | `POST /webhook/meta-whatsapp` | notifications | `routes/meta-whatsapp.js` (resolved-owned) |
-| `GET /api/orders/{id}` | orders | `routes/orders.js` (resolved-owned) |
-| `POST /api/orders/{id}/cancel` | orders | `routes/orders.js` (resolved-owned) |
+| `GET /api/orders/{id}` | orders | `routes/orders/detail.js` (resolved-owned) |
+| `POST /api/orders/{id}/cancel` | orders | `routes/orders/cancel.js` (resolved-owned) |
 | `GET /api/invoices/public/{id}` | orders | `routes/invoices.js` (resolved-owned) |
-| `GET /api/admin/orders` | orders | `routes/admin.js` (resolved-different-owner) |
-| `DELETE /api/admin/orders/{id}` | orders | `routes/admin.js` (resolved-different-owner) |
-| `POST /api/admin/orders/{id}/refund` | orders | `routes/admin.js` (resolved-different-owner) |
-| `POST /api/hub/orders/mark-ordered` | orders | `routes/hub.js` (resolved-different-owner) |
+| `GET /api/admin/orders` | orders | `routes/admin/orders.js` (resolved-owned) |
+| `DELETE /api/admin/orders/{id}` | orders | `routes/admin/orders.js` (resolved-owned) |
+| `POST /api/admin/orders/{id}/refund` | orders | `routes/admin/orders.js` (resolved-owned) |
+| `POST /api/hub/orders/mark-ordered` | orders | `routes/hub-mark-ordered.js` (resolved-owned) |
 | `GET /api/invoices` | orders | `routes/invoices.js` (resolved-owned) |
 | `GET /api/invoices/{id}` | orders | `routes/invoices.js` (resolved-owned) |
 | `POST /api/invoices/{id}/deliver` | orders | `routes/invoices.js` (resolved-owned) |
 | `GET /api/invoices/{id}/download` | orders | `routes/invoices.js` (resolved-owned) |
 | `GET /api/invoices/{id}/json` | orders | `routes/invoices.js` (resolved-owned) |
-| `POST /api/orders/{id}/cancel-backorder` | orders | `routes/orders.js` (resolved-owned) |
-| `PATCH /api/orders/{id}/cost` | orders | `routes/orders.js` (resolved-owned) |
-| `GET /api/orders/{id}/history` | orders | `routes/orders.js` (resolved-owned) |
-| `POST /api/orders/{id}/mark-availability` | orders | `routes/orders.js` (resolved-owned) |
-| `GET /api/orders/{id}/parcels` | orders | `routes/orders.js` (resolved-owned) |
-| `POST /api/orders/{id}/partial-ship` | orders | `routes/orders.js` (resolved-owned) |
-| `POST /api/orders/{id}/qr-token` | orders | `routes/orders.js` (resolved-owned) |
-| `PATCH /api/orders/{id}/status` | orders | `routes/orders.js` (resolved-owned) |
-| `GET /api/orders/{id}/sub-orders` | orders | `routes/orders.js` (resolved-owned) |
-| `GET /api/orders/credits` | orders | `routes/orders.js` (resolved-owned) |
-| `PATCH /api/orders/parcels/{id}/status` | orders | `routes/orders.js` (resolved-owned) |
-| `GET /api/orders/problems` | orders | `routes/orders.js` (resolved-owned) |
-| `GET /api/orders/relais` | orders | `routes/orders.js` (resolved-owned) |
-| `GET /api/orders/retrait/{id}` | orders | `routes/orders.js` (resolved-owned) |
-| `PATCH /api/orders/sub-orders/{id}/status` | orders | `routes/orders.js` (resolved-owned) |
+| `POST /api/orders/{id}/cancel-backorder` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `PATCH /api/orders/{id}/cost` | orders | `routes/orders/status.js` (resolved-owned) |
+| `GET /api/orders/{id}/history` | orders | `routes/orders/detail.js` (resolved-owned) |
+| `POST /api/orders/{id}/mark-availability` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/orders/{id}/parcels` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `POST /api/orders/{id}/partial-ship` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `POST /api/orders/{id}/qr-token` | orders | `routes/orders/qr.js` (resolved-owned) |
+| `PATCH /api/orders/{id}/status` | orders | `routes/orders/status.js` (resolved-owned) |
+| `GET /api/orders/{id}/sub-orders` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/orders/credits` | orders | `routes/orders/list.js` (resolved-owned) |
+| `PATCH /api/orders/parcels/{id}/status` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/orders/problems` | orders | `routes/orders/list.js` (resolved-owned) |
+| `GET /api/orders/relais` | orders | `routes/orders/list.js` (resolved-owned) |
+| `GET /api/orders/retrait/{id}` | orders | `routes/orders/qr.js` (resolved-owned) |
+| `PATCH /api/orders/sub-orders/{id}/status` | orders | `routes/orders/parcels.js` (resolved-owned) |
 | `GET /api/v2/orders` | orders | `routes/order-api-v2.js` (resolved-owned) |
 | `GET /api/v2/orders/{id}` | orders | `routes/order-api-v2.js` (resolved-owned) |
 | `POST /api/v2/orders/{id}/confirm-cash` | orders | `routes/order-api-v2.js` (resolved-owned) |
@@ -998,7 +1000,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/payments/paypal/refund/{id}` | payments | `routes/payments-paypal.js` (resolved-owned) |
 | `GET /api/payments/rates` | payments | `routes/payments.js` (resolved-owned) |
 | `POST /api/payments/stripe/webhook` | payments | `routes/payments.js` (resolved-owned) |
-| `GET /health` | platform-ops | `routes/unknown.js` (resolved-different-owner) |
+| `GET /health` | platform-ops | `routes/health.js` (resolved-owned) |
 | `GET /api/modules` | platform-ops | `routes/modules.js` (resolved-owned) |
 | `POST /api/admin/simulator/cleanup` | platform-ops | `routes/simulator.js` (resolved-owned) |
 | `GET /api/admin/simulator/journal` | platform-ops | `routes/simulator.js` (resolved-owned) |
@@ -1021,16 +1023,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/v2/global` | platform-ops | `routes/ops-api.js` (resolved-owned) |
 | `GET /api/v2/incidents` | platform-ops | `routes/ops-api.js` (resolved-owned) |
 | `GET /api/v2/invoices` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}/orders` | platform-ops | `routes/parcel-api-v2.js` (resolved-different-owner) |
-| `GET /api/v2/parcels/{id}/scans` | platform-ops | `routes/parcel-api-v2.js` (resolved-different-owner) |
-| `GET /api/v2/parcels/{id}/detail` | platform-ops | `routes/parcel-api-v2.js` (resolved-different-owner) |
+| `GET /api/v2/parcels/{id}/orders` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/scans` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/detail` | platform-ops | `routes/ops-api.js` (resolved-owned) |
 | `GET /api/v2/reconciliation` | platform-ops | `routes/ops-api.js` (resolved-owned) |
 | `GET /api/v2/reconciliation/summary` | platform-ops | `routes/ops-api.js` (resolved-owned) |
 | `GET /api/v2/scan-events` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /health/detailed` | platform-ops | `routes/detailed.js` (resolved-different-owner) |
-| `GET /health/metrics` | platform-ops | `routes/metrics.js` (resolved-different-owner) |
-| `GET /health/ready` | platform-ops | `routes/ready.js` (resolved-different-owner) |
-| `GET /health/version` | platform-ops | `routes/version.js` (resolved-different-owner) |
+| `GET /health/detailed` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /health/metrics` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /health/ready` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /health/version` | platform-ops | `routes/health.js` (resolved-owned) |
 | `GET /api/purchasing` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `GET /api/purchasing/suppliers` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/suppliers` | purchasing | `routes/purchasing.js` (resolved-owned) |
@@ -1042,50 +1044,50 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/purchasing/{id}/receive` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `DELETE /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `GET /api/boutique/suggestions` | recommendations | `routes/boutique-suggestions.js` (resolved-owned) |
-| `POST /api/shared-carts/from-cart-items` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/from-basket` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/from-order` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `GET /api/shared-carts/mine` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `GET /api/shared-carts/{id}` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `GET /api/shared-carts/{id}/as-cart-items` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `PUT /api/shared-carts/{id}/items` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/{id}/close` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/{id}/finalize` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/{id}/awaiting-choice/complete` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/{id}/awaiting-choice/adjust` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/{id}/awaiting-choice/cancel` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/{id}/extend-window` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/{id}/cancel` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `GET /api/shared-carts/public/{id}` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `GET /api/shared-carts/public/{id}/estimations` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/public/{id}/estimations` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `DELETE /api/shared-carts/public/{id}/estimations/{id}` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `GET /api/shared-carts/public/{id}/estimations/by-phone` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `POST /api/shared-carts/public/{id}/contributions` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
+| `POST /api/shared-carts/from-cart-items` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/from-basket` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/from-order` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/mine` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/{id}/as-cart-items` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `PUT /api/shared-carts/{id}/items` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/close` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/finalize` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/awaiting-choice/complete` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/awaiting-choice/adjust` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/awaiting-choice/cancel` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/extend-window` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/cancel` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/public/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/public/{id}/estimations` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/public/{id}/estimations` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `DELETE /api/shared-carts/public/{id}/estimations/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/public/{id}/estimations/by-phone` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/public/{id}/contributions` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
 | `POST /api/shared-carts/public/{id}/contributions/cash` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
 | `POST /api/shared-carts/contributions/{id}/confirm-cash` | shared-cart | `routes/shared-cart-cash.js` (resolved-owned) |
-| `GET /api/admin/shared-carts` | shared-cart | `routes/shared-cart-refund-admin.js` (resolved-owned) |
-| `GET /api/admin/shared-carts/refund-queue` | shared-cart | `routes/shared-cart-refund-admin.js` (resolved-owned) |
-| `GET /api/admin/shared-carts/{id}` | shared-cart | `routes/shared-cart-refund-admin.js` (resolved-owned) |
-| `POST /api/admin/shared-carts/{id}/expire` | shared-cart | `routes/shared-cart-refund-admin.js` (resolved-owned) |
-| `POST /api/admin/shared-carts/{id}/extend` | shared-cart | `routes/shared-cart-refund-admin.js` (resolved-owned) |
-| `POST /api/admin/shared-carts/{id}/note` | shared-cart | `routes/shared-cart-refund-admin.js` (resolved-owned) |
+| `GET /api/admin/shared-carts` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/admin/shared-carts/refund-queue` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/admin/shared-carts/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/admin/shared-carts/{id}/expire` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/admin/shared-carts/{id}/extend` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/admin/shared-carts/{id}/note` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
 | `POST /api/admin/shared-carts/refund-queue/{id}/mark-refunded` | shared-cart | `routes/shared-cart-refund-admin.js` (resolved-owned) |
 | `POST /api/shares` | shared-cart | `routes/shares.js` (resolved-owned) |
 | `GET /api/shares/{id}` | shared-cart | `routes/shares.js` (resolved-owned) |
 | `POST /api/shares/{id}/contributions` | shared-cart | `routes/shares.js` (resolved-owned) |
 | `PATCH /api/shares/{id}/contributions/{id}` | shared-cart | `routes/shares.js` (resolved-owned) |
-| `GET /api/admin/sourcing/connectors` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `POST /api/admin/sourcing/catalogs/import` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `GET /api/admin/sourcing/catalogs` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `GET /api/admin/sourcing/candidates` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `GET /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `PUT /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `POST /api/admin/sourcing/candidates/{id}/scan` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `POST /api/admin/sourcing/candidates/scan-batch` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `POST /api/admin/sourcing/candidates/{id}/import-product` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `POST /api/admin/sourcing/candidates/{id}/reject` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
-| `POST /api/admin/sourcing/candidates/{id}/watchlist` | sourcing | `routes/sourcing.js` (resolved-different-owner) |
+| `GET /api/admin/sourcing/connectors` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/catalogs/import` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/sourcing/catalogs` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/sourcing/candidates` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `PUT /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/scan` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/scan-batch` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/import-product` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/reject` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/watchlist` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
 | `GET /api/unsold` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
 | `GET /api/unsold/{id}` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
 | `PATCH /api/unsold/{id}` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
@@ -1241,6 +1243,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | unsold-resolution | catalog (`catalog (produit concerné)`) | ✔ |
 | unsold-resolution | auth (`auth`) | ✔ |
 | wallet | auth-identity (`auth-identity (identification du client)`) | ✔ |
+| admin-dashboard | sourcing (`sourcing`) | ✔ |
 
 ## Drifts
 
@@ -1248,7 +1251,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### WARN / DEBT (192)
+### WARN / DEBT (155)
 
 Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
 
@@ -1271,57 +1274,20 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 14 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ... | scripts/feature-audit.js: full) — limitation du modèle statique O5, jamais inventé
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ customs / GET /api/admin/customs — contract.exposes déclare "GET /api/admin/customs" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans customs.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ documents / GET /api/admin/documents — contract.exposes déclare "GET /api/admin/documents" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans documents.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ documents / GET /api/admin/documents/{id} — contract.exposes déclare "GET /api/admin/documents/{id}" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans documents.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ documents / GET /api/admin/documents/summary — contract.exposes déclare "GET /api/admin/documents/summary" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans documents.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ economic-engine / GET /api/dashboard/annulations-parcels — contract.exposes déclare "GET /api/dashboard/annulations-parcels" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ economic-engine / GET /api/dashboard/finance — contract.exposes déclare "GET /api/dashboard/finance" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ economic-engine / GET /api/dashboard/payments — contract.exposes déclare "GET /api/dashboard/payments" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ economic-engine / GET /api/dashboard/sales — contract.exposes déclare "GET /api/dashboard/sales" mais le contrat OpenAPI le résout vers "routes/dashboard.js", non déclaré dans economic-engine.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ infrastructure / GET /api/health — contract.exposes déclare "GET /api/health" mais le contrat OpenAPI le résout vers "routes/health.js", non déclaré dans infrastructure.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ infrastructure / GET /api/public/config — contract.exposes déclare "GET /api/public/config" mais le contrat OpenAPI le résout vers "routes/public.js", non déclaré dans infrastructure.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ infrastructure / POST /api/shared-carts/stripe/webhook — contract.exposes déclare "POST /api/shared-carts/stripe/webhook" mais le contrat OpenAPI le résout vers "routes/shared-cart-cash.js", non déclaré dans infrastructure.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ orders / DELETE /api/admin/orders/{id} — contract.exposes déclare "DELETE /api/admin/orders/{id}" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans orders.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ orders / GET /api/admin/orders — contract.exposes déclare "GET /api/admin/orders" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans orders.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ orders / POST /api/admin/orders/{id}/refund — contract.exposes déclare "POST /api/admin/orders/{id}/refund" mais le contrat OpenAPI le résout vers "routes/admin.js", non déclaré dans orders.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ orders / POST /api/hub/orders/mark-ordered — contract.exposes déclare "POST /api/hub/orders/mark-ordered" mais le contrat OpenAPI le résout vers "routes/hub.js", non déclaré dans orders.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /api/v2/parcels/{id}/detail — contract.exposes déclare "GET /api/v2/parcels/{id}/detail" mais le contrat OpenAPI le résout vers "routes/parcel-api-v2.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /api/v2/parcels/{id}/orders — contract.exposes déclare "GET /api/v2/parcels/{id}/orders" mais le contrat OpenAPI le résout vers "routes/parcel-api-v2.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /api/v2/parcels/{id}/scans — contract.exposes déclare "GET /api/v2/parcels/{id}/scans" mais le contrat OpenAPI le résout vers "routes/parcel-api-v2.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[GENERATOR_LIMITATION]_ platform-ops / GET /health — contract.exposes déclare "GET /health" mais le contrat OpenAPI le résout vers "routes/unknown.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /health/detailed — contract.exposes déclare "GET /health/detailed" mais le contrat OpenAPI le résout vers "routes/detailed.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /health/metrics — contract.exposes déclare "GET /health/metrics" mais le contrat OpenAPI le résout vers "routes/metrics.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /health/ready — contract.exposes déclare "GET /health/ready" mais le contrat OpenAPI le résout vers "routes/ready.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[KNOWN_DEBT]_ platform-ops / GET /health/version — contract.exposes déclare "GET /health/version" mais le contrat OpenAPI le résout vers "routes/version.js", non déclaré dans platform-ops.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / GET /api/admin/sourcing/candidates — contract.exposes déclare "GET /api/admin/sourcing/candidates" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / GET /api/admin/sourcing/candidates/{id} — contract.exposes déclare "GET /api/admin/sourcing/candidates/{id}" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / GET /api/admin/sourcing/catalogs — contract.exposes déclare "GET /api/admin/sourcing/catalogs" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / GET /api/admin/sourcing/connectors — contract.exposes déclare "GET /api/admin/sourcing/connectors" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/{id}/import-product — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/import-product" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/{id}/reject — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/reject" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/{id}/scan — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/scan" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/{id}/watchlist — contract.exposes déclare "POST /api/admin/sourcing/candidates/{id}/watchlist" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/candidates/scan-batch — contract.exposes déclare "POST /api/admin/sourcing/candidates/scan-batch" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / POST /api/admin/sourcing/catalogs/import — contract.exposes déclare "POST /api/admin/sourcing/catalogs/import" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ sourcing / PUT /api/admin/sourcing/candidates/{id} — contract.exposes déclare "PUT /api/admin/sourcing/candidates/{id}" mais le contrat OpenAPI le résout vers "routes/sourcing.js", non déclaré dans sourcing.files.routes
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ catalog / DELETE /api/products/{id}/skus/{id} — "DELETE /api/products/{id}/skus/{id}" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ catalog / GET /api/products/{id}/skus — "GET /api/products/{id}/skus" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ catalog / GET /api/products/{id}/skus/readiness — "GET /api/products/{id}/skus/readiness" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ catalog / POST /api/products/{id}/skus — "POST /api/products/{id}/skus" déclaré par catalog mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ infrastructure / GET /api/health — contract.exposes déclare "GET /api/health" mais le contrat OpenAPI le résout vers "server.js", non déclaré dans infrastructure.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ infrastructure / GET /api/public/config — contract.exposes déclare "GET /api/public/config" mais le contrat OpenAPI le résout vers "server.js", non déclaré dans infrastructure.files.routes
+- **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ infrastructure / POST /api/shared-carts/stripe/webhook — contract.exposes déclare "POST /api/shared-carts/stripe/webhook" mais le contrat OpenAPI le résout vers "server.js", non déclaré dans infrastructure.files.routes
 - **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 - **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ logistics / POST /api/hub/photo — "POST /api/hub/photo" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[GENERATOR_LIMITATION]_ logistics / POST /api/hub/volume — "POST /api/hub/volume" déclaré par logistics mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 - **[LOCAL-MANIFEST-DEPENDENCY-WITHOUT-CANONICAL-CONSUMER]** _[KNOWN_DEBT]_ boutique-manifest:tracking — 5 dépendance(s) technique(s) observée(s) depuis boutique-manifest:tracking (ontology gap déjà documenté, canonicalFeature=null) vers auth-identity, logistics, orders — visible mais non collapsable en paire canonical-feature (pas de Feature Card consumer pour déclarer contract.consumes)
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> catalog — dépendance cross-feature observée (canal: interface, 2 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "catalog"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> customs — dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "customs"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> dashboard — dépendance cross-feature observée (canal: interface, 20 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> dashboard — dépendance cross-feature observée (canal: interface, 15 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "dashboard"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> decision-signals — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "decision-signals"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> economic-engine — dépendance cross-feature observée (canal: interface, 20 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "economic-engine"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> economic-engine — dépendance cross-feature observée (canal: interface, 22 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "economic-engine"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> inventory — dépendance cross-feature observée (canal: interface, 5 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "inventory"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> logistics — dépendance cross-feature observée (canal: interface, 8 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "logistics"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> orders — dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "orders"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> logistics — dépendance cross-feature observée (canal: interface, 7 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "logistics"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> orders — dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "orders"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ admin-dashboard -> payments — dépendance cross-feature observée (canal: interface, 6 preuve(s)) sans contract.consumes déclaré chez "admin-dashboard" vers "payments"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "auth" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth -> infrastructure — dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez "auth" vers "infrastructure"
@@ -1331,7 +1297,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> notifications — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "notifications"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> orders — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "orders"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 33 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ customs -> infrastructure — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "customs" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> catalog — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "catalog"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> decision-signals — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "decision-signals"
@@ -1457,8 +1423,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 779 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 91 fichier(s) observés, dont 63 sous manifest non-canonique (canonicalFeature=null)
+- backend : 785 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 100 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
 - dash : 83 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1470,13 +1436,14 @@ Meta Graph monté : oui.
 |---|---|---|---|---|
 | admin-dashboard | catalog | interface | 2 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | customs | interface | 4 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | dashboard | interface | 20 | **OBSERVED_UNDECLARED** |
+| admin-dashboard | dashboard | interface | 15 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | decision-signals | interface | 3 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | economic-engine | interface | 20 | **OBSERVED_UNDECLARED** |
+| admin-dashboard | economic-engine | interface | 22 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | inventory | interface | 5 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | logistics | interface | 8 | **OBSERVED_UNDECLARED** |
-| admin-dashboard | orders | interface | 3 | **OBSERVED_UNDECLARED** |
+| admin-dashboard | logistics | interface | 7 | **OBSERVED_UNDECLARED** |
+| admin-dashboard | orders | interface | 4 | **OBSERVED_UNDECLARED** |
 | admin-dashboard | payments | interface | 6 | **OBSERVED_UNDECLARED** |
+| admin-dashboard | sourcing | interface | 3 | **DECLARED_AND_OBSERVED** |
 | auth | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
 | auth | infrastructure | static-code | 13 | **OBSERVED_UNDECLARED** |
 | auth | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
@@ -1486,9 +1453,10 @@ Meta Graph monté : oui.
 | auth-identity | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
 | auth-identity | orders | static-code | 1 | **OBSERVED_UNDECLARED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| catalog | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 33 | **OBSERVED_UNDECLARED** |
-| catalog | logistics | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| catalog | economic-engine | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 37 | **OBSERVED_UNDECLARED** |
+| catalog | logistics | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| catalog | shared-cart | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | customs | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1720,7 +1688,6 @@ Meta Graph monté : oui.
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
 
 - `auth` → `orders` (déclaré : `orders`)
-- `catalog` → `shared-cart` (déclaré : `shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)`)
 - `customs` → `logistics` (déclaré : `logistics (colis a classer)`)
 - `dashboard` → `payments` (déclaré : `payments (lecture paiements)`)
 - `dashboard` → `inventory` (déclaré : `inventory (lecture stock)`)
@@ -1754,7 +1721,7 @@ Meta Graph monté : oui.
 
 ### Transversal topology (consumer = local-manifest frontend-transversal, hors ontology gap)
 
-- `boutique-manifest:boutique` → auth-identity (interface), catalog (interface), catalog (static-code), logistics (interface), orders (interface), payments (static-code), platform-ops (interface), purchasing (interface), recommendations (interface), recommendations (static-code), shared-cart (interface), shared-cart (static-code), wallet (static-code)
+- `boutique-manifest:boutique` → auth-identity (interface), catalog (interface), catalog (static-code), logistics (interface), orders (interface), payments (static-code), purchasing (interface), recommendations (interface), recommendations (static-code), shared-cart (interface), shared-cart (static-code), wallet (static-code)
 
 ### Local-manifest dependencies without canonical consumer (ontology gap, KNOWN_DEBT)
 

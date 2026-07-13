@@ -1,0 +1,147 @@
+{
+  "$id": "komerce/catalog/product-detail/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "inventory_model",
+    "product",
+    "pricing",
+    "media",
+    "option_axes",
+    "sellable_units",
+    "delivery_options"
+  ],
+  "properties": {
+    "contract_version": { "const": "1" },
+    "inventory_model": { "enum": ["LEGACY_VARIANTS", "SKU"] },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "reference", "name", "description", "category", "subcategory"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "reference": { "type": ["string", "null"], "maxLength": 200 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "description": { "type": ["string", "null"], "maxLength": 10000 },
+        "category": { "type": ["string", "null"], "maxLength": 200 },
+        "subcategory": { "type": ["string", "null"], "maxLength": 200 }
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["price_kmf", "old_price_kmf", "promo_pct"],
+      "properties": {
+        "price_kmf": { "type": ["integer", "null"], "minimum": 0 },
+        "old_price_kmf": { "type": ["integer", "null"], "minimum": 0 },
+        "promo_pct": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }
+      }
+    },
+    "media": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "url", "role", "alt", "option_values"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "url": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "role": { "enum": ["PRODUCT", "SCENE", "DETAIL", "SIZE_GUIDE", "OTHER"] },
+          "alt": { "type": ["string", "null"], "maxLength": 500 },
+          "option_values": {
+            "type": "object",
+            "maxProperties": 20,
+            "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 200 }
+          }
+        }
+      }
+    },
+    "option_axes": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "display_name", "values"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "display_name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "values": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["value", "thumbnail_url"],
+              "properties": {
+                "value": { "type": "string", "minLength": 1, "maxLength": 200 },
+                "thumbnail_url": { "type": ["string", "null"], "maxLength": 2000 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sellable_units": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sku_id",
+          "sku",
+          "option_values",
+          "stock_status",
+          "available_quantity",
+          "price_kmf",
+          "media_ids"
+        ],
+        "properties": {
+          "sku_id": { "type": "string", "format": "uuid" },
+          "sku": { "type": ["string", "null"], "maxLength": 200 },
+          "option_values": {
+            "type": "object",
+            "maxProperties": 20,
+            "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 200 }
+          },
+          "stock_status": { "enum": ["AVAILABLE", "OUT_OF_STOCK"] },
+          "available_quantity": { "type": "integer", "minimum": 0 },
+          "price_kmf": { "type": ["integer", "null"], "minimum": 0 },
+          "media_ids": {
+            "type": "array",
+            "maxItems": 500,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1, "maxLength": 300 }
+          }
+        }
+      }
+    },
+    "delivery_options": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "label",
+          "available",
+          "price_kmf",
+          "eta_label",
+          "unavailable_reason"
+        ],
+        "properties": {
+          "code": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "available": { "type": "boolean" },
+          "price_kmf": { "type": ["integer", "null"], "minimum": 0 },
+          "eta_label": { "type": ["string", "null"], "maxLength": 500 },
+          "unavailable_reason": { "type": ["string", "null"], "maxLength": 500 }
+        }
+      }
+    }
+  }
+}

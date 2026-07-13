@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-06T21:18:51.781Z",
+  "generatedAt": "2026-07-13T11:02:27.272Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 470,
+  "count": 475,
   "routes": [
     {
       "method": "GET",
@@ -3515,6 +3515,17 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/products/:id/detail",
+      "mountPrefix": "/api/products",
+      "localPath": "/:id/detail",
+      "routeFile": "routes/catalog-product-detail.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/products.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/products/:id/image",
       "mountPrefix": "/api/products",
@@ -3529,6 +3540,46 @@
       "fullPath": "/api/products/:id/images",
       "mountPrefix": "/api/products",
       "localPath": "/:id/images",
+      "routeFile": "routes/products.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/products/:id/skus",
+      "mountPrefix": "/api/products",
+      "localPath": "/:id/skus",
+      "routeFile": "routes/products.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/products/:id/skus",
+      "mountPrefix": "/api/products",
+      "localPath": "/:id/skus",
+      "routeFile": "routes/products.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "fullPath": "/api/products/:id/skus/:skuId",
+      "mountPrefix": "/api/products",
+      "localPath": "/:id/skus/:skuId",
+      "routeFile": "routes/products.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/products/:id/skus/readiness",
+      "mountPrefix": "/api/products",
+      "localPath": "/:id/skus/readiness",
       "routeFile": "routes/products.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

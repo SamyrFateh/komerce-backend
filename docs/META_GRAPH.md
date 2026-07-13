@@ -1,14 +1,14 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-13T11:26:19.571Z.
+> Régénéré le 2026-07-13T11:37:08.570Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
 ## Sources cousues
 
-- Backend : **727** nœuds · Contrat : **433** endpoints
-- Boutique : **66** modules, 51 endpoints
+- Backend : **741** nœuds · Contrat : **438** endpoints
+- Boutique : **69** modules, 52 endpoints
 - Dashboards : **41** modules, 112 arêtes d'appel
 
 ## Synthèse des coutures
@@ -16,30 +16,33 @@
 - Endpoints consommés par au moins un front : **85**
 - 🔗 Endpoints **partagés** (boutique + dashboards) : **2** — rayon de casse amplifié
 - 🔴 Coutures **fantômes** (front → hors contrat) : **0**
-- ⚠️ Tables touchées par **les deux** fronts : **11**
+- ⚠️ Tables touchées par **les deux** fronts : **14**
 
 ## 1. Endpoints partagés — toucher = casse double
 
 | Endpoint | Route backend | Boutique | Dashboards | Tables |
 |---|---|---|---|---|
-| `/api/orders` | `routes/orders.js` | b-checkout, b-tracking, komerce-api | OrdersLogisticsView, ProblemsView | — |
+| `/api/orders` | `routes/orders/create.js` | b-checkout, b-tracking, komerce-api | OrdersLogisticsView, ProblemsView | `orders`, `product_skus`, `product_variants`, `products`, `recipients`, `relais`, `cart_shares`, `order_items`, `order_status_history` |
 | `/api/products` | `routes/products.js` | komerce-api | EconomicFlowView, PricingStrategyView | `product_skus`, `product_variants`, `products` |
 
 ## 3. Tables à rayon de casse maximal (lues/écrites pour les 2 fronts)
 
 | Table | Routes | Modules boutique | Vues dashboards |
 |---|---|---|---|
+| `cart_shares` | 2 | 5 | 2 |
 | `invoices` | 2 | 1 | 1 |
-| `order_items` | 4 | 2 | 1 |
-| `orders` | 16 | 5 | 11 |
-| `parcel_items` | 3 | 1 | 2 |
-| `parcels` | 10 | 2 | 9 |
-| `product_skus` | 1 | 1 | 2 |
-| `product_variants` | 2 | 1 | 4 |
-| `products` | 9 | 4 | 6 |
-| `relais` | 7 | 4 | 6 |
-| `scan_events` | 2 | 1 | 1 |
-| `users` | 9 | 6 | 5 |
+| `order_items` | 6 | 3 | 4 |
+| `order_status_history` | 1 | 3 | 2 |
+| `orders` | 19 | 5 | 13 |
+| `parcel_items` | 4 | 1 | 3 |
+| `parcels` | 10 | 2 | 10 |
+| `product_skus` | 2 | 3 | 4 |
+| `product_variants` | 3 | 3 | 5 |
+| `products` | 11 | 5 | 9 |
+| `recipients` | 1 | 3 | 2 |
+| `relais` | 9 | 4 | 8 |
+| `scan_events` | 3 | 1 | 3 |
+| `users` | 10 | 6 | 6 |
 
 ## 4. Carte des coutures (partagés + fantômes)
 
@@ -48,7 +51,7 @@ graph TD
   subgraph FRONTS
     direction LR
   end
-  ep__api_orders["/api/orders"] --> rt_routes_orders_js["routes/orders.js"]
+  ep__api_orders["/api/orders"] --> rt_routes_orders_create_js["routes/orders/create.js"]
   BTQ((boutique)) -->|3| ep__api_orders
   DASH((dashboards)) -->|2| ep__api_orders
   ep__api_products["/api/products"] --> rt_routes_products_js["routes/products.js"]

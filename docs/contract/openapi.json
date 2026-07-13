@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 0,
-    "total_routes": 483,
+    "unknown_responses": 5,
+    "total_routes": 438,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -687,6 +687,38 @@
         }
       }
     },
+    "/api/products/{id}/detail": {
+      "get": {
+        "summary": "GET /api/products/{id}/detail",
+        "x-route-file": "routes/catalog-product-detail.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/products/{id}": {
       "get": {
         "summary": "GET /api/products/{id}",
@@ -1164,10 +1196,144 @@
         }
       }
     },
+    "/api/products/{id}/skus": {
+      "get": {
+        "summary": "GET /api/products/{id}/skus",
+        "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /api/products/{id}/skus",
+        "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/products/{id}/skus/readiness": {
+      "get": {
+        "summary": "GET /api/products/{id}/skus/readiness",
+        "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/products/{id}/skus/{skuId}": {
+      "delete": {
+        "summary": "DELETE /api/products/{id}/skus/{skuId}",
+        "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skuId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/orders": {
       "get": {
         "summary": "GET /api/orders",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/list.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -1206,7 +1372,7 @@
       },
       "post": {
         "summary": "POST /api/orders",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/create.js",
         "requestBody": {
           "required": true,
           "content": {
@@ -1427,7 +1593,7 @@
     "/api/orders/relais": {
       "get": {
         "summary": "GET /api/orders/relais",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/list.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -1460,7 +1626,7 @@
     "/api/orders/problems": {
       "get": {
         "summary": "GET /api/orders/problems",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/list.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -1501,7 +1667,7 @@
     "/api/orders/credits": {
       "get": {
         "summary": "GET /api/orders/credits",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/list.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -1534,7 +1700,7 @@
     "/api/orders/{id}/qr-token": {
       "post": {
         "summary": "POST /api/orders/{id}/qr-token",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/qr.js",
         "parameters": [
           {
             "name": "id",
@@ -1585,7 +1751,7 @@
     "/api/orders/retrait/{token}": {
       "get": {
         "summary": "GET /api/orders/retrait/{token}",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/qr.js",
         "parameters": [
           {
             "name": "token",
@@ -1636,7 +1802,7 @@
     "/api/orders/{id}/mark-availability": {
       "post": {
         "summary": "POST /api/orders/{id}/mark-availability",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/parcels.js",
         "parameters": [
           {
             "name": "id",
@@ -1679,7 +1845,7 @@
     "/api/orders/{id}/partial-ship": {
       "post": {
         "summary": "POST /api/orders/{id}/partial-ship",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/parcels.js",
         "parameters": [
           {
             "name": "id",
@@ -1722,7 +1888,7 @@
     "/api/orders/{id}/sub-orders": {
       "get": {
         "summary": "GET /api/orders/{id}/sub-orders",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/parcels.js",
         "parameters": [
           {
             "name": "id",
@@ -1773,7 +1939,7 @@
     "/api/orders/{id}/parcels": {
       "get": {
         "summary": "GET /api/orders/{id}/parcels",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/parcels.js",
         "parameters": [
           {
             "name": "id",
@@ -1820,7 +1986,7 @@
     "/api/orders/parcels/{parcelId}/status": {
       "patch": {
         "summary": "PATCH /api/orders/parcels/{parcelId}/status",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/parcels.js",
         "parameters": [
           {
             "name": "parcelId",
@@ -1863,7 +2029,7 @@
     "/api/orders/sub-orders/{subId}/status": {
       "patch": {
         "summary": "PATCH /api/orders/sub-orders/{subId}/status",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/parcels.js",
         "parameters": [
           {
             "name": "subId",
@@ -1906,7 +2072,7 @@
     "/api/orders/{id}/cancel-backorder": {
       "post": {
         "summary": "POST /api/orders/{id}/cancel-backorder",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/parcels.js",
         "parameters": [
           {
             "name": "id",
@@ -1949,7 +2115,7 @@
     "/api/orders/{id}/cancel": {
       "post": {
         "summary": "POST /api/orders/{id}/cancel",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/cancel.js",
         "requestBody": {
           "required": true,
           "content": {
@@ -2022,7 +2188,7 @@
     "/api/orders/{id}/status": {
       "patch": {
         "summary": "PATCH /api/orders/{id}/status",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/status.js",
         "requestBody": {
           "required": true,
           "content": {
@@ -2090,7 +2256,7 @@
     "/api/orders/{id}/cost": {
       "patch": {
         "summary": "PATCH /api/orders/{id}/cost",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/status.js",
         "parameters": [
           {
             "name": "id",
@@ -2133,7 +2299,7 @@
     "/api/orders/{ref}": {
       "get": {
         "summary": "GET /api/orders/{ref}",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/detail.js",
         "parameters": [
           {
             "name": "ref",
@@ -2200,7 +2366,7 @@
     "/api/orders/{id}/history": {
       "get": {
         "summary": "GET /api/orders/{id}/history",
-        "x-route-file": "routes/orders.js",
+        "x-route-file": "routes/orders/detail.js",
         "parameters": [
           {
             "name": "id",
@@ -2777,55 +2943,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "reference": {
-                      "type": "string"
+                    "shipment_id": {
+                      "type": "string",
+                      "x-observed": true
                     },
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "declared"
-                      ]
-                    },
-                    "declared_at": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "declared_by": {
-                      "type": "string",
-                      "nullable": true
+                      "x-observed": true
                     },
                     "customs_paid_kmf": {
-                      "type": "integer"
-                    },
-                    "freight_kmf": {
-                      "type": "integer",
-                      "nullable": true
-                    },
-                    "effective_rate_pct": {
-                      "type": "number",
-                      "nullable": true
-                    },
-                    "notes": {
                       "type": "string",
-                      "nullable": true
+                      "x-observed": true
                     },
-                    "allocation_results": {
-                      "type": "object",
-                      "nullable": true
+                    "parcels_updated": {
+                      "type": "string",
+                      "x-observed": true
                     }
-                  },
-                  "required": [
-                    "id",
-                    "reference",
-                    "status"
-                  ]
+                  }
                 }
               }
             }
@@ -2846,55 +2984,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "shipments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "reference": {
-                            "type": "string"
-                          },
-                          "shipment_date": {
-                            "type": "string"
-                          },
-                          "transitaire_name": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "transport_mode": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "cif_value_kmf": {
-                            "type": "integer"
-                          },
-                          "nb_parcels": {
-                            "type": "integer"
-                          },
-                          "created_at": {
-                            "type": "string"
-                          },
-                          "parcels_linked": {
-                            "type": "integer"
-                          }
-                        }
-                      }
+                      "type": "string",
+                      "x-observed": true
                     },
                     "count": {
-                      "type": "integer"
+                      "type": "string",
+                      "x-observed": true
                     }
-                  },
-                  "required": [
-                    "shipments",
-                    "count"
-                  ]
+                  }
                 }
               }
             }
@@ -2915,57 +3017,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
-                    "shipments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "reference": {
-                            "type": "string"
-                          },
-                          "shipment_date": {
-                            "type": "string"
-                          },
-                          "cif_value_kmf": {
-                            "type": "integer"
-                          },
-                          "customs_paid_kmf": {
-                            "type": "integer",
-                            "nullable": true
-                          },
-                          "variance_kmf": {
-                            "type": "integer",
-                            "nullable": true
-                          },
-                          "effective_rate_pct": {
-                            "type": "number",
-                            "nullable": true
-                          },
-                          "expected_rate_pct": {
-                            "type": "number",
-                            "nullable": true
-                          },
-                          "status": {
-                            "type": "string"
-                          }
-                        }
-                      }
+                    "error": {
+                      "type": "string",
+                      "x-observed": true
                     },
-                    "count": {
-                      "type": "integer"
+                    "code": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "detail": {
+                      "type": "string",
+                      "x-observed": true
                     }
-                  },
-                  "required": [
-                    "shipments",
-                    "count"
-                  ]
+                  }
                 }
               }
             }
@@ -2986,38 +3058,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "trends": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "month": {
-                            "type": "string"
-                          },
-                          "avg_variance_kmf": {
-                            "type": "number"
-                          },
-                          "avg_effective_rate_pct": {
-                            "type": "number"
-                          },
-                          "shipment_count": {
-                            "type": "integer"
-                          }
-                        }
-                      }
+                      "type": "string",
+                      "x-observed": true
                     },
                     "months": {
-                      "type": "integer"
+                      "type": "string",
+                      "x-observed": true
                     }
-                  },
-                  "required": [
-                    "trends",
-                    "months"
-                  ]
+                  }
                 }
               }
             }
@@ -3048,56 +3101,83 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "string"
+                    "shipment_id": {
+                      "type": "string",
+                      "x-observed": true
                     },
                     "reference": {
-                      "type": "string"
+                      "type": "string",
+                      "x-observed": true
                     },
-                    "cif_value_kmf": {
-                      "type": "integer"
+                    "shipment_date": {
+                      "type": "string",
+                      "x-observed": true
                     },
-                    "customs_paid_kmf": {
-                      "type": "integer",
-                      "nullable": true
+                    "transitaire_name": {
+                      "type": "string",
+                      "x-observed": true
                     },
-                    "variance_kmf": {
-                      "type": "integer",
-                      "nullable": true
+                    "transport_mode": {
+                      "type": "string",
+                      "x-observed": true
                     },
-                    "effective_rate_pct": {
-                      "type": "number",
-                      "nullable": true
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
                     },
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "order_item_id": {
-                            "type": "string"
-                          },
-                          "product_name": {
-                            "type": "string"
-                          },
-                          "allocated_kmf": {
-                            "type": "number"
-                          },
-                          "allocated_pct": {
-                            "type": "number"
-                          }
-                        }
-                      }
+                    "declared_at": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "parcel_count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actual_customs_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actual_rate_pct": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "declared_cif_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "expected_customs_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "declared_avg_rate_pct": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ecart_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ecart_pct": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ecart_direction": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "coverage": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "confidence": {
+                      "type": "string",
+                      "x-observed": true
                     }
-                  },
-                  "required": [
-                    "id",
-                    "reference"
-                  ]
+                  }
                 }
               }
             }
@@ -5029,70 +5109,34 @@
     "/api/admin/documents": {
       "get": {
         "summary": "GET /api/admin/documents",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/documents.js",
         "responses": {
           "200": {
             "description": "Succès",
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "documents": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "type": {
-                            "type": "string"
-                          },
-                          "order_id": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "refund_id": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "file_url": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "issued_at": {
-                            "type": "string"
-                          },
-                          "issued_by": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "metadata": {
-                            "type": "object",
-                            "nullable": true
-                          }
-                        }
-                      }
+                      "type": "string",
+                      "x-observed": true
                     },
                     "total": {
-                      "type": "integer"
+                      "type": "string",
+                      "x-observed": true
                     },
                     "limit": {
-                      "type": "integer"
+                      "type": "string",
+                      "x-observed": true
                     },
                     "offset": {
-                      "type": "integer"
+                      "type": "string",
+                      "x-observed": true
                     }
-                  },
-                  "required": [
-                    "documents",
-                    "total",
-                    "limit",
-                    "offset"
-                  ]
+                  }
                 }
               }
             }
@@ -5106,51 +5150,38 @@
     "/api/admin/documents/summary": {
       "get": {
         "summary": "GET /api/admin/documents/summary",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/documents.js",
         "responses": {
           "200": {
             "description": "Succès",
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "table_exists": {
-                      "type": "boolean"
+                      "type": "string",
+                      "x-observed": true
                     },
                     "by_type": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "type": {
-                            "type": "string"
-                          },
-                          "count": {
-                            "type": "integer"
-                          }
-                        }
-                      }
+                      "type": "string",
+                      "x-observed": true
                     },
                     "sequences": {
-                      "type": "object"
+                      "type": "string",
+                      "x-observed": true
                     },
                     "type_constraint": {
                       "type": "string",
-                      "nullable": true
+                      "x-observed": true
                     },
                     "diagnosis": {
                       "type": "string",
-                      "nullable": true
+                      "x-observed": true
                     }
-                  },
-                  "required": [
-                    "table_exists",
-                    "by_type",
-                    "sequences"
-                  ]
+                  }
                 }
               }
             }
@@ -5164,7 +5195,7 @@
     "/api/admin/documents/{id}": {
       "get": {
         "summary": "GET /api/admin/documents/{id}",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/documents.js",
         "parameters": [
           {
             "name": "id",
@@ -5181,52 +5212,329 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "document": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "type": {
-                          "type": "string"
-                        },
-                        "order_id": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "refund_id": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "file_url": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "issued_at": {
-                          "type": "string"
-                        },
-                        "issued_by": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "nullable": true
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "type"
-                      ]
+                      "type": "string",
+                      "x-observed": true
                     }
-                  },
-                  "required": [
-                    "document"
-                  ]
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue": {
+      "get": {
+        "summary": "GET /api/admin/catalog/approval-queue",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "limit": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "offset": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue/{id}/approve": {
+      "post": {
+        "summary": "POST /api/admin/catalog/approval-queue/{id}/approve",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "description": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "fragility": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "emoji": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "price_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "stock": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lifecycle_status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "content_source": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "needs_review": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "enrichment_confidence": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "is_active": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "quality_validated": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue/{id}/reject": {
+      "post": {
+        "summary": "POST /api/admin/catalog/approval-queue/{id}/reject",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "description": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "price_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "stock": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lifecycle_status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "content_source": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "needs_review": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "is_active": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/catalog/approval-queue/{id}/override": {
+      "post": {
+        "summary": "POST /api/admin/catalog/approval-queue/{id}/override",
+        "x-route-file": "routes/admin/catalog-approval.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "description": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "fragility": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "emoji": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "price_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "stock": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lifecycle_status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "content_source": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "needs_review": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "enrichment_confidence": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "is_active": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "quality_validated": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "overridden": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -5240,7 +5548,7 @@
     "/api/admin/customs": {
       "get": {
         "summary": "GET /api/admin/customs",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/customs.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5281,7 +5589,7 @@
     "/api/admin/partners": {
       "get": {
         "summary": "GET /api/admin/partners",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/partners.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5320,7 +5628,7 @@
       },
       "post": {
         "summary": "POST /api/admin/partners",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/partners.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5361,7 +5669,7 @@
     "/api/admin/partners/stats": {
       "get": {
         "summary": "GET /api/admin/partners/stats",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/partners.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5394,7 +5702,7 @@
     "/api/admin/partners/{id}": {
       "get": {
         "summary": "GET /api/admin/partners/{id}",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/partners.js",
         "parameters": [
           {
             "name": "id",
@@ -5435,7 +5743,7 @@
       },
       "put": {
         "summary": "PUT /api/admin/partners/{id}",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/partners.js",
         "parameters": [
           {
             "name": "id",
@@ -5484,7 +5792,7 @@
       },
       "delete": {
         "summary": "DELETE /api/admin/partners/{id}",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/partners.js",
         "parameters": [
           {
             "name": "id",
@@ -5527,7 +5835,7 @@
     "/api/admin/users": {
       "get": {
         "summary": "GET /api/admin/users",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/users.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5558,7 +5866,7 @@
       },
       "post": {
         "summary": "POST /api/admin/users",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/users.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5591,7 +5899,7 @@
     "/api/admin/users/{id}/role": {
       "put": {
         "summary": "PUT /api/admin/users/{id}/role",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/users.js",
         "parameters": [
           {
             "name": "id",
@@ -5634,7 +5942,7 @@
     "/api/admin/users/{id}/password": {
       "put": {
         "summary": "PUT /api/admin/users/{id}/password",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/users.js",
         "parameters": [
           {
             "name": "id",
@@ -5677,7 +5985,7 @@
     "/api/admin/users/{id}": {
       "delete": {
         "summary": "DELETE /api/admin/users/{id}",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/users.js",
         "parameters": [
           {
             "name": "id",
@@ -5728,7 +6036,7 @@
     "/api/admin/dashboard": {
       "get": {
         "summary": "GET /api/admin/dashboard",
-        "x-route-file": "routes/admin-dashboard.js",
+        "x-route-file": "routes/admin/dashboard.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5765,7 +6073,7 @@
     "/api/admin/margins": {
       "get": {
         "summary": "GET /api/admin/margins",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/dashboard.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5798,7 +6106,7 @@
     "/api/admin/alerts": {
       "get": {
         "summary": "GET /api/admin/alerts",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/dashboard.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5831,7 +6139,7 @@
     "/api/admin/counts": {
       "get": {
         "summary": "GET /api/admin/counts",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/system.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5876,7 +6184,7 @@
     "/api/admin/reset": {
       "post": {
         "summary": "POST /api/admin/reset",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/system.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5917,7 +6225,7 @@
     "/api/admin/seed-test": {
       "post": {
         "summary": "POST /api/admin/seed-test",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/system.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5954,7 +6262,7 @@
     "/api/admin/purchasing/repair-ordered-without-pos": {
       "post": {
         "summary": "POST /api/admin/purchasing/repair-ordered-without-pos",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/system.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -5991,7 +6299,7 @@
     "/api/admin/orders": {
       "get": {
         "summary": "GET /api/admin/orders",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/orders.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -6020,7 +6328,7 @@
     "/api/admin/orders/{id}": {
       "delete": {
         "summary": "DELETE /api/admin/orders/{id}",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/orders.js",
         "parameters": [
           {
             "name": "id",
@@ -6067,7 +6375,7 @@
     "/api/admin/orders/{id}/refund": {
       "post": {
         "summary": "POST /api/admin/orders/{id}/refund",
-        "x-route-file": "routes/admin.js",
+        "x-route-file": "routes/admin/orders.js",
         "parameters": [
           {
             "name": "id",
@@ -7422,7 +7730,7 @@
     "/api/admin/sourcing/connectors": {
       "get": {
         "summary": "GET /api/admin/sourcing/connectors",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7451,7 +7759,7 @@
     "/api/admin/sourcing/catalogs/import": {
       "post": {
         "summary": "POST /api/admin/sourcing/catalogs/import",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7480,7 +7788,7 @@
     "/api/admin/sourcing/catalogs": {
       "get": {
         "summary": "GET /api/admin/sourcing/catalogs",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7509,7 +7817,7 @@
     "/api/admin/sourcing/candidates": {
       "get": {
         "summary": "GET /api/admin/sourcing/candidates",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7538,7 +7846,7 @@
     "/api/admin/sourcing/candidates/{id}": {
       "get": {
         "summary": "GET /api/admin/sourcing/candidates/{id}",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "parameters": [
           {
             "name": "id",
@@ -7575,7 +7883,7 @@
       },
       "put": {
         "summary": "PUT /api/admin/sourcing/candidates/{id}",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "parameters": [
           {
             "name": "id",
@@ -7614,7 +7922,7 @@
     "/api/admin/sourcing/candidates/{id}/scan": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/scan",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "parameters": [
           {
             "name": "id",
@@ -7653,7 +7961,7 @@
     "/api/admin/sourcing/candidates/scan-batch": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/scan-batch",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -7682,7 +7990,7 @@
     "/api/admin/sourcing/candidates/{id}/import-product": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/import-product",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "parameters": [
           {
             "name": "id",
@@ -7721,7 +8029,7 @@
     "/api/admin/sourcing/candidates/{id}/reject": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/reject",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "parameters": [
           {
             "name": "id",
@@ -7760,7 +8068,7 @@
     "/api/admin/sourcing/candidates/{id}/watchlist": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/watchlist",
-        "x-route-file": "routes/sourcing.js",
+        "x-route-file": "routes/sourcing-scanner.js",
         "parameters": [
           {
             "name": "id",
@@ -8238,7 +8546,7 @@
     "/api/dashboard/ops": {
       "get": {
         "summary": "GET /api/dashboard/ops",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-ops.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8275,7 +8583,7 @@
     "/api/dashboard/pilotage": {
       "get": {
         "summary": "GET /api/dashboard/pilotage",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-ops.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8328,7 +8636,7 @@
     "/api/dashboard/pipeline": {
       "get": {
         "summary": "GET /api/dashboard/pipeline",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-ops.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8357,7 +8665,7 @@
     "/api/dashboard/retards": {
       "get": {
         "summary": "GET /api/dashboard/retards",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-ops.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8386,7 +8694,7 @@
     "/api/dashboard/forecast": {
       "get": {
         "summary": "GET /api/dashboard/forecast",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-ops.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8419,7 +8727,7 @@
     "/api/dashboard/global": {
       "get": {
         "summary": "GET /api/dashboard/global",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-ops.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8472,7 +8780,7 @@
     "/api/dashboard/stats": {
       "get": {
         "summary": "GET /api/dashboard/stats",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-ops.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8525,7 +8833,7 @@
     "/api/dashboard/finance": {
       "get": {
         "summary": "GET /api/dashboard/finance",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-finance.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8562,7 +8870,7 @@
     "/api/dashboard/annulations-parcels": {
       "get": {
         "summary": "GET /api/dashboard/annulations-parcels",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-finance.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8595,7 +8903,7 @@
     "/api/dashboard/payments": {
       "get": {
         "summary": "GET /api/dashboard/payments",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-finance.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8632,7 +8940,7 @@
     "/api/dashboard/sales": {
       "get": {
         "summary": "GET /api/dashboard/sales",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-finance.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8665,7 +8973,7 @@
     "/api/dashboard/clients": {
       "get": {
         "summary": "GET /api/dashboard/clients",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-clients.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8694,7 +9002,7 @@
     "/api/dashboard/clients/list": {
       "get": {
         "summary": "GET /api/dashboard/clients/list",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-clients.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8731,7 +9039,7 @@
     "/api/dashboard/clients/detail": {
       "get": {
         "summary": "GET /api/dashboard/clients/detail",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-clients.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8776,7 +9084,7 @@
     "/api/dashboard/history": {
       "get": {
         "summary": "GET /api/dashboard/history",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-clients.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8813,7 +9121,7 @@
     "/api/dashboard/relais": {
       "get": {
         "summary": "GET /api/dashboard/relais",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-clients.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8850,7 +9158,7 @@
     "/api/dashboard/hub-dubai": {
       "get": {
         "summary": "GET /api/dashboard/hub-dubai",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-hub.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -8879,7 +9187,7 @@
     "/api/dashboard/hub": {
       "get": {
         "summary": "GET /api/dashboard/hub",
-        "x-route-file": "routes/dashboard.js",
+        "x-route-file": "routes/dashboard-hub.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -9874,7 +10182,7 @@
     "/api/v2/parcels": {
       "get": {
         "summary": "GET /api/v2/parcels",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/parcel-api-v2/read.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -9907,7 +10215,7 @@
     "/api/v2/parcels/kpis": {
       "get": {
         "summary": "GET /api/v2/parcels/kpis",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/parcel-api-v2/read.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -9952,7 +10260,7 @@
     "/api/v2/parcels/alerts": {
       "get": {
         "summary": "GET /api/v2/parcels/alerts",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/parcel-api-v2/read.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -9989,7 +10297,7 @@
     "/api/v2/parcels/critical": {
       "get": {
         "summary": "GET /api/v2/parcels/critical",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/parcel-api-v2/read.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -10022,7 +10330,7 @@
     "/api/v2/parcels/reconciliation": {
       "get": {
         "summary": "GET /api/v2/parcels/reconciliation",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/parcel-api-v2/read.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -10055,7 +10363,7 @@
     "/api/v2/parcels/{ref}": {
       "get": {
         "summary": "GET /api/v2/parcels/{ref}",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/parcel-api-v2/read.js",
         "parameters": [
           {
             "name": "ref",
@@ -10110,7 +10418,7 @@
     "/api/v2/parcels/{ref}/timeline": {
       "get": {
         "summary": "GET /api/v2/parcels/{ref}/timeline",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/parcel-api-v2/read.js",
         "parameters": [
           {
             "name": "ref",
@@ -10169,7 +10477,7 @@
     "/api/v2/parcels/{ref}/scan": {
       "post": {
         "summary": "POST /api/v2/parcels/{ref}/scan",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/parcel-api-v2/scans.js",
         "parameters": [
           {
             "name": "ref",
@@ -10212,7 +10520,7 @@
     "/api/v2/parcels/{ref}/label": {
       "get": {
         "summary": "GET /api/v2/parcels/{ref}/label",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/parcel-label.js",
         "parameters": [
           {
             "name": "ref",
@@ -10745,7 +11053,7 @@
     "/api/v2/parcels/{ref}/detail": {
       "get": {
         "summary": "GET /api/v2/parcels/{ref}/detail",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/ops-api.js",
         "parameters": [
           {
             "name": "ref",
@@ -10781,61 +11089,10 @@
         }
       }
     },
-    "/api/v2/parcels/{id}": {
-      "get": {
-        "summary": "GET /api/v2/parcels/{id}",
-        "x-route-file": "routes/parcel-api-v2.js",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "reference": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "status": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "type": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
     "/api/v2/parcels/{id}/scans": {
       "get": {
         "summary": "GET /api/v2/parcels/{id}/scans",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/ops-api.js",
         "parameters": [
           {
             "name": "id",
@@ -10874,7 +11131,7 @@
     "/api/v2/parcels/{id}/orders": {
       "get": {
         "summary": "GET /api/v2/parcels/{id}/orders",
-        "x-route-file": "routes/parcel-api-v2.js",
+        "x-route-file": "routes/ops-api.js",
         "parameters": [
           {
             "name": "id",
@@ -12277,7 +12534,7 @@
     "/api/auth/magic-link": {
       "post": {
         "summary": "POST /api/auth/magic-link",
-        "x-route-file": "routes/auth.js",
+        "x-route-file": "routes/client-auth.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -12310,7 +12567,7 @@
     "/api/auth/magic-link/validate": {
       "get": {
         "summary": "GET /api/auth/magic-link/validate",
-        "x-route-file": "routes/auth.js",
+        "x-route-file": "routes/client-auth.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -12339,7 +12596,7 @@
     "/api/auth/orders": {
       "get": {
         "summary": "GET /api/auth/orders",
-        "x-route-file": "routes/auth.js",
+        "x-route-file": "routes/client-auth.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -12368,7 +12625,7 @@
     "/api/auth/invoices": {
       "get": {
         "summary": "GET /api/auth/invoices",
-        "x-route-file": "routes/auth.js",
+        "x-route-file": "routes/client-auth.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -14392,6 +14649,92 @@
         }
       }
     },
+    "/api/hub/volume": {
+      "post": {
+        "summary": "POST /api/hub/volume",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "product": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "repack_gain_cm3": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "recorded_by": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub/photo": {
+      "post": {
+        "summary": "POST /api/hub/photo",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "event_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "photo_url": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "photo_count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "recorded_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/hub/batch-scan": {
       "post": {
         "summary": "POST /api/hub/batch-scan",
@@ -14560,7 +14903,7 @@
     "/api/hub/orders/mark-ordered": {
       "post": {
         "summary": "POST /api/hub/orders/mark-ordered",
-        "x-route-file": "routes/hub.js",
+        "x-route-file": "routes/hub-mark-ordered.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -14971,7 +15314,7 @@
     "/api/hub/auto-distribute": {
       "post": {
         "summary": "POST /api/hub/auto-distribute",
-        "x-route-file": "routes/hub.js",
+        "x-route-file": "routes/auto-distribute-api.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -14998,7 +15341,7 @@
       },
       "get": {
         "summary": "GET /api/hub/auto-distribute",
-        "x-route-file": "routes/hub.js",
+        "x-route-file": "routes/auto-distribute-api.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -15027,7 +15370,7 @@
     "/api/hub/auto-distribute/cleanup": {
       "post": {
         "summary": "POST /api/hub/auto-distribute/cleanup",
-        "x-route-file": "routes/hub.js",
+        "x-route-file": "routes/auto-distribute-api.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -17453,7 +17796,7 @@
     "/health": {
       "get": {
         "summary": "GET /health",
-        "x-route-file": "routes/unknown.js",
+        "x-route-file": "routes/health.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -17482,7 +17825,7 @@
     "/health/ready": {
       "get": {
         "summary": "GET /health/ready",
-        "x-route-file": "routes/ready.js",
+        "x-route-file": "routes/health.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -17511,7 +17854,7 @@
     "/health/metrics": {
       "get": {
         "summary": "GET /health/metrics",
-        "x-route-file": "routes/metrics.js",
+        "x-route-file": "routes/health.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -17540,7 +17883,7 @@
     "/health/detailed": {
       "get": {
         "summary": "GET /health/detailed",
-        "x-route-file": "routes/detailed.js",
+        "x-route-file": "routes/health.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -17576,7 +17919,7 @@
     "/health/version": {
       "get": {
         "summary": "GET /health/version",
-        "x-route-file": "routes/version.js",
+        "x-route-file": "routes/health.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -17664,7 +18007,7 @@
     "/api/shared-carts/public/{token}": {
       "get": {
         "summary": "GET /api/shared-carts/public/{token}",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "token",
@@ -17727,7 +18070,7 @@
     "/api/shared-carts/public/{token}/estimations": {
       "get": {
         "summary": "GET /api/shared-carts/public/{token}/estimations",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "token",
@@ -17764,7 +18107,7 @@
       },
       "post": {
         "summary": "POST /api/shared-carts/public/{token}/estimations",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "token",
@@ -17815,7 +18158,7 @@
     "/api/shared-carts/public/{token}/estimations/{estimationId}": {
       "delete": {
         "summary": "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "token",
@@ -17866,7 +18209,7 @@
     "/api/shared-carts/public/{token}/estimations/by-phone": {
       "get": {
         "summary": "GET /api/shared-carts/public/{token}/estimations/by-phone",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "token",
@@ -17905,7 +18248,7 @@
     "/api/shared-carts/public/{token}/contributions": {
       "post": {
         "summary": "POST /api/shared-carts/public/{token}/contributions",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "token",
@@ -17960,7 +18303,7 @@
     "/api/shared-carts/from-cart-items": {
       "post": {
         "summary": "POST /api/shared-carts/from-cart-items",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -18001,7 +18344,7 @@
     "/api/shared-carts/from-basket": {
       "post": {
         "summary": "POST /api/shared-carts/from-basket",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -18042,7 +18385,7 @@
     "/api/shared-carts/from-order": {
       "post": {
         "summary": "POST /api/shared-carts/from-order",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -18083,7 +18426,7 @@
     "/api/shared-carts/mine": {
       "get": {
         "summary": "GET /api/shared-carts/mine",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -18112,7 +18455,7 @@
     "/api/shared-carts/{id}": {
       "get": {
         "summary": "GET /api/shared-carts/{id}",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18155,7 +18498,7 @@
     "/api/shared-carts/{id}/as-cart-items": {
       "get": {
         "summary": "GET /api/shared-carts/{id}/as-cart-items",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18206,7 +18549,7 @@
     "/api/shared-carts/{id}/items": {
       "put": {
         "summary": "PUT /api/shared-carts/{id}/items",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18257,7 +18600,7 @@
     "/api/shared-carts/{id}/close": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/close",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18308,7 +18651,7 @@
     "/api/shared-carts/{id}/finalize": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/finalize",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18351,7 +18694,7 @@
     "/api/shared-carts/{id}/awaiting-choice/complete": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/awaiting-choice/complete",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18402,7 +18745,7 @@
     "/api/shared-carts/{id}/awaiting-choice/adjust": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/awaiting-choice/adjust",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18453,7 +18796,7 @@
     "/api/shared-carts/{id}/extend-window": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/extend-window",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18500,7 +18843,7 @@
     "/api/shared-carts/{id}/awaiting-choice/cancel": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/awaiting-choice/cancel",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18547,7 +18890,7 @@
     "/api/shared-carts/{id}/cancel": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/cancel",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18637,7 +18980,7 @@
     "/api/admin/shared-carts": {
       "get": {
         "summary": "GET /api/admin/shared-carts",
-        "x-route-file": "routes/shared-cart-refund-admin.js",
+        "x-route-file": "routes/shared-cart.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -18670,7 +19013,7 @@
     "/api/admin/shared-carts/refund-queue": {
       "get": {
         "summary": "GET /api/admin/shared-carts/refund-queue",
-        "x-route-file": "routes/shared-cart-refund-admin.js",
+        "x-route-file": "routes/shared-cart.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -18699,7 +19042,7 @@
     "/api/admin/shared-carts/{id}": {
       "get": {
         "summary": "GET /api/admin/shared-carts/{id}",
-        "x-route-file": "routes/shared-cart-refund-admin.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18738,7 +19081,7 @@
     "/api/admin/shared-carts/{id}/expire": {
       "post": {
         "summary": "POST /api/admin/shared-carts/{id}/expire",
-        "x-route-file": "routes/shared-cart-refund-admin.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18781,7 +19124,7 @@
     "/api/admin/shared-carts/{id}/extend": {
       "post": {
         "summary": "POST /api/admin/shared-carts/{id}/extend",
-        "x-route-file": "routes/shared-cart-refund-admin.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18824,7 +19167,7 @@
     "/api/admin/shared-carts/{id}/note": {
       "post": {
         "summary": "POST /api/admin/shared-carts/{id}/note",
-        "x-route-file": "routes/shared-cart-refund-admin.js",
+        "x-route-file": "routes/shared-cart.js",
         "parameters": [
           {
             "name": "id",
@@ -18863,7 +19206,7 @@
     "/api/shared-carts/stripe/webhook": {
       "post": {
         "summary": "POST /api/shared-carts/stripe/webhook",
-        "x-route-file": "routes/shared-cart-cash.js",
+        "x-route-file": "server.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -18892,7 +19235,7 @@
     "/api/health": {
       "get": {
         "summary": "GET /api/health",
-        "x-route-file": "routes/health.js",
+        "x-route-file": "server.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -18925,7 +19268,7 @@
     "/api/public/config": {
       "get": {
         "summary": "GET /api/public/config",
-        "x-route-file": "routes/public.js",
+        "x-route-file": "server.js",
         "responses": {
           "200": {
             "description": "Succès",
@@ -18947,231 +19290,6 @@
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/catalog/approval-queue": {
-      "get": {
-        "summary": "GET /api/admin/catalog/approval-queue",
-        "x-route-file": "routes/admin/catalog-approval.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
-                  "type": "object",
-                  "properties": {
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "description": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "category": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "fragility": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "emoji": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "price_kmf": {
-                            "type": "integer",
-                            "nullable": true
-                          },
-                          "stock": {
-                            "type": "integer"
-                          },
-                          "lifecycle_status": {
-                            "type": "string"
-                          },
-                          "content_source": {
-                            "type": "string"
-                          },
-                          "needs_review": {
-                            "type": "boolean"
-                          },
-                          "enrichment_confidence": {
-                            "type": "number",
-                            "nullable": true
-                          },
-                          "created_at": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    },
-                    "total": {
-                      "type": "integer"
-                    },
-                    "limit": {
-                      "type": "integer"
-                    },
-                    "offset": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "items",
-                    "total"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/catalog/approval-queue/{id}/approve": {
-      "post": {
-        "summary": "POST /api/admin/catalog/approval-queue/{id}/approve",
-        "x-route-file": "routes/admin/catalog-approval.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
-                  "type": "object",
-                  "properties": {
-                    "product": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "lifecycle_status": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "name",
-                        "lifecycle_status"
-                      ]
-                    },
-                    "published_at": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "product"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/catalog/approval-queue/{id}/reject": {
-      "post": {
-        "summary": "POST /api/admin/catalog/approval-queue/{id}/reject",
-        "x-route-file": "routes/admin/catalog-approval.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
-                  "type": "object",
-                  "properties": {
-                    "product_id": {
-                      "type": "string"
-                    },
-                    "rejected_at": {
-                      "type": "string"
-                    },
-                    "reason": {
-                      "type": "string",
-                      "nullable": true
-                    }
-                  },
-                  "required": [
-                    "product_id",
-                    "rejected_at"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/admin/catalog/approval-queue/{id}/override": {
-      "post": {
-        "summary": "POST /api/admin/catalog/approval-queue/{id}/override",
-        "x-route-file": "routes/admin/catalog-approval.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Schéma extrait depuis le handler — prouvé empiriquement (D-06 PR563)",
-                  "type": "object",
-                  "properties": {
-                    "product": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "lifecycle_status": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "name",
-                        "lifecycle_status"
-                      ]
-                    },
-                    "fields_applied": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "published_at": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "product"
-                  ]
-                }
-              }
-            }
           }
         }
       }

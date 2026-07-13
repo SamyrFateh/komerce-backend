@@ -35,7 +35,13 @@ module.exports = {
   service: "Navigation et affichage catalogue (listing, sous-categories, fiches produit, rendu cartes) — tout ce qui touche au parcours de decouverte des produits.",
 
   perimeter: {
-    in:  ['fichiers js/* annotes @domain catalog'],
+    in:  [
+      'fichiers js/* annotes @domain catalog',
+      'consommation du Product Detail Contract public',
+      'etat de selection SKU unique partage mobile/desktop',
+      'composition responsive mobile PDC-4 et desktop PDC-5 de la fiche produit',
+      'orchestration unique du fetch Product Detail pour la modal',
+    ],
     out: ['logique backend equivalente (repo komerce-backend, feature catalog)'],
   },
 
@@ -57,9 +63,6 @@ module.exports = {
       '../js/view-models/product-card-view-model.js',
     ],
     css: [
-      // Backfill gouvernance globale (governance/boutique-global-ownership) :
-      // hero.css pilote la section hero de la home, périmètre "catalogue vivant"
-      // déjà déclaré ci-dessus en perimeter.in.
       '../css/hero.css',
     ],
     tests: [
@@ -77,8 +80,6 @@ module.exports = {
 
   contract: {
     exposes: [],
-    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : exports JS
-    // internes, pas des routes HTTP.
     internalApi: [
       'b-catalog.js / setActiveCat / scrollToCategorySection',
       'shop-schema.js / getCategoryIcon / normalizeCategoryKey',
@@ -86,21 +87,25 @@ module.exports = {
       'b-subcat.js',
       'home-controller.js / syncRailActiveState / renderSubcatRail',
       'render-product-card.js / renderProductCard',
+      'modal-selection-model.js / createModalSelection / selectModalOption',
+      'b-modal-product-detail-bootstrap.js / setupProductDetailModal',
+      'b-modal-mobile-product.js / renderMobileProductDetail',
+      'b-modal-desktop-product.js / renderDesktopProductDetail',
     ],
     consumes: [
       'boutique — b-catalog.js, b-pager.js, b-subcat.js, b-product-open-contract.js importent b-bus.js, b-store.js, b-utils.js, b-scroll-owner.js, b-cart-core.js, b-cart.js, b-modal.js',
-      // Rangé ici et non dans exposes (audit 2026-07-06) : GET /api/categories est une
-      // route réelle du backend (routes/categories.js, feature catalog backend),
-      // appelée par shop-schema.js — ce n'est pas un endpoint exposé par la boutique.
       'catalog (backend) — shop-schema.js appelle GET /api/categories',
+      'catalog (backend) — b-modal-product-detail-bootstrap.js appelle GET /api/products/:id/detail une seule fois par ouverture produit',
     ],
   },
 
-  authority: 'boutique — tout changement de perimetre de ce domaine doit etre reflete ici.',
+  authority: 'boutique — modal-selection-model.js reste l owner unique de l etat de selection SKU ; b-modal-product-detail-bootstrap.js possede le chargement du contrat detail pour les deux viewports.',
 
   invariants: [
     'tout fichier js/* portant @domain catalog doit etre liste dans files.js de ce manifeste',
     'tout CSS/test propre a la home catalogue (hero.css, render-home-sections) doit etre liste dans files.css / files.tests',
+    'mobile et desktop consomment le meme Product Detail Contract et le meme modal-selection-model',
+    'aucun renderer responsive ne reconstruit un stock par axe',
+    'un seul fetch Product Detail et une seule creation de selection alimentent les deux compositions',
   ],
-
 };
