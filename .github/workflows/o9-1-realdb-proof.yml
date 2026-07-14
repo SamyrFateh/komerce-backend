@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'tests/integration/o9-1-critical-runtime-proofs.test.js'
+      - 'services/cancel-order-purchase-orders.js'
       - '.github/workflows/o9-1-realdb-proof.yml'
 
 jobs:
@@ -49,10 +50,21 @@ jobs:
         run: |
           psql "$DATABASE_URL" -f docs/db/railway-live-schema.sql
           node scripts/ci-migrate.js
-      - name: Run O9.1 REAL_DB proofs only
+      - name: Run complete O9.1 REAL_DB proof set
         run: |
           set -o pipefail
-          npx jest tests/integration/o9-1-critical-runtime-proofs.test.js --ci --runInBand --verbose 2>&1 | tee o9-1-realdb.log
+          {
+            for f in \
+              tests/integration/alerts-contract-red-proof.test.js \
+              tests/integration/alerts-contract-real-db.test.js \
+              tests/integration/stripe-payment-seams.test.js \
+              tests/integration/post-o8-payments-seams.test.js \
+              tests/integration/wallet-refund-seams.test.js \
+              tests/integration/o9-1-critical-runtime-proofs.test.js; do
+              echo "── $f ──"
+              npx jest "$f" --ci --forceExit --verbose || exit 1
+            done
+          } 2>&1 | tee o9-1-realdb.log
       - name: Upload O9.1 REAL_DB log
         if: always()
         uses: actions/upload-artifact@v4
