@@ -31,13 +31,22 @@ async function restorePriceHistory() {
   await pool.query('ALTER TABLE price_history_hidden RENAME TO price_history');
 }
 
-async function resetProductPrice() {
-  await pool.query('UPDATE products SET price_kmf = 10000 WHERE id = $1', [PRODUCT_ID]);
+async function resetFixtures() {
+  await pool.query(`
+    INSERT INTO users (id, full_name, email, role)
+    VALUES ($1, 'Admin TXG02', 'admin-txg02@komerce.test', 'admin')
+    ON CONFLICT (id) DO NOTHING
+  `, [USER_ID]);
+  await pool.query(`
+    INSERT INTO products (id, name, price_kmf)
+    VALUES ($1, 'Produit Test TXG02', 10000)
+    ON CONFLICT (id) DO UPDATE SET price_kmf = 10000
+  `, [PRODUCT_ID]);
   await pool.query('UPDATE pricing_strategies SET is_active = FALSE WHERE product_id = $1', [PRODUCT_ID]);
 }
 
 beforeAll(async () => {
-  await resetProductPrice();
+  await resetFixtures();
 });
 
 afterAll(async () => {
@@ -46,7 +55,7 @@ afterAll(async () => {
 
 describe('TXG-02 — applyStrategy price_history SAVEPOINT', () => {
   test('UPDATE prix et historique stratégie persistent malgré price_history indisponible', async () => {
-    await resetProductPrice();
+    await resetFixtures();
     const svc = loadService();
     await hidePriceHistory();
     try {
