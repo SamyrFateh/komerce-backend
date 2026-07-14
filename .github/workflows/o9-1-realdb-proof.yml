@@ -1,0 +1,53 @@
+name: O9.1 REAL_DB Proofs
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'tests/integration/o9-1-critical-runtime-proofs.test.js'
+      - '.github/workflows/o9-1-realdb-proof.yml'
+
+jobs:
+  o9-1-realdb:
+    name: O9.1 critical runtime proofs
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
+      NODE_ENV: test
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Load Railway schema + pending migrations
+        run: |
+          psql "$DATABASE_URL" -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+      - name: Run O9.1 REAL_DB proofs only
+        run: npx jest tests/integration/o9-1-critical-runtime-proofs.test.js --ci --runInBand --verbose
