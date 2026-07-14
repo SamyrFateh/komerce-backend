@@ -193,62 +193,42 @@ function verifySeal(parcelSealCode, providedSealCode) {
 
 // ─── DB Migration ─────────────────────────────────────────────────────────
 
+// LOT R2 — DEBT-05 : le DDL (CREATE TABLE parcel_events + index, ALTER
+// parcels ADD COLUMN, index unique external_code) vit désormais dans les
+// migrations versionnées migrations/014d_parcel_events_foundation.sql et
+// migrations/078_parcels_security_columns.sql (déjà correcte, laissée
+// telle quelle — les deux sont idempotentes et redondantes sans risque).
+// Cette fonction ne fait plus de DDL au boot : elle VÉRIFIE seulement
+// (lecture catalogue) et échoue bruyamment (throw) si le contrat n'est pas
+// là — non-fatal pour le process, attribuable via boot-guard.js, cf.
+// tests/unit/bootstrap-server-lifecycle.test.js.
 async function ensureSecurityTables(db) {
-  try {
-    // Table parcel_events — journal traçabilité complet
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS parcel_events (
-        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        parcel_id   UUID NOT NULL REFERENCES parcels(id) ON DELETE CASCADE,
-        event_type  TEXT NOT NULL,
-        actor_id    UUID REFERENCES users(id),
-        location    TEXT,
-        weight_kg   NUMERIC(6,2),
-        notes       TEXT,
-        metadata    JSONB,
-        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-
-    // Index pour requêtes fréquentes
-    await db.query(`
-      CREATE INDEX IF NOT EXISTS idx_parcel_events_parcel_id ON parcel_events(parcel_id);
-    `);
-    await db.query(`
-      CREATE INDEX IF NOT EXISTS idx_parcel_events_type ON parcel_events(event_type);
-    `);
-    await db.query(`
-      CREATE INDEX IF NOT EXISTS idx_parcel_events_created ON parcel_events(created_at);
-    `);
-
-    // Colonnes sécurité sur parcels
-    const cols = [
-      { name: 'external_code', type: 'TEXT', unique: true },
-      { name: 'seal_code', type: 'TEXT' },
-      { name: 'last_weight_kg', type: 'NUMERIC(6,2)' },
-      { name: 'last_weight_at', type: 'TIMESTAMPTZ' },
-      { name: 'last_weight_location', type: 'TEXT' },
-    ];
-
-    // DDL de bootstrap uniquement — idempotent via IF NOT EXISTS (FRESH-020)
-    // AUD-07: col.name and col.type come from the hardcoded cols array above — no user input
-    const ALLOWED_COL_NAMES = cols.map(c => c.name); // derived from literal array, not user input
-    for (const col of cols) {
-      if (!ALLOWED_COL_NAMES.includes(col.name)) throw new Error(`Colonne non autorisée: ${col.name}`); // AUD-07 safety net
-      await db.query(`ALTER TABLE parcels ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
-      log.debug({ column: col.name }, 'parcels security column ensured');
-    }
-
-    // Unique index on external_code (ignore nulls)
-    await db.query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_parcels_external_code
-      ON parcels(external_code) WHERE external_code IS NOT NULL
-    `);
-
-    log.info('Security tables ready');
-  } catch (err) {
-    log.error({ err }, 'Security migration error');
+  const { rows } = await db.query(`
+    SELECT
+      to_regclass('public.parcel_events')       IS NOT NULL AS parcel_events,
+      to_regclass('public.idx_parcels_external_code') IS NOT NULL AS idx_parcels_external_code,
+      EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'parcels' AND column_name = 'external_code') AS external_code,
+      EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'parcels' AND column_name = 'seal_code') AS seal_code,
+      EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'parcels' AND column_name = 'last_weight_kg') AS last_weight_kg,
+      EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'parcels' AND column_name = 'last_weight_at') AS last_weight_at,
+      EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'parcels' AND column_name = 'last_weight_location') AS last_weight_location
+  `);
+  const check = rows[0];
+  const missing = Object.entries(check).filter(([, ok]) => !ok).map(([k]) => k);
+  if (missing.length) {
+    throw new Error(
+      `[parcel-security] Schéma sécurité colis incomplet — objet(s) manquant(s) : ${missing.join(', ')}. ` +
+      `Vérifier que migrations/014d_parcel_events_foundation.sql et 078_parcels_security_columns.sql ` +
+      `ont bien tourné (node scripts/migrate.js) avant de servir du trafic colis.`
+    );
   }
+
+  log.info('Security tables verified (DDL owned by migrations/014d_parcel_events_foundation.sql + 078)');
 }
 
 /**

@@ -39,74 +39,38 @@ const walletReceiptService = require('./documents/wallet-receipt');
 const { markPaid } = require('./payment-service');
 const log = require('../utils/logger').child({ module: 'wallet-service' });
 
-// ── Schema Migration ────────────────────────────────────────────────────────
+// ── Schema Verification ─────────────────────────────────────────────────────
+// LOT R2 — DEBT-01 : le DDL (CREATE TABLE wallets/wallet_transactions/
+// wallet_credit_lots/wallet_consumptions + index + orders.wallet_applied_kmf)
+// vit désormais dans la migration versionnée migrations/014c_wallet_foundation.sql
+// (contrat reproduit exactement depuis docs/db/railway-live-schema.sql).
+// Cette fonction ne fait plus de DDL au boot : elle VÉRIFIE seulement (lecture
+// catalogue) et échoue bruyamment (throw) si le contrat n'est pas là —
+// non-fatal pour le process, attribuable via boot-guard.js, cf.
+// tests/unit/bootstrap-server-lifecycle.test.js.
 async function ensureWalletTables() {
   const client = await db.getClient();
   try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS wallets (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-        balance_kmf INTEGER NOT NULL DEFAULT 0,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS wallet_transactions (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        wallet_id UUID NOT NULL REFERENCES wallets(id),
-        type VARCHAR(20) NOT NULL CHECK (type IN ('credit','debit','reversal','expiration')),
-        amount_kmf INTEGER NOT NULL CHECK (amount_kmf > 0),
-        balance_after_kmf INTEGER NOT NULL,
-        reason VARCHAR(50) NOT NULL,
-        reference_id UUID,
-        idempotency_key VARCHAR(100),
-        note TEXT,
-        metadata JSONB DEFAULT '{}',
-        created_by UUID,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS wallet_credit_lots (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        wallet_id UUID NOT NULL REFERENCES wallets(id),
-        transaction_id UUID NOT NULL REFERENCES wallet_transactions(id),
-        original_amount_kmf INTEGER NOT NULL,
-        remaining_kmf INTEGER NOT NULL CHECK (remaining_kmf >= 0),
-        reason VARCHAR(50) NOT NULL,
-        source_order_id UUID,
-        expires_at TIMESTAMPTZ,
-        status VARCHAR(20) NOT NULL DEFAULT 'active'
-          CHECK (status IN ('active','used','expired','reversed')),
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS wallet_consumptions (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        order_id UUID NOT NULL,
-        credit_lot_id UUID NOT NULL REFERENCES wallet_credit_lots(id),
-        transaction_id UUID NOT NULL REFERENCES wallet_transactions(id),
-        amount_kmf INTEGER NOT NULL CHECK (amount_kmf > 0),
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_wallets_user
-        ON wallets(user_id);
-      CREATE INDEX IF NOT EXISTS idx_wtx_wallet
-        ON wallet_transactions(wallet_id);
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_wtx_idempotency
-        ON wallet_transactions(idempotency_key)
-        WHERE idempotency_key IS NOT NULL;
-      CREATE INDEX IF NOT EXISTS idx_wlots_wallet_active
-        ON wallet_credit_lots(wallet_id) WHERE status = 'active';
-      CREATE INDEX IF NOT EXISTS idx_wcons_order
-        ON wallet_consumptions(order_id);
-
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS wallet_applied_kmf INTEGER DEFAULT 0;
+    const { rows } = await client.query(`
+      SELECT
+        to_regclass('public.wallets')             IS NOT NULL AS wallets,
+        to_regclass('public.wallet_transactions')  IS NOT NULL AS wallet_transactions,
+        to_regclass('public.wallet_credit_lots')   IS NOT NULL AS wallet_credit_lots,
+        to_regclass('public.wallet_consumptions')  IS NOT NULL AS wallet_consumptions,
+        to_regclass('public.idx_wtx_idempotency')  IS NOT NULL AS idx_wtx_idempotency,
+        EXISTS (SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'orders' AND column_name = 'wallet_applied_kmf') AS wallet_applied_kmf
     `);
-    log.info('✅ Wallet tables ready');
-  } catch (err) {
-    log.error({ err }, '⚠️ Wallet migration error:');
+    const check = rows[0];
+    const missing = Object.entries(check).filter(([, ok]) => !ok).map(([k]) => k);
+    if (missing.length) {
+      throw new Error(
+        `[wallet-service] Schéma wallet incomplet — objet(s) manquant(s) : ${missing.join(', ')}. ` +
+        `Vérifier que migrations/014c_wallet_foundation.sql a bien tourné ` +
+        `(node scripts/migrate.js) avant de servir du trafic wallet.`
+      );
+    }
+    log.info('Wallet tables verified (DDL owned by migrations/014c_wallet_foundation.sql)');
   } finally {
     client.release();
   }

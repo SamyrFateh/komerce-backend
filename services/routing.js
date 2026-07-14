@@ -151,31 +151,38 @@ function resolveRoutingFromRelais(relais) {
   };
 }
 
-// ── Migration DB safe (additive, idempotente) ────────────────────────────────
-// Ajoute les colonnes routing si elles n'existent pas (DDL seule, rapide et sûre au boot)
+// ── Vérification de schéma (fail-closed) ─────────────────────────────────────
+// LOT R2 — DEBT-05 : le DDL additif (ALTER TABLE ... ADD COLUMN IF NOT EXISTS)
+// vit désormais dans migrations/014e_routing_columns_foundation.sql (l'ALTER
+// sous trafic live était justement le facteur de risque identifié le
+// 2026-07-09, cf. KOMERCE_SKIP_BOOT_ENSURE). Cette fonction ne fait plus
+// qu'une lecture catalogue (1 requête, rapide) et échoue bruyamment (throw)
+// si le contrat n'est pas là — non-fatal pour le process, attribuable via
+// boot-guard.js.
 
 async function ensureRoutingColumns(db) {
-  const migrations = [
-    // Relais : ajouter island_code standardisé
-    `ALTER TABLE relais ADD COLUMN IF NOT EXISTS island_code VARCHAR(20)`,
-    // Orders : ajouter les 3 champs routing (nullable = rétrocompatible)
-    `ALTER TABLE orders ADD COLUMN IF NOT EXISTS destination_island VARCHAR(20)`,
-    `ALTER TABLE orders ADD COLUMN IF NOT EXISTS routing_mode VARCHAR(20)`,
-    `ALTER TABLE orders ADD COLUMN IF NOT EXISTS transit_hub VARCHAR(20)`,
-  ];
-
-  for (const sql of migrations) {
-    try {
-      await db.query(sql);
-    } catch (e) {
-      // Colonne existe déjà ou autre erreur non critique
-      if (!e.message.includes('already exists')) {
-        log.warn(`[Routing] Migration warning: ${e.message}`);
-      }
-    }
+  const { rows } = await db.query(`
+    SELECT
+      EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'relais' AND column_name = 'island_code') AS island_code,
+      EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'orders' AND column_name = 'destination_island') AS destination_island,
+      EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'orders' AND column_name = 'routing_mode') AS routing_mode,
+      EXISTS (SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'orders' AND column_name = 'transit_hub') AS transit_hub
+  `);
+  const check = rows[0];
+  const missing = Object.entries(check).filter(([, ok]) => !ok).map(([k]) => k);
+  if (missing.length) {
+    throw new Error(
+      `[routing] Colonnes routing manquantes : ${missing.join(', ')}. ` +
+      `Vérifier que migrations/014e_routing_columns_foundation.sql a bien tourné ` +
+      `(node scripts/migrate.js) avant de servir du trafic routing.`
+    );
   }
 
-  log.info('✅ Routing columns ready');
+  log.info('Routing columns verified (DDL owned by migrations/014e_routing_columns_foundation.sql)');
 }
 
 /**

@@ -476,20 +476,44 @@ describe('createCreditFromCancel()', () => {
 // ensureWalletTables()
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('ensureWalletTables()', () => {
-  test('runs migration query and releases client on success', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+describe('ensureWalletTables() [LOT R2 — verification only, DDL owned by migrations/014c]', () => {
+  test('all objects present → resolves, releases client, no throw', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        wallets: true,
+        wallet_transactions: true,
+        wallet_credit_lots: true,
+        wallet_consumptions: true,
+        idx_wtx_idempotency: true,
+        wallet_applied_kmf: true,
+      }],
+    });
 
-    await walletService.ensureWalletTables();
-
+    await expect(walletService.ensureWalletTables()).resolves.toBeUndefined();
     expect(mockQuery).toHaveBeenCalledTimes(1);
     expect(mockClient.release).toHaveBeenCalled();
   });
 
-  test('swallows migration error and still releases client', async () => {
-    mockQuery.mockRejectedValueOnce(new Error('relation already exists'));
+  test('missing object → throws (fail-closed), but still releases client', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        wallets: true,
+        wallet_transactions: false, // manquant : migrations/014c pas jouée
+        wallet_credit_lots: true,
+        wallet_consumptions: true,
+        idx_wtx_idempotency: true,
+        wallet_applied_kmf: true,
+      }],
+    });
 
-    await expect(walletService.ensureWalletTables()).resolves.toBeUndefined();
+    await expect(walletService.ensureWalletTables()).rejects.toThrow(/wallet_transactions/);
+    expect(mockClient.release).toHaveBeenCalled();
+  });
+
+  test('client always released even on unexpected query error', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('connection refused'));
+
+    await expect(walletService.ensureWalletTables()).rejects.toThrow('connection refused');
     expect(mockClient.release).toHaveBeenCalled();
   });
 });

@@ -168,36 +168,49 @@ describe('parcel-security — verifySeal [S5]', () => {
   });
 });
 
-describe('parcel-security — ensureSecurityTables [AUD-07]', () => {
-  // FIX 2026-07-09 : ensureSecurityTables ne fait plus QUE le DDL (CREATE TABLE
-  // IF NOT EXISTS, index, ALTER TABLE ADD COLUMN), rapide et sûr au boot. Le
-  // backfill external_code (boucle SELECT+N×UPDATE, potentiellement lourd sous
-  // trafic live) est sorti dans backfillParcelExternalCodes — voir describe()
-  // dédié plus bas.
-  it('exécute le DDL idempotent, sans backfill', async () => {
-    const queries = [];
+describe('parcel-security — ensureSecurityTables [LOT R2 — verification only, DDL owned by migrations/014d + 078]', () => {
+  // LOT R2 : le DDL (CREATE TABLE parcel_events + index, ALTER TABLE
+  // parcels ADD COLUMN, index unique external_code) vit désormais dans
+  // migrations/014d_parcel_events_foundation.sql et
+  // migrations/078_parcels_security_columns.sql. Cette fonction ne fait
+  // plus qu'une lecture catalogue (1 requête) et échoue bruyamment (throw)
+  // si le contrat n'est pas là. Le backfill external_code reste inchangé,
+  // dans backfillParcelExternalCodes (describe() dédié plus bas).
+  it('tous les objets présents → resolves sans throw, une seule requête', async () => {
     const db = {
-      query: jest.fn(async (sql, params) => {
-        queries.push({ sql, params });
-        return { rows: [] };
+      query: jest.fn().mockResolvedValue({
+        rows: [{
+          parcel_events: true,
+          idx_parcels_external_code: true,
+          external_code: true,
+          seal_code: true,
+          last_weight_kg: true,
+          last_weight_at: true,
+          last_weight_location: true,
+        }],
       }),
     };
 
-    await ensureSecurityTables(db);
-
-    const alterCalls = queries.filter(q => q.sql.includes('ALTER TABLE parcels ADD COLUMN'));
-    expect(alterCalls.length).toBe(5); // exactement les 5 colonnes hardcodées
-    for (const c of alterCalls) {
-      expect(c.sql).toMatch(/^\s*ALTER TABLE parcels ADD COLUMN IF NOT EXISTS (external_code|seal_code|last_weight_kg|last_weight_at|last_weight_location)/);
-    }
-
-    const updateCalls = queries.filter(q => q.sql.includes('UPDATE parcels SET external_code'));
-    expect(updateCalls.length).toBe(0); // plus de backfill dans ensureSecurityTables
+    await expect(ensureSecurityTables(db)).resolves.toBeUndefined();
+    expect(db.query).toHaveBeenCalledTimes(1);
   });
 
-  it('ne throw jamais même si une requête de migration échoue (non-bloquant)', async () => {
-    const db = { query: jest.fn().mockRejectedValue(new Error('migration failed')) };
-    await expect(ensureSecurityTables(db)).resolves.toBeUndefined();
+  it('objet manquant → throw fail-closed, nomme l\'objet manquant', async () => {
+    const db = {
+      query: jest.fn().mockResolvedValue({
+        rows: [{
+          parcel_events: false, // manquant : migrations/014d pas jouée
+          idx_parcels_external_code: true,
+          external_code: true,
+          seal_code: true,
+          last_weight_kg: true,
+          last_weight_at: true,
+          last_weight_location: true,
+        }],
+      }),
+    };
+
+    await expect(ensureSecurityTables(db)).rejects.toThrow(/parcel_events/);
   });
 });
 

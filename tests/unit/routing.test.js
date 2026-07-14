@@ -103,44 +103,42 @@ describe('routing', () => {
     });
   });
 
-  describe('ensureRoutingColumns', () => {
-    // FIX 2026-07-09 : ensureRoutingColumns ne fait plus QUE le DDL additif
-    // (ALTER TABLE ... ADD COLUMN IF NOT EXISTS), rapide et sûr au boot. Le
-    // backfill de données (lourd, potentiellement bloquant sous trafic live)
-    // est sorti dans backfillRoutingData — voir describe() dédié plus bas.
-    it('execute les 4 migrations additives de facon idempotente, sans backfill', async () => {
-      const db = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
-
-      await ensureRoutingColumns(db);
-
-      const sqls = db.query.mock.calls.map(call => String(call[0]));
-      expect(sqls[0]).toContain('ALTER TABLE relais ADD COLUMN IF NOT EXISTS island_code');
-      expect(sqls[1]).toContain('ALTER TABLE orders ADD COLUMN IF NOT EXISTS destination_island');
-      expect(sqls[2]).toContain('ALTER TABLE orders ADD COLUMN IF NOT EXISTS routing_mode');
-      expect(sqls[3]).toContain('ALTER TABLE orders ADD COLUMN IF NOT EXISTS transit_hub');
-      expect(db.query).toHaveBeenCalledTimes(4);
-    });
-
-    it('ignore les erreurs already exists et continue', async () => {
+  describe('ensureRoutingColumns [LOT R2 — verification only, DDL owned by migrations/014e]', () => {
+    // LOT R2 : le DDL additif (ALTER TABLE ... ADD COLUMN IF NOT EXISTS) vit
+    // désormais dans migrations/014e_routing_columns_foundation.sql (l'ALTER
+    // sous trafic live était justement le facteur de risque identifié le
+    // 2026-07-09, cf. KOMERCE_SKIP_BOOT_ENSURE). Cette fonction ne fait plus
+    // qu'une lecture catalogue (1 requête, rapide) et échoue bruyamment
+    // (throw) si le contrat n'est pas là.
+    it('toutes les colonnes présentes → resolves sans throw', async () => {
       const db = {
-        query: jest.fn()
-          .mockRejectedValueOnce(new Error('column already exists'))
-          .mockResolvedValue({ rows: [], rowCount: 0 }),
+        query: jest.fn().mockResolvedValue({
+          rows: [{
+            island_code: true,
+            destination_island: true,
+            routing_mode: true,
+            transit_hub: true,
+          }],
+        }),
       };
 
       await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
-      expect(db.query).toHaveBeenCalledTimes(4);
+      expect(db.query).toHaveBeenCalledTimes(1);
     });
 
-    it('logue un warning pour une erreur de migration autre que already exists', async () => {
+    it('colonne manquante → throw fail-closed, nomme la colonne', async () => {
       const db = {
-        query: jest.fn()
-          .mockRejectedValueOnce(new Error('connection refused'))
-          .mockResolvedValue({ rows: [], rowCount: 0 }),
+        query: jest.fn().mockResolvedValue({
+          rows: [{
+            island_code: true,
+            destination_island: false, // manquante : migrations/014e pas jouée
+            routing_mode: true,
+            transit_hub: true,
+          }],
+        }),
       };
 
-      await expect(ensureRoutingColumns(db)).resolves.toBeUndefined();
-      expect(db.query).toHaveBeenCalledTimes(4);
+      await expect(ensureRoutingColumns(db)).rejects.toThrow(/destination_island/);
     });
   });
 
