@@ -50,4 +50,13 @@ jobs:
           psql "$DATABASE_URL" -f docs/db/railway-live-schema.sql
           node scripts/ci-migrate.js
       - name: Run O9.1 REAL_DB proofs only
-        run: npx jest tests/integration/o9-1-critical-runtime-proofs.test.js --ci --runInBand --verbose
+        run: |
+          set -o pipefail
+          npx jest tests/integration/o9-1-critical-runtime-proofs.test.js --ci --runInBand --verbose 2>&1 | tee o9-1-realdb.log
+      - name: Upload O9.1 REAL_DB log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: o9-1-realdb-log-${{ github.sha }}
+          path: o9-1-realdb.log
+          if-no-files-found: error
