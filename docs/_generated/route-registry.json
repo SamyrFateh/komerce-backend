@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T11:02:27.272Z",
+  "generatedAt": "2026-07-14T14:33:02.494Z",
   "generator": "scripts/gen-route-registry.js",
   "count": 475,
   "routes": [
@@ -120,9 +120,7 @@
       "localPath": "/catalog/approval-queue",
       "routeFile": "routes/admin/catalog-approval.js",
       "mountedFrom": [
-        "bootstrap/api-routes.js",
-        "routes/admin.js",
-        "routes/admin/index.js"
+        "bootstrap/api-routes.js"
       ]
     },
     {
@@ -132,9 +130,7 @@
       "localPath": "/catalog/approval-queue/:id/approve",
       "routeFile": "routes/admin/catalog-approval.js",
       "mountedFrom": [
-        "bootstrap/api-routes.js",
-        "routes/admin.js",
-        "routes/admin/index.js"
+        "bootstrap/api-routes.js"
       ]
     },
     {
@@ -144,9 +140,7 @@
       "localPath": "/catalog/approval-queue/:id/override",
       "routeFile": "routes/admin/catalog-approval.js",
       "mountedFrom": [
-        "bootstrap/api-routes.js",
-        "routes/admin.js",
-        "routes/admin/index.js"
+        "bootstrap/api-routes.js"
       ]
     },
     {
@@ -156,9 +150,7 @@
       "localPath": "/catalog/approval-queue/:id/reject",
       "routeFile": "routes/admin/catalog-approval.js",
       "mountedFrom": [
-        "bootstrap/api-routes.js",
-        "routes/admin.js",
-        "routes/admin/index.js"
+        "bootstrap/api-routes.js"
       ]
     },
     {
