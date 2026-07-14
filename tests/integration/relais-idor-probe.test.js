@@ -203,5 +203,66 @@ if (!hasIntegrationEnv) {
       expect(res.status).not.toBe(401);
       expect(res.status).not.toBe(403);
     });
+
+    // ── RC-SEC / XREL-01, XREL-02 ──────────────────────────────────────
+    describe('RC-SEC — routes/parcels.js weight & verify-seal', () => {
+      let parcelOfRelaisA;
+
+      beforeAll(async () => {
+        const { rows: [parcel] } = await db.query(
+          `INSERT INTO parcels (order_id, reference, status, seal_code)
+           VALUES ($1, $2, 'preparation', 'SEAL-ITEST-01') RETURNING id`,
+          [orderOfRelaisA.id, `ITEST-PCL-SEC-${Date.now()}`]
+        );
+        parcelOfRelaisA = parcel;
+      });
+
+      afterAll(async () => {
+        try {
+          await db.query(`DELETE FROM parcels WHERE id = $1`, [parcelOfRelaisA.id]);
+          await db.query(`DELETE FROM pickup_verify_attempts WHERE token LIKE 'seal:%'`);
+        } catch (_) {}
+      });
+
+      test('[XREL-01] agent_relais B ne peut pas peser un colis d\'une commande du relais A (403)', async () => {
+        const res = await request(app)
+          .post(`/api/parcels/${parcelOfRelaisA.id}/weight`)
+          .set(...bearer(agentB.token))
+          .send({ weight_kg: 3.5 });
+
+        expect(res.status).toBe(403);
+      });
+
+      test('[XREL-02] agent_relais B ne peut pas vérifier le scellé d\'un colis d\'une commande du relais A (403)', async () => {
+        const res = await request(app)
+          .post(`/api/parcels/${parcelOfRelaisA.id}/verify-seal`)
+          .set(...bearer(agentB.token))
+          .send({ seal_code: 'SEAL-ITEST-01' });
+
+        expect(res.status).toBe(403);
+      });
+
+      test('contrôle positif — agent_relais A (propriétaire) peut peser SON colis', async () => {
+        const res = await request(app)
+          .post(`/api/parcels/${parcelOfRelaisA.id}/weight`)
+          .set(...bearer(agentA.token))
+          .send({ weight_kg: 3.5 });
+
+        expect(res.status).not.toBe(401);
+        expect(res.status).not.toBe(403);
+      });
+
+      test('[XREL-02] rate-limit — N tentatives de vérification de scellé bloquent la N+1ème (429)', async () => {
+        let lastStatus;
+        for (let i = 0; i < 12; i++) {
+          const res = await request(app)
+            .post(`/api/parcels/${parcelOfRelaisA.id}/verify-seal`)
+            .set(...bearer(agentA.token))
+            .send({ seal_code: 'MAUVAIS-CODE' });
+          lastStatus = res.status;
+        }
+        expect(lastStatus).toBe(429);
+      });
+    });
   });
 }

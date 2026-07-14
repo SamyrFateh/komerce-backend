@@ -100,7 +100,7 @@ describe('POST /:id/qr-token — nominal', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(typeof res.body.token).toBe('string');
-    expect(res.body.token).toHaveLength(24);
+    expect(res.body.token).toHaveLength(48); // [TOK-01] crypto.randomBytes(24).toString('hex')
     expect(res.body.qr_payload).toMatchObject({
       orderId: 'order-1',
       reference: 'ORD-1',
@@ -124,6 +124,45 @@ describe('POST /:id/qr-token — nominal', () => {
     mockQuery.mockRejectedValueOnce(new Error('db down'));
     const res = await request(app).post('/api/orders/order-1/qr-token');
     expect(res.status).toBe(500);
+  });
+});
+
+// [TOK-01] Preuve : token QR = CSPRNG pur, non dérivé des inputs connus.
+// Le fail-closed QR_SECRET au boot est déjà prouvé par
+// tests/unit/bootstrap-env.test.js (préexistant, inchangé) — non dupliqué ici.
+describe('POST /:id/qr-token — TOK-01 (entropie token)', () => {
+  it('génère un token différent à chaque appel pour la même commande (non-déterministe)', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available', relais_id: 'relais-A', reference: 'ORD-1' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    getRule.mockResolvedValue(48);
+    const res1 = await request(app).post('/api/orders/order-1/qr-token');
+
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available', relais_id: 'relais-A', reference: 'ORD-1' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    getRule.mockResolvedValue(48);
+    const res2 = await request(app).post('/api/orders/order-1/qr-token');
+
+    expect(res1.body.token).not.toBe(res2.body.token);
+  });
+
+  it('le token ne dépend pas de QR_SECRET au runtime (génération indépendante du secret)', async () => {
+    const originalSecret = process.env.QR_SECRET;
+    try {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available', relais_id: 'relais-A', reference: 'ORD-1' }] })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+      getRule.mockResolvedValue(48);
+      process.env.QR_SECRET = 'un_autre_secret_completement_different_xx';
+      const res = await request(app).post('/api/orders/order-1/qr-token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.token).toHaveLength(48);
+      expect(res.body.token).toMatch(/^[0-9a-f]{48}$/);
+    } finally {
+      process.env.QR_SECRET = originalSecret;
+    }
   });
 });
 

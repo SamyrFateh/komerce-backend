@@ -21,13 +21,13 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 757,
-    "edges": 4289,
+    "edges": 4290,
     "dbTables": 112,
     "doctrines": 149,
     "impactAreas": 125,
     "unresolvedCodeEdges": 410,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 65
+    "multiWriterTables": 66
   },
   "byDomain": {
     "infrastructure": 20,
@@ -7335,7 +7335,8 @@
       "dbWrite": [
         "orders",
         "parcel_items",
-        "parcels"
+        "parcels",
+        "pickup_verify_attempts"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -17825,6 +17826,11 @@
       "table": "parcel_events"
     },
     {
+      "id": "db:pickup_verify_attempts",
+      "type": "db-table",
+      "table": "pickup_verify_attempts"
+    },
+    {
       "id": "db:stripe_events_processed",
       "type": "db-table",
       "table": "stripe_events_processed"
@@ -17898,11 +17904,6 @@
       "id": "db:product_sku_media",
       "type": "db-table",
       "table": "product_sku_media"
-    },
-    {
-      "id": "db:pickup_verify_attempts",
-      "type": "db-table",
-      "table": "pickup_verify_attempts"
     },
     {
       "id": "db:unsold_items",
@@ -29698,6 +29699,12 @@
       "to": "db:parcels",
       "type": "db-write",
       "label": "parcels"
+    },
+    {
+      "from": "routes/parcels.js",
+      "to": "db:pickup_verify_attempts",
+      "type": "db-write",
+      "label": "pickup_verify_attempts"
     },
     {
       "from": "routes/parcels.js",
@@ -52385,7 +52392,8 @@
       "dbWrite": [
         "orders",
         "parcel_items",
-        "parcels"
+        "parcels",
+        "pickup_verify_attempts"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -52401,6 +52409,7 @@
         "db:parcel_events",
         "db:parcel_items",
         "db:parcels",
+        "db:pickup_verify_attempts",
         "db:products",
         "db:relais",
         "db:users",
@@ -62867,6 +62876,14 @@
       "writers": [
         "services/payment-paypal-events.js",
         "services/payment-paypal.js"
+      ]
+    },
+    {
+      "table": "pickup_verify_attempts",
+      "writerCount": 2,
+      "writers": [
+        "routes/parcels.js",
+        "routes/tracking.js"
       ]
     },
     {

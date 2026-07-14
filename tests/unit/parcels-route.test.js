@@ -307,9 +307,45 @@ describe('routes/parcels', () => {
       expect(res.body.anomaly).toEqual({ message: 'écart suspect' });
       expect(parcelSecurity.logParcelEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event_type: 'anomaly_detected' }));
     });
+
+    // ── XREL-01 : garde cross-relais ────────────────────────────────────
+    test('[XREL-01] agent_relais sur colis d\'une commande d\'un AUTRE relais → 403, UPDATE jamais exécuté', async () => {
+      mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, last_weight_kg: 3.0, external_code: 'EXT-1', relais_id: 'relais-B' }] });
+
+      const res = await request(buildApp())
+        .post(`/api/parcels/${VALID_UUID_1}/weight`)
+        .send({ weight_kg: 3.2 });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toMatch(/relais/);
+      // Une seule requête (la lecture) — le garde bloque AVANT tout UPDATE.
+      expect(mockDbQuery).toHaveBeenCalledTimes(1);
+    });
+
+    test('[XREL-01] agent_relais sur colis de SON PROPRE relais → autorisé (continue)', async () => {
+      mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, last_weight_kg: 3.0, external_code: 'EXT-1', relais_id: 'relais-A' }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const res = await request(buildApp())
+        .post(`/api/parcels/${VALID_UUID_1}/weight`)
+        .send({ weight_kg: 3.2 });
+
+      expect(res.status).toBe(200);
+    });
   });
 
   describe('POST /:id/verify-seal', () => {
+    // Helper : mock des 2 requêtes de rate-limit XREL-02 (DELETE puis INSERT..RETURNING)
+    // en plus de la lecture du colis, dans l'ordre où le handler les émet.
+    function mockRateLimitOk() {
+      mockDbQuery
+        .mockResolvedValueOnce({}) // DELETE FROM pickup_verify_attempts (cleanup)
+        .mockResolvedValueOnce({ rows: [{ count: 1, reset_at: new Date(Date.now() + 15 * 60 * 1000) }] }); // INSERT..RETURNING
+    }
+
     test('400 si seal_code absent', async () => {
       const res = await request(buildApp()).post(`/api/parcels/${VALID_UUID_1}/verify-seal`).send({});
       expect(res.status).toBe(400);
@@ -324,7 +360,8 @@ describe('routes/parcels', () => {
     });
 
     test('scellé valide → 200', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1' }] });
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: null }] });
+      mockRateLimitOk();
       parcelSecurity.verifySeal.mockReturnValueOnce({ valid: true });
 
       const res = await request(buildApp())
@@ -336,7 +373,8 @@ describe('routes/parcels', () => {
     });
 
     test('scellé invalide (mismatch) → 422 avec message alerte', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1' }] });
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: null }] });
+      mockRateLimitOk();
       parcelSecurity.verifySeal.mockReturnValueOnce({ valid: false, reason: 'seal_mismatch' });
 
       const res = await request(buildApp())
@@ -348,7 +386,8 @@ describe('routes/parcels', () => {
     });
 
     test('scellé manquant → 422 avec message générique', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: null, external_code: 'EXT-1' }] });
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: null, external_code: 'EXT-1', relais_id: null }] });
+      mockRateLimitOk();
       parcelSecurity.verifySeal.mockReturnValueOnce({ valid: false, reason: 'seal_missing' });
 
       const res = await request(buildApp())
@@ -357,6 +396,51 @@ describe('routes/parcels', () => {
 
       expect(res.status).toBe(422);
       expect(res.body.message).toMatch(/manquant/);
+    });
+
+    // ── XREL-02 : garde cross-relais ────────────────────────────────────
+    test('[XREL-02] agent_relais sur colis d\'une commande d\'un AUTRE relais → 403, verifySeal jamais appelé', async () => {
+      mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: 'relais-B' }] });
+
+      const res = await request(buildApp())
+        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
+        .send({ seal_code: 'SEAL-1' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toMatch(/relais/);
+      expect(parcelSecurity.verifySeal).not.toHaveBeenCalled();
+      // Le rate-limit ne doit même pas être consulté après un 403 IDOR.
+      expect(mockDbQuery).toHaveBeenCalledTimes(1);
+    });
+
+    test('[XREL-02] agent_relais sur colis de SON PROPRE relais → autorisé (continue)', async () => {
+      mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
+      mockDbQuery.mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: 'relais-A' }] });
+      mockRateLimitOk();
+      parcelSecurity.verifySeal.mockReturnValueOnce({ valid: true });
+
+      const res = await request(buildApp())
+        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
+        .send({ seal_code: 'SEAL-1' });
+
+      expect(res.status).toBe(200);
+    });
+
+    // ── XREL-02 : rate-limit (oracle de scellé) ─────────────────────────
+    test('[XREL-02] trop de tentatives → 429, verifySeal jamais appelé', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [{ id: VALID_UUID_1, seal_code: 'SEAL-1', external_code: 'EXT-1', relais_id: null }] })
+        .mockResolvedValueOnce({}) // DELETE cleanup
+        .mockResolvedValueOnce({ rows: [{ count: 999, reset_at: new Date(Date.now() + 5 * 60 * 1000) }] }); // limite dépassée
+
+      const res = await request(buildApp())
+        .post(`/api/parcels/${VALID_UUID_1}/verify-seal`)
+        .send({ seal_code: 'SEAL-1' });
+
+      expect(res.status).toBe(429);
+      expect(res.body.retryAfter).toBeGreaterThan(0);
+      expect(parcelSecurity.verifySeal).not.toHaveBeenCalled();
     });
   });
 

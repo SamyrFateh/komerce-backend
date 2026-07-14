@@ -14,12 +14,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 757
-- Edges: 4289
+- Edges: 4290
 - DB tables: 112
 - Doctrines: 149
 - Impact areas: 125
 - Unresolved code edges: 410
-- Tables multi-écrivains directs (>=2): 65
+- Tables multi-écrivains directs (>=2): 66
 - Avertissements db-write / db-write-via en chevauchement: 0
 
 ## Domains
@@ -572,13 +572,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - parcel_events: 2 écrivains directs — services/parcel-security.js, utils/parcelSync.js
 - partners: 2 écrivains directs — routes/admin/partners.js, routes/admin/system.js
 - paypal_events_processed: 2 écrivains directs — services/payment-paypal-events.js, services/payment-paypal.js
+- pickup_verify_attempts: 2 écrivains directs — routes/parcels.js, routes/tracking.js
 - product_sku_media: 2 écrivains directs — routes/sourcing-scanner.js, services/catalog-promotion.js
 - product_suppliers: 2 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js
 - refunds: 2 écrivains directs — services/refund-service.js, utils/refunds.js
 - relais: 2 écrivains directs — routes/admin/system.js, services/routing.js
 - revoked_tokens: 2 écrivains directs — bootstrap/crons.js, routes/auth.js
 - signals: 2 écrivains directs — routes/signals.js, services/signal-service.js
-- sourcing_candidate_events: 2 écrivains directs — routes/sourcing-scanner.js, services/suppliers/catalog-import-orchestrator.js
 
 ## DB Write / Write-Via Overlap Warnings
 

@@ -73,15 +73,12 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
       });
     }
 
-    // Générer le token : SHA256(orderId + relaisId + timestamp + QR_SECRET)
-    // QR_SECRET est obligatoire au démarrage via bootstrap/env.js (requiredEnv).
-    const secret    = process.env.QR_SECRET;
-    const timestamp = Date.now().toString();
-    const token     = crypto
-      .createHash('sha256')
-      .update(`${id}-${order.relais_id || 'NO_RELAIS'}-${timestamp}-${secret}`)
-      .digest('hex')
-      .slice(0, 24); // 24 caractères hex = suffisamment unique et lisible
+    // [TOK-01] Token QR = CSPRNG pur (crypto.randomBytes), non dérivé des
+    // inputs (id/relaisId/timestamp/QR_SECRET). QR_SECRET reste requis au
+    // boot (fail-closed via bootstrap/env.js, inchangé) mais n'entre plus
+    // dans le calcul du token — le token est stocké puis relu par égalité
+    // stricte (WHERE qr_token = $1), jamais recalculé.
+    const token = crypto.randomBytes(24).toString('hex'); // 48 car. hex
 
     const qrHours   = await getRule('QR_EXPIRATION_HOURS', 48);
     const expiration = new Date(Date.now() + qrHours * 60 * 60 * 1000);

@@ -21,6 +21,7 @@
 // routes/shares.js — v2 (event shares + contributions)
 const express = require('express');
 const router  = express.Router();
+const crypto  = require('crypto');
 const db      = require('../db');
 const { sharedCartLimiter } = require('../middleware/rate-limit');
 const log = require('../utils/logger').child({ module: 'shares' });
@@ -28,10 +29,14 @@ const log = require('../utils/logger').child({ module: 'shares' });
 // ── DDL géré par migrations/075_hub_shares_collective_schema.sql ────────────
 
 /* ── helpers ─────────────────────────────────────── */
-function genToken(len = 8) {
+// [TOK-02] CSPRNG (crypto.randomBytes) au lieu de Math.random() —
+// alphabet base58-like (ambiguïtés 0/O/I/l retirées), longueur ≥ 12.
+// share_token est VARCHAR(20) (migrations/057) : 12 <= 20, compatible.
+function genToken(len = 12) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const bytes = crypto.randomBytes(len);
   let t = '';
-  for (let i = 0; i < len; i++) t += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < len; i++) t += chars[bytes[i] % chars.length];
   return t;
 }
 
@@ -90,7 +95,7 @@ router.post('/', sharedCartLimiter, async (req, res, next) => {
     let token;
     let attempts = 0;
     while (attempts < 5) {
-      token = genToken(8);
+      token = genToken(12);
       const { rowCount } = await db.query(
         'SELECT 1 FROM cart_shares WHERE share_token = $1', [token]
       );
@@ -270,4 +275,5 @@ router.patch('/:token/contributions/:id', async (req, res, next) => {
   }
 });
 
+router.genToken = genToken; // exposé pour preuve TOK-02 (CSPRNG, cf. tests/unit/shares-token-entropy.test.js)
 module.exports = router;

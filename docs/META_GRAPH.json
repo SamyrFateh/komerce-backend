@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-14T11:17:05.029Z",
+  "generatedAt": "2026-07-14T12:06:05.240Z",
   "sources": {
     "backend": {
       "nodes": 757
@@ -375,7 +375,8 @@
         "parcels",
         "products",
         "relais",
-        "users"
+        "users",
+        "pickup_verify_attempts"
       ]
     },
     "/api/parcels/optimize": {
@@ -397,7 +398,8 @@
         "parcels",
         "products",
         "relais",
-        "users"
+        "users",
+        "pickup_verify_attempts"
       ]
     },
     "/api/hub/scan": {
@@ -1948,6 +1950,15 @@
         "ProblemsView",
         "TransitaireView"
       ]
+    },
+    "pickup_verify_attempts": {
+      "routes": [
+        "routes/parcels.js"
+      ],
+      "boutique": [
+        "komerce-api"
+      ],
+      "dashboards": []
     },
     "product_suppliers": {
       "routes": [

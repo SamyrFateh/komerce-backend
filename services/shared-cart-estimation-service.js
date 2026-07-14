@@ -263,6 +263,19 @@ async function upsertEstimation(token, body = {}) {
  * Supprime une estimation (DELETE réel, pas de soft-status 'withdrawn').
  * Guard : statut cart === 'open' requis.
  * Guard optionnel : vérification du téléphone si fourni dans le body.
+ *
+ * [IDOR-01] Modèle d'autorisation retenu — documenté explicitement (pas de
+ * changement de comportement) : la possession du `token` du panier partagé
+ * (share URL) vaut droit d'édition sur TOUTES les estimations de ce panier,
+ * y compris celles d'autres participants. `participant_phone` est une
+ * vérification best-effort optionnelle, PAS une authentification — si le
+ * body ne le fournit pas, la suppression réussit quand même (`phoneClause`
+ * vide). C'est cohérent avec le reste du flux public non-authentifié
+ * (shared_carts n'a pas de notion de compte utilisateur par participant).
+ * Rendre `participant_phone` obligatoire casserait le flux existant pour
+ * les participants qui ne l'ont jamais renseigné (cas déjà couvert par les
+ * tests "sans phone"). Risque résiduel accepté : P3, cohérent avec le
+ * modèle "lien = droit d'édition" du panier partagé dans son ensemble.
  */
 async function deleteEstimation(token, estimationId, body = {}) {
   return tx(async (client) => {

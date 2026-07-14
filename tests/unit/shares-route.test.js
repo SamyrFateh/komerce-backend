@@ -72,7 +72,7 @@ describe('routes/shares', () => {
       expect(res.status).toBe(200);
       expect(res.body.total_kmf).toBe(2500);
       expect(res.body.type).toBe('simple');
-      expect(res.body.token).toHaveLength(8);
+      expect(res.body.token).toHaveLength(12); // [TOK-02] genToken CSPRNG, len>=12
       expect(res.body.redirect).toBe(`/boutique/?share=${res.body.token}`);
 
       const insertCall = mockDbQuery.mock.calls[1];

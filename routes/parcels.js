@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, parcel_events, parcel_items, parcels, products, relais, users
- * @db-write      orders, parcel_items, parcels
+ * @db-write      orders, parcel_items, parcels, pickup_verify_attempts
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics
@@ -45,6 +45,7 @@
 
 const express = require('express');
 const router  = express.Router();
+const crypto  = require('crypto');
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
@@ -58,6 +59,52 @@ const { PARCEL_STATUSES } = require('../utils/parcels');
 // Actif phase Avion uniquement — à réécrire à neuf si ce besoin revient.
 const { evaluateOrderParcelLinkRules } = require('../utils/orderParcelLinkRules');
 const log = require('../utils/logger').child({ module: 'parcels' });
+
+// [XREL-02] Rate-limit vérification scellé — réutilise la table
+// pickup_verify_attempts (migrations existantes) sans toucher à
+// routes/tracking.js (hors périmètre RC-SEC). Clé = hash(parcelId + IP),
+// token stocké = `seal:<parcelId>` pour distinguer du flux retrait client.
+const SEAL_VERIFY_LIMIT = 10;
+const SEAL_VERIFY_WINDOW_MINUTES = 15;
+
+function sealVerifyClientIp(req) {
+  const raw = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+  return String(raw).split(',')[0].trim() || 'unknown';
+}
+
+function sealVerifyAttemptKey(parcelId, req) {
+  const ipHash = crypto.createHash('sha256').update(sealVerifyClientIp(req)).digest('hex');
+  return crypto.createHash('sha256').update(`seal:${parcelId}:${ipHash}`).digest('hex');
+}
+
+async function checkSealVerifyLimit(parcelId, req) {
+  const key = sealVerifyAttemptKey(parcelId, req);
+  const token = `seal:${parcelId}`;
+  const ipHash = crypto.createHash('sha256').update(sealVerifyClientIp(req)).digest('hex');
+
+  await db.query('DELETE FROM pickup_verify_attempts WHERE reset_at <= NOW()');
+
+  const { rows: [entry] } = await db.query(`
+    INSERT INTO pickup_verify_attempts (attempt_key, token, ip_hash, count, reset_at)
+    VALUES ($1, $2, $3, 1, NOW() + ($4 || ' minutes')::interval)
+    ON CONFLICT (attempt_key)
+    DO UPDATE SET
+      count = CASE
+        WHEN pickup_verify_attempts.reset_at <= NOW() THEN 1
+        ELSE pickup_verify_attempts.count + 1
+      END,
+      reset_at = CASE
+        WHEN pickup_verify_attempts.reset_at <= NOW()
+          THEN NOW() + ($4 || ' minutes')::interval
+        ELSE pickup_verify_attempts.reset_at
+      END,
+      updated_at = NOW()
+    RETURNING count, reset_at
+  `, [key, token, ipHash, SEAL_VERIFY_WINDOW_MINUTES]);
+
+  const retryAfter = Math.max(1, Math.ceil((new Date(entry.reset_at).getTime() - Date.now()) / 1000));
+  return { exceeded: entry.count > SEAL_VERIFY_LIMIT, retryAfter, count: entry.count };
+}
 
 // [S1-S5] Sécurité logistique
 const {
@@ -305,12 +352,22 @@ router.post('/:id/weight', ...adminAgentRelais, async (req, res, next) => {
     }
 
     const parcelCheck = await db.query(
-      'SELECT id, last_weight_kg, last_weight_location, external_code FROM parcels WHERE id = $1',
+      `SELECT p.id, p.last_weight_kg, p.last_weight_location, p.external_code, o.relais_id
+       FROM parcels p LEFT JOIN orders o ON o.id = p.order_id
+       WHERE p.id = $1`,
       [req.params.id]
     );
     if (!parcelCheck.rows.length) return res.status(404).json({ error: 'Colis introuvable' });
 
     const parcel = parcelCheck.rows[0];
+
+    // [XREL-01] IDOR cross-relais : un agent_relais ne peut peser que les
+    // colis d'une commande de SON relais (même pattern que
+    // services/parcel-operations.js:381).
+    if (req.user.role === 'agent_relais' && String(parcel.relais_id) !== String(req.user.relais_id)) {
+      log.warn(`[IDOR] bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → parcel ${parcel.id} (order relais ${parcel.relais_id})`);
+      return res.status(403).json({ error: "Ce colis n'appartient pas à une commande de votre relais" });
+    }
 
     // [S5] Vérifier l'intégrité poids
     const anomaly = checkWeightIntegrity(parcel.last_weight_kg, weight_kg);
@@ -351,12 +408,27 @@ router.post('/:id/verify-seal', ...adminAgentRelais, async (req, res, next) => {
     if (!providedSeal) return res.status(400).json({ error: 'seal_code requis' });
 
     const parcelCheck = await db.query(
-      'SELECT id, seal_code, external_code FROM parcels WHERE id = $1',
+      `SELECT p.id, p.seal_code, p.external_code, o.relais_id
+       FROM parcels p LEFT JOIN orders o ON o.id = p.order_id
+       WHERE p.id = $1`,
       [req.params.id]
     );
     if (!parcelCheck.rows.length) return res.status(404).json({ error: 'Colis introuvable' });
 
     const parcel = parcelCheck.rows[0];
+
+    // [XREL-02] IDOR cross-relais : même garde que /:id/weight.
+    if (req.user.role === 'agent_relais' && String(parcel.relais_id) !== String(req.user.relais_id)) {
+      log.warn(`[IDOR] bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → parcel ${parcel.id} (order relais ${parcel.relais_id})`);
+      return res.status(403).json({ error: "Ce colis n'appartient pas à une commande de votre relais" });
+    }
+
+    // [XREL-02] Rate-limit — le scellé est un oracle : limiter les tentatives.
+    const limit = await checkSealVerifyLimit(parcel.id, req);
+    if (limit.exceeded) {
+      return res.status(429).json({ error: 'Trop de tentatives de vérification', retryAfter: limit.retryAfter });
+    }
+
     const result = verifySeal(parcel.seal_code, providedSeal);
 
     // Logger la vérification
