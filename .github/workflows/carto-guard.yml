@@ -25,17 +25,22 @@ jobs:
           # Les CSS Boutique, leurs manifests feature et leur métadonnée de bundling
           # sont gouvernés par les gates Feature First / CSS dédiés : ils ne créent
           # ni route, ni service, ni table et ne doivent pas forcer un faux delta
-          # CARTOGRAPHY_360. package.json ne compte que si une surface runtime/topologique
-          # change (entrypoint, start, deps, engine).
+          # CARTOGRAPHY_360. Pour index.html, seul le bump généré des ?v= CSS est
+          # ignoré ; toute autre modification HTML reste un changement applicatif.
           APP_CHANGED=$(git diff --name-only origin/main...HEAD \
             | grep -E '^(routes/|middleware/|utils/|validators/|db/|public/|dashboard-app/|server\.js|db\.js)' \
             | grep -Ev '(^|/)tests?/' \
             | grep -Ev '^public/boutique/css/.*\.css$' \
             | grep -Ev '^public/boutique/features/.*\.feature\.js$' \
             | grep -Ev '^public/boutique/\.cache-buster-state\.json$' \
-            | grep -Ev '^public/boutique/scripts/css-bundles\.js$' || true)
+            | grep -Ev '^public/boutique/scripts/css-bundles\.js$' \
+            | grep -Ev '^public/boutique/index\.html$' || true)
+          INDEX_RUNTIME_CHANGED=$(git diff --unified=0 origin/main...HEAD -- public/boutique/index.html \
+            | grep -E '^[+-]' \
+            | grep -Ev '^(\+\+\+|---)' \
+            | grep -Ev 'css/dist/(base|components|desktop|event)\.css\?v=[0-9]+' || true)
           PACKAGE_RUNTIME_CHANGED=$(git diff --unified=0 origin/main...HEAD -- package.json | grep -E '^[+-].*"(main|start|dependencies|engines)"' || true)
-          CODE_CHANGED=$(printf '%s\n%s\n' "$APP_CHANGED" "$PACKAGE_RUNTIME_CHANGED" | sed '/^$/d')
+          CODE_CHANGED=$(printf '%s\n%s\n%s\n' "$APP_CHANGED" "$INDEX_RUNTIME_CHANGED" "$PACKAGE_RUNTIME_CHANGED" | sed '/^$/d')
           if [ -n "$CODE_CHANGED" ]; then
             echo "code_changed=true" >> $GITHUB_OUTPUT
             echo "files<<ENDFILES" >> $GITHUB_OUTPUT
