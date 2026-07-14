@@ -2,15 +2,13 @@
 -- PostgreSQL database dump
 --
 
-\restrict eW3NNHAMGyaN34NRgGde7JDnxR0EWfeuaXxFZ9sNUl4nZWAlDyQQwFacT2iAbnb
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
--- Dumped by pg_dump version 18.3
+-- Dumped by pg_dump version 18.4 (Debian 18.4-1.pgdg13+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -856,6 +854,33 @@ CREATE TABLE public.cash_reconciliation (
 
 
 --
+-- Name: catalog_enrichment_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_enrichment_runs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid,
+    prompt_version integer NOT NULL,
+    model text NOT NULL,
+    status character varying(20) NOT NULL,
+    confidence numeric(4,3),
+    input_tokens integer,
+    output_tokens integer,
+    duration_ms integer,
+    error text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_enrichment_runs_status_check CHECK (((status)::text = ANY ((ARRAY['ok'::character varying, 'low_confidence'::character varying, 'invalid_output'::character varying, 'failed'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE catalog_enrichment_runs; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_enrichment_runs IS 'Trace de chaque appel d''enrichissement IA (doctrine catalogue §8 : échecs tracés, coût par produit suivi en tokens). ok = appliqué ; low_confidence = appliqué + needs_review ; invalid_output = JSON hors schéma, rien appliqué ; failed = erreur réseau/modèle, rien appliqué.';
+
+
+--
 -- Name: catalog_exclusions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -924,6 +949,41 @@ CREATE TABLE public.catalog_glossary (
 --
 
 COMMENT ON TABLE public.catalog_glossary IS 'Glossaire EN→FR injecté dans l''enrichissement IA (doctrine catalogue §4). term_fr = ''='' signifie : conserver tel quel (marques, noms propres).';
+
+
+--
+-- Name: catalog_media; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.catalog_media (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    source_media_id text,
+    url text NOT NULL,
+    role character varying(20) DEFAULT 'PRODUCT'::character varying NOT NULL,
+    alt text,
+    option_values jsonb,
+    display_order integer,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT catalog_media_option_values_object CHECK (((option_values IS NULL) OR (jsonb_typeof(option_values) = 'object'::text))),
+    CONSTRAINT catalog_media_role_check CHECK (((role)::text = ANY ((ARRAY['PRODUCT'::character varying, 'SCENE'::character varying, 'DETAIL'::character varying, 'SIZE_GUIDE'::character varying, 'OTHER'::character varying])::text[])))
+);
+
+
+--
+-- Name: TABLE catalog_media; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.catalog_media IS 'Média canonique catalogue (PDC-8 Lot 2). Cible de promotion depuis normalized_source_contract.media[]. Identité stable : product_id + source_media_id lorsque connu. Legacy (products.images / product_variants.images) reste le fallback pour les produits non promus.';
+
+
+--
+-- Name: COLUMN catalog_media.source_media_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.catalog_media.source_media_id IS 'supplier_media_id V2 tel quel. NULL = source pauvre, aucune identité fournisseur fabriquée : pas d''unicité applicable, ré-promotion peut dupliquer honnêtement.';
 
 
 --
@@ -2025,6 +2085,7 @@ CREATE TABLE public.order_items (
     tva_pct numeric(5,2),
     taxe_add_pct numeric(5,2),
     classification_defaulted boolean DEFAULT false NOT NULL,
+    sku_id uuid,
     CONSTRAINT chk_order_items_price CHECK ((price_kmf > 0)),
     CONSTRAINT chk_order_items_qty CHECK ((quantity > 0))
 );
@@ -2112,6 +2173,13 @@ COMMENT ON COLUMN public.order_items.taxe_add_pct IS 'Taux taxe additionnelle (%
 --
 
 COMMENT ON COLUMN public.order_items.classification_defaulted IS 'true si product.category ne matchait aucune customs_categories.key et que la catégorie "default" a été utilisée en repli.';
+
+
+--
+-- Name: COLUMN order_items.sku_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.sku_id IS 'FK vers product_skus (Lot 0). NULL tant que routes/orders/create.js ne le renseigne pas (Lot 3). Remplacera variant_combo comme canal de pilotage du stock — variant_combo reste pour affichage/historique.';
 
 
 --
@@ -3032,6 +3100,76 @@ CREATE SEQUENCE public.product_ref_seq
 
 
 --
+-- Name: product_sku_media; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_sku_media (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sku_id uuid NOT NULL,
+    media_id uuid NOT NULL,
+    display_order integer,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE product_sku_media; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.product_sku_media IS 'Association explicite SKU <-> média canonique (PDC-8 Lot 5), source : sellable_units[].media_refs (V2). Les références explicites gagnent toujours sur un matching option_values heuristique. Table neuve, aucun writer avant le service de promotion (Lot 6).';
+
+
+--
+-- Name: product_skus; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_skus (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    product_id uuid NOT NULL,
+    sku text,
+    variant_combo jsonb,
+    stock integer DEFAULT 0 NOT NULL,
+    price_kmf integer,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    supplier_sku text,
+    source character varying(20) DEFAULT 'MANUAL'::character varying NOT NULL,
+    CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY ((ARRAY['MANUAL'::character varying, 'SUPPLIER'::character varying])::text[]))),
+    CONSTRAINT product_skus_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= 0))),
+    CONSTRAINT product_skus_stock_non_negatif CHECK ((stock >= 0))
+);
+
+
+--
+-- Name: TABLE product_skus; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.product_skus IS 'Source de vérité du stock par unité vendable (Lot 0, DECISION_MODELE_STOCK_SKU.md). variant_combo NULL = SKU par défaut (produit sans variantes). Non consommée par le code applicatif tant que les Lots 1-4 ne sont pas livrés.';
+
+
+--
+-- Name: COLUMN product_skus.variant_combo; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.product_skus.variant_combo IS 'Même shape que order_items.variant_combo, ex: {"couleur":"Noir","taille":"M"}. NULL = SKU par défaut.';
+
+
+--
+-- Name: COLUMN product_skus.supplier_sku; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.product_skus.supplier_sku IS 'Identité source stable (NormalizedSupplierProduct V2 sellable_units[].supplier_sku). NULL pour les SKU manuels (source=MANUAL). Gouverne la re-promotion : un supplier_sku rejoué conserve TOUJOURS le même product_skus.id, même si variant_combo change (correction fournisseur). Ne jamais réutiliser product_id+variant_combo comme identité de re-promotion (insuffisant, cf. PDC-8 §SKU).';
+
+
+--
+-- Name: COLUMN product_skus.source; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.product_skus.source IS 'MANUAL = créé par un admin via routes/products.js (upsertProductSku). SUPPLIER = promu depuis normalized_source_contract.sellable_units[] (PDC-8 Lot 6). Distinction honnête, jamais déduite après coup.';
+
+
+--
 -- Name: product_suppliers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3091,9 +3229,18 @@ CREATE TABLE public.product_variants (
     display_order integer DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    images jsonb DEFAULT '[]'::jsonb NOT NULL,
+    display_name text,
     CONSTRAINT product_variants_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= 0))),
     CONSTRAINT product_variants_stock_non_negatif CHECK (((stock IS NULL) OR (stock >= 0)))
 );
+
+
+--
+-- Name: COLUMN product_variants.display_name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.product_variants.display_name IS 'Nom d''affichage de l''AXE (ex: "Couleur" pour variant_type="couleur"), préservé tel que fourni par NormalizedSupplierProduct V2 option_axes[].display_name (PDC-8 Lot 3). NULL = source ne le portait pas — jamais fabriqué.';
 
 
 --
@@ -3111,7 +3258,8 @@ CREATE VIEW public.product_variants_ordered AS
     image_url,
     display_order,
     created_at,
-    updated_at
+    updated_at,
+    images
    FROM public.product_variants
   ORDER BY product_id, variant_type, display_order, created_at;
 
@@ -3120,7 +3268,7 @@ CREATE VIEW public.product_variants_ordered AS
 -- Name: VIEW product_variants_ordered; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON VIEW public.product_variants_ordered IS 'Variantes triÃ©es display_order ASC â€” utiliser cette vue dans /api/products/:id';
+COMMENT ON VIEW public.product_variants_ordered IS 'Variantes triées display_order ASC — inclut images[] (Lot 2)';
 
 
 --
@@ -3189,12 +3337,15 @@ CREATE TABLE public.products (
     source_locale character varying(8),
     content_source character varying(20),
     enrichment_version integer,
+    needs_review boolean DEFAULT false NOT NULL,
+    enrichment_confidence numeric(4,3),
+    inventory_model text DEFAULT 'LEGACY_VARIANTS'::text NOT NULL,
+    CONSTRAINT chk_products_inventory_model CHECK ((inventory_model = ANY (ARRAY['LEGACY_VARIANTS'::text, 'SKU'::text]))),
     CONSTRAINT chk_products_price CHECK ((price_kmf > 0)),
     CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
     CONSTRAINT chk_products_stock CHECK ((stock >= 0)),
     CONSTRAINT chk_stock_nonneg CHECK (((stock >= 0) OR (stock IS NULL))),
-    CONSTRAINT price_eur_positive CHECK (((price_eur IS NULL) OR (price_eur >= (0)::numeric))),
-    enrichment_confidence numeric(4,3)
+    CONSTRAINT price_eur_positive CHECK (((price_eur IS NULL) OR (price_eur >= (0)::numeric)))
 );
 
 
@@ -3280,6 +3431,27 @@ COMMENT ON COLUMN public.products.content_source IS 'Qui a écrit les champs pub
 --
 
 COMMENT ON COLUMN public.products.enrichment_version IS 'Version du prompt d''enrichissement ayant produit la fiche (doctrine §8 : le prompt est du code, versionné). NULL = jamais enrichie par IA.';
+
+
+--
+-- Name: COLUMN products.needs_review; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.needs_review IS 'Fiche à relire humainement : confiance IA sous CATALOG_ENRICH_CONFIDENCE_MIN, ou enrichissement en échec (fiche restée en donnée source). Champ de CUISINE : la boutique ne le lit jamais (catalog-public-view.js).';
+
+
+--
+-- Name: COLUMN products.enrichment_confidence; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.enrichment_confidence IS 'Score de confiance (0..1) déclaré par le dernier enrichissement IA appliqué. NULL = jamais enrichie. Champ de cuisine, invisible boutique.';
+
+
+--
+-- Name: COLUMN products.inventory_model; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.products.inventory_model IS 'LEGACY_VARIANTS (défaut) = stock lu/écrit sur products.stock + product_variants.stock. SKU = stock lu/écrit exclusivement sur product_skus, aucune lecture/écriture legacy autorisée pour ce produit. Bascule atomique portée par le Lot 5 — jamais déduite de l''existence de lignes product_skus.';
 
 
 --
@@ -3855,10 +4027,26 @@ CREATE TABLE public.sourcing_candidates (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_by uuid,
+    raw_payload jsonb,
+    normalized_source_contract jsonb,
+    CONSTRAINT chk_sourcing_candidates_normalized_source_contract_object CHECK (((normalized_source_contract IS NULL) OR (jsonb_typeof(normalized_source_contract) = 'object'::text))),
     CONSTRAINT sourcing_candidates_confidence_check CHECK ((confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
-    CONSTRAINT sourcing_candidates_state_check CHECK ((state = ANY (ARRAY['raw_imported'::text, 'normalized'::text, 'scanned'::text, 'test_ready'::text, 'watchlist'::text, 'imported_to_catalog'::text, 'rejected'::text, 'archived'::text]))),
-    raw_payload jsonb
+    CONSTRAINT sourcing_candidates_state_check CHECK ((state = ANY (ARRAY['raw_imported'::text, 'normalized'::text, 'scanned'::text, 'test_ready'::text, 'watchlist'::text, 'imported_to_catalog'::text, 'rejected'::text, 'archived'::text])))
 );
+
+
+--
+-- Name: COLUMN sourcing_candidates.raw_payload; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sourcing_candidates.raw_payload IS 'Payload fournisseur brut intégral (toutes colonnes, y compris non mappées). Jamais lu par la boutique. Sert la rejouabilité et l''éligibilité douane (une colonne inconnue type hazmat_class doit pouvoir matcher une exclusion). NULL = candidat créé avant ING-5 (legacy, pas de brut disponible).';
+
+
+--
+-- Name: COLUMN sourcing_candidates.normalized_source_contract; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sourcing_candidates.normalized_source_contract IS 'Snapshot du NormalizedSupplierProduct V2 validé, sans raw_payload. Préserve les mappings media/option_axes/sellable_units du connecteur. NULL pour les contrats V1. Ne constitue pas la vérité catalogue ni stock.';
 
 
 --
@@ -4805,6 +4993,14 @@ ALTER TABLE ONLY public.cash_reconciliation
 
 
 --
+-- Name: catalog_enrichment_runs catalog_enrichment_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_enrichment_runs
+    ADD CONSTRAINT catalog_enrichment_runs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: catalog_exclusions catalog_exclusions_label_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4850,6 +5046,14 @@ ALTER TABLE ONLY public.catalog_glossary
 
 ALTER TABLE ONLY public.catalog_glossary
     ADD CONSTRAINT catalog_glossary_term_key UNIQUE (term_source);
+
+
+--
+-- Name: catalog_media catalog_media_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_media
+    ADD CONSTRAINT catalog_media_pkey PRIMARY KEY (id);
 
 
 --
@@ -5421,6 +5625,22 @@ ALTER TABLE ONLY public.pricing_strategy_history
 
 
 --
+-- Name: product_sku_media product_sku_media_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_sku_media
+    ADD CONSTRAINT product_sku_media_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: product_skus product_skus_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_skus
+    ADD CONSTRAINT product_skus_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: product_suppliers product_suppliers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5962,6 +6182,13 @@ CREATE INDEX idx_cash_recon_status ON public.cash_reconciliation USING btree (st
 
 
 --
+-- Name: idx_catalog_media_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_catalog_media_product ON public.catalog_media USING btree (product_id, display_order);
+
+
+--
 -- Name: idx_catalog_overrides_product; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6333,6 +6560,13 @@ CREATE INDEX idx_economic_snapshots_created_at ON public.economic_snapshots USIN
 
 
 --
+-- Name: idx_enrichment_runs_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_enrichment_runs_product ON public.catalog_enrichment_runs USING btree (product_id, created_at DESC);
+
+
+--
 -- Name: idx_fabrics_available; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6659,6 +6893,13 @@ CREATE INDEX idx_order_items_product_id ON public.order_items USING btree (produ
 --
 
 CREATE INDEX idx_order_items_scan_code ON public.order_items USING btree (scan_code);
+
+
+--
+-- Name: idx_order_items_sku_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_order_items_sku_id ON public.order_items USING btree (sku_id) WHERE (sku_id IS NOT NULL);
 
 
 --
@@ -7229,6 +7470,34 @@ CREATE UNIQUE INDEX idx_pricing_strategies_product_active ON public.pricing_stra
 
 
 --
+-- Name: idx_product_sku_media_media; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_sku_media_media ON public.product_sku_media USING btree (media_id);
+
+
+--
+-- Name: idx_product_sku_media_sku; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_sku_media_sku ON public.product_sku_media USING btree (sku_id);
+
+
+--
+-- Name: idx_product_skus_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_skus_product ON public.product_skus USING btree (product_id);
+
+
+--
+-- Name: idx_product_skus_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_skus_source ON public.product_skus USING btree (source);
+
+
+--
 -- Name: idx_product_suppliers_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7275,6 +7544,13 @@ CREATE INDEX idx_products_category_subcategory ON public.products USING btree (c
 --
 
 CREATE INDEX idx_products_fragile_bulky ON public.products USING btree (is_fragile, is_bulky);
+
+
+--
+-- Name: idx_products_inventory_model; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_products_inventory_model ON public.products USING btree (inventory_model) WHERE (inventory_model = 'SKU'::text);
 
 
 --
@@ -7936,6 +8212,48 @@ CREATE UNIQUE INDEX uq_users_email ON public.users USING btree (email) WHERE (em
 
 
 --
+-- Name: ux_catalog_media_source_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_catalog_media_source_identity ON public.catalog_media USING btree (product_id, source_media_id) WHERE (source_media_id IS NOT NULL);
+
+
+--
+-- Name: ux_product_sku_media_pair; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_product_sku_media_pair ON public.product_sku_media USING btree (sku_id, media_id);
+
+
+--
+-- Name: ux_product_skus_combo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_product_skus_combo ON public.product_skus USING btree (product_id, variant_combo) WHERE (variant_combo IS NOT NULL);
+
+
+--
+-- Name: ux_product_skus_default; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_product_skus_default ON public.product_skus USING btree (product_id) WHERE (variant_combo IS NULL);
+
+
+--
+-- Name: ux_product_skus_supplier_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_product_skus_supplier_identity ON public.product_skus USING btree (product_id, supplier_sku) WHERE (supplier_sku IS NOT NULL);
+
+
+--
+-- Name: catalog_media trg_catalog_media_updated; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_catalog_media_updated BEFORE UPDATE ON public.catalog_media FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
 -- Name: parcel_items trg_check_parcel_item_qty; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -8094,6 +8412,13 @@ CREATE TRIGGER trg_prevent_scan_event_delete BEFORE DELETE ON public.scan_events
 --
 
 CREATE TRIGGER trg_pricing_components_updated BEFORE UPDATE ON public.pricing_components FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: product_skus trg_product_skus_updated; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_product_skus_updated BEFORE UPDATE ON public.product_skus FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
@@ -8256,11 +8581,27 @@ ALTER TABLE ONLY public.cash_collections
 
 
 --
+-- Name: catalog_enrichment_runs catalog_enrichment_runs_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_enrichment_runs
+    ADD CONSTRAINT catalog_enrichment_runs_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
+
+
+--
 -- Name: catalog_field_overrides catalog_field_overrides_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.catalog_field_overrides
     ADD CONSTRAINT catalog_field_overrides_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: catalog_media catalog_media_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.catalog_media
+    ADD CONSTRAINT catalog_media_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
 
 
 --
@@ -8696,6 +9037,14 @@ ALTER TABLE ONLY public.order_items
 
 
 --
+-- Name: order_items order_items_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_items
+    ADD CONSTRAINT order_items_sku_id_fkey FOREIGN KEY (sku_id) REFERENCES public.product_skus(id) ON DELETE SET NULL;
+
+
+--
 -- Name: order_status_history order_status_history_changed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8989,6 +9338,30 @@ ALTER TABLE ONLY public.pricing_strategy_history
 
 ALTER TABLE ONLY public.pricing_strategy_history
     ADD CONSTRAINT pricing_strategy_history_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_sku_media product_sku_media_media_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_sku_media
+    ADD CONSTRAINT product_sku_media_media_id_fkey FOREIGN KEY (media_id) REFERENCES public.catalog_media(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_sku_media product_sku_media_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_sku_media
+    ADD CONSTRAINT product_sku_media_sku_id_fkey FOREIGN KEY (sku_id) REFERENCES public.product_skus(id) ON DELETE CASCADE;
+
+
+--
+-- Name: product_skus product_skus_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_skus
+    ADD CONSTRAINT product_skus_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
 
 
 --
@@ -9418,6 +9791,3 @@ ALTER TABLE ONLY public.wallets
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict eW3NNHAMGyaN34NRgGde7JDnxR0EWfeuaXxFZ9sNUl4nZWAlDyQQwFacT2iAbnb
-
