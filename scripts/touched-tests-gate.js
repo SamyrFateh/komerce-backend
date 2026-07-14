@@ -12,6 +12,9 @@
  * En mode --strict, la preuve A active la règle de complétion au contact :
  * la couverture statements + branches de la source doit atteindre le seuil
  * défini dans governance/coverage-thresholds.json (100/100 par défaut).
+ * Pour une source CSS, un test correspondant reste obligatoire mais la couverture
+ * statements/branches Jest n'est pas applicable ; les gates CSS dédiés portent
+ * la preuve de compilation, de cascade et de fraîcheur du bundle.
  *
  * Le mesureur est workspace-aware : les sources Boutique sont exécutées avec
  * le Jest, le cwd et la configuration de public/boutique, au lieu d'être
@@ -306,6 +309,15 @@ function main() {
     if (hasMatchingTest(file, all)) {
       if (!checkCompletion) {
         console.log(`  ${ICON.PASS} ${C.dim}${file}${C.r}  ${C.grn}test correspondant touché${C.r}`);
+        continue;
+      }
+
+      // La couverture statements/branches de Jest s'applique aux sources exécutables,
+      // pas aux feuilles CSS. Le CSS reste soumis à un test correspondant touché ;
+      // compilation, cascade et fraîcheur du bundle sont ensuite prouvées par les
+      // gates CSS Boutique dédiés.
+      if (file.endsWith('.css')) {
+        console.log(`  ${ICON.PASS} ${C.dim}${file}${C.r}  ${C.grn}test CSS correspondant touché — couverture Jest non applicable${C.r}`);
         continue;
       }
 
