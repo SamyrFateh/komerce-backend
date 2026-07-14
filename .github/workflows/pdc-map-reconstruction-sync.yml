@@ -1,0 +1,56 @@
+name: PDC map reconstruction sync (temporary)
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate-map-artifacts:
+    if: github.head_ref == 'agent/pdc-final-e2e-validation' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pdc-final-e2e-validation
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Regenerate authoritative map chain
+        run: |
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+          npm run meta:graph
+
+      - name: Prove complete reconstruction before commit
+        run: npm run map:check
+
+      - name: Commit generated map artifacts when changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/komerce-arch-header-graph.json \
+            docs/BUSINESS_FEATURE_GRAPH.json \
+            docs/BUSINESS_FEATURE_GRAPH.md \
+            docs/O6_INVENTORY.md \
+            docs/FEATURE_360.json \
+            docs/FEATURE_360.md \
+            docs/META_GRAPH.json \
+            docs/META_GRAPH.md
+          if git diff --cached --quiet; then
+            echo "Map artifacts already synchronized."
+            exit 0
+          fi
+          git commit -m "build(map): regenerate PDC architecture projections"
+          git push origin HEAD:agent/pdc-final-e2e-validation
