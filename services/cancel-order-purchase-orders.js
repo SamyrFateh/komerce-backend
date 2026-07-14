@@ -70,7 +70,7 @@ async function syncPurchaseOrdersOnOrderCancel(q = db, { orderId, orderReference
       `UPDATE purchase_orders
           SET status = 'cancelled',
               updated_at = NOW(),
-              notes = CONCAT(COALESCE(notes, ''), $2)
+              notes = CONCAT(COALESCE(notes, ''), $2::text)
         WHERE id = ANY($1::uuid[])`,
       [
         autoIds,
