@@ -1,31 +1,17 @@
 'use strict';
 /**
- * TXG-04 — RED-avant / GREEN-après (REAL_DB_INTEGRATION)
- * Cible: routes/admin/system.js — POST /api/admin/reset mode=factory (~l.155)
+ * TXG-04 — CURRENT REAL_DB REGRESSION
+ * Cible: routes/admin/system.js — POST /api/admin/reset mode=factory
  *
- * Mécanisme: le DELETE FROM partners best-effort échoue (table absente,
- * simulée par rename) => sans SAVEPOINT le client devient "aborted" =>
- * le COMMIT suivant ne lève PAS d'erreur côté pg mais exécute un ROLLBACK
- * silencieux (même mécanisme que TXG-01) => le DELETE products/relais
- * pourtant déjà exécutés dans la même transaction sont annulés, MAIS la
- * route renvoie quand même 200/success:true avec un report mensonger.
- *
- * RED-avant : la requête renvoie 200/success:true (mensonge), mais
- *             products/relais NE sont PAS vidés (rollback silencieux).
- * GREEN-après : la requête réussit (200 success:true, cette fois honnête),
- *               products/relais sont bien vidés, seul le DELETE partners
- *               est sauté (loggué best-effort).
+ * Invariant courant: si le nettoyage partners best-effort échoue, le reset
+ * factory doit tout de même committer les suppressions métier déjà effectuées.
  */
-const fs = require('fs');
 const path = require('path');
 const request = require('supertest');
 const express = require('express');
 const { Pool } = require('pg');
 
 const TARGET = path.join(__dirname, '../../routes/admin/system.js');
-const BASELINE = fs.readFileSync('/home/claude/baseline/system.js', 'utf8');
-const FIXED = fs.readFileSync('/home/claude/fixed/system.js', 'utf8');
-
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const ADMIN_ID = '00000000-0000-0000-0000-000000000001';
@@ -53,6 +39,7 @@ function buildApp() {
 async function hidePartners() {
   await pool.query('ALTER TABLE partners RENAME TO partners_hidden');
 }
+
 async function restorePartners() {
   await pool.query('ALTER TABLE partners_hidden RENAME TO partners');
 }
@@ -71,20 +58,6 @@ async function seedFactoryFixtures() {
 }
 
 async function restoreSharedSeed() {
-  // Réhydrate TOUTES les fixtures partagées avec les autres TXG. Le mode
-  // 'factory' ne se contente pas de vider products/relais : la route exécute
-  // TRUNCATE orders CASCADE de façon inconditionnelle en tête de handler
-  // (hors du bloc if(mode==='factory')), ce qui purge aussi orders/
-  // order_items utilisés par TXG-03 (order c1) — sans reseed complet ici,
-  // TXG-03 échoue en 404 si jest exécute les suites dans un ordre différent
-  // de celui du fichier (constaté : TXG-04 avant TXG-03 dans un run groupé).
-  //
-  // De plus, mode 'factory' exécute aussi `DELETE FROM users WHERE role !=
-  // 'admin'` (l.148) — ce qui supprime le user agent_hub (HUB_USER_ID) dont
-  // dépend la FK order_comments.author_id utilisée par TXG-03. Sans reseed
-  // ici, TXG-03/GREEN échoue en 500 (violation FK) quand TXG-04 s'exécute
-  // avant lui dans un run groupé (constaté : jest peut ordonner txg03 avant
-  // OU après txg04 selon son séquenceur interne — ce n'est jamais garanti).
   await pool.query(`
     INSERT INTO users (id, full_name, email, role)
     VALUES
@@ -134,35 +107,7 @@ afterAll(async () => {
 });
 
 describe('TXG-04 — factory reset partners SAVEPOINT', () => {
-  test('RED-avant: fix absent -> partners KO fait échouer tout le reset factory, products/relais non vidés', async () => {
-    fs.writeFileSync(TARGET, BASELINE);
-    await seedFactoryFixtures();
-    const app = buildApp();
-    await hidePartners();
-    try {
-      const res = await request(app)
-        .post('/api/admin/reset')
-        .send({ mode: 'factory', confirm: true });
-
-      // Comportement réel observé (diffère de l'hypothèse initiale en
-      // en-tête) : sans SAVEPOINT, le COMMIT sur un client "aborted" ne
-      // lève PAS d'erreur côté pg — il exécute un ROLLBACK silencieux et
-      // renvoie quand même 200/success:true. Même mécanisme que TXG-01
-      // (COMMIT-devient-ROLLBACK-silencieux), pas une 500.
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true); // <- le mensonge du bug : le report ment
-
-      const { rows: prodRows } = await pool.query(
-        "SELECT id FROM products WHERE id = '00000000-0000-0000-0000-0000000000b1'"
-      );
-      expect(prodRows.length).toBe(1); // <- le DELETE products a été annulé (rollback silencieux), rien de vidé
-    } finally {
-      await restorePartners();
-    }
-  });
-
-  test('GREEN-après: fix present -> products/relais vidés malgré partners indisponible', async () => {
-    fs.writeFileSync(TARGET, FIXED);
+  test('products et relais sont supprimés malgré partners indisponible', async () => {
     await seedFactoryFixtures();
     const app = buildApp();
     await hidePartners();
@@ -177,15 +122,14 @@ describe('TXG-04 — factory reset partners SAVEPOINT', () => {
       const { rows: prodRows } = await pool.query(
         "SELECT id FROM products WHERE id = '00000000-0000-0000-0000-0000000000b1'"
       );
-      expect(prodRows.length).toBe(0); // <- products bien vidés malgré partners KO
+      expect(prodRows.length).toBe(0);
 
       const { rows: relaisRows } = await pool.query(
         "SELECT id FROM relais WHERE id = '00000000-0000-0000-0000-0000000000a1'"
       );
-      expect(relaisRows.length).toBe(0); // <- relais bien vidés
+      expect(relaisRows.length).toBe(0);
     } finally {
       await restorePartners();
-      fs.writeFileSync(TARGET, FIXED); // leave repo in fixed state
     }
   });
 });
