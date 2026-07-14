@@ -32,7 +32,7 @@ if (!hasIntegrationEnv) {
   const {
     createTestRelais, createLegacyProduct, createPendingOrder, createOrderItem,
     cleanupBusinessFixtures,
-  } = require('./test-harness/seed-helpers');
+  } = require('./test-harness/seed-helpers.EXTENDED');
 
   // Fake PayPal provider boundary — no network.
   function fakePaypal({ amountEur, captureId = 'CAP-itest-1', orderId = null }) {

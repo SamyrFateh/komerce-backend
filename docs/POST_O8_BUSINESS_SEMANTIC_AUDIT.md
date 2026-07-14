@@ -67,6 +67,18 @@
   fidélité, et **sans déclenchement sourcing/achat fournisseur** (effet métier
   majeur absent).
 - **VERDICT initial** : **BROKEN** (3 preuves rouges REAL_DB). **Corrigé** → SAFE.
+- **RÉTROGRADÉ — R4/W1-4, 2026-07-14 (session remediation, `tests/integration/post-o8-payments-seams.test.js`
+  ré-exécuté REAL_DB, git baseline locale sans HEAD réel vérifiable — voir réserve R1 §0)** :
+  **le "Corrigé → SAFE" ci-dessus est FAUX sur ce HEAD.** Preuve REAL_DB
+  réexécutée : les 3 tests (`PAYPAL-CAPTURE`, `PAYPAL-WEBHOOK-FALLBACK`,
+  `PAYPAL-RACE`) échouent — `hooks.loyalty/notif/invoice/purchasing` reçoivent
+  **0** appel sur les 3 scénarios. Confirmé par lecture directe :
+  `services/payment-paypal.js` ne `require()` **aucun** des 4 modules
+  (`loyalty-service`, `notification-service`, `invoice-service`,
+  `purchasing-trigger-service`). Soit le fix n'a jamais été mergé sur ce
+  HEAD, soit il a régressé après coup. **VERDICT réel : BROKEN, non-SAFE.**
+  Fix runtime explicitement **hors périmètre R4** (proof debt only) — reste
+  une découverte à traiter en lot dédié.
 
 ### FLOW — pickup secret (Cycle B O7.2)
 - **FILES** : `services/pickup-secret-service.js` consommé par payment-stripe,
@@ -101,9 +113,9 @@
 | Flow | O7 touch | Niveau preuve atteint | Verdict |
 |---|---|---|---|
 | invoice-ready / AuthKey WID | O7.2 A | MOCK_INTEGRATION (fetch) | **BROKEN → SAFE (fix)** |
-| Stripe chain (nominal, replay) | — (voisin) | REAL_DB_INTEGRATION | SAFE |
+| Stripe chain (nominal, replay, stockBlocked/P0-A) | — (voisin) | REAL_DB_INTEGRATION | SAFE — **confirmé R4/W1-1,W1-2,W1-3, 2026-07-14** : `tests/integration/stripe-payment-seams.test.js`, 3/3 PASS réel (nominal : hooks×1 + stock -2 ; stockBlocked : alerte forcée en échec via SAVEPOINT, commande survit et COMMIT quand même (P0-A prouvé, pas juste chemin heureux) ; replay : 2e delivery idempotente, stock inchangé, hooks non re-tirés) |
 | Cash chain (cross-relais, nominal, stock-bloqué) | — (voisin) | REAL_DB_INTEGRATION | SAFE |
-| PayPal post-commit (capture + webhook) | O7.2 B | REAL_DB_INTEGRATION | **BROKEN → SAFE (fix)** |
+| PayPal post-commit (capture + webhook) | O7.2 B | REAL_DB_INTEGRATION | **BROKEN — rétrogradé R4/W1-4, 2026-07-14** (voir détail ci-dessus ; le "SAFE (fix)" était stale/faux, 0 hook tiré, 3/3 tests rouges REAL_DB) |
 | Pickup secret invariants | O7.2 B | REAL_DB_INTEGRATION | SAFE |
 | Loyalty extraction | O7.3 | UNIT | SAFE |
 | Catalog approval routing/guards | O7.3 | REAL_DB_INTEGRATION | SAFE (routing) |
@@ -111,7 +123,7 @@
 | Purchasing trigger seam | O7.2 C | REAL_DB_INTEGRATION | SAFE |
 | Purchasing receive→scan seam | O7.2 C | — | AT_RISK (non ré-exécuté E2E) |
 | Shared-cart phone boundary | O7.3 | — | NOT_PROVEN_EXTERNAL |
-| Wallet 100% downstream | — | — | NOT_PROVEN_EXTERNAL (Playwright) |
+| Wallet 100% downstream | — | — | NOT_PROVEN_EXTERNAL (Playwright) — *distinct de la couche service* : `credit()`/`debit()` (idempotency_key, double-crédit concurrent) sont désormais **SAFE, confirmé R4/W1-5,W1-6, 2026-07-14** (`tests/integration/wallet-refund-seams.test.js`, 3/3 PASS REAL_DB). Ce qui reste NOT_PROVEN_EXTERNAL est uniquement le parcours navigateur (checkout wallet end-to-end via Playwright), pas la logique wallet elle-même. |
 | AuthKey/Stripe/PayPal external smoke | — | — | NOT_PROVEN_EXTERNAL |
 
 ## 4. Corrections appliquées (strictement pilotées par test rouge)
