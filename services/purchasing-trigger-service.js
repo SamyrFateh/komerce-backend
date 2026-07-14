@@ -81,7 +81,7 @@ async function notifyAdminManual(order, item, ps, purchaseOrderId) {
   log.info('[PURCHASING] Notification admin — commande manuelle:', order.reference, ps.supplier_name);
 }
 
-async function notifySupplierWhatsApp(ps, order, item, purchaseOrderId) {
+async function notifySupplierWhatsApp(client, ps, order, item, purchaseOrderId) {
   const totalAed = (ps.supplier_price_aed * item.quantity).toFixed(2);
   const msg = encodeURIComponent([
     `Bonjour ${ps.supplier_name},`,
@@ -99,7 +99,15 @@ async function notifySupplierWhatsApp(ps, order, item, purchaseOrderId) {
   const waUrl = `https://wa.me/${ps.contact_phone}?text=${msg}`;
   log.info('[PURCHASING] WhatsApp fournisseur:', waUrl);
 
-  await db.query(`
+  // FIX 2026-07 (LOT R3, DEBT-03/FSF-03) : cette écriture doit vivre dans LA
+  // MÊME transaction que l'INSERT de purchase_orders (le `client` passé par
+  // triggerPurchasing, toujours en cours au moment de cet appel — cf.
+  // triggerPurchasing, BEGIN...COMMIT). Écrire via `db.query` (le pool, une
+  // connexion séparée) faisait de cet UPDATE une lecture READ COMMITTED sur
+  // une ligne pas encore commitée : 0 ligne mise à jour, silencieusement
+  // (UPDATE ne throw jamais sur 0 ligne affectée) — le wa_url était donc
+  // perdu après COMMIT. Preuve REAL_DB : tests/integration/purchasing-wa-url-w3-1.test.js.
+  await client.query(`
     UPDATE purchase_orders SET notes = $1, updated_at = NOW() WHERE id = $2
   `, [`wa_url:${waUrl}`, purchaseOrderId]);
 }
@@ -258,7 +266,7 @@ async function triggerPurchasing(orderId) {
             results.push({ item: item.product_name, status: 'api_failed_notified', purchase_order_id: po.id });
           }
         } else if (ps.platform === 'whatsapp') {
-          await notifySupplierWhatsApp(ps, order, item, po.id);
+          await notifySupplierWhatsApp(client, ps, order, item, po.id);
           await client.query(`
             UPDATE purchase_orders SET status = 'notified', ordered_at = NOW(), updated_at = NOW() WHERE id = $1
           `, [po.id]);

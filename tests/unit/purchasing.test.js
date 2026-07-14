@@ -143,19 +143,25 @@ describe('triggerPurchasing', () => {
   test('mode whatsapp → status whatsapp_sent', async () => {
     mockDbQuery
       .mockResolvedValueOnce({ rows: [ORDER] })
-      .mockResolvedValueOnce({ rows: [ITEM] })
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // notifySupplierWhatsApp → UPDATE notes (via db.query)
+      .mockResolvedValueOnce({ rows: [ITEM] });
 
     const client = makeClient([
       { rows: [PS_WHATSAPP] },
       { rows: [] },                   // existingPo
       { rows: [{ id: 'po-wa' }] },   // INSERT
+      { rows: [], rowCount: 1 },      // UPDATE notes wa_url (LOT R3 : via le client transactionnel)
       { rows: [], rowCount: 1 },      // UPDATE status = notified
     ]);
     mockGetClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('order-uuid');
     expect(result.purchase_orders[0].status).toBe('whatsapp_sent');
+    // LOT R3 (DEBT-03/FSF-03) : le wa_url doit être écrit dans LA MÊME
+    // transaction que l'INSERT purchase_orders (via le client), pas via
+    // db.query (le pool) — sinon perdu après COMMIT (READ COMMITTED).
+    const waUpdate = client.calls.find(c => c.sql.startsWith('UPDATE purchase_orders SET notes'));
+    expect(waUpdate).toBeDefined();
+    expect(waUpdate.params[0]).toEqual(expect.stringContaining('wa_url:'));
   });
 
   test('mode auto_order (stub noon → echec) → api_failed_notified', async () => {

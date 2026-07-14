@@ -132,12 +132,12 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
   it('fournisseur WhatsApp (auto_order=false, platform=whatsapp) → whatsapp_sent', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [order] })
-      .mockResolvedValueOnce({ rows: [item] })
-      .mockResolvedValueOnce({}); // db.query UPDATE notes (dans notifySupplierWhatsApp, hors transaction)
+      .mockResolvedValueOnce({ rows: [item] });
     const client = makeClient([
       { rows: [supplierRow({ platform: 'whatsapp', auto_order: false })] },
       { rows: [] },
       { rows: [{ id: 'po2' }] },
+      {}, // UPDATE notes wa_url (LOT R3 : via le client transactionnel, plus le pool)
       {}, // UPDATE status notified
     ]);
     db.getClient.mockResolvedValue(client);
@@ -145,7 +145,13 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     const result = await triggerPurchasing('o1');
 
     expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'whatsapp_sent', purchase_order_id: 'po2' }]);
-    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE purchase_orders SET notes'), expect.arrayContaining([expect.stringContaining('wa.me'), 'po2']));
+    // LOT R3 (DEBT-03/FSF-03) : le wa_url doit être écrit via le client
+    // transactionnel (même transaction que l'INSERT purchase_orders), pas
+    // via db.query (le pool) — c'était la cause du wa_url perdu après COMMIT.
+    expect(client.calls).toEqual(
+      expect.arrayContaining([expect.stringContaining('UPDATE purchase_orders SET notes')])
+    );
+    expect(db.query).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE purchase_orders SET notes'), expect.anything());
   });
 
   it('fournisseur manuel standard (auto_order=false, platform≠whatsapp) → admin_notified', async () => {

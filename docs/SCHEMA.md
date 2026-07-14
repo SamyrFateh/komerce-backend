@@ -166,14 +166,11 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `catalog_glossary` | Glossaire EN→FR injecté dans l'enrichissement IA (doctrine catalogue §4). `term_fr='='` signifie ne pas traduire (marques, termes culturels). Mémoire des corrections : chaque retouche récurrente devient une entrée. Migration 098, confirmée live. |
 | `catalog_exclusions` | Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). Deux couches : `absolute` (douane/loi, définitif) et `restricted` (contrainte transport, ex. batteries lithium = maritime uniquement). Matching mots-clés sur la donnée source EN, étage ③ de la raffinerie. Migration 098, confirmée live. |
 | `catalog_field_overrides` | Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK `products` ON DELETE CASCADE. Migration 098, confirmée live. |
+| `product_skus` | Unités vendables canoniques en Mode SKU : une combinaison exacte d’options = un SKU, stock unique par SKU, prix SKU optionnel, SKU par défaut si variant_combo est NULL. Source de vérité stock cible selon DECISION_MODELE_STOCK_SKU. **Migration 104 — promue le 2026-07-14 (schema-promote, dump live verifie).** |
+| `catalog_media` | Média canonique catalogue (PDC-8 Lot 2). Cible de promotion depuis `normalized_source_contract.media[]`. Identité stable : `product_id` + `source_media_id` lorsque connu (NULL = source pauvre, aucune identité fournisseur fabriquée, pas d'unicité applicable, ré-promotion peut dupliquer honnêtement). Legacy (`products.images` / `product_variants.images`) reste le fallback pour les produits non promus. Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
+| `product_sku_media` | Association explicite SKU ↔ média canonique (PDC-8 Lot 5), source : `sellable_units[].media_refs` (V2). Les références explicites gagnent toujours sur un matching `option_values` heuristique. Table neuve au 2026-07-14, aucun writer avant le service de promotion (Lot 6). Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
+| `catalog_enrichment_runs` | Trace de chaque appel d'enrichissement IA (doctrine catalogue §8 : échecs tracés, coût par produit suivi en tokens). `status` : `ok` (appliqué), `low_confidence` (appliqué + needs_review), `invalid_output` (JSON hors schéma, rien appliqué), `failed` (erreur réseau/modèle, rien appliqué). Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
 
-<!-- schema-pending
-object: product_skus
-kind: table
-migration: 104
-section: ### 4.5 Paniers et catalogue
-role: Unités vendables canoniques en Mode SKU : une combinaison exacte d’options = un SKU, stock unique par SKU, prix SKU optionnel, SKU par défaut si variant_combo est NULL. Source de vérité stock cible selon DECISION_MODELE_STOCK_SKU.
--->
 
 ### 4.6 Paniers partagés (7 tables)
 
@@ -304,23 +301,9 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `customs_taux_mensuel` | Évolution mensuelle. | Admin |
 | `suppliers_stats` | Stats fournisseurs. | Admin |
 | `product_variants_ordered` | Variantes commandées. | Admin |
-<!-- schema-pending
-object: v_parcel_reconciliation
-kind: view
-migration: 094
-section: ## 5. Vues critiques
-role: Réconciliation colis (dernier event, poids, écarts). Détectée non documentée et non déployée par gate:migration-doc le 2026-07-03.
-consumers: Admin logistique
--->
+| `v_parcel_reconciliation` | Réconciliation colis (dernier event, poids, écarts). Détectée non documentée et non déployée par gate:migration-doc le 2026-07-03. **Migration 094 — promue le 2026-07-14 (schema-promote, dump live verifie).** | Admin logistique |
+| `v_shipment_density` | Densité par shipment : poids, volume, tonnage taxable W/M, fill_rate_pct, margin_kmf_per_m3 (KPI doctrinal). Lecture seule, tolère les volumes NULL. Doctrine : DOCTRINE_DENSITE_VALEUR. **Migration 095 — promue le 2026-07-14 (schema-promote, dump live verifie).** | Admin logistique / calibration V-5 (docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md) |
 
-<!-- schema-pending
-object: v_shipment_density
-kind: view
-migration: 095
-section: ## 5. Vues critiques
-role: Densité par shipment : poids, volume, tonnage taxable W/M, fill_rate_pct, margin_kmf_per_m3 (KPI doctrinal). Lecture seule, tolère les volumes NULL. Doctrine : DOCTRINE_DENSITE_VALEUR.
-consumers: Admin logistique / calibration V-5 (docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md)
--->
 
 ---
 
