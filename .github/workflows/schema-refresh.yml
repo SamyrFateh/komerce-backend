@@ -49,6 +49,13 @@ jobs:
           sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends postgresql-client-18
+          # update-alternatives ne bascule pas toujours pg_dump vers 18
+          # (le runner ubuntu-latest a déjà un postgresql-client v16
+          # préinstallé, pas géré par alternatives) — on force donc le
+          # dossier de binaires 18 en tête du PATH pour le reste du job,
+          # plutôt que de dépendre de la résolution automatique.
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+          export PATH="/usr/lib/postgresql/18/bin:$PATH"
           pg_dump --version
 
       - uses: actions/setup-node@v4
