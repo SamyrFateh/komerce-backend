@@ -1,0 +1,48 @@
+name: O9.2 Playwright Public Staging
+
+on:
+  push:
+    branches:
+      - agent/o9-2-full-test-campaign
+  workflow_dispatch:
+
+jobs:
+  public-staging:
+    name: O9.2A — Public Playwright on staging
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: public/boutique
+    env:
+      BASE_URL: https://staging.komerce.co/boutique/
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install boutique dependencies
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run all public Playwright projects on staging
+        run: >-
+          npx playwright test
+          --project='Desktop Chrome'
+          --project='Desktop Firefox'
+          --project='Desktop Safari'
+          --project='Mobile Chrome'
+          --project='Mobile Safari'
+          --workers=1
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: o9-2-playwright-public-report
+          path: |
+            public/boutique/playwright-report/
+            public/boutique/test-results/
+          if-no-files-found: ignore
+          retention-days: 30
