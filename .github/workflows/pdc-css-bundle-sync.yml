@@ -1,0 +1,32 @@
+name: PDC CSS bundle sync (temporary)
+
+on:
+  push:
+    branches:
+      - agent/pdc-final-e2e-validation
+
+permissions:
+  contents: write
+
+jobs:
+  sync-css-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pdc-final-e2e-validation
+
+      - name: Regenerate CSS bundles with repository source of truth
+        run: node public/boutique/scripts/deploy-css.js
+
+      - name: Commit generated CSS artifacts when changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/css/dist/ public/boutique/index.html public/boutique/.cache-buster-state.json
+          if git diff --cached --quiet; then
+            echo "CSS bundle already synchronized."
+            exit 0
+          fi
+          git commit -m "build(css): regenerate mobile modal price bundle"
+          git push origin HEAD:agent/pdc-final-e2e-validation
