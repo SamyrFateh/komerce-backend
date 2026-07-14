@@ -34,8 +34,22 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install postgresql-client
-        run: sudo apt-get install -y --no-install-recommends postgresql-client
+      # Le paquet postgresql-client par défaut d'Ubuntu (runner ubuntu-latest)
+      # est trop ancien pour dumper un serveur Railway en PostgreSQL 18
+      # (pg_dump refuse : "aborting because of server version mismatch" —
+      # même erreur que rencontrée en local sous Windows avec un client v16).
+      # On installe explicitement le client 18 via le dépôt officiel PGDG.
+      - name: Install postgresql-client-18 (matches Railway's PG18)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends wget ca-certificates gnupg lsb-release
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo wget --quiet -O /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client-18
+          pg_dump --version
 
       - uses: actions/setup-node@v4
         with:
