@@ -9,9 +9,9 @@
  *   P0-E — Purchasing : erreur PO + erreur SQL réelle dans alerts, transaction continue et commit.
  *   P0-F — Cancel order / PO engagée : erreur SQL réelle dans alerts, transaction parent reste saine.
  *
- * Important : les erreurs alerts sont provoquées par un trigger PostgreSQL de test qui RAISE EXCEPTION
- * sur des types ciblés. Ce n'est pas un mock JS : PostgreSQL met réellement la transaction en erreur,
- * et seuls les SAVEPOINT / frontières transactionnelles du code permettent de récupérer.
+ * Les erreurs sont provoquées par PostgreSQL lui-même via des triggers de test.
+ * Les triggers ne ciblent que les fixtures dont la référence commence par ITEST-O9P0-
+ * et la suite tient un advisory lock dédié pendant toute son exécution.
  */
 
 const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
@@ -31,6 +31,9 @@ if (!hasIntegrationEnv) {
   jest.setTimeout(45000);
 
   const TAG = `O9P0-${Date.now()}`;
+  const ADVISORY_LOCK_KEY = 9010001;
+  let fixtureLockClient;
+
   const created = {
     orderIds: [],
     productIds: [],
@@ -40,9 +43,12 @@ if (!hasIntegrationEnv) {
   };
 
   async function installFailureTriggers() {
-    await db.query('DROP TRIGGER IF EXISTS o9_fail_selected_alerts_trigger ON alerts');
-    await db.query('DROP FUNCTION IF EXISTS o9_fail_selected_alerts()');
-    await db.query(`
+    fixtureLockClient = await db.getClient();
+    await fixtureLockClient.query('SELECT pg_advisory_lock($1)', [ADVISORY_LOCK_KEY]);
+
+    await fixtureLockClient.query('DROP TRIGGER IF EXISTS o9_fail_selected_alerts_trigger ON alerts');
+    await fixtureLockClient.query('DROP FUNCTION IF EXISTS o9_fail_selected_alerts()');
+    await fixtureLockClient.query(`
       CREATE FUNCTION o9_fail_selected_alerts() RETURNS trigger
       LANGUAGE plpgsql AS $$
       BEGIN
@@ -50,6 +56,12 @@ if (!hasIntegrationEnv) {
           'paid_but_stock_blocked',
           'purchasing_po_creation_failed',
           'order_cancel_purchasing_blocked'
+        )
+        AND NEW.entity_id IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM orders
+          WHERE id = NEW.entity_id
+            AND reference LIKE 'ITEST-O9P0-%'
         ) THEN
           RAISE EXCEPTION 'O9 forced alerts failure for %', NEW.type;
         END IF;
@@ -57,26 +69,26 @@ if (!hasIntegrationEnv) {
       END;
       $$
     `);
-    await db.query(`
+    await fixtureLockClient.query(`
       CREATE TRIGGER o9_fail_selected_alerts_trigger
       BEFORE INSERT ON alerts
       FOR EACH ROW EXECUTE FUNCTION o9_fail_selected_alerts()
     `);
 
-    await db.query('DROP TRIGGER IF EXISTS o9_fail_selected_po_trigger ON purchase_orders');
-    await db.query('DROP FUNCTION IF EXISTS o9_fail_selected_po()');
-    await db.query(`
+    await fixtureLockClient.query('DROP TRIGGER IF EXISTS o9_fail_selected_po_trigger ON purchase_orders');
+    await fixtureLockClient.query('DROP FUNCTION IF EXISTS o9_fail_selected_po()');
+    await fixtureLockClient.query(`
       CREATE FUNCTION o9_fail_selected_po() RETURNS trigger
       LANGUAGE plpgsql AS $$
       BEGIN
-        IF NEW.supplier_sku LIKE 'O9-FAIL-%' THEN
+        IF NEW.supplier_sku LIKE 'O9-FAIL-O9P0-%' THEN
           RAISE EXCEPTION 'O9 forced purchase_order failure for %', NEW.supplier_sku;
         END IF;
         RETURN NEW;
       END;
       $$
     `);
-    await db.query(`
+    await fixtureLockClient.query(`
       CREATE TRIGGER o9_fail_selected_po_trigger
       BEFORE INSERT ON purchase_orders
       FOR EACH ROW EXECUTE FUNCTION o9_fail_selected_po()
@@ -84,10 +96,14 @@ if (!hasIntegrationEnv) {
   }
 
   async function removeFailureTriggers() {
-    await db.query('DROP TRIGGER IF EXISTS o9_fail_selected_alerts_trigger ON alerts').catch(() => {});
-    await db.query('DROP FUNCTION IF EXISTS o9_fail_selected_alerts()').catch(() => {});
-    await db.query('DROP TRIGGER IF EXISTS o9_fail_selected_po_trigger ON purchase_orders').catch(() => {});
-    await db.query('DROP FUNCTION IF EXISTS o9_fail_selected_po()').catch(() => {});
+    if (!fixtureLockClient) return;
+    await fixtureLockClient.query('DROP TRIGGER IF EXISTS o9_fail_selected_alerts_trigger ON alerts').catch(() => {});
+    await fixtureLockClient.query('DROP FUNCTION IF EXISTS o9_fail_selected_alerts()').catch(() => {});
+    await fixtureLockClient.query('DROP TRIGGER IF EXISTS o9_fail_selected_po_trigger ON purchase_orders').catch(() => {});
+    await fixtureLockClient.query('DROP FUNCTION IF EXISTS o9_fail_selected_po()').catch(() => {});
+    await fixtureLockClient.query('SELECT pg_advisory_unlock($1)', [ADVISORY_LOCK_KEY]).catch(() => {});
+    fixtureLockClient.release();
+    fixtureLockClient = null;
   }
 
   async function seedRelais(suffix) {
@@ -179,7 +195,9 @@ if (!hasIntegrationEnv) {
   }
 
   async function cleanup() {
-    await db.query(`DELETE FROM alerts WHERE title LIKE $1 OR type LIKE 'cash_collect_%'`, [`%${TAG}%`]).catch(() => {});
+    if (created.orderIds.length) {
+      await db.query('DELETE FROM alerts WHERE entity_id = ANY($1::uuid[])', [created.orderIds]).catch(() => {});
+    }
 
     for (const id of created.orderIds) {
       await db.query('DELETE FROM purchase_orders WHERE order_id = $1', [id]).catch(() => {});
@@ -187,7 +205,6 @@ if (!hasIntegrationEnv) {
       await db.query('DELETE FROM order_items WHERE order_id = $1', [id]).catch(() => {});
       await db.query('DELETE FROM orders WHERE id = $1', [id]).catch(() => {});
     }
-
     for (const id of created.productIds) {
       await db.query('DELETE FROM product_suppliers WHERE product_id = $1', [id]).catch(() => {});
       await db.query('DELETE FROM products WHERE id = $1', [id]).catch(() => {});
@@ -212,9 +229,8 @@ if (!hasIntegrationEnv) {
   beforeAll(installFailureTriggers);
   afterEach(cleanup);
   afterAll(async () => {
-    await removeFailureTriggers();
     await cleanup();
-    await db.pool?.end?.();
+    await removeFailureTriggers();
   });
 
   describe('O9.1 — missing critical runtime proofs (REAL_DB)', () => {
@@ -258,7 +274,7 @@ if (!hasIntegrationEnv) {
       expect(afterProduct.stock).toBe(1);
 
       const { rows: failedAlertRows } = await db.query(
-        `SELECT id FROM alerts WHERE type = 'paid_but_stock_blocked' AND entity_id = $1`,
+        "SELECT id FROM alerts WHERE type = 'paid_but_stock_blocked' AND entity_id = $1",
         [order.id]
       );
       expect(failedAlertRows).toHaveLength(0);
@@ -276,7 +292,7 @@ if (!hasIntegrationEnv) {
       const agent = await createUser({ role: 'agent_relais', relais_id: agentRelais.id });
       created.userIds.push(agent.id);
 
-      const client = await db.pool.connect();
+      const client = await db.getClient();
       try {
         await client.query('BEGIN');
         const result = await collectCash({
@@ -288,13 +304,15 @@ if (!hasIntegrationEnv) {
         expect(result.cross_relais_blocked).toBe(true);
         await expect(client.query('SELECT 1')).resolves.toBeTruthy();
         await client.query('ROLLBACK');
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw err;
       } finally {
         client.release();
       }
 
       const { rows: alerts } = await db.query(
-        `SELECT type, entity_id FROM alerts
-         WHERE type = 'cash_collect_cross_relais_blocked' AND entity_id = $1`,
+        "SELECT type, entity_id FROM alerts WHERE type = 'cash_collect_cross_relais_blocked' AND entity_id = $1",
         [order.id]
       );
       expect(alerts).toHaveLength(1);
@@ -334,7 +352,7 @@ if (!hasIntegrationEnv) {
       expect(result.purchase_orders.filter(r => r.purchase_order_id)).toHaveLength(2);
 
       const { rows: pos } = await db.query(
-        `SELECT supplier_sku, status FROM purchase_orders WHERE order_id = $1 ORDER BY supplier_sku`,
+        'SELECT supplier_sku, status FROM purchase_orders WHERE order_id = $1 ORDER BY supplier_sku',
         [order.id]
       );
       expect(pos).toHaveLength(2);
@@ -342,7 +360,7 @@ if (!hasIntegrationEnv) {
       expect(pos.some(po => po.supplier_sku.startsWith('O9-FAIL-'))).toBe(false);
 
       const { rows: failedAlertRows } = await db.query(
-        `SELECT id FROM alerts WHERE type = 'purchasing_po_creation_failed' AND entity_id = $1`,
+        "SELECT id FROM alerts WHERE type = 'purchasing_po_creation_failed' AND entity_id = $1",
         [order.id]
       );
       expect(failedAlertRows).toHaveLength(0);
@@ -375,7 +393,7 @@ if (!hasIntegrationEnv) {
         [order.id, confirmedPs.supplier_id, confirmedPs.id, confirmedPs.supplier_sku]
       );
 
-      const client = await db.pool.connect();
+      const client = await db.getClient();
       let result;
       try {
         await client.query('BEGIN');
@@ -386,7 +404,7 @@ if (!hasIntegrationEnv) {
           reason: `${TAG} forced cancellation`,
         });
 
-        await client.query(`UPDATE orders SET status = 'cancelled' WHERE id = $1`, [order.id]);
+        await client.query("UPDATE orders SET status = 'cancelled' WHERE id = $1", [order.id]);
         await expect(client.query('SELECT 1')).resolves.toBeTruthy();
         await client.query('COMMIT');
       } catch (err) {
@@ -403,7 +421,7 @@ if (!hasIntegrationEnv) {
       expect(afterOrder.status).toBe('cancelled');
 
       const { rows: pos } = await db.query(
-        `SELECT id, status FROM purchase_orders WHERE id = ANY($1::uuid[]) ORDER BY id`,
+        'SELECT id, status FROM purchase_orders WHERE id = ANY($1::uuid[]) ORDER BY id',
         [[pendingPo.id, confirmedPo.id]]
       );
       const byId = new Map(pos.map(po => [po.id, po.status]));
@@ -411,7 +429,7 @@ if (!hasIntegrationEnv) {
       expect(byId.get(confirmedPo.id)).toBe('confirmed');
 
       const { rows: failedAlertRows } = await db.query(
-        `SELECT id FROM alerts WHERE type = 'order_cancel_purchasing_blocked' AND entity_id = $1`,
+        "SELECT id FROM alerts WHERE type = 'order_cancel_purchasing_blocked' AND entity_id = $1",
         [order.id]
       );
       expect(failedAlertRows).toHaveLength(0);
