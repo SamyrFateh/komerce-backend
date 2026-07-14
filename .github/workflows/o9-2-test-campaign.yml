@@ -1,0 +1,123 @@
+name: O9.2 Full Test Campaign
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: o9-2-campaign-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-inventory:
+    name: O9.2A — Integration inventory (real Postgres)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
+      NODE_ENV: test
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Load Railway schema + pending migrations
+        run: |
+          psql "$DATABASE_URL" -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+
+      - name: Run every integration suite and keep full inventory
+        shell: bash
+        run: |
+          mkdir -p test-results/o9-2
+          summary="test-results/o9-2/integration-summary.ndjson"
+          : > "$summary"
+          failed=0
+          total=0
+
+          for f in tests/integration/*.test.js; do
+            total=$((total + 1))
+            safe=$(basename "$f" .test.js)
+            result="test-results/o9-2/${safe}.json"
+
+            echo "::group::$f"
+            set +e
+            npx jest "$f" --ci --forceExit --json --outputFile="$result"
+            code=$?
+            set -e
+            echo "::endgroup::"
+
+            node - "$f" "$result" "$code" >> "$summary" <<'NODE'
+          const fs = require('fs');
+          const [file, resultPath, rawCode] = process.argv.slice(2);
+          const code = Number(rawCode);
+          let data = {};
+          try { data = JSON.parse(fs.readFileSync(resultPath, 'utf8')); } catch {}
+          const row = {
+            file,
+            status: code === 0 ? 'PASS' : 'FAIL',
+            passed: data.numPassedTests ?? null,
+            failed: data.numFailedTests ?? null,
+            pending: data.numPendingTests ?? null,
+            todo: data.numTodoTests ?? null,
+            suitesPassed: data.numPassedTestSuites ?? null,
+            suitesFailed: data.numFailedTestSuites ?? null,
+            success: data.success ?? (code === 0)
+          };
+          process.stdout.write(JSON.stringify(row) + '\n');
+          NODE
+
+            if [ "$code" -ne 0 ]; then
+              failed=$((failed + 1))
+            fi
+          done
+
+          echo "===== O9.2A INTEGRATION INVENTORY ====="
+          cat "$summary"
+          echo "TOTAL_SUITES=$total"
+          echo "FAILED_SUITES=$failed"
+
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Upload O9.2 integration inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: o9-2-integration-inventory
+          path: test-results/o9-2/
+          if-no-files-found: error
