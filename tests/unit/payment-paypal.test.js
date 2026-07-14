@@ -529,6 +529,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
     mockClientQuery
       .mockResolvedValueOnce({}) // BEGIN
       .mockResolvedValueOnce({}) // UPDATE orders COALESCE paypal_capture_id
+      .mockResolvedValueOnce({ rows: [{ pickup_secret_hash: 'already-set' }] }) // SELECT pickup_secret_hash (PICKUP-5 parity — déjà présent, pas de régénération)
       .mockResolvedValueOnce({}) // INSERT paypal_events_processed (processed, dans la tx)
       .mockResolvedValueOnce({}); // COMMIT
     const paypal = {
@@ -540,7 +541,7 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
       { id: 'evt-fb', event_type: 'PAYMENT.CAPTURE.COMPLETED' }, '{}', {}, makeDb(), paypal
     );
     expect(result).toEqual({ received: true });
-    expect(mockClientQuery).toHaveBeenNthCalledWith(4, 'COMMIT');
+    expect(mockClientQuery).toHaveBeenNthCalledWith(5, 'COMMIT');
     expect(mockClientRelease).toHaveBeenCalledTimes(1);
   });
 

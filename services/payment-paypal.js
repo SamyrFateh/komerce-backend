@@ -270,6 +270,42 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
         .catch(e => log.error({ err: e.message }, '[PAYPAL] cacheCodeForReveal failed'));
     }
 
+    // Post-commit : hooks métier (parity Stripe — LOY-01 + NOTIF + INVOICE + PURCHASING)
+    // Déclenché uniquement si le cycle a réellement progressé (pas noop, pas stockBlocked seul)
+    if (!stockBlocked) {
+      try {
+        const loyaltyService = require('./loyalty-service');
+        loyaltyService.handleOrderConfirmed({ orderId: order.id })
+          .then(r => { if (r && !r.skipped) log.info({ orderId: order.id }, '[PAYPAL] loyalty hook OK:', r); })
+          .catch(e => log.warn({ err: e }, '[PAYPAL] loyalty hook error'));
+      } catch (_) { /* non-bloquant */ }
+
+      try {
+        const notifSvc = require('./notification-service');
+        notifSvc.notifyPaymentConfirmed(order.id, order.reference)
+          .catch(e => log.error({ err: e }, '[PAYPAL] notif payment-confirmed failed'));
+        require('./invoice-service').sendInvoiceReadyNotification(order.id, order.reference)
+          .catch(e => log.error({ err: e }, '[PAYPAL] invoice-ready notif failed'));
+      } catch (e) { log.error({ err: e }, '[PAYPAL] notif require error'); }
+
+      try {
+        const { triggerPurchasing } = require('./purchasing-trigger-service');
+        triggerPurchasing(order.id)
+          .then(() => log.info({ order_reference: order.reference }, '[PAYPAL] purchasing trigger OK'))
+          .catch(async (e) => {
+            log.error({ err: e, order_reference: order.reference }, '[PAYPAL] purchasing trigger error');
+            try {
+              await createAlert(db, {
+                type: 'purchasing_trigger_failed', entityType: 'order', entityId: order.id,
+                severity: 'medium',
+                title: `triggerPurchasing failed (PayPal) — ${order.reference}`,
+                description: `capture ${info.paypal_capture_id} : ${e.message}`,
+              });
+            } catch (_) {}
+          });
+      } catch (e) { log.error({ err: e }, '[PAYPAL] purchasing require error'); }
+    }
+
     log.info({
       order_id: order.id, order_reference: order.reference,
       paypal_capture_id: info.paypal_capture_id,
@@ -424,6 +460,22 @@ async function _handleCaptureCompleted(event, db, paypal) {
       [info.paypal_capture_id, order.id]
     );
 
+    // Code secret retrait — parity avec capturePaypalOrder (webhook = seul chemin si capture HTTP échouée)
+    let webhookPickupCode = null;
+    const hasSecretRow = await client.query('SELECT pickup_secret_hash FROM orders WHERE id = $1', [order.id]);
+    if (!hasSecretRow.rows[0]?.pickup_secret_hash) {
+      try {
+        const { rows: [oRow] } = await client.query('SELECT relais_id FROM orders WHERE id = $1', [order.id]);
+        const genResult = await generateAndStoreSecret({
+          orderId: order.id, relaisId: oRow?.relais_id || null,
+          channel: 'paypal_webhook', dbClient: client,
+        });
+        webhookPickupCode = genResult.code;
+      } catch (genErr) {
+        log.error({ err: genErr.message, order_id: order.id }, '[PAYPAL-WEBHOOK] génération code retrait échouée — non-bloquant');
+      }
+    }
+
     // Marquer dans la même tx
     await client.query(
       `INSERT INTO paypal_events_processed (event_id, event_type, payload_summary, status)
@@ -437,6 +489,32 @@ async function _handleCaptureCompleted(event, db, paypal) {
     );
 
     await client.query('COMMIT');
+
+    // Post-commit : hooks métier (parity Stripe — LOY-01 + NOTIF + INVOICE + PURCHASING)
+    if (!cycleResult.stockBlocked) {
+      try {
+        const loyaltyService = require('./loyalty-service');
+        loyaltyService.handleOrderConfirmed({ orderId: order.id })
+          .catch(e => log.warn({ err: e }, '[PAYPAL-WEBHOOK] loyalty hook error'));
+      } catch (_) {}
+      try {
+        const notifSvc = require('./notification-service');
+        notifSvc.notifyPaymentConfirmed(order.id, order.reference)
+          .catch(e => log.error({ err: e }, '[PAYPAL-WEBHOOK] notif failed'));
+        require('./invoice-service').sendInvoiceReadyNotification(order.id, order.reference)
+          .catch(e => log.error({ err: e }, '[PAYPAL-WEBHOOK] invoice-ready notif failed'));
+      } catch (e) { log.error({ err: e }, '[PAYPAL-WEBHOOK] notif require error'); }
+      try {
+        const { triggerPurchasing } = require('./purchasing-trigger-service');
+        triggerPurchasing(order.id)
+          .catch(e => log.error({ err: e, order_reference: order.reference }, '[PAYPAL-WEBHOOK] purchasing trigger error'));
+      } catch (e) { log.error({ err: e }, '[PAYPAL-WEBHOOK] purchasing require error'); }
+    }
+
+    if (webhookPickupCode) {
+      cacheCodeForReveal(order.id, webhookPickupCode)
+        .catch(e => log.error({ err: e.message }, '[PAYPAL-WEBHOOK] cacheCodeForReveal failed'));
+    }
 
     log.info({ order_id: order.id, paypal_capture_id: info.paypal_capture_id, source: 'webhook_fallback' },
       '[PAYPAL-WEBHOOK] capture traitée via webhook (capture endpoint avait probablement échoué)');

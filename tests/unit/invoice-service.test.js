@@ -282,10 +282,10 @@ describe('sendInvoiceReadyNotification', () => {
 
   jest.mock('../../services/invoice-public-token', () => ({
     createInvoicePublicToken: (...a) => mockCreateToken(...a),
-  }), { virtual: true });
+  }));
   jest.mock('../../services/notification-service', () => ({
     notifyInvoiceReady: (...a) => mockNotifyInvoiceReady(...a),
-  }), { virtual: true });
+  }));
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -307,9 +307,9 @@ describe('sendInvoiceReadyNotification', () => {
     mockExistingInvoice();
     mockNotifyInvoiceReady.mockResolvedValueOnce({ ok: true, messageId: 'm1' });
 
-    const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+    const result = await invoiceService.sendInvoiceReadyNotification('11111111-1111-1111-1111-111111111111', 'CMD-1');
 
-    expect(mockCreateToken).toHaveBeenCalledWith('order-1');
+    expect(mockCreateToken).toHaveBeenCalledWith('11111111-1111-1111-1111-111111111111');
     expect(mockNotifyInvoiceReady).toHaveBeenCalledWith(
       '+269111',
       expect.objectContaining({
@@ -317,7 +317,7 @@ describe('sendInvoiceReadyNotification', () => {
         message: expect.stringContaining('facture'),
         invoiceNumber: 'KOM-INV-2026-000042',
       }),
-      'order-1',
+      '11111111-1111-1111-1111-111111111111',
     );
     expect(result).toEqual({ ok: true, messageId: 'm1' });
   });
@@ -326,19 +326,19 @@ describe('sendInvoiceReadyNotification', () => {
     mockExistingInvoice({ payment_mode: 'cash_relais' });
     mockNotifyInvoiceReady.mockResolvedValueOnce({ ok: true });
 
-    await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+    await invoiceService.sendInvoiceReadyNotification('11111111-1111-1111-1111-111111111111', 'CMD-1');
 
     expect(mockNotifyInvoiceReady).toHaveBeenCalledWith(
       '+269111',
       expect.objectContaining({ message: expect.stringContaining('enregistre') }),
-      'order-1',
+      '11111111-1111-1111-1111-111111111111',
     );
   });
 
   it('skip proprement si aucun téléphone sur la facture', async () => {
     mockExistingInvoice({ client_phone: null });
 
-    const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+    const result = await invoiceService.sendInvoiceReadyNotification('11111111-1111-1111-1111-111111111111', 'CMD-1');
 
     expect(result).toEqual({ ok: false, reason: 'no_phone' });
     expect(mockNotifyInvoiceReady).not.toHaveBeenCalled();
@@ -347,7 +347,7 @@ describe('sendInvoiceReadyNotification', () => {
   it('non-bloquant si getOrCreateInvoice rejette (ex. paiement pas encore confirmé)', async () => {
     mockQuery.mockRejectedValueOnce(new Error('Commande CMD-1 non payée (status: pending)'));
 
-    const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+    const result = await invoiceService.sendInvoiceReadyNotification('11111111-1111-1111-1111-111111111111', 'CMD-1');
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain('non payée');
@@ -358,7 +358,7 @@ describe('sendInvoiceReadyNotification', () => {
     mockExistingInvoice();
     mockNotifyInvoiceReady.mockResolvedValueOnce({ ok: false, reason: 'no_phone_or_payload' });
 
-    const result = await invoiceService.sendInvoiceReadyNotification('order-1', 'CMD-1');
+    const result = await invoiceService.sendInvoiceReadyNotification('11111111-1111-1111-1111-111111111111', 'CMD-1');
 
     expect(result).toEqual({ ok: false, reason: 'no_phone_or_payload' });
   });

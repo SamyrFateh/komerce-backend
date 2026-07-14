@@ -12,10 +12,13 @@
  *   - pool.query / pool.connect ne sont plus réassignés : db.query et
  *     db.getClient/db.connect exposent directement les méthodes natives
  *     de node-pg, sans wrapper.
- *   - utils/alerts-compat.js n'est PAS supprimé (16 services alerts en
- *     dépendent encore) : seul le branchement dans db.js est retiré. La
- *     vraie correction (helper métier createAlert()) viendra dans un
- *     correctif séparé.
+ *   - utils/alerts-compat.js : au moment du hotfix, ce fichier n'était pas
+ *     supprimé (16 services alerts en dépendaient encore) — seul le
+ *     branchement dans db.js était retiré. Depuis, la vraie correction
+ *     (helper métier createAlert()) a été livrée : tous les writers sont
+ *     passés au nouveau schéma (LEGACY_ALERT_RUNTIME_WRITERS = 0) et
+ *     utils/alerts-compat.js a été supprimé (archivé sous
+ *     docs/_archive/alerts-compat-pr563/).
  *
  * CHANGEMENTS V2.8 (inchangés) :
  *   - max: 10 → 20 (supporte plus de connexions concurrentes)

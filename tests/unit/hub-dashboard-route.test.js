@@ -266,7 +266,9 @@ describe('routes/hub-dashboard', () => {
         { rows: [] }, // INSERT parcel_items oi1
         { rows: [] }, // INSERT parcel_items oi2
         { rows: [] }, // UPDATE weight_kg
+        { rows: [] }, // SAVEPOINT sp_scans_auto_prepare
         { rows: [] }, // INSERT scans
+        { rows: [] }, // RELEASE SAVEPOINT sp_scans_auto_prepare
         { rows: [] }, // INSERT order_comments
       ]);
       mockGetClient.mockResolvedValue(client);

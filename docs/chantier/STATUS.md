@@ -1312,7 +1312,14 @@ Statut : **corrigé et testé — 2026-07-09**.
 
 ### utils/alerts-compat.js — réécriture robuste des INSERT `alerts` legacy
 
-Statut : **corrigé et testé — 2026-07-09**.
+Statut : **corrigé et testé — 2026-07-09**. **⚠ Historique / dépassé** : depuis,
+la migration vers `createAlert()` (nouveau schéma `type, entity_type, entity_id,
+severity, title, description`) a été achevée pour les 16 services concernés —
+`LEGACY_ALERT_RUNTIME_WRITERS = 0`. `utils/alerts-compat.js` a été supprimé du
+dépôt (archivé sous `docs/_archive/alerts-compat-pr563/`) ; la section ci-dessous
+décrit un état révolu, conservée pour mémoire seulement. Le test associé
+(`tests/unit/alerts-compat.test.js`) a été retiré (testait un module qui
+n'existe plus).
 
 - Parsing par profondeur de parenthèses/quotes (`splitSqlArgs`, `findMatchingParen`) —
   remplace un `split(',')` naïf qui cassait sur les payloads JSON contenant des virgules.
