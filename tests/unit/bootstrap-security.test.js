@@ -108,6 +108,22 @@ describe('bootstrap/security', () => {
       expect(isAllowedOrigin('http://notlocalhost.com')).toBe(false);
       expect(isAllowedOrigin('http://evil.com/localhost')).toBe(false);
     });
+
+    // BUGFIX 2026-07 — régression Safari : requêtes fetch same-origin
+    // credentialed avec Origin envoyée, et FRONTEND_URL absente/mal
+    // configurée en production. Voir commentaire DEFAULT_ALLOWED_ORIGINS
+    // dans bootstrap/security.js.
+    test('komerce.co est toujours autorisé, même sans FRONTEND_URL/ALLOWED_ORIGINS configurées (prod)', () => {
+      process.env.NODE_ENV = 'production';
+      expect(isAllowedOrigin('https://komerce.co')).toBe(true);
+      expect(isAllowedOrigin('https://www.komerce.co')).toBe(true);
+    });
+
+    test('le filet de sécurité komerce.co ne contourne pas le refus des autres origines', () => {
+      process.env.NODE_ENV = 'production';
+      expect(isAllowedOrigin('https://komerce.co.evil.com')).toBe(false);
+      expect(isAllowedOrigin('https://evil.com')).toBe(false);
+    });
   });
 
   describe('buildCorsOptions', () => {
