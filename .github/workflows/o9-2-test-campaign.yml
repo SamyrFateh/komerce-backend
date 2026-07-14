@@ -123,13 +123,13 @@ jobs:
           if-no-files-found: error
 
   public-playwright-staging:
-    name: O9.2A — Public Playwright on staging
+    name: O9.2A — Public Playwright on current Komerce environment
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: public/boutique
     env:
-      BASE_URL: https://staging.komerce.co/boutique/
+      BASE_URL: https://komerce.co/boutique/
       CI: 'true'
 
     steps:
@@ -147,7 +147,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run all public Playwright projects on staging
+      - name: Run all public Playwright projects on current Komerce environment
         run: >-
           npx playwright test
           --project='Desktop Chrome'
