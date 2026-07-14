@@ -7,10 +7,10 @@
   },
   "hashes": {
     "base.css": "8189f571ab9d",
-    "components.css": "1c4d8e8b4dc9",
+    "components.css": "602a59b43bfc",
     "desktop.css": "3f95016e95d2"
   },
-  "updatedAt": "2026-07-07T11:58:56.944Z",
+  "updatedAt": "2026-07-14T19:25:09.000Z",
   "changedBundles": [
     "components.css"
   ]
