@@ -22,8 +22,8 @@ jobs:
         run: |
           # La cartographie 360 décrit la topologie applicative, pas l'outillage de
           # gouvernance, les suites de tests ni les changements purement visuels.
-          # Les CSS Boutique et leur métadonnée de bundling sont gouvernés par le
-          # pipeline CSS dédié (css-bundles + css-guard + check:cache) : ils ne créent
+          # Les CSS Boutique, leurs manifests feature et leur métadonnée de bundling
+          # sont gouvernés par les gates Feature First / CSS dédiés : ils ne créent
           # ni route, ni service, ni table et ne doivent pas forcer un faux delta
           # CARTOGRAPHY_360. package.json ne compte que si une surface runtime/topologique
           # change (entrypoint, start, deps, engine).
@@ -31,6 +31,7 @@ jobs:
             | grep -E '^(routes/|middleware/|utils/|validators/|db/|public/|dashboard-app/|server\.js|db\.js)' \
             | grep -Ev '(^|/)tests?/' \
             | grep -Ev '^public/boutique/css/.*\.css$' \
+            | grep -Ev '^public/boutique/features/.*\.feature\.js$' \
             | grep -Ev '^public/boutique/\.cache-buster-state\.json$' \
             | grep -Ev '^public/boutique/scripts/css-bundles\.js$' || true)
           PACKAGE_RUNTIME_CHANGED=$(git diff --unified=0 origin/main...HEAD -- package.json | grep -E '^[+-].*"(main|start|dependencies|engines)"' || true)
