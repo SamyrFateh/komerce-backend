@@ -49,6 +49,7 @@ const db = require('../db');
 const { notifyText } = require('./notification-service');
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('./order-status-machine');
+const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'scan-operations' });
 
 // Droits d'accès par étape (iso-comportement avec la route)
@@ -675,12 +676,21 @@ function _notifyAnomaly(reference, step, notes, order_id) {
     .catch(err => log.error({ err }, 'Notification anomaly error'));
 }
 
-/** Log d'alerte sécurité non bloquant */
+/**
+ * Log d'alerte sécurité non bloquant. Appelée uniquement APRÈS un ROLLBACK
+ * déjà exécuté par l'appelant (cf. call sites) : jamais sur un client
+ * transactionnel encore ouvert. Persistée via le pool (`db`).
+ */
 function _logAlert(level, message, payload) {
-  db.query(
-    `INSERT INTO alerts (level, source, message, payload) VALUES ($1, 'scan_collect', $2, $3) ON CONFLICT DO NOTHING`,
-    [level, message, JSON.stringify(payload)]
-  ).catch(() => {});
+  const entityId = payload?.order_id || null;
+  createAlert(db, {
+    type: 'scan_operations_security',
+    entityType: 'order',
+    entityId,
+    severity: level,
+    title: String(message).slice(0, 500),
+    description: JSON.stringify(payload),
+  }).catch((e) => log.error({ err: e.message }, '[SCAN-OPS] alert insert failed'));
 }
 
 module.exports = { recordScan, collectParcel, verifyQr, triggerScan3 };

@@ -26,6 +26,7 @@
  */
 
 const db = require('../db');
+const { createAlert } = require('../utils/alerts');
 
 async function repairCollectiveReadyToCapture({ dryRun = true, limit = 25, minAgeMinutes = 5, user }) {
   if (!user?.id || user.role !== 'admin') {
@@ -79,15 +80,15 @@ async function repairCollectiveReadyToCapture({ dryRun = true, limit = 25, minAg
       });
 
       try {
-        await db.query(
-          `INSERT INTO alerts (level, source, message, payload)
-           VALUES ('elevated', 'collective_repair_ready_to_capture', $1, $2)`,
-          [
-            `Repair collective ready_to_capture failed for session ${session.id}`,
-            JSON.stringify({ session_id: session.id, workspace_id: session.workspace_id, error: err.message }),
-          ]
-        );
-      } catch (_) { /* non-bloquant */ }
+        await createAlert(db, {
+          type: 'collective_repair_ready_to_capture_failed',
+          entityType: 'collective_session',
+          entityId: session.id,
+          severity: 'medium',
+          title: `Repair collective ready_to_capture failed for session ${session.id}`,
+          description: `workspace_id=${session.workspace_id} error=${err.message}`,
+        });
+      } catch (_e) { /* non-bloquant */ }
     }
   }
 

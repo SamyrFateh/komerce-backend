@@ -102,7 +102,8 @@ describe('repairCollectiveReadyToCapture', () => {
 
     const alertCall = mockDbQuery.mock.calls[1];
     expect(alertCall[0]).toMatch(/INSERT INTO alerts/);
-    expect(alertCall[1][0]).toMatch(/sess-1/);
+    expect(alertCall[1]).toEqual(expect.arrayContaining(['collective_repair_ready_to_capture_failed', 'collective_session']));
+    expect(alertCall[1][4]).toMatch(/sess-1/);
   });
 
   test('mode réel : l\'échec de l\'insertion d\'alerte ne bloque pas le résultat', async () => {

@@ -31,6 +31,7 @@
 
 const db  = require('../db');
 const { notifyText } = require('../services/notification-service'); // ZG-1: remplace sendSMS
+const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 // ─── Numéro WhatsApp admin (notifications manuelles) ──────────────────────────
@@ -277,12 +278,28 @@ async function triggerPurchasing(orderId) {
         await client.query(`ROLLBACK TO SAVEPOINT po_item_${poSavepointIdx}`).catch(() => {});
         log.error(`[PURCHASING] Erreur création PO pour ${item.product_name}:`, itemErr.message);
         results.push({ item: item.product_name, status: 'error', error: itemErr.message });
+        // P0-E : l'alerte vit sous SON PROPRE savepoint, distinct de
+        // po_item_${poSavepointIdx} (déjà consommé par le ROLLBACK TO
+        // SAVEPOINT ci-dessus). Sans ce second savepoint, un échec de
+        // l'INSERT alerts remettait TOUTE la transaction en état "aborted"
+        // (preuve RED-2) : les items suivants échouaient en cascade et le
+        // COMMIT final devenait un ROLLBACK silencieux (preuve RED-2b),
+        // perdant même les PO déjà créées pour les items précédents.
         try {
-          await client.query(
-            `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated','purchasing',$1,$2)`,
-            [`PO creation failed — order ${orderId} product ${item.product_name}`, JSON.stringify({ order_id: orderId, product_id: item.product_id, error: itemErr.message })]
-          );
-        } catch (_) {}
+          await client.query(`SAVEPOINT po_item_${poSavepointIdx}_alert`);
+          await createAlert(client, {
+            type: 'purchasing_po_creation_failed',
+            entityType: 'order',
+            entityId: orderId,
+            severity: 'medium',
+            title: `PO creation failed — order ${orderId} product ${item.product_name}`,
+            description: `product_id=${item.product_id} error=${itemErr.message}`,
+          });
+          await client.query(`RELEASE SAVEPOINT po_item_${poSavepointIdx}_alert`);
+        } catch (alertErr) {
+          await client.query(`ROLLBACK TO SAVEPOINT po_item_${poSavepointIdx}_alert`).catch(() => {});
+          log.error(`[PURCHASING] alert insert failed for ${item.product_name}:`, alertErr.message);
+        }
       }
     }
 

@@ -251,15 +251,15 @@ async function safeSyncScanToParcels(opts, dbClient = null) {
     // PATCH P2-10 / TODO #387 : alerte 'elevated' si la sync parcel échoue.
     // Sans cet alerting, la divergence scan/parcel/order est invisible en production.
     // L'alerte est non-bloquante (fire-and-forget) — on ne laisse jamais crasher le client.
-    const db = require('../db');
-    db.query(
-      `INSERT INTO alerts (level, source, message, payload, created_at)
-       VALUES ('elevated', 'parcel_sync', $1, $2, NOW())`,
-      [
-        `safeSyncScanToParcels failed — order ${opts.order_id} step ${opts.step}`,
-        JSON.stringify({ order_id: opts.order_id, step: opts.step, scan_id: opts.scan_id, error: err.message }),
-      ]
-    ).catch(alertErr => log.error('[PARCEL-SYNC] Impossible d\'insérer l\'alerte:', alertErr.message));
+    const { createAlert } = require('./alerts');
+    createAlert(db, {
+      type: 'parcel_sync_failed',
+      entityType: 'order',
+      entityId: opts.order_id || null,
+      severity: 'medium',
+      title: `safeSyncScanToParcels failed — order ${opts.order_id} step ${opts.step}`,
+      description: `scan_id=${opts.scan_id} error=${err.message}`,
+    }).catch(alertErr => log.error('[PARCEL-SYNC] Impossible d\'insérer l\'alerte:', alertErr.message));
 
     return { synced: false, parcelsUpdated: 0, orderStatus: null };
   }

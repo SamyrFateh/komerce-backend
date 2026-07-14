@@ -378,7 +378,9 @@ describe('capturePaypalOrder — transaction complète (cycle paiement)', () => 
     mockClientQuery
       .mockResolvedValueOnce({}) // BEGIN
       .mockResolvedValueOnce({}) // UPDATE orders SET notes
-      .mockResolvedValueOnce({}) // INSERT alerts (stockBlocked, via client)
+      .mockResolvedValueOnce({}) // SAVEPOINT alert_stock_blocked
+      .mockResolvedValueOnce({ rows: [{ id: 'alert-1' }] }) // INSERT alerts (createAlert, stockBlocked)
+      .mockResolvedValueOnce({}) // RELEASE SAVEPOINT alert_stock_blocked
       .mockResolvedValueOnce({}) // UPDATE orders (persist infos paypal)
       .mockResolvedValueOnce({ rows: [{ relais_id: null }] }) // SELECT relais_id
       .mockResolvedValueOnce({}); // COMMIT
@@ -389,7 +391,7 @@ describe('capturePaypalOrder — transaction complète (cycle paiement)', () => 
     expect(result.success).toBe(true);
     expect(mockClientQuery).toHaveBeenNthCalledWith(2,
       expect.stringContaining('SET notes'), expect.any(Array));
-    expect(mockClientQuery).toHaveBeenNthCalledWith(3,
+    expect(mockClientQuery).toHaveBeenNthCalledWith(4,
       expect.stringContaining('INSERT INTO alerts'), expect.any(Array));
   });
 
@@ -401,7 +403,9 @@ describe('capturePaypalOrder — transaction complète (cycle paiement)', () => 
     mockClientQuery
       .mockResolvedValueOnce({}) // BEGIN
       .mockResolvedValueOnce({}) // UPDATE notes
-      .mockRejectedValueOnce(new Error('alert insert failed')) // INSERT alerts échoue
+      .mockResolvedValueOnce({}) // SAVEPOINT alert_stock_blocked
+      .mockRejectedValueOnce(new Error('alert insert failed')) // INSERT alerts (createAlert) échoue
+      .mockResolvedValueOnce({}) // ROLLBACK TO SAVEPOINT alert_stock_blocked (non-bloquant)
       .mockResolvedValueOnce({}) // UPDATE orders (persist)
       .mockResolvedValueOnce({ rows: [{ relais_id: null }] }) // SELECT relais_id
       .mockResolvedValueOnce({}); // COMMIT
@@ -623,8 +627,8 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
     );
     expect(result).toEqual({ received: true });
     expect(mockDbQuery).toHaveBeenNthCalledWith(2,
-      expect.stringContaining("VALUES ($1, 'paypal_webhook'"),
-      expect.arrayContaining(['warning'])
+      expect.stringContaining('INSERT INTO alerts'),
+      expect.arrayContaining(['paypal_capture_denied', 'medium'])
     );
   });
 
@@ -679,8 +683,8 @@ describe('handlePaypalWebhookEvent — dispatch par event_type', () => {
     const result = await handlePaypalWebhookEvent(event, '{}', {}, makeDb(), paypal);
     expect(result).toEqual({ received: true });
     expect(mockDbQuery).toHaveBeenNthCalledWith(2,
-      expect.stringContaining("VALUES ($1, 'paypal_dispute'"),
-      expect.arrayContaining(['critical'])
+      expect.stringContaining('INSERT INTO alerts'),
+      expect.arrayContaining(['paypal_dispute', 'high'])
     );
   });
 

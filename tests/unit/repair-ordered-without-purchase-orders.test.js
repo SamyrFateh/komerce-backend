@@ -93,7 +93,8 @@ describe('repairOrderedWithoutPurchaseOrders', () => {
 
     const alertCall = db.query.mock.calls.find(c => /INSERT INTO alerts/.test(String(c[0])));
     expect(alertCall).toBeDefined();
-    expect(alertCall[1][0]).toMatch(/KM-1/);
+    expect(alertCall[1]).toEqual(expect.arrayContaining(['purchasing_repair_failed', 'order', 'medium']));
+    expect(alertCall[1][4]).toMatch(/KM-1/);
   });
 
   test('limit est borné entre 1 et 100', async () => {

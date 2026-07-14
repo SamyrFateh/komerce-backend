@@ -42,7 +42,7 @@ module.exports = {
       'middleware/validate.js',
     ],
     utils: [
-      'utils/alerts-compat.js',
+      'utils/alerts.js',
       'utils/logger.js',
       'utils/phone.js',
       'utils/rates.js',
@@ -435,9 +435,7 @@ module.exports = {
       'tests/unit/order-parcel-link-rules.test.js',
       'tests/unit/phone.test.js',
       'tests/unit/rate-limit.test.js',
-      'tests/unit/alerts-compat.test.js',
       'tests/unit/db.test.js',
-      'tests/unit/verify-rewrite.test.js',
       'tests/unit/rates.test.js',
       'tests/unit/reference.test.js',
       'tests/unit/request-id.test.js',

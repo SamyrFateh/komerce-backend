@@ -11,9 +11,9 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Business dependencies : **92**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
-- Ambiguous ownership signals : **62**
+- Ambiguous ownership signals : **69**
 - Ontology gaps : **0**
-- Debt items (total) : **118**
+- Debt items (total) : **125**
 
 ## Features
 
@@ -22,7 +22,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | admin-dashboard | projection | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | sourcing | _aucune_ | 0 |
 | auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | catalog, customs, dashboard, documents, economic-engine, infrastructure, inventory, logistics, orders, purchasing, shared-cart, sourcing, unsold-resolution | 4 |
 | auth-identity | technical-transversal | 🟢 HEALTHY | 🟡 ATTENTION | otp_codes | notifications | payments, shared-cart, wallet | 1 |
-| catalog | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, product_skus, supplier_catalog_imports | auth, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, sourcing | 6 |
+| catalog | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, supplier_catalog_imports | auth, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, sourcing | 9 |
 | customs | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | customs_categories, customs_shipment_parcels, customs_shipments | auth, documents, economic-engine | dashboard, infrastructure, orders, shared-cart | 3 |
 | dashboard | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | order_incidents, partners | auth, customs, decision-signals, documents, economic-engine, logistics, orders, purchasing | economic-engine, infrastructure | 13 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | logistics | dashboard, notifications | 0 |
@@ -43,7 +43,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | recommendations | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | _aucune_ | infrastructure | 3 |
 | refunds | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | refunds | documents, wallet | logistics, orders, payments, shared-cart | 2 |
 | shared-cart | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | basket_items, baskets, cart_contributions, cart_shares, collective_payment_sessions, collective_payment_tokens, collective_stock_reservations, collective_workspace_contributions, collective_workspace_events, collective_workspace_items, collective_workspaces, order_items, recipients, shared_cart_contributions, shared_cart_estimations, shared_cart_events, shared_cart_items, shared_carts, stripe_events_processed | auth, auth-identity, customs, documents, logistics, loyalty, notifications, orders, payments, refunds | catalog, infrastructure | 5 |
-| sourcing | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | _aucune_ | auth, catalog, economic-engine | admin-dashboard | 3 |
+| sourcing | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | _aucune_ | auth, catalog, economic-engine | admin-dashboard | 7 |
 | unsold-resolution | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | unsold_items | auth | _aucune_ | 2 |
 | wallet | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets | auth-identity, documents, payments | infrastructure, orders, payments, refunds | 1 |
 | wallet-loyalty | deprecated | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
@@ -227,8 +227,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css
 - aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux
 
-**Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `product_skus`, `supplier_catalog_imports`
-**Writes (not owner)** : `alerts` (ambiguous), `price_history` (ambiguous), `product_variants` (ambiguous), `products` (ambiguous), `sourcing_candidate_events` (ambiguous), `sourcing_candidates` (ambiguous)
+**Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `supplier_catalog_imports`
+**Writes (not owner)** : `alerts` (ambiguous), `catalog_media` (ambiguous), `price_history` (ambiguous), `product_sku_media` (ambiguous), `product_skus` (ambiguous), `product_variants` (ambiguous), `products` (ambiguous), `sourcing_candidate_events` (ambiguous), `sourcing_candidates` (ambiguous)
 
 **Exposes** : 0 internal API(s), 31 HTTP interface(s)
 
@@ -240,25 +240,28 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Technical context** : 1 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 6, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 9, ontology gaps: 0
 
-**Architectural debt** (6) :
+**Architectural debt** (9) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table alerts — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table catalog_media — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table price_history — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table product_sku_media — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table product_skus — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table product_variants — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table products — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidate_events — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 104 fichier(s) déclaré(s), boutique: 16 fichier(s)
+**Implementation** : 116 fichier(s) déclaré(s), boutique: 16 fichier(s)
   - boutique : 36
   - dash : 4
   - docs : 4
-  - migrations : 5
+  - migrations : 9
   - routes : 5
   - schemas : 3
-  - services : 18
-  - tests : 28
+  - services : 22
+  - tests : 32
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_
@@ -654,7 +657,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `UNRESOLVED_INTERNAL_API` (medium) — utils/rules.js — moteur de règles métier centralisé (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — validators/index.js — barrel des schémas Joi (null) — statut: undeclared-in-graph
 
-**Implementation** : 386 fichier(s) déclaré(s)
+**Implementation** : 384 fichier(s) déclaré(s)
   - assets : 37
   - bootstrap : 8
   - ci : 25
@@ -664,7 +667,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - middleware : 5
   - migrations : 6
   - scripts : 85
-  - tests : 19
+  - tests : 17
   - utils : 6
   - validators : 1
 
@@ -1368,7 +1371,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - le payload fournisseur brut est conservé intégralement (raw_payload) pour rejouabilité
 
 **Owns** : _aucune_
-**Writes (not owner)** : `products` (ambiguous), `sourcing_candidate_events` (ambiguous), `sourcing_candidates` (ambiguous)
+**Writes (not owner)** : `catalog_media` (ambiguous), `product_sku_media` (ambiguous), `product_skus` (ambiguous), `product_variants` (ambiguous), `products` (ambiguous), `sourcing_candidate_events` (ambiguous), `sourcing_candidates` (ambiguous)
 
 **Exposes** : 0 internal API(s), 11 HTTP interface(s)
 
@@ -1380,9 +1383,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Technical context** : 1 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 3, ontology gaps: 0
+**Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 7, ontology gaps: 0
 
-**Architectural debt** (3) :
+**Architectural debt** (7) :
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table catalog_media — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table product_sku_media — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table product_skus — écrite par sourcing (RW), aucun lifecycle owner résolu (multi-writer non classifié)
+- `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table product_variants — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table products — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidate_events — écrite par sourcing (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par sourcing (RW), aucun lifecycle owner résolu (multi-writer non classifié)

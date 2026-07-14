@@ -128,8 +128,12 @@ describe('confirmPaymentCycle — confirmed→ordered non-fatal', () => {
     expect(db.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO alerts'),
       [
+        'payment_cycle_confirmed_to_ordered_rejected',
+        'order',
+        'o7',
+        'medium',
         'confirmed→ordered rejeté — order o7',
-        JSON.stringify({ orderId: 'o7', error: 'sourcing indisponible' }),
+        'error=sourcing indisponible',
       ]
     );
   });

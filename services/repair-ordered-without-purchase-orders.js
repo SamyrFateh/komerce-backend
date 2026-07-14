@@ -29,6 +29,7 @@
  */
 
 const db = require('../db');
+const { createAlert } = require('../utils/alerts');
 
 async function repairOrderedWithoutPurchaseOrders({ dryRun = true, limit = 25, user }) {
   if (!user?.id || user.role !== 'admin') {
@@ -81,15 +82,15 @@ async function repairOrderedWithoutPurchaseOrders({ dryRun = true, limit = 25, u
       });
 
       try {
-        await db.query(
-          `INSERT INTO alerts (level, source, message, payload)
-           VALUES ('elevated', 'purchasing_repair', $1, $2)`,
-          [
-            `Repair sourcing failed for ordered order ${order.reference}`,
-            JSON.stringify({ order_id: order.id, reference: order.reference, error: err.message }),
-          ]
-        );
-      } catch (_) { /* non-bloquant */ }
+        await createAlert(db, {
+          type: 'purchasing_repair_failed',
+          entityType: 'order',
+          entityId: order.id,
+          severity: 'medium',
+          title: `Repair sourcing failed for ordered order ${order.reference}`,
+          description: `error=${err.message}`,
+        });
+      } catch (_e) { /* non-bloquant */ }
     }
   }
 

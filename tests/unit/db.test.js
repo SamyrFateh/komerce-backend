@@ -23,9 +23,11 @@
  *
  * Les tests de réécriture alerts (INSERT legacy → schéma réel) ont été
  * retirés d'ici : ce mécanisme est retiré de db.js par ce hotfix. La
- * couverture de rewriteLegacyAlertInsert() reste dans
- * tests/unit/verify-rewrite.test.js et tests/unit/alerts-compat.test.js,
- * qui testent utils/alerts-compat.js directement (fichier non supprimé).
+ * couche de compat utils/alerts-compat.js (et ses tests dédiés
+ * verify-rewrite.test.js / alerts-compat.test.js) a depuis été archivée
+ * (mission ALERTS_CONTRACT_RECOVERY, 2026-07-14) : plus aucun writer
+ * runtime ne dépend du schéma legacy — voir utils/alerts.js et
+ * docs/ALERTS_CONTRACT_RECOVERY_AUDIT.md.
  */
 
 jest.mock('pg', () => {

@@ -8,8 +8,12 @@ jest.mock('../../services/order-payment-confirmation', () => ({
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
+  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
+jest.mock('../../db', () => ({ query: jest.fn().mockResolvedValue({ rows: [{ id: 'alert-1' }], rowCount: 1 }) }));
+
+const db = require('../../db');
 const { confirmPaymentCycle } = require('../../services/order-payment-confirmation');
 const { collectCash } = require('../../services/cash-operations');
 
@@ -33,6 +37,8 @@ describe('cash-operations', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     confirmPaymentCycle.mockReset();
+    db.query.mockClear();
+    db.query.mockResolvedValue({ rows: [{ id: 'alert-1' }], rowCount: 1 });
   });
 
   describe('collectCash', () => {
@@ -104,7 +110,10 @@ describe('cash-operations', () => {
       const result = await collectCash({ orderId: 'order-001', agentUser: makeAgent(), dbClient: client });
 
       expect(result).toEqual({ cross_relais_blocked: true });
-      expect(client.calls[2].sql).toContain('INSERT INTO alerts');
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO alerts'),
+        expect.arrayContaining(['cash_collect_cross_relais_blocked'])
+      );
       expect(confirmPaymentCycle).not.toHaveBeenCalled();
     });
 
@@ -128,6 +137,8 @@ describe('cash-operations — Lot A, branches manquantes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     confirmPaymentCycle.mockReset();
+    db.query.mockClear();
+    db.query.mockResolvedValue({ rows: [{ id: 'alert-1' }], rowCount: 1 });
   });
 
   describe('collectCash — préconditions', () => {
@@ -161,7 +172,10 @@ describe('cash-operations — Lot A, branches manquantes', () => {
       ]);
       const result = await collectCash({ orderId: 'order-001', agentUser: makeAgent(), dbClient: client });
       expect(result).toEqual({ agent_config_error: true });
-      expect(client.calls.some(c => String(c.sql).includes('INSERT INTO alerts'))).toBe(true);
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO alerts'),
+        expect.arrayContaining(['cash_collect_agent_config_error'])
+      );
       expect(confirmPaymentCycle).not.toHaveBeenCalled();
     });
 

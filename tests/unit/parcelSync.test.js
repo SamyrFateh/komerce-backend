@@ -245,8 +245,12 @@ describe('safeSyncScanToParcels — wrapper SAFE', () => {
     const alertCall = mockDbQuery.mock.calls.find(([sql]) => sql.includes('INSERT INTO alerts'));
     expect(alertCall).toBeDefined();
     expect(alertCall[1]).toEqual([
+      'parcel_sync_failed',
+      'order',
+      'o1',
+      'medium',
       'safeSyncScanToParcels failed — order o1 step shipped',
-      JSON.stringify({ order_id: 'o1', step: 'shipped', scan_id: 's1', error: 'db cassee' }),
+      'scan_id=s1 error=db cassee',
     ]);
   });
 

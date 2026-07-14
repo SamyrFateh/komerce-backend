@@ -85,7 +85,7 @@ describe('I-SWEEP service behavior', () => {
     test('writes a product_stock_audit alert when stock changes', async () => {
       jest.resetModules();
       const { auditProductStockChange } = require('../../services/product-publication-guard');
-      const q = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      const q = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'alert-1' }] }) };
 
       const result = await auditProductStockChange(q, {
         productId: '00000000-0000-0000-0000-000000000001',
@@ -95,9 +95,11 @@ describe('I-SWEEP service behavior', () => {
       });
 
       expect(result.inserted).toBe(true);
-      expect(q.query).toHaveBeenCalledTimes(1);
-      expect(q.query.mock.calls[0][0]).toContain('INSERT INTO alerts');
-      expect(q.query.mock.calls[0][1][1]).toContain('"delta":3');
+      expect(q.query).toHaveBeenCalledTimes(3);
+      expect(q.query.mock.calls[0][0]).toContain('SAVEPOINT');
+      expect(q.query.mock.calls[1][0]).toContain('INSERT INTO alerts');
+      expect(q.query.mock.calls[1][1][5]).toContain('delta=3');
+      expect(q.query.mock.calls[2][0]).toContain('RELEASE SAVEPOINT');
     });
   });
 });

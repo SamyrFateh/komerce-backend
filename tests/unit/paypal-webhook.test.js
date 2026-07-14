@@ -239,7 +239,8 @@ describe('POST /api/payments/paypal/webhook', () => {
     expect(res.status).toBe(200);
     const inserts = dbQueries.filter(q => q.sql.includes('INSERT INTO alerts'));
     expect(inserts.length).toBeGreaterThanOrEqual(1);
-    expect(inserts[0].params[0]).toBe('warning');
+    expect(inserts[0].params[0]).toBe('paypal_capture_denied');
+    expect(inserts[0].params[3]).toBe('medium');
   });
 
   test('CUSTOMER.DISPUTE.CREATED → insert alerte critical', async () => {
@@ -258,7 +259,8 @@ describe('POST /api/payments/paypal/webhook', () => {
     expect(res.status).toBe(200);
     const inserts = dbQueries.filter(q => q.sql.includes('INSERT INTO alerts'));
     expect(inserts.length).toBeGreaterThanOrEqual(1);
-    expect(inserts[0].params[0]).toBe('critical');
+    expect(inserts[0].params[0]).toBe('paypal_dispute');
+    expect(inserts[0].params[3]).toBe('high');
   });
 
   test('Event type inconnu → 200 + ignored:true', async () => {

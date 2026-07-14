@@ -831,6 +831,34 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/catalog-promotion.js",
+        "resolvedPath": "services/catalog-promotion.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-promotion/axes.js",
+        "resolvedPath": "services/catalog-promotion/axes.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-promotion/sku.js",
+        "resolvedPath": "services/catalog-promotion/sku.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-promotion/sku-media.js",
+        "resolvedPath": "services/catalog-promotion/sku-media.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/suppliers/normalized-product.js",
         "resolvedPath": "services/suppliers/normalized-product.js",
         "status": "resolved-in-technical-graph"
@@ -987,6 +1015,34 @@
         "category": "migrations",
         "declared": "migrations/105_catalog_source_contract_v2.sql",
         "resolvedPath": "migrations/105_catalog_source_contract_v2.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/106_catalog_media.sql",
+        "resolvedPath": "migrations/106_catalog_media.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/107_product_variants_axis_display_name.sql",
+        "resolvedPath": "migrations/107_product_variants_axis_display_name.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/108_product_skus_supplier_identity.sql",
+        "resolvedPath": "migrations/108_product_skus_supplier_identity.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/109_product_sku_media.sql",
+        "resolvedPath": "migrations/109_product_sku_media.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -1393,6 +1449,34 @@
         "category": "tests",
         "declared": "tests/unit/noon-connector.test.js",
         "resolvedPath": "tests/unit/noon-connector.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-promotion.test.js",
+        "resolvedPath": "tests/unit/catalog-promotion.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-promotion-axes.test.js",
+        "resolvedPath": "tests/unit/catalog-promotion-axes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-promotion-sku.test.js",
+        "resolvedPath": "tests/unit/catalog-promotion-sku.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-promotion-sku-media.test.js",
+        "resolvedPath": "tests/unit/catalog-promotion-sku-media.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3645,8 +3729,8 @@
       {
         "feature": "infrastructure",
         "category": "utils",
-        "declared": "utils/alerts-compat.js",
-        "resolvedPath": "utils/alerts-compat.js",
+        "declared": "utils/alerts.js",
+        "resolvedPath": "utils/alerts.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -6256,22 +6340,8 @@
       {
         "feature": "infrastructure",
         "category": "tests",
-        "declared": "tests/unit/alerts-compat.test.js",
-        "resolvedPath": "tests/unit/alerts-compat.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "tests",
         "declared": "tests/unit/db.test.js",
         "resolvedPath": "tests/unit/db.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "tests",
-        "declared": "tests/unit/verify-rewrite.test.js",
-        "resolvedPath": "tests/unit/verify-rewrite.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14320,7 +14390,7 @@
       {
         "from": "sourcing",
         "to": "catalog",
-        "raw": "catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, supplier-catalog-scanner pour le scan pricing lui-même)",
+        "raw": "catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, supplier-catalog-scanner pour le scan pricing lui-même, et depuis PDC-8 Lot 6 : catalog-promotion.js — appelé dans la transaction de POST .../import-product pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/product_skus/product_sku_media)",
         "resolved": true
       },
       {
@@ -16092,6 +16162,10 @@
               },
               {
                 "sourceFileId": "services/product-publication-guard.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/product-publication-guard.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -16169,6 +16243,10 @@
               {
                 "sourceFileId": "routes/categories.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-promotion.test.js",
+                "targetFile": "tests/integration/test-harness/mock-db.js"
               },
               {
                 "sourceFileId": "tests/unit/product-admin-service.test.js",
@@ -18231,6 +18309,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "utils/parcelSync.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "utils/parcels.js",
                 "targetFile": "utils/rules.js"
               },
@@ -18265,6 +18347,10 @@
               {
                 "sourceFileId": "services/scan-operations.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/scan-operations.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/scan-operations.js",
@@ -19096,11 +19182,19 @@
               },
               {
                 "sourceFileId": "services/admin-order-refund.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/admin-order-refund.js",
                 "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/cancel-order-purchase-orders.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/cancel-order-purchase-orders.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/cancel-order-purchase-orders.js",
@@ -19113,6 +19207,10 @@
               {
                 "sourceFileId": "services/order-payment-confirmation.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/order-payment-confirmation.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "routes/admin/orders.js",
@@ -19640,11 +19738,23 @@
               },
               {
                 "sourceFileId": "services/payment-paypal.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/payment-paypal.js",
                 "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/payment-cash-confirm.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/payment-cash-confirm.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/payment-stripe.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/payment-stripe.js",
@@ -19664,11 +19774,23 @@
               },
               {
                 "sourceFileId": "services/confirm-pickup-cash-payment.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/confirm-pickup-cash-payment.js",
                 "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/payment-paypal-events.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/cash-operations.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/cash-operations.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "services/cash-operations.js",
@@ -19737,6 +19859,10 @@
               {
                 "sourceFileId": "tests/unit/cash-operations-service.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/cash-operations-service.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/cash-reminder-service.test.js",
@@ -20385,6 +20511,10 @@
               },
               {
                 "sourceFileId": "services/purchasing-trigger-service.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-trigger-service.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -20410,6 +20540,10 @@
               {
                 "sourceFileId": "services/repair-ordered-without-purchase-orders.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/repair-ordered-without-purchase-orders.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/purchasing-admin-service.js",
@@ -20796,8 +20930,16 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/repair-collective-ready-to-capture.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "services/repair-collective-stock-reservations.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/repair-collective-stock-reservations.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "routes/shared-cart.js",
@@ -21141,6 +21283,10 @@
               },
               {
                 "sourceFileId": "routes/sourcing-scanner.js",
+                "targetFile": "services/catalog-promotion.js"
+              },
+              {
+                "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "services/suppliers/connectors/csv-connector.js"
               },
               {
@@ -21190,6 +21336,10 @@
               {
                 "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sourcing-scanner.test.js",
+                "targetFile": "tests/integration/test-harness/mock-db.js"
               }
             ]
           }
@@ -21807,7 +21957,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 785
+        "filesObserved": 791
       },
       "boutique": {
         "filesObserved": 100,
@@ -22840,7 +22990,7 @@
         "from": "sourcing",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
         "providerKind": "technical-transversal",
         "channels": [
@@ -22923,8 +23073,8 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|technical-transversal|technical-transversal|technical-primitive": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 5,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|technical-primitive": 10,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|technical-primitive": 7,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|technical-primitive": 11,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|technical-primitive": 6,
       "PILOTING_CAPABILITY|RUNTIME_AND_TEST|business-transversal|piloting-capability|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-transversal|technical-primitive": 5,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|piloting-capability|technical-transversal|technical-primitive": 1,
@@ -23346,6 +23496,21 @@
       "lifecycleOwner": "catalog",
       "resolution": "single-writer"
     },
+    "catalog_media": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW"
+        },
+        {
+          "feature": "sourcing",
+          "mode": "W"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": null,
+      "resolution": "ambiguous-multi-writer"
+    },
     "price_history": {
       "writers": [
         {
@@ -23366,11 +23531,30 @@
         {
           "feature": "catalog",
           "mode": "RW"
+        },
+        {
+          "feature": "sourcing",
+          "mode": "RW"
         }
       ],
       "readers": [],
-      "lifecycleOwner": "catalog",
-      "resolution": "single-writer"
+      "lifecycleOwner": null,
+      "resolution": "ambiguous-multi-writer"
+    },
+    "product_sku_media": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW"
+        },
+        {
+          "feature": "sourcing",
+          "mode": "W"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": null,
+      "resolution": "ambiguous-multi-writer"
     },
     "product_variants": {
       "writers": [
@@ -23381,6 +23565,10 @@
         {
           "feature": "economic-engine",
           "mode": "RW"
+        },
+        {
+          "feature": "sourcing",
+          "mode": "W"
         }
       ],
       "readers": [
@@ -24547,8 +24735,8 @@
       "backend": {
         "manifestsDiscovered": 24,
         "manifestsConnected": 24,
-        "technicalNodesTotal": 297,
-        "technicalNodesOwned": 297,
+        "technicalNodesTotal": 301,
+        "technicalNodesOwned": 301,
         "technicalOrphans": 0
       },
       "dash": {
@@ -24841,7 +25029,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 37 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 39 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -24951,7 +25139,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "logistics -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 73 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 75 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -24986,7 +25174,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 64 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 67 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25006,7 +25194,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "payments -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 39 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 46 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25056,7 +25244,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "purchasing -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 18 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 20 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25076,7 +25264,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 61 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 63 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25091,7 +25279,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "sourcing -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -25132,6 +25320,11 @@
         "type": "WRITER-NOT-OWNER",
         "ref": "cart_shares",
         "msg": "table \"cart_shares\" : lifecycle owner = shared-cart (classification.signals.ownsTables), mais aussi écrite par orders"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "catalog_media",
+        "msg": "table \"catalog_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -25220,8 +25413,18 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
+        "ref": "product_sku_media",
+        "msg": "table \"product_sku_media\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "product_skus",
+        "msg": "table \"product_skus\" a 2 écrivain(s) déclaré(s) (catalog, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
         "ref": "product_variants",
-        "msg": "table \"product_variants\" a 2 écrivain(s) déclaré(s) (catalog, economic-engine) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
+        "msg": "table \"product_variants\" a 3 écrivain(s) déclaré(s) (catalog, economic-engine, sourcing) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",

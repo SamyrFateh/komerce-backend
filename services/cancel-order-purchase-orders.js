@@ -30,6 +30,7 @@
  */
 
 const db = require('../db');
+const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'cancel-order-purchase-orders' });
 
 const AUTO_CANCEL_STATUSES = ['pending', 'notified'];
@@ -97,24 +98,36 @@ async function syncPurchaseOrdersOnOrderCancel(q = db, { orderId, orderReference
 }
 
 async function insertBlockingAlert(q, { orderId, orderReference, actor, reason, blockingPos }) {
+  // P0-F : `q` peut être le pool `db` (appel autonome) OU le client
+  // transactionnel de la machine de statut (appel imbriqué dans le BEGIN de
+  // l'annulation de commande). Dans ce second cas, un échec de persistance
+  // de CETTE alerte ne doit jamais empoisonner `q` : les queries suivantes
+  // de order-status-machine.js (et son COMMIT final) partagent le même
+  // client. D'où le SAVEPOINT, tenté dans les deux cas : s'il échoue parce
+  // que `q` n'est pas dans une transaction (cas pool), c'est sans
+  // conséquence — chaque appel pool.query() est une connexion autonome.
+  let savepointActive = false;
   try {
-    await q.query(
-      `INSERT INTO alerts (level, source, message, payload)
-       VALUES ('elevated', 'order_cancel_purchasing', $1, $2)`,
-      [
-        `Commande annulée avec PO fournisseur déjà engagée${orderReference ? ` — ${orderReference}` : ''}`,
-        JSON.stringify({
-          order_id: orderId,
-          order_reference: orderReference,
-          actor,
-          reason,
-          blocking_purchase_orders: blockingPos,
-          doctrine: 'pending/notified auto-cancelled; engaged POs require manual handling',
-        }),
-      ]
-    );
+    await q.query('SAVEPOINT cancel_order_po_alert');
+    savepointActive = true;
+  } catch (_e) { /* q hors transaction (pool) — pas de savepoint nécessaire */ }
+
+  try {
+    await createAlert(q, {
+      type: 'order_cancel_purchasing_blocked',
+      entityType: 'order',
+      entityId: orderId,
+      severity: 'medium',
+      title: `Commande annulée avec PO fournisseur déjà engagée${orderReference ? ` — ${orderReference}` : ''}`,
+      description: `actor=${JSON.stringify(actor)} reason=${reason || 'n/a'} ` +
+        `blocking_purchase_orders=${JSON.stringify(blockingPos)} ` +
+        `doctrine=pending/notified auto-cancelled; engaged POs require manual handling`,
+    });
+    if (savepointActive) await q.query('RELEASE SAVEPOINT cancel_order_po_alert').catch(() => {});
   } catch (err) {
-    // Ne jamais casser l'annulation métier uniquement parce que l'alerte échoue.
+    if (savepointActive) await q.query('ROLLBACK TO SAVEPOINT cancel_order_po_alert').catch(() => {});
+    // Invariant du service (§ doc module) : l'échec de création de l'alerte
+    // ne doit jamais casser l'annulation métier.
     log.error({ err }, '[I-SWEEP-5A] failed to insert purchasing cancel alert:');
   }
 }

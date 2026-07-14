@@ -35,6 +35,8 @@
  */
 
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
+const { createAlert } = require('../utils/alerts');
+const db = require('../db');
 const log = require('../utils/logger').child({ module: 'cash-operations' });
 
 // ─── collectCash ──────────────────────────────────────────────────────────────
@@ -99,19 +101,23 @@ async function collectCash({ orderId, agentUser, dbClient }) {
     }
 
     if (!checkPossible || !agentRelaisId) {
-      // Alert fire-and-forget hors transaction principale (on est dans BEGIN)
-      _insertAlertAsync(client, 'elevated', 'cash_collect',
-        `agent_relais sans relais_id tente cash_collect: user=${agentId}`,
-        { order_id: orderId, user_id: agentId }
+      // Persistée hors transaction (pool), attendue avant retour — cf. P0-D.
+      await _insertSecurityAlert(
+        'cash_collect_agent_config_error',
+        orderId,
+        `agent_relais sans relais_id tente cash_collect — user=${agentId}`,
+        `order_id=${orderId} user_id=${agentId}`
       );
       return { agent_config_error: true };
     }
 
     if (String(agentRelaisId) !== String(order.relais_id)) {
       log.warn(`[CASH-COLLECT] ⛔ Cross-relais refusé — agent ${agentId} (relais ${agentRelaisId}) tentait commande ${orderId} (relais ${order.relais_id})`);
-      _insertAlertAsync(client, 'elevated', 'cash_collect',
+      await _insertSecurityAlert(
+        'cash_collect_cross_relais_blocked',
+        orderId,
         `Cross-relais refusé — order ${orderId}`,
-        { user_id: agentId, agent_relais_id: agentRelaisId, order_relais_id: order.relais_id }
+        `user_id=${agentId} agent_relais_id=${agentRelaisId} order_relais_id=${order.relais_id}`
       );
       return { cross_relais_blocked: true };
     }
@@ -157,16 +163,34 @@ async function collectCash({ orderId, agentUser, dbClient }) {
 // ─── Helper interne ───────────────────────────────────────────────────────────
 
 /**
- * Insère une alerte de façon non-bloquante.
- * Utilise le pool directement pour ne pas polluer la transaction appelante.
+ * Persiste une alerte de sécurité (tentative cross-relais / agent mal
+ * configuré) HORS de la transaction métier de la route appelante.
+ *
+ * Décision transactionnelle (P0-D) : ces alertes doivent survivre à un
+ * ROLLBACK de la commande — un ROLLBACK n'annule pas la réalité de la
+ * tentative de fraude/mauvaise config, qui reste opérationnellement
+ * pertinente pour le triage sécurité. Elles sont donc écrites via le POOL
+ * (`db`), jamais via le `client` transactionnel de la route (qui peut être
+ * rollback juste après ce retour), et ATTENDUES séquentiellement — jamais
+ * deux queries concurrentes non séquencées sur le même PoolClient (c'était
+ * le bug : l'ancien code utilisait `client.query(...)` sans `await`, en
+ * pleine transaction que la route s'apprêtait à ROLLBACK).
+ * Non-bloquant : un échec de persistance de CETTE alerte ne doit jamais
+ * faire échouer la réponse 403 déjà décidée.
  */
-function _insertAlertAsync(client, level, source, message, payload) {
-  // On insère dans la tx courante car on n'a pas accès au pool ici.
-  // L'alerte sera commitée ou rollbackée avec la transaction de la route.
-  client.query(
-    `INSERT INTO alerts (level, source, message, payload) VALUES ($1, $2, $3, $4)`,
-    [level, source, message, JSON.stringify(payload)]
-  ).catch(e => log.error({ err: e.message }, '[CASH-COLLECT] alert insert failed'));
+async function _insertSecurityAlert(type, entityId, title, description) {
+  try {
+    await createAlert(db, {
+      type,
+      entityType: 'order',
+      entityId,
+      severity: 'high',
+      title,
+      description,
+    });
+  } catch (e) {
+    log.error({ err: e.message }, '[CASH-COLLECT] alert insert failed');
+  }
 }
 
 module.exports = {

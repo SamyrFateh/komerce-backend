@@ -49,6 +49,7 @@ const { appendOrderHistoryNote, transitionOrderStatus } = require('./order-statu
 // O7.2 (Cycle B) : importait auparavant routes/pickup-secret.js (une route,
 // pas une boundary de feature). Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
 const { generateAndStoreSecret, cacheCodeForReveal } = require('./pickup-secret-service');
+const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'payment-paypal' });
 
 // ─── createPaypalOrder ────────────────────────────────────────────────────────
@@ -137,17 +138,15 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
     log.error({ order_id: order.id, expected: expectedEur, actual: actualEur,
       capture_id: info.paypal_capture_id }, '[PAYPAL] MISMATCH montant — capture rejetée');
     try {
-      await db.query(
-        `INSERT INTO alerts (level, source, message, payload) VALUES ('critical', 'paypal_capture', $1, $2)`,
-        [
-          `paypal_amount_mismatch — ${order.reference}`,
-          JSON.stringify({
-            order_id: order.id, order_reference: order.reference,
-            expected_eur: expectedEur, actual_eur: actualEur,
-            paypal_capture_id: info.paypal_capture_id, paypal_order_id: paypalOrderId,
-          }),
-        ]
-      );
+      await createAlert(db, {
+        type: 'paypal_amount_mismatch',
+        entityType: 'order',
+        entityId: order.id,
+        severity: 'high',
+        title: `Montant PayPal ne correspond pas — ${order.reference}`,
+        description: `Attendu ${expectedEur} EUR, reçu ${actualEur} EUR ` +
+          `(capture ${info.paypal_capture_id}, order PayPal ${paypalOrderId}).`,
+      });
     } catch (e) { log.error({ err: e.message }, '[PAYPAL] alert insert failed'); }
     return { amount_mismatch: true, expected: expectedEur, actual: actualEur };
   }
@@ -186,17 +185,15 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
       log.error({ cycle_error: cycleResult.error, order_id: order.id }, '[PAYPAL] cycle rejected');
       await client.query('ROLLBACK');
       try {
-        await db.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('critical', 'paypal_capture', $1, $2)`,
-          [
-            `paypal_paid_but_cycle_failed — ${order.reference}`,
-            JSON.stringify({
-              order_id: order.id, cycle_error: cycleResult.error,
-              paypal_capture_id: info.paypal_capture_id,
-            }),
-          ]
-        );
-      } catch (e) { /* log only */ }
+        await createAlert(db, {
+          type: 'paypal_paid_but_cycle_failed',
+          entityType: 'order',
+          entityId: order.id,
+          severity: 'high',
+          title: `PayPal encaissé mais cycle rejeté — ${order.reference}`,
+          description: `cycle_error=${cycleResult.error} capture=${info.paypal_capture_id}`,
+        });
+      } catch (e) { log.error({ err: e.message }, '[PAYPAL] alert insert failed (cycle_rejected)'); }
       return { cycle_rejected: true, error: cycleResult.error };
     }
 
@@ -210,18 +207,23 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
       await client.query(
         `UPDATE orders SET notes = COALESCE(notes, '') || $1 WHERE id = $2`, [note, order.id]
       );
+      // SAVEPOINT dédié (même doctrine que P0-A) : la persistance de l'alerte
+      // ne doit jamais empoisonner le client transactionnel dont dépendent
+      // les queries suivantes (UPDATE orders infos PayPal, pickup secret, COMMIT).
       try {
-        await client.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('critical', 'paypal_capture', $1, $2)`,
-          [
-            `paid_but_stock_blocked — ${order.reference}`,
-            JSON.stringify({
-              order_id: order.id, order_reference: order.reference,
-              insufficient_items: items, paypal_capture_id: info.paypal_capture_id,
-            }),
-          ]
-        );
+        await client.query('SAVEPOINT alert_stock_blocked');
+        await createAlert(client, {
+          type: 'paid_but_stock_blocked',
+          entityType: 'order',
+          entityId: order.id,
+          severity: 'high',
+          title: `Paiement PayPal encaissé mais stock bloqué — ${order.reference}`,
+          description: `Capture ${info.paypal_capture_id} : ` +
+            items.map(i => `${i.product_name} dispo=${i.available} besoin=${i.needed}`).join('; '),
+        });
+        await client.query('RELEASE SAVEPOINT alert_stock_blocked');
       } catch (e) {
+        await client.query('ROLLBACK TO SAVEPOINT alert_stock_blocked').catch(() => {});
         log.error({ err: e.message }, '[PAYPAL] alert insert failed (stockBlocked)');
       }
     }
@@ -452,15 +454,14 @@ async function _handleCaptureDenied(event, db, paypal) {
   log.warn({ event_id: event.id, capture_id: info?.paypal_capture_id },
     '[PAYPAL-WEBHOOK] capture DENIED');
   try {
-    await db.query(
-      `INSERT INTO alerts (level, source, message, payload) VALUES ($1, 'paypal_webhook', $2, $3)`,
-      [
-        'warning',
-        `paypal_capture_denied — ${info?.reference_id || event.id}`,
-        JSON.stringify({ event_id: event.id, capture_info: info }),
-      ]
-    );
-  } catch (_) { /* non-bloquant */ }
+    await createAlert(db, {
+      type: 'paypal_capture_denied',
+      entityType: 'paypal_webhook',
+      severity: 'medium',
+      title: `paypal_capture_denied — ${info?.reference_id || event.id}`,
+      description: `event_id=${event.id} capture_info=${JSON.stringify(info)}`,
+    });
+  } catch (_e) { /* non-bloquant */ }
   await markPaypalEventProcessed(event, 'processed', { reason: 'denied_logged' }, db);
 }
 
@@ -474,21 +475,14 @@ async function _handleDispute(event, db) {
     '[PAYPAL-WEBHOOK] litige reçu');
   try {
     const r = event.resource || {};
-    await db.query(
-      `INSERT INTO alerts (level, source, message, payload) VALUES ($1, 'paypal_dispute', $2, $3)`,
-      [
-        'critical',
-        `paypal_dispute — ${r.dispute_id || event.id}`,
-        JSON.stringify({
-          event_id:              event.id,
-          dispute_id:            r.dispute_id,
-          dispute_state:         r.dispute_state,
-          reason:                r.reason,
-          dispute_amount:        r.dispute_amount,
-          disputed_transactions: r.disputed_transactions,
-        }),
-      ]
-    );
+    await createAlert(db, {
+      type: 'paypal_dispute',
+      entityType: 'paypal_dispute',
+      severity: 'high',
+      title: `paypal_dispute — ${r.dispute_id || event.id}`,
+      description: `event_id=${event.id} state=${r.dispute_state} reason=${r.reason} ` +
+        `amount=${JSON.stringify(r.dispute_amount)} transactions=${JSON.stringify(r.disputed_transactions)}`,
+    });
   } catch (e) {
     log.error({ err: e.message }, '[PAYPAL-WEBHOOK] dispute alert insert failed');
   }

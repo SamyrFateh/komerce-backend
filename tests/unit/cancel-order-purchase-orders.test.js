@@ -38,9 +38,11 @@ describe('cancel-order-purchase-orders', () => {
       { id: 'po-confirmed', status: 'confirmed', supplier_id: 'sup-3', supplier_order_id: 'S-3' },
     ];
     const q = { query: jest.fn()
-      .mockResolvedValueOnce({ rows: purchaseOrders })
-      .mockResolvedValueOnce({ rows: [], rowCount: 2 })
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) };
+      .mockResolvedValueOnce({ rows: purchaseOrders })              // SELECT ... FOR UPDATE
+      .mockResolvedValueOnce({ rows: [], rowCount: 2 })              // UPDATE status='cancelled'
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })              // SAVEPOINT cancel_order_po_alert
+      .mockResolvedValueOnce({ rows: [{ id: 'alert-1' }] })          // INSERT alerts (createAlert)
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) };           // RELEASE SAVEPOINT cancel_order_po_alert
 
     const result = await syncPurchaseOrdersOnOrderCancel(q, {
       orderId: 'order-001',
@@ -58,18 +60,19 @@ describe('cancel-order-purchase-orders', () => {
     expect(q.query.mock.calls[1][0]).toContain("SET status = 'cancelled'");
     expect(q.query.mock.calls[1][1][0]).toEqual(['po-pending', 'po-notified']);
     expect(q.query.mock.calls[1][1][1]).toContain('client_cancel');
-    expect(q.query.mock.calls[2][0]).toContain('INSERT INTO alerts');
-    expect(JSON.parse(q.query.mock.calls[2][1][1])).toMatchObject({
-      order_id: 'order-001',
-      order_reference: 'CMD-001',
-      blocking_purchase_orders: [{ id: 'po-confirmed', status: 'confirmed', supplier_id: 'sup-3', supplier_order_id: 'S-3' }],
-    });
+    expect(q.query.mock.calls[3][0]).toContain('INSERT INTO alerts');
+    expect(q.query.mock.calls[3][1]).toEqual(expect.arrayContaining(['order_cancel_purchasing_blocked', 'order', 'order-001', 'medium']));
+    const description = q.query.mock.calls[3][1][5];
+    expect(description).toContain('client_cancel');
+    expect(description).toContain('po-confirmed');
   });
 
   it('ne casse pas lannulation si linsertion dalerte echoue', async () => {
     const q = { query: jest.fn()
       .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'received', supplier_id: 'sup', supplier_order_id: null }] })
-      .mockRejectedValueOnce(new Error('alert_down')) };
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })   // SAVEPOINT cancel_order_po_alert
+      .mockRejectedValueOnce(new Error('alert_down'))     // INSERT alerts (createAlert) échoue
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) }; // ROLLBACK TO SAVEPOINT cancel_order_po_alert
 
     await expect(syncPurchaseOrdersOnOrderCancel(q, { orderId: 'order-001' })).resolves.toMatchObject({
       total: 1,

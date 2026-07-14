@@ -334,7 +334,9 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
 
     const client = makeClient([
       { rows: [], rowCount: 1 }, // UPDATE orders SET notes
-      { rows: [], rowCount: 1 }, // INSERT INTO alerts (critical)
+      { rows: [], rowCount: 1 }, // SAVEPOINT alert_stock_blocked
+      { rows: [{ id: 'alert-1' }] }, // INSERT INTO alerts (createAlert, current schema)
+      { rows: [], rowCount: 1 }, // RELEASE SAVEPOINT alert_stock_blocked
       { rows: [{ relais_id: 'relais-001' }] }, // SELECT relais_id
       { rows: [], rowCount: 1 }, // INSERT stripe_events_processed
     ]);
@@ -373,7 +375,9 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
 
     const client = makeClient([
       { rows: [], rowCount: 1 }, // UPDATE orders SET notes
-      { rows: [], rowCount: 1 }, // INSERT INTO alerts (critical)
+      { rows: [], rowCount: 1 }, // SAVEPOINT alert_stock_blocked
+      { rows: [{ id: 'alert-1' }] }, // INSERT INTO alerts (createAlert, current schema)
+      { rows: [], rowCount: 1 }, // RELEASE SAVEPOINT alert_stock_blocked
       { rows: [{ relais_id: 'relais-001' }] }, // SELECT relais_id
       { rows: [], rowCount: 1 }, // INSERT stripe_events_processed
     ]);
@@ -403,7 +407,9 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
 
     const client = makeClient([
       { rows: [], rowCount: 1 }, // UPDATE orders SET notes
-      { error: new Error('insert alerts failed') }, // INSERT INTO alerts → throw
+      { rows: [], rowCount: 1 }, // SAVEPOINT alert_stock_blocked
+      { error: new Error('insert alerts failed') }, // INSERT INTO alerts (createAlert) → throw
+      { rows: [], rowCount: 1 }, // ROLLBACK TO SAVEPOINT alert_stock_blocked (non-bloquant)
       { rows: [{ relais_id: null }] }, // SELECT relais_id
       { rows: [], rowCount: 1 }, // INSERT stripe_events_processed
     ]);
@@ -436,10 +442,12 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
     db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
 
     const client = makeClient([
-      { rows: [], rowCount: 1 },
-      { rows: [], rowCount: 1 },
-      { rows: [{ relais_id: 'relais-002' }] },
-      { rows: [], rowCount: 1 },
+      { rows: [], rowCount: 1 }, // UPDATE orders SET notes
+      { rows: [], rowCount: 1 }, // SAVEPOINT alert_stock_blocked
+      { rows: [{ id: 'alert-1' }] }, // INSERT INTO alerts (createAlert)
+      { rows: [], rowCount: 1 }, // RELEASE SAVEPOINT alert_stock_blocked
+      { rows: [{ relais_id: 'relais-002' }] }, // SELECT relais_id
+      { rows: [], rowCount: 1 }, // INSERT stripe_events_processed
     ]);
     db.pool.connect.mockResolvedValueOnce(client);
 
@@ -468,10 +476,12 @@ describe('handleStripeSucceeded — chemin 6 : stockBlocked', () => {
     db.query.mockResolvedValueOnce({ rows: [{ payment_status: 'pending' }] });
 
     const client = makeClient([
-      { rows: [], rowCount: 1 },
-      { rows: [], rowCount: 1 },
-      { rows: [{ relais_id: 'relais-003' }] },
-      { rows: [], rowCount: 1 },
+      { rows: [], rowCount: 1 }, // UPDATE orders SET notes
+      { rows: [], rowCount: 1 }, // SAVEPOINT alert_stock_blocked
+      { rows: [{ id: 'alert-1' }] }, // INSERT INTO alerts (createAlert)
+      { rows: [], rowCount: 1 }, // RELEASE SAVEPOINT alert_stock_blocked
+      { rows: [{ relais_id: 'relais-003' }] }, // SELECT relais_id
+      { rows: [], rowCount: 1 }, // INSERT stripe_events_processed
     ]);
     db.pool.connect.mockResolvedValueOnce(client);
 
@@ -537,7 +547,9 @@ describe('handleStripeSucceeded — chemin 7 : nominal (processedOk=true)', () =
     await handleStripeSucceeded(event, intent, db, triggerPurchasing);
     await new Promise(r => setTimeout(r, 20));
 
-    const alertCall = db.query.mock.calls.find(c => String(c[0]).includes("'elevated', 'purchasing'"));
+    const alertCall = db.query.mock.calls.find(c =>
+      String(c[0]).includes('INSERT INTO alerts') && (c[1] || []).includes('purchasing_trigger_failed')
+    );
     expect(alertCall).toBeDefined();
   });
 

@@ -44,6 +44,7 @@ const { markFailed }             = require('./payment-service');
 // O7.2 (Cycle B) : importait auparavant routes/pickup-secret.js (une route,
 // pas une boundary de feature). Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
 const { generateAndStoreSecret, cacheCodeForReveal } = require('./pickup-secret-service');
+const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'payment-stripe' });
 
 // ─── createStripeIntent ───────────────────────────────────────────────────────
@@ -190,22 +191,26 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
         [incidentNote, orderId]
       );
 
+      // SAVEPOINT dédié : createAlert() persiste dans le contrat physique réel
+      // et ne devrait normalement jamais échouer pour une raison de schéma,
+      // mais l'alerte reste non-bloquante par doctrine (P0-A) — un incident
+      // DB inattendu sur CET insert ne doit jamais empoisonner le client
+      // transactionnel dont dépendent les queries suivantes (SELECT relais_id,
+      // pickup secret, COMMIT).
       try {
-        await client.query(
-          `INSERT INTO alerts (level, source, message, payload)
-           VALUES ('critical', 'stripe_webhook', $1, $2)`,
-          [
-            `paid_but_stock_blocked — ${orderReference}`,
-            JSON.stringify({
-              order_id:                 orderId,
-              order_reference:          orderReference,
-              insufficient_items:       insufficientItems,
-              stripe_event_id:          event.id,
-              stripe_payment_intent_id: intent.id,
-            }),
-          ]
-        );
+        await client.query('SAVEPOINT alert_stock_blocked');
+        await createAlert(client, {
+          type: 'paid_but_stock_blocked',
+          entityType: 'order',
+          entityId: orderId,
+          severity: 'high',
+          title: `Paiement Stripe encaissé mais stock bloqué — ${orderReference}`,
+          description: `Stripe webhook ${event.id} (payment_intent ${intent.id}) : ` +
+            insufficientItems.map(i => `${i.product_name} dispo=${i.available} besoin=${i.needed}`).join('; '),
+        });
+        await client.query('RELEASE SAVEPOINT alert_stock_blocked');
       } catch (alertErr) {
+        await client.query('ROLLBACK TO SAVEPOINT alert_stock_blocked').catch(() => {});
         log.error({ err: alertErr, order_reference: orderReference },
           '[STRIPE-WEBHOOK] FAILED TO INSERT ALERT');
       }
@@ -313,14 +318,14 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
       .catch(async (e) => {
         log.error({ err: e, order_reference: smsContext?.order_reference }, '[PURCHASING] Stripe trigger error');
         try {
-          await db.query(
-            `INSERT INTO alerts (level, source, message, payload)
-             VALUES ('elevated', 'purchasing', $1, $2)`,
-            [
-              `triggerPurchasing failed: ${smsContext?.order_reference}`,
-              JSON.stringify({ order_id: triggerPurchasingFor, error: e.message, stripe_event_id: event.id }),
-            ]
-          );
+          await createAlert(db, {
+            type: 'purchasing_trigger_failed',
+            entityType: 'order',
+            entityId: triggerPurchasingFor,
+            severity: 'medium',
+            title: `triggerPurchasing failed — ${smsContext?.order_reference || triggerPurchasingFor}`,
+            description: `Stripe webhook ${event.id} : ${e.message}`,
+          });
         } catch (alertErr) {
           log.error({ err: alertErr }, '[PURCHASING] alert insert failed');
         }

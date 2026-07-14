@@ -47,9 +47,9 @@
     "businessDependencies": 92,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
-    "ambiguousOwnershipSignals": 62,
+    "ambiguousOwnershipSignals": 69,
     "ontologyGaps": 0,
-    "debtItemsTotal": 118
+    "debtItemsTotal": 125
   },
   "features": [
     {
@@ -1353,7 +1353,7 @@
             ]
           },
           "migrations": {
-            "count": 5,
+            "count": 9,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -1378,6 +1378,26 @@
               {
                 "declared": "migrations/105_catalog_source_contract_v2.sql",
                 "resolvedPath": "migrations/105_catalog_source_contract_v2.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/106_catalog_media.sql",
+                "resolvedPath": "migrations/106_catalog_media.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/107_product_variants_axis_display_name.sql",
+                "resolvedPath": "migrations/107_product_variants_axis_display_name.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/108_product_skus_supplier_identity.sql",
+                "resolvedPath": "migrations/108_product_skus_supplier_identity.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/109_product_sku_media.sql",
+                "resolvedPath": "migrations/109_product_sku_media.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -1433,7 +1453,7 @@
             ]
           },
           "services": {
-            "count": 18,
+            "count": 22,
             "files": [
               {
                 "declared": "services/catalog-approval.js",
@@ -1458,6 +1478,26 @@
               {
                 "declared": "services/catalog-product-detail.js",
                 "resolvedPath": "services/catalog-product-detail.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-promotion.js",
+                "resolvedPath": "services/catalog-promotion.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-promotion/axes.js",
+                "resolvedPath": "services/catalog-promotion/axes.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-promotion/sku-media.js",
+                "resolvedPath": "services/catalog-promotion/sku-media.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-promotion/sku.js",
+                "resolvedPath": "services/catalog-promotion/sku.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -1528,7 +1568,7 @@
             ]
           },
           "tests": {
-            "count": 28,
+            "count": 32,
             "files": [
               {
                 "declared": "tests/unit/admin-boutique-categories.test.js",
@@ -1583,6 +1623,26 @@
               {
                 "declared": "tests/unit/catalog-product-detail.test.js",
                 "resolvedPath": "tests/unit/catalog-product-detail.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-promotion-axes.test.js",
+                "resolvedPath": "tests/unit/catalog-promotion-axes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-promotion-sku-media.test.js",
+                "resolvedPath": "tests/unit/catalog-promotion-sku-media.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-promotion-sku.test.js",
+                "resolvedPath": "tests/unit/catalog-promotion-sku.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-promotion.test.js",
+                "resolvedPath": "tests/unit/catalog-promotion.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -1683,7 +1743,7 @@
             ]
           }
         },
-        "totalFiles": 104,
+        "totalFiles": 116,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 16,
@@ -1822,10 +1882,6 @@
             "resolution": "single-writer"
           },
           {
-            "table": "product_skus",
-            "resolution": "single-writer"
-          },
-          {
             "table": "supplier_catalog_imports",
             "resolution": "single-writer"
           }
@@ -1862,16 +1918,28 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "catalog_media",
+            "mode": "RW",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
             "table": "price_history",
             "mode": "W",
             "lifecycleOwner": null,
             "ownershipStatus": "ambiguous"
           },
           {
+            "table": "product_sku_media",
+            "mode": "RW",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
             "table": "product_skus",
             "mode": "RW",
-            "lifecycleOwner": "catalog",
-            "ownershipStatus": "owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "product_variants",
@@ -1942,10 +2010,6 @@
             "resolution": "single-writer"
           },
           {
-            "table": "product_skus",
-            "resolution": "single-writer"
-          },
-          {
             "table": "supplier_catalog_imports",
             "resolution": "single-writer"
           }
@@ -1982,16 +2046,28 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "catalog_media",
+            "mode": "RW",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
             "table": "price_history",
             "mode": "W",
             "lifecycleOwner": null,
             "ownershipStatus": "ambiguous"
           },
           {
+            "table": "product_sku_media",
+            "mode": "RW",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
             "table": "product_skus",
             "mode": "RW",
-            "lifecycleOwner": "catalog",
-            "ownershipStatus": "owner"
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
           },
           {
             "table": "product_variants",
@@ -2148,10 +2224,10 @@
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 6
+        "ambiguousOwnershipCount": 9
       },
       "architecturalDebt": {
-        "debtCount": 6,
+        "debtCount": 9,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -2161,7 +2237,22 @@
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
+            "evidence": "table catalog_media — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
             "evidence": "table price_history — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
+            "evidence": "table product_sku_media — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
+            "evidence": "table product_skus — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
           },
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -8044,7 +8135,7 @@
             ]
           },
           "tests": {
-            "count": 19,
+            "count": 17,
             "files": [
               {
                 "declared": "tests/integration/groupe-paiement.manual.js",
@@ -8069,11 +8160,6 @@
               {
                 "declared": "tests/test-flow-contract.js",
                 "resolvedPath": "tests/test-flow-contract.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/alerts-compat.test.js",
-                "resolvedPath": "tests/unit/alerts-compat.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8135,11 +8221,6 @@
                 "declared": "tests/unit/upload.test.js",
                 "resolvedPath": "tests/unit/upload.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/verify-rewrite.test.js",
-                "resolvedPath": "tests/unit/verify-rewrite.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -8147,8 +8228,8 @@
             "count": 6,
             "files": [
               {
-                "declared": "utils/alerts-compat.js",
-                "resolvedPath": "utils/alerts-compat.js",
+                "declared": "utils/alerts.js",
+                "resolvedPath": "utils/alerts.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -8189,7 +8270,7 @@
             ]
           }
         },
-        "totalFiles": 386,
+        "totalFiles": 384,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -15327,6 +15408,30 @@
         "ownsTables": [],
         "writesTables": [
           {
+            "table": "catalog_media",
+            "mode": "W",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "product_sku_media",
+            "mode": "W",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "product_skus",
+            "mode": "RW",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "product_variants",
+            "mode": "W",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
             "table": "products",
             "mode": "W",
             "lifecycleOwner": null,
@@ -15355,6 +15460,30 @@
       "data": {
         "ownsTables": [],
         "writesTables": [
+          {
+            "table": "catalog_media",
+            "mode": "W",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "product_sku_media",
+            "mode": "W",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "product_skus",
+            "mode": "RW",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "product_variants",
+            "mode": "W",
+            "lifecycleOwner": null,
+            "ownershipStatus": "ambiguous"
+          },
           {
             "table": "products",
             "mode": "W",
@@ -15449,11 +15578,31 @@
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount": 3
+        "ambiguousOwnershipCount": 7
       },
       "architecturalDebt": {
-        "debtCount": 3,
+        "debtCount": 7,
         "debtItems": [
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
+            "evidence": "table catalog_media — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
+            "evidence": "table product_sku_media — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
+            "evidence": "table product_skus — écrite par sourcing (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
+          {
+            "type": "AMBIGUOUS_TABLE_OWNERSHIP",
+            "severity": "medium",
+            "evidence": "table product_variants — écrite par sourcing (W), aucun lifecycle owner résolu (multi-writer non classifié)"
+          },
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",

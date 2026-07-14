@@ -33,6 +33,7 @@ const { processRefund }       = require('./refund-service');
 const { transitionOrderStatus } = require('./order-status-machine');
 const { markRefunded }        = require('./payment-service');
 const refundReceiptService    = require('./documents/refund-receipt');
+const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'admin-order-refund' });
 
 async function refundCancelledOrder({ orderId, user, dryRun = true, reason = null, cashMode = 'manual' }) {
@@ -124,14 +125,26 @@ async function refundCancelledOrder({ orderId, user, dryRun = true, reason = nul
     }
 
     if (plannedMethod === 'manual_cash') {
-      await client.query(
-        `INSERT INTO alerts (level, source, message, payload)
-         VALUES ('elevated', 'refund_manual_cash', $1, $2)`,
-        [
-          `Remboursement cash manuel requis — ${order.reference}`,
-          JSON.stringify({ order_id: order.id, reference: order.reference, amount_kmf: amountKmf, reason }),
-        ]
-      );
+      // SAVEPOINT dédié : un échec de persistance d'alerte ne doit JAMAIS
+      // convertir ce COMMIT en ROLLBACK silencieux (Postgres traite un COMMIT
+      // sur client empoisonné comme un ROLLBACK sans lever d'exception — cf.
+      // preuve RED-2b). Le contrat fonctionnel (202 + manual_required=true +
+      // commande cancelled) doit rester vrai même si l'alerte échoue.
+      try {
+        await client.query('SAVEPOINT alert_refund_manual_cash');
+        await createAlert(client, {
+          type: 'refund_manual_cash',
+          entityType: 'order',
+          entityId: order.id,
+          severity: 'high',
+          title: `Remboursement cash manuel requis — ${order.reference}`,
+          description: `amount_kmf=${amountKmf}${reason ? ` reason=${reason}` : ''}`,
+        });
+        await client.query('RELEASE SAVEPOINT alert_refund_manual_cash');
+      } catch (alertErr) {
+        await client.query('ROLLBACK TO SAVEPOINT alert_refund_manual_cash').catch(() => {});
+        log.error({ err: alertErr, order_id: order.id }, '[REFUND] manual_cash alert insert failed');
+      }
       await client.query('COMMIT');
       return {
         status: 202,

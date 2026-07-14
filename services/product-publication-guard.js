@@ -27,6 +27,7 @@
  */
 
 const db = require('../db');
+const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'product-publication-guard' });
 
 async function auditProductStockChange(q = db, {
@@ -44,25 +45,30 @@ async function auditProductStockChange(q = db, {
 
   if (oldValue === newValue) return { skipped: true, reason: 'unchanged' };
 
+  // `q` peut être le pool OU un client transactionnel imbriqué dans l'appel
+  // de product-admin-service.js / catalog-approval.js. SAVEPOINT best-effort
+  // pour ne jamais empoisonner une transaction appelante si `q` en a une.
+  let savepointActive = false;
   try {
-    await q.query(
-      `INSERT INTO alerts (level, source, message, payload)
-       VALUES ('info', 'product_stock_audit', $1, $2)`,
-      [
-        `Stock catalogue modifié pour produit ${productId}`,
-        JSON.stringify({
-          product_id: productId,
-          old_stock: oldValue,
-          new_stock: newValue,
-          actor,
-          source,
-          note,
-          delta: oldValue === null || newValue === null ? null : newValue - oldValue,
-        }),
-      ]
-    );
-    return { inserted: true };
+    await q.query('SAVEPOINT product_stock_audit');
+    savepointActive = true;
+  } catch (_e) { /* q hors transaction (pool) */ }
+
+  try {
+    const row = await createAlert(q, {
+      type: 'product_stock_audit',
+      entityType: 'product',
+      entityId: productId,
+      severity: 'low',
+      title: `Stock catalogue modifié pour produit ${productId}`,
+      description: `old_stock=${oldValue} new_stock=${newValue} delta=${
+        oldValue === null || newValue === null ? 'n/a' : newValue - oldValue
+      } source=${source} actor=${JSON.stringify(actor)}${note ? ` note=${note}` : ''}`,
+    });
+    if (savepointActive) await q.query('RELEASE SAVEPOINT product_stock_audit').catch(() => {});
+    return { inserted: true, alert_id: row.id };
   } catch (err) {
+    if (savepointActive) await q.query('ROLLBACK TO SAVEPOINT product_stock_audit').catch(() => {});
     log.warn({ err }, '[product-publication-guard] stock audit skipped:');
     return { skipped: true, reason: err.message };
   }

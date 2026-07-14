@@ -36,6 +36,7 @@
  */
 
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
+const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'payment-cash-confirm' });
 
 // ─── confirmCashByReference ────────────────────────────────────────────────────
@@ -88,22 +89,28 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
 
       if (!checkPossible || !agentRelaisId) {
         await client.query('ROLLBACK');
-        db.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_confirm', $1, $2)`,
-          [`agent_relais sans relais_id tente cash_confirm: user=${actor.id}`,
-           JSON.stringify({ order_reference: order.reference, user_id: actor.id })]
-        ).catch(() => {});
+        createAlert(db, {
+          type: 'cash_confirm_agent_config_error',
+          entityType: 'order',
+          entityId: order.id,
+          severity: 'high',
+          title: `agent_relais sans relais_id tente cash_confirm — user=${actor.id}`,
+          description: `order_reference=${order.reference} user_id=${actor.id}`,
+        }).catch(() => {});
         return { status: 403, body: { error: 'Configuration agent incomplète — contactez un admin' } };
       }
 
       if (String(agentRelaisId) !== String(order.relais_id)) {
         await client.query('ROLLBACK');
         log.warn(`[CASH-CONFIRM] ⛔ Cross-relais refusé — agent ${actor.id} (relais ${agentRelaisId}) tentait commande ${order.reference} (relais ${order.relais_id})`);
-        db.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_confirm', $1, $2)`,
-          [`Cross-relais refusé: ${order.reference}`,
-           JSON.stringify({ user_id: actor.id, agent_relais_id: agentRelaisId, order_relais_id: order.relais_id, order_reference: order.reference })]
-        ).catch(() => {});
+        createAlert(db, {
+          type: 'cash_confirm_cross_relais_blocked',
+          entityType: 'order',
+          entityId: order.id,
+          severity: 'high',
+          title: `Cross-relais refusé — ${order.reference}`,
+          description: `user_id=${actor.id} agent_relais_id=${agentRelaisId} order_relais_id=${order.relais_id}`,
+        }).catch(() => {});
         return { status: 403, body: { error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider' } };
       }
     }

@@ -14,6 +14,7 @@ const { makeClient } = require('../integration/test-harness/mock-db');
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
+  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
 const mockConfirmPaymentCycle = jest.fn();

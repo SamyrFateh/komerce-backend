@@ -103,7 +103,8 @@ describe('repairCollectiveStockReservations', () => {
 
     const alertCall = mockDbQuery.mock.calls[2];
     expect(alertCall[0]).toMatch(/INSERT INTO alerts/);
-    expect(alertCall[1][0]).toMatch(/consume failed for workspace ws-1/);
+    expect(alertCall[1]).toEqual(expect.arrayContaining(['collective_stock_reservation_repair_failed', 'collective_workspace', 'medium']));
+    expect(alertCall[1][4]).toMatch(/consume failed for workspace ws-1/);
   });
 
   test('mode réel : status 207 et alerte si un release échoue', async () => {

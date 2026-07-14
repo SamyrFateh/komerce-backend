@@ -35,18 +35,26 @@ describe('product-publication-guard', () => {
   });
 
   it('auditProductStockChange insere une alerte avec delta', async () => {
-    const q = { query: jest.fn().mockResolvedValueOnce({ rows: [], rowCount: 1 }) };
+    const q = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })     // SAVEPOINT product_stock_audit
+      .mockResolvedValueOnce({ rows: [{ id: 'alert-1' }] }) // INSERT alerts (createAlert)
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }),    // RELEASE SAVEPOINT product_stock_audit
+    };
 
     await expect(auditProductStockChange(q, { productId: 'prod-001', oldStock: 1, newStock: 4, actor: 'admin', source: 'test', note: 'ok' }))
-      .resolves.toEqual({ inserted: true });
-    expect(q.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO alerts'), [
-      'Stock catalogue modifié pour produit prod-001',
-      JSON.stringify({ product_id: 'prod-001', old_stock: 1, new_stock: 4, actor: 'admin', source: 'test', note: 'ok', delta: 3 }),
-    ]);
+      .resolves.toEqual({ inserted: true, alert_id: 'alert-1' });
+    expect(q.query).toHaveBeenNthCalledWith(2,
+      expect.stringContaining('INSERT INTO alerts'),
+      expect.arrayContaining(['product_stock_audit', 'product', 'prod-001', 'low'])
+    );
   });
 
   it('auditProductStockChange ne bloque pas si alert insert echoue', async () => {
-    const q = { query: jest.fn().mockRejectedValueOnce(new Error('alerts_down')) };
+    const q = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })  // SAVEPOINT product_stock_audit
+      .mockRejectedValueOnce(new Error('alerts_down'))   // INSERT alerts (createAlert) échoue
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }), // ROLLBACK TO SAVEPOINT product_stock_audit
+    };
 
     await expect(auditProductStockChange(q, { productId: 'prod-001', oldStock: 1, newStock: 4 }))
       .resolves.toEqual({ skipped: true, reason: 'alerts_down' });

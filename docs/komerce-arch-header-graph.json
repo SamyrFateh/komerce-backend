@@ -20,12 +20,12 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 756,
-    "edges": 4286,
+    "graphNodes": 757,
+    "edges": 4289,
     "dbTables": 112,
-    "doctrines": 148,
+    "doctrines": 149,
     "impactAreas": 125,
-    "unresolvedCodeEdges": 411,
+    "unresolvedCodeEdges": 410,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 65
   },
@@ -16400,27 +16400,28 @@
       "version": "2026-06"
     },
     {
-      "id": "utils/alerts-compat.js",
-      "file": "utils/alerts-compat.js",
+      "id": "utils/alerts.js",
+      "file": "utils/alerts.js",
       "type": "file",
       "headerType": "full",
-      "role": "alerts-schema-compat",
+      "role": "alerts-persistence-boundary",
       "domain": "infrastructure",
       "layer": "util",
       "criticality": "high",
       "owner": null,
       "purpose": null,
       "inputs": [
-        "sql_query",
-        "sql_params"
+        "db_or_client",
+        "alert_fields"
       ],
       "outputs": [
-        "rewritten_sql_query",
-        "rewritten_sql_params"
+        "persisted_alert_row"
       ],
       "depends": [],
       "usedBy": [
-        "db.js"
+        "services/payment-stripe.js",
+        "services/payment-paypal.js",
+        "services/payment-cash-confirm.js"
       ],
       "dbRead": [],
       "dbWrite": [
@@ -16431,16 +16432,17 @@
         "compatible_with_caller"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "writer_helper_is_not_lifecycle_owner"
       ],
       "impactAreas": [
         "operations",
         "payment",
         "logistics",
         "catalog",
-        "refunds"
+        "refunds",
+        "purchasing"
       ],
-      "version": "2026-07-09b"
+      "version": "2026-07-14"
     },
     {
       "id": "utils/categories-cache.js",
@@ -18766,6 +18768,11 @@
       "id": "doctrine:secrets_env_only",
       "type": "doctrine",
       "doctrine": "secrets_env_only"
+    },
+    {
+      "id": "doctrine:writer_helper_is_not_lifecycle_owner",
+      "type": "doctrine",
+      "doctrine": "writer_helper_is_not_lifecycle_owner"
     },
     {
       "id": "doctrine:API_CONTRACTS",
@@ -43235,52 +43242,70 @@
       "label": "checkout"
     },
     {
-      "from": "db.js",
-      "to": "utils/alerts-compat.js",
+      "from": "services/payment-stripe.js",
+      "to": "utils/alerts.js",
       "type": "uses",
-      "label": "db.js"
+      "label": "services/payment-stripe.js"
     },
     {
-      "from": "utils/alerts-compat.js",
+      "from": "services/payment-paypal.js",
+      "to": "utils/alerts.js",
+      "type": "uses",
+      "label": "services/payment-paypal.js"
+    },
+    {
+      "from": "services/payment-cash-confirm.js",
+      "to": "utils/alerts.js",
+      "type": "uses",
+      "label": "services/payment-cash-confirm.js"
+    },
+    {
+      "from": "utils/alerts.js",
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
     },
     {
-      "from": "utils/alerts-compat.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "from": "utils/alerts.js",
+      "to": "doctrine:writer_helper_is_not_lifecycle_owner",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "writer_helper_is_not_lifecycle_owner"
     },
     {
-      "from": "utils/alerts-compat.js",
+      "from": "utils/alerts.js",
       "to": "impact:operations",
       "type": "impact",
       "label": "operations"
     },
     {
-      "from": "utils/alerts-compat.js",
+      "from": "utils/alerts.js",
       "to": "impact:payment",
       "type": "impact",
       "label": "payment"
     },
     {
-      "from": "utils/alerts-compat.js",
+      "from": "utils/alerts.js",
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
     },
     {
-      "from": "utils/alerts-compat.js",
+      "from": "utils/alerts.js",
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
     },
     {
-      "from": "utils/alerts-compat.js",
+      "from": "utils/alerts.js",
       "to": "impact:refunds",
       "type": "impact",
       "label": "refunds"
+    },
+    {
+      "from": "utils/alerts.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "utils/categories-cache.js",
@@ -57838,6 +57863,7 @@
         "routes/payments.js",
         "services/loyalty-service.js",
         "services/order-payment-confirmation.js",
+        "utils/alerts.js",
         "utils/logger.js"
       ]
     },
@@ -57937,6 +57963,7 @@
         "services/payment-service.js",
         "services/paypal-client.js",
         "services/pickup-secret-service.js",
+        "utils/alerts.js",
         "utils/logger.js"
       ]
     },
@@ -58051,6 +58078,7 @@
         "services/order-payment-confirmation.js",
         "services/payment-service.js",
         "services/pickup-secret-service.js",
+        "utils/alerts.js",
         "utils/logger.js"
       ]
     },
@@ -61084,8 +61112,8 @@
         "services/shared-cart-lifecycle.js"
       ]
     },
-    "utils/alerts-compat.js": {
-      "role": "alerts-schema-compat",
+    "utils/alerts.js": {
+      "role": "alerts-persistence-boundary",
       "domain": "infrastructure",
       "criticality": "high",
       "headerType": "full",
@@ -61093,7 +61121,9 @@
       "purpose": null,
       "directDependsOn": [],
       "directUsedBy": [
-        "db.js"
+        "services/payment-stripe.js",
+        "services/payment-paypal.js",
+        "services/payment-cash-confirm.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -61102,23 +61132,28 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "writer_helper_is_not_lifecycle_owner"
       ],
       "impactAreas": [
         "operations",
         "payment",
         "logistics",
         "catalog",
-        "refunds"
+        "refunds",
+        "purchasing"
       ],
       "mustCheck": [
         "db:alerts",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:writer_helper_is_not_lifecycle_owner",
         "impact:catalog",
         "impact:logistics",
         "impact:operations",
         "impact:payment",
-        "impact:refunds"
+        "impact:purchasing",
+        "impact:refunds",
+        "services/payment-cash-confirm.js",
+        "services/payment-paypal.js",
+        "services/payment-stripe.js"
       ]
     },
     "utils/categories-cache.js": {
@@ -62282,7 +62317,7 @@
         "services/repair-collective-stock-reservations.js",
         "services/repair-ordered-without-purchase-orders.js",
         "services/scan-operations.js",
-        "utils/alerts-compat.js",
+        "utils/alerts.js",
         "utils/parcelSync.js"
       ]
     },
@@ -65325,12 +65360,6 @@
       "to": "services/whatsapp-meta.js",
       "type": "uses",
       "label": "notification-service.js"
-    },
-    {
-      "from": "db.js",
-      "to": "utils/alerts-compat.js",
-      "type": "uses",
-      "label": "db.js"
     },
     {
       "from": "routes/documents-html.js",

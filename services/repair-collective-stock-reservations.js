@@ -29,6 +29,7 @@
  */
 
 const db = require('../db');
+const { createAlert } = require('../utils/alerts');
 const stockReservations = require('./collective-stock-reservation-service');
 
 async function repairCollectiveStockReservations({ dryRun = true, limit = 50, user }) {
@@ -124,20 +125,15 @@ async function repairCollectiveStockReservations({ dryRun = true, limit = 50, us
 
 async function insertRepairAlert(candidate, err, action) {
   try {
-    await db.query(
-      `INSERT INTO alerts (level, source, message, payload)
-       VALUES ('elevated', 'collective_stock_reservation_repair', $1, $2)`,
-      [
-        `Collective stock reservation ${action} failed for workspace ${candidate.workspace_id}`,
-        JSON.stringify({
-          workspace_id: candidate.workspace_id,
-          order_id: candidate.order_id || null,
-          action,
-          error: err.message,
-        }),
-      ]
-    );
-  } catch (_) { /* non-bloquant */ }
+    await createAlert(db, {
+      type: 'collective_stock_reservation_repair_failed',
+      entityType: 'collective_workspace',
+      entityId: candidate.workspace_id,
+      severity: 'medium',
+      title: `Collective stock reservation ${action} failed for workspace ${candidate.workspace_id}`,
+      description: `order_id=${candidate.order_id || 'n/a'} action=${action} error=${err.message}`,
+    });
+  } catch (_e) { /* non-bloquant */ }
 }
 
 module.exports = { repairCollectiveStockReservations };

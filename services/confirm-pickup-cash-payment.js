@@ -34,6 +34,7 @@
 
 const db = require('../db');
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
+const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'confirm-pickup-cash-payment' });
 
 const PHONE_RX = /^[+]?[0-9\s().-]{6,20}$/;
@@ -127,35 +128,30 @@ async function confirmPickupCashPayment({
       if (!checkPossible || !agentRelaisId) {
         await client.query('ROLLBACK');
         try {
-          await db.query(
-            `INSERT INTO alerts (level, source, message, payload)
-             VALUES ('elevated', 'pickup_cash_confirm', $1, $2)`,
-            [
-              `agent_relais sans relais_id tente pickup pay-cash: user=${user.id}`,
-              JSON.stringify({ order_reference: order.reference, user_id: user.id, check_possible: checkPossible }),
-            ]
-          );
-        } catch (_) { /* non-bloquant */ }
+          await createAlert(db, {
+            type: 'pickup_cash_confirm_agent_config_error',
+            entityType: 'order',
+            entityId: order.id,
+            severity: 'high',
+            title: `agent_relais sans relais_id tente pickup pay-cash — user=${user.id}`,
+            description: `order_reference=${order.reference} user_id=${user.id} check_possible=${checkPossible}`,
+          });
+        } catch (_e) { /* non-bloquant */ }
         return { status: 403, body: { error: 'Configuration agent incomplète — contactez un admin' } };
       }
 
       if (String(agentRelaisId) !== String(order.relais_id)) {
         await client.query('ROLLBACK');
         try {
-          await db.query(
-            `INSERT INTO alerts (level, source, message, payload)
-             VALUES ('elevated', 'pickup_cash_confirm', $1, $2)`,
-            [
-              `Cross-relais refusé pickup pay-cash: ${order.reference}`,
-              JSON.stringify({
-                user_id: user.id,
-                agent_relais_id: agentRelaisId,
-                order_relais_id: order.relais_id,
-                order_reference: order.reference,
-              }),
-            ]
-          );
-        } catch (_) { /* non-bloquant */ }
+          await createAlert(db, {
+            type: 'pickup_cash_confirm_cross_relais_blocked',
+            entityType: 'order',
+            entityId: order.id,
+            severity: 'high',
+            title: `Cross-relais refusé pickup pay-cash — ${order.reference}`,
+            description: `user_id=${user.id} agent_relais_id=${agentRelaisId} order_relais_id=${order.relais_id}`,
+          });
+        } catch (_e) { /* non-bloquant */ }
         return { status: 403, body: { error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider' } };
       }
     }
