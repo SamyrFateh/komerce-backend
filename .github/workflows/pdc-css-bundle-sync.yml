@@ -1,15 +1,15 @@
 name: PDC CSS bundle sync (temporary)
 
 on:
-  push:
-    branches:
-      - agent/pdc-final-e2e-validation
+  pull_request:
+    types: [opened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   sync-css-bundle:
+    if: github.head_ref == 'agent/pdc-final-e2e-validation'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
