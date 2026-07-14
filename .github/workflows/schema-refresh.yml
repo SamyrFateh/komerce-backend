@@ -34,28 +34,24 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Le paquet postgresql-client par défaut d'Ubuntu (runner ubuntu-latest)
-      # est trop ancien pour dumper un serveur Railway en PostgreSQL 18
-      # (pg_dump refuse : "aborting because of server version mismatch" —
-      # même erreur que rencontrée en local sous Windows avec un client v16).
-      # On installe explicitement le client 18 via le dépôt officiel PGDG.
-      - name: Install postgresql-client-18 (matches Railway's PG18)
+      # ── pg_dump via Docker plutôt que via apt ──────────────────────────
+      # Après 3 échecs différents avec le paquet apt (DNS interne Railway,
+      # puis version 16 par défaut d'Ubuntu, puis update-alternatives qui
+      # ne bascule pas vers 18 malgré le paquet PGDG installé), on abandonne
+      # l'approche "installer le bon pg_dump sur le runner" — trop fragile,
+      # dépendante de l'image ubuntu-latest et de sa config alternatives.
+      #
+      # À la place : l'image Docker officielle postgres:18 (déjà buildée
+      # avec le bon pg_dump, aucune ambiguïté de version possible) tourne
+      # directement sur le runner (Docker est natif sur ubuntu-latest).
+      # On l'expose comme un shim /usr/local/bin/pg_dump pour que
+      # scripts/db-snapshot.js (qui appelle spawnSync('pg_dump', args))
+      # n'ait besoin d'aucune modification.
+      - name: Set up pg_dump 18 via Docker (avoids all apt/alternatives version drift)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends wget ca-certificates gnupg lsb-release
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo wget --quiet -O /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
-            https://www.postgresql.org/media/keys/ACCC4CF8.asc
-          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends postgresql-client-18
-          # update-alternatives ne bascule pas toujours pg_dump vers 18
-          # (le runner ubuntu-latest a déjà un postgresql-client v16
-          # préinstallé, pas géré par alternatives) — on force donc le
-          # dossier de binaires 18 en tête du PATH pour le reste du job,
-          # plutôt que de dépendre de la résolution automatique.
-          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
-          export PATH="/usr/lib/postgresql/18/bin:$PATH"
+          docker pull postgres:18
+          printf '#!/bin/sh\nexec docker run --rm --network host postgres:18 pg_dump "$@"\n' | sudo tee /usr/local/bin/pg_dump > /dev/null
+          sudo chmod +x /usr/local/bin/pg_dump
           pg_dump --version
 
       - uses: actions/setup-node@v4
