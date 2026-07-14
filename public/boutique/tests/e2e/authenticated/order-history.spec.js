@@ -30,11 +30,9 @@ test.describe('FLOW — Historique commande (F06)', () => {
 
     // ── 2. Récupérer les commandes ──
     const orders = await getRecentOrders(page);
+    // [R5] Plus de skip : requireOrders() lève une erreur si aucune commande n'existe
     if (orders.length === 0) {
-      // eslint-disable-next-line no-console
-      console.log('[F06] Aucune commande sur le compte de test — skip');
-      test.skip();
-      return;
+      await requireOrders(page); // throws with clear message
     }
 
     const targetOrder = orders[0];

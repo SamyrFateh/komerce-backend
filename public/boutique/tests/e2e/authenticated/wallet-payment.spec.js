@@ -24,14 +24,33 @@ const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
-const { verifySession, verifyWalletBalance } = require('../helpers/api.helpers');
+const {
+  verifySession, verifyWalletBalance,
+  provisionTestWallet, assertNotProdIfMutant, // [R5]
+} = require('../helpers/api.helpers');
 
 test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
+  // [R5] ALLOW_ORDER_SUBMIT est une précondition dure — le test échoue si absent (ne skipe pas).
+  // provisionTestWallet crédite le compte de test avant le run.
+  let walletBefore;
 
-  test.skip(
-    !process.env.ALLOW_ORDER_SUBMIT,
-    'F02 nécessite ALLOW_ORDER_SUBMIT=true — staging uniquement'
-  );
+  test.beforeAll(async ({ browser }) => {
+    assertNotProdIfMutant(); // [R5][FAIL-CLOSED] refuse si BASE_URL = prod
+    if (!process.env.ALLOW_ORDER_SUBMIT) {
+      throw new Error(
+        '[R5] F02 nécessite ALLOW_ORDER_SUBMIT=true — staging uniquement. ' +
+        'Ce test ne peut pas être skippé : configurer l\'environnement de test.'
+      );
+    }
+    const page = await browser.newPage();
+    try {
+      walletBefore = await provisionTestWallet(page, 50_000);
+      // eslint-disable-next-line no-console
+      console.log(`[F02] Wallet provisionné : ${walletBefore.balance} KMF`);
+    } finally {
+      await page.close();
+    }
+  });
 
   test('F02 — Wallet couvre 100% → payment_status=paid immédiat', async ({ page }) => {
     await page.goto(BASE_URL);
@@ -40,13 +59,8 @@ test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
     const session = await verifySession(page);
     expect(session.authenticated, 'Session active requise').toBe(true);
 
-    const walletBefore = await verifyWalletBalance(page);
-    if (!walletBefore || walletBefore.balance <= 0) {
-      // eslint-disable-next-line no-console
-      console.log(`[F02] Solde wallet = ${walletBefore?.balance ?? 'N/A'} — insuffisant, skip`);
-      test.skip();
-      return;
-    }
+    // solde garanti par beforeAll (provisionTestWallet) — plus de skip conditionnel
+    expect(walletBefore.balance, '[R5] Solde wallet insuffisant après provisionnement').toBeGreaterThan(0);
     // eslint-disable-next-line no-console
     console.log(`[F02] Solde wallet avant : ${walletBefore.balance} KMF`);
 
@@ -54,16 +68,16 @@ test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
     await waitForGrid(page);
     await openFirstCard(page);
 
-    // Lire le prix du produit depuis la modale pour vérifier que le wallet couvre
+    // Lire le prix du produit depuis la modale — si > solde, c'est un vrai échec de config
     const priceText = await page.locator('#k-modal-price, .k-modal-price').first().textContent().catch(() => '');
     const priceMatch = priceText.match(/[\d\s]+/);
     const estimatedPrice = priceMatch ? parseInt(priceMatch[0].replace(/\s/g, ''), 10) : 0;
 
     if (estimatedPrice > 0 && estimatedPrice > walletBefore.balance) {
-      // eslint-disable-next-line no-console
-      console.log(`[F02] Prix produit ~${estimatedPrice} KMF > solde ${walletBefore.balance} — skip`);
-      test.skip();
-      return;
+      throw new Error(
+        `[R5] Prix produit ~${estimatedPrice} KMF > solde ${walletBefore.balance} KMF — ` +
+        'augmenter le montant du provisionnement (TEST_WALLET_PROVISION_AMOUNT)'
+      );
     }
 
     await addToCartFromModal(page);
@@ -96,9 +110,8 @@ test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
       console.log('[F02] Checkbox wallet cochée ✓');
     } else {
       // eslint-disable-next-line no-console
-      console.log('[F02] Checkbox #cb-use-wallet non trouvée — le wallet n\'est peut-être pas proposé');
-      test.skip();
-      return;
+      // [R5] Pas de skip : la checkbox doit être présente si le wallet a été provisionné
+      throw new Error('[R5][F02] Checkbox #cb-use-wallet absente — wallet non proposé au checkout malgré provisionnement');
     }
 
     // Attendre le relais auto

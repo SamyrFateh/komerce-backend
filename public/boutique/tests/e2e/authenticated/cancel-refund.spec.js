@@ -31,10 +31,16 @@ const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').rep
 
 test.describe('FLOW — Annulation avec remboursement wallet (F03)', () => {
 
-  test.skip(
-    !process.env.ALLOW_ORDER_CANCEL,
-    'F03 nécessite ALLOW_ORDER_CANCEL=true — staging uniquement, annulation réelle'
-  );
+  // [R5] Précondition dure — throw si absent, pas de skip
+  test.beforeAll(() => {
+    assertNotProdIfMutant(); // [R5][FAIL-CLOSED]
+    if (!process.env.ALLOW_ORDER_CANCEL) {
+      throw new Error(
+        '[R5] F03 nécessite ALLOW_ORDER_CANCEL=true — staging uniquement. ' +
+        "Ce test ne peut pas être skippé : configurer l'environnement de test."
+      );
+    }
+  });
 
   test('F03 — Annulation commande payée → wallet re-crédité', async ({ page }) => {
     await page.goto(BASE_URL);
@@ -54,9 +60,10 @@ test.describe('FLOW — Annulation avec remboursement wallet (F03)', () => {
 
     if (cancellable.length === 0) {
       // eslint-disable-next-line no-console
-      console.log('[F03] Aucune commande payée annulable — skip (lancer F02 d\'abord)');
-      test.skip();
-      return;
+      throw new Error(
+        '[R5][F03] Aucune commande payée annulable — ' +
+        'lancer F01/F02 d\'abord pour créer une commande payée, ou utiliser un compte de test pré-alimenté.'
+      );
     }
 
     const target = cancellable[0];

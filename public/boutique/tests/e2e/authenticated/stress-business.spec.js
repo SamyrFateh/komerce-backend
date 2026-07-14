@@ -31,7 +31,11 @@ const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').rep
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('STRESS — Concurrence stock (S1)', () => {
 
-  test.skip(!process.env.ALLOW_ORDER_SUBMIT, 'ALLOW_ORDER_SUBMIT requis');
+  // [R5] Précondition dure (remplace test.skip conditionnel)
+  test.beforeAll(() => {
+    assertNotProdIfMutant();
+    if (!process.env.ALLOW_ORDER_SUBMIT) throw new Error('[R5] ALLOW_ORDER_SUBMIT requis — ce test ne peut pas être skippé');
+  });
   test.setTimeout(90_000);
 
   test('S1 — 2 POST /api/orders simultanés sur le même produit', async ({ page }) => {
@@ -49,9 +53,7 @@ test.describe('STRESS — Concurrence stock (S1)', () => {
     const stockBefore = await getProductStock(page, productId);
 
     if (!stockBefore || stockBefore.stock === null || stockBefore.stock < 2) {
-      console.log(`[S1] Stock ${stockBefore?.stock} insuffisant (<2) — skip`);
-      test.skip();
-      return;
+      throw new Error(`[R5][S1] Stock insuffisant (${stockBefore?.stock}) — env de test doit avoir stock ≥ 2`);
     }
     console.log(`[S1] Produit "${stockBefore.name}" (${productId}) — stock: ${stockBefore.stock}`);
 
@@ -75,9 +77,7 @@ test.describe('STRESS — Concurrence stock (S1)', () => {
     }, { pid: productId, base: API_BASE });
 
     if (!relaisId) {
-      console.log('[S1] Pas de relais — skip');
-      test.skip();
-      return;
+      throw new Error('[R5][S1] Aucun relais disponible — env de test doit avoir un relais configuré');
     }
 
     // Lancer 2 POST /api/orders en parallèle via page.evaluate
@@ -162,9 +162,7 @@ test.describe('STRESS — Gros panier (S2)', () => {
     const target = Math.min(count, 5);
 
     if (target < 3) {
-      console.log(`[S2] Seulement ${count} produits dans le catalogue — skip`);
-      test.skip();
-      return;
+      throw new Error(`[R5][S2] Catalogue insuffisant (${count} produits) — env de test doit avoir ≥ 3 produits`);
     }
 
     // Ajouter N produits au panier
@@ -244,9 +242,7 @@ test.describe('STRESS — Gros panier (S2)', () => {
     }
 
     if (added < 3) {
-      console.log(`[S2] Seulement ${added} produits ajoutés — insuffisant pour le stress test`);
-      test.skip();
-      return;
+      throw new Error(`[R5][S2] Seulement ${added} produits ajoutés — insuffisant pour le stress test`);
     }
 
     // Vérifier le badge panier
@@ -287,7 +283,11 @@ test.describe('STRESS — Gros panier (S2)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('STRESS — Wallet au centime près (S3)', () => {
 
-  test.skip(!process.env.ALLOW_ORDER_SUBMIT, 'ALLOW_ORDER_SUBMIT requis');
+  // [R5] Précondition dure
+  test.beforeAll(() => {
+    assertNotProdIfMutant();
+    if (!process.env.ALLOW_ORDER_SUBMIT) throw new Error('[R5] ALLOW_ORDER_SUBMIT requis — ce test ne peut pas être skippé');
+  });
 
   test('S3 — Wallet couvre exactement le montant → solde final = 0', async ({ page }) => {
     await page.goto(BASE_URL);
@@ -296,9 +296,7 @@ test.describe('STRESS — Wallet au centime près (S3)', () => {
 
     const wallet = await verifyWalletBalance(page);
     if (!wallet || wallet.balance <= 0) {
-      console.log('[S3] Solde wallet = 0 — skip');
-      test.skip();
-      return;
+      throw new Error('[R5][S3] Solde wallet = 0 — provisionner le compte de test');
     }
     console.log(`[S3] Solde wallet : ${wallet.balance} KMF`);
 
@@ -324,9 +322,7 @@ test.describe('STRESS — Wallet au centime près (S3)', () => {
     }
 
     if (foundCard === null) {
-      console.log('[S3] Aucun produit à prix ≤ solde wallet — skip');
-      test.skip();
-      return;
+      throw new Error('[R5][S3] Aucun produit à prix ≤ solde wallet — augmenter le provisionnement');
     }
 
     // Le produit est déjà ouvert dans la modale
@@ -350,7 +346,7 @@ test.describe('STRESS — Wallet au centime près (S3)', () => {
 
     // Cocher le wallet
     const walletCb = page.locator('#cb-use-wallet');
-    if ((await walletCb.count()) === 0) { test.skip(); return; }
+    if ((await walletCb.count()) === 0) { throw new Error('[R5][S3] Checkbox wallet absente malgré solde > 0'); }
     if (!(await walletCb.isChecked())) await walletCb.check();
 
     await page.locator('#ck-relais-summary').waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
@@ -535,7 +531,11 @@ test.describe('STRESS — Back button (S6)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('STRESS — 2 onglets même user (S7)', () => {
 
-  test.skip(!process.env.ALLOW_ORDER_SUBMIT, 'ALLOW_ORDER_SUBMIT requis');
+  // [R5] Précondition dure (remplace test.skip conditionnel)
+  test.beforeAll(() => {
+    assertNotProdIfMutant();
+    if (!process.env.ALLOW_ORDER_SUBMIT) throw new Error('[R5] ALLOW_ORDER_SUBMIT requis — ce test ne peut pas être skippé');
+  });
   test.setTimeout(90_000);
 
   test('S7 — 2 onglets commandent simultanément → pas de corruption', async ({ page, context }) => {

@@ -19,6 +19,31 @@ console.log(
   `[playwright.config] mode=${isRemote ? 'DISTANT' : 'LOCAL (statique, sans backend)'} baseURL=${baseURL}`
 );
 
+// ── [R5] FAIL-CLOSED — garde anti-prod pour les tests mutants ────────────────
+// Si BASE_URL pointe la production (komerce.co), les specs mutantes
+// (cancel-refund, stress-business, wallet-lifecycle, wallet-payment)
+// sont refusées ici ET dans leur propre beforeAll (assertNotProdIfMutant).
+// Deux couches de protection pour qu'un run direct (`playwright test spec.js`)
+// sans passer par e2e-business-run.js soit aussi bloqué.
+const PROD_GUARD_HOSTS = ['komerce.co'];
+const MUTANT_SPEC_NAMES = ['cancel-refund', 'stress-business', 'wallet-lifecycle', 'wallet-payment'];
+if (isRemote && !process.env.ALLOW_MUTANTS_ON_PROD) {
+  const isProd = PROD_GUARD_HOSTS.some(h => baseURL.includes(h));
+  if (isProd) {
+    const argv = process.argv.join(' ');
+    const hasMutant = MUTANT_SPEC_NAMES.some(s => argv.includes(s));
+    if (hasMutant) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `\n[R5][FAIL-CLOSED] ⛔ Test mutant refusé sur URL de production "${baseURL}".\n` +
+        `  Utiliser staging ou ALLOW_MUTANTS_ON_PROD=1 (dangereux).\n`
+      );
+      process.exit(2);
+    }
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 module.exports = defineConfig({
   testDir: './tests',
   testMatch: ['**/e2e/**/*.spec.js', '**/contracts.spec.js'],

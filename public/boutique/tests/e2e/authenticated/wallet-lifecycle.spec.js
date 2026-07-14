@@ -23,17 +23,36 @@ const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
-const { verifySession, verifyWalletBalance } = require('../helpers/api.helpers');
+const {
+  verifySession, verifyWalletBalance,
+  provisionTestWallet, assertNotProdIfMutant, // [R5]
+} = require('../helpers/api.helpers');
 const { getOrderByRef } = require('../helpers/business.helpers');
 
 const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').replace('/boutique/', '');
 
 test.describe('FLOW — Cycle de vie wallet complet (F02 → F03 → F11)', () => {
+  // [R5] Préconditions dures — throw si absent, pas de skip
+  let initialBalance;
 
-  test.skip(
-    !process.env.ALLOW_ORDER_SUBMIT || !process.env.ALLOW_ORDER_CANCEL,
-    'Nécessite ALLOW_ORDER_SUBMIT=true ET ALLOW_ORDER_CANCEL=true — staging uniquement'
-  );
+  test.beforeAll(async ({ browser }) => {
+    assertNotProdIfMutant(); // [R5][FAIL-CLOSED]
+    if (!process.env.ALLOW_ORDER_SUBMIT || !process.env.ALLOW_ORDER_CANCEL) {
+      throw new Error(
+        '[R5] wallet-lifecycle nécessite ALLOW_ORDER_SUBMIT=true ET ALLOW_ORDER_CANCEL=true — ' +
+        'staging uniquement. Ce test ne peut pas être skippé.'
+      );
+    }
+    const page = await browser.newPage();
+    try {
+      const wallet = await provisionTestWallet(page, 50_000);
+      initialBalance = wallet.balance;
+      // eslint-disable-next-line no-console
+      console.log(`[LIFECYCLE] Wallet provisionné : ${initialBalance} KMF`);
+    } finally {
+      await page.close();
+    }
+  });
 
   // Timeout élevé : le cycle complet enchaîne commande + annulation
   test.setTimeout(90_000);
@@ -42,20 +61,13 @@ test.describe('FLOW — Cycle de vie wallet complet (F02 → F03 → F11)', () =
     await page.goto(BASE_URL);
 
     // ════════════════════════════════════════════════════════════════════════
-    //  ÉTAPE 0 — Préconditions
+    //  ÉTAPE 0 — Préconditions (garanties par beforeAll)
     // ════════════════════════════════════════════════════════════════════════
 
     const session = await verifySession(page);
     expect(session.authenticated, 'Session active requise').toBe(true);
-
-    const walletInitial = await verifyWalletBalance(page);
-    if (!walletInitial || walletInitial.balance <= 0) {
-      // eslint-disable-next-line no-console
-      console.log(`[LIFECYCLE] Solde wallet = ${walletInitial?.balance ?? 'N/A'} — insuffisant, skip`);
-      test.skip();
-      return;
-    }
-    const initialBalance = walletInitial.balance;
+    // solde garanti par provisionTestWallet — plus de skip conditionnel
+    expect(initialBalance, '[R5] Solde wallet insuffisant après provisionnement').toBeGreaterThan(0);
     // eslint-disable-next-line no-console
     console.log(`[LIFECYCLE] Solde initial : ${initialBalance} KMF`);
 
@@ -87,9 +99,7 @@ test.describe('FLOW — Cycle de vie wallet complet (F02 → F03 → F11)', () =
     const walletCb = page.locator('#cb-use-wallet');
     if ((await walletCb.count()) === 0) {
       // eslint-disable-next-line no-console
-      console.log('[LIFECYCLE] Checkbox wallet absente — skip');
-      test.skip();
-      return;
+      throw new Error('[R5][LIFECYCLE] Checkbox #cb-use-wallet absente — wallet non proposé au checkout malgré provisionnement');
     }
     if (!(await walletCb.isChecked())) await walletCb.check();
 
@@ -118,9 +128,7 @@ test.describe('FLOW — Cycle de vie wallet complet (F02 → F03 → F11)', () =
 
     if (creditApplied === 0) {
       // eslint-disable-next-line no-console
-      console.log('[LIFECYCLE] Wallet non appliqué — le cycle ne peut pas être vérifié');
-      test.skip();
-      return;
+      throw new Error('[R5][LIFECYCLE] credit_applied_kmf=0 — wallet non déduit malgré provisionnement (bug checkout ?).');
     }
 
     // Vérifier le débit wallet

@@ -289,4 +289,119 @@ module.exports = {
   cancelSharedCart,
   cancelAnyActiveSharedCart,
   spyOnApi,
+  // R5 — provisionnement et gardes fail-closed
+  provisionTestWallet,
+  requireOrders,
+  assertNotProdIfMutant,
 };
+
+// ── R5 — Helpers de provisionnement (dé-conditionnement des skips) ───────────
+
+/**
+ * [R5] Crédite le wallet du compte de test via POST /api/wallet/admin/credit.
+ * Nécessite TEST_ADMIN_TOKEN dans l'environnement (JWT admin pré-généré pour
+ * le compte de test staging). Si absent → throw (ne skipe pas).
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {number} targetBalance  Solde cible en KMF (défaut : 50 000)
+ * @returns {Promise<{balance: number}>}
+ */
+async function provisionTestWallet(page, targetBalance = 50_000) {
+  const adminToken = process.env.TEST_ADMIN_TOKEN;
+  if (!adminToken) {
+    throw new Error(
+      '[R5] provisionTestWallet: TEST_ADMIN_TOKEN absent — ' +
+      'configurer un JWT admin staging pour le compte de test. ' +
+      'Ce test ne peut pas être skippé.'
+    );
+  }
+  const apiBase = (process.env.BASE_URL || 'http://localhost:3000/boutique/').replace('/boutique/', '');
+  // Récupérer le userId du compte de test depuis la session
+  const userId = await page.evaluate(async (base) => {
+    try {
+      const r = await fetch(new URL('/api/auth/me', base).href, { credentials: 'include' });
+      if (!r.ok) return null;
+      const d = await r.json();
+      return (d.user || d)?.id || null;
+    } catch { return null; }
+  }, apiBase);
+  if (!userId) {
+    throw new Error('[R5] provisionTestWallet: impossible de récupérer userId (session inactive ?)');
+  }
+  // Créditer via l'API admin
+  const result = await page.evaluate(async (args) => {
+    try {
+      const r = await fetch(new URL('/api/wallet/admin/credit', args.base).href, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${args.token}`,
+        },
+        body: JSON.stringify({
+          user_id: args.userId,
+          amount_kmf: args.amount,
+          reason: 'e2e-r5-provision',
+          idempotency_key: `r5-provision-${args.userId}-${Date.now()}`,
+        }),
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ error: r.status }));
+        return { ok: false, error: err.error || r.status };
+      }
+      const d = await r.json();
+      return { ok: true, balance: d.wallet?.balance ?? d.balance ?? null };
+    } catch (e) { return { ok: false, error: e.message }; }
+  }, { base: apiBase, token: adminToken, userId, amount: targetBalance });
+
+  if (!result.ok) {
+    throw new Error(`[R5] provisionTestWallet échoué : ${result.error}`);
+  }
+  // Relire le solde réel pour confirmation
+  const wallet = await verifyWalletBalance(page);
+  if (!wallet || wallet.balance < targetBalance) {
+    throw new Error(
+      `[R5] Solde insuffisant après provisionnement : ${wallet?.balance ?? 'null'} KMF < ${targetBalance} KMF`
+    );
+  }
+  return wallet;
+}
+
+/**
+ * [R5] Vérifie qu'au moins une commande existe pour le compte de test.
+ * Lève une erreur (ne skipe pas) si aucune commande n'est trouvée.
+ * Pour F06 (order-history) : données en lecture seule, pas de création.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<Array>} Liste de commandes (au moins 1)
+ */
+async function requireOrders(page) {
+  const orders = await getRecentOrders(page);
+  if (orders.length === 0) {
+    throw new Error(
+      '[R5] requireOrders: aucune commande sur le compte de test. ' +
+      'F06 est READ-ONLY — il faut qu\'au moins une commande existe. ' +
+      'Lancer F01/F02 d\'abord ou utiliser un compte de test pré-alimenté.'
+    );
+  }
+  return orders;
+}
+
+/**
+ * [R5] Garde fail-closed : lève une erreur si BASE_URL pointe vers la
+ * production et que le flag ALLOW_MUTANTS_ON_PROD est absent.
+ * À appeler dans beforeAll des specs mutantes (cancel-refund, stress-business,
+ * wallet-payment, wallet-lifecycle).
+ */
+function assertNotProdIfMutant() {
+  const base = process.env.BASE_URL || '';
+  const PROD_HOSTS = ['komerce.co'];
+  const isProd = PROD_HOSTS.some(h => base.includes(h));
+  if (isProd && !process.env.ALLOW_MUTANTS_ON_PROD) {
+    throw new Error(
+      `[R5][FAIL-CLOSED] Test mutant refusé sur URL de production "${base}". ` +
+      'Utiliser un environnement staging. Pour forcer (dangereux) : ALLOW_MUTANTS_ON_PROD=1.'
+    );
+  }
+}
+
+// (exports consolidés dans module.exports ci-dessus)
