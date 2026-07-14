@@ -21,11 +21,18 @@ jobs:
         id: code_changes
         run: |
           # La cartographie 360 décrit la topologie applicative, pas l'outillage de
-          # gouvernance du dépôt ni les suites de tests. Un nouveau gate sous scripts/
-          # ou un test sous public/**/tests/ ne doit donc pas forcer un faux delta
+          # gouvernance, les suites de tests ni les changements purement visuels.
+          # Les CSS Boutique et leur métadonnée de bundling sont gouvernés par le
+          # pipeline CSS dédié (css-bundles + css-guard + check:cache) : ils ne créent
+          # ni route, ni service, ni table et ne doivent pas forcer un faux delta
           # CARTOGRAPHY_360. package.json ne compte que si une surface runtime/topologique
           # change (entrypoint, start, deps, engine).
-          APP_CHANGED=$(git diff --name-only origin/main...HEAD | grep -E '^(routes/|middleware/|utils/|validators/|db/|public/|dashboard-app/|server\.js|db\.js)' | grep -Ev '(^|/)tests?/' || true)
+          APP_CHANGED=$(git diff --name-only origin/main...HEAD \
+            | grep -E '^(routes/|middleware/|utils/|validators/|db/|public/|dashboard-app/|server\.js|db\.js)' \
+            | grep -Ev '(^|/)tests?/' \
+            | grep -Ev '^public/boutique/css/.*\.css$' \
+            | grep -Ev '^public/boutique/\.cache-buster-state\.json$' \
+            | grep -Ev '^public/boutique/scripts/css-bundles\.js$' || true)
           PACKAGE_RUNTIME_CHANGED=$(git diff --unified=0 origin/main...HEAD -- package.json | grep -E '^[+-].*"(main|start|dependencies|engines)"' || true)
           CODE_CHANGED=$(printf '%s\n%s\n' "$APP_CHANGED" "$PACKAGE_RUNTIME_CHANGED" | sed '/^$/d')
           if [ -n "$CODE_CHANGED" ]; then
@@ -91,7 +98,7 @@ jobs:
           exit 1
 
       - name: ✅ Carto à jour
-        if: steps.code_changes.outputs.code_changed == 'true' && steps.carto_check.outputs.carto_updated == 'true'
+        if: steps.code_changes.outputs.code_changed == 'true' && steps.carto_check.outputs.code_changed == 'true' && steps.carto_check.outputs.carto_updated == 'true'
         continue-on-error: true
         uses: actions/github-script@v7
         with:
