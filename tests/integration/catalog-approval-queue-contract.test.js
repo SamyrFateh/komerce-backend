@@ -80,7 +80,7 @@ if (!hasIntegrationEnv) {
     try {
       if (ids.length) {
         await db.query(`DELETE FROM catalog_field_overrides WHERE product_id = ANY($1::uuid[])`, [ids]);
-        await db.query(`DELETE FROM alerts WHERE source = 'catalog_approval_reject' AND payload->>'product_id' = ANY($1::text[])`, [ids]);
+        await db.query(`DELETE FROM alerts WHERE type = 'catalog_approval_reject' AND entity_id = ANY($1::uuid[])`, [ids]);
         await db.query(`DELETE FROM products WHERE id = ANY($1::uuid[])`, [ids]);
       }
     } catch (_) {}
@@ -200,16 +200,17 @@ if (!hasIntegrationEnv) {
       });
 
       const { rows } = await db.query(
-        `SELECT source, payload
+        `SELECT type, entity_type, entity_id, severity, title, description
            FROM alerts
-          WHERE source = 'catalog_approval_reject'
-            AND payload->>'product_id' = $1
+          WHERE type = 'catalog_approval_reject'
+            AND entity_id = $1
           ORDER BY created_at DESC
           LIMIT 1`,
         [candidate.id]
       );
       expect(rows).toHaveLength(1);
-      expect(rows[0].payload).toMatchObject({ product_id: candidate.id, reason });
+      expect(rows[0].entity_type).toBe('product');
+      expect(rows[0].description).toContain(reason);
     });
   });
 
