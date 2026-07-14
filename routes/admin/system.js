@@ -152,7 +152,16 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
     if (mode === 'factory') {
       await client.query('DELETE FROM products');
       await client.query('DELETE FROM relais');
-      try { await client.query('DELETE FROM partners'); } catch (_) {}
+      try {
+        await client.query('SAVEPOINT sp_factory_partners');
+        await client.query('DELETE FROM partners');
+        await client.query('RELEASE SAVEPOINT sp_factory_partners');
+      } catch (_) {
+        // table optionnelle — sans SAVEPOINT, cette erreur aborterait le
+        // client et annulerait silencieusement le reste du factory reset
+        // (DELETE products/relais déjà exécutés, RED-2/RED-2b).
+        await client.query('ROLLBACK TO SAVEPOINT sp_factory_partners').catch(() => {});
+      }
       report.reseeded.push('factory reset (re-seed manual requis)');
     }
 

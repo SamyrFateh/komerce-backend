@@ -113,17 +113,28 @@ router.put('/taxes/:category', authenticate, requireAdmin, async (req, res, next
 
       // Audit log : créer une entrée dans business_rules_history
       // (on utilise la même table d'audit pour centraliser)
-      await client.query(`
-        INSERT INTO pricing_matrices_audit
-          (matrix_type, category, old_value, new_value, changed_by, change_reason)
-        VALUES ('taxes', $1, $2, $3, $4, $5)
-      `, [
-        category,
-        JSON.stringify({ douane_pct: oldRow.douane_pct, tva_pct: oldRow.tva_pct, taxe_add_pct: oldRow.taxe_add_pct }),
-        JSON.stringify({ douane_pct, tva_pct, taxe_add_pct }),
-        req.user.id,
-        reason.trim().slice(0, 500)
-      ]);
+      try {
+        await client.query('SAVEPOINT sp_pricing_matrices_audit_taxes');
+        await client.query(`
+          INSERT INTO pricing_matrices_audit
+            (matrix_type, category, old_value, new_value, changed_by, change_reason)
+          VALUES ('taxes', $1, $2, $3, $4, $5)
+        `, [
+          category,
+          JSON.stringify({ douane_pct: oldRow.douane_pct, tva_pct: oldRow.tva_pct, taxe_add_pct: oldRow.taxe_add_pct }),
+          JSON.stringify({ douane_pct, tva_pct, taxe_add_pct }),
+          req.user.id,
+          reason.trim().slice(0, 500)
+        ]);
+        await client.query('RELEASE SAVEPOINT sp_pricing_matrices_audit_taxes');
+      } catch (auditErr) {
+        // Audit best-effort, ne bloque pas l'update — sans SAVEPOINT, cette
+        // erreur aborterait la transaction et le COMMIT suivant deviendrait
+        // un ROLLBACK silencieux (RED-2/RED-2b, PR563 — twin de TXG-01, même
+        // fichier, route /taxes au lieu de /dims).
+        await client.query('ROLLBACK TO SAVEPOINT sp_pricing_matrices_audit_taxes').catch(() => {});
+        log.warn('[PRICING] Audit taxes skipped:', auditErr.message);
+      }
 
       await client.query('COMMIT');
       invalidatePricingMatricesCache();
@@ -137,14 +148,7 @@ router.put('/taxes/:category', authenticate, requireAdmin, async (req, res, next
       await client.query('ROLLBACK');
       throw err;
     } finally { client.release(); }
-  } catch (err) {
-    // Table audit manquante ? On crée à la volée un log console mais on n'échoue pas
-    if (err.message && err.message.includes('pricing_matrices_audit')) {
-      log.warn('[PRICING] Table pricing_matrices_audit manquante, audit skippé.');
-      return res.json({ success: true, warning: 'Audit trail non persisté (table manquante)' });
-    }
-    next(err);
-  }
+  } catch (err) { next(err); }
 });
 
 // ── GET /api/admin/pricing-matrices/dims ───────────────────────────────────
@@ -211,6 +215,7 @@ router.put('/dims/:category', authenticate, requireAdmin, async (req, res, next)
       `, [length_cm, width_cm, height_cm, req.user.id, category]);
 
       try {
+        await client.query('SAVEPOINT sp_pricing_matrices_audit');
         await client.query(`
           INSERT INTO pricing_matrices_audit
             (matrix_type, category, old_value, new_value, changed_by, change_reason)
@@ -222,8 +227,12 @@ router.put('/dims/:category', authenticate, requireAdmin, async (req, res, next)
           req.user.id,
           reason.trim().slice(0, 500)
         ]);
+        await client.query('RELEASE SAVEPOINT sp_pricing_matrices_audit');
       } catch (auditErr) {
-        // Audit best-effort, ne bloque pas l'update
+        // Audit best-effort, ne bloque pas l'update — sans SAVEPOINT, cette
+        // erreur aborterait la transaction et le COMMIT suivant deviendrait
+        // un ROLLBACK silencieux (RED-2/RED-2b, PR563).
+        await client.query('ROLLBACK TO SAVEPOINT sp_pricing_matrices_audit').catch(() => {});
         log.warn('[PRICING] Audit dims skipped:', auditErr.message);
       }
 

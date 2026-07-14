@@ -166,8 +166,8 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
     if (item_ids && item_ids.length) {
       for (const itemId of item_ids) {
         await db.query(`
-          INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
-          SELECT $1, oi.id, oi.quantity
+          INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
+          SELECT $1, oi.id, oi.product_id, oi.quantity
           FROM order_items oi WHERE oi.id = $2 AND oi.order_id = $3
           ON CONFLICT DO NOTHING
         `, [parcel.id, itemId, order.id]).catch(() => {});
@@ -269,10 +269,10 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
     // Assigner tous les articles non-assignés
     for (const item of unassigned) {
       await client.query(`
-        INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
-        VALUES ($1, $2, $3)
+        INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT DO NOTHING
-      `, [parcel.id, item.id, item.quantity]);
+      `, [parcel.id, item.id, item.product_id, item.quantity]);
     }
 
     // Poids estimé total
@@ -285,12 +285,20 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
     // Log scan + commentaire
     // R7 FIX — scan_code NOT NULL : code synthétique pour scans hub automatiques
     try {
+      await client.query('SAVEPOINT sp_scans_auto_prepare');
       const scanCodeAuto = `HUB-AUTO-${order.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
       await client.query(`
         INSERT INTO scans (order_id, step, scanned_by, notes, scan_code)
         VALUES ($1, 'preparation', $2, $3, $4)
       `, [order.id, req.user.id, `Auto-prepare: colis ${reference} créé, ${unassigned.length} article(s) assigné(s)`, scanCodeAuto]);
-    } catch(e) { /* scans table peut varier */ }
+      await client.query('RELEASE SAVEPOINT sp_scans_auto_prepare');
+    } catch(e) {
+      // scans table peut varier — sans SAVEPOINT, cette erreur aborte le
+      // client et l'INSERT order_comments suivant échoue (auto-prepare
+      // annulé silencieusement au COMMIT, RED-2/RED-2b).
+      await client.query('ROLLBACK TO SAVEPOINT sp_scans_auto_prepare').catch(() => {});
+      log.warn('[HUB] scan auto-prepare skipped:', e.message);
+    }
 
     await client.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
@@ -330,7 +338,7 @@ router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
 
     // Verify item belongs to same order
     const { rows: [item] } = await db.query(
-      'SELECT id, quantity FROM order_items WHERE id = $1 AND order_id = $2',
+      'SELECT id, quantity, product_id FROM order_items WHERE id = $1 AND order_id = $2',
       [order_item_id, parcel.order_id]
     );
     if (!item) return res.status(400).json({ error: "Article n'appartient pas à cette commande" });
@@ -338,11 +346,11 @@ router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
     const qty = quantity || item.quantity;
 
     const { rows: [pi] } = await db.query(`
-      INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
-      VALUES ($1, $2, $3)
+      INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT DO NOTHING
       RETURNING *
-    `, [parcel.id, order_item_id, qty]);
+    `, [parcel.id, order_item_id, item.product_id, qty]);
 
     res.json({ message: 'Article ajouté', item: pi || { already_assigned: true } });
   } catch(e) { next(e); }

@@ -384,12 +384,20 @@ async function applyStrategy(dbPool, body, userId) {
         [final_price_kmf, product_id]
       );
       try {
+        await client.query('SAVEPOINT sp_price_history');
         await client.query(
           `INSERT INTO price_history (product_id, old_price_kmf, new_price_kmf, source, applied_by)
            VALUES ($1, $2, $3, $4, $5)`,
           [product_id, oldPriceKmf, final_price_kmf, 'strategy:' + strategy_type, userId || null]
         );
-      } catch (_) { /* table optionnelle */ }
+        await client.query('RELEASE SAVEPOINT sp_price_history');
+      } catch (e) {
+        // table optionnelle — sans SAVEPOINT, l'échec aborte le client et
+        // l'INSERT pricing_strategy_history suivant échoue à son tour
+        // (UPDATE prix annulé silencieusement au COMMIT, RED-2/RED-2b).
+        await client.query('ROLLBACK TO SAVEPOINT sp_price_history').catch(() => {});
+        console.warn('[PRICING] price_history skipped:', e.message);
+      }
       appliedProducts.push(product_id);
     } else {
       const { rows: catProducts } = await client.query(
