@@ -21,10 +21,11 @@ jobs:
         id: code_changes
         run: |
           # La cartographie 360 décrit la topologie applicative, pas l'outillage de
-          # gouvernance du dépôt. Un nouveau gate sous scripts/ ne doit donc pas
-          # forcer un faux delta CARTOGRAPHY_360. package.json ne compte que si
-          # une surface runtime/topologique change (entrypoint, start, deps, engine).
-          APP_CHANGED=$(git diff --name-only origin/main...HEAD | grep -E '^(routes/|middleware/|utils/|validators/|db/|public/|dashboard-app/|server\.js|db\.js)' || true)
+          # gouvernance du dépôt ni les suites de tests. Un nouveau gate sous scripts/
+          # ou un test sous public/**/tests/ ne doit donc pas forcer un faux delta
+          # CARTOGRAPHY_360. package.json ne compte que si une surface runtime/topologique
+          # change (entrypoint, start, deps, engine).
+          APP_CHANGED=$(git diff --name-only origin/main...HEAD | grep -E '^(routes/|middleware/|utils/|validators/|db/|public/|dashboard-app/|server\.js|db\.js)' | grep -Ev '(^|/)tests?/' || true)
           PACKAGE_RUNTIME_CHANGED=$(git diff --unified=0 origin/main...HEAD -- package.json | grep -E '^[+-].*"(main|start|dependencies|engines)"' || true)
           CODE_CHANGED=$(printf '%s\n%s\n' "$APP_CHANGED" "$PACKAGE_RUNTIME_CHANGED" | sed '/^$/d')
           if [ -n "$CODE_CHANGED" ]; then
