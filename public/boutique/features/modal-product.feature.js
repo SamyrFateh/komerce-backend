@@ -77,7 +77,7 @@ module.exports = {
       '../tests/unit/b-modal-product-detail-bootstrap.test.js',
       '../tests/unit/b-modal-desktop-enhancers.test.js',
       '../tests/unit/b-modal-approche-c-hybrid.test.js',
-      '../tests/unit/modal-price-normalization.test.js',
+      '../tests/unit/modal-product-price-normalization.test.js',
     ],
   },
 
