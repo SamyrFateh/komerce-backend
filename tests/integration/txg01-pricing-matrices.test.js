@@ -14,6 +14,7 @@ const express = require('express');
 const { Pool } = require('pg');
 
 const TARGET = path.join(__dirname, '../../routes/admin-pricing-matrices.js');
+const ADMIN_ID = '00000000-0000-0000-0000-000000000001';
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 jest.setTimeout(30000);
@@ -21,7 +22,7 @@ jest.setTimeout(30000);
 function loadRouter() {
   jest.resetModules();
   jest.doMock('../../middleware/auth', () => ({
-    authenticate: (req, _res, next) => { req.user = { id: '00000000-0000-0000-0000-000000000001', role: 'admin' }; next(); },
+    authenticate: (req, _res, next) => { req.user = { id: ADMIN_ID, role: 'admin' }; next(); },
     requireAdmin: (_req, _res, next) => next(),
   }));
   jest.doMock('../../utils/pricing-cache', () => ({ invalidatePricingMatricesCache: jest.fn() }));
@@ -45,11 +46,28 @@ async function restoreAuditTable() {
   await pool.query('ALTER TABLE pricing_matrices_audit_hidden RENAME TO pricing_matrices_audit');
 }
 
-beforeAll(async () => {
+async function seedFixtures() {
   await pool.query(`
-    UPDATE pricing_category_dims SET length_cm=30, width_cm=20, height_cm=10 WHERE category='electronique';
-    UPDATE pricing_category_taxes SET douane_pct=0.10, tva_pct=0.20, taxe_add_pct=0 WHERE category='electronique';
+    INSERT INTO users (id, full_name, email, role)
+    VALUES ($1, 'Admin TXG01', 'admin-txg01@komerce.test', 'admin')
+    ON CONFLICT (id) DO NOTHING
+  `, [ADMIN_ID]);
+  await pool.query(`
+    INSERT INTO pricing_category_dims (category, label_fr, length_cm, width_cm, height_cm)
+    VALUES ('electronique', 'Électronique', 30, 20, 10)
+    ON CONFLICT (category) DO UPDATE
+    SET length_cm=30, width_cm=20, height_cm=10
   `);
+  await pool.query(`
+    INSERT INTO pricing_category_taxes (category, label_fr, douane_pct, tva_pct, taxe_add_pct)
+    VALUES ('electronique', 'Électronique', 0.10, 0.20, 0)
+    ON CONFLICT (category) DO UPDATE
+    SET douane_pct=0.10, tva_pct=0.20, taxe_add_pct=0
+  `);
+}
+
+beforeAll(async () => {
+  await seedFixtures();
 });
 
 afterAll(async () => {
