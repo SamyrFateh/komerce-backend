@@ -22,6 +22,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   refresh:
@@ -43,20 +44,125 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # db-snapshot.js fait : pg_dump → neutralize PG18 artifacts → write atomiquement
-      # Il remplace l'ancien pg_dump manuel du shell — et neutralise \restrict +
-      # transaction_timeout que pg_dump PG18/Railway émet et qui cassent psql PG16 en CI.
-      - name: Dump + clean schema from Railway prod
+      # ── Retry avec backoff ────────────────────────────────────────────
+      # PROBLÈME RÉSOLU ICI (constaté 2026-07-14) : ce job est déclenché par
+      # le même push que celui qui déclenche le déploiement Railway
+      # (railway.toml → releaseCommand = "node scripts/migrate.js"). Les deux
+      # tournent en PARALLÈLE, pas en séquence. GitHub Actions termine son
+      # install + pg_dump largement avant que Railway ait fini de builder,
+      # déployer, et exécuter la migration sur la base live. Résultat observé
+      # depuis le durcissement du 2026-07-12 (--all) : le check échoue
+      # systématiquement car la migration n'est simplement "pas encore là" —
+      # jamais un vrai problème de dump, juste une course perdue à chaque
+      # fois. Le job échouait alors silencieusement (aucune PR, aucune alerte
+      # visible), et le dump committé prenait du retard indéfiniment.
+      #
+      # Fix : retenter avec un backoff assez long pour couvrir un déploiement
+      # Railway normal, plutôt que d'abandonner après un seul essai.
+      - name: Dump + verify with retry (waits for Railway release to finish)
+        id: snapshot
         env:
           DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-        run: node scripts/db-snapshot.js
+        run: |
+          set +e
+          MAX_ATTEMPTS=6
+          SLEEP_SECONDS=60
+          attempt=1
+          until [ "$attempt" -gt "$MAX_ATTEMPTS" ]; do
+            echo "::group::Tentative ${attempt}/${MAX_ATTEMPTS}"
+            node scripts/db-snapshot.js
+            snapshot_status=$?
+            if [ $snapshot_status -eq 0 ]; then
+              node scripts/check-schema-freshness.js --all
+              freshness_status=$?
+            else
+              freshness_status=1
+            fi
+            echo "::endgroup::"
 
-      # Après un dump fraîchement extrait, le mode --all est volontairement plus
-      # strict que le gate PR : TOUTES les migrations courantes doivent être
-      # visibles. Cela détecte une mauvaise DB, une migration non déployée ou un
-      # dump partiel avant de créer le PR automatique.
-      - name: Verify fresh dump against all current migrations
-        run: node scripts/check-schema-freshness.js --all
+            if [ $freshness_status -eq 0 ]; then
+              echo "success=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            echo "⏳ Tentative ${attempt} échouée — migration probablement pas encore déployée sur Railway."
+            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+              echo "   Nouvelle tentative dans ${SLEEP_SECONDS}s..."
+              sleep $SLEEP_SECONDS
+            fi
+            attempt=$((attempt + 1))
+          done
+
+          echo "success=false" >> "$GITHUB_OUTPUT"
+          echo "❌ Toutes les tentatives ont échoué (${MAX_ATTEMPTS} x ${SLEEP_SECONDS}s)."
+          exit 1
+
+      # ── Alerte visible si toutes les tentatives ont échoué ─────────────
+      # Remplace le silence précédent : plutôt qu'un job rouge que personne
+      # ne regarde, on ouvre (ou met à jour) une issue explicite. Recherche
+      # une issue ouverte existante avec le label pour éviter le spam à
+      # chaque nouveau push pendant que le souci persiste.
+      - name: Open/update alert issue if all retries failed
+        if: failure() && steps.snapshot.outputs.success == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = 'schema-drift-alert';
+            const title = '🔴 schema-refresh: dump Railway toujours pas à jour après retries';
+
+            // Le label peut ne pas exister encore sur ce repo — le créer
+            // plutôt que de laisser issues.create échouer sur un label inconnu.
+            try {
+              await github.rest.issues.getLabel({ owner: context.repo.owner, repo: context.repo.repo, name: label });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                name: label, color: 'B60205',
+                description: 'schema-refresh.yml a épuisé ses retries — dump Railway potentiellement périmé',
+              }).catch(() => {}); // course possible entre deux runs concurrents, sans conséquence
+            }
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+            });
+            // listForRepo renvoie aussi les PR portant ce label — on ne garde que les vraies issues.
+            const openIssue = existing.find(i => !i.pull_request);
+
+            const body = [
+              `Le workflow \`schema-refresh.yml\` a épuisé ses tentatives (retry + backoff) `,
+              `sans obtenir un dump Railway cohérent avec toutes les migrations de \`migrations/**.sql\`.`,
+              ``,
+              `Run : ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `Commit : ${context.sha}`,
+              ``,
+              `Causes probables :`,
+              `- le déploiement Railway a pris plus longtemps que prévu (build lourd, queue de déploiement) — relancer manuellement ce workflow (workflow_dispatch) une fois le déploiement Railway confirmé terminé ;`,
+              `- \`RAILWAY_DATABASE_URL\` a expiré/changé ;`,
+              `- une migration a été ajoutée à \`migrations/**.sql\` sans être réellement appliquée (vérifier \`node scripts/migrate.js\` côté Railway).`,
+            ].join('\n');
+
+            if (openIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: openIssue.number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: [label],
+              }).catch(async (e) => {
+                // Filet ultime : si la création avec label échoue encore pour
+                // une raison quelconque, ne pas perdre l'alerte silencieusement.
+                core.warning(`Création avec label échouée (${e.message}), retry sans label.`);
+                await github.rest.issues.create({
+                  owner: context.repo.owner, repo: context.repo.repo, title, body,
+                });
+              });
+            }
+
 
       - name: Check for changes
         id: diff
