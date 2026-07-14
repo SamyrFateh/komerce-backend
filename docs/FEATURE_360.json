@@ -1746,7 +1746,7 @@
         "totalFiles": 116,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 16,
+          "count": 18,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -1758,6 +1758,13 @@
             {
               "declared": "../css/modal-product-lot4-hybrid.css",
               "resolvedPath": "public/boutique/css/modal-product-lot4-hybrid.css",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-product-price-normalization.css",
+              "resolvedPath": "public/boutique/css/modal-product-price-normalization.css",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1849,6 +1856,13 @@
             {
               "declared": "../tests/unit/b-modal-product-detail-bootstrap.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-modal-product-detail-bootstrap.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/modal-product-price-normalization.test.js",
+              "resolvedPath": "public/boutique/tests/unit/modal-product-price-normalization.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
