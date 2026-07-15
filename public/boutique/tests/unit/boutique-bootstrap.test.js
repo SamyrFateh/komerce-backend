@@ -165,55 +165,66 @@ describe('syncModalViewportOwner (fix Samsung Internet)', () => {
     document.documentElement.style.cssText = '';
     document.body.innerHTML = '<div id="k-modal"></div>';
     Object.defineProperty(document, 'readyState', { configurable: true, value: 'complete' });
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    delete window.visualViewport;
   });
 
-  it('mobile : la modal remplit son overlay au lieu de recalculer le viewport', () => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+  it('mobile : utilise directement la hauteur du visual viewport', () => {
+    const vvResizeListeners = [];
+    const vv = {
+      height: 540.8,
+      addEventListener: jest.fn((eventName, handler) => {
+        if (eventName === 'resize') vvResizeListeners.push(handler);
+      }),
+    };
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: vv });
 
     jest.isolateModules(() => {
       require('../../js/boutique.js');
     });
 
     const modal = document.getElementById('k-modal');
-    expect(modal.style.height).toBe('100%');
-    expect(modal.style.maxHeight).toBe('100%');
+    expect(modal.style.height).toBe('540px');
+    expect(modal.style.maxHeight).toBe('540px');
+    expect(vv.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
     expect(mockBus.on).toHaveBeenCalledWith('modal:opened', expect.any(Function));
+
+    vv.height = 512.2;
+    vvResizeListeners[0]();
+    expect(modal.style.height).toBe('512px');
+    expect(modal.style.maxHeight).toBe('512px');
+  });
+
+  it('mobile sans visualViewport : utilise innerHeight en fallback', () => {
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 684 });
+
+    jest.isolateModules(() => {
+      require('../../js/boutique.js');
+    });
+
+    const modal = document.getElementById('k-modal');
+    expect(modal.style.height).toBe('684px');
+    expect(modal.style.maxHeight).toBe('684px');
   });
 
   it('passage desktop : retire les overrides runtime et rend la main au shell desktop', () => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: { height: 540, addEventListener: jest.fn() },
+    });
 
     jest.isolateModules(() => {
       require('../../js/boutique.js');
     });
 
     const modal = document.getElementById('k-modal');
-    expect(modal.style.height).toBe('100%');
-    expect(modal.style.maxHeight).toBe('100%');
+    expect(modal.style.height).toBe('540px');
+    expect(modal.style.maxHeight).toBe('540px');
 
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
     window.dispatchEvent(new Event('resize'));
 
     expect(modal.style.height).toBe('');
     expect(modal.style.maxHeight).toBe('');
-  });
-
-  it('ne dépend plus de visualViewport.height ni de --k-vh', () => {
-    const vvAddEventListener = jest.fn();
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
-    Object.defineProperty(window, 'visualViewport', {
-      configurable: true,
-      value: { height: 540, addEventListener: vvAddEventListener },
-    });
-
-    jest.isolateModules(() => {
-      require('../../js/boutique.js');
-    });
-
-    expect(document.getElementById('k-modal').style.height).toBe('100%');
-    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('');
-    expect(vvAddEventListener).not.toHaveBeenCalled();
-
-    delete window.visualViewport;
   });
 });

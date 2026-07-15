@@ -1,7 +1,7 @@
 # Cartographie 360 Komerce
 
 > **Statut** : cartographie documentaire canonique  
-> **Dernière consolidation** : 12 juillet 2026  
+> **Dernière consolidation** : 15 juillet 2026  
 > **Méthode** : version maintenable, vérifiée contre `server.js`, `bootstrap/api-routes.js`, `bootstrap/html-routes.js`, `bootstrap/env.js` et les services critiques.  
 > **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes. Pour le schéma DB complet, voir `SCHEMA.md`.
 
@@ -84,7 +84,7 @@ Invariants actifs :
 
 ### 2 quater. Delta viewport modal mobile — Samsung Internet du 15 juillet 2026
 
-Le shell de la fiche produit mobile est dimensionné par l'overlay `#k-modal-overlay`, déjà fixé aux quatre côtés du viewport. `#k-modal` remplit cet overlay ; il ne maintient pas en parallèle une seconde vérité de hauteur dérivée de `visualViewport.height` ou d'une variable `--k-vh`. Cette règle évite les écarts de calcul entre viewport visuel, `dvh` et barres système sur Samsung Internet, tout en conservant la barre d'actions hors du scroll.
+Le premier garde runtime basé sur `height: 100%` du parent a été invalidé par un test réel sur Samsung Internet : un overlay `position: fixed` ancré aux quatre côtés peut encore suivre le layout viewport et inclure une zone masquée par les barres du navigateur. Le shell mobile `#k-modal` reçoit désormais directement une hauteur en pixels issue de `window.visualViewport.height`, avec `window.innerHeight` en fallback. La mesure est resynchronisée à l'initialisation, à l'ouverture de la modal, au resize, au changement d'orientation et au `resize` du Visual Viewport. La barre d'actions reste un enfant flex direct de `#k-modal`, hors de `.k-modal-scroll`, afin que le scroll occupe uniquement l'espace réellement visible restant.
 
 ---
 

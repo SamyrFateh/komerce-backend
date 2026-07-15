@@ -115,29 +115,36 @@ import './b-cart-stepper-guard.js'; // correctif capture document vs boutons +/-
   window.addEventListener('resize', applyDesktopReset);
 })();
 
-// ── FIX Samsung Internet : un seul propriétaire de la hauteur viewport ──
-// L'overlay #k-modal-overlay est déjà position:fixed avec les 4 côtés ancrés.
-// Il représente donc directement la zone réellement disponible. Sur mobile,
-// la modal doit remplir CE parent (100%) au lieu de recalculer une seconde
-// hauteur via 100dvh ou visualViewport.height : Samsung Internet peut alors
-// soustraire la barre système deux fois et faire remonter la CTA sur le prix.
-// Le style inline est volontairement limité à ce garde runtime de viewport ;
-// il est retiré dès le passage en desktop, dont le shell possède sa propre taille.
+// ── FIX Samsung Internet : le shell mobile suit le viewport réellement visible ──
+// L'overlay fixed peut rester dimensionné sur le layout viewport, qui inclut une zone
+// masquée par les barres du navigateur sur certains Samsung Internet. `height:100%`
+// reproduit alors exactement cette hauteur trop grande. La modal reçoit donc directement
+// la hauteur en pixels du Visual Viewport ; aucun bundle CSS ni variable --k-vh n'est
+// nécessaire pour que le runtime prenne effet. `innerHeight` reste le fallback standard.
 function syncModalViewportOwner() {
   const modal = document.getElementById('k-modal');
   if (!modal) return;
 
   if (window.innerWidth < 900) {
-    modal.style.height = '100%';
-    modal.style.maxHeight = '100%';
+    const vv = window.visualViewport;
+    const rawHeight = vv && Number.isFinite(vv.height) && vv.height > 0
+      ? vv.height
+      : (window.innerHeight || document.documentElement.clientHeight);
+    const visibleHeight = Math.max(1, Math.floor(rawHeight || 1));
+
+    modal.style.height = visibleHeight + 'px';
+    modal.style.maxHeight = visibleHeight + 'px';
   } else {
-    if (modal.style.height === '100%') modal.style.removeProperty('height');
-    if (modal.style.maxHeight === '100%') modal.style.removeProperty('max-height');
+    modal.style.removeProperty('height');
+    modal.style.removeProperty('max-height');
   }
 }
 
 window.addEventListener('resize', syncModalViewportOwner);
 window.addEventListener('orientationchange', syncModalViewportOwner);
+if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+  window.visualViewport.addEventListener('resize', syncModalViewportOwner);
+}
 bus.on('modal:opened', syncModalViewportOwner);
 
 // ── CONSTANTES KOMERCE ──────────────────────────────────────────────
