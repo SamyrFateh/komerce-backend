@@ -20,6 +20,22 @@
 const cors = require('cors');
 const helmet = require('helmet');
 
+// Filet de sécurité : domaine(s) de production toujours autorisés, même si
+// FRONTEND_URL / ALLOWED_ORIGINS sont absents ou mal configurés au niveau
+// de l'environnement de déploiement.
+//
+// BUGFIX 2026-07 : Safari/WebKit envoie l'en-tête Origin même pour des
+// requêtes fetch same-origin dès lors que credentials:'include' est utilisé
+// (cf. public/boutique/js/komerce-api.js → _doFetch). Chrome/Firefox
+// n'envoient pas cet en-tête pour un GET same-origin classique, donc le
+// bug restait invisible sur ces navigateurs. Si FRONTEND_URL n'était pas
+// positionnée à https://komerce.co en production, isAllowedOrigin()
+// refusait alors cette Origin légitime → la réponse cors() n'incluait pas
+// Access-Control-Allow-Origin → Safari bloquait le fetch avec
+// "... due to access control checks." (ex. sur GET /api/relais/public,
+// provoquant une erreur console bloquante détectée par le test E27).
+const DEFAULT_ALLOWED_ORIGINS = ['https://komerce.co', 'https://www.komerce.co'];
+
 function isAllowedOrigin(origin, frontendUrl = process.env.FRONTEND_URL || '', allowedOrigins = process.env.ALLOWED_ORIGINS || '') {
   if (!origin) return true;
   if (process.env.NODE_ENV !== 'production' && /^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
@@ -28,6 +44,7 @@ function isAllowedOrigin(origin, frontendUrl = process.env.FRONTEND_URL || '', a
     const allowed = allowedOrigins.split(',').map(s => s.trim()).filter(Boolean);
     if (allowed.includes(origin)) return true;
   }
+  if (DEFAULT_ALLOWED_ORIGINS.includes(origin)) return true;
   return false;
 }
 

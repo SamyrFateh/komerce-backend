@@ -2,6 +2,7 @@
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
 > Régénéré le 2026-07-14T20:26:55.604Z.
+> Régénéré le 2026-07-14T21:12:07.708Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
