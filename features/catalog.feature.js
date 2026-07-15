@@ -143,6 +143,8 @@ module.exports = {
       'css/modal-media.css',
       'css/modal-product.css',
       'css/modal-product-lot4-hybrid.css',
+      'css/modal-mobile-canonical.css',
+      'css/modal-product-price-normalization.css',
     ],
     dash: [
       'dashboards/admin/js/views/SuppliersView.js',
@@ -171,6 +173,7 @@ module.exports = {
       'tests/unit/product-publication-guard.test.js',
       'tests/unit/products.test.js',
       'tests/unit/catalog-product-detail.test.js',
+      'tests/unit/modal-mobile-canonical.test.js',
       'tests/unit/supplier-catalog-scanner.test.js',
       'tests/unit/catalog-import-orchestrator.test.js',
       'tests/unit/catalog-import-orchestrator-source-v2.test.js',

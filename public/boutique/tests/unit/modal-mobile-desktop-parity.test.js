@@ -6,12 +6,21 @@
  * MDP-4 — Test contractuel de parité Mobile/Desktop.
  *
  * Principe : même Product Detail Contract + même modalSelection + même SKU
- * résolu → mêmes informations ET mêmes capacités métier, quelle que soit la
- * composition (b-modal-mobile-product.js vs b-modal-desktop-product.js).
+ * résolu → même NOYAU TRANSACTIONNEL (nom, prix, ancien prix, promo,
+ * référence, blocage CTA), quelle que soit la composition
+ * (b-modal-mobile-product.js vs b-modal-desktop-product.js).
  *
- * Ce test compare le CONTENU MÉTIER (texte, disponibilité, sous-total, modes
- * de paiement) — jamais l'ordre DOM, le layout ou la position des blocs, qui
- * sont autorisés à différer entre les deux compositions.
+ * MDM-8 (2026-07) a volontairement retiré du mobile ce qui appartient au
+ * parcours d'achat plutôt qu'à la fiche produit : sous-total et sélecteur de
+ * paiement. Ce test vérifie donc :
+ *   1. la parité du noyau transactionnel entre les deux compositions ;
+ *   2. l'absence intentionnelle de sous-total/paiement côté mobile ;
+ *   3. leur présence correcte côté desktop (qui les conserve).
+ *
+ * Ce test compare le CONTENU MÉTIER partagé — jamais l'ordre DOM, le layout
+ * ou la position des blocs, qui sont autorisés à différer entre les deux
+ * compositions (et diffèrent délibérément : description, catégorie et
+ * disponibilité ont une présentation propre à chaque composition depuis MDM).
  */
 
 jest.mock('../../js/b-store.js', () => ({
@@ -133,7 +142,6 @@ function installMobileDom() {
       <span id="k-modal-price"></span>
       <span id="k-modal-old-price"></span>
       <span id="k-modal-sku"></span>
-      <span id="k-modal-stock"></span>
       <span id="k-modal-promo-badge"></span>
     </div>`;
 
@@ -145,7 +153,6 @@ function installMobileDom() {
   dom.modalPrice = document.getElementById('k-modal-price');
   dom.modalOldPrice = document.getElementById('k-modal-old-price');
   dom.modalSku = document.getElementById('k-modal-sku');
-  dom.modalStock = document.getElementById('k-modal-stock');
   dom.modalPromoBadge = document.getElementById('k-modal-promo-badge');
   dom.modalQtyVal = document.getElementById('k-qty-val');
   dom.qtyMinus = document.getElementById('k-qty-minus');
@@ -198,21 +205,18 @@ function installDesktopDom() {
   dom.addCartBtn = document.getElementById('k-add-cart-btn');
 }
 
-function businessSnapshot() {
+// Noyau transactionnel : le sous-ensemble de champs que mobile ET desktop
+// DOIVENT exposer de façon identique pour un même contrat + une même
+// sélection. Sous-total, paiement, description et catégorie sont
+// délibérément hors de ce noyau depuis MDM (voir composition mobile v3).
+function coreTransactionalSnapshot() {
   return {
     name: dom.modalName.textContent,
-    description: dom.modalDesc.textContent,
-    category: dom.modalCat.textContent,
     price: dom.modalPrice.textContent,
     oldPrice: dom.modalOldPrice.textContent,
     promo: dom.modalPromoBadge.textContent,
     reference: dom.modalSku.textContent,
-    stock: dom.modalStock.textContent,
     ctaDisabled: dom.addCartBtn.disabled,
-    subtotal: document.querySelector('.k-modal-subtotal, .k-modal-subtotal--mobile strong, .k-modal-subtotal strong')?.closest('.k-modal-subtotal, .k-modal-subtotal--mobile')?.textContent || '',
-    paymentTabCount: document.querySelectorAll('.k-buybox-payment-tab').length,
-    paymentActiveMode: document.querySelector('.k-buybox-payment-tab.is-active')?.dataset.pay,
-    deliveryLabel: document.body.textContent.includes('Livraison standard'),
   };
 }
 
@@ -224,7 +228,7 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     state.modalPaymentMode = null;
   });
 
-  test('TEST 1 — parité à état fixe : même sous-total, mêmes modes de paiement, même SKU', () => {
+  test('TEST 1 — parité du noyau transactionnel : même prix, même promo, même réf, même SKU', () => {
     const product = detail();
 
     // Rendu mobile
@@ -235,22 +239,31 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     selection = selectModalOption(product, selection, 'Couleur', 'Marron');
     selection = selectModalOption(product, selection, 'Taille', 'M');
     renderMobileProductDetail(product, selection);
-    const mobileSnapshot = businessSnapshot();
+    const mobileCore = coreTransactionalSnapshot();
+
+    // MDM-8 : sous-total et paiement n'existent plus côté mobile.
+    expect(document.querySelector('.k-modal-subtotal, .k-modal-subtotal--mobile')).toBeNull();
+    expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(0);
 
     // Rendu desktop — même produit, même sélection déjà résolue
     installDesktopDom();
     window.matchMedia = jest.fn().mockReturnValue({ matches: false }); // desktop
     isDesktop.mockReturnValue(true);
     renderDesktopProductDetail(product, selection);
-    const desktopSnapshot = businessSnapshot();
+    const desktopCore = coreTransactionalSnapshot();
 
     expect(selection.selected_sku_id).toBe(SKU_MAR_M);
-    expect(mobileSnapshot).toEqual(desktopSnapshot);
-    expect(desktopSnapshot.paymentTabCount).toBe(4);
-    expect(desktopSnapshot.paymentActiveMode).toBe('stripe');
-    expect(desktopSnapshot.subtotal).toContain('25000 KMF'); // 12500 × qty 2
-    expect(desktopSnapshot.ctaDisabled).toBe(false);
-    expect(desktopSnapshot.deliveryLabel).toBe(true);
+    expect(mobileCore).toEqual(desktopCore);
+    expect(desktopCore.ctaDisabled).toBe(false);
+
+    // Desktop conserve sous-total et paiement (MDP-1/MDP-2 partagés avec
+    // mobile via b-modal-buybox-shared.js, mais uniquement composés côté
+    // desktop depuis MDM-8).
+    const paymentTabs = document.querySelectorAll('.k-buybox-payment-tab');
+    expect(paymentTabs).toHaveLength(4);
+    expect(document.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
+    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('25000 KMF'); // 12500 × qty 2
+    expect(document.body.textContent).toContain('Livraison standard');
   });
 
   test('TEST 2 — même sélection non résolue (option manquante) : parité de blocage CTA', () => {
@@ -263,23 +276,22 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     window.matchMedia = jest.fn().mockReturnValue({ matches: true });
     isDesktop.mockReturnValue(false);
     renderMobileProductDetail(product, selection);
-    const mobileSnapshot = businessSnapshot();
+    expect(dom.addCartBtn.disabled).toBe(true);
+    // Mobile n'affiche plus de sélecteur de paiement (MDM-8).
+    expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(0);
 
     installDesktopDom();
     window.matchMedia = jest.fn().mockReturnValue({ matches: false });
     isDesktop.mockReturnValue(true);
     renderDesktopProductDetail(product, selection);
-    const desktopSnapshot = businessSnapshot();
 
     expect(selection.selected_sku_id).toBeNull();
-    expect(mobileSnapshot.ctaDisabled).toBe(true);
-    expect(desktopSnapshot.ctaDisabled).toBe(true);
-    // Les deux compositions exposent le même sélecteur de paiement même sans SKU résolu.
-    expect(mobileSnapshot.paymentTabCount).toBe(4);
-    expect(desktopSnapshot.paymentTabCount).toBe(4);
+    expect(dom.addCartBtn.disabled).toBe(true);
+    // Desktop expose toujours le sélecteur de paiement même sans SKU résolu.
+    expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(4);
   });
 
-  test('TEST 3 — Beige + L : même prix SKU, même sous-total sur les deux compositions', () => {
+  test('TEST 3 — Beige + L : même prix SKU sur les deux compositions, sous-total desktop correct', () => {
     const product = detail();
     let selection = createModalSelection(product);
     selection = selectModalOption(product, selection, 'Couleur', 'Beige');
@@ -291,7 +303,8 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     isDesktop.mockReturnValue(false);
     renderMobileProductDetail(product, selection);
     expect(dom.modalPrice.textContent).toBe('13000 KMF');
-    expect(document.querySelector('.k-modal-subtotal--mobile strong').textContent).toBe('26000 KMF');
+    // MDM-8 : plus de sous-total côté mobile — le prix seul suffit sur la fiche.
+    expect(document.querySelector('.k-modal-subtotal, .k-modal-subtotal--mobile')).toBeNull();
 
     installDesktopDom();
     window.matchMedia = jest.fn().mockReturnValue({ matches: false });

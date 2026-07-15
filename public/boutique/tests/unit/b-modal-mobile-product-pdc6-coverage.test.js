@@ -60,7 +60,6 @@ function installDom({ withBuyNow = true } = {}) {
   dom.modalPrice = document.createElement('div');
   dom.modalOldPrice = document.createElement('div');
   dom.modalSku = document.createElement('div');
-  dom.modalStock = document.createElement('div');
 }
 
 function richDetail() {
@@ -155,7 +154,7 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     renderMobileProductDetail(detail, selection, { forceMedia: true });
 
     expect(dom.modal.querySelector('[data-mobile-reassurance]')).toBeNull();
-    const root = dom.modalVariants.querySelector('[data-pdc4-root]');
+    const root = dom.modalVariants.querySelector('[data-mdm-root]');
     expect(root).not.toBeNull();
     expect(root.querySelectorAll('.k-vg')).toHaveLength(2);
 
@@ -172,9 +171,12 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(sizeButtons[2].dataset.optionState).toBe(OPTION_STATE.INCOMPATIBLE);
 
     expect(dom.modalName.textContent).toBe('Robe Dubaï');
-    expect(dom.modalDesc.textContent).toBe('Robe longue');
-    expect(dom.modalDesc.classList.contains('is-expanded')).toBe(false);
-    expect(dom.modalCat.textContent).toBe('Mode');
+    // MDM-7 : la description est retirée de la zone identité (déplacée
+    // sous le fold) — modalDesc reste vide et masqué dans l'identité.
+    expect(dom.modalDesc.textContent).toBe('');
+    expect(dom.modalDesc.classList.contains('u-hidden')).toBe(true);
+    // MDM-3 : catégorie non affichée sur mobile (pas de poids visuel utile).
+    expect(dom.modalCat.textContent).toBe('');
     expect(dom.modalPromoBadge.textContent).toBe('-20%');
     expect(dom.modalPromoBadge.classList.contains('show')).toBe(true);
     expect(dom.modal.classList.contains('k-modal--has-promo')).toBe(true);
@@ -183,8 +185,13 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(dom.modalOldPrice.classList.contains('u-hidden')).toBe(false);
     expect(dom.modalSku.textContent).toBe('Réf. SKU-RM');
     expect(dom.modalSku.hidden).toBe(false);
-    expect(dom.modalStock.textContent).toBe('✓ Disponible');
-    expect(dom.modalStock.className).toContain('k-modal-stock--ok');
+
+    // MDM-5 : disponibilité et livraison vivent désormais dans l'info strip
+    // (chips), pas dans dom.modalStock.
+    const availChip = root.querySelector('.k-mdm-chip--ok');
+    expect(availChip).not.toBeNull();
+    expect(availChip.textContent).toBe('✓ Disponible');
+
     expect(document.getElementById('k-add-cart-btn').disabled).toBe(false);
     expect(document.getElementById('k-buy-now-btn').disabled).toBe(false);
     expect(dom.qtyMinus.disabled).toBe(true);
@@ -195,8 +202,14 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(selectionMessage.hidden).toBe(false);
     expect(root.textContent).toContain('Relais');
     expect(root.textContent).toContain('500 KMF · 2 jours');
-    expect(root.textContent).toContain('24 h · Indisponible');
+    expect(root.textContent).toContain('Express');
+    expect(root.textContent).toContain('24 h');
     expect(root.textContent).toContain('Retrait');
+
+    // MDM-7 : description déplacée sous le fold, avec bouton "Lire la suite".
+    const descText = root.querySelector('.k-mdm-desc-text');
+    expect(descText.textContent).toBe('Robe longue');
+    expect(root.querySelector('.k-mdm-read-more')).not.toBeNull();
 
     expect(buildCarouselSlides).toHaveBeenCalledWith({
       name: 'Robe Dubaï',
@@ -210,7 +223,7 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     colorButtons[1].click();
     expect(selectModalOption).toHaveBeenCalledWith(detail, selection, 'coloris', 'Bleu');
     expect(state.modalSelection).toBe(nextSelection);
-    expect(dom.modalVariants.querySelectorAll('[data-pdc4-root]')).toHaveLength(1);
+    expect(dom.modalVariants.querySelectorAll('[data-mdm-root]')).toHaveLength(1);
     expect(dom.modalPrice.textContent).toBe('7000 KMF');
     expect(dom.modalSku.textContent).toBe('Réf. SKU-BM');
   });
@@ -246,8 +259,9 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(dom.modalOldPrice.classList.contains('u-hidden')).toBe(true);
     expect(dom.modalSku.textContent).toBe('');
     expect(dom.modalSku.hidden).toBe(true);
-    expect(dom.modalStock.hidden).toBe(true);
-    expect(dom.modalStock.textContent).toBe('');
+    // selection_supported === false → pas de chip de disponibilité (seule la
+    // chip de livraison fallback est présente, cf. assertion plus bas).
+    expect(dom.modalVariants.querySelector('.k-mdm-chip--ok')).toBeNull();
     expect(document.getElementById('k-add-cart-btn').disabled).toBe(false);
     expect(document.getElementById('k-buy-now-btn').disabled).toBe(false);
     expect(dom.qtyMinus.disabled).toBe(false);
@@ -273,7 +287,7 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(state.modalMediaSignature).toBe('');
   });
 
-  test('stock et aria suivent la progression de sélection SKU sans intelligence locale', () => {
+  test('la puce de disponibilité et l’aria suivent la progression de sélection SKU sans intelligence locale', () => {
     const detail = richDetail();
     const empty = richSelection({
       selected_options: {},
@@ -283,7 +297,8 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     });
 
     renderMobileProductDetail(detail, empty);
-    expect(dom.modalStock.textContent).toBe('Choisissez vos options');
+    let chip = dom.modalVariants.querySelector('.k-mdm-chip');
+    expect(chip.textContent).toBe('Choisissez vos options');
     expect(document.getElementById('k-add-cart-btn').disabled).toBe(true);
     expect(document.getElementById('k-add-cart-btn').getAttribute('aria-describedby')).toBe('k-modal-selection-message');
 
@@ -294,12 +309,14 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
       selection_message: '',
     });
     renderMobileProductDetail(detail, partial);
-    expect(dom.modalStock.textContent).toBe('Choisissez la suite');
+    chip = dom.modalVariants.querySelector('.k-mdm-chip');
+    expect(chip.textContent).toBe('Choisissez la suite');
     expect(dom.modalVariants.querySelector('#k-modal-selection-message').hidden).toBe(true);
 
     const resolved = richSelection();
     renderMobileProductDetail(detail, resolved);
     expect(document.getElementById('k-add-cart-btn').hasAttribute('aria-describedby')).toBe(false);
+    expect(dom.modalVariants.querySelector('.k-mdm-chip--ok').textContent).toBe('✓ Disponible');
   });
 
   test('gardes DOM et viewport restent fail-safe', () => {
@@ -324,7 +341,6 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     dom.modalPrice = null;
     dom.modalOldPrice = null;
     dom.modalSku = null;
-    dom.modalStock = null;
     dom.addCartBtn = null;
     dom.qtyMinus = null;
     dom.qtyPlus = null;

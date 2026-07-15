@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-15T16:46:34.293Z",
+  "generatedAt": "2026-07-15T23:23:08.309Z",
   "summary": {
     "modules": 70,
     "withHeader": 70,
@@ -1697,6 +1697,7 @@
       ],
       "emits": [],
       "listens": [
+        "modal:opened",
         "checkout:open"
       ],
       "imports": [
@@ -2227,7 +2228,8 @@
         "b-modal-desktop-enhancers",
         "b-modal-product-detail-bootstrap",
         "b-pager",
-        "b-pdp-curation-suggestions"
+        "b-pdp-curation-suggestions",
+        "boutique"
       ]
     },
     "modal:composition-synced": {
@@ -2300,6 +2302,7 @@
         "modal-product",
         "modal-product-lot4-hybrid",
         "modal-product-price-normalization",
+        "modal-mobile-canonical",
         "cart",
         "interactions",
         "hero-cart-proxy",

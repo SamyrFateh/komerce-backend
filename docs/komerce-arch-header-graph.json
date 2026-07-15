@@ -2326,7 +2326,7 @@
         "delivery-options",
         "media-carousel"
       ],
-      "version": "2026-07"
+      "version": "2026-07 — MDM canonical rewrite"
     },
     {
       "id": "public/boutique/js/b-modal-nav.js",

@@ -4,60 +4,13 @@
  * @domain        catalog
  * @layer         ui-style
  * @owner         modal-product
- * @purpose       Garantit un rendu de prix mobile non tronqué et une géométrie identique promo / hors promo.
+ * @purpose       SUPERSEDED by modal-mobile-canonical.css (MDM rewrite).
+ *                Retained as empty file to avoid 404 from existing link tags.
+ *                The tactical guard (clamp, 190px identity reserve, premium-v1
+ *                overrides) is no longer needed: the canonical composition uses
+ *                fixed 48vh media cap and compact identity without magic heights.
  * @impact-areas  product-modal, mobile, pricing-display
- * @version       2026-07
+ * @version       2026-07 — emptied by MDM canonical
  */
 
-/*
- * La garde anti-débordement historique du shell pose overflow-x:hidden sur
- * .k-modal-price-row et le style promo changeait la taille du prix. Sur certains
- * montants longs, la combinaison pouvait rogner les glyphes ou donner une
- * métrique différente d'un produit à l'autre.
- *
- * Cette couche est chargée après les sources modal historiques et ne touche que
- * la composition mobile. Desktop conserve sa composition Approche C.
- */
-@media (max-width: 899px) {
-  #k-modal .k-modal-price-row {
-    overflow: visible;
-    flex-wrap: wrap;
-    row-gap: 4px;
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  #k-modal .k-modal-price {
-    line-height: 1.15;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-
-  /* Promo = emphase couleur/poids uniquement : aucune variation de géométrie. */
-  #k-modal.k-modal--has-promo .k-modal-price {
-    font-size: 22px;
-  }
-
-  html.k-mobile-premium-v1 #k-modal.k-modal .k-modal-price,
-  html.k-mobile-premium-v1 #k-modal.k-modal.k-modal--has-promo .k-modal-price {
-    font-size: clamp(24px, 7vw, 30px);
-    line-height: 1.15;
-  }
-
-  /*
-   * Samsung Internet : le shell est borné par visualViewport en pixels alors
-   * que la hauteur média historique reste exprimée en 45vh. Quand vh continue
-   * de suivre le layout viewport (plus haut que la zone réellement visible),
-   * l'image consomme trop de place et le prix arrive exactement sous la limite
-   * du scroll, au contact de la barre CTA.
-   *
-   * Le scroll owner possède, lui, la hauteur réellement disponible entre la
-   * topbar et les actions. On plafonne donc l'image relativement à ce parent et
-   * on réserve 190px à l'identité produit (titre, référence, prix). Le minimum
-   * de 180px évite de réduire excessivement le média sur les écrans très courts.
-   */
-  #k-modal .k-modal-img-wrap {
-    min-height: 180px;
-    max-height: clamp(180px, calc(100% - 190px), 400px);
-  }
-}
+/* Intentionally empty — see modal-mobile-canonical.css */

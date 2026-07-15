@@ -12,6 +12,14 @@
  *   - SKU, selected_sku_id absent             → CTA verrouillé, stepper verrouillé
  *   - SKU, selected_sku_id résolu             → CTA actif, stepper TOUJOURS verrouillé
  *       (le stepper mute le panier "product-id first" — jamais valide en SKU)
+ *
+ * MDM-8 (2026-07) : sous-total (MDP-1) et sélecteur de paiement (MDP-2) ont
+ * été retirés de la composition mobile — ils appartiennent au parcours
+ * d'achat, pas à la fiche produit. Le prix courant reste calculé via
+ * b-modal-buybox-shared.js (getCurrentPrice) et affiché dans l'identité
+ * compacte ; il n'y a plus de sous-total ni de modes de paiement à tester
+ * côté mobile (voir modal-mobile-desktop-parity.test.js pour la parité avec
+ * le desktop, qui conserve ces deux blocs).
  */
 
 jest.mock('../../js/b-store.js', () => ({
@@ -38,10 +46,10 @@ jest.mock('../../js/b-modal-image-ux.js', () => ({
   setupImageUX: jest.fn(),
 }));
 
-// MDP-1/MDP-2 : b-modal-mobile-product.js délègue désormais le prix, le
-// sous-total et les modes de paiement à b-modal-buybox-shared.js, qui importe
-// à son tour b-modal.js/b-cart.js/b-share-cart.js — mocks isolants, même
-// convention que tests/unit/b-modal-desktop-product.test.js.
+// b-modal-mobile-product.js délègue le calcul du prix courant à
+// b-modal-buybox-shared.js, qui importe à son tour b-modal.js/b-cart.js/
+// b-share-cart.js — mocks isolants, même convention que
+// tests/unit/b-modal-desktop-product.test.js.
 jest.mock('../../js/b-modal.js', () => ({ closeModal: jest.fn() }));
 jest.mock('../../js/b-cart.js', () => ({ addToCart: jest.fn() }));
 jest.mock('../../js/b-share-cart.js', () => ({ startShareFlow: jest.fn() }));
@@ -147,22 +155,22 @@ describe('b-modal-mobile-product — renderActions (CTA + stepper, PDC-6)', () =
   });
 });
 
-// MDP-1 : sous-total partagé (b-modal-buybox-shared.js) — même logique que
-// desktop, seule la composition (placement dans le flux root) diffère.
-describe('b-modal-mobile-product — sous-total partagé (MDP-1)', () => {
+// MDP-1 (prix courant) : la composition mobile affiche toujours le prix
+// courant dans l'identité compacte, dérivé de la même fonction pure que le
+// desktop (getCurrentPrice, via b-modal-buybox-shared.js).
+describe('b-modal-mobile-product — prix courant dans l’identité (MDP-1)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     installDom();
   });
 
-  test('affiche le sous-total = prix courant × modalQty', () => {
+  test('affiche le prix produit quand aucune unité SKU n’est résolue', () => {
     const detail = baseDetail({ pricing: { price_kmf: 2000 } });
     const selection = baseSelection();
-    state.modalQty = 3;
 
     renderMobileProductDetail(detail, selection);
 
-    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('6000 KMF');
+    expect(dom.modalPrice.textContent).toBe('2000 KMF');
   });
 
   test('utilise le prix de l’unité SKU résolue plutôt que le prix produit', () => {
@@ -172,31 +180,31 @@ describe('b-modal-mobile-product — sous-total partagé (MDP-1)', () => {
       sellable_units: [{ sku_id: 'sku-1', price_kmf: 9000 }],
     });
     const selection = baseSelection({ selected_sku_id: 'sku-1' });
-    state.modalQty = 1;
 
     renderMobileProductDetail(detail, selection);
 
-    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('9000 KMF');
+    expect(dom.modalPrice.textContent).toBe('9000 KMF');
   });
 });
 
-// MDP-2 : mêmes modes de paiement qu'en desktop, composés dans le flux mobile
-// (.k-buybox-payment-mobile) au lieu du placement fixe desktop.
-describe('b-modal-mobile-product — modes de paiement partagés (MDP-2)', () => {
+// MDM-8 : sous-total et modes de paiement sont retirés de la composition
+// mobile — ils n'appartiennent plus à la fiche produit. Ce test verrouille
+// leur absence pour empêcher une régression qui les réintroduirait.
+describe('b-modal-mobile-product — extinction du sous-total et du paiement (MDM-8)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     installDom();
   });
 
-  test('rend les 4 modes de paiement, Carte actif par défaut', () => {
+  test('ne rend ni sous-total ni sélecteur de paiement sur la fiche produit mobile', () => {
     const detail = baseDetail();
     const selection = baseSelection();
 
     renderMobileProductDetail(detail, selection);
 
-    const payment = document.querySelector('.k-buybox-payment-mobile');
-    expect(payment).not.toBeNull();
-    expect(payment.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(4);
-    expect(payment.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
+    expect(document.querySelector('.k-modal-subtotal')).toBeNull();
+    expect(document.querySelector('.k-modal-subtotal--mobile')).toBeNull();
+    expect(document.querySelector('.k-buybox-payment-mobile')).toBeNull();
+    expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(0);
   });
 });

@@ -13,7 +13,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
-| **Modal produit** `.k-modal*` | modal-shell.css (17), modal-product.css (4), interactions.css (2), modal-product-price-normalization.css (2), boutique-desktop.css (1) | 5 | 🔴 |
+| **Modal produit** `.k-modal*` | modal-shell.css (17), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
 | **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (20), layout.css (10), hero.css (1) | 3 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
@@ -54,12 +54,12 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
 | `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
+| `boutique.js` | 0 | 9 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
 | `b-modal-suggestions.js` | 6 | 0 | 2/4 | Modal produit |
 | `b-nav.js` | 5 | 1 | 2/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
 | `b-favs.js` | 5 | 0 | 0/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `b-paypal.js` | 5 | 0 | 0/0 | — |
-| `boutique.js` | 0 | 5 | 2/0 | Modal produit, Grille produits, Chips catégories |
 | `b-home-premium-v1.js` | 4 | 0 | 2/0 | Hero, Chips catégories |
 | `b-mobile-modal-v1.js` | 2 | 2 | 1/0 | Modal produit |
 | `b-mobile-premium-v1.js` | 2 | 2 | 1/0 | — |
@@ -93,7 +93,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | group-cart-flow.css | 900px, 1200px, 380px | 🔴 380px |
 | interactions.css | 899px | 🔴 899px |
 | modal-media.css | 400px, 900px | 🔴 400px |
-| modal-product-price-normalization.css | 899px | 🔴 899px |
+| modal-mobile-canonical.css | 899px | 🔴 899px |
 | modal-product.css | 900px, 899px | 🔴 899px |
 | modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |

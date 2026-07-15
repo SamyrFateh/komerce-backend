@@ -13,7 +13,27 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
  * @impact-areas  product-modal, mobile, sku-selection, delivery-options, media-carousel
- * @version       2026-07
+ * @version       2026-07 — MDM canonical rewrite
+ *
+ * Composition canonique mobile v3 :
+ *
+ *   TOPBAR (sticky, existing shell)
+ *   MEDIA (image carousel, promo badge, voir en grand, favori overlay)
+ *   IDENTITY COMPACT (name 1-line + ref inline | price + old_price + promo tag)
+ *   OPTIONS (axes from option_axes[], thumbnails if available)
+ *   INFO STRIP (dispo chip + delivery_options[] chips — single horizontal row)
+ *   ── fold ──
+ *   DESCRIPTION (truncated + read more)
+ *   DETAILS (composition, entretien — if available)
+ *   STICKY CTA BAR (qty + panier + acheter — existing shell actions)
+ *
+ * Removed from mobile composition (MDM-8):
+ * - renderSubtotal() → price + qty suffice on product sheet
+ * - renderPaymentSection() → belongs to purchase flow, not product sheet
+ * - hardcoded reassurance blocks
+ *
+ * The modal selects and renders. It never reconstructs stock, invents a SKU
+ * combination, hardcodes delivery labels, or becomes a mini-checkout.
  */
 
 'use strict';
@@ -26,7 +46,9 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { getCurrentPrice, renderSubtotalInto, renderPaymentModes, startGroupCartFlow } from './b-modal-buybox-shared.js';
+import { getCurrentPrice } from './b-modal-buybox-shared.js';
+
+/* ── helpers ──────────────────────────────────────────────────── */
 
 function isMobileViewport() {
   return window.matchMedia('(max-width: 899px)').matches;
@@ -37,21 +59,34 @@ function isPhotoAxis(axis) {
 }
 
 function activeUnit(detail, selection) {
-  return (detail.sellable_units || []).find((unit) => unit.sku_id === selection.selected_sku_id) || null;
+  return (detail.sellable_units || []).find(
+    (unit) => unit.sku_id === selection.selected_sku_id
+  ) || null;
 }
 
 function mediaSignature(selection) {
-  return (selection.selected_media || []).map((media) => `${media.id}:${media.url}`).join('|');
+  return (selection.selected_media || [])
+    .map((media) => `${media.id}:${media.url}`)
+    .join('|');
 }
+
+function optionMessage(optionState) {
+  if (optionState === OPTION_STATE.OUT_OF_STOCK) return 'Rupture';
+  if (optionState === OPTION_STATE.INCOMPATIBLE) return 'Non proposé';
+  return '';
+}
+
+/* ── MDM-2 : Media ────────────────────────────────────────────── */
 
 function renderMedia(detail, selection, force = false) {
   const signature = mediaSignature(selection);
   if (!force && state.modalMediaSignature === signature) return;
   state.modalMediaSignature = signature;
 
-  const media = selection.selected_media && selection.selected_media.length
-    ? selection.selected_media
-    : (detail.media || []);
+  const media =
+    selection.selected_media && selection.selected_media.length
+      ? selection.selected_media
+      : detail.media || [];
 
   buildCarouselSlides({
     name: detail.product.name,
@@ -59,22 +94,39 @@ function renderMedia(detail, selection, force = false) {
     image_url: media[0]?.url || '',
   });
   goToSlide(0);
-
-  // b-modal-image-ux relit les slides réels à chaque appel. Après un changement
-  // couleur, le fullscreen et le compteur suivent donc la nouvelle galerie.
   setupImageUX();
 }
 
-function renderIdentity(detail) {
+/* ── MDM-3 : Identity compact ─────────────────────────────────── */
+
+function renderIdentity(detail, selection) {
+  // Name — single line, overflow handled by CSS clamp
   if (dom.modalName) dom.modalName.textContent = detail.product.name;
-  if (dom.modalDesc) {
-    dom.modalDesc.textContent = detail.product.description || '';
-    dom.modalDesc.classList.remove('is-expanded');
-  }
-  if (dom.modalCat) {
-    dom.modalCat.textContent = detail.product.category || '';
+
+  // Reference — compact inline
+  const unit = activeUnit(detail, selection);
+  if (dom.modalSku) {
+    const reference = unit?.sku || detail.product.reference;
+    dom.modalSku.textContent = reference ? `Réf. ${reference}` : '';
+    dom.modalSku.hidden = !reference;
   }
 
+  // Price
+  const price = getCurrentPrice(detail, selection);
+  if (dom.modalPrice) dom.modalPrice.textContent = fmtPrice(price);
+
+  // Old price — only if contract provides it, never reconstructed
+  if (dom.modalOldPrice) {
+    if (detail.pricing.old_price_kmf != null) {
+      dom.modalOldPrice.textContent = fmtPrice(detail.pricing.old_price_kmf);
+      dom.modalOldPrice.classList.remove('u-hidden');
+    } else {
+      dom.modalOldPrice.textContent = '';
+      dom.modalOldPrice.classList.add('u-hidden');
+    }
+  }
+
+  // Promo badge on media
   const promo = Number(detail.pricing.promo_pct || 0);
   if (dom.modalPromoBadge) {
     if (promo > 0) {
@@ -87,99 +139,21 @@ function renderIdentity(detail) {
       dom.modal?.classList.remove('k-modal--has-promo');
     }
   }
-}
 
-function renderPriceAndReference(detail, selection) {
-  const unit = activeUnit(detail, selection);
-  const price = getCurrentPrice(detail, selection);
-  if (dom.modalPrice) dom.modalPrice.textContent = fmtPrice(price);
-
-  // PDC-4 : l'ancien prix vient du contrat ou reste absent. La modal ne le
-  // reconstruit jamais depuis promo_pct.
-  if (dom.modalOldPrice) {
-    if (detail.pricing.old_price_kmf != null) {
-      dom.modalOldPrice.textContent = fmtPrice(detail.pricing.old_price_kmf);
-      dom.modalOldPrice.classList.remove('u-hidden');
-    } else {
-      dom.modalOldPrice.textContent = '';
-      dom.modalOldPrice.classList.add('u-hidden');
-    }
+  // Description — moved below fold (MDM-7). Clear the legacy inline desc
+  // so it doesn't compete with the transactional core.
+  if (dom.modalDesc) {
+    dom.modalDesc.textContent = '';
+    dom.modalDesc.classList.add('u-hidden');
   }
 
-  if (dom.modalSku) {
-    const reference = unit?.sku || detail.product.reference;
-    dom.modalSku.textContent = reference ? `Réf. ${reference}` : '';
-    dom.modalSku.hidden = !reference;
+  // Category — hidden on mobile (no visual weight needed)
+  if (dom.modalCat) {
+    dom.modalCat.textContent = '';
   }
 }
 
-function renderStock(selection) {
-  if (!dom.modalStock) return;
-
-  if (!selection.selection_supported) {
-    dom.modalStock.textContent = '';
-    dom.modalStock.className = 'k-modal-stock';
-    dom.modalStock.hidden = true;
-    return;
-  }
-
-  dom.modalStock.hidden = false;
-  if (selection.selected_sku_id) {
-    dom.modalStock.textContent = '✓ Disponible';
-    dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
-    return;
-  }
-
-  dom.modalStock.textContent = Object.keys(selection.selected_options).length > 0
-    ? 'Choisissez la suite'
-    : 'Choisissez vos options';
-  dom.modalStock.className = 'k-modal-stock';
-}
-
-function renderActions(detail, selection) {
-  const isSku = detail.inventory_model === 'SKU';
-  const enabled = !isSku || Boolean(selection.selected_sku_id);
-  [dom.addCartBtn, document.getElementById('k-buy-now-btn')].forEach((button) => {
-    if (!button) return;
-    button.disabled = !enabled;
-    if (!enabled) button.setAttribute('aria-describedby', 'k-modal-selection-message');
-    else button.removeAttribute('aria-describedby');
-  });
-
-  // PDC-6 : le stepper modal (+/-) mute le panier "product-id first"
-  // (quickAdd/quickRemove résolvent par product.id, jamais par selected_sku_id).
-  // Ce n'est donc jamais une voie de mutation valide pour un produit SKU —
-  // même une fois le SKU résolu et le CTA actif — sous peine de contourner la
-  // sélection SKU. Il n'est réautorisé que pour l'inventaire historique
-  // (LEGACY_VARIANTS / simple), où la mutation product-id first reste valide.
-  [dom.qtyMinus, dom.qtyPlus].forEach((control) => {
-    if (!control) return;
-    control.disabled = isSku;
-  });
-}
-
-function optionMessage(optionState) {
-  if (optionState === OPTION_STATE.OUT_OF_STOCK) return 'Rupture';
-  if (optionState === OPTION_STATE.INCOMPATIBLE) return 'Non proposé';
-  return '';
-}
-
-function renderSelectionMessage(root, selection) {
-  const wrap = document.createElement('div');
-  wrap.className = 'k-modal-reassurance';
-  wrap.dataset.selectionMessage = '1';
-
-  const message = document.createElement('div');
-  message.id = 'k-modal-selection-message';
-  message.className = 'k-modal-reassurance-toggle';
-  message.setAttribute('role', 'status');
-  message.setAttribute('aria-live', 'polite');
-  message.textContent = selection.selection_message || '';
-  message.hidden = !selection.selection_message;
-
-  wrap.appendChild(message);
-  root.appendChild(wrap);
-}
+/* ── MDM-4 : Options SKU + availability ──────────────────────── */
 
 function renderAxis(detail, selection, axis, onSelectionChanged) {
   const group = document.createElement('section');
@@ -202,7 +176,10 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
   wrap.className = photo ? 'k-vg-skus' : 'k-vg-sizes';
 
   const states = new Map(
-    (selection.option_states[axis.key] || []).map((entry) => [entry.value, entry.state])
+    (selection.option_states[axis.key] || []).map((entry) => [
+      entry.value,
+      entry.state,
+    ])
   );
 
   axis.values.forEach((option) => {
@@ -216,13 +193,15 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
     button.setAttribute('aria-pressed', active ? 'true' : 'false');
     button.setAttribute(
       'aria-label',
-      `${axis.display_name} ${option.value}${unavailable ? ` — ${optionMessage(stateValue)}` : ''}`
+      `${axis.display_name} ${option.value}${
+        unavailable ? ` — ${optionMessage(stateValue)}` : ''
+      }`
     );
 
     if (photo && option.thumbnail_url) {
-      // k-vp--out rend l'indisponibilité sans pointer-events:none : contrairement
-      // à l'ancien k-sku--out, le clic reste possible pour expliquer la raison.
-      button.className = `k-sku${active ? ' k-sku--active' : ''}${unavailable ? ' k-vp--out' : ''}`;
+      button.className = `k-sku${active ? ' k-sku--active' : ''}${
+        unavailable ? ' k-vp--out' : ''
+      }`;
       const image = document.createElement('img');
       image.src = optimizeImgUrl(option.thumbnail_url, 140);
       image.alt = '';
@@ -233,7 +212,9 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
       button.appendChild(image);
       button.appendChild(name);
     } else {
-      button.className = `k-vp${active ? ' k-vp--active' : ''}${unavailable ? ' k-vp--out' : ''}`;
+      button.className = `k-vp${active ? ' k-vp--active' : ''}${
+        unavailable ? ' k-vp--out' : ''
+      }`;
       button.textContent = option.value;
     }
 
@@ -254,103 +235,165 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
   return group;
 }
 
-function deliveryMeta(option) {
-  const parts = [];
-  if (option.price_kmf != null) parts.push(fmtPrice(option.price_kmf));
-  if (option.eta_label) parts.push(option.eta_label);
-  if (!option.available && option.unavailable_reason) parts.push(option.unavailable_reason);
-  return parts.join(' · ');
+function renderSelectionMessage(root, selection) {
+  const message = document.createElement('div');
+  message.id = 'k-modal-selection-message';
+  message.className = 'k-mdm-selection-msg';
+  message.setAttribute('role', 'status');
+  message.setAttribute('aria-live', 'polite');
+  message.textContent = selection.selection_message || '';
+  message.hidden = !selection.selection_message;
+  root.appendChild(message);
 }
 
-function renderDeliveryOptions(detail, root) {
-  const delivery = document.createElement('section');
-  delivery.className = 'k-modal-reassurance';
-  delivery.dataset.productDeliveryOptions = '1';
+/* ── MDM-5 : Info strip (dispo + delivery chips) ──────────────── */
+
+function renderInfoStrip(detail, selection, root) {
+  const strip = document.createElement('div');
+  strip.className = 'k-mdm-info-strip';
+  strip.dataset.infoStrip = '1';
+
+  // Availability chip — only when selection is supported
+  if (selection.selection_supported) {
+    const availChip = document.createElement('span');
+    if (selection.selected_sku_id) {
+      availChip.className = 'k-mdm-chip k-mdm-chip--ok';
+      availChip.textContent = '✓ Disponible';
+    } else {
+      const hasSelections =
+        Object.keys(selection.selected_options).length > 0;
+      availChip.className = 'k-mdm-chip';
+      availChip.textContent = hasSelections
+        ? 'Choisissez la suite'
+        : 'Choisissez vos options';
+    }
+    strip.appendChild(availChip);
+  }
+
+  // Delivery chips — exclusively from detail.delivery_options[]
+  // Never hardcoded. Zero chips if array is empty.
   const options = detail?.delivery_options || [];
+  options.forEach((option) => {
+    const chip = document.createElement('span');
+    chip.className = 'k-mdm-chip k-mdm-chip--delivery';
+    const icon = /express|air|aérien/i.test(option.label) ? '✈️' : '📦';
+    chip.textContent = `${icon} ${option.label}`;
 
-  if (!options.length) {
-    const row = document.createElement('div');
-    row.className = 'k-modal-reassurance-toggle';
-    row.innerHTML =
-      '<span class="k-modal-reassurance-main">' +
-        '<span class="k-modal-reassurance-icon">📦</span>' +
-        '<span class="k-modal-reassurance-label">Livraison</span>' +
-        '<span class="k-modal-reassurance-delay">· communiquée à la commande</span>' +
-      '</span>';
-    delivery.appendChild(row);
-  } else {
-    options.forEach((option) => {
-      const row = document.createElement('div');
-      row.className = 'k-modal-reassurance-toggle';
-      const main = document.createElement('span');
-      main.className = 'k-modal-reassurance-main';
-      main.innerHTML = '<span class="k-modal-reassurance-icon">📦</span>';
+    // Append meta (price, ETA) if provided by contract
+    const meta = [];
+    if (option.price_kmf != null) meta.push(fmtPrice(option.price_kmf));
+    if (option.eta_label) meta.push(option.eta_label);
+    if (meta.length > 0) {
+      const metaSpan = document.createElement('span');
+      metaSpan.className = 'k-mdm-chip-meta';
+      metaSpan.textContent = ` · ${meta.join(' · ')}`;
+      chip.appendChild(metaSpan);
+    }
 
-      const label = document.createElement('span');
-      label.className = 'k-modal-reassurance-label';
-      label.textContent = option.label;
-      main.appendChild(label);
+    strip.appendChild(chip);
+  });
 
-      const metaText = deliveryMeta(option);
-      if (metaText) {
-        const meta = document.createElement('span');
-        meta.className = 'k-modal-reassurance-delay';
-        meta.textContent = `· ${metaText}`;
-        main.appendChild(meta);
-      }
-
-      row.appendChild(main);
-      delivery.appendChild(row);
-    });
+  // Fallback: no delivery options at all
+  if (options.length === 0) {
+    const fallback = document.createElement('span');
+    fallback.className = 'k-mdm-chip k-mdm-chip--delivery';
+    fallback.textContent = '📦 Livraison communiquée à la commande';
+    strip.appendChild(fallback);
   }
 
-  root.appendChild(delivery);
+  root.appendChild(strip);
 }
 
-function renderSubtotal(detail, selection, root) {
-  let subtotal = root.querySelector('.k-modal-subtotal');
-  if (!subtotal) {
-    subtotal = document.createElement('div');
-    subtotal.className = 'k-modal-subtotal k-modal-subtotal--mobile';
-    root.appendChild(subtotal);
-  }
-  renderSubtotalInto(subtotal, detail, selection, state.modalQty);
-}
+/* ── MDM-6 : Actions state (CTA enable/disable) ──────────────── */
 
-// MDP-2 : mêmes modes de paiement qu'en desktop (Carte / Cash / Panier
-// partagé / Cagnotte), même logique (b-modal-buybox-shared.js). Seule la
-// composition diffère : ici le sélecteur est composé dans le flux naturel
-// de `root`, au lieu du placement desktop géré par b-modal-approche-c-hybrid.js.
-function renderPaymentSection(detail, selection, root) {
-  let payment = root.querySelector('.k-buybox-payment-mobile');
-  if (!payment) {
-    payment = document.createElement('div');
-    payment.className = 'k-buybox-payment-mobile';
-    root.appendChild(payment);
-  }
+function renderActions(detail, selection) {
+  const isSku = detail.inventory_model === 'SKU';
+  const enabled = !isSku || Boolean(selection.selected_sku_id);
+  [dom.addCartBtn, document.getElementById('k-buy-now-btn')].forEach(
+    (button) => {
+      if (!button) return;
+      button.disabled = !enabled;
+      if (!enabled)
+        button.setAttribute('aria-describedby', 'k-modal-selection-message');
+      else button.removeAttribute('aria-describedby');
+    }
+  );
 
-  renderPaymentModes(payment, {
-    activeMode: state.modalPaymentMode,
-    onModeChange: (key) => { state.modalPaymentMode = key; },
-    onGroupSelect: () => {
-      startGroupCartFlow(state.modalProduct, state.modalQty, payment);
-    },
+  // Stepper: disabled for SKU products (product-id-first mutation is invalid
+  // for SKU inventory — see PDC-6 doctrine note)
+  [dom.qtyMinus, dom.qtyPlus].forEach((control) => {
+    if (!control) return;
+    control.disabled = isSku;
   });
 }
 
+/* ── MDM-7 : Description below fold ──────────────────────────── */
+
+function renderBelowFold(detail, root) {
+  // Fold separator
+  const fold = document.createElement('hr');
+  fold.className = 'k-mdm-fold';
+  root.appendChild(fold);
+
+  // Description section — truncated, with "Lire la suite"
+  if (detail.product.description) {
+    const descSection = document.createElement('section');
+    descSection.className = 'k-mdm-desc-section';
+
+    const heading = document.createElement('h4');
+    heading.className = 'k-mdm-section-heading';
+    heading.textContent = 'Description';
+    descSection.appendChild(heading);
+
+    const text = document.createElement('div');
+    text.className = 'k-mdm-desc-text';
+    text.textContent = detail.product.description;
+    descSection.appendChild(text);
+
+    const readMore = document.createElement('button');
+    readMore.className = 'k-mdm-read-more';
+    readMore.type = 'button';
+    readMore.textContent = 'Lire la suite';
+    readMore.addEventListener('click', () => {
+      const expanded = text.classList.toggle('k-mdm-desc-text--expanded');
+      readMore.textContent = expanded ? 'Réduire' : 'Lire la suite';
+    });
+    descSection.appendChild(readMore);
+
+    root.appendChild(descSection);
+  }
+}
+
+/* ── Main render ──────────────────────────────────────────────── */
+
 /**
- * Rend la composition mobile PDC-4 depuis le contrat détail et l'état de
- * sélection unique. Cette fonction peut être rappelée après chaque sélection.
+ * Renders the canonical mobile product composition (v3) from the product
+ * detail contract and the shared selection state.
+ *
+ * Composition order:
+ *   1. Options (axes) — rendered into #k-modal-variants container
+ *   2. Selection message
+ *   3. Info strip (availability + delivery chips)
+ *   4. Below-fold content (description)
+ *   5. Identity (name, ref, price) — rendered into existing shell DOM
+ *   6. Actions state — rendered into existing shell CTA bar
+ *   7. Media — rendered into existing carousel
+ *
+ * Steps 5-7 target existing shell elements (dom.*) rather than the
+ * variants container, maintaining compatibility with the shell layout.
  */
-export function renderMobileProductDetail(detail, selection, { forceMedia = false } = {}) {
-  const container = dom.modalVariants || document.getElementById('k-modal-variants');
+export function renderMobileProductDetail(
+  detail,
+  selection,
+  { forceMedia = false } = {}
+) {
+  const container =
+    dom.modalVariants || document.getElementById('k-modal-variants');
   if (!container || !isMobileViewport()) return;
 
   state.modalProductDetail = detail;
   state.modalSelection = selection;
-  // Compatibilité transactionnelle de transition : le backend SKU résout encore
-  // autoritairement depuis variant_combo. Le snapshot lisible suit donc exactement
-  // l'état PDC-3 ; il n'est plus construit par le renderer legacy à deux axes.
+  // Compatibility: backend SKU resolves from variant_combo
   state.modalVariantCombo = selection.selection_supported
     ? { ...selection.selected_options }
     : {};
@@ -359,29 +402,39 @@ export function renderMobileProductDetail(detail, selection, { forceMedia = fals
     renderMobileProductDetail(detail, state.modalSelection);
   }
 
-  // Le legacy core injecte encore temporairement sa reassurance hardcodée.
-  // PDC-4 la retire dès que le vrai contrat détail est disponible.
+  // MDM-8: Remove any legacy hardcoded reassurance injected by core
   dom.modal?.querySelector('[data-mobile-reassurance]')?.remove();
 
+  // Clear and rebuild the variants container
   container.innerHTML = '';
   const root = document.createElement('div');
-  root.dataset.pdc4Root = '1';
+  root.dataset.mdmRoot = '1';
+  root.className = 'k-mdm-root';
   container.appendChild(root);
 
+  // MDM-4: Option axes
   if (selection.selection_supported) {
     detail.option_axes.forEach((axis) => {
       root.appendChild(renderAxis(detail, selection, axis, rerender));
     });
   }
 
+  // Selection message (e.g. "L indisponible — rupture")
   renderSelectionMessage(root, selection);
-  renderDeliveryOptions(detail, root);
-  renderIdentity(detail);
-  renderPriceAndReference(detail, selection);
-  renderStock(selection);
+
+  // MDM-5: Info strip (availability chip + delivery chips)
+  renderInfoStrip(detail, selection, root);
+
+  // MDM-7: Description below fold
+  renderBelowFold(detail, root);
+
+  // MDM-3: Identity into shell DOM
+  renderIdentity(detail, selection);
+
+  // MDM-6: Actions state into shell CTA bar
   renderActions(detail, selection);
-  renderSubtotal(detail, selection, root);
-  renderPaymentSection(detail, selection, root);
+
+  // MDM-2: Media into shell carousel
   renderMedia(detail, selection, forceMedia);
 }
 

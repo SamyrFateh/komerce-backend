@@ -523,3 +523,88 @@ Scénarios métier obligatoires :
 10. quantité desktop modifiée → sous-total recalculé depuis le prix courant du contrat/SKU ;
 11. enhancer desktop → aucun write prix/stock/livraison/sous-total ;
 12. repaint legacy tardif → root responsive restauré depuis l'état partagé pendant la transition PDC-6.
+
+---
+
+## 12. MDM — Composition canonique mobile v3
+
+> **Mis à jour : 2026-07-16** — Phase 1 implémentée.
+
+### 12.1 Principes
+
+La modal mobile est une **fiche produit transactionnelle**. Elle répond à sept questions dans un seul écran : qu'est-ce que c'est, combien ça coûte, quelle variante, est-elle disponible, comment être livré, quelle quantité, et ajouter ou acheter.
+
+Elle n'est pas une démonstration de toutes les capacités de Komerce.
+
+### 12.2 Composition canonique v3
+
+```text
+TOPBAR (sticky shell existant)
+├── ← Retour / Catalogue
+├── 🛒 badge panier
+└── ✕ fermer
+
+MEDIA (48vh max, aspect natif)
+├── Carousel swipe
+├── Badge promo -N% (si pricing.promo_pct > 0)
+├── ♡ Favori (overlay sur image)
+├── Voir en grand
+└── Compteur 1/N
+
+IDENTITY COMPACT (card overlap sur media)
+├── Nom (2 lignes max, -webkit-line-clamp)
+├── Réf. inline
+├── Prix actuel (coral si promo)
+├── Ancien prix barré (uniquement si old_price_kmf != null)
+└── Tag promo -N% inline
+
+OPTIONS (dans #k-modal-variants)
+├── Couleur · [selected] — thumbnails si disponibles
+├── Taille · [selected] — boutons
+├── Message sélection (rupture/incompatibilité)
+└── Autres axes si présents
+
+INFO STRIP (chips horizontaux, une seule ligne)
+├── ✓ Disponible (ou message de guidance)
+├── 📦 [delivery_options[0].label]  — JAMAIS hardcodé
+└── ✈️ [delivery_options[1].label]  — JAMAIS hardcodé
+
+── FOLD (séparateur 3px) ──
+
+DESCRIPTION (tronquée 3 lignes + Lire la suite)
+DÉTAILS (composition, entretien — si disponibles)
+
+STICKY CTA BAR (fixed bottom, shell existant)
+├── [−] qty [+]
+├── 🛒 Panier
+└── ⚡ Acheter
+```
+
+### 12.3 Éléments retirés du mobile (MDM-8)
+
+| Élément | Raison | Destination |
+|---|---|---|
+| Sous-total | Prix + quantité suffisent sur fiche produit | Supprimé du mobile |
+| Sélecteur paiement (Carte/Cash/Panier/Cagnotte) | Appartient au parcours déclenché après "Acheter" | Purchase flow |
+| Reassurance hardcodée | Remplacée par info strip dynamique | Supprimée |
+| Description dans zone identité | Polluait le premier écran transactionnel | Below fold |
+
+### 12.4 Fichiers MDM
+
+| Rôle | Fichier |
+|---|---|
+| Renderer mobile canonical | `public/boutique/js/b-modal-mobile-product.js` |
+| CSS canonical mobile | `public/boutique/css/modal-mobile-canonical.css` |
+| CSS price normalization | `public/boutique/css/modal-product-price-normalization.css` — vidé, remplacé par canonical |
+| Tests | `tests/unit/modal-mobile-canonical.test.js` |
+| Bundle CSS | `components.css` via `css-bundles.js` |
+
+### 12.5 Règles de layout MDM
+
+1. Titre limité à 2 lignes visuelles, jamais de hauteur magique.
+2. Média plafonné à `48vh`, min `180px`.
+3. CTA sticky `position: fixed` en bas — jamais dans le flux scrollable.
+4. Info strip : dispo + delivery chips en ligne horizontale, pas empilés.
+5. Description hors premier écran, sous séparateur fort.
+6. Zéro label livraison hardcodé — `delivery_options[]` exclusivement.
+7. Fonctionne de 320px à 428px de largeur sans recalcul.
