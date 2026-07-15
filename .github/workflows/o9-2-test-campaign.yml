@@ -147,23 +147,85 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run all public Playwright projects on current Komerce environment
-        run: >-
-          npx playwright test
-          --project='Desktop Chrome'
-          --project='Desktop Firefox'
-          --project='Desktop Safari'
-          --project='Mobile Chrome'
-          --project='Mobile Safari'
-          --workers=1
+      - name: Run public Playwright and write compact failure inventory
+        shell: bash
+        run: |
+          mkdir -p o9-2-summary
+          set +e
+          npx playwright test \
+            --project='Desktop Chrome' \
+            --project='Desktop Firefox' \
+            --project='Desktop Safari' \
+            --project='Mobile Chrome' \
+            --project='Mobile Safari' \
+            --workers=1 \
+            --reporter=json \
+            > o9-2-summary/playwright-public.json
+          code=$?
+          set -e
 
-      - name: Upload Playwright report
+          node <<'NODE'
+          const fs = require('fs');
+          const input = 'o9-2-summary/playwright-public.json';
+          const out = 'o9-2-summary/playwright-public-summary.ndjson';
+          const data = JSON.parse(fs.readFileSync(input, 'utf8'));
+          const rows = [];
+
+          function walk(suite, inheritedFile = null) {
+            const file = suite.file || inheritedFile;
+            for (const spec of suite.specs || []) {
+              for (const test of spec.tests || []) {
+                const results = test.results || [];
+                const final = results[results.length - 1] || {};
+                const errors = [];
+                for (const result of results) {
+                  const candidates = result.errors || (result.error ? [result.error] : []);
+                  for (const error of candidates) {
+                    const message = error && (error.message || error.value || error.stack);
+                    if (message && !errors.includes(message)) errors.push(message);
+                  }
+                }
+                rows.push({
+                  file: file || null,
+                  project: test.projectName || test.projectId || null,
+                  title: spec.title,
+                  status: test.status || final.status || 'unknown',
+                  expectedStatus: test.expectedStatus || null,
+                  retries: Math.max(0, results.length - 1),
+                  errors: errors.slice(0, 3)
+                });
+              }
+            }
+            for (const child of suite.suites || []) walk(child, file);
+          }
+
+          for (const suite of data.suites || []) walk(suite);
+
+          const failing = rows.filter((row) => !['expected', 'skipped'].includes(row.status));
+          const summary = {
+            stats: data.stats || null,
+            total: rows.length,
+            expected: rows.filter((row) => row.status === 'expected').length,
+            skipped: rows.filter((row) => row.status === 'skipped').length,
+            flaky: rows.filter((row) => row.status === 'flaky').length,
+            unexpected: rows.filter((row) => row.status === 'unexpected').length,
+            other: rows.filter((row) => !['expected', 'skipped', 'flaky', 'unexpected'].includes(row.status)).length,
+            failing
+          };
+
+          fs.writeFileSync(out, [JSON.stringify({ type: 'summary', ...summary }), ...failing.map((row) => JSON.stringify({ type: 'failure', ...row }))].join('\n') + '\n');
+          console.log('===== O9.2 PLAYWRIGHT COMPACT INVENTORY =====');
+          console.log(JSON.stringify(summary, null, 2));
+          NODE
+
+          cat o9-2-summary/playwright-public-summary.ndjson
+          exit "$code"
+
+      - name: Upload compact Playwright inventory
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: o9-2-playwright-public-report
-          path: |
-            public/boutique/playwright-report/
-            public/boutique/test-results/
-          if-no-files-found: ignore
+          name: o9-2-playwright-public-summary
+          path: public/boutique/o9-2-summary/
+          if-no-files-found: error
           retention-days: 30
