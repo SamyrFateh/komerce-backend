@@ -115,6 +115,25 @@ import './b-cart-stepper-guard.js'; // correctif capture document vs boutons +/-
   window.addEventListener('resize', applyDesktopReset);
 })();
 
+// ── FIX Samsung Internet : dvh mal recalculé → .k-modal (100dvh) plus haut
+//    que le viewport réellement visible → .k-modal-scroll croit être en
+//    bout de scroll alors que prix/CTA sont encore sous la barre système.
+//    On pose --k-vh en JS (visualViewport.height, source de vérité côté
+//    device) ; consommé par .k-modal dans modal-shell.css. Voir bug report
+//    "prix rogné / scroll bloqué sur le prix / CTA remonte" — Samsung only.
+(function syncViewportHeight() {
+  function setVh() {
+    let h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+    document.documentElement.style.setProperty('--k-vh', h + 'px');
+  }
+  setVh();
+  window.addEventListener('resize', setVh);
+  window.addEventListener('orientationchange', setVh);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', setVh);
+  }
+})();
+
 // ── CONSTANTES KOMERCE ──────────────────────────────────────────────
 const KOMERCE_WA = '33699272526';
 const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;

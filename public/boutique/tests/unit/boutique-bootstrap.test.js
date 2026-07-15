@@ -158,3 +158,62 @@ test('boutique câble le boot, les événements globaux et le reset desktop', ()
   expect(document.querySelector('.k-modal-dot[data-index="1"]').classList.contains('active'))
     .toBe(true);
 });
+
+describe('syncViewportHeight (--k-vh — fix Samsung Internet dvh)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    document.documentElement.style.cssText = '';
+    Object.defineProperty(document, 'readyState', { configurable: true, value: 'complete' });
+  });
+
+  it('pose --k-vh depuis visualViewport.height si disponible', () => {
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: { height: 640, addEventListener: jest.fn() },
+    });
+    jest.isolateModules(() => {
+      require('../../js/boutique.js');
+    });
+    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('640px');
+    delete window.visualViewport;
+  });
+
+  it('fallback sur window.innerHeight si visualViewport absent', () => {
+    delete window.visualViewport;
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 720 });
+    jest.isolateModules(() => {
+      require('../../js/boutique.js');
+    });
+    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('720px');
+  });
+
+  it('remet --k-vh à jour sur resize et orientationchange', () => {
+    delete window.visualViewport;
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 500 });
+    jest.isolateModules(() => {
+      require('../../js/boutique.js');
+    });
+    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('500px');
+
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 480 });
+    window.dispatchEvent(new Event('resize'));
+    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('480px');
+
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 640 });
+    window.dispatchEvent(new Event('orientationchange'));
+    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('640px');
+  });
+
+  it('s\'abonne aussi à visualViewport.resize quand il existe', () => {
+    const vvAddEventListener = jest.fn();
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: { height: 600, addEventListener: vvAddEventListener },
+    });
+    jest.isolateModules(() => {
+      require('../../js/boutique.js');
+    });
+    expect(vvAddEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
+    delete window.visualViewport;
+  });
+});
