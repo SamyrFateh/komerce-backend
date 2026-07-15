@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 371,
-    "filesWithFullHeaders": 344,
+    "scannedCodeFiles": 372,
+    "filesWithFullHeaders": 345,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 371,
+    "filesWithAnyHeaders": 372,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 757,
-    "edges": 4290,
+    "graphNodes": 758,
+    "edges": 4304,
     "dbTables": 112,
     "doctrines": 149,
     "impactAreas": 125,
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 46,
+    "catalog": 47,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 4,
@@ -71,6 +71,7 @@
     "ui-page": 4,
     "ui-service": 1,
     "ui-experiment": 1,
+    "view-model": 4,
     "ui-controller": 1,
     "ui-state": 1,
     "util-ui": 2,
@@ -81,7 +82,6 @@
     "api-client": 2,
     "state-store": 1,
     "schema": 1,
-    "view-model": 3,
     "route": 100,
     "entrypoint": 1,
     "service": 150,
@@ -94,7 +94,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 101,
-    "high": 160,
+    "high": 161,
     "low": 34
   },
   "nodes": [
@@ -2015,6 +2015,55 @@
         "product-modal",
         "cart",
         "shared-cart-creation",
+        "checkout-entry"
+      ],
+      "version": "2026-07"
+    },
+    {
+      "id": "public/boutique/js/b-modal-buybox-shared.js",
+      "file": "public/boutique/js/b-modal-buybox-shared.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "product-modal-buybox-shared-logic",
+      "domain": "catalog",
+      "layer": "view-model",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_detail_v1",
+        "modal_selection_state",
+        "modal_qty",
+        "modal_payment_mode"
+      ],
+      "outputs": [
+        "buybox_price_projection",
+        "buybox_payment_dom"
+      ],
+      "depends": [
+        "b-utils.js",
+        "b-modal.js",
+        "b-cart.js",
+        "b-share-cart.js"
+      ],
+      "usedBy": [
+        "b-modal-mobile-product.js",
+        "b-modal-desktop-product.js",
+        "b-modal-approche-c-hybrid.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "mobile",
+        "desktop",
+        "sku-selection",
         "checkout-entry"
       ],
       "version": "2026-07"
@@ -19016,6 +19065,21 @@
       "area": "shared-cart-creation"
     },
     {
+      "id": "impact:mobile",
+      "type": "impact-area",
+      "area": "mobile"
+    },
+    {
+      "id": "impact:desktop",
+      "type": "impact-area",
+      "area": "desktop"
+    },
+    {
+      "id": "impact:sku-selection",
+      "type": "impact-area",
+      "area": "sku-selection"
+    },
+    {
       "id": "impact:modal-layout",
       "type": "impact-area",
       "area": "modal-layout"
@@ -19031,16 +19095,6 @@
       "area": "modal-desktop"
     },
     {
-      "id": "impact:desktop",
-      "type": "impact-area",
-      "area": "desktop"
-    },
-    {
-      "id": "impact:sku-selection",
-      "type": "impact-area",
-      "area": "sku-selection"
-    },
-    {
       "id": "impact:delivery-options",
       "type": "impact-area",
       "area": "delivery-options"
@@ -19049,11 +19103,6 @@
       "id": "impact:media-carousel",
       "type": "impact-area",
       "area": "media-carousel"
-    },
-    {
-      "id": "impact:mobile",
-      "type": "impact-area",
-      "area": "mobile"
     },
     {
       "id": "impact:participant-verification",
@@ -22301,6 +22350,90 @@
     },
     {
       "from": "public/boutique/js/b-modal-approche-c-hybrid.js",
+      "to": "impact:checkout-entry",
+      "type": "impact",
+      "label": "checkout-entry"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "public/boutique/js/b-utils.js",
+      "type": "depends",
+      "label": "b-utils.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "public/boutique/js/b-modal.js",
+      "type": "depends",
+      "label": "b-modal.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "public/boutique/js/b-cart.js",
+      "type": "depends",
+      "label": "b-cart.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "public/boutique/js/b-share-cart.js",
+      "type": "depends",
+      "label": "b-share-cart.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-mobile-product.js",
+      "to": "public/boutique/js/b-modal-buybox-shared.js",
+      "type": "uses",
+      "label": "b-modal-mobile-product.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-desktop-product.js",
+      "to": "public/boutique/js/b-modal-buybox-shared.js",
+      "type": "uses",
+      "label": "b-modal-desktop-product.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-approche-c-hybrid.js",
+      "to": "public/boutique/js/b-modal-buybox-shared.js",
+      "type": "uses",
+      "label": "b-modal-approche-c-hybrid.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
+      "type": "doctrine",
+      "label": "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "impact:product-modal",
+      "type": "impact",
+      "label": "product-modal"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "impact:mobile",
+      "type": "impact",
+      "label": "mobile"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "impact:desktop",
+      "type": "impact",
+      "label": "desktop"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "impact:sku-selection",
+      "type": "impact",
+      "label": "sku-selection"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
       "to": "impact:checkout-entry",
       "type": "impact",
       "label": "checkout-entry"
@@ -46522,6 +46655,7 @@
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-group-cart-flow.js",
         "public/boutique/js/b-modal-approche-c-hybrid.js",
+        "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-scroll-owner.js",
@@ -47269,9 +47403,60 @@
         "impact:shared-cart-creation",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/main.js"
+      ]
+    },
+    "public/boutique/js/b-modal-buybox-shared.js": {
+      "role": "product-modal-buybox-shared-logic",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-utils.js",
+        "public/boutique/js/b-modal.js",
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-share-cart.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/b-modal-mobile-product.js",
+        "public/boutique/js/b-modal-desktop-product.js",
+        "public/boutique/js/b-modal-approche-c-hybrid.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "mobile",
+        "desktop",
+        "sku-selection",
+        "checkout-entry"
+      ],
+      "mustCheck": [
+        "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "impact:checkout-entry",
+        "impact:desktop",
+        "impact:mobile",
+        "impact:product-modal",
+        "impact:sku-selection",
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/b-modal-approche-c-hybrid.js",
+        "public/boutique/js/b-modal-desktop-product.js",
+        "public/boutique/js/b-modal-mobile-product.js",
+        "public/boutique/js/b-modal.js",
+        "public/boutique/js/b-share-cart.js",
+        "public/boutique/js/b-utils.js"
       ]
     },
     "public/boutique/js/b-modal-cart.js": {
@@ -47456,6 +47641,7 @@
         "impact:media-carousel",
         "impact:product-modal",
         "impact:sku-selection",
+        "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "public/boutique/js/b-modal-product.js",
@@ -47545,6 +47731,7 @@
         "impact:mobile",
         "impact:product-modal",
         "impact:sku-selection",
+        "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "public/boutique/js/b-modal-product.js",
@@ -47762,6 +47949,7 @@
       "mustCheck": [
         "impact:boutique",
         "public/boutique/js/b-catalog.js",
+        "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-subcat.js",
@@ -48103,6 +48291,7 @@
         "public/boutique/js/b-group-view.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-modal-approche-c-hybrid.js",
+        "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-phone.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/boutique.js",
@@ -48354,6 +48543,7 @@
         "public/boutique/js/b-checkout-render.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-mini-cart.js",
+        "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-modal-product.js",

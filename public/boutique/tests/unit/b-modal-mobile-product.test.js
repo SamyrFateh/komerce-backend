@@ -38,7 +38,15 @@ jest.mock('../../js/b-modal-image-ux.js', () => ({
   setupImageUX: jest.fn(),
 }));
 
-const { dom } = require('../../js/b-store.js');
+// MDP-1/MDP-2 : b-modal-mobile-product.js délègue désormais le prix, le
+// sous-total et les modes de paiement à b-modal-buybox-shared.js, qui importe
+// à son tour b-modal.js/b-cart.js/b-share-cart.js — mocks isolants, même
+// convention que tests/unit/b-modal-desktop-product.test.js.
+jest.mock('../../js/b-modal.js', () => ({ closeModal: jest.fn() }));
+jest.mock('../../js/b-cart.js', () => ({ addToCart: jest.fn() }));
+jest.mock('../../js/b-share-cart.js', () => ({ startShareFlow: jest.fn() }));
+
+const { state, dom } = require('../../js/b-store.js');
 const { renderMobileProductDetail } = require('../../js/b-modal-mobile-product.js');
 
 function installDom() {
@@ -136,5 +144,59 @@ describe('b-modal-mobile-product — renderActions (CTA + stepper, PDC-6)', () =
     // Preuve : aucune mutation panier "product-id first" possible même une
     // fois le SKU résolu — le stepper reste hors service en SKU.
     stepperControls().forEach((btn) => expect(btn.disabled).toBe(true));
+  });
+});
+
+// MDP-1 : sous-total partagé (b-modal-buybox-shared.js) — même logique que
+// desktop, seule la composition (placement dans le flux root) diffère.
+describe('b-modal-mobile-product — sous-total partagé (MDP-1)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  test('affiche le sous-total = prix courant × modalQty', () => {
+    const detail = baseDetail({ pricing: { price_kmf: 2000 } });
+    const selection = baseSelection();
+    state.modalQty = 3;
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('6000 KMF');
+  });
+
+  test('utilise le prix de l’unité SKU résolue plutôt que le prix produit', () => {
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      pricing: { price_kmf: 5000 },
+      sellable_units: [{ sku_id: 'sku-1', price_kmf: 9000 }],
+    });
+    const selection = baseSelection({ selected_sku_id: 'sku-1' });
+    state.modalQty = 1;
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('9000 KMF');
+  });
+});
+
+// MDP-2 : mêmes modes de paiement qu'en desktop, composés dans le flux mobile
+// (.k-buybox-payment-mobile) au lieu du placement fixe desktop.
+describe('b-modal-mobile-product — modes de paiement partagés (MDP-2)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  test('rend les 4 modes de paiement, Carte actif par défaut', () => {
+    const detail = baseDetail();
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    const payment = document.querySelector('.k-buybox-payment-mobile');
+    expect(payment).not.toBeNull();
+    expect(payment.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(4);
+    expect(payment.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
   });
 });

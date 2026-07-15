@@ -1,14 +1,14 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-14T21:12:07.374Z.
+> Régénéré le 2026-07-15T09:29:27.794Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **69** (69 headés) · Événements bus : **17** · Bundles CSS : **3**
+- Modules JS : **70** (70 headés) · Événements bus : **18** · Bundles CSS : **3**
 - Endpoints appelés : **52** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
-- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 6 non déclaré(s)
+- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
 
@@ -79,6 +79,7 @@
 | `chip:center` | b-pager | b-catalog | 🟢 sain |
 | `modal:close` | b-cart, b-checkout, b-modal-desktop-enhancers | b-modal-core | 🟢 sain |
 | `modal:closed` | b-modal-core | b-modal-approche-c-hybrid, b-modal-product-detail-bootstrap, b-pager | 🟡 non déclaré |
+| `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-approche-c-hybrid, b-modal-desktop-enhancers | 🟡 non déclaré |
 | `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-modal-suggestions, b-product-open-contract | 🟢 sain |
 | `modal:opened` | b-modal-core | b-mobile-modal-v1, b-mobile-premium-v1, b-modal-approche-c-hybrid, b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions | 🟡 non déclaré |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
@@ -125,6 +126,8 @@ graph LR
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_pager["b-pager"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_pdp_curation_suggestions["b-pdp-curation-suggestions"]
+  b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_approche_c_hybrid["b-modal-approche-c-hybrid"]
+  b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_approche_c_hybrid["b-modal-approche-c-hybrid"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_pager["b-pager"]
@@ -137,7 +140,7 @@ graph LR
 | Bundle | Sources |
 |---|---|
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
-| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `cart`, `interactions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal`, `wallet` |
+| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-product-price-normalization`, `cart`, `interactions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal`, `wallet` |
 | `css/dist/desktop.css` | `boutique-desktop` |
 
 ---

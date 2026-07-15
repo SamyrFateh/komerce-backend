@@ -13,7 +13,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
-| **Modal produit** `.k-modal*` | modal-shell.css (17), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
+| **Modal produit** `.k-modal*` | modal-shell.css (17), modal-product.css (4), interactions.css (2), modal-product-price-normalization.css (2), boutique-desktop.css (1) | 5 | 🔴 |
 | **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (20), layout.css (10), hero.css (1) | 3 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
@@ -34,16 +34,16 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-core.js` | 33 | 54 | 2/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout.js` | 60 | 4 | 0/2 | Bottom-nav mobile |
 | `b-checkout-render.js` | 56 | 0 | 0/0 | — |
-| `b-modal-desktop-product.js` | 40 | 0 | 0/0 | Modal produit |
-| `b-modal-mobile-product.js` | 34 | 0 | 0/0 | Modal produit |
+| `b-modal-desktop-product.js` | 38 | 0 | 0/0 | Modal produit |
+| `b-modal-mobile-product.js` | 38 | 0 | 0/0 | Modal produit |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
 | `b-modal-product.js` | 24 | 6 | 0/1 | Modal produit |
-| `b-modal-desktop-enhancers.js` | 27 | 0 | 1/1 | Modal produit |
+| `b-modal-desktop-enhancers.js` | 27 | 0 | 2/1 | Modal produit |
 | `b-share-cart.js` | 25 | 1 | 0/0 | Panier, Header, Bottom-nav mobile |
 | `b-cart-pill.js` | 6 | 18 | 3/0 | Grille produits, Section catalogue |
 | `b-wallet.js` | 24 | 0 | 0/0 | Section catalogue |
 | `b-mini-cart.js` | 4 | 19 | 2/0 | Panier |
-| `b-modal-approche-c-hybrid.js` | 19 | 0 | 2/0 | Modal produit |
+| `b-modal-buybox-shared.js` | 20 | 0 | 0/0 | Modal produit |
 | `b-modal-nav.js` | 10 | 9 | 1/4 | Modal produit |
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
 | `b-identity.js` | 11 | 5 | 0/0 | — |
@@ -67,12 +67,13 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `komerce-api.js` | 4 | 0 | 0/0 | — |
 | `b-catalog-desktop-enhancers.js` | 0 | 3 | 1/0 | Header, Chips catégories |
 | `b-greeting.js` | 2 | 0 | 0/0 | — |
+| `b-modal-approche-c-hybrid.js` | 2 | 0 | 3/0 | Modal produit |
 | `b-modal-cart.js` | 2 | 0 | 0/0 | — |
 | `b-utils.js` | 2 | 0 | 0/0 | Carte produit |
 | `b-cart-core.js` | 1 | 0 | 1/2 | Modal produit, Panier, Bottom-nav mobile |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
 | `b-desktop-sidebar.js` | 1 | 0 | 0/1 | Chips catégories |
-| `b-modal-product-detail-bootstrap.js` | 1 | 0 | 2/0 | Modal produit |
+| `b-modal-product-detail-bootstrap.js` | 1 | 0 | 2/1 | Modal produit |
 | `b-store.js` | 0 | 1 | 0/1 | Modal produit, Panier, Grille produits, Hero |
 
 ---
@@ -92,6 +93,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | group-cart-flow.css | 900px, 1200px, 380px | 🔴 380px |
 | interactions.css | 899px | 🔴 899px |
 | modal-media.css | 400px, 900px | 🔴 400px |
+| modal-product-price-normalization.css | 899px | 🔴 899px |
 | modal-product.css | 900px, 899px | 🔴 899px |
 | modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |
@@ -135,9 +137,9 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Indicateur | Valeur | Cible |
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
-| Modules JS écrivant le DOM | 39 | ≤ 5 |
+| Modules JS écrivant le DOM | 40 | ≤ 5 |
 | Breakpoints distincts | 7 | ≤ 2 |
-| Violations breakpoint | 12 | 0 |
+| Violations breakpoint | 13 | 0 |
 | `!important` | 23 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

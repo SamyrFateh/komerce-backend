@@ -16,6 +16,7 @@ import './b-store.js';
 import './boutique.js';
 import { setupSharePhoneGuard } from './b-share-phone-guard.js';
 import { setupDesktopUpgrade } from './b-desktop-upgrade.js';
+import { setupModalDesktopEnhancers } from './b-modal-desktop-enhancers.js';
 import { isDesktop } from './b-scroll-owner.js';
 import { setupProductOpenContract } from './b-product-open-contract.js';
 import { setupCartProductOpenStyle } from './b-cart-product-open-style.js';
@@ -28,6 +29,10 @@ import { greetIfKnown } from './b-greeting.js';
 
 function setupBoutiqueRuntime() {
   setupSharePhoneGuard();
+  // MDP-3 : abonnement resize installé indépendamment du viewport initial —
+  // voir b-modal-desktop-enhancers.js (setupModalDesktopEnhancers est
+  // idempotent ; ré-appelé sans effet par setupDesktopUpgrade() ci-dessous).
+  setupModalDesktopEnhancers();
   setupDesktopUpgrade();
   setupApprocheCHybridPdp();
   setupPdpCurationSuggestions();

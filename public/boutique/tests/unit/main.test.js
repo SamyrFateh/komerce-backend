@@ -17,6 +17,7 @@ const mockSetupHomePremiumV1 = jest.fn();
 const mockSetupProductDetailModal = jest.fn();
 const mockGreetIfKnown = jest.fn();
 const mockIsDesktop = jest.fn();
+const mockSetupModalDesktopEnhancers = jest.fn();
 
 jest.mock('../../js/b-utils.js', () => ({}));
 jest.mock('../../js/b-bus.js', () => ({ bus: mockBus }));
@@ -27,6 +28,13 @@ jest.mock('../../js/b-share-phone-guard.js', () => ({
 }));
 jest.mock('../../js/b-desktop-upgrade.js', () => ({
   setupDesktopUpgrade: mockSetupDesktopUpgrade,
+}));
+// MDP-3 : main.js importe désormais setupModalDesktopEnhancers directement
+// (en plus de l'appel existant à l'intérieur de setupDesktopUpgrade) pour
+// brancher les listeners resize avant le premier passage desktop. Mocké ici
+// pour ne pas tirer la vraie chaîne b-modal-core.js/b-cart.js/b-catalog.js.
+jest.mock('../../js/b-modal-desktop-enhancers.js', () => ({
+  setupModalDesktopEnhancers: mockSetupModalDesktopEnhancers,
 }));
 jest.mock('../../js/b-scroll-owner.js', () => ({ isDesktop: mockIsDesktop }));
 jest.mock('../../js/b-product-open-contract.js', () => ({
@@ -60,6 +68,7 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
 
   expect(window._kbus).toBe(mockBus);
   expect(mockSetupSharePhoneGuard).toHaveBeenCalledTimes(1);
+  expect(mockSetupModalDesktopEnhancers).toHaveBeenCalledTimes(1);
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(1);
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   expect(mockSetupProductOpenContract).toHaveBeenCalledTimes(1);

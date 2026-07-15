@@ -15168,6 +15168,14 @@
       {
         "boutiqueManifest": "modal-product",
         "category": "boutique",
+        "declared": "../js/b-modal-buybox-shared.js",
+        "resolvedPath": "public/boutique/js/b-modal-buybox-shared.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
         "declared": "../js/b-modal-desktop-enhancers.js",
         "resolvedPath": "public/boutique/js/b-modal-desktop-enhancers.js",
         "exists": true,
@@ -15242,6 +15250,22 @@
         "category": "tests",
         "declared": "../tests/unit/b-modal-desktop-product.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-modal-desktop-product.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "tests",
+        "declared": "../tests/unit/b-modal-buybox-shared.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "tests",
+        "declared": "../tests/unit/modal-mobile-desktop-parity.test.js",
+        "resolvedPath": "public/boutique/tests/unit/modal-mobile-desktop-parity.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16365,7 +16389,11 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "public/boutique/js/b-modal-approche-c-hybrid.js",
+                "sourceFileId": "public/boutique/js/b-modal-buybox-shared.js",
+                "targetFile": "public/boutique/js/b-share-cart.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
                 "targetFile": "public/boutique/js/b-share-cart.js"
               },
               {
@@ -21567,6 +21595,13 @@
       {
         "consumerManifest": "boutique",
         "sourceFileId": "public/boutique/js/main.js",
+        "targetFile": "public/boutique/js/b-modal-desktop-enhancers.js",
+        "providerFeature": "catalog",
+        "channel": "static-code"
+      },
+      {
+        "consumerManifest": "boutique",
+        "sourceFileId": "public/boutique/js/main.js",
         "targetFile": "public/boutique/js/b-product-open-contract.js",
         "providerFeature": "catalog",
         "channel": "static-code"
@@ -21992,7 +22027,7 @@
         "filesObserved": 791
       },
       "boutique": {
-        "filesObserved": 101,
+        "filesObserved": 104,
         "nonCanonicalManifestFiles": 60
       },
       "dash": {
@@ -24782,8 +24817,8 @@
       "boutique": {
         "manifestsDiscovered": 10,
         "manifestsConnected": 10,
-        "technicalNodesTotal": 70,
-        "technicalNodesOwned": 70,
+        "technicalNodesTotal": 71,
+        "technicalNodesOwned": 71,
         "technicalOrphans": 0
       }
     },

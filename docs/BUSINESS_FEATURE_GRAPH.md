@@ -74,7 +74,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 |---|---|---|---|---|---|
 | backend | 24 | 24 | 301 | 301 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 10 | 10 | 70 | 70 | 0 |
+| boutique | 10 | 10 | 71 | 71 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -1431,7 +1431,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 791 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 101 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 104 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
 - dash : 83 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1462,7 +1462,7 @@ Meta Graph monté : oui.
 | catalog | economic-engine | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | infrastructure | static-code | 39 | **OBSERVED_UNDECLARED** |
 | catalog | logistics | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| catalog | shared-cart | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| catalog | shared-cart | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | customs | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |

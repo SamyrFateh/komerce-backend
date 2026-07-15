@@ -4295,6 +4295,116 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   .k-modal-payment-opt .k-modal-pay-badge { display: none; }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   MDP-2 — Buy Box paiement partagée (b-modal-buybox-shared.js)
+   Owner : modal-product.css
+   Remplace le rendu legacy .k-modal-payment-opt ci-dessus : le DOM est
+   désormais généré par renderPaymentModes() (une seule logique, deux
+   projections). Règles non scopées : mêmes classes utilisées par
+   #k-modal-payment (desktop, révélé ≥900px par la règle §5 ci-dessus)
+   ET par .k-buybox-payment-mobile (mobile, composé dans le flux natif
+   de la fiche, jamais masqué). La composition diffère, pas le style
+   de base — un enrichissement desktop est ajouté sous la media query.
+   ══════════════════════════════════════════════════════════════ */
+.k-buybox-payment-mobile {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sand-dark);
+}
+.k-buybox-payment-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.k-buybox-payment-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 6px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  background: var(--white);
+  user-select: none;
+  text-align: center;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+.k-buybox-payment-tab span:first-child { font-size: 18px; flex-shrink: 0; }
+.k-buybox-payment-tab span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+.k-buybox-payment-tab:hover {
+  border-color: var(--ocean-light);
+  background: var(--ocean-bg-08);
+}
+.k-buybox-payment-tab.is-active {
+  border-color: var(--ocean);
+  background: var(--ocean-bg-08);
+  color: var(--ocean-dark);
+}
+.k-buybox-payment-detail-wrap { display: block; }
+.k-buybox-payment-detail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+}
+.k-buybox-payment-check { display: none; }
+.k-buybox-payment-icon { font-size: 20px; flex-shrink: 0; }
+.k-buybox-payment-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.k-buybox-payment-copy strong { font-size: 13px; color: var(--text); }
+.k-buybox-payment-copy small { font-size: 11px; color: var(--text-muted); }
+.k-buybox-payment-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ocean-dark);
+  background: var(--ocean-bg-08);
+  border-radius: 999px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+@media (min-width: 900px) {
+  #k-modal-payment.k-modal-payment {
+    display: block;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+  #k-modal-payment .k-modal-section-title { margin-bottom: 10px; }
+}
+
+/* Sous-total partagé (MDP-1 — b-modal-buybox-shared.js), même classe
+   desktop/mobile ; modificateur mobile pour l'espacement propre au flux. */
+.k-modal-subtotal {
+  font-size: 14px;
+  color: var(--text);
+  margin: 10px 0;
+}
+.k-modal-subtotal strong { font-weight: 700; }
+.k-modal-subtotal--mobile { padding: 0 16px; }
+.k-modal-subtotal:empty { display: none; }
+
 
 
 /* ═══════════════════════════════════════════════════════════════════════════

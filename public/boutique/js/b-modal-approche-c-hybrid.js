@@ -23,25 +23,29 @@
  *
  * La livraison et le sous-total produit ne sont plus calculés ici :
  * `b-modal-desktop-product.js` les rend depuis Product Detail + sélection SKU.
- * Ce module conserve le placement des actions, la quantité minimale d'intention
- * et l'entrée de paiement/partage existante.
+ *
+ * MDP-2 : le rendu du sélecteur de mode de paiement (logique + DOM) a été
+ * déplacé dans les renderers PDC eux-mêmes (`b-modal-mobile-product.js`,
+ * `b-modal-desktop-product.js`), qui l'appellent tous deux via
+ * `b-modal-buybox-shared.js::renderPaymentModes`. Ce module ne possède donc
+ * plus aucune logique de paiement : il ne reste responsable que du
+ * placement desktop des actions (déplacement après la livraison) et de la
+ * quantité minimale d'intention.
+ *
+ * MDP-3 : ce placement est réconcilié à chaque transition de viewport via
+ * `modal:composition-synced` (émis par b-modal-product-detail-bootstrap.js
+ * après un resize), en plus de `modal:opened`. Toutes les opérations DOM
+ * ci-dessous sont idempotentes (vérifient l'état avant d'agir) pour
+ * supporter des resizes successifs sans doublon ni déplacement cumulatif.
  */
 
 import { bus } from './b-bus.js';
 import { state, modalZone } from './b-store.js';
 import { isDesktop } from './b-scroll-owner.js';
-import { closeModal } from './b-modal.js';
-import { addToCart } from './b-cart.js';
-import { startShareFlow } from './b-share-cart.js';
 
 let _installed = false;
 let _qtyGuardInstalled = false;
 let _actionsHome = null;
-
-function clearNode(node) {
-  if (!node) return;
-  while (node.firstChild) node.removeChild(node.firstChild);
-}
 
 function ensureIntentQty() {
   if (!state.modalProduct) return;
@@ -98,111 +102,28 @@ function restoreActionsHome() {
   _actionsHome = null;
 }
 
-const PAYMENT_MODES = {
-  stripe: { icon: '💳', tab: 'Carte', title: 'Carte bancaire', sub: 'Visa, Mastercard — Stripe sécurisé', badge: 'Stripe' },
-  cash:   { icon: '💵', tab: 'Livraison', title: 'Paiement à la livraison', sub: 'En espèces à la réception', badge: 'Cash' },
-  group:  { icon: '👥', tab: 'Partagé', title: 'Panier partagé', sub: 'Invitez des proches à contribuer', badge: 'Partage' },
-  pot:    { icon: '🎁', tab: 'Cagnotte', title: 'Cagnotte collective', sub: 'Offrir ensemble, payer ensemble', badge: 'Collectif' },
-};
-
-function buildPaymentDetail(key) {
-  const mode = PAYMENT_MODES[key] || PAYMENT_MODES.stripe;
-  const detail = document.createElement('div');
-  detail.className = 'k-buybox-payment-detail';
-  detail.dataset.payDetail = key;
-
-  const check = document.createElement('span');
-  check.className = 'k-buybox-payment-check';
-  check.setAttribute('aria-hidden', 'true');
-
-  const icon = document.createElement('span');
-  icon.className = 'k-buybox-payment-icon';
-  icon.setAttribute('aria-hidden', 'true');
-  icon.textContent = mode.icon;
-
-  const copy = document.createElement('span');
-  copy.className = 'k-buybox-payment-copy';
-  const title = document.createElement('strong');
-  title.textContent = mode.title;
-  const sub = document.createElement('small');
-  sub.textContent = mode.sub;
-  copy.append(title, sub);
-
-  const badge = document.createElement('span');
-  badge.className = 'k-buybox-payment-badge';
-  badge.textContent = mode.badge;
-
-  detail.append(check, icon, copy, badge);
-  return detail;
-}
-
-function renderPayment() {
-  const el = document.getElementById('k-modal-payment');
-  if (!el) return;
-
-  const active = state.modalPaymentMode || 'stripe';
-  clearNode(el);
-
-  const title = document.createElement('div');
-  title.className = 'k-modal-section-title';
-  title.textContent = 'Mode de paiement';
-
-  const tabs = document.createElement('div');
-  tabs.className = 'k-buybox-payment-tabs';
-  tabs.setAttribute('role', 'tablist');
-  tabs.setAttribute('aria-label', 'Mode de paiement');
-
-  const wrap = document.createElement('div');
-  wrap.className = 'k-buybox-payment-detail-wrap';
-
-  Object.keys(PAYMENT_MODES).forEach(function(key) {
-    const mode = PAYMENT_MODES[key];
-    const tab = document.createElement('button');
-    tab.type = 'button';
-    tab.className = 'k-buybox-payment-tab' + (key === active ? ' is-active' : '');
-    tab.dataset.pay = key;
-    tab.setAttribute('role', 'tab');
-    tab.setAttribute('aria-selected', key === active ? 'true' : 'false');
-
-    const icon = document.createElement('span');
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = mode.icon;
-    const label = document.createElement('span');
-    label.textContent = mode.tab;
-    tab.append(icon, label);
-
-    tab.addEventListener('click', function() {
-      if (key === 'group') {
-        if (!state.modalProduct) return;
-        addToCart(state.modalProduct, state.modalQty || 1, tab);
-        closeModal();
-        setTimeout(() => startShareFlow(), 250);
-        return;
-      }
-
-      state.modalPaymentMode = key;
-      tabs.querySelectorAll('.k-buybox-payment-tab').forEach(function(button) {
-        const isActive = button === tab;
-        button.classList.toggle('is-active', isActive);
-        button.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      });
-      clearNode(wrap);
-      wrap.appendChild(buildPaymentDetail(key));
-    });
-
-    tabs.appendChild(tab);
-  });
-
-  wrap.appendChild(buildPaymentDetail(active));
-  el.append(title, tabs, wrap);
-}
-
+// Composition desktop pure : placement des actions + garde de quantité.
+// Idempotent — peut être rappelée à chaque ouverture ou reconciliation resize
+// sans effet cumulatif (moveActionsAfterDelivery / installQtyGuard vérifient
+// leur propre état avant d'agir).
 function applyHybridPdp() {
   if (!isDesktop()) return;
   installQtyGuard();
   moveActionsAfterDelivery();
   ensureIntentQty();
-  renderPayment();
+}
+
+// MDP-3 : réconciliation appelée à chaque transition de viewport (resize),
+// en plus de l'ouverture de modal. Idempotente dans les deux sens :
+// - vers desktop : replace les actions si besoin (no-op si déjà en place) ;
+// - vers mobile : restaure les actions à leur emplacement d'origine
+//   (no-op si déjà restaurées, cf. garde `_actionsHome` dans restoreActionsHome).
+function reconcileComposition() {
+  if (isDesktop()) {
+    applyHybridPdp();
+  } else {
+    restoreActionsHome();
+  }
 }
 
 export function setupApprocheCHybridPdp() {
@@ -217,5 +138,10 @@ export function setupApprocheCHybridPdp() {
     });
   });
 
+  bus.on('modal:composition-synced', reconcileComposition);
   bus.on('modal:closed', restoreActionsHome);
 }
+
+export const _hybridPdpTestApi = Object.freeze({
+  reconcileComposition,
+});

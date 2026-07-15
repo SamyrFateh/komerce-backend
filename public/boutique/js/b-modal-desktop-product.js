@@ -27,6 +27,7 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
+import { getCurrentPrice, renderSubtotalInto, renderPaymentModes, startGroupCartFlow } from './b-modal-buybox-shared.js';
 
 let _qtyObserver = null;
 let _qtyObservedEl = null;
@@ -39,9 +40,10 @@ function activeUnit(detail, selection) {
   return (detail.sellable_units || []).find((unit) => unit.sku_id === selection.selected_sku_id) || null;
 }
 
+// MDP-1 : le prix courant n'est plus calculé localement — il vient de
+// b-modal-buybox-shared.js, la même fonction que celle utilisée en mobile.
 function currentPrice(detail, selection) {
-  const unit = activeUnit(detail, selection);
-  return unit?.price_kmf ?? detail?.pricing?.price_kmf ?? null;
+  return getCurrentPrice(detail, selection);
 }
 
 function mediaSignature(selection) {
@@ -308,17 +310,20 @@ function renderSubtotal(detail, selection) {
     actions.appendChild(subtotal);
   }
 
-  const price = currentPrice(detail, selection);
-  const qty = Math.max(1, Number(state.modalQty) || 1);
-  if (price == null) {
-    subtotal.textContent = '';
-    return;
-  }
+  renderSubtotalInto(subtotal, detail, selection, state.modalQty);
+}
 
-  subtotal.textContent = 'Sous-total : ';
-  const strong = document.createElement('strong');
-  strong.textContent = fmtPrice(price * qty);
-  subtotal.appendChild(strong);
+function renderPaymentSection(detail, selection) {
+  const el = document.getElementById('k-modal-payment');
+  if (!el) return;
+
+  renderPaymentModes(el, {
+    activeMode: state.modalPaymentMode,
+    onModeChange: (key) => { state.modalPaymentMode = key; },
+    onGroupSelect: () => {
+      startGroupCartFlow(state.modalProduct, state.modalQty, el);
+    },
+  });
 }
 
 function ensureQtyObserver() {
@@ -375,6 +380,7 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
   renderActions(detail, selection);
   renderDeliveryOptions(detail);
   renderSubtotal(detail, selection);
+  renderPaymentSection(detail, selection);
   renderMedia(detail, selection, forceMedia);
   ensureQtyObserver();
 }

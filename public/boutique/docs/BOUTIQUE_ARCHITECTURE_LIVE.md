@@ -10,7 +10,7 @@
 
 ## 1. Inventaire CSS
 
-20 fichier(s) sur disque, 20 orphelin(s).
+21 fichier(s) sur disque, 21 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
@@ -25,7 +25,8 @@
 | `layout.css` | 1168 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 301 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 357 | 🔴 **ORPHELIN** |
-| `modal-product.css` | 1352 | 🔴 **ORPHELIN** |
+| `modal-product-price-normalization.css` | 47 | 🔴 **ORPHELIN** |
+| `modal-product.css` | 1462 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 899 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 962 | 🔴 **ORPHELIN** |
@@ -41,7 +42,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=118
- 2. /boutique/css/dist/components.css?v=137
+ 2. /boutique/css/dist/components.css?v=139
  3. /boutique/css/dist/desktop.css?v=52
  4. /boutique/css/dist/event.css?v=32
 ```
@@ -107,7 +108,7 @@ Aucun. ✅
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 20 (cible : 0)
+- **CSS orphelins** : 21 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 25 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)

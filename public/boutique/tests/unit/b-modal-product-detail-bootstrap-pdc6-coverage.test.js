@@ -3,7 +3,7 @@
 const handlers = {};
 
 jest.mock('../../js/b-bus.js', () => ({
-  bus: { on: jest.fn((event, fn) => { handlers[event] = fn; }) },
+  bus: { on: jest.fn((event, fn) => { handlers[event] = fn; }), emit: jest.fn() },
 }));
 
 jest.mock('../../js/b-store.js', () => ({ state: {}, dom: {} }));

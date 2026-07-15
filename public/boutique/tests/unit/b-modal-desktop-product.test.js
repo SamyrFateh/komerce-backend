@@ -27,6 +27,10 @@ jest.mock('../../js/b-modal-image-ux.js', () => ({
   setupImageUX: jest.fn(),
 }));
 
+jest.mock('../../js/b-modal.js', () => ({ closeModal: jest.fn() }));
+jest.mock('../../js/b-cart.js', () => ({ addToCart: jest.fn() }));
+jest.mock('../../js/b-share-cart.js', () => ({ startShareFlow: jest.fn() }));
+
 const { state, dom } = require('../../js/b-store.js');
 const { isDesktop } = require('../../js/b-scroll-owner.js');
 const { buildCarouselSlides, goToSlide } = require('../../js/b-modal-product.js');
@@ -129,6 +133,7 @@ function installDom() {
       <div class="k-modal-info">
         <div id="k-modal-variants"></div>
         <div id="k-modal-delivery"></div>
+        <div id="k-modal-payment"></div>
       </div>
       <div class="k-modal-actions">
         <button id="k-qty-minus">−</button>
@@ -287,6 +292,19 @@ describe('desktop product detail renderer', () => {
     state.modalQty = 3;
     refreshDesktopProductSubtotal();
     expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('39000 KMF');
+  });
+
+  // MDP-2 : couvre la régression où b-modal-desktop-product.js importait
+  // renderPaymentModes/startGroupCartFlow sans jamais les appeler après le
+  // retrait de renderPayment() de b-modal-approche-c-hybrid.js — le paiement
+  // ne s'affichait alors plus nulle part en desktop.
+  test('rend les 4 modes de paiement dans #k-modal-payment (même logique que mobile)', () => {
+    const product = detail();
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const payment = document.getElementById('k-modal-payment');
+    expect(payment.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(4);
+    expect(payment.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
   });
 
   test('ne reconstruit jamais ancien prix depuis promo_pct', () => {

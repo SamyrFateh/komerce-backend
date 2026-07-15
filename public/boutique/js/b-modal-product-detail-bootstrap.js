@@ -90,6 +90,15 @@ function syncResponsiveComposition() {
     state.modalSelection,
     false
   );
+
+  // MDP-3 : le cœur PDC vient d'être re-rendu pour le nouveau viewport, mais
+  // les enrichissements périphériques (placement des actions desktop, entrée
+  // paiement) ont leur propre cycle de vie (b-modal-approche-c-hybrid.js,
+  // b-modal-desktop-enhancers.js) qui n'écoute que modal:opened/modal:closed.
+  // Sans ce signal, un resize en cours de session laissait ces enrichissements
+  // non réconciliés (D3). Émis une seule fois par transition de viewport —
+  // jamais en boucle — donc idempotent pour des resizes successifs.
+  bus.emit('modal:composition-synced');
 }
 
 function onViewportResize() {

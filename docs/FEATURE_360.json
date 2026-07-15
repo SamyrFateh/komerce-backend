@@ -1746,7 +1746,7 @@
         "totalFiles": 116,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 18,
+          "count": 21,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -1786,6 +1786,13 @@
             {
               "declared": "../js/b-modal-approche-c-hybrid.js",
               "resolvedPath": "public/boutique/js/b-modal-approche-c-hybrid.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/b-modal-buybox-shared.js",
+              "resolvedPath": "public/boutique/js/b-modal-buybox-shared.js",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1833,6 +1840,13 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../tests/unit/b-modal-buybox-shared.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../tests/unit/b-modal-desktop-enhancers.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-modal-desktop-enhancers.test.js",
               "category": "tests",
@@ -1856,6 +1870,13 @@
             {
               "declared": "../tests/unit/b-modal-product-detail-bootstrap.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-modal-product-detail-bootstrap.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/modal-mobile-desktop-parity.test.js",
+              "resolvedPath": "public/boutique/tests/unit/modal-mobile-desktop-parity.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"

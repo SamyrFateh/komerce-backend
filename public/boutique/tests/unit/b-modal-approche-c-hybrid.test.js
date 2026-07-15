@@ -74,13 +74,16 @@ describe('b-modal-approche-c-hybrid — composition only', () => {
     expect(delivery.textContent).toBe('contract delivery');
   });
 
-  test('desktop : ne touche plus livraison ni sous-total du Product Detail renderer', async () => {
+  test('desktop : ne touche plus livraison, sous-total ni paiement du Product Detail renderer', async () => {
     bus.emit('modal:opened');
     await flushRaf();
 
     expect(delivery.textContent).toBe('contract delivery');
     expect(dom.modal.querySelector('.k-modal-subtotal').textContent).toBe('contract subtotal');
-    expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(4);
+    // MDP-2 : le rendu paiement est désormais porté par les renderers PDC
+    // (via b-modal-buybox-shared.js), jamais par ce module de composition.
+    // Voir b-modal-buybox-shared.test.js pour la couverture fonctionnelle paiement.
+    expect(document.getElementById('k-modal-payment').innerHTML).toBe('');
   });
 
   test('quantité invalide : garde d’intention force uniquement 1', async () => {
@@ -145,41 +148,9 @@ describe('b-modal-approche-c-hybrid — composition only', () => {
     marker.remove();
   });
 
-  test('paiement : quatre onglets avec Carte actif par défaut', async () => {
-    bus.emit('modal:opened');
-    await flushRaf();
-
-    expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(4);
-    expect(document.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
-    expect(document.querySelector('.k-buybox-payment-detail').dataset.payDetail).toBe('stripe');
-  });
-
-  test('paiement : respecte et change le mode UI sans toucher au produit', async () => {
-    state.modalPaymentMode = 'cash';
-    bus.emit('modal:opened');
-    await flushRaf();
-    expect(document.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('cash');
-
-    const pot = document.querySelector('[data-pay="pot"]');
-    pot.click();
-    expect(state.modalPaymentMode).toBe('pot');
-    expect(document.querySelector('.k-buybox-payment-detail').dataset.payDetail).toBe('pot');
-    expect(document.querySelector('.k-buybox-payment-badge').textContent).toBe('Collectif');
-  });
-
-  test('onglet Partagé conserve le parcours add → close → share', async () => {
-    bus.emit('modal:opened');
-    await flushRaf();
-
-    const group = document.querySelector('[data-pay="group"]');
-    expect(group).not.toBeNull();
-
-    jest.useFakeTimers();
-    group.click();
-
-    expect(addToCart).toHaveBeenCalledWith(state.modalProduct, 1, group);
-    expect(closeModal).toHaveBeenCalled();
-    jest.advanceTimersByTime(250);
-    expect(startShareFlow).toHaveBeenCalled();
-  });
+  // MDP-2 : la logique fonctionnelle du paiement (onglets, changement de mode,
+  // parcours panier partagé) a été extraite dans b-modal-buybox-shared.js et
+  // n'est plus possédée par ce module de composition desktop. Elle est testée
+  // dans tests/unit/b-modal-buybox-shared.test.js, appelée par les deux
+  // renderers viewport (mobile + desktop) plutôt que par ce module seul.
 });

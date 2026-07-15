@@ -26,6 +26,7 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
+import { getCurrentPrice, renderSubtotalInto, renderPaymentModes, startGroupCartFlow } from './b-modal-buybox-shared.js';
 
 function isMobileViewport() {
   return window.matchMedia('(max-width: 899px)').matches;
@@ -90,7 +91,7 @@ function renderIdentity(detail) {
 
 function renderPriceAndReference(detail, selection) {
   const unit = activeUnit(detail, selection);
-  const price = unit?.price_kmf ?? detail.pricing.price_kmf;
+  const price = getCurrentPrice(detail, selection);
   if (dom.modalPrice) dom.modalPrice.textContent = fmtPrice(price);
 
   // PDC-4 : l'ancien prix vient du contrat ou reste absent. La modal ne le
@@ -306,6 +307,37 @@ function renderDeliveryOptions(detail, root) {
   root.appendChild(delivery);
 }
 
+function renderSubtotal(detail, selection, root) {
+  let subtotal = root.querySelector('.k-modal-subtotal');
+  if (!subtotal) {
+    subtotal = document.createElement('div');
+    subtotal.className = 'k-modal-subtotal k-modal-subtotal--mobile';
+    root.appendChild(subtotal);
+  }
+  renderSubtotalInto(subtotal, detail, selection, state.modalQty);
+}
+
+// MDP-2 : mêmes modes de paiement qu'en desktop (Carte / Cash / Panier
+// partagé / Cagnotte), même logique (b-modal-buybox-shared.js). Seule la
+// composition diffère : ici le sélecteur est composé dans le flux naturel
+// de `root`, au lieu du placement desktop géré par b-modal-approche-c-hybrid.js.
+function renderPaymentSection(detail, selection, root) {
+  let payment = root.querySelector('.k-buybox-payment-mobile');
+  if (!payment) {
+    payment = document.createElement('div');
+    payment.className = 'k-buybox-payment-mobile';
+    root.appendChild(payment);
+  }
+
+  renderPaymentModes(payment, {
+    activeMode: state.modalPaymentMode,
+    onModeChange: (key) => { state.modalPaymentMode = key; },
+    onGroupSelect: () => {
+      startGroupCartFlow(state.modalProduct, state.modalQty, payment);
+    },
+  });
+}
+
 /**
  * Rend la composition mobile PDC-4 depuis le contrat détail et l'état de
  * sélection unique. Cette fonction peut être rappelée après chaque sélection.
@@ -348,6 +380,8 @@ export function renderMobileProductDetail(detail, selection, { forceMedia = fals
   renderPriceAndReference(detail, selection);
   renderStock(selection);
   renderActions(detail, selection);
+  renderSubtotal(detail, selection, root);
+  renderPaymentSection(detail, selection, root);
   renderMedia(detail, selection, forceMedia);
 }
 

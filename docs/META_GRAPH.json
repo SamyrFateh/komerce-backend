@@ -1,12 +1,11 @@
 {
-  "generatedAt": "2026-07-14T20:26:55.604Z",
-  "generatedAt": "2026-07-14T21:12:07.708Z",
+  "generatedAt": "2026-07-15T09:29:28.161Z",
   "sources": {
     "backend": {
-      "nodes": 757
+      "nodes": 758
     },
     "boutique": {
-      "modules": 69,
+      "modules": 70,
       "endpoints": 52
     },
     "dashboards": {

@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 371
-- Files with full headers: 344
+- Scanned code files: 372
+- Files with full headers: 345
 - Files with lite headers: 27
-- Files with any headers: 371
+- Files with any headers: 372
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 757
-- Edges: 4290
+- Graph nodes: 758
+- Edges: 4304
 - DB tables: 112
 - Doctrines: 149
 - Impact areas: 125
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 4
 - bootstrap: 1
 - boutique: 36
-- catalog: 46
+- catalog: 47
 - checkout: 2
 - customs: 6
 - dashboard: 28
@@ -84,7 +84,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - util: 24
 - util-ui: 2
 - validators: 1
-- view-model: 3
+- view-model: 4
 
 ## Critical And High Files
 
@@ -174,6 +174,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-catalog.js — boutique-catalog-renderer (catalog, high, full)
 - public/boutique/js/b-checkout-render.js — checkout-dom-renderer (checkout, high, full)
 - public/boutique/js/b-identity.js — boutique-client-identity (auth, high, full)
+- public/boutique/js/b-modal-buybox-shared.js — product-modal-buybox-shared-logic (catalog, high, full)
 - public/boutique/js/b-modal-core.js — product-modal-orchestrator (boutique, high, full)
 - public/boutique/js/b-modal-desktop-product.js — desktop-product-modal-renderer (catalog, high, full)
 - public/boutique/js/b-modal-mobile-product.js — mobile-product-modal-renderer (catalog, high, full)

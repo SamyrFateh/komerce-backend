@@ -71,19 +71,28 @@ describe('b-modal-desktop-enhancers — composition only', () => {
     jest.restoreAllMocks();
   });
 
-  test('mobile : setup desktop ne branche aucun listener', () => {
+  test('mobile : setup branche les listeners mais aucun enrichissement ne s’exécute (MDP-3)', () => {
     isDesktop.mockReturnValue(false);
     const spy = jest.spyOn(bus, 'on');
     enhancers.setupModalDesktopEnhancers();
-    expect(spy).not.toHaveBeenCalled();
+    // MDP-3 : l'installation des listeners ne dépend plus du viewport au
+    // moment du setup — sinon un modal ouvert en mobile puis resizé vers
+    // desktop ratait la réconciliation (breadcrumb/trust/partage absents).
+    // Chaque injecteur reste auto-gardé sur isDesktop() : rien ne s'affiche.
+    expect(spy).toHaveBeenCalledWith('modal:opened', expect.any(Function));
+    expect(spy).toHaveBeenCalledWith('modal:composition-synced', expect.any(Function));
+
+    bus.emit('modal:opened', state.modalProduct);
+    expect(dom.modal.querySelector('.k-modal-breadcrumb')).toBeNull();
   });
 
   test('desktop : setup est idempotent et rend les enrichissements éditoriaux', () => {
     const onSpy = jest.spyOn(bus, 'on');
     enhancers.setupModalDesktopEnhancers();
     enhancers.setupModalDesktopEnhancers();
-    expect(onSpy).toHaveBeenCalledTimes(1);
+    expect(onSpy).toHaveBeenCalledTimes(2);
     expect(onSpy).toHaveBeenCalledWith('modal:opened', expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith('modal:composition-synced', expect.any(Function));
 
     bus.emit('modal:opened', state.modalProduct);
 
@@ -91,6 +100,14 @@ describe('b-modal-desktop-enhancers — composition only', () => {
     expect(dom.modal.querySelector('.k-modal-share-row')).not.toBeNull();
     expect(dom.modal.querySelector('.k-modal-trust')).not.toBeNull();
     expect(dom.modal.querySelector('.k-modal-recent')).not.toBeNull();
+  });
+
+  test('resize mobile→desktop (modal:composition-synced) rend les mêmes enrichissements sans réouvrir la modal', () => {
+    enhancers.setupModalDesktopEnhancers();
+    bus.emit('modal:composition-synced');
+
+    expect(dom.modal.querySelector('.k-modal-breadcrumb')).not.toBeNull();
+    expect(dom.modal.querySelector('.k-modal-trust')).not.toBeNull();
   });
 
   test('n’écrit plus aucune vérité prix, stock, livraison, paiement ou sous-total', () => {

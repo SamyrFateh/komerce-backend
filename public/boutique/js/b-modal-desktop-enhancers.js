@@ -244,7 +244,13 @@ function onModalOpened() {
 }
 
 export function setupModalDesktopEnhancers() {
-  if (!isDesktop() || _enhancersInstalled) return;
+  if (_enhancersInstalled) return;
   _enhancersInstalled = true;
   bus.on('modal:opened', onModalOpened);
+  // MDP-3 : réconciliation resize. Un modal ouvert en mobile puis basculé en
+  // desktop ne rejoue jamais modal:opened — sans cet abonnement, breadcrumb/
+  // trust/partage/vu-récemment restaient absents jusqu'à une fermeture/
+  // réouverture. onModalOpened() s'auto-garde déjà sur isDesktop(), donc cet
+  // abonnement est sans effet tant que le viewport reste mobile.
+  bus.on('modal:composition-synced', onModalOpened);
 }

@@ -8,11 +8,12 @@
   "undeclared": [
     "carousel:changed",
     "modal:closed",
+    "modal:composition-synced",
     "modal:opened",
     "modal:product-changed",
     "sidebar:built",
     "view:changed"
   ],
   "notFoundEndpoints": [],
-  "savedAt": "2026-07-13T11:29:29.977Z"
+  "savedAt": "2026-07-15T09:26:11.795Z"
 }

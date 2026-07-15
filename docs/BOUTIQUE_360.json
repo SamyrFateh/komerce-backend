@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-07-14T21:12:07.374Z",
+  "generatedAt": "2026-07-15T09:29:27.794Z",
   "summary": {
-    "modules": 69,
-    "withHeader": 69,
-    "events": 17,
+    "modules": 70,
+    "withHeader": 70,
+    "events": 18,
     "declaredActive": 12,
     "declaredDead": 5,
     "cssBundles": 3,
     "endpoints": 52,
     "orphanEmit": 1,
     "orphanListen": 1,
-    "undeclared": 6,
+    "undeclared": 7,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 30,
     "dynamicEndpoints": 24
@@ -799,12 +799,43 @@
       "emits": [],
       "listens": [
         "modal:opened",
+        "modal:composition-synced",
         "modal:closed"
       ],
       "imports": [
         "b-bus",
         "b-store",
-        "b-scroll-owner",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-buybox-shared.js",
+      "id": "b-modal-buybox-shared",
+      "hasHeader": true,
+      "role": "product-modal-buybox-shared-logic",
+      "domain": "catalog",
+      "layer": "view-model",
+      "criticality": "high",
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "depends": [
+        "b-utils.js",
+        "b-modal.js",
+        "b-cart.js",
+        "b-share-cart.js"
+      ],
+      "usedBy": [
+        "b-modal-mobile-product.js",
+        "b-modal-desktop-product.js",
+        "b-modal-approche-c-hybrid.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils",
         "b-modal",
         "b-cart",
         "b-share-cart"
@@ -913,7 +944,8 @@
         "modal:close"
       ],
       "listens": [
-        "modal:opened"
+        "modal:opened",
+        "modal:composition-synced"
       ],
       "imports": [
         "b-bus",
@@ -958,7 +990,8 @@
         "b-scroll-owner",
         "modal-selection-model",
         "b-modal-product",
-        "b-modal-image-ux"
+        "b-modal-image-ux",
+        "b-modal-buybox-shared"
       ],
       "bodyClasses": []
     },
@@ -1020,7 +1053,8 @@
         "b-utils",
         "modal-selection-model",
         "b-modal-product",
-        "b-modal-image-ux"
+        "b-modal-image-ux",
+        "b-modal-buybox-shared"
       ],
       "bodyClasses": []
     },
@@ -1067,7 +1101,9 @@
       "usedBy": [
         "main.js"
       ],
-      "emits": [],
+      "emits": [
+        "modal:composition-synced"
+      ],
       "listens": [
         "modal:opened",
         "modal:closed"
@@ -1877,6 +1913,7 @@
         "b-bus",
         "b-share-phone-guard",
         "b-desktop-upgrade",
+        "b-modal-desktop-enhancers",
         "b-scroll-owner",
         "b-product-open-contract",
         "b-cart-product-open-style",
@@ -2193,6 +2230,15 @@
         "b-pdp-curation-suggestions"
       ]
     },
+    "modal:composition-synced": {
+      "emitters": [
+        "b-modal-product-detail-bootstrap"
+      ],
+      "listeners": [
+        "b-modal-approche-c-hybrid",
+        "b-modal-desktop-enhancers"
+      ]
+    },
     "modal:closed": {
       "emitters": [
         "b-modal-core"
@@ -2253,6 +2299,7 @@
         "modal-media",
         "modal-product",
         "modal-product-lot4-hybrid",
+        "modal-product-price-normalization",
         "cart",
         "interactions",
         "hero-cart-proxy",
@@ -2859,6 +2906,7 @@
     "undeclared": [
       "carousel:changed",
       "modal:closed",
+      "modal:composition-synced",
       "modal:opened",
       "modal:product-changed",
       "sidebar:built",
