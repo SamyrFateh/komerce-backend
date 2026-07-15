@@ -52,4 +52,12 @@ describe('modal-product — normalisation du prix mobile', () => {
       /html\.k-mobile-premium-v1 #k-modal\.k-modal \.k-modal-price,\s*html\.k-mobile-premium-v1 #k-modal\.k-modal\.k-modal--has-promo \.k-modal-price\s*\{[^}]*font-size:\s*clamp\(24px,\s*7vw,\s*30px\)/m
     );
   });
+
+  test('le média mobile réserve un budget vertical au titre, à la référence et au prix', () => {
+    const block = rule('#k-modal .k-modal-img-wrap');
+    expect(block).toMatch(/min-height:\s*180px/);
+    expect(block).toMatch(
+      /max-height:\s*clamp\(180px,\s*calc\(100%\s*-\s*190px\),\s*400px\)/
+    );
+  });
 });
