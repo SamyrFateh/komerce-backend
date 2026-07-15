@@ -87,17 +87,15 @@
    Les règles hauteur-image à largeur max ont été fusionnées dans la règle base
    .k-modal-img-wrap ci-dessus. Plus de fragmentation par breakpoint. ──── */
 
-/* ── BOUTON FAVORI MODALE (top-right de la zone détails) ─────────────
-   FIX favori absent dans modale produit : bouton ❤️ universel
-   mobile + desktop, posé sur la zone blanche details.
-   FIX: env(safe-area-inset-top) retiré — le bouton est positionné
-   relativement à .k-modal-details (position:relative) qui se trouve
-   SOUS la topbar et la zone image ; utiliser safe-area-inset-top ici
-   ajoutait un décalage erroné sur iPhone à encoche (44-59 px). */
+/* ── BOUTON FAVORI MODALE (LOT N-2 — enfant en flux de .k-modal-name-row) ──
+   Un seul bouton dans le DOM (index.html), toujours à côté du h2 dans
+   .k-modal-name-row : il n'y a pas de cas où il est posé sur le média.
+   L'ancien position:absolute pariait sur l'endroit où le titre casse sa
+   ligne (voir Fait 3 de l'audit) ; ownership tranché : la géométrie
+   appartient à .k-modal-name-row (modal-product.css), ce bouton n'y ajoute
+   que sa propre taille via flex-shrink:0. */
 .k-modal-fav-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  flex: 0 0 auto;
   width: 42px; height: 42px;
   background: var(--surface-sand-94);
   border: none; border-radius: 50%;
@@ -133,7 +131,7 @@
   .k-modal-fav-btn.liked:hover { transform: scale(1.10); }
 }
 @media (min-width: 900px) {
-  .k-modal-fav-btn { top: 14px; right: 14px; width: 46px; height: 46px; font-size: 22px; }
+  .k-modal-fav-btn { width: 46px; height: 46px; font-size: 22px; }
 }
 
 /* ── FULLSCREEN IMAGE (mobile, tap on image) ─────────────────

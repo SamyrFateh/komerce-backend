@@ -36,10 +36,18 @@
   }
 }
 .k-modal-info { box-sizing: border-box; padding: 16px 12px 12px; display: flex; flex-direction: column; } /* S2.3 — padding-top revient à 16px ; le clamp(20px) compensait margin-top:-20px supprimé en S2.2 */
+/* LOT N-2 — Source unique de vérité pour la géométrie titre/favori.
+   .k-modal-name-row possède le layout (seul propriétaire) : vrai flex,
+   ce qui rend enfin effectifs les gap/align-items déjà déclarés en
+   scope mobile/desktop (modal-product.css §premium, lot4-hybrid, modal-shell).
+   .k-modal-fav-btn n'est plus jamais absolu ici (voir modal-media.css) :
+   il est un enfant en flux, dimensionné par flex-shrink:0. */
+.k-modal-name-row { display: flex; align-items: flex-start; gap: 10px; }
 .k-modal-info h2 {
   font-family: var(--font-display); font-size: 18px; font-weight: 500;
   line-height: 1.2; letter-spacing: -.01em; margin: 0; color: var(--text);
   font-variation-settings: 'opsz' 18;
+  flex: 1 1 auto; min-width: 0; /* laisse le titre rétrécir/wrapper au lieu de pousser le bouton hors boîte */
 }
 .k-modal-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
 .k-modal-price-row { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; flex-wrap: nowrap; }
@@ -1243,7 +1251,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 @media (max-width: 899px) {
   html.k-mobile-premium-v1 #k-modal .k-modal-scroll {
     background: linear-gradient(180deg, var(--sand) 0%, var(--white) 34%);
-    padding-bottom: calc(172px + env(safe-area-inset-bottom));
   }
   html.k-mobile-premium-v1 #k-modal .k-modal-img-wrap {
     min-height: 36vh;  /* Lot 0 — was 46vh, réduit pour remonter les variantes above fold */
@@ -1272,7 +1279,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   html.k-mobile-premium-v1 #k-modal .k-modal-name-row {
     gap: 12px;
-    align-items: flex-start;
   }
   /* Lot 0 — titre dé-héroïfié : was clamp(28px,8vw,38px) / 1.02 */
   html.k-mobile-premium-v1 #k-modal .k-modal-info h2 {

@@ -182,12 +182,19 @@
   }
 
   #k-modal .k-buybox-payment-tab {
+    /* LOT N-3 — le lot4 compose icône + libellé en rangée horizontale
+       (`💳 Carte`) mais ne resettait jamais flex-direction, hérité en
+       `column` depuis la base mobile (modal-product.css). Résultat :
+       une colonne écrasée dans une boîte pensée pour une ligne, le
+       libellé comprimé à 0px de hauteur (voir modal-product.css,
+       span:last-child). Cause racine : direction non déclarée ici. */
     height: 42px;
     border-radius: 13px;
     border: 1px solid var(--border);
     background: var(--white);
     color: var(--text);
     display: inline-flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 7px;

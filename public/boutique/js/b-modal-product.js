@@ -191,32 +191,39 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
 
   /* ════ ENCARTS MOBILE (livraison / trust / padding) ════ */
 
-  /* ── SYNC PADDING SCROLL ────────────────────────────────────────
-     Mesure la hauteur réelle de .k-modal-actions (position:fixed) et
-     applique un padding-bottom compensatoire sur .k-modal-scroll.
-     Utilise offsetHeight plutôt que env(safe-area-inset-bottom) en CSS
-     car offsetHeight inclut déjà la safe-area rendue par l'OS, même
-     sur Samsung Internet / Chrome Android qui ignorent env() dans calc().
-     Double-rAF : laisse un cycle de paint pour que les injections
-     (_injectMobileTrust, _injectMobileDelivery) soient reflowées. */
+  /* ── SYNC PADDING SCROLL (LOT N-1 — source unique de vérité) ─────
+     --k-modal-cta-h est l'unique signal consommé par .k-modal-scroll
+     (modal-shell.css). Deux cas, un seul et même calcul :
+       - .k-modal-actions est enfant flex direct de #k-modal (architecture
+         statique, cas normal) → rien à compenser, la variable vaut 0 ;
+       - .k-modal-actions est resté en position:fixed (fallback — voir
+         #k-modal > .k-modal-actions dans modal-shell.css ; atteignable si
+         la modal a été ouverte pour la première fois en desktop puis la
+         fenêtre redimensionnée sous 900px sans re-render du bootstrap) →
+         la variable porte la hauteur réellement mesurée.
+     ResizeObserver plutôt qu'un double-rAF ponctuel : la hauteur de la
+     barre change (injections livraison/paiement, rotation, police tardive)
+     après le premier paint, donc la mesure doit rester vivante pendant
+     toute la durée de vie de la modal — pas figée à l'ouverture. */
+  let _ctaResizeObserver = null;
+
   function _syncScrollPadding() {
-    if (window.innerWidth >= 900) return;
     let actBar = dom.modal && dom.modal.querySelector('.k-modal-actions');
-    // FIX v5: si .k-modal-actions est enfant direct de #k-modal (architecture statique),
-    // le layout flex gère l'ancrage. On expose quand même la hauteur mesurée en CSS let // pour que le padding-bottom du scroll soit toujours exact (VIS-3D).
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        if (!actBar) return;
-        let h = actBar.offsetHeight || 0;
-        // Source unique : let CSS mesurée → consommée par modal.css
-        document.documentElement.style.setProperty('--k-modal-cta-h', h + 'px');
-        // Fallback legacy si actions pas encore en flex statique (position:fixed)
-        if (actBar.parentNode !== dom.modal) {
-          let scrollEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
-          if (scrollEl) scrollEl.style.paddingBottom = (h + 20) + 'px';
-        }
-      });
-    });
+    if (!actBar) return;
+
+    function measure() {
+      let isStatic = actBar.parentNode === dom.modal;
+      let h = isStatic ? 0 : (actBar.offsetHeight || 0);
+      document.documentElement.style.setProperty('--k-modal-cta-h', h + 'px');
+    }
+
+    measure();
+
+    if (typeof ResizeObserver === 'function') {
+      if (_ctaResizeObserver) _ctaResizeObserver.disconnect();
+      _ctaResizeObserver = new ResizeObserver(measure);
+      _ctaResizeObserver.observe(actBar);
+    }
   }
 
   /* ════ TOPBAR ENRICHIE + RETOUR HAUT ════ */

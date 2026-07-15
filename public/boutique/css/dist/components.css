@@ -2170,18 +2170,23 @@ html.k-mobile-premium-v1 .k-chip-label {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-/* VIS-3D FIX — Remplace le magic-number 150px par la hauteur CTA réellement mesurée
-   (--k-modal-cta-h, posée par _syncScrollPadding en JS). Fallback 150px si JS pas encore
-   passé. Le safe-area fallback 12px est cohérent avec VIS-3C (actions padding). */
+/* SOURCE UNIQUE DE VÉRITÉ (LOT N-1) — --k-modal-cta-h est l'unique signal :
+   posée à 0 par _syncScrollPadding() quand .k-modal-actions est en flux
+   statique (rien à compenser), posée à la hauteur mesurée (ResizeObserver)
+   quand .k-modal-actions reste en position:fixed (fallback ci-dessous).
+   Aucun fallback magique ici : tant que le JS n'a pas encore posé la
+   variable, calc(var(--k-modal-cta-h)) est invalide et padding-bottom
+   retombe sur sa valeur initiale (0) — jamais un nombre en dur. */
 .k-modal-scroll {
-  padding-bottom: calc(var(--k-modal-cta-h, 150px) + env(safe-area-inset-bottom, 12px));
+  padding-bottom: calc(var(--k-modal-cta-h) + env(safe-area-inset-bottom, 12px));
 }
 .k-modal-suggestions { order: 2; }
 
 /* FIX ARCHITECTURE v5: .k-modal-actions sorti du scroll par JS (setupModal)
    => enfant flex direct de #k-modal => position statique, flex gere l'ancrage.
    Selecteur enfant direct (>) => ne s'applique QUE si le JS a fait le deplacement.
-   Si le JS echoue, l'ancien position:fixed reste en fallback. */
+   Si le JS echoue, l'ancien position:fixed reste en fallback — dans ce cas
+   --k-modal-cta-h porte la vraie hauteur mesurée (voir b-modal-product.js). */
 #k-modal > .k-modal-actions {
   position: static;
   bottom: auto;
@@ -2189,10 +2194,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   right: auto;
   z-index: auto;
   border-radius: 0;
-}
-/* Quand la barre CTA est en position statique (flex), le padding compensatoire est inutile */
-#k-modal > .k-modal-scroll {
-  padding-bottom: 0;
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
@@ -2264,7 +2265,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   -webkit-overflow-scrolling: touch;
   width: 100%;
   max-width: 100%;
-  padding-bottom: calc(150px + env(safe-area-inset-bottom, 48px)); /* BUGFIX: §2 guard ne doit pas écraser le 150px de §1 (bug scroll sous CTA + badges sur bouton Acheter) */
 }
 
 /* Pas de débordement horizontal sur aucun enfant.
@@ -2955,17 +2955,15 @@ html.k-mobile-premium-v1 .k-chip-label {
    Les règles hauteur-image à largeur max ont été fusionnées dans la règle base
    .k-modal-img-wrap ci-dessus. Plus de fragmentation par breakpoint. ──── */
 
-/* ── BOUTON FAVORI MODALE (top-right de la zone détails) ─────────────
-   FIX favori absent dans modale produit : bouton ❤️ universel
-   mobile + desktop, posé sur la zone blanche details.
-   FIX: env(safe-area-inset-top) retiré — le bouton est positionné
-   relativement à .k-modal-details (position:relative) qui se trouve
-   SOUS la topbar et la zone image ; utiliser safe-area-inset-top ici
-   ajoutait un décalage erroné sur iPhone à encoche (44-59 px). */
+/* ── BOUTON FAVORI MODALE (LOT N-2 — enfant en flux de .k-modal-name-row) ──
+   Un seul bouton dans le DOM (index.html), toujours à côté du h2 dans
+   .k-modal-name-row : il n'y a pas de cas où il est posé sur le média.
+   L'ancien position:absolute pariait sur l'endroit où le titre casse sa
+   ligne (voir Fait 3 de l'audit) ; ownership tranché : la géométrie
+   appartient à .k-modal-name-row (modal-product.css), ce bouton n'y ajoute
+   que sa propre taille via flex-shrink:0. */
 .k-modal-fav-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  flex: 0 0 auto;
   width: 42px; height: 42px;
   background: var(--surface-sand-94);
   border: none; border-radius: 50%;
@@ -3001,7 +2999,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-fav-btn.liked:hover { transform: scale(1.10); }
 }
 @media (min-width: 900px) {
-  .k-modal-fav-btn { top: 14px; right: 14px; width: 46px; height: 46px; font-size: 22px; }
+  .k-modal-fav-btn { width: 46px; height: 46px; font-size: 22px; }
 }
 
 /* ── FULLSCREEN IMAGE (mobile, tap on image) ─────────────────
@@ -3207,10 +3205,18 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 }
 .k-modal-info { box-sizing: border-box; padding: 16px 12px 12px; display: flex; flex-direction: column; } /* S2.3 — padding-top revient à 16px ; le clamp(20px) compensait margin-top:-20px supprimé en S2.2 */
+/* LOT N-2 — Source unique de vérité pour la géométrie titre/favori.
+   .k-modal-name-row possède le layout (seul propriétaire) : vrai flex,
+   ce qui rend enfin effectifs les gap/align-items déjà déclarés en
+   scope mobile/desktop (modal-product.css §premium, lot4-hybrid, modal-shell).
+   .k-modal-fav-btn n'est plus jamais absolu ici (voir modal-media.css) :
+   il est un enfant en flux, dimensionné par flex-shrink:0. */
+.k-modal-name-row { display: flex; align-items: flex-start; gap: 10px; }
 .k-modal-info h2 {
   font-family: var(--font-display); font-size: 18px; font-weight: 500;
   line-height: 1.2; letter-spacing: -.01em; margin: 0; color: var(--text);
   font-variation-settings: 'opsz' 18;
+  flex: 1 1 auto; min-width: 0; /* laisse le titre rétrécir/wrapper au lieu de pousser le bouton hors boîte */
 }
 .k-modal-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
 .k-modal-price-row { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; flex-wrap: nowrap; }
@@ -4414,7 +4420,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 @media (max-width: 899px) {
   html.k-mobile-premium-v1 #k-modal .k-modal-scroll {
     background: linear-gradient(180deg, var(--sand) 0%, var(--white) 34%);
-    padding-bottom: calc(172px + env(safe-area-inset-bottom));
   }
   html.k-mobile-premium-v1 #k-modal .k-modal-img-wrap {
     min-height: 36vh;  /* Lot 0 — was 46vh, réduit pour remonter les variantes above fold */
@@ -4443,7 +4448,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   html.k-mobile-premium-v1 #k-modal .k-modal-name-row {
     gap: 12px;
-    align-items: flex-start;
   }
   /* Lot 0 — titre dé-héroïfié : was clamp(28px,8vw,38px) / 1.02 */
   html.k-mobile-premium-v1 #k-modal .k-modal-info h2 {
@@ -4817,12 +4821,19 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 
   #k-modal .k-buybox-payment-tab {
+    /* LOT N-3 — le lot4 compose icône + libellé en rangée horizontale
+       (`💳 Carte`) mais ne resettait jamais flex-direction, hérité en
+       `column` depuis la base mobile (modal-product.css). Résultat :
+       une colonne écrasée dans une boîte pensée pour une ligne, le
+       libellé comprimé à 0px de hauteur (voir modal-product.css,
+       span:last-child). Cause racine : direction non déclarée ici. */
     height: 42px;
     border-radius: 13px;
     border: 1px solid var(--border);
     background: var(--white);
     color: var(--text);
     display: inline-flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     gap: 7px;

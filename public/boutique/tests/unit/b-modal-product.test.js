@@ -12,7 +12,7 @@
  * Périmètre couvert :
  *   - buildCarouselSlides (slides, dots vs compteur >5 images, miniatures desktop)
  *   - goToSlide (borne, sync dots/miniatures/compteur, bus carousel:changed)
- *   - _syncScrollPadding (no-op desktop ≥900px)
+ *   - _syncScrollPadding (LOT N-1 : source unique --k-modal-cta-h, statique vs fallback fixed)
  *   - setupModalFAB / hideModalFAB (topbar enrichie, cleanup observers)
  *   - openSizeGuide / closeSizeGuide (overlay, onglets, fermeture croix/backdrop/Escape)
  *
@@ -147,16 +147,53 @@ describe('b-modal-product', () => {
     });
   });
 
-  describe('_syncScrollPadding', () => {
-    it('desktop (innerWidth ≥ 900) → no-op, ne pose pas de --k-modal-cta-h', () => {
-      window.innerWidth = 1200;
-      _syncScrollPadding();
+  describe('_syncScrollPadding (LOT N-1 — source unique --k-modal-cta-h)', () => {
+    it('sans .k-modal-actions dans le DOM → ne throw pas, ne pose rien', () => {
+      expect(() => _syncScrollPadding()).not.toThrow();
       expect(document.documentElement.style.getPropertyValue('--k-modal-cta-h')).toBe('');
     });
 
-    it('mobile (innerWidth < 900) → ne throw pas même sans .k-modal-actions', () => {
-      window.innerWidth = 400;
-      expect(() => _syncScrollPadding()).not.toThrow();
+    it('.k-modal-actions enfant direct de #k-modal (statique) → --k-modal-cta-h = 0px, quel que soit le viewport', () => {
+      const actions = document.createElement('div');
+      actions.className = 'k-modal-actions';
+      dom.modal.appendChild(actions); // enfant DIRECT → architecture statique
+
+      window.innerWidth = 1200; // LOT N-1 : la variable n'est plus gatée par innerWidth
+      _syncScrollPadding();
+      expect(document.documentElement.style.getPropertyValue('--k-modal-cta-h')).toBe('0px');
+    });
+
+    it('.k-modal-actions PAS enfant direct (fallback position:fixed) → --k-modal-cta-h = hauteur mesurée', () => {
+      const wrapper = document.createElement('div');
+      dom.modal.appendChild(wrapper);
+      const actions = document.createElement('div');
+      actions.className = 'k-modal-actions';
+      wrapper.appendChild(actions); // PAS enfant direct de #k-modal → fallback fixed
+      Object.defineProperty(actions, 'offsetHeight', { value: 149, configurable: true });
+
+      window.innerWidth = 360;
+      _syncScrollPadding();
+      expect(document.documentElement.style.getPropertyValue('--k-modal-cta-h')).toBe('149px');
+    });
+
+    it("branche une seule fois le ResizeObserver par appel (pas d'accumulation sur ouvertures répétées)", () => {
+      const actions = document.createElement('div');
+      actions.className = 'k-modal-actions';
+      dom.modal.appendChild(actions);
+
+      const disconnectSpy = jest.fn();
+      const observeSpy = jest.fn();
+      global.ResizeObserver = jest.fn().mockImplementation(function () {
+        this.disconnect = disconnectSpy;
+        this.observe = observeSpy;
+      });
+
+      _syncScrollPadding();
+      _syncScrollPadding();
+      expect(global.ResizeObserver).toHaveBeenCalledTimes(2);
+      expect(disconnectSpy).toHaveBeenCalledTimes(1); // le 2e appel déconnecte le 1er observer
+      expect(observeSpy).toHaveBeenCalledTimes(2);
+      delete global.ResizeObserver;
     });
   });
 
