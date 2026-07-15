@@ -159,61 +159,61 @@ test('boutique câble le boot, les événements globaux et le reset desktop', ()
     .toBe(true);
 });
 
-describe('syncViewportHeight (--k-vh — fix Samsung Internet dvh)', () => {
+describe('syncModalViewportOwner (fix Samsung Internet)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     document.documentElement.style.cssText = '';
+    document.body.innerHTML = '<div id="k-modal"></div>';
     Object.defineProperty(document, 'readyState', { configurable: true, value: 'complete' });
   });
 
-  it('pose --k-vh depuis visualViewport.height si disponible', () => {
-    Object.defineProperty(window, 'visualViewport', {
-      configurable: true,
-      value: { height: 640, addEventListener: jest.fn() },
-    });
+  it('mobile : la modal remplit son overlay au lieu de recalculer le viewport', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+
     jest.isolateModules(() => {
       require('../../js/boutique.js');
     });
-    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('640px');
-    delete window.visualViewport;
+
+    const modal = document.getElementById('k-modal');
+    expect(modal.style.height).toBe('100%');
+    expect(modal.style.maxHeight).toBe('100%');
+    expect(mockBus.on).toHaveBeenCalledWith('modal:opened', expect.any(Function));
   });
 
-  it('fallback sur window.innerHeight si visualViewport absent', () => {
-    delete window.visualViewport;
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 720 });
+  it('passage desktop : retire les overrides runtime et rend la main au shell desktop', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+
     jest.isolateModules(() => {
       require('../../js/boutique.js');
     });
-    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('720px');
-  });
 
-  it('remet --k-vh à jour sur resize et orientationchange', () => {
-    delete window.visualViewport;
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 500 });
-    jest.isolateModules(() => {
-      require('../../js/boutique.js');
-    });
-    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('500px');
+    const modal = document.getElementById('k-modal');
+    expect(modal.style.height).toBe('100%');
+    expect(modal.style.maxHeight).toBe('100%');
 
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 480 });
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
     window.dispatchEvent(new Event('resize'));
-    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('480px');
 
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 640 });
-    window.dispatchEvent(new Event('orientationchange'));
-    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('640px');
+    expect(modal.style.height).toBe('');
+    expect(modal.style.maxHeight).toBe('');
   });
 
-  it('s\'abonne aussi à visualViewport.resize quand il existe', () => {
+  it('ne dépend plus de visualViewport.height ni de --k-vh', () => {
     const vvAddEventListener = jest.fn();
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
     Object.defineProperty(window, 'visualViewport', {
       configurable: true,
-      value: { height: 600, addEventListener: vvAddEventListener },
+      value: { height: 540, addEventListener: vvAddEventListener },
     });
+
     jest.isolateModules(() => {
       require('../../js/boutique.js');
     });
-    expect(vvAddEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
+
+    expect(document.getElementById('k-modal').style.height).toBe('100%');
+    expect(document.documentElement.style.getPropertyValue('--k-vh')).toBe('');
+    expect(vvAddEventListener).not.toHaveBeenCalled();
+
     delete window.visualViewport;
   });
 });

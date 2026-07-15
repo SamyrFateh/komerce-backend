@@ -115,24 +115,30 @@ import './b-cart-stepper-guard.js'; // correctif capture document vs boutons +/-
   window.addEventListener('resize', applyDesktopReset);
 })();
 
-// ── FIX Samsung Internet : dvh mal recalculé → .k-modal (100dvh) plus haut
-//    que le viewport réellement visible → .k-modal-scroll croit être en
-//    bout de scroll alors que prix/CTA sont encore sous la barre système.
-//    On pose --k-vh en JS (visualViewport.height, source de vérité côté
-//    device) ; consommé par .k-modal dans modal-shell.css. Voir bug report
-//    "prix rogné / scroll bloqué sur le prix / CTA remonte" — Samsung only.
-(function syncViewportHeight() {
-  function setVh() {
-    let h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-    document.documentElement.style.setProperty('--k-vh', h + 'px');
+// ── FIX Samsung Internet : un seul propriétaire de la hauteur viewport ──
+// L'overlay #k-modal-overlay est déjà position:fixed avec les 4 côtés ancrés.
+// Il représente donc directement la zone réellement disponible. Sur mobile,
+// la modal doit remplir CE parent (100%) au lieu de recalculer une seconde
+// hauteur via 100dvh ou visualViewport.height : Samsung Internet peut alors
+// soustraire la barre système deux fois et faire remonter la CTA sur le prix.
+// Le style inline est volontairement limité à ce garde runtime de viewport ;
+// il est retiré dès le passage en desktop, dont le shell possède sa propre taille.
+function syncModalViewportOwner() {
+  const modal = document.getElementById('k-modal');
+  if (!modal) return;
+
+  if (window.innerWidth < 900) {
+    modal.style.height = '100%';
+    modal.style.maxHeight = '100%';
+  } else {
+    if (modal.style.height === '100%') modal.style.removeProperty('height');
+    if (modal.style.maxHeight === '100%') modal.style.removeProperty('max-height');
   }
-  setVh();
-  window.addEventListener('resize', setVh);
-  window.addEventListener('orientationchange', setVh);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', setVh);
-  }
-})();
+}
+
+window.addEventListener('resize', syncModalViewportOwner);
+window.addEventListener('orientationchange', syncModalViewportOwner);
+bus.on('modal:opened', syncModalViewportOwner);
 
 // ── CONSTANTES KOMERCE ──────────────────────────────────────────────
 const KOMERCE_WA = '33699272526';
@@ -153,6 +159,7 @@ const PAVILION_CATEGORY_ALIASES = {
  */
 function init() {
   initDom();
+  syncModalViewportOwner();
   document.body.classList.add('k-view-shop');
 
   installScrollOwner();
