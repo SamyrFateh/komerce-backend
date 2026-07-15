@@ -15207,6 +15207,14 @@
       },
       {
         "boutiqueManifest": "modal-product",
+        "category": "boutique",
+        "declared": "../css/modal-product-price-normalization.css",
+        "resolvedPath": "public/boutique/css/modal-product-price-normalization.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
         "category": "dist",
         "declared": "../css/dist/components.css",
         "resolvedPath": "public/boutique/css/dist/components.css",
@@ -15258,6 +15266,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-modal-approche-c-hybrid.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-modal-approche-c-hybrid.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "tests",
+        "declared": "../tests/unit/modal-product-price-normalization.test.js",
+        "resolvedPath": "public/boutique/tests/unit/modal-product-price-normalization.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -19967,6 +19983,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/payment-paypal.js",
+                "targetFile": "services/loyalty-service.js"
+              },
+              {
                 "sourceFileId": "services/payment-cash-confirm.js",
                 "targetFile": "services/loyalty-service.js"
               },
@@ -19992,6 +20012,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/cash-reminder-service.js",
+                "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "services/payment-paypal.js",
                 "targetFile": "services/notification-service.js"
               },
               {
@@ -20037,6 +20061,10 @@
               {
                 "sourceFileId": "services/payment-paypal.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "services/payment-paypal.js",
+                "targetFile": "services/invoice-service.js"
               },
               {
                 "sourceFileId": "services/payment-cash-confirm.js",
@@ -20128,6 +20156,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/payment-paypal.js",
+                "targetFile": "services/purchasing-trigger-service.js"
+              },
               {
                 "sourceFileId": "routes/cash.js",
                 "targetFile": "services/purchasing-trigger-service.js"
@@ -21960,7 +21992,7 @@
         "filesObserved": 791
       },
       "boutique": {
-        "filesObserved": 100,
+        "filesObserved": 101,
         "nonCanonicalManifestFiles": 60
       },
       "dash": {
@@ -25199,7 +25231,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "payments -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"notifications\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

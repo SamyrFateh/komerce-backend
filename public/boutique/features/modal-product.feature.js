@@ -65,6 +65,7 @@ module.exports = {
       '../css/modal-shell.css',
       '../css/modal-product.css',
       '../css/modal-product-lot4-hybrid.css',
+      '../css/modal-product-price-normalization.css',
     ],
     dist: [
       '../css/dist/components.css',
@@ -76,6 +77,7 @@ module.exports = {
       '../tests/unit/b-modal-product-detail-bootstrap.test.js',
       '../tests/unit/b-modal-desktop-enhancers.test.js',
       '../tests/unit/b-modal-approche-c-hybrid.test.js',
+      '../tests/unit/modal-product-price-normalization.test.js',
     ],
   },
 

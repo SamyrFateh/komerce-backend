@@ -1357,7 +1357,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> auth — dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez "payments" vers "auth"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> documents — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "payments" vers "documents"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> infrastructure — dépendance cross-feature observée (canal: static-code, 46 preuve(s)) sans contract.consumes déclaré chez "payments" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> notifications — dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez "payments" vers "notifications"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> notifications — dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez "payments" vers "notifications"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> platform-ops — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "payments" vers "platform-ops"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ payments -> refunds — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "payments" vers "refunds"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ platform-ops -> auth — dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth"
@@ -1431,7 +1431,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 791 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 100 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 101 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
 - dash : 83 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1544,11 +1544,11 @@ Meta Graph monté : oui.
 | payments | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
 | payments | infrastructure | static-code | 46 | **OBSERVED_UNDECLARED** |
 | payments | logistics | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
-| payments | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| payments | notifications | static-code | 6 | **OBSERVED_UNDECLARED** |
-| payments | orders | static-code, interface | 17 | **DECLARED_AND_OBSERVED** |
+| payments | loyalty | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| payments | notifications | static-code | 7 | **OBSERVED_UNDECLARED** |
+| payments | orders | static-code, interface | 18 | **DECLARED_AND_OBSERVED** |
 | payments | platform-ops | static-code | 1 | **OBSERVED_UNDECLARED** |
-| payments | purchasing | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| payments | purchasing | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | payments | refunds | static-code | 2 | **OBSERVED_UNDECLARED** |
 | payments | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
 | platform-ops | auth | static-code | 5 | **OBSERVED_UNDECLARED** |

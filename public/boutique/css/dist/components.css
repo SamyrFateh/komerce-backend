@@ -4881,6 +4881,55 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 }
 
 
+/* ── modal-product-price-normalization.css ───────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          mobile-modal-price-layout-normalization
+ * @domain        catalog
+ * @layer         ui-style
+ * @owner         modal-product
+ * @purpose       Garantit un rendu de prix mobile non tronqué et une géométrie identique promo / hors promo.
+ * @impact-areas  product-modal, mobile, pricing-display
+ * @version       2026-07
+ */
+
+/*
+ * La garde anti-débordement historique du shell pose overflow-x:hidden sur
+ * .k-modal-price-row et le style promo changeait la taille du prix. Sur certains
+ * montants longs, la combinaison pouvait rogner les glyphes ou donner une
+ * métrique différente d'un produit à l'autre.
+ *
+ * Cette couche est chargée après les sources modal historiques et ne touche que
+ * la composition mobile. Desktop conserve sa composition Approche C.
+ */
+@media (max-width: 899px) {
+  #k-modal .k-modal-price-row {
+    overflow: visible;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #k-modal .k-modal-price {
+    line-height: 1.15;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* Promo = emphase couleur/poids uniquement : aucune variation de géométrie. */
+  #k-modal.k-modal--has-promo .k-modal-price {
+    font-size: 22px;
+  }
+
+  html.k-mobile-premium-v1 #k-modal.k-modal .k-modal-price,
+  html.k-mobile-premium-v1 #k-modal.k-modal.k-modal--has-promo .k-modal-price {
+    font-size: clamp(24px, 7vw, 30px);
+    line-height: 1.15;
+  }
+}
+
+
 /* ── cart.css ────────────────────────────────────────────── */
 /* ---------------------------------------------------------------
    KOMERCE � cart.css
