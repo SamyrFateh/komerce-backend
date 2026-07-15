@@ -227,6 +227,15 @@
   right: auto;
   z-index: auto;
   border-radius: 0;
+  /* FIX LOT N: neutraliser le layer GPU hérité du fallback fixed.
+     translateZ(0) forçait une couche composite séparée — légitime en fixed
+     pour contrer le stacking context de k-slide-up, mais en static (post-
+     reparenting) cette couche peint son fond blanc par-dessus le prix
+     sur Chromium Android / Samsung Internet. Safari iOS non affecté. */
+  transform: none;
+  -webkit-transform: none;
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
