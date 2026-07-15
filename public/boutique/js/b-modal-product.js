@@ -83,10 +83,24 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       // Première image : on coupe le shimmer dès qu'elle est chargée
       if (i === 0 && imgWrapForSkeleton) {
         let killShimmer = function() { imgWrapForSkeleton.classList.add('is-image-loaded'); };
-        img.addEventListener('load', killShimmer, { once: true });
+        // FIX LOT N: re-reset scrollTop après le chargement de l'image.
+        // Sur Chrome Android / Samsung Internet, le decode asynchrone de l'image
+        // provoque un layout shift qui décale scrollTop via scroll anchoring,
+        // poussant le prix sous la barre CTA. Le overflow-anchor:none dans le CSS
+        // couvre le cas nominal ; ce reset couvre le edge-case où le browser
+        // l'ignore (Samsung Internet < v24, WebView anciennes).
+        let resetScroll = function() {
+          let _s = dom.modal && dom.modal.querySelector('.k-modal-scroll');
+          if (_s && _s.scrollTop !== 0) _s.scrollTop = 0;
+        };
+        let onFirstImgReady = function() {
+          killShimmer();
+          requestAnimationFrame(resetScroll);
+        };
+        img.addEventListener('load', onFirstImgReady, { once: true });
         img.addEventListener('error', killShimmer, { once: true });
         // Si l'image est déjà en cache (load déjà tiré), on rattrape
-        if (img.complete && img.naturalWidth > 0) killShimmer();
+        if (img.complete && img.naturalWidth > 0) onFirstImgReady();
         // Fallback Android Chrome : si load/error ne se déclenchent pas en 3s, on retire le shimmer
         setTimeout(killShimmer, 3000);
       }

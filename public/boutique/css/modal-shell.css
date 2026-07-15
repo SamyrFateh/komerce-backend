@@ -98,6 +98,11 @@
   flex: 1; overflow-y: auto; overflow-x: hidden;
   -webkit-overflow-scrolling: touch; scrollbar-width: thin; min-height: 0;
   display: flex; flex-direction: column; padding-top: 0;
+  /* FIX LOT N: désactiver le scroll anchoring de Chrome/Samsung Internet.
+     Quand l'image carousel se charge après le scrollTop=0 du rAF, le browser
+     ajuste automatiquement scrollTop pour "stabiliser" l'ancre visible (les
+     détails). Ce décalage de quelques px pousse le prix dans la zone CTA. */
+  overflow-anchor: none;
 }
 
 /* ── PRODUCT-ZONE : transparent sur mobile (display:contents) ── */
