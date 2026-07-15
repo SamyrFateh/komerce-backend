@@ -5,55 +5,12 @@ on:
     branches: [ main, master ]
   pull_request:
 
-# Temporaire PR #622 : autorise le job css-autofix à pousser les sorties du
-# générateur officiel sur la branche source. Ce bloc est retiré dès le bundle synchronisé.
-permissions:
-  contents: write
-  pull-requests: read
-
 # Annule les runs obsolètes sur une même branche
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # TEMPORAIRE PR #622 — génère le bundle officiel puis devient inerte une fois le diff nul.
-  css-autofix:
-    name: "🧰 Temporary CSS bundle sync"
-    if: github.event_name == 'pull_request' && github.head_ref == 'agent/fix-modal-price-initial-visibility'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Generate official Boutique CSS outputs
-        working-directory: public/boutique
-        run: node scripts/deploy-css.js
-
-      - name: Commit generated outputs when needed
-        run: |
-          if git diff --quiet -- \
-            public/boutique/css/dist/components.css \
-            public/boutique/.cache-buster-state.json \
-            public/boutique/index.html; then
-            echo "CSS outputs already synchronized."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            public/boutique/css/dist/components.css \
-            public/boutique/.cache-buster-state.json \
-            public/boutique/index.html
-          git commit -m "chore(css): sync generated boutique bundle"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
-
   # ─────────────────────────────────────────────────────────────
   # Job 1 — Tests unitaires : rapides, aucune base de données.
   # ─────────────────────────────────────────────────────────────
