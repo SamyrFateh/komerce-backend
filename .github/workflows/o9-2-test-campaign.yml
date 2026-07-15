@@ -122,15 +122,31 @@ jobs:
           path: test-results/o9-2/
           if-no-files-found: error
 
-  public-playwright-staging:
-    name: O9.2A — Public Playwright on current Komerce environment
+  public-playwright:
+    name: O9.2A — Public Playwright — ${{ matrix.project }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: Desktop Chrome
+            slug: desktop-chrome
+          - project: Desktop Firefox
+            slug: desktop-firefox
+          - project: Desktop Safari
+            slug: desktop-safari
+          - project: Mobile Chrome
+            slug: mobile-chrome
+          - project: Mobile Safari
+            slug: mobile-safari
     defaults:
       run:
         working-directory: public/boutique
     env:
       BASE_URL: https://komerce.co/boutique/
       CI: 'true'
+      O9_PROJECT: ${{ matrix.project }}
+      O9_SLUG: ${{ matrix.slug }}
 
     steps:
       - uses: actions/checkout@v4
@@ -144,30 +160,28 @@ jobs:
       - name: Install boutique dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
+      - name: Install Playwright browser dependencies
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run public Playwright and write compact failure inventory
+      - name: Run project and write compact failure inventory
         shell: bash
         run: |
-          mkdir -p o9-2-summary
+          mkdir -p "o9-2-summary/${O9_SLUG}"
+          raw="o9-2-summary/${O9_SLUG}/playwright.json"
+          summary="o9-2-summary/${O9_SLUG}/summary.ndjson"
+
           set +e
           npx playwright test \
-            --project='Desktop Chrome' \
-            --project='Desktop Firefox' \
-            --project='Desktop Safari' \
-            --project='Mobile Chrome' \
-            --project='Mobile Safari' \
+            --project="${O9_PROJECT}" \
             --workers=1 \
             --reporter=json \
-            > o9-2-summary/playwright-public.json
+            > "$raw"
           code=$?
           set -e
 
-          node <<'NODE'
+          node - "$raw" "$summary" "$O9_PROJECT" <<'NODE'
           const fs = require('fs');
-          const input = 'o9-2-summary/playwright-public.json';
-          const out = 'o9-2-summary/playwright-public-summary.ndjson';
+          const [input, out, project] = process.argv.slice(2);
           const data = JSON.parse(fs.readFileSync(input, 'utf8'));
           const rows = [];
 
@@ -187,7 +201,7 @@ jobs:
                 }
                 rows.push({
                   file: file || null,
-                  project: test.projectName || test.projectId || null,
+                  project,
                   title: spec.title,
                   status: test.status || final.status || 'unknown',
                   expectedStatus: test.expectedStatus || null,
@@ -203,6 +217,7 @@ jobs:
 
           const failing = rows.filter((row) => !['expected', 'skipped'].includes(row.status));
           const summary = {
+            project,
             stats: data.stats || null,
             total: rows.length,
             expected: rows.filter((row) => row.status === 'expected').length,
@@ -218,14 +233,14 @@ jobs:
           console.log(JSON.stringify(summary, null, 2));
           NODE
 
-          cat o9-2-summary/playwright-public-summary.ndjson
+          cat "$summary"
           exit "$code"
 
       - name: Upload compact Playwright inventory
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: o9-2-playwright-public-summary
-          path: public/boutique/o9-2-summary/
+          name: o9-2-playwright-${{ matrix.slug }}
+          path: public/boutique/o9-2-summary/${{ matrix.slug }}/
           if-no-files-found: error
           retention-days: 30
