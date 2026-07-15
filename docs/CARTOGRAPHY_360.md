@@ -82,6 +82,10 @@ Invariants actifs :
 - `AIR_EXPRESS` n'apparaît dans `delivery_options` que lorsque `logistics` le rend commercialement exposable ;
 - jusqu'à PDC-6, un guard de repaint strictement transitoire rétablit le rendu PDC-4 si le fetch legacy de `b-modal-core.js` repeint tardivement les variantes. Ce guard ne dérive aucune vérité métier et doit disparaître avec le chemin legacy.
 
+### 2 quater. Delta viewport modal mobile — Samsung Internet du 15 juillet 2026
+
+Le shell de la fiche produit mobile est dimensionné par l'overlay `#k-modal-overlay`, déjà fixé aux quatre côtés du viewport. `#k-modal` remplit cet overlay ; il ne maintient pas en parallèle une seconde vérité de hauteur dérivée de `visualViewport.height` ou d'une variable `--k-vh`. Cette règle évite les écarts de calcul entre viewport visuel, `dvh` et barres système sur Samsung Internet, tout en conservant la barre d'actions hors du scroll.
+
 ---
 
 ## 3. Domaines API montés
