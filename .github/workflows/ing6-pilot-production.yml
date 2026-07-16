@@ -21,21 +21,31 @@ jobs:
   pilot:
     if: github.event_name == 'push' || github.event.pull_request.head.ref == 'ops/ing6-pilot-production'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: 1c5c37ab-557b-41b1-885a-8b3ead573795
       RAILWAY_ENVIRONMENT_ID: 7a0ce7dc-93a0-4bfa-88c9-088f70e8883a
       RAILWAY_POSTGRES_SERVICE_ID: 3b4520db-f7ce-43b4-b37c-acf58ec1bdcb
+      NODE_ENV: production
 
     steps:
       - name: Checkout isolated operations branch
         uses: actions/checkout@v4
 
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
       - name: Install Railway CLI
         run: npm install --global @railway/cli
 
-      - name: Verify Railway credentials
+      - name: Resolve and mask public PostgreSQL URL
         shell: bash
         run: |
           set -euo pipefail
@@ -43,64 +53,122 @@ jobs:
             echo 'RAILWAY_TOKEN repository secret is missing.'
             exit 42
           fi
-          railway --version
 
-      - name: Inspect Postgres endpoint variable names without secrets
-        shell: bash
-        run: |
-          set -euo pipefail
           railway variable list \
             --project "$RAILWAY_PROJECT_ID" \
             --environment "$RAILWAY_ENVIRONMENT_ID" \
             --service "$RAILWAY_POSTGRES_SERVICE_ID" \
             --json > /tmp/postgres-vars.json
 
-          node - <<'NODE' > /tmp/postgres-endpoints-safe.txt
+          node - <<'NODE'
           const fs = require('fs');
           const vars = JSON.parse(fs.readFileSync('/tmp/postgres-vars.json', 'utf8'));
-          const entries = Object.entries(vars).sort(([a], [b]) => a.localeCompare(b));
-
-          console.log('POSTGRES_VARIABLE_NAMES');
-          for (const [key] of entries) {
-            if (/(DATABASE|PG|POSTGRES|TCP|PROXY|HOST|PORT|PUBLIC)/i.test(key)) {
-              console.log(key);
-            }
+          const url = vars.DATABASE_PUBLIC_URL;
+          if (!url || typeof url !== 'string') {
+            throw new Error('DATABASE_PUBLIC_URL absent du service PostgreSQL Railway');
           }
-
-          console.log('ENDPOINT_CLASSES');
-          for (const [key, raw] of entries) {
-            if (!/(DATABASE|PGHOST|RAILWAY.*(TCP|PROXY|PUBLIC)|HOST|PORT)/i.test(key)) continue;
-            const value = String(raw ?? '');
-            if (!value) continue;
-            let host = null;
-            let port = null;
-            try {
-              if (value.includes('://')) {
-                const parsed = new URL(value);
-                host = parsed.hostname;
-                port = parsed.port || null;
-              } else if (/HOST|DOMAIN/i.test(key)) {
-                host = value;
-              } else if (/PORT/i.test(key)) {
-                port = value;
-              }
-            } catch (_) {}
-
-            if (host) {
-              const kind = host.endsWith('.railway.internal') ? 'private' : 'public-or-external';
-              console.log(`${key}: host-kind=${kind}; port-present=${Boolean(port)}`);
-            } else if (port) {
-              console.log(`${key}: port-present=true`);
-            }
+          const parsed = new URL(url);
+          if (!parsed.hostname || parsed.hostname.endsWith('.railway.internal')) {
+            throw new Error('DATABASE_PUBLIC_URL ne pointe pas vers un endpoint public');
           }
+          console.log(`::add-mask::${url}`);
+          fs.appendFileSync(process.env.GITHUB_ENV, `DATABASE_URL<<ING6_DB_URL\n${url}\nING6_DB_URL\n`);
+          console.log(`Endpoint PostgreSQL public résolu (${parsed.hostname}, port présent: ${Boolean(parsed.port)}).`);
           NODE
 
-      - name: Upload safe Postgres endpoint diagnostic
+      - name: Verify pending migrations read-only
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/run-migrations.js --dry-run 2>&1 | tee /tmp/ing6-migrations-dry-run.log
+
+      - name: Apply pending migrations idempotently
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/run-migrations.js 2>&1 | tee /tmp/ing6-migrations-apply.log
+
+      - name: Import five-product pilot batch
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/pilot-json-import.js --count 5 2>&1 | tee /tmp/ing6-pilot-import.log
+
+      - name: Scan and promote Eyeshadow Palette only
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/ops-ing6-pilot-promote.js 2>&1 | tee /tmp/ing6-pilot-promotion.log
+
+      - name: Verify pilot states and quarantine
+        shell: bash
+        run: |
+          set -o pipefail
+          node - <<'NODE' 2>&1 | tee /tmp/ing6-pilot-verification.log
+          const db = require('./db');
+          (async () => {
+            const supplier = 'KOMERCE-TEST-DUMMYJSON';
+            const rows = await db.query(
+              `SELECT supplier_product_id, product_name, state, product_id,
+                      promotion_status,
+                      normalized_source_contract->>'schema_version' AS schema_version
+                 FROM sourcing_candidates
+                WHERE supplier_name = $1
+                  AND supplier_product_id = ANY($2::text[])
+                ORDER BY supplier_product_id`,
+              [supplier, [
+                'dummyjson-derived-1',
+                'dummyjson-derived-2',
+                'dummyjson-derived-3',
+                'dummyjson-derived-4',
+                'dummyjson-derived-5',
+              ]]
+            );
+
+            const byId = new Map(rows.rows.map((row) => [row.supplier_product_id, row]));
+            const palette = byId.get('dummyjson-derived-2');
+            const lipstick = byId.get('dummyjson-derived-4');
+            if (!palette || palette.state !== 'imported_to_catalog' || !palette.product_id) {
+              throw new Error(`Palette non promue correctement: ${JSON.stringify(palette)}`);
+            }
+            if (!lipstick || lipstick.state !== 'quarantined' || lipstick.product_id) {
+              throw new Error(`Produit vidéo non conservé en quarantaine: ${JSON.stringify(lipstick)}`);
+            }
+
+            const product = await db.query(
+              `SELECT id, name, is_active, lifecycle_status, price_kmf
+                 FROM products WHERE id = $1`,
+              [palette.product_id]
+            );
+            const p = product.rows[0];
+            if (!p || p.is_active !== false || p.lifecycle_status !== 'candidate') {
+              throw new Error(`Produit pilote ne respecte pas l'état inactif attendu: ${JSON.stringify(p)}`);
+            }
+
+            console.log(JSON.stringify({
+              ok: true,
+              candidates: rows.rows,
+              product: p,
+            }, null, 2));
+          })()
+            .catch((error) => {
+              console.error(error.stack || error.message);
+              process.exitCode = 1;
+            })
+            .finally(async () => {
+              try { await db.pool.end(); } catch (_) {}
+            });
+          NODE
+
+      - name: Upload pilot evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: railway-postgres-endpoints-safe
-          path: /tmp/postgres-endpoints-safe.txt
-          if-no-files-found: error
-
-      - name: Stop before any database write
-        run: exit 1
+          name: ing6-production-pilot-evidence
+          path: |
+            /tmp/ing6-migrations-dry-run.log
+            /tmp/ing6-migrations-apply.log
+            /tmp/ing6-pilot-import.log
+            /tmp/ing6-pilot-promotion.log
+            /tmp/ing6-pilot-verification.log
+          if-no-files-found: warn
