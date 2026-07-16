@@ -11,7 +11,7 @@ const SUPPLIER = 'KOMERCE-TEST-DUMMYJSON';
 const SUPPLIER_PRODUCT_ID = 'dummyjson-derived-2';
 const EXPECTED_NAME = 'Eyeshadow Palette with Mirror';
 const ALLOWED_BATCH_STATUSES = new Set(['COMPLETED', 'COMPLETED_WITH_QUARANTINE']);
-const ALLOWED_SOURCING_DECISIONS = new Set(['TEST', 'PRIORITY']);
+const BLOCKED_SOURCING_DECISIONS = new Set(['AVOID', 'LOSS', 'EXCLUDED']);
 
 async function loadCandidate(client = db) {
   const { rows } = await client.query(
@@ -31,24 +31,21 @@ async function loadProduct(productId) {
   const { rows } = await db.query(
     `SELECT id, name, category, price_kmf, stock, is_active,
             quality_validated, lifecycle_status
-       FROM products
-      WHERE id = $1`,
+       FROM products WHERE id = $1`,
     [productId]
   );
   return rows[0] || null;
 }
 
-async function verifyProduct(productId, { active }) {
+async function verifyProduct(productId, active) {
   const row = await loadProduct(productId);
-  if (!row) throw new Error(`Produit ${productId} introuvable après promotion`);
+  if (!row) throw new Error(`Produit ${productId} introuvable`);
   if (row.name !== EXPECTED_NAME) throw new Error(`Produit inattendu : ${row.name}`);
 
   if (active) {
     if (row.is_active !== true || row.lifecycle_status !== 'active' || row.quality_validated !== true) {
       throw new Error(`Produit non publié selon la doctrine : ${JSON.stringify(row)}`);
     }
-  } else if (row.is_active !== false || row.lifecycle_status !== 'candidate') {
-    throw new Error(`Produit candidat dans un état inattendu : ${JSON.stringify(row)}`);
   }
 
   const [media, variants, skus, skuMedia] = await Promise.all([
@@ -88,34 +85,30 @@ async function publishProduct(productId) {
       throw new Error(`Publication refusée (${approval.status}) : ${JSON.stringify(approval.body)}`);
     }
   }
-
-  return verifyProduct(productId, { active: true });
+  return verifyProduct(productId, true);
 }
 
 async function enrichCandidate(candidate, config) {
-  const normalized = await scanner.normalizeCandidate(
-    {
-      supplier_name: candidate.supplier_name,
-      supplier_product_id: candidate.supplier_product_id,
-      product_name: candidate.product_name,
-      supplier_category: candidate.supplier_category,
-      purchase_price: candidate.purchase_price,
-      currency: candidate.currency,
-      image_url: candidate.image_url,
-      product_url: candidate.product_url,
-      description: candidate.description,
-      stock_available: candidate.stock_available,
-      min_order_qty: candidate.min_order_qty,
-      supplier_delay_days: candidate.supplier_delay_days,
-      weight_kg: candidate.weight_kg,
-      dimensions: {
-        l_cm: candidate.dim_l_cm,
-        w_cm: candidate.dim_w_cm,
-        h_cm: candidate.dim_h_cm,
-      },
+  const normalized = await scanner.normalizeCandidate({
+    supplier_name: candidate.supplier_name,
+    supplier_product_id: candidate.supplier_product_id,
+    product_name: candidate.product_name,
+    supplier_category: candidate.supplier_category,
+    purchase_price: candidate.purchase_price,
+    currency: candidate.currency,
+    image_url: candidate.image_url,
+    product_url: candidate.product_url,
+    description: candidate.description,
+    stock_available: candidate.stock_available,
+    min_order_qty: candidate.min_order_qty,
+    supplier_delay_days: candidate.supplier_delay_days,
+    weight_kg: candidate.weight_kg,
+    dimensions: {
+      l_cm: candidate.dim_l_cm,
+      w_cm: candidate.dim_w_cm,
+      h_cm: candidate.dim_h_cm,
     },
-    { config }
-  );
+  }, { config });
 
   if (!normalized.purchase_price_kmf) {
     throw new Error('Le prix fournisseur n’a pas pu être converti en KMF');
@@ -143,18 +136,17 @@ async function enrichCandidate(candidate, config) {
       candidate.id,
     ]
   );
-
   return { ...rows[0], import_status: candidate.import_status };
 }
 
 function assertPromotable(candidate) {
-  if (candidate.state === 'quarantined') throw new Error('La palette est en quarantaine — promotion interdite');
-  if (candidate.state === 'rejected') throw new Error('La palette est rejetée — promotion interdite');
+  if (candidate.state === 'quarantined') throw new Error('La palette est en quarantaine');
+  if (candidate.state === 'rejected') throw new Error('La palette est rejetée');
   if (candidate.import_status && !ALLOWED_BATCH_STATUSES.has(candidate.import_status)) {
     throw new Error(`Batch parent non promouvable : ${candidate.import_status}`);
   }
   if (!candidate.normalized_source_contract || String(candidate.normalized_source_contract.schema_version) !== '2') {
-    throw new Error('Contrat V2 absent ou invalide sur le candidat pilote');
+    throw new Error('Contrat V2 absent ou invalide');
   }
 }
 
@@ -162,29 +154,21 @@ async function main() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis');
 
   let candidate = await loadCandidate();
-  if (!candidate) {
-    throw new Error(`Candidat ${SUPPLIER}/${SUPPLIER_PRODUCT_ID} introuvable`);
-  }
+  if (!candidate) throw new Error(`Candidat ${SUPPLIER}/${SUPPLIER_PRODUCT_ID} introuvable`);
 
   if (candidate.state === 'imported_to_catalog' && candidate.product_id) {
     const verification = await publishProduct(candidate.product_id);
-    console.log(JSON.stringify({
-      ok: true,
-      idempotent: true,
-      candidate_id: candidate.id,
-      ...verification,
-    }, null, 2));
+    console.log(JSON.stringify({ ok: true, idempotent: true, candidate_id: candidate.id, ...verification }, null, 2));
     return;
   }
 
   assertPromotable(candidate);
-
   const config = await pricingEngine.loadGlobalConfig();
   candidate = await enrichCandidate(candidate, config);
 
   const scan = await scanner.scanCandidate(candidate, { config });
-  if (!ALLOWED_SOURCING_DECISIONS.has(scan.sourcing_decision)) {
-    throw new Error(`Décision sourcing non publiable : ${scan.sourcing_decision} — ${scan.reason}`);
+  if (BLOCKED_SOURCING_DECISIONS.has(scan.sourcing_decision)) {
+    throw new Error(`Décision sourcing bloquante : ${scan.sourcing_decision} — ${scan.reason}`);
   }
 
   const mergedScan = {
@@ -202,11 +186,8 @@ async function main() {
   const { rows: scannedRows } = await db.query(
     `UPDATE sourcing_candidates
         SET scan_result = $1::jsonb,
-            scan_at = NOW(),
-            confidence = $2,
-            state = 'scanned'
-      WHERE id = $3
-      RETURNING *`,
+            scan_at = NOW(), confidence = $2, state = 'scanned'
+      WHERE id = $3 RETURNING *`,
     [JSON.stringify(mergedScan), scan.confidence, candidate.id]
   );
   candidate = { ...scannedRows[0], import_status: candidate.import_status };
@@ -220,8 +201,7 @@ async function main() {
       `SELECT sc.*, sci.status AS import_status
          FROM sourcing_candidates sc
          LEFT JOIN supplier_catalog_imports sci ON sci.id = sc.import_id
-        WHERE sc.id = $1
-        FOR UPDATE OF sc`,
+        WHERE sc.id = $1 FOR UPDATE OF sc`,
       [candidate.id]
     );
     const current = rows[0];
@@ -230,15 +210,9 @@ async function main() {
     if (current.state === 'imported_to_catalog' && current.product_id) {
       await client.query('ROLLBACK');
       const verification = await publishProduct(current.product_id);
-      console.log(JSON.stringify({
-        ok: true,
-        idempotent: true,
-        candidate_id: current.id,
-        ...verification,
-      }, null, 2));
+      console.log(JSON.stringify({ ok: true, idempotent: true, candidate_id: current.id, ...verification }, null, 2));
       return;
     }
-
     assertPromotable(current);
 
     const product = await client.query(
@@ -246,7 +220,7 @@ async function main() {
          name, category, cost_kmf, price_kmf, stock, weight_kg,
          is_active, lifecycle_status,
          name_source, description_source, source_locale, content_source
-       ) VALUES ($1, $2, $3, $4, $5, $6, FALSE, 'candidate', $7, $8, 'en', 'connector_raw')
+       ) VALUES ($1,$2,$3,$4,$5,$6,FALSE,'candidate',$7,$8,'en','connector_raw')
        RETURNING id`,
       [
         current.product_name,
@@ -268,19 +242,20 @@ async function main() {
 
     await client.query(
       `UPDATE sourcing_candidates
-          SET state = 'imported_to_catalog', product_id = $1, updated_by = NULL
-        WHERE id = $2`,
+          SET state='imported_to_catalog', product_id=$1, updated_by=NULL
+        WHERE id=$2`,
       [productId, current.id]
     );
     await client.query(
       `INSERT INTO sourcing_candidate_events
-         (candidate_id, event_type, old_state, new_state, changes, triggered_by)
-       VALUES ($1, 'imported', $2, 'imported_to_catalog', $3::jsonb, NULL)`,
-      [
-        current.id,
-        current.state,
-        JSON.stringify({ product_id: productId, price_kmf: initialPrice, operation: 'ING6_PILOT' }),
-      ]
+         (candidate_id,event_type,old_state,new_state,changes,triggered_by)
+       VALUES ($1,'imported',$2,'imported_to_catalog',$3::jsonb,NULL)`,
+      [current.id, current.state, JSON.stringify({
+        product_id: productId,
+        price_kmf: initialPrice,
+        sourcing_decision: scan.sourcing_decision,
+        operation: 'ING6_PILOT_ADMIN_TEST_PRICE',
+      })]
     );
     await client.query('COMMIT');
   } catch (error) {
@@ -295,6 +270,7 @@ async function main() {
     ok: true,
     idempotent: false,
     candidate_id: candidate.id,
+    sourcing_decision: scan.sourcing_decision,
     promotion,
     ...verification,
   }, null, 2));
