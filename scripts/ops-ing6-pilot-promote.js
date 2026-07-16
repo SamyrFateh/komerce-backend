@@ -19,7 +19,7 @@ const scanner = require('../services/supplier-catalog-scanner');
 const pricingEngine = require('../services/pricing-engine');
 const { promoteCatalog } = require('../services/catalog-promotion');
 
-const SUPPLIER = 'DummyJSON';
+const SUPPLIER = 'KOMERCE-TEST-DUMMYJSON';
 const SUPPLIER_PRODUCT_ID = 'dummyjson-derived-2';
 const EXPECTED_NAME = 'Eyeshadow Palette with Mirror';
 const ALLOWED_BATCH_STATUSES = new Set(['COMPLETED', 'COMPLETED_WITH_QUARANTINE']);
@@ -245,5 +245,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    try { await db.end(); } catch (_) {}
+    try { await db.pool.end(); } catch (_) {}
   });
