@@ -81,7 +81,11 @@ async function main() {
   await db.pool.end();
 }
 
-main().catch((err) => {
-  console.error('Échec import pilote :', err);
-  process.exitCode = 1;
-});
+main()
+  .catch((err) => {
+    console.error('Échec import pilote :', err);
+    process.exitCode = 1;
+  })
+  .finally(() => {
+    process.exit(process.exitCode || 0);
+  });
