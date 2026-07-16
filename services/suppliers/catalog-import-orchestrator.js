@@ -33,6 +33,7 @@ const pricingEngine = require('../pricing-engine');
 const eligibility = require('../catalog-eligibility');
 const { buildNormalizedSourceContractSnapshot } = require('./normalized-product');
 const { getRuleNumber } = require('../../utils/rules');
+const { importJsonCatalog } = require('./catalog-import-json');
 
 /**
  * Agrège les raisons de rejet d'un tableau d'entrées invalides en compte par
@@ -63,8 +64,18 @@ async function importCatalog(body, userId, dispatchToConnector) {
   if (!supplierName) {
     return { status: 400, body: { error: 'supplier_name requis' } };
   }
-  if (!['csv', 'manual', 'api'].includes(sourceType)) {
-    return { status: 400, body: { error: 'source_type doit être csv, manual ou api' } };
+  if (!['csv', 'manual', 'api', 'json'].includes(sourceType)) {
+    return { status: 400, body: { error: 'source_type doit être csv, manual, api ou json' } };
+  }
+
+  // ING-6 — la source JSON emprunte un chemin transactionnel dédié
+  // (services/suppliers/catalog-import-json.js), volontairement séparé du
+  // legacy ci-dessous : batch créé AVANT classification, staging
+  // ready/quarantined/rejected, transaction propre. Le SQL et le
+  // comportement legacy (csv/manual/api) ne sont ni lus ni modifiés par
+  // cette branche — court-circuit avant tout appel à dispatchToConnector.
+  if (sourceType === 'json') {
+    return importJsonCatalog(b, userId);
   }
 
   // 1. Dispatcher vers le connecteur → NormalizedSupplierProduct[]

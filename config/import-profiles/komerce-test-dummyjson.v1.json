@@ -1,0 +1,43 @@
+{
+  "profile_id": "KOMERCE_TEST_DUMMYJSON_V1",
+  "profile_version": 3,
+  "supplier_name": "KOMERCE-TEST-DUMMYJSON",
+  "source_type": "json",
+  "currency": {
+    "default": "USD",
+    "resolution_policy": "SOURCE_THEN_DEFAULT",
+    "allowed": ["AED", "EUR", "USD", "KMF"]
+  },
+  "identity": {
+    "supplier_id_field": "sourceId"
+  },
+  "media": {
+    "gallery_source_field": "images",
+    "thumbnail_fallback": true
+  },
+  "weight": {
+    "source_field": "weight",
+    "source_unit": null,
+    "target_unit": "kg",
+    "unknown_unit_policy": "PRESERVE_RAW_AND_OMIT"
+  },
+  "policies": {
+    "unsupported_video": "QUARANTINE_PRODUCT",
+    "lossy_mapping": "QUARANTINE_PRODUCT",
+    "duplicate_relation": "DEDUPLICATE_AND_AUDIT",
+    "asset_reuse": "ALLOW_AND_AUDIT",
+    "missing_brand": "ALLOW_NULL",
+    "missing_image": "ALLOW_WITH_WARNING",
+    "unknown_fields": "PRESERVE_RAW"
+  },
+  "batch": {
+    "max_products": 5000,
+    "max_file_bytes": 20000000,
+    "allow_empty_products": false,
+    "max_invalid_pct": 30,
+    "max_quarantined_pct": 50,
+    "max_field_bytes": 65536,
+    "max_depth": 12
+  },
+  "notes": "Profil de test dérivé de la raffinerie dry-run v1-v4 (82 produits fixture DummyJSON). v3 : seuils de batch séparés (max_invalid_pct=30 conserve ING-I4 sur les rejets ; max_quarantined_pct=50 couvre les 40,24% de quarantaine vidéo de cette fixture sans les compter comme invalides). source_unit du poids reste null : non confirmée par la fixture -> weight_kg toujours null, brut conservé, finding SOURCE_WEIGHT_UNIT_UNKNOWN. A ne pas utiliser pour un vrai fournisseur sans revue explicite."
+}

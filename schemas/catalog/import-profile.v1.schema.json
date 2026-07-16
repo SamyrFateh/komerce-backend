@@ -1,0 +1,138 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "komerce://schemas/catalog/import-profile.v1.schema.json",
+  "title": "KomerceImportProfile.v1",
+  "description": "Profil d'import déterministe pour un connecteur (chantier ING-6, invariant ING-I9). Toute configuration d'un batch d'ingestion est résolue depuis un profil versionné, validé et auditable AVANT le traitement des produits — jamais depuis un flag CLI ad-hoc, jamais depuis une valeur par défaut fabriquée dans le code (ING-I2). Toute invalidité ici est un BATCH_CONFIGURATION_ERROR, jamais un statut produit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile_id", "profile_version", "supplier_name", "source_type", "currency", "identity", "weight", "policies", "batch"],
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Z0-9_]+$",
+      "description": "Identifiant stable du profil, ex. KOMERCE_TEST_DUMMYJSON_V1. Attribut d'observation d'un batch — jamais un composant de l'identité d'un candidat (cf. uniq_sc_supplier_ref)."
+    },
+    "profile_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Incrémenté à chaque changement de règle de résolution. Un batch enregistre cette version pour rejouer/auditer. Un bump réobserve les mêmes candidats, il n'en crée jamais de nouveaux."
+    },
+    "supplier_name": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "enum": ["A_DEFINIR_PAR_CONNECTEUR", "UNKNOWN", "TODO"] },
+      "description": "Jamais une valeur fabriquée. Fourni explicitement par le profil."
+    },
+    "source_type": {
+      "type": "string",
+      "enum": ["csv", "manual", "api", "json"],
+      "description": "json = fichier JSON traité par json-connector. api = transport JSON via un connecteur API réel. Ne jamais déclarer un fichier comme api : cela falsifierait provenance, connecteur, config applicable, métriques et reprise."
+    },
+    "currency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default", "resolution_policy", "allowed"],
+      "properties": {
+        "default": {
+          "type": ["string", "null"],
+          "pattern": "^[A-Z]{3}$",
+          "description": "Devise de repli. Appliquée UNIQUEMENT aux produits dont la source ne fournit aucune devise. null autorisé si le profil exige une devise source. Le pattern ISO 4217 ne s'applique qu'aux valeurs non nulles (type null exempté par JSON Schema)."
+        },
+        "resolution_policy": {
+          "type": "string",
+          "enum": ["SOURCE_THEN_DEFAULT"],
+          "description": "Seule politique implémentée. Toute autre valeur = BATCH_CONFIGURATION_ERROR."
+        },
+        "allowed": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Z]{3}$" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supplier_id_field"],
+      "properties": {
+        "supplier_id_field": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Champ SOURCE mappé vers supplier_product_id. Jamais déduit implicitement."
+        }
+      }
+    },
+    "media": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gallery_source_field", "thumbnail_fallback"],
+      "properties": {
+        "gallery_source_field": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Champ source porteur de la galerie ordonnée. Chaque entrée devient role=PRODUCT, display_order=position d'affichage (jamais une sémantique)."
+        },
+        "thumbnail_fallback": {
+          "type": "boolean",
+          "description": "true : quand la galerie est vide, thumbnail devient l'unique média PRODUCT/display_order=0 avec role_assignment_basis=thumbnail_fallback (V1 comme V2). false : thumbnail reste dans raw_payload uniquement."
+        }
+      }
+    },
+    "weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_field", "source_unit", "target_unit", "unknown_unit_policy"],
+      "properties": {
+        "source_field": { "type": ["string", "null"], "minLength": 1 },
+        "source_unit": {
+          "type": ["string", "null"],
+          "enum": ["kg", "g", "lb", "oz", null],
+          "description": "null = unité NON confirmée par le fournisseur. Aucune conversion possible, aucune unité inventée (ING-I2)."
+        },
+        "target_unit": { "type": "string", "enum": ["kg"] },
+        "unknown_unit_policy": {
+          "type": "string",
+          "enum": ["PRESERVE_RAW_AND_OMIT", "REJECT_PRODUCT"],
+          "description": "PRESERVE_RAW_AND_OMIT : weight_kg=null, brut conservé dans raw_payload, finding SOURCE_WEIGHT_UNIT_UNKNOWN. REJECT_PRODUCT : REJECTED_SOURCE_DATA_INVALID."
+        }
+      }
+    },
+    "policies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unsupported_video", "lossy_mapping", "duplicate_relation", "asset_reuse", "missing_brand", "missing_image", "unknown_fields"],
+      "properties": {
+        "unsupported_video":  { "type": "string", "enum": ["QUARANTINE_PRODUCT", "REJECT_PRODUCT"] },
+        "lossy_mapping":      { "type": "string", "enum": ["QUARANTINE_PRODUCT", "REJECT_PRODUCT"] },
+        "duplicate_relation": { "type": "string", "enum": ["DEDUPLICATE_AND_AUDIT", "REJECT_PRODUCT"] },
+        "asset_reuse":        { "type": "string", "enum": ["ALLOW_AND_AUDIT"] },
+        "missing_brand":      { "type": "string", "enum": ["ALLOW_NULL", "REJECT_PRODUCT"] },
+        "missing_image":      { "type": "string", "enum": ["ALLOW_WITH_WARNING", "REJECT_PRODUCT"] },
+        "unknown_fields":     { "type": "string", "enum": ["PRESERVE_RAW"] }
+      }
+    },
+    "batch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_products", "max_file_bytes", "allow_empty_products", "max_invalid_pct", "max_quarantined_pct"],
+      "properties": {
+        "max_products":         { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "max_file_bytes":       { "type": "integer", "minimum": 1 },
+        "allow_empty_products": { "type": "boolean" },
+        "max_invalid_pct": {
+          "type": "number", "minimum": 0, "maximum": 100,
+          "description": "ING-I4 : rejected / total. Protège contre une source INVALIDE."
+        },
+        "max_quarantined_pct": {
+          "type": "number", "minimum": 0, "maximum": 100,
+          "description": "quarantined / total. Protège contre une source majoritairement NON REPRÉSENTABLE, sans prétendre que ses données sont invalides. Jamais mélangé au numérateur de max_invalid_pct."
+        },
+        "max_field_bytes":      { "type": "integer", "minimum": 1 },
+        "max_depth":            { "type": "integer", "minimum": 1 }
+      }
+    },
+    "notes": { "type": "string" }
+  }
+}
