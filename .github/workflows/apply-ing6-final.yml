@@ -3,15 +3,14 @@ name: Apply and validate ING6 final
 on:
   pull_request:
     types: [reopened]
-    branches:
-      - main
+    branches: [main]
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
 
 jobs:
-  apply-test-commit:
+  diagnose-integration:
     if: github.event.pull_request.head.ref == 'agent/ing6-final'
     runs-on: ubuntu-latest
     services:
@@ -21,8 +20,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: komerce_test
-        ports:
-          - 5432:5432
+        ports: ['5432:5432']
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -34,13 +32,12 @@ jobs:
       NODE_ENV: test
       CI: true
     steps:
-      - name: Checkout orchestration branch
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: agent/ing6-final
 
-      - name: Rebuild, verify and apply final patch
+      - name: Apply final patch and diagnostic-only test edits
         shell: bash
         run: |
           set -euo pipefail
@@ -52,151 +49,50 @@ jobs:
           git apply /tmp/ING6_FINAL_ALL_IN_ONE.diff
           python - <<'PY'
           from pathlib import Path
-          p = Path('tests/unit/json-source-pipeline.test.js')
-          text = p.read_text()
-          old = """    const multi = r.ready.filter((e) => e.contract.schema_version === '2');
-              expect(multi.length).toBeGreaterThan(0);
-              for (const e of multi) {
-                const src = products.find((p) => p.id === e.diagnostics.source_id);
-                expect(e.contract.media).toHaveLength(new Set(src.images).size);
-              }
-          """
-          new = """    const multi = r.ready.filter((e) => {
-                const src = products.find((p) => p.id === e.diagnostics.source_id);
-                return Array.isArray(src?.images) && new Set(src.images).size > 1;
-              });
-              expect(multi.length).toBeGreaterThan(0);
-              for (const e of multi) {
-                const src = products.find((p) => p.id === e.diagnostics.source_id);
-                expect(e.contract.media).toHaveLength(new Set(src.images).size);
-              }
-          """
-          if old not in text:
-              raise SystemExit('Expected multi-image test block not found')
-          p.write_text(text.replace(old, new))
-          PY
-          rm -rf .ing6
-          git diff --check
 
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
+          unit = Path('tests/unit/json-source-pipeline.test.js')
+          text = unit.read_text()
+          text = text.replace(
+              "const multi = r.ready.filter((e) => e.contract.schema_version === '2');",
+              "const multi = r.ready.filter((e) => {\n      const src = products.find((p) => p.id === e.diagnostics.source_id);\n      return Array.isArray(src?.images) && new Set(src.images).size > 1;\n    });"
+          )
+          unit.write_text(text)
+
+          integration = Path('tests/integration/catalog-import-json.integration.test.js')
+          text = integration.read_text()
+          text = text.replace(
+              '    expect(result.status).toBe(200);',
+              "    if (result.status !== 200) console.error('ING6_RESULT_BODY', JSON.stringify(result.body));\n    expect(result.status).toBe(200);"
+          )
+          text = text.replace(
+              '    expect(first.status).toBe(200);',
+              "    if (first.status !== 200) console.error('ING6_FIRST_BODY', JSON.stringify(first.body));\n    expect(first.status).toBe(200);"
+          )
+          integration.write_text(text)
+          PY
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Syntax checks
-        run: |
-          node --check services/suppliers/json-source-pipeline.js
-          node --check services/suppliers/catalog-import-json.js
-          node --check services/suppliers/connectors/json-connector.js
-          node --check services/suppliers/catalog-import-orchestrator.js
-          node --check routes/sourcing-scanner.js
-          node --check scripts/dry-run-import.js
-          node --check scripts/pilot-json-import.js
-
-      - name: JSON refinery unit tests
-        id: unit_tests
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          npx jest tests/unit/json-source-pipeline.test.js --runInBand 2>&1 | tee /tmp/ing6-unit-tests.log
-
-      - name: Upload exact unit-test failure
-        if: steps.unit_tests.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ing6-unit-test-failure
-          path: /tmp/ing6-unit-tests.log
-          if-no-files-found: error
-
-      - name: Stop after unit-test failure
-        if: steps.unit_tests.outcome == 'failure'
-        run: exit 1
-
-      - name: Official 82-product dry-run
-        run: |
-          node scripts/dry-run-import.js \
-            --input data/catalogue-test-raw/komerce_catalogue_brut_tests/komerce-catalogue-brut-sample.json \
-            --profile config/import-profiles/komerce-test-dummyjson.v1.json \
-            --out /tmp/dry-run-report-final.json
-          node - <<'NODE'
-          const r = require('/tmp/dry-run-report-final.json');
-          const s = r.summary;
-          if (!s || s.total !== 82 || s.ready !== 49 || s.quarantined !== 33 || s.rejected !== 0) {
-            throw new Error(`Unexpected dry-run counts: ${JSON.stringify(s)}`);
-          }
-          if (s.sum_check !== 82 || s.sum_check_expected !== 82) {
-            throw new Error(`Dry-run sum mismatch: ${JSON.stringify(s)}`);
-          }
-          if (!Array.isArray(r.ready_contracts) || r.ready_contracts.length !== 49) {
-            throw new Error('Expected 49 ready contracts');
-          }
-          if (r.ready_contracts.some(c => String(c.schema_version) !== '2')) {
-            throw new Error('Every READY product must expose a V2 contract');
-          }
-          NODE
-
+      - run: npm ci
       - name: Prepare PostgreSQL 16 test schema
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/110_catalog_import_audit.sql
-
-      - name: PostgreSQL integration tests
-        id: integration_tests
+      - name: Run diagnostic integration test
+        id: integration
         continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
-          npx jest tests/integration/catalog-import-json.integration.test.js --runInBand 2>&1 | tee /tmp/ing6-integration-tests.log
-
-      - name: Upload exact integration-test failure
-        if: steps.integration_tests.outcome == 'failure'
+          npx jest tests/integration/catalog-import-json.integration.test.js --runInBand 2>&1 | tee /tmp/ing6-integration-diagnostic.log
+      - name: Upload exact integration diagnostic
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ing6-integration-test-failure
-          path: /tmp/ing6-integration-tests.log
+          name: ing6-integration-diagnostic
+          path: /tmp/ing6-integration-diagnostic.log
           if-no-files-found: error
-
-      - name: Stop after integration-test failure
-        if: steps.integration_tests.outcome == 'failure'
+      - if: steps.integration.outcome == 'failure'
         run: exit 1
-
-      - name: Legacy orchestrator non-regression tests
-        id: legacy_tests
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          mapfile -t tests < <(find tests -type f -name 'catalog-import-orchestrator*.test.js' | sort)
-          if ((${#tests[@]})); then
-            npx jest --runInBand "${tests[@]}" 2>&1 | tee /tmp/ing6-legacy-tests.log
-          else
-            echo 'No dedicated legacy orchestrator test files found; JSON unit and integration suites remain authoritative.' | tee /tmp/ing6-legacy-tests.log
-          fi
-
-      - name: Upload exact legacy-test failure
-        if: steps.legacy_tests.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ing6-legacy-test-failure
-          path: /tmp/ing6-legacy-tests.log
-          if-no-files-found: error
-
-      - name: Stop after legacy-test failure
-        if: steps.legacy_tests.outcome == 'failure'
-        run: exit 1
-
-      - name: Commit validated ING6 implementation
-        shell: bash
-        run: |
-          set -euo pipefail
-          git diff --check
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git commit -m 'feat(catalog): add transactional JSON refinery import'
-          git push origin HEAD:agent/ing6-final
