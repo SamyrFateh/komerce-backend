@@ -1,5 +1,6 @@
 'use strict';
 
+// Fixtures canvas déterministes : le test protège la densité visuelle, sans réseau ni image externe.
 jest.mock('../../js/b-utils.js', () => ({
   optimizeImgUrl: jest.fn((url) => url),
   fmtPrice: jest.fn((n) => String(n) + ' KMF'),
