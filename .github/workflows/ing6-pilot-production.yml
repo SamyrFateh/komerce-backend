@@ -7,12 +7,14 @@ on:
     paths:
       - .github/workflows/ing6-pilot-production.yml
       - scripts/ops-ing6-pilot-promote.js
+      - scripts/pilot-json-import.js
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main]
     paths:
       - .github/workflows/ing6-pilot-production.yml
       - scripts/ops-ing6-pilot-promote.js
+      - scripts/pilot-json-import.js
 
 permissions:
   contents: read
@@ -94,13 +96,13 @@ jobs:
           set -o pipefail
           node scripts/pilot-json-import.js --count 5 2>&1 | tee /tmp/ing6-pilot-import.log
 
-      - name: Scan and promote Eyeshadow Palette only
+      - name: Normalize, promote and officially publish Eyeshadow Palette
         shell: bash
         run: |
           set -o pipefail
           node scripts/ops-ing6-pilot-promote.js 2>&1 | tee /tmp/ing6-pilot-promotion.log
 
-      - name: Verify pilot states and quarantine
+      - name: Verify publication and quarantine
         shell: bash
         run: |
           set -o pipefail
@@ -136,19 +138,29 @@ jobs:
             }
 
             const product = await db.query(
-              `SELECT id, name, is_active, lifecycle_status, price_kmf
+              `SELECT id, name, is_active, quality_validated, lifecycle_status, price_kmf, stock
                  FROM products WHERE id = $1`,
               [palette.product_id]
             );
             const p = product.rows[0];
-            if (!p || p.is_active !== false || p.lifecycle_status !== 'candidate') {
-              throw new Error(`Produit pilote ne respecte pas l'état inactif attendu: ${JSON.stringify(p)}`);
+            if (!p || p.is_active !== true || p.quality_validated !== true || p.lifecycle_status !== 'active') {
+              throw new Error(`Produit pilote non publié selon la doctrine: ${JSON.stringify(p)}`);
             }
+
+            const media = await db.query(
+              `SELECT id, media_type, role, display_order, external_url, storage_status
+                 FROM catalog_media
+                WHERE product_id = $1
+                ORDER BY display_order, id`,
+              [palette.product_id]
+            );
+            if (!media.rows.length) throw new Error('Galerie du produit publié vide');
 
             console.log(JSON.stringify({
               ok: true,
               candidates: rows.rows,
               product: p,
+              media: media.rows,
             }, null, 2));
           })()
             .catch((error) => {
@@ -157,6 +169,7 @@ jobs:
             })
             .finally(async () => {
               try { await db.pool.end(); } catch (_) {}
+              process.exit(process.exitCode || 0);
             });
           NODE
 
