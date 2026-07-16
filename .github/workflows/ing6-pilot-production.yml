@@ -7,12 +7,19 @@ on:
     paths:
       - .github/workflows/ing6-pilot-production.yml
       - scripts/ops-ing6-pilot-promote.js
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/ing6-pilot-production.yml
+      - scripts/ops-ing6-pilot-promote.js
 
 permissions:
   contents: read
 
 jobs:
   pilot:
+    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'ops/ing6-pilot-production'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
