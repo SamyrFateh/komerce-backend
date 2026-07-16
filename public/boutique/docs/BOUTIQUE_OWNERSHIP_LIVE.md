@@ -13,7 +13,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
-| **Modal produit** `.k-modal*` | modal-shell.css (17), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
+| **Modal produit** `.k-modal*` | modal-shell.css (18), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
 | **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (20), layout.css (10), hero.css (1) | 3 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
@@ -31,7 +31,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | Module JS | DOM | CSS-inj | bus on/emit | Composants ciblés |
 |-----------|:---:|:-------:|:-----------:|-------------------|
 | `b-cart.js` | 58 | 31 | 1/6 | Modal produit, Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
-| `b-modal-core.js` | 33 | 54 | 2/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
+| `b-modal-core.js` | 33 | 54 | 3/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout.js` | 60 | 4 | 0/2 | Bottom-nav mobile |
 | `b-checkout-render.js` | 56 | 0 | 0/0 | — |
 | `b-modal-desktop-product.js` | 38 | 0 | 0/0 | Modal produit |
@@ -53,6 +53,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-image-ux.js` | 8 | 5 | 2/0 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
 | `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
+| `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/1 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `boutique.js` | 0 | 9 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
@@ -73,7 +74,6 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-cart-core.js` | 1 | 0 | 1/2 | Modal produit, Panier, Bottom-nav mobile |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
 | `b-desktop-sidebar.js` | 1 | 0 | 0/1 | Chips catégories |
-| `b-modal-product-detail-bootstrap.js` | 1 | 0 | 2/1 | Modal produit |
 | `b-store.js` | 0 | 1 | 0/1 | Modal produit, Panier, Grille produits, Hero |
 
 ---
@@ -94,13 +94,13 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | interactions.css | 899px | 🔴 899px |
 | modal-media.css | 400px, 900px | 🔴 400px |
 | modal-mobile-canonical.css | 899px | 🔴 899px |
-| modal-product.css | 900px, 899px | 🔴 899px |
 | modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
 | hero-cart-proxy.css | 900px | ✅ |
 | identity.css | 900px | ✅ |
 | modal-product-lot4-hybrid.css | 900px | ✅ |
+| modal-product.css | 900px | ✅ |
 | reset.css | 900px | ✅ |
 | share-cart.css | 900px | ✅ |
 | shared-followup.css | 900px, 1200px | ✅ |
@@ -139,7 +139,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Composants en multipropriété CSS | 8 | 0 |
 | Modules JS écrivant le DOM | 40 | ≤ 5 |
 | Breakpoints distincts | 7 | ≤ 2 |
-| Violations breakpoint | 13 | 0 |
+| Violations breakpoint | 12 | 0 |
 | `!important` | 23 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

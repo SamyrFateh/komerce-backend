@@ -248,7 +248,11 @@ describe('product detail modal bootstrap', () => {
     // Inversion PDC-6 : le paint legacy #k-modal-variants n'est plus préservé
     // en cas d'échec /detail — il est purgé (fail closed), pas conservé.
     expect(dom.modalVariants.querySelector('[data-legacy]')).toBeNull();
-    expect(dom.modalVariants.innerHTML).toBe('');
+    // [MDM-8 phase 2] Le vide silencieux (indiscernable d'une modale cassée,
+    // cf audit §1.3/§6) est remplacé par un état d'erreur visuel explicite.
+    // Le chemin transactionnel reste verrouillé (assertion ci-dessous) —
+    // seul le rendu change, pas le comportement fail-closed.
+    expect(dom.modalVariants.querySelector('[data-mdm-detail-error]')).not.toBeNull();
     // Preuve : aucune mutation panier SKU n'est possible tant que le contrat
     // détail n'a pas résolu avec succès — CTA et stepper restent verrouillés.
     transactionalControls().forEach((control) => {

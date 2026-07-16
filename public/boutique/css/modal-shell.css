@@ -882,7 +882,11 @@
 /* ── Desktop : taille & ombre modale (ex desktop-commerce-skeleton.css) ── */
 @media (min-width: 900px) {
   .k-modal {
-    max-width: min(1040px, calc(100vw - 56px));
+    /* [MDM-8 phase 2] max-width: min(1040px, …) retiré — mort par
+       spécificité, toujours écrasé par #k-modal.k-modal { max-width: none }
+       (ligne ~761, contre-balance desktop-commerce-skeleton.css). La
+       largeur réelle desktop est pilotée par cette règle ID, pas ici
+       (audit MDM8_AUDIT_PHASE1.md §1.5). */
     border-radius: 26px;
     /* PALETTE-FIX-01 */
     box-shadow: 0 30px 80px var(--border-ocean-18);

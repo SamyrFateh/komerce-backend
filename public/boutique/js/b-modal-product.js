@@ -215,26 +215,6 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       let isStatic = actBar.parentNode === dom.modal;
       let h = isStatic ? 0 : (actBar.offsetHeight || 0);
       document.documentElement.style.setProperty('--k-modal-cta-h', h + 'px');
-
-      // DEBUG TEMPORAIRE — à retirer une fois le fix --k-vh validé sur device.
-      // Activer sur mobile via l'URL : ?debugvh=1 (persisté en localStorage).
-      try {
-        if (location.search.indexOf('debugvh=1') > -1) localStorage.setItem('komerceDebugVh', '1');
-        if (localStorage.getItem('komerceDebugVh') === '1') {
-          let vv = window.visualViewport;
-          console.log('[k-vh-debug]', {
-            isStatic: isStatic,
-            ctaOffsetHeight: h,
-            modalComputedHeight: dom.modal ? getComputedStyle(dom.modal).height : null,
-            visualViewportHeight: vv ? vv.height : null,
-            windowInnerHeight: window.innerHeight,
-            kVhVar: getComputedStyle(document.documentElement).getPropertyValue('--k-vh'),
-            scrollMaxReached: dom.modal && dom.modal.querySelector('.k-modal-scroll')
-              ? (function(sc) { return sc.scrollHeight - sc.scrollTop - sc.clientHeight; })(dom.modal.querySelector('.k-modal-scroll'))
-              : null,
-          });
-        }
-      } catch (e) {}
     }
 
     measure();

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T00:39:45.275Z",
+  "generatedAt": "2026-07-16T01:03:30.157Z",
   "summary": {
     "modules": 70,
     "withHeader": 70,
@@ -897,7 +897,8 @@
       ],
       "listens": [
         "modal:close",
-        "modal:open"
+        "modal:open",
+        "modal:composition-synced"
       ],
       "imports": [
         "b-bus",
@@ -2238,6 +2239,7 @@
       ],
       "listeners": [
         "b-modal-approche-c-hybrid",
+        "b-modal-core",
         "b-modal-desktop-enhancers"
       ]
     },
@@ -2301,7 +2303,6 @@
         "modal-media",
         "modal-product",
         "modal-product-lot4-hybrid",
-        "modal-product-price-normalization",
         "modal-mobile-canonical",
         "cart",
         "interactions",

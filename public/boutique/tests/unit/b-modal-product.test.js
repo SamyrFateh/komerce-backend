@@ -176,63 +176,12 @@ describe('b-modal-product', () => {
       expect(document.documentElement.style.getPropertyValue('--k-modal-cta-h')).toBe('149px');
     });
 
-    it('debug --k-vh silencieux par défaut (pas de log, pas de throw)', () => {
-      const actions = document.createElement('div');
-      actions.className = 'k-modal-actions';
-      dom.modal.appendChild(actions);
-      localStorage.removeItem('komerceDebugVh');
-
-      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      expect(() => _syncScrollPadding()).not.toThrow();
-      expect(logSpy).not.toHaveBeenCalled();
-      logSpy.mockRestore();
-    });
-
-    it('debug --k-vh actif via ?debugvh=1 → persiste le flag et logue le diagnostic', () => {
-      const actions = document.createElement('div');
-      actions.className = 'k-modal-actions';
-      dom.modal.appendChild(actions);
-      localStorage.removeItem('komerceDebugVh');
-
-      // window.location n'est pas réassignable (ni via affectation directe,
-      // ni via defineProperty — jsdom la déclare non-configurable, comme un
-      // vrai navigateur). On passe par l'History API, qui met réellement à
-      // jour location.search, et on restaure l'URL ensuite pour ne pas
-      // polluer les tests suivants.
-      const originalUrl = window.location.href;
-      window.history.pushState({}, '', '?debugvh=1');
-      document.documentElement.style.setProperty('--k-vh', '640px');
-
-      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      try {
-        _syncScrollPadding();
-
-        expect(localStorage.getItem('komerceDebugVh')).toBe('1');
-        expect(logSpy).toHaveBeenCalledWith('[k-vh-debug]', expect.objectContaining({
-          kVhVar: '640px',
-        }));
-      } finally {
-        logSpy.mockRestore();
-        window.history.pushState({}, '', originalUrl);
-      }
-    });
-
-    it('debug --k-vh actif via localStorage (sans query param) → logue à chaque mesure', () => {
-      const actions = document.createElement('div');
-      actions.className = 'k-modal-actions';
-      dom.modal.appendChild(actions);
-      localStorage.setItem('komerceDebugVh', '1');
-
-      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      _syncScrollPadding();
-      expect(logSpy).toHaveBeenCalledTimes(1);
-      expect(logSpy.mock.calls[0][1]).toEqual(expect.objectContaining({
-        isStatic: true,
-        ctaOffsetHeight: 0,
-      }));
-      logSpy.mockRestore();
-      localStorage.removeItem('komerceDebugVh');
-    });
+    // [MDM-8 phase 2] Les 3 tests "debug --k-vh" ont été retirés avec le code
+    // qu'ils couvraient : c'était un bloc de debug temporaire conditionné par
+    // ?debugvh=1, dont le commentaire disait explicitement "à retirer une
+    // fois le fix --k-vh validé sur device" — --k-vh n'existe déjà plus nulle
+    // part en CSS (confirmé par grep), c'était un vestige de debug, pas un
+    // mécanisme actif (audit MDM8_AUDIT_PHASE1.md §1.4/§1.5).
 
     it("branche une seule fois le ResizeObserver par appel (pas d'accumulation sur ouvertures répétées)", () => {
       const actions = document.createElement('div');

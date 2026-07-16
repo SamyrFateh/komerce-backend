@@ -5,8 +5,10 @@
  * Régression UI — les prix mobiles longs ne doivent plus être rognés et la promo
  * ne doit plus changer la géométrie du montant.
  *
- * MDM canonical (2026-07) : modal-product-price-normalization.css a été vidé
- * (tactical guard superseded) — la géométrie mobile canonique vit désormais
+ * MDM canonical (2026-07) : modal-product-price-normalization.css avait été
+ * vidé (tactical guard superseded) puis, en phase 2 (MDM-8), retiré du
+ * bundle et supprimé — plus aucune référence directe ne le liait (ni HTML,
+ * ni bundle). La géométrie mobile canonique vit désormais exclusivement
  * dans modal-mobile-canonical.css. Ce fichier de test cible donc la nouvelle
  * source de vérité, sans changer l'intention métier des assertions.
  */
@@ -14,9 +16,6 @@
 const fs = require('fs');
 const path = require('path');
 const { BUNDLES } = require('../../scripts/css-bundles');
-
-const legacyCssPath = path.join(__dirname, '../../css/modal-product-price-normalization.css');
-const legacyCss = fs.readFileSync(legacyCssPath, 'utf8');
 
 const cssPath = path.join(__dirname, '../../css/modal-mobile-canonical.css');
 const css = fs.readFileSync(cssPath, 'utf8');
@@ -30,23 +29,21 @@ function rule(selector) {
 describe('modal-product — normalisation du prix mobile', () => {
   test('la couche canonique est réellement incluse dans components.css après les styles modal historiques', () => {
     const components = BUNDLES.find((bundle) => bundle.out === 'components.css');
-    const priceLayer = components.files.indexOf('modal-product-price-normalization');
     const canonicalLayer = components.files.indexOf('modal-mobile-canonical');
     const modalLayer = components.files.indexOf('modal-product-lot4-hybrid');
     const cartLayer = components.files.indexOf('cart');
 
     expect(modalLayer).toBeGreaterThan(-1);
-    expect(priceLayer).toBeGreaterThan(modalLayer);
-    expect(canonicalLayer).toBeGreaterThan(priceLayer);
+    expect(canonicalLayer).toBeGreaterThan(modalLayer);
     expect(canonicalLayer).toBeLessThan(cartLayer);
   });
 
-  test('le fichier tactique historique est bien vidé (superseded), pas supprimé', () => {
-    // Retenu vide pour éviter un 404 sur les <link> existants ; la géométrie
-    // réelle vit désormais dans modal-mobile-canonical.css.
-    expect(legacyCss).not.toMatch(/overflow:\s*visible/);
-    expect(legacyCss).not.toMatch(/line-height:\s*1\.15/);
-    expect(legacyCss.length).toBeLessThan(1000);
+  test('le fichier tactique historique (superseded) a bien été retiré du bundle et du disque', () => {
+    const components = BUNDLES.find((bundle) => bundle.out === 'components.css');
+    expect(components.files).not.toContain('modal-product-price-normalization');
+
+    const legacyCssPath = path.join(__dirname, '../../css/modal-product-price-normalization.css');
+    expect(fs.existsSync(legacyCssPath)).toBe(false);
   });
 
   test('la ligne de prix mobile peut respirer sans rogner les montants longs', () => {

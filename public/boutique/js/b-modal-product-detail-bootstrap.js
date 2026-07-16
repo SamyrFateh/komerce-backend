@@ -71,6 +71,40 @@ function clearLegacyVariantsPaint() {
   if (container) container.innerHTML = '';
 }
 
+// MDM-8 phase 2 : entre le paint legacy (openModal) et la résolution du
+// fetch /detail, #k-modal-variants restait vide — indiscernable d'une
+// modale cassée à l'œil (audit MDM8_AUDIT_PHASE1.md §1.3). Un skeleton
+// comble cette fenêtre ; renderResponsiveProductDetail() l'efface déjà
+// via son propre container.innerHTML = '' en cas de succès.
+function renderDetailSkeleton() {
+  const container = dom.modalVariants || document.getElementById('k-modal-variants');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'k-mdm-skeleton';
+  el.setAttribute('aria-hidden', 'true');
+  el.dataset.mdmSkeleton = '1';
+  el.innerHTML =
+    '<div class="k-mdm-skeleton-row k-mdm-skeleton-row--short"></div>' +
+    '<div class="k-mdm-skeleton-row k-mdm-skeleton-row--chip"></div>' +
+    '<div class="k-mdm-skeleton-row k-mdm-skeleton-row--full"></div>';
+  container.innerHTML = '';
+  container.appendChild(el);
+}
+
+// Échec du fetch /detail (réseau lent/coupure) : le chemin transactionnel
+// reste verrouillé (fail-closed volontaire, PDC-6, non modifié ici) mais
+// l'utilisateur voit désormais un état explicite plutôt qu'un vide silencieux.
+function renderDetailUnavailable() {
+  const container = dom.modalVariants || document.getElementById('k-modal-variants');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'k-mdm-detail-error';
+  el.dataset.mdmDetailError = '1';
+  el.textContent = 'Options et livraison indisponibles — vérifiez votre connexion.';
+  container.innerHTML = '';
+  container.appendChild(el);
+}
+
 function renderResponsiveProductDetail(detail, selection, forceMedia) {
   _viewportMode = viewportMode();
   if (_viewportMode === 'mobile') {
@@ -117,6 +151,7 @@ async function loadProductDetail(product) {
   // Verrouillage AVANT le fetch : tant que le contrat détail n'a pas résolu
   // avec succès, aucune mutation panier SKU n'est permise.
   lockTransactionalPath();
+  renderDetailSkeleton();
 
   try {
     const response = await fetch(`/api/products/${productId}/detail`, {
@@ -144,6 +179,7 @@ async function loadProductDetail(product) {
     // chemin transactionnel reste verrouillé (jamais déverrouillé ici).
     if (generation === _generation && state.modalOpen && currentProductId() === productId) {
       clearLegacyVariantsPaint();
+      renderDetailUnavailable();
       lockTransactionalPath();
     }
     console.warn('[Product Detail] contrat modal indisponible:', error?.message || error);

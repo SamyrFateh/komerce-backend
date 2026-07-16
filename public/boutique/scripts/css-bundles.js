@@ -28,7 +28,6 @@ const BUNDLES = [
   {
     out: 'components.css',
     files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
-            'modal-product-price-normalization',
             'modal-mobile-canonical',
             'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'share-cart', 'shared-followup', 'identity', 'paypal', 'wallet'],
   },

@@ -498,6 +498,45 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
   }
 
 
+  // FIX ARCHITECTURE v5: extraire .k-modal-actions du flux scrollable
+  // Sur mobile, position:fixed sur .k-modal-actions cause un bug subtil:
+  // l'animation k-slide-up (transform) sur .k-modal cree un containing block
+  // pour ses enfants position:fixed => ils sont positionnes par rapport a
+  // .k-modal en cours de transformation, pas le viewport.
+  // + offsetHeight peut valoir 0 pendant l'animation => padding compensatoire
+  // faux => scroll sous la CTA.
+  // Solution: deplacer .k-modal-actions en enfant flex direct de #k-modal
+  // (display:flex flex-direction:column). Flex l'ancre en bas sans position:fixed.
+  //
+  // [MDM-8 phase 2] Auparavant exécuté une seule fois au DOMContentLoaded,
+  // figé sur window.innerWidth *à cet instant précis* : un chargement en
+  // largeur desktop suivi d'un resize/rotation vers mobile (ou l'inverse)
+  // laissait .k-modal-actions dans le mauvais parent, avec --k-modal-cta-h
+  // désynchronisé. Extrait en fonction idempotente, appelée à l'ouverture
+  // ET rebranchée sur le même signal de resize que le reste du PDC
+  // (bus 'modal:composition-synced', émis par
+  // b-modal-product-detail-bootstrap.js::syncResponsiveComposition) plutôt
+  // que de dupliquer un second listener resize/debounce.
+  function reorderActionsForViewport() {
+    if (!dom.modal) return;
+    const act = dom.modal.querySelector('.k-modal-actions');
+    if (!act) return;
+    // Cette fonction ne gère QUE le cas mobile (reparentage flex statique en
+    // enfant direct de #k-modal). Le retour desktop est déjà entièrement pris
+    // en charge, de façon idempotente, par b-modal-approche-c-hybrid.js ::
+    // restoreActionsHome() sur ce même événement modal:composition-synced —
+    // ne pas dupliquer cette doctrine ici (cf audit MDM8_AUDIT_PHASE1.md §1.2,
+    // point 3 : hors périmètre MDM-8, ne pas toucher).
+    if (window.innerWidth < 900 && act.parentNode !== dom.modal) {
+      dom.modal.appendChild(act);
+    }
+    // --k-modal-cta-h dépend de act.parentNode (isStatic) : la resynchroniser
+    // à chaque reparentage, pas seulement au ResizeObserver de hauteur.
+    _syncScrollPadding();
+  }
+
+  bus.on('modal:composition-synced', reorderActionsForViewport);
+
   /**
    * Initialise le modal produit complet (carousel, topbar, suggestions, swipe).
    * Point d'entrée appelé une seule fois au DOMContentLoaded.
@@ -505,21 +544,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
    */
   function setupModal() {
 
-    // FIX ARCHITECTURE v5: extraire .k-modal-actions du flux scrollable
-    // Sur mobile, position:fixed sur .k-modal-actions cause un bug subtil:
-    // l'animation k-slide-up (transform) sur .k-modal cree un containing block
-    // pour ses enfants position:fixed => ils sont positionnes par rapport a
-    // .k-modal en cours de transformation, pas le viewport.
-    // + offsetHeight peut valoir 0 pendant l'animation => padding compensatoire
-    // faux => scroll sous la CTA.
-    // Solution: deplacer .k-modal-actions en enfant flex direct de #k-modal
-    // (display:flex flex-direction:column). Flex l'ancre en bas sans position:fixed.
-    if (window.innerWidth < 900) {
-      let _act = dom.modal && dom.modal.querySelector('.k-modal-actions');
-      if (_act && _act.parentNode !== dom.modal) {
-        dom.modal.appendChild(_act);
-      }
-    }
+    reorderActionsForViewport();
 
     dom.modalBack.addEventListener('click', modalGoBack);
     dom.modalClose.addEventListener('click', closeModal);
