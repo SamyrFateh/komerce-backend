@@ -171,6 +171,30 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `product_sku_media` | Association explicite SKU ↔ média canonique (PDC-8 Lot 5), source : `sellable_units[].media_refs` (V2). Les références explicites gagnent toujours sur un matching `option_values` heuristique. Table neuve au 2026-07-14, aucun writer avant le service de promotion (Lot 6). Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
 | `catalog_enrichment_runs` | Trace de chaque appel d'enrichissement IA (doctrine catalogue §8 : échecs tracés, coût par produit suivi en tokens). `status` : `ok` (appliqué), `low_confidence` (appliqué + needs_review), `invalid_output` (JSON hors schéma, rien appliqué), `failed` (erreur réseau/modèle, rien appliqué). Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
 
+<!-- schema-pending
+object: product_content_profile
+kind: table
+migration: 111
+section: ### 4.5 Paniers et catalogue
+role: Profil éditorial 1:1 par produit (fiche produit enrichie). brand, short_description, provenance globale (source/enrichment_version/reviewed) exposée par product_detail_v1.content.provenance. Cible de promotion depuis normalized_source_contract V2, jamais servi depuis le raw_payload.
+-->
+
+<!-- schema-pending
+object: product_content_sections
+kind: table
+migration: 111
+section: ### 4.5 Paniers et catalogue
+role: Sections éditoriales structurées + materials/care/warnings via section_key réservés (MATERIALS/CARE/WARNINGS, toujours BULLETS). UNIQUE(product_id, section_key) pour ré-promotion idempotente. content_json validé par le service de projection avant de traverser le contrat public.
+-->
+
+<!-- schema-pending
+object: product_attributes
+kind: table
+migration: 111
+section: ### 4.5 Paniers et catalogue
+role: Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.highlights, kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). UNIQUE(product_id, kind, group_key, attribute_key) pour idempotence.
+-->
+
 
 ### 4.6 Paniers partagés (7 tables)
 

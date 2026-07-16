@@ -142,6 +142,114 @@
           "unavailable_reason": { "type": ["string", "null"], "maxLength": 500 }
         }
       }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "brand",
+        "short_description",
+        "highlights",
+        "specifications",
+        "sections",
+        "materials",
+        "care",
+        "warnings",
+        "provenance"
+      ],
+      "properties": {
+        "brand": { "type": ["string", "null"], "maxLength": 200 },
+        "short_description": { "type": ["string", "null"], "maxLength": 500 },
+        "highlights": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "label"],
+            "properties": {
+              "key": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "label": { "type": "string", "minLength": 1, "maxLength": 200 }
+            }
+          }
+        },
+        "specifications": {
+          "type": "array",
+          "maxItems": 60,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["group", "key", "label", "value", "unit", "display_order"],
+            "properties": {
+              "group": { "type": ["string", "null"], "maxLength": 128 },
+              "key": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+              "value": { "type": "string", "minLength": 1, "maxLength": 500 },
+              "unit": { "type": ["string", "null"], "maxLength": 50 },
+              "display_order": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "sections": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "title", "type", "text", "items", "entries", "display_order"],
+            "properties": {
+              "key": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+              "type": { "enum": ["TEXT", "BULLETS", "KEY_VALUE"] },
+              "text": { "type": ["string", "null"], "maxLength": 10000 },
+              "items": {
+                "type": "array",
+                "maxItems": 100,
+                "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+              },
+              "entries": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["label", "value"],
+                  "properties": {
+                    "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+                    "value": { "type": "string", "minLength": 1, "maxLength": 500 }
+                  }
+                }
+              },
+              "display_order": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "materials": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "care": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "minLength": 1, "maxLength": 300 }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "enrichment_version", "reviewed"],
+          "properties": {
+            "source": { "enum": ["SUPPLIER", "AI_ENRICHED", "MANUAL"] },
+            "enrichment_version": { "type": ["string", "null"], "maxLength": 50 },
+            "reviewed": { "type": "boolean" }
+          }
+        }
+      }
     }
   }
 }

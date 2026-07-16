@@ -91,6 +91,7 @@ module.exports = {
       'migrations/107_product_variants_axis_display_name.sql',
       'migrations/108_product_skus_supplier_identity.sql',
       'migrations/109_product_sku_media.sql',
+      'migrations/111_product_content.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_CATALOGUE.md',
@@ -175,6 +176,8 @@ module.exports = {
       'tests/unit/product-publication-guard.test.js',
       'tests/unit/products.test.js',
       'tests/unit/catalog-product-detail.test.js',
+      'tests/unit/product-detail-content-schema.test.js',
+      'tests/unit/normalized-supplier-product-v2-content.test.js',
       'tests/unit/modal-mobile-canonical.test.js',
       'tests/unit/supplier-catalog-scanner.test.js',
       'tests/unit/catalog-import-orchestrator.test.js',
