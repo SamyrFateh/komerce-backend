@@ -1,0 +1,28 @@
+name: Apply MDM9 delivery retry
+
+on:
+  push:
+    branches: [fix/mdm9-modal-gallery-layout]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/mdm9-modal-gallery-layout
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply, validate and commit delivery
+        run: bash scripts/apply-mdm9-delivery.sh
