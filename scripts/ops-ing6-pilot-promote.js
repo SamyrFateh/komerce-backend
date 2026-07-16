@@ -246,4 +246,5 @@ main()
   })
   .finally(async () => {
     try { await db.pool.end(); } catch (_) {}
+    process.exit(process.exitCode || 0);
   });
