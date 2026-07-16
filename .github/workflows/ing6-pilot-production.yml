@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/ing6-pilot-production.yml
       - scripts/ops-ing6-pilot-promote.js
+      - scripts/ops-ing6-repair-default-sku.js
       - scripts/pilot-json-import.js
   pull_request:
     types: [opened, synchronize, reopened]
@@ -14,6 +15,7 @@ on:
     paths:
       - .github/workflows/ing6-pilot-production.yml
       - scripts/ops-ing6-pilot-promote.js
+      - scripts/ops-ing6-repair-default-sku.js
       - scripts/pilot-json-import.js
 
 permissions:
@@ -55,27 +57,22 @@ jobs:
             echo 'RAILWAY_TOKEN repository secret is missing.'
             exit 42
           fi
-
           railway variable list \
             --project "$RAILWAY_PROJECT_ID" \
             --environment "$RAILWAY_ENVIRONMENT_ID" \
             --service "$RAILWAY_POSTGRES_SERVICE_ID" \
             --json > /tmp/postgres-vars.json
-
           node - <<'NODE'
           const fs = require('fs');
           const vars = JSON.parse(fs.readFileSync('/tmp/postgres-vars.json', 'utf8'));
           const url = vars.DATABASE_PUBLIC_URL;
-          if (!url || typeof url !== 'string') {
-            throw new Error('DATABASE_PUBLIC_URL absent du service PostgreSQL Railway');
-          }
+          if (!url || typeof url !== 'string') throw new Error('DATABASE_PUBLIC_URL absent');
           const parsed = new URL(url);
           if (!parsed.hostname || parsed.hostname.endsWith('.railway.internal')) {
-            throw new Error('DATABASE_PUBLIC_URL ne pointe pas vers un endpoint public');
+            throw new Error('DATABASE_PUBLIC_URL non publique');
           }
           console.log(`::add-mask::${url}`);
           fs.appendFileSync(process.env.GITHUB_ENV, `DATABASE_URL<<ING6_DB_URL\n${url}\nING6_DB_URL\n`);
-          console.log(`Endpoint PostgreSQL public résolu (${parsed.hostname}, port présent: ${Boolean(parsed.port)}).`);
           NODE
 
       - name: Verify pending migrations read-only
@@ -96,13 +93,19 @@ jobs:
           set -o pipefail
           node scripts/pilot-json-import.js --count 5 2>&1 | tee /tmp/ing6-pilot-import.log
 
-      - name: Normalize, promote and officially publish Eyeshadow Palette
+      - name: Repair default SKU and media links on published simple product
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/ops-ing6-repair-default-sku.js 2>&1 | tee /tmp/ing6-pilot-sku-repair.log
+
+      - name: Verify official publication
         shell: bash
         run: |
           set -o pipefail
           node scripts/ops-ing6-pilot-promote.js 2>&1 | tee /tmp/ing6-pilot-promotion.log
 
-      - name: Verify publication and quarantine
+      - name: Verify publication, SKU, gallery and quarantine
         shell: bash
         run: |
           set -o pipefail
@@ -148,19 +151,38 @@ jobs:
             }
 
             const media = await db.query(
-              `SELECT id, media_type, role, display_order, external_url, storage_status
+              `SELECT id, source_media_id, url, role, display_order
                  FROM catalog_media
                 WHERE product_id = $1
                 ORDER BY display_order, id`,
               [palette.product_id]
             );
+            const skus = await db.query(
+              `SELECT id, supplier_sku, stock, is_active
+                 FROM product_skus
+                WHERE product_id = $1
+                ORDER BY supplier_sku`,
+              [palette.product_id]
+            );
+            const links = await db.query(
+              `SELECT COUNT(*)::int AS n
+                 FROM product_sku_media psm
+                 JOIN product_skus ps ON ps.id = psm.sku_id
+                WHERE ps.product_id = $1`,
+              [palette.product_id]
+            );
+
             if (!media.rows.length) throw new Error('Galerie du produit publié vide');
+            if (!skus.rows.length) throw new Error('Aucun SKU sur le produit publié');
+            if (links.rows[0].n < 1) throw new Error('Aucun lien SKU↔média');
 
             console.log(JSON.stringify({
               ok: true,
               candidates: rows.rows,
               product: p,
               media: media.rows,
+              skus: skus.rows,
+              sku_media_links: links.rows[0].n,
             }, null, 2));
           })()
             .catch((error) => {
@@ -182,6 +204,7 @@ jobs:
             /tmp/ing6-migrations-dry-run.log
             /tmp/ing6-migrations-apply.log
             /tmp/ing6-pilot-import.log
+            /tmp/ing6-pilot-sku-repair.log
             /tmp/ing6-pilot-promotion.log
             /tmp/ing6-pilot-verification.log
           if-no-files-found: warn
