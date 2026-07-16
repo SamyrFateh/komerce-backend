@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 372
-- Files with full headers: 345
+- Scanned code files: 375
+- Files with full headers: 348
 - Files with lite headers: 27
-- Files with any headers: 372
+- Files with any headers: 375
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 758
-- Edges: 4304
-- DB tables: 112
-- Doctrines: 149
+- Graph nodes: 766
+- Edges: 4330
+- DB tables: 113
+- Doctrines: 153
 - Impact areas: 125
-- Unresolved code edges: 410
-- Tables multi-écrivains directs (>=2): 66
+- Unresolved code edges: 416
+- Tables multi-écrivains directs (>=2): 67
 - Avertissements db-write / db-write-via en chevauchement: 0
 
 ## Domains
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 4
 - bootstrap: 1
 - boutique: 36
-- catalog: 47
+- catalog: 50
 - checkout: 2
 - customs: 6
 - dashboard: 28
@@ -69,7 +69,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 100
 - route-manifest: 1
 - schema: 1
-- service: 150
+- service: 153
 - state: 1
 - state-store: 1
 - ui-component: 38
@@ -314,6 +314,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/shared-cart-items-service.js — shared-cart-items-update-service (shared-cart, high, full)
 - services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
 - services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
+- services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
 - services/transport-cost-allocation.js — transport-cost-allocation-contract (economic-engine, high, full)
 - services/transport-rails.js — transport-rail-registry (logistics, high, full)
@@ -557,6 +558,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - price_history: 3 écrivains directs — services/pricing-apply.js, services/pricing-strategy-service.js, services/product-price-audit.js
 - product_skus: 3 écrivains directs — routes/sourcing-scanner.js, services/catalog-promotion.js, services/product-admin-service.js
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
+- sourcing_candidates: 3 écrivains directs — routes/sourcing-scanner.js, services/suppliers/catalog-import-json.js, services/suppliers/catalog-import-orchestrator.js
 - cart_shares: 2 écrivains directs — routes/orders/create.js, routes/shares.js
 - cash_collections: 2 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js
 - catalog_field_overrides: 2 écrivains directs — services/catalog-overrides.js, services/product-admin-service.js
@@ -579,7 +581,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - refunds: 2 écrivains directs — services/refund-service.js, utils/refunds.js
 - relais: 2 écrivains directs — routes/admin/system.js, services/routing.js
 - revoked_tokens: 2 écrivains directs — bootstrap/crons.js, routes/auth.js
-- signals: 2 écrivains directs — routes/signals.js, services/signal-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 

@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 372,
-    "filesWithFullHeaders": 345,
+    "scannedCodeFiles": 375,
+    "filesWithFullHeaders": 348,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 372,
+    "filesWithAnyHeaders": 375,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 758,
-    "edges": 4304,
-    "dbTables": 112,
-    "doctrines": 149,
+    "graphNodes": 766,
+    "edges": 4330,
+    "dbTables": 113,
+    "doctrines": 153,
     "impactAreas": 125,
-    "unresolvedCodeEdges": 410,
+    "unresolvedCodeEdges": 416,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 66
+    "multiWriterTables": 67
   },
   "byDomain": {
     "infrastructure": 20,
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 47,
+    "catalog": 50,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 4,
@@ -84,7 +84,7 @@
     "schema": 1,
     "route": 100,
     "entrypoint": 1,
-    "service": 150,
+    "service": 153,
     "external-adapter": 2,
     "machine": 2,
     "policy": 1,
@@ -93,8 +93,8 @@
   },
   "byCriticality": {
     "critical": 76,
-    "medium": 101,
-    "high": 161,
+    "medium": 103,
+    "high": 162,
     "low": 34
   },
   "nodes": [
@@ -15891,6 +15891,55 @@
       "version": "2026-06"
     },
     {
+      "id": "services/suppliers/catalog-import-json.js",
+      "file": "services/suppliers/catalog-import-json.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-import-json",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "raw_json_source_batch",
+        "import_profile_v1"
+      ],
+      "outputs": [
+        "supplier_catalog_imports (batch)",
+        "sourcing_candidates (staging)",
+        "supplier_catalog_import_rejections"
+      ],
+      "depends": [
+        "db.js",
+        "services/suppliers/connectors/json-connector.js"
+      ],
+      "usedBy": [
+        "services/suppliers/catalog-import-orchestrator.js (source_type=json)",
+        "scripts/pilot-json-import.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "supplier_catalog_imports",
+        "sourcing_candidates",
+        "supplier_catalog_import_rejections"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "BEGIN au staging",
+        "jamais autour de l'INSERT du batch ni de l'UPDATE FAILED"
+      ],
+      "doctrine": [
+        "docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "version": "2026-07 (ING-6)"
+    },
+    {
       "id": "services/suppliers/catalog-import-orchestrator.js",
       "file": "services/suppliers/catalog-import-orchestrator.js",
       "type": "file",
@@ -16065,6 +16114,44 @@
       "version": "2026-07"
     },
     {
+      "id": "services/suppliers/connectors/json-connector.js",
+      "file": "services/suppliers/connectors/json-connector.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "json-connector",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "raw_json_source_batch",
+        "import_profile_v1"
+      ],
+      "outputs": [
+        "connector_result_v1 (ready/quarantined/rejected/statistics/batchFindings)"
+      ],
+      "depends": [
+        "services/suppliers/json-source-pipeline.js"
+      ],
+      "usedBy": [
+        "scripts/dry-run-import.js (l'orchestrateur n'est PAS encore branché)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
+        "ING-I9 proposé)"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-discovery"
+      ],
+      "version": "2026-07 (ING-6)"
+    },
+    {
       "id": "services/suppliers/connectors/manual-connector.js",
       "file": "services/suppliers/connectors/manual-connector.js",
       "type": "file",
@@ -16142,6 +16229,49 @@
         "product-discovery"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/suppliers/json-source-pipeline.js",
+      "file": "services/suppliers/json-source-pipeline.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "json-source-pipeline",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "raw_json_source_batch",
+        "import_profile_v1"
+      ],
+      "outputs": [
+        "normalized_supplier_product_v1_or_v2",
+        "promotion_classification",
+        "findings"
+      ],
+      "depends": [
+        "services/suppliers/normalized-product.js",
+        "schemas/catalog/import-profile.v1.schema.json"
+      ],
+      "usedBy": [
+        "services/suppliers/connectors/json-connector.js",
+        "scripts/dry-run-import.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
+        "ING-I9 proposé)",
+        "docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-discovery"
+      ],
+      "version": "2026-07 (ING-6 — extrait des dry-run v1..v4, corrections 1..8)"
     },
     {
       "id": "services/suppliers/normalized-product.js",
@@ -18085,6 +18215,11 @@
       "table": "shared_cart_estimations"
     },
     {
+      "id": "db:supplier_catalog_import_rejections",
+      "type": "db-table",
+      "table": "supplier_catalog_import_rejections"
+    },
+    {
       "id": "doctrine:routes_canoniques",
       "type": "doctrine",
       "doctrine": "routes_canoniques"
@@ -18780,6 +18915,11 @@
       "doctrine": "token_public_controle"
     },
     {
+      "id": "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
@@ -18803,6 +18943,21 @@
       "id": "doctrine:ING-I3)",
       "type": "doctrine",
       "doctrine": "ING-I3)"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4"
+    },
+    {
+      "id": "doctrine:ING-I9 proposé)",
+      "type": "doctrine",
+      "doctrine": "ING-I9 proposé)"
+    },
+    {
+      "id": "doctrine:docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)"
     },
     {
       "id": "doctrine:whatsapp_template_trace",
@@ -42590,6 +42745,72 @@
       "label": "product-discovery"
     },
     {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "services/suppliers/connectors/json-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/json-connector.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js (source_type=json)",
+      "to": "services/suppliers/catalog-import-json.js",
+      "type": "uses",
+      "label": "services/suppliers/catalog-import-orchestrator.js (source_type=json)"
+    },
+    {
+      "from": "scripts/pilot-json-import.js",
+      "to": "services/suppliers/catalog-import-json.js",
+      "type": "uses",
+      "label": "scripts/pilot-json-import.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-write",
+      "label": "supplier_catalog_imports"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-write",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "db:supplier_catalog_import_rejections",
+      "type": "db-write",
+      "label": "supplier_catalog_import_rejections"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
       "from": "services/suppliers/catalog-import-orchestrator.js",
       "to": "db.js",
       "type": "depends",
@@ -42794,6 +43015,42 @@
       "label": "product-discovery"
     },
     {
+      "from": "services/suppliers/connectors/json-connector.js",
+      "to": "services/suppliers/json-source-pipeline.js",
+      "type": "depends",
+      "label": "services/suppliers/json-source-pipeline.js"
+    },
+    {
+      "from": "scripts/dry-run-import.js (l'orchestrateur n'est PAS encore branché)",
+      "to": "services/suppliers/connectors/json-connector.js",
+      "type": "uses",
+      "label": "scripts/dry-run-import.js (l'orchestrateur n'est PAS encore branché)"
+    },
+    {
+      "from": "services/suppliers/connectors/json-connector.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4"
+    },
+    {
+      "from": "services/suppliers/connectors/json-connector.js",
+      "to": "doctrine:ING-I9 proposé)",
+      "type": "doctrine",
+      "label": "ING-I9 proposé)"
+    },
+    {
+      "from": "services/suppliers/connectors/json-connector.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/connectors/json-connector.js",
+      "to": "impact:product-discovery",
+      "type": "impact",
+      "label": "product-discovery"
+    },
+    {
       "from": "services/suppliers/connectors/manual-connector.js",
       "to": "services/suppliers/connectors/_connector-utils.js",
       "type": "depends",
@@ -42867,6 +43124,60 @@
     },
     {
       "from": "services/suppliers/connectors/noon-connector.js",
+      "to": "impact:product-discovery",
+      "type": "impact",
+      "label": "product-discovery"
+    },
+    {
+      "from": "services/suppliers/json-source-pipeline.js",
+      "to": "services/suppliers/normalized-product.js",
+      "type": "depends",
+      "label": "services/suppliers/normalized-product.js"
+    },
+    {
+      "from": "services/suppliers/json-source-pipeline.js",
+      "to": "schemas/catalog/import-profile.v1.schema.json",
+      "type": "depends",
+      "label": "schemas/catalog/import-profile.v1.schema.json"
+    },
+    {
+      "from": "services/suppliers/connectors/json-connector.js",
+      "to": "services/suppliers/json-source-pipeline.js",
+      "type": "uses",
+      "label": "services/suppliers/connectors/json-connector.js"
+    },
+    {
+      "from": "scripts/dry-run-import.js",
+      "to": "services/suppliers/json-source-pipeline.js",
+      "type": "uses",
+      "label": "scripts/dry-run-import.js"
+    },
+    {
+      "from": "services/suppliers/json-source-pipeline.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4"
+    },
+    {
+      "from": "services/suppliers/json-source-pipeline.js",
+      "to": "doctrine:ING-I9 proposé)",
+      "type": "doctrine",
+      "label": "ING-I9 proposé)"
+    },
+    {
+      "from": "services/suppliers/json-source-pipeline.js",
+      "to": "doctrine:docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)",
+      "type": "doctrine",
+      "label": "docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)"
+    },
+    {
+      "from": "services/suppliers/json-source-pipeline.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/json-source-pipeline.js",
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
@@ -60785,6 +61096,48 @@
         "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
+    "services/suppliers/catalog-import-json.js": {
+      "role": "catalog-import-json",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/suppliers/connectors/json-connector.js"
+      ],
+      "directUsedBy": [
+        "services/suppliers/catalog-import-orchestrator.js (source_type=json)",
+        "scripts/pilot-json-import.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "supplier_catalog_imports",
+        "sourcing_candidates",
+        "supplier_catalog_import_rejections"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "mustCheck": [
+        "db:sourcing_candidates",
+        "db:supplier_catalog_import_rejections",
+        "db:supplier_catalog_imports",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
+        "impact:catalog",
+        "impact:sourcing",
+        "services/suppliers/connectors/json-connector.js"
+      ]
+    },
     "services/suppliers/catalog-import-orchestrator.js": {
       "role": "catalog-import-orchestrator",
       "domain": "catalog",
@@ -60940,6 +61293,40 @@
         "services/suppliers/normalized-product.js"
       ]
     },
+    "services/suppliers/connectors/json-connector.js": {
+      "role": "json-connector",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/json-source-pipeline.js"
+      ],
+      "directUsedBy": [
+        "scripts/dry-run-import.js (l'orchestrateur n'est PAS encore branché)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
+        "ING-I9 proposé)"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-discovery"
+      ],
+      "mustCheck": [
+        "doctrine:ING-I9 proposé)",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
+        "impact:catalog",
+        "impact:product-discovery",
+        "services/suppliers/catalog-import-json.js",
+        "services/suppliers/json-source-pipeline.js"
+      ]
+    },
     "services/suppliers/connectors/manual-connector.js": {
       "role": "manual-connector",
       "domain": "catalog",
@@ -61010,6 +61397,44 @@
         "services/suppliers/connectors/api-connector.base.js"
       ]
     },
+    "services/suppliers/json-source-pipeline.js": {
+      "role": "json-source-pipeline",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/normalized-product.js",
+        "schemas/catalog/import-profile.v1.schema.json"
+      ],
+      "directUsedBy": [
+        "services/suppliers/connectors/json-connector.js",
+        "scripts/dry-run-import.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
+        "ING-I9 proposé)",
+        "docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-discovery"
+      ],
+      "mustCheck": [
+        "doctrine:ING-I9 proposé)",
+        "doctrine:docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
+        "impact:catalog",
+        "impact:product-discovery",
+        "services/suppliers/connectors/json-connector.js",
+        "services/suppliers/normalized-product.js"
+      ]
+    },
     "services/suppliers/normalized-product.js": {
       "role": "catalog-normalized-product",
       "domain": "catalog",
@@ -61050,7 +61475,8 @@
         "services/suppliers/catalog-import-orchestrator.js",
         "services/suppliers/connectors/api-connector.base.js",
         "services/suppliers/connectors/csv-connector.js",
-        "services/suppliers/connectors/manual-connector.js"
+        "services/suppliers/connectors/manual-connector.js",
+        "services/suppliers/json-source-pipeline.js"
       ]
     },
     "services/transport-cost-allocation.js": {
@@ -62941,6 +63367,15 @@
       ]
     },
     {
+      "table": "sourcing_candidates",
+      "writerCount": 3,
+      "writers": [
+        "routes/sourcing-scanner.js",
+        "services/suppliers/catalog-import-json.js",
+        "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    {
       "table": "cart_shares",
       "writerCount": 2,
       "writers": [
@@ -63133,19 +63568,19 @@
       ]
     },
     {
-      "table": "sourcing_candidates",
-      "writerCount": 2,
-      "writers": [
-        "routes/sourcing-scanner.js",
-        "services/suppliers/catalog-import-orchestrator.js"
-      ]
-    },
-    {
       "table": "stripe_events_processed",
       "writerCount": 2,
       "writers": [
         "services/payment-stripe.js",
         "services/shared-cart-queries.js"
+      ]
+    },
+    {
+      "table": "supplier_catalog_imports",
+      "writerCount": 2,
+      "writers": [
+        "services/suppliers/catalog-import-json.js",
+        "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
     {
@@ -65479,6 +65914,24 @@
       "label": "db"
     },
     {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/catalog-import-orchestrator.js (source_type=json)",
+      "to": "services/suppliers/catalog-import-json.js",
+      "type": "uses",
+      "label": "services/suppliers/catalog-import-orchestrator.js (source_type=json)"
+    },
+    {
+      "from": "scripts/pilot-json-import.js",
+      "to": "services/suppliers/catalog-import-json.js",
+      "type": "uses",
+      "label": "scripts/pilot-json-import.js"
+    },
+    {
       "from": "services/suppliers/catalog-import-orchestrator.js",
       "to": "db.js",
       "type": "depends",
@@ -65501,6 +65954,24 @@
       "to": "papaparse",
       "type": "depends",
       "label": "papaparse"
+    },
+    {
+      "from": "scripts/dry-run-import.js (l'orchestrateur n'est PAS encore branché)",
+      "to": "services/suppliers/connectors/json-connector.js",
+      "type": "uses",
+      "label": "scripts/dry-run-import.js (l'orchestrateur n'est PAS encore branché)"
+    },
+    {
+      "from": "services/suppliers/json-source-pipeline.js",
+      "to": "schemas/catalog/import-profile.v1.schema.json",
+      "type": "depends",
+      "label": "schemas/catalog/import-profile.v1.schema.json"
+    },
+    {
+      "from": "scripts/dry-run-import.js",
+      "to": "services/suppliers/json-source-pipeline.js",
+      "type": "uses",
+      "label": "scripts/dry-run-import.js"
     },
     {
       "from": "services/suppliers/normalized-product.js",
