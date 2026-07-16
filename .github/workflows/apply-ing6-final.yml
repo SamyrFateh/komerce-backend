@@ -6,11 +6,11 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
 
 jobs:
-  validate-and-materialize:
+  validate-and-package:
     if: github.event.pull_request.head.ref == 'agent/ing6-final'
     runs-on: ubuntu-latest
     services:
@@ -38,7 +38,7 @@ jobs:
           fetch-depth: 0
           ref: agent/ing6-final
 
-      - name: Apply final ING6 patch and reviewed corrections
+      - name: Apply final ING6 patch and reviewed test correction
         shell: bash
         run: |
           set -euo pipefail
@@ -48,33 +48,19 @@ jobs:
           echo '2f266afe651f96e34e8afd1a7e56b4de9044a54fa3e5516979efd3cf25190de3  /tmp/ING6_FINAL_ALL_IN_ONE.diff' | sha256sum -c -
           git apply --check /tmp/ING6_FINAL_ALL_IN_ONE.diff
           git apply /tmp/ING6_FINAL_ALL_IN_ONE.diff
-
           python - <<'PY'
           from pathlib import Path
-
-          unit = Path('tests/unit/json-source-pipeline.test.js')
-          text = unit.read_text()
+          p = Path('tests/unit/json-source-pipeline.test.js')
+          text = p.read_text()
           old = "const multi = r.ready.filter((e) => e.contract.schema_version === '2');"
           new = """const multi = r.ready.filter((e) => {
-      const src = products.find((p) => p.id === e.diagnostics.source_id);
-      return Array.isArray(src?.images) && new Set(src.images).size > 1;
-    });"""
+              const src = products.find((p) => p.id === e.diagnostics.source_id);
+              return Array.isArray(src?.images) && new Set(src.images).size > 1;
+            });"""
           if old not in text:
               raise SystemExit('Expected multi-image assertion not found')
-          unit.write_text(text.replace(old, new))
-
-          migration = Path('migrations/110_catalog_import_audit.sql')
-          sql = migration.read_text()
-          anchor = "ALTER TABLE public.sourcing_candidates\n  ADD COLUMN IF NOT EXISTS promotion_status  text,"
-          replacement = """ALTER TABLE public.sourcing_candidates
-  ADD COLUMN IF NOT EXISTS raw_payload                 jsonb,
-  ADD COLUMN IF NOT EXISTS normalized_source_contract jsonb,
-  ADD COLUMN IF NOT EXISTS promotion_status            text,"""
-          if anchor not in sql:
-              raise SystemExit('Expected sourcing_candidates audit column block not found')
-          migration.write_text(sql.replace(anchor, replacement, 1))
+          p.write_text(text.replace(old, new))
           PY
-
           git diff --check
 
       - name: Setup Node 20
@@ -122,7 +108,7 @@ jobs:
           }
           NODE
 
-      - name: Prepare PostgreSQL 16 with real migration chain
+      - name: Prepare PostgreSQL 16 with migrations 102 through 110
         shell: bash
         run: |
           set -euo pipefail
@@ -132,6 +118,7 @@ jobs:
               | grep -E '/(10[2-9]|110)_[^/]+\.sql$' \
               | sort -V
           )
+          test "${#migrations_to_apply[@]}" -gt 0
           for migration in "${migrations_to_apply[@]}"; do
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
           done
@@ -150,23 +137,38 @@ jobs:
             echo 'No dedicated legacy orchestrator test files found.'
           fi
 
-      - name: Materialize clean ING6 branch from latest main
+      - name: Package the exact validated merge tree
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          files=(
+            config/import-profiles/komerce-test-dummyjson.v1.json
+            data/catalogue-test-raw/komerce_catalogue_brut_tests/komerce-catalogue-brut-sample.json
+            docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md
+            migrations/110_catalog_import_audit.sql
+            routes/sourcing-scanner.js
+            schemas/catalog/import-profile.v1.schema.json
+            scripts/dry-run-import.js
+            scripts/pilot-json-import.js
+            services/suppliers/catalog-import-json.js
+            services/suppliers/catalog-import-orchestrator.js
+            services/suppliers/connectors/json-connector.js
+            services/suppliers/json-source-pipeline.js
+            tests/integration/catalog-import-json.integration.test.js
+            tests/unit/json-source-pipeline.test.js
+          )
+          rm -rf /tmp/ing6-validated-tree
+          mkdir -p /tmp/ing6-validated-tree
+          for file in "${files[@]}"; do
+            mkdir -p "/tmp/ing6-validated-tree/$(dirname "$file")"
+            cp "$file" "/tmp/ing6-validated-tree/$file"
+          done
+          (cd /tmp/ing6-validated-tree && find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd /tmp/ing6-validated-tree && zip -qr /tmp/ing6-validated-tree.zip .)
 
-          git add -A
-          git diff --cached --binary > /tmp/ing6-materialized.diff
-          test -s /tmp/ing6-materialized.diff
-
-          git fetch origin main
-          git reset --hard origin/main
-          git apply --index /tmp/ing6-materialized.diff
-          rm -f .github/workflows/apply-ing6-final.yml
-          git add -A
-          git diff --cached --check
-
-          git commit -m 'feat(catalog): add transactional JSON refinery import'
-          git push --force origin HEAD:agent/ing6-final
+      - name: Upload validated ING6 tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: ing6-validated-tree
+          path: /tmp/ing6-validated-tree.zip
+          if-no-files-found: error
