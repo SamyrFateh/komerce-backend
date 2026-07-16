@@ -38,9 +38,6 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install application dependencies
-        run: npm ci
-
       - name: Install Railway CLI
         run: npm install --global @railway/cli
 
@@ -54,56 +51,55 @@ jobs:
           fi
           railway --version
 
-      - name: Verify pending migrations
-        id: migration_check
-        continue-on-error: true
+      - name: Inspect database endpoint names without secrets
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           railway run \
             --project "$RAILWAY_PROJECT_ID" \
             --environment "$RAILWAY_ENVIRONMENT_ID" \
             --service "$RAILWAY_SERVICE_ID" \
-            node scripts/run-migrations.js --dry-run 2>&1 | tee /tmp/railway-migration-check.log
+            node - <<'NODE' | tee /tmp/railway-db-endpoints.txt
+          const selected = Object.keys(process.env)
+            .filter((k) => /(DATABASE|PGHOST|PGPORT|RAILWAY.*(TCP|PROXY))/i.test(k))
+            .sort();
 
-      - name: Upload Railway targeting diagnostic
-        if: steps.migration_check.outcome == 'failure'
+          console.log('VARIABLE_NAMES');
+          for (const key of selected) console.log(key);
+          console.log('ENDPOINT_CLASSES');
+
+          for (const key of selected) {
+            const value = process.env[key];
+            if (!value) continue;
+            let host = null;
+            let port = null;
+            try {
+              if (value.includes('://')) {
+                const parsed = new URL(value);
+                host = parsed.hostname;
+                port = parsed.port || null;
+              } else if (/HOST$/i.test(key)) {
+                host = value;
+              } else if (/PORT$/i.test(key)) {
+                port = value;
+              }
+            } catch (_) {}
+
+            if (host) {
+              const kind = host.endsWith('.railway.internal') ? 'private' : 'public-or-external';
+              console.log(`${key}: host-kind=${kind}; port-present=${Boolean(port)}`);
+            } else if (port) {
+              console.log(`${key}: port-present=true`);
+            }
+          }
+          NODE
+
+      - name: Upload safe database endpoint diagnostic
         uses: actions/upload-artifact@v4
         with:
-          name: railway-targeting-diagnostic
-          path: /tmp/railway-migration-check.log
+          name: railway-db-endpoint-names
+          path: /tmp/railway-db-endpoints.txt
           if-no-files-found: error
 
-      - name: Stop after Railway targeting failure
-        if: steps.migration_check.outcome == 'failure'
+      - name: Stop before any database write
         run: exit 1
-
-      - name: Apply pending migrations idempotently
-        shell: bash
-        run: |
-          set -euo pipefail
-          railway run \
-            --project "$RAILWAY_PROJECT_ID" \
-            --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --service "$RAILWAY_SERVICE_ID" \
-            node scripts/run-migrations.js
-
-      - name: Import five-product pilot batch
-        shell: bash
-        run: |
-          set -euo pipefail
-          railway run \
-            --project "$RAILWAY_PROJECT_ID" \
-            --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --service "$RAILWAY_SERVICE_ID" \
-            node scripts/pilot-json-import.js --count 5
-
-      - name: Scan and promote Eyeshadow Palette only
-        shell: bash
-        run: |
-          set -euo pipefail
-          railway run \
-            --project "$RAILWAY_PROJECT_ID" \
-            --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --service "$RAILWAY_SERVICE_ID" \
-            node scripts/ops-ing6-pilot-promote.js
