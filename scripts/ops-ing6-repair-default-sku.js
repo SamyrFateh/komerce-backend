@@ -27,21 +27,54 @@ function buildRichContract(candidate) {
     media_refs: media.map((item) => item.supplier_media_id),
   }];
 
-  return {
-    ...source,
-    media,
-    sellable_units: sellableUnits,
-  };
+  return { ...source, media, sellable_units: sellableUnits };
+}
+
+async function deduplicateProductMedia(client, productId) {
+  const { rows } = await client.query(
+    `SELECT id, source_media_id, url, role, display_order
+       FROM catalog_media
+      WHERE product_id = $1
+      ORDER BY url, role, display_order, source_media_id NULLS LAST, id`,
+    [productId]
+  );
+
+  const groups = new Map();
+  for (const row of rows) {
+    const key = `${row.url}|${row.role}|${row.display_order ?? ''}`;
+    const list = groups.get(key) || [];
+    list.push(row);
+    groups.set(key, list);
+  }
+
+  let removed = 0;
+  for (const list of groups.values()) {
+    if (list.length < 2) continue;
+    const keep = list.find((row) => row.source_media_id) || list[0];
+    for (const duplicate of list) {
+      if (duplicate.id === keep.id) continue;
+      await client.query(
+        `INSERT INTO product_sku_media (sku_id, media_id)
+         SELECT sku_id, $1
+           FROM product_sku_media
+          WHERE media_id = $2
+         ON CONFLICT (sku_id, media_id) DO NOTHING`,
+        [keep.id, duplicate.id]
+      );
+      await client.query('DELETE FROM product_sku_media WHERE media_id = $1', [duplicate.id]);
+      await client.query('DELETE FROM catalog_media WHERE id = $1', [duplicate.id]);
+      removed++;
+    }
+  }
+  return removed;
 }
 
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis');
 
   const { rows } = await db.query(
-    `SELECT *
-       FROM sourcing_candidates
-      WHERE supplier_name = $1
-        AND supplier_product_id = $2
+    `SELECT * FROM sourcing_candidates
+      WHERE supplier_name = $1 AND supplier_product_id = $2
       LIMIT 1`,
     [SUPPLIER, SUPPLIER_PRODUCT_ID]
   );
@@ -54,12 +87,12 @@ async function main() {
   const contract = buildRichContract(candidate);
   const client = await db.getClient();
   let promotion;
+  let duplicatesRemoved = 0;
   try {
     await client.query('BEGIN');
     await client.query(
       `UPDATE sourcing_candidates
-          SET normalized_source_contract = $1::jsonb,
-              updated_at = NOW()
+          SET normalized_source_contract = $1::jsonb, updated_at = NOW()
         WHERE id = $2`,
       [JSON.stringify(contract), candidate.id]
     );
@@ -67,6 +100,7 @@ async function main() {
       productId: candidate.product_id,
       normalizedSourceContract: contract,
     });
+    duplicatesRemoved = await deduplicateProductMedia(client, candidate.product_id);
     await client.query('COMMIT');
   } catch (error) {
     try { await client.query('ROLLBACK'); } catch (_) {}
@@ -78,9 +112,7 @@ async function main() {
   const [skus, links, media] = await Promise.all([
     db.query(
       `SELECT id, supplier_sku, stock, is_active
-         FROM product_skus
-        WHERE product_id = $1
-        ORDER BY supplier_sku`,
+         FROM product_skus WHERE product_id = $1 ORDER BY supplier_sku`,
       [candidate.product_id]
     ),
     db.query(
@@ -90,20 +122,26 @@ async function main() {
         WHERE ps.product_id = $1`,
       [candidate.product_id]
     ),
-    db.query('SELECT COUNT(*)::int AS n FROM catalog_media WHERE product_id = $1', [candidate.product_id]),
+    db.query(
+      `SELECT id, source_media_id, url, role, display_order
+         FROM catalog_media WHERE product_id = $1 ORDER BY display_order, id`,
+      [candidate.product_id]
+    ),
   ]);
 
   if (skus.rows.length < 1) throw new Error('Réparation échouée : aucun SKU');
-  if (media.rows[0].n > 0 && links.rows[0].n < 1) {
-    throw new Error('Réparation échouée : aucun lien SKU↔média');
-  }
+  if (media.rows.length < 1) throw new Error('Réparation échouée : aucun média');
+  if (links.rows[0].n < 1) throw new Error('Réparation échouée : aucun lien SKU↔média');
+  const uniqueKeys = new Set(media.rows.map((row) => `${row.url}|${row.role}|${row.display_order ?? ''}`));
+  if (uniqueKeys.size !== media.rows.length) throw new Error('Réparation échouée : galerie encore dupliquée');
 
   console.log(JSON.stringify({
     ok: true,
     product_id: candidate.product_id,
     promotion,
+    duplicates_removed: duplicatesRemoved,
     skus: skus.rows,
-    media_count: media.rows[0].n,
+    media: media.rows,
     sku_media_links: links.rows[0].n,
   }, null, 2));
 }
