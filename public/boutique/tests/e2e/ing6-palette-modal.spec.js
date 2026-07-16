@@ -5,13 +5,18 @@ const { test, expect } = require('@playwright/test');
 const BASE_URL = process.env.BASE_URL || 'https://komerce.co/boutique/';
 const PRODUCT_NAME = 'Eyeshadow Palette with Mirror';
 const PRODUCT_ID = '234e5d20-d2b2-4b2b-bfe0-fc34afa420e2';
+const EXPECTED_ANONYMOUS_401 = new Set([
+  '/api/auth/me',
+  '/api/shared-carts/mine',
+]);
 
 async function openPaletteModal(page) {
   const failed = [];
   page.on('response', (response) => {
-    if (response.status() >= 400 && new URL(response.url()).origin === new URL(BASE_URL).origin) {
-      failed.push(`${response.status()} ${response.url()}`);
-    }
+    const parsed = new URL(response.url());
+    if (parsed.origin !== new URL(BASE_URL).origin) return;
+    if (response.status() === 401 && EXPECTED_ANONYMOUS_401.has(parsed.pathname)) return;
+    if (response.status() >= 400) failed.push(`${response.status()} ${response.url()}`);
   });
   page.on('requestfailed', (request) => {
     if (new URL(request.url()).origin === new URL(BASE_URL).origin) {
