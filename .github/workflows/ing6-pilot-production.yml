@@ -54,31 +54,42 @@ jobs:
           fi
           railway --version
 
-      - name: Link successful production service
+      - name: Verify pending migrations
         shell: bash
         run: |
           set -euo pipefail
-          railway link \
+          railway run \
             --project "$RAILWAY_PROJECT_ID" \
             --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --service "$RAILWAY_SERVICE_ID"
-          railway status
+            --service "$RAILWAY_SERVICE_ID" \
+            node scripts/run-migrations.js --dry-run
 
-      - name: Verify and apply pending migrations idempotently
+      - name: Apply pending migrations idempotently
         shell: bash
         run: |
           set -euo pipefail
-          railway run node scripts/run-migrations.js --dry-run
-          railway run node scripts/run-migrations.js
+          railway run \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID" \
+            node scripts/run-migrations.js
 
       - name: Import five-product pilot batch
         shell: bash
         run: |
           set -euo pipefail
-          railway run node scripts/pilot-json-import.js --count 5
+          railway run \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID" \
+            node scripts/pilot-json-import.js --count 5
 
       - name: Scan and promote Eyeshadow Palette only
         shell: bash
         run: |
           set -euo pipefail
-          railway run node scripts/ops-ing6-pilot-promote.js
+          railway run \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID" \
+            node scripts/ops-ing6-pilot-promote.js
