@@ -138,6 +138,21 @@ module.exports = defineConfig({
       },
     },
 
+    // ── MDM-9 — Projet dédié layout galerie modale (§5) ────────────────────
+    // Le spec modal-mdm9-gallery-layout.spec.js boucle en interne sur
+    // 3 viewports (360×800, 390×844, 1280×800). Ce projet Chromium dédié
+    // évite que le spec soit rejoué sur les 5 projets navigateur standards,
+    // ce qui créerait une matrice involontaire de 9×5 = 45 tests.
+    // Les viewports sont gérés par test.use() dans le spec lui-même.
+    {
+      name: 'Chromium MDM-9',
+      testMatch: '**/modal-mdm9-gallery-layout.spec.js',
+      use: {
+        ...devices['Desktop Chrome'],
+        locale: 'fr-FR',
+      },
+    },
+
     // ── Desktop (public, sans session) ─────────────────────────────────────
     // testIgnore : les specs authenticated/ ont besoin du storageState posé
     // par le projet "authenticated" (dépendance sur "setup") — sans lui, un
@@ -146,7 +161,7 @@ module.exports = defineConfig({
     // explicitement ici pour ne pas les rejouer en double, sans session.
     {
       name: 'Desktop Chrome',
-      testIgnore: '**/authenticated/**',
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
@@ -155,7 +170,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Desktop Firefox',
-      testIgnore: '**/authenticated/**',
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
       use: {
         ...devices['Desktop Firefox'],
         viewport: { width: 1280, height: 800 },
@@ -164,7 +179,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Desktop Safari',
-      testIgnore: '**/authenticated/**',
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
       use: {
         ...devices['Desktop Safari'],
         viewport: { width: 1280, height: 800 },
@@ -175,7 +190,7 @@ module.exports = defineConfig({
     // ── Mobile (la boutique est mobile-first — diaspora comorienne) ─────────
     {
       name: 'Mobile Chrome',
-      testIgnore: '**/authenticated/**',
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
       use: {
         ...devices['Pixel 7'],
         locale: 'fr-FR',
@@ -183,7 +198,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Mobile Safari',
-      testIgnore: '**/authenticated/**',
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
       use: {
         ...devices['iPhone 14'],
         locale: 'fr-FR',

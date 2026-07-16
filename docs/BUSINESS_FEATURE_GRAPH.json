@@ -866,6 +866,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/suppliers/json-source-pipeline.js",
+        "resolvedPath": "services/suppliers/json-source-pipeline.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/suppliers/connectors/api-connector.base.js",
         "resolvedPath": "services/suppliers/connectors/api-connector.base.js",
         "status": "resolved-in-technical-graph"
@@ -901,6 +908,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/suppliers/connectors/json-connector.js",
+        "resolvedPath": "services/suppliers/connectors/json-connector.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/supplier-catalog-scanner.js",
         "resolvedPath": "services/supplier-catalog-scanner.js",
         "status": "resolved-in-technical-graph"
@@ -910,6 +924,13 @@
         "category": "services",
         "declared": "services/suppliers/catalog-import-orchestrator.js",
         "resolvedPath": "services/suppliers/catalog-import-orchestrator.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/catalog-import-json.js",
+        "resolvedPath": "services/suppliers/catalog-import-json.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -1362,6 +1383,13 @@
       },
       {
         "feature": "catalog",
+        "category": "boutique",
+        "declared": "css/modal-mobile-canonical.css",
+        "resolvedPath": "public/boutique/css/modal-mobile-canonical.css",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
         "category": "dash",
         "declared": "dashboards/admin/js/views/SuppliersView.js",
         "resolvedPath": "public/dashboards/admin/js/views/SuppliersView.js",
@@ -1531,6 +1559,13 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/modal-mobile-canonical.test.js",
+        "resolvedPath": "tests/unit/modal-mobile-canonical.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/supplier-catalog-scanner.test.js",
         "resolvedPath": "tests/unit/supplier-catalog-scanner.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1603,6 +1638,20 @@
         "category": "tests",
         "declared": "tests/unit/catalog-overrides.test.js",
         "resolvedPath": "tests/unit/catalog-overrides.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/integration/catalog-import-json.integration.test.js",
+        "resolvedPath": "tests/integration/catalog-import-json.integration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/json-source-pipeline.test.js",
+        "resolvedPath": "tests/unit/json-source-pipeline.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15215,14 +15264,6 @@
       },
       {
         "boutiqueManifest": "modal-product",
-        "category": "boutique",
-        "declared": "../css/modal-product-price-normalization.css",
-        "resolvedPath": "public/boutique/css/modal-product-price-normalization.css",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "modal-product",
         "category": "dist",
         "declared": "../css/dist/components.css",
         "resolvedPath": "public/boutique/css/dist/components.css",
@@ -16229,6 +16270,10 @@
                 "targetFile": "utils/rules.js"
               },
               {
+                "sourceFileId": "services/suppliers/catalog-import-json.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/catalog-eligibility.js",
                 "targetFile": "db.js"
               },
@@ -16347,6 +16392,10 @@
               {
                 "sourceFileId": "tests/unit/catalog-enrichment-extended.test.js",
                 "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-import-json.integration.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -16375,6 +16424,10 @@
               {
                 "sourceFileId": "tests/unit/scan-engine-extras.test.js",
                 "targetFile": "services/scan-engine.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-import-json.integration.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
               }
             ]
           }
@@ -21951,6 +22004,11 @@
     "dynamicUnresolvedByScope": {
       "backend": [
         {
+          "sourceFileId": "tests/unit/modal-mobile-canonical.test.js",
+          "kind": "require",
+          "raw": "CSS_BUNDLES_PATH"
+        },
+        {
           "sourceFileId": "scripts/boutique-ownership-full-check.js",
           "kind": "require",
           "raw": "path.join(abs, f"
@@ -22024,7 +22082,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 791
+        "filesObserved": 797
       },
       "boutique": {
         "filesObserved": 104,
@@ -24802,8 +24860,8 @@
       "backend": {
         "manifestsDiscovered": 24,
         "manifestsConnected": 24,
-        "technicalNodesTotal": 301,
-        "technicalNodesOwned": 301,
+        "technicalNodesTotal": 304,
+        "technicalNodesOwned": 304,
         "technicalOrphans": 0
       },
       "dash": {
@@ -24971,7 +25029,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "14 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ... | scripts/feature-audit.js: full) — limitation du modèle statique O5, jamais inventé"
+        "msg": "15 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
@@ -25096,7 +25154,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 39 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 41 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

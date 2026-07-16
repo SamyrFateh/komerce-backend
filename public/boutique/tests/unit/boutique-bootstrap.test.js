@@ -105,11 +105,6 @@ test('boutique câble le boot, les événements globaux et le reset desktop', ()
     <div id="k-grid"></div>
     <a data-footer-cat="Mode"></a>
     <button class="k-chip" data-cat="Mode"></button>
-    <div class="k-modal-carousel-track">
-      <div class="k-modal-slide"></div><div class="k-modal-slide"></div>
-    </div>
-    <button class="k-modal-dot" data-index="0"></button>
-    <button class="k-modal-dot" data-index="1"></button>
   `;
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
   Object.defineProperty(document, 'readyState', { configurable: true, value: 'loading' });
@@ -151,12 +146,6 @@ test('boutique câble le boot, les événements globaux et le reset desktop', ()
 
   document.querySelector('[data-footer-cat="Mode"]').click();
   expect(chip.click).toHaveBeenCalledTimes(1);
-
-  document.querySelector('.k-modal-dot[data-index="1"]').click();
-  expect(document.querySelector('.k-modal-carousel-track').style.transform)
-    .toBe('translateX(-100%)');
-  expect(document.querySelector('.k-modal-dot[data-index="1"]').classList.contains('active'))
-    .toBe(true);
 });
 
 describe('syncModalViewportOwner (fix Samsung Internet)', () => {

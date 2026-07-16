@@ -5027,6 +5027,41 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
   }
 
+  /* ── MDM-9 : Mode galerie — wrapper compact en single SANS réduire le
+     sujet visuellement (§1/§2 du correctif).
+     multiple : inchangé, 48vh (confirmé explicitement, non-régression §8).
+     single   : wrapper réduit à 36vh (marge de sécurité sous le seuil de
+     38vh du spec), mais le sujet réel est compensé par un zoom CSS piloté
+     par --k-modal-subject-scale (posé par _applySubjectScale en JS via
+     calcul canvas same-origin du bounding box non-blanc). Le scale est
+     plafonné et conserve une marge de sécurité (0.88) côté JS : jamais de
+     coupe des bords utiles du produit. object-position reste centré. */
+  #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"] {
+    min-height: 180px;
+    max-height: 48vh;
+    max-height: 48dvh;
+    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+    height: 48vh;
+    height: 48dvh;
+    height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+  }
+
+  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
+    min-height: 150px;
+    max-height: 36vh;
+    max-height: 36dvh;
+    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.36);
+    height: 36vh;
+    height: 36dvh;
+    height: calc(var(--k-modal-vvh, 100dvh) * 0.36);
+  }
+
+  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
+    transform: scale(var(--k-modal-subject-scale, 1));
+    transform-origin: center center;
+    object-position: center center;
+  }
+
   /* ── MDM-4 : Variant groups (tighter spacing) ──────────────── */
 
   #k-modal .k-vg {

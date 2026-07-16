@@ -253,15 +253,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidate_events — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 116 fichier(s) déclaré(s), boutique: 21 fichier(s)
-  - boutique : 36
+**Implementation** : 123 fichier(s) déclaré(s), boutique: 20 fichier(s)
+  - boutique : 37
   - dash : 4
   - docs : 4
   - migrations : 9
   - routes : 5
   - schemas : 3
-  - services : 22
-  - tests : 32
+  - services : 25
+  - tests : 35
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_
