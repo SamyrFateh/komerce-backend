@@ -55,14 +55,28 @@ jobs:
           railway --version
 
       - name: Verify pending migrations
+        id: migration_check
+        continue-on-error: true
         shell: bash
         run: |
-          set -euo pipefail
+          set -o pipefail
           railway run \
             --project "$RAILWAY_PROJECT_ID" \
             --environment "$RAILWAY_ENVIRONMENT_ID" \
             --service "$RAILWAY_SERVICE_ID" \
-            node scripts/run-migrations.js --dry-run
+            node scripts/run-migrations.js --dry-run 2>&1 | tee /tmp/railway-migration-check.log
+
+      - name: Upload Railway targeting diagnostic
+        if: steps.migration_check.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: railway-targeting-diagnostic
+          path: /tmp/railway-migration-check.log
+          if-no-files-found: error
+
+      - name: Stop after Railway targeting failure
+        if: steps.migration_check.outcome == 'failure'
+        run: exit 1
 
       - name: Apply pending migrations idempotently
         shell: bash
