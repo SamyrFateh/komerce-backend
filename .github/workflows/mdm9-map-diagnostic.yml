@@ -1,4 +1,4 @@
-name: MDM9 map diagnostic
+name: MDM9 Feature 360 regeneration
 
 on:
   pull_request:
@@ -6,33 +6,36 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  regenerate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: fix/mdm9-modal-gallery-layout
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Run verbose map check
+      - name: Regenerate Feature 360
+        run: |
+          npm run feature:360:gen
+          npm run feature:360:check
+      - name: Verify complete map
+        run: npm run map:check
+      - name: Commit Feature 360 and remove one-shot workflow
         shell: bash
         run: |
-          set +e
-          npm run map:check -- --verbose 2>&1 | tee /tmp/mdm9-map-check.log
-          status=${PIPESTATUS[0]}
-          echo "MAP_CHECK_EXIT=$status" >> /tmp/mdm9-map-check.log
-          exit $status
-      - name: Upload diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mdm9-map-diagnostic
-          path: /tmp/mdm9-map-check.log
-          if-no-files-found: error
+          set -euo pipefail
+          rm -f .github/workflows/mdm9-map-diagnostic.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/FEATURE_360.json docs/FEATURE_360.md .github/workflows/mdm9-map-diagnostic.yml
+          git status --short
+          git commit -m 'docs(governance): refresh Feature 360 for MDM9'
+          git push origin HEAD:fix/mdm9-modal-gallery-layout
