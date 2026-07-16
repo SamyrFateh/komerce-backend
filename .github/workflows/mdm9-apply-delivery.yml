@@ -1,0 +1,153 @@
+name: Apply MDM9 delivery
+
+on:
+  push:
+    branches:
+      - fix/mdm9-modal-gallery-layout
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout delivery branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/mdm9-modal-gallery-layout
+          fetch-depth: 0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Decode and apply MDM9 sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .mdm9-delivery/part-* > /tmp/mdm9-min.b64
+          base64 --decode /tmp/mdm9-min.b64 > /tmp/mdm9-min.zip
+          rm -rf /tmp/mdm9-min
+          unzip -q /tmp/mdm9-min.zip -d /tmp
+
+          cp /tmp/mdm9-min/js/b-modal-product.js public/boutique/js/b-modal-product.js
+          cp /tmp/mdm9-min/js/boutique.js public/boutique/js/boutique.js
+          cp /tmp/mdm9-min/css/modal-mobile-canonical.css public/boutique/css/modal-mobile-canonical.css
+          cp /tmp/mdm9-min/playwright.config.js public/boutique/playwright.config.js
+          cp /tmp/mdm9-min/tests/e2e/modal-mdm9-gallery-layout.spec.js public/boutique/tests/e2e/modal-mdm9-gallery-layout.spec.js
+          cp /tmp/mdm9-min/tests/unit/b-modal-product.test.js public/boutique/tests/unit/b-modal-product.test.js
+          cp /tmp/mdm9-min/tests/unit/boutique-bootstrap.test.js public/boutique/tests/unit/boutique-bootstrap.test.js
+
+      - name: Generate deterministic image fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/boutique/tests/fixtures/images
+          python3 - <<'PY'
+          import struct, zlib
+          from pathlib import Path
+
+          out = Path('public/boutique/tests/fixtures/images')
+
+          def png(path, pixel):
+              w = h = 1200
+              raw = bytearray()
+              for y in range(h):
+                  raw.append(0)
+                  for x in range(w):
+                      raw.extend(pixel(x, y))
+              def chunk(kind, data):
+                  return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data) & 0xffffffff)
+              payload = b'\x89PNG\r\n\x1a\n'
+              payload += chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
+              payload += chunk(b'IDAT', zlib.compress(bytes(raw), 9))
+              payload += chunk(b'IEND', b'')
+              path.write_bytes(payload)
+
+          png(out / 'produit-plein-cadre.png', lambda x, y: (45, 122, 62))
+          png(out / 'produit-fond-blanc.png', lambda x, y: (200, 92, 45) if 400 <= x < 800 and 400 <= y < 800 else (255, 255, 255))
+          PY
+
+      - name: Reconcile catalog feature registry minimally
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const manifestPath = 'features/catalog.feature.js';
+          let source = fs.readFileSync(manifestPath, 'utf8');
+
+          function addAfter(anchor, entry) {
+            const line = `      '${entry}',`;
+            if (source.includes(line)) return;
+            if (!source.includes(anchor)) throw new Error(`Anchor absent: ${anchor}`);
+            source = source.replace(anchor, `${anchor}\n${line}`);
+          }
+
+          addAfter("      'services/suppliers/normalized-product.js',", 'services/suppliers/json-source-pipeline.js');
+          addAfter("      'services/suppliers/connectors/noon-connector.js',", 'services/suppliers/connectors/json-connector.js');
+          addAfter("      'services/suppliers/catalog-import-orchestrator.js',", 'services/suppliers/catalog-import-json.js');
+          source = source.replace("      'css/modal-product-price-normalization.css',\n", '');
+
+          const needles = ['json-source-pipeline', 'json-connector', 'catalog-import-json'];
+          const tests = [];
+          function walk(dir) {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else if (/\.(test|spec)\.js$/.test(entry.name)) {
+                const body = fs.readFileSync(full, 'utf8');
+                if (needles.some(n => full.includes(n) || body.includes(n))) tests.push(full.replace(/\\/g, '/'));
+              }
+            }
+          }
+          walk('tests');
+          const anchor = "      'tests/unit/catalog-approval.test.js',";
+          for (const test of [...new Set(tests)].sort()) {
+            const line = `      '${test}',`;
+            if (!source.includes(line)) source = source.replace(anchor, `${line}\n${anchor}`);
+          }
+          fs.writeFileSync(manifestPath, source);
+          console.log('Tests JSON déclarés:', tests.sort());
+          NODE
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build boutique CSS and run CSS gates
+        run: npm run build
+
+      - name: Run targeted unit tests
+        run: npx jest public/boutique/tests/unit/b-modal-product.test.js public/boutique/tests/unit/boutique-bootstrap.test.js --runInBand --forceExit
+
+      - name: Run feature gates
+        run: |
+          npm run feature:check
+          npm run feature:registry
+
+      - name: Refresh derived business graph
+        run: |
+          npm run business-graph:gen
+          npm run business-graph:ratchet-check
+
+      - name: Remove temporary delivery machinery
+        run: |
+          rm -rf .mdm9-delivery
+          rm -f .github/workflows/mdm9-apply-delivery.yml
+
+      - name: Commit final delivery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git status --short
+          git commit -m 'fix(boutique): optimize product modal media space'
+          git push origin HEAD:fix/mdm9-modal-gallery-layout
