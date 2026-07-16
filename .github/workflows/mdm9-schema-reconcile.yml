@@ -1,6 +1,8 @@
 name: MDM9 migration 110 snapshot reconciliation
 
 on:
+  push:
+    branches: [fix/mdm9-modal-gallery-layout]
   pull_request:
     types: [reopened]
     branches: [main]
@@ -10,6 +12,7 @@ permissions:
 
 jobs:
   reconcile:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     services:
