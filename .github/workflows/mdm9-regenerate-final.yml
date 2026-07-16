@@ -1,0 +1,41 @@
+name: MDM9 final graph regeneration
+
+on:
+  pull_request:
+    types: [reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/mdm9-modal-gallery-layout
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Regenerate official graphs
+        run: |
+          npm run arch:gen
+          npm run arch:reconcile -- --write
+          npm run business-graph:gen
+          npm run meta:graph:save
+      - name: Commit final graph artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/mdm9-regenerate-final.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git status --short
+          git commit -m 'docs(governance): refresh MDM9 graphs after coverage tests'
+          git push origin HEAD:fix/mdm9-modal-gallery-layout
