@@ -20,9 +20,9 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 766,
-    "edges": 4330,
-    "dbTables": 113,
+    "graphNodes": 769,
+    "edges": 4335,
+    "dbTables": 116,
     "doctrines": 153,
     "impactAreas": 125,
     "unresolvedCodeEdges": 416,
@@ -9397,6 +9397,11 @@
         "routes/catalog-product-detail.js"
       ],
       "dbRead": [
+        "catalog_media",
+        "product_attributes",
+        "product_content_profile",
+        "product_content_sections",
+        "product_sku_media",
         "product_skus",
         "product_variants",
         "products"
@@ -9415,7 +9420,7 @@
         "modal",
         "logistics"
       ],
-      "version": "2026-07"
+      "version": "2026-07 — fiche produit enrichie (content)"
     },
     {
       "id": "services/catalog-promotion.js",
@@ -18128,6 +18133,21 @@
       "id": "db:catalog_enrichment_runs",
       "type": "db-table",
       "table": "catalog_enrichment_runs"
+    },
+    {
+      "id": "db:product_attributes",
+      "type": "db-table",
+      "table": "product_attributes"
+    },
+    {
+      "id": "db:product_content_profile",
+      "type": "db-table",
+      "table": "product_content_profile"
+    },
+    {
+      "id": "db:product_content_sections",
+      "type": "db-table",
+      "table": "product_content_sections"
     },
     {
       "id": "db:collective_stock_reservations",
@@ -32855,6 +32875,36 @@
       "to": "services/catalog-product-detail.js",
       "type": "uses",
       "label": "routes/catalog-product-detail.js"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:catalog_media",
+      "type": "db-read",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:product_attributes",
+      "type": "db-read",
+      "label": "product_attributes"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:product_content_profile",
+      "type": "db-read",
+      "label": "product_content_profile"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:product_content_sections",
+      "type": "db-read",
+      "label": "product_content_sections"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:product_sku_media",
+      "type": "db-read",
+      "label": "product_sku_media"
     },
     {
       "from": "services/catalog-product-detail.js",
@@ -54847,6 +54897,11 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "catalog_media",
+        "product_attributes",
+        "product_content_profile",
+        "product_content_sections",
+        "product_sku_media",
         "product_skus",
         "product_variants",
         "products"
@@ -54865,6 +54920,11 @@
         "logistics"
       ],
       "mustCheck": [
+        "db:catalog_media",
+        "db:product_attributes",
+        "db:product_content_profile",
+        "db:product_content_sections",
+        "db:product_sku_media",
         "db:product_skus",
         "db:product_variants",
         "db:products",

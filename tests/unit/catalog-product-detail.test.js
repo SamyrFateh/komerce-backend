@@ -98,13 +98,33 @@ function skuRows() {
   ];
 }
 
-function dbFor({ product = skuProduct(), variants = variantRows(), skus = skuRows() } = {}) {
-  return {
-    query: jest.fn()
-      .mockResolvedValueOnce({ rows: product ? [product] : [] })
-      .mockResolvedValueOnce({ rows: variants })
-      .mockResolvedValueOnce({ rows: skus }),
-  };
+function dbFor({
+  product = skuProduct(),
+  variants = variantRows(),
+  skus = skuRows(),
+  catalogMedia = [],
+  skuMedia = [],
+  contentProfile = null,
+  contentSections = [],
+  attributes = [],
+} = {}) {
+  const calls = [
+    { rows: product ? [product] : [] },
+    { rows: variants },
+    { rows: skus },
+    { rows: catalogMedia },
+  ];
+  if (catalogMedia.length > 0 && skus.length > 0) {
+    calls.push({ rows: skuMedia });
+  }
+  calls.push(
+    { rows: contentProfile ? [contentProfile] : [] },
+    { rows: contentSections },
+    { rows: attributes }
+  );
+  const query = jest.fn();
+  calls.forEach((result) => query.mockResolvedValueOnce(result));
+  return { query };
 }
 
 function commercialSeaOnly() {
@@ -237,7 +257,11 @@ describe('catalog product detail contract v1', () => {
     const db = {
       query: jest.fn()
         .mockResolvedValueOnce({ rows: [product] })
-        .mockResolvedValueOnce({ rows: variantRows() }),
+        .mockResolvedValueOnce({ rows: variantRows() })
+        .mockResolvedValueOnce({ rows: [] }) // catalog_media
+        .mockResolvedValueOnce({ rows: [] }) // product_content_profile
+        .mockResolvedValueOnce({ rows: [] }) // product_content_sections
+        .mockResolvedValueOnce({ rows: [] }), // product_attributes
     };
 
     const detail = await getProductDetail(db, PRODUCT_ID);
@@ -245,8 +269,9 @@ describe('catalog product detail contract v1', () => {
     expect(detail.inventory_model).toBe('LEGACY_VARIANTS');
     expect(detail.option_axes).toHaveLength(2);
     expect(detail.sellable_units).toEqual([]);
-    expect(db.query).toHaveBeenCalledTimes(2);
+    expect(db.query).toHaveBeenCalledTimes(6);
     expect(db.query.mock.calls.some(([sql]) => sql.includes('FROM product_skus'))).toBe(false);
+    expect(db.query.mock.calls.some(([sql]) => sql.includes('FROM product_sku_media'))).toBe(false);
   });
 
   test('un produit inconnu retourne null sans lire variantes ou SKU', async () => {

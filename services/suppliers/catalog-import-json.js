@@ -9,7 +9,7 @@
  * @depends       db.js, services/suppliers/connectors/json-connector.js
  * @used-by       services/suppliers/catalog-import-orchestrator.js (source_type=json), scripts/pilot-json-import.js
  * @db-read       none
- * @db-write      supplier_catalog_imports, sourcing_candidates, supplier_catalog_import_rejections
+ * @db-write      sourcing_candidates, supplier_catalog_import_rejections, supplier_catalog_imports
  * @db-txn        BEGIN au staging, jamais autour de l'INSERT du batch ni de l'UPDATE FAILED
  * @doctrine      docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md, docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, sourcing

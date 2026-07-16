@@ -8,12 +8,12 @@
  * @outputs       public_product_detail_v1
  * @depends       services/transport-rails.js, schemas/catalog/product-detail.v1.schema.json
  * @used-by       routes/catalog-product-detail.js
- * @db-read       product_skus, product_variants, products
+ * @db-read       catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/specs/DECISION_MODELE_STOCK_SKU.md, docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md
  * @impact-areas  catalog, product-detail, modal, logistics
- * @version       2026-07
+ * @version       2026-07 — fiche produit enrichie (content)
  */
 
 'use strict';
@@ -86,6 +86,135 @@ function mediaMatchesOptions(mediaOptions, unitOptions) {
   return entries.every(([key, value]) => unitOptions?.[key] === value);
 }
 
+// section_key réservés de product_content_sections : toujours BULLETS,
+// aplatis vers content.materials/care/warnings plutôt que content.sections[].
+// Cf. migrations/111_product_content.sql §2 pour la justification.
+const RESERVED_SECTION_TARGETS = Object.freeze({
+  MATERIALS: 'materials',
+  CARE: 'care',
+  WARNINGS: 'warnings',
+});
+
+function asStringOrNull(value) {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text.length > 0 ? text : null;
+}
+
+function asStringArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (item === null || item === undefined ? '' : String(item).trim()))
+    .filter((item) => item.length > 0);
+}
+
+function asDisplayOrder(value) {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : 0;
+}
+
+/**
+ * Sépare les lignes product_content_sections entre les section_key réservés
+ * (MATERIALS/CARE/WARNINGS, aplatis en listes de chaînes) et les sections
+ * éditoriales libres (content.sections[]). Ne fabrique jamais de HTML : le
+ * texte traverse tel quel, le rendu frontend l'assigne via textContent.
+ */
+function buildSections(sectionRows) {
+  const sections = [];
+  const flattened = { materials: [], care: [], warnings: [] };
+
+  for (const row of sectionRows || []) {
+    const json = row.content_json || {};
+    const target = RESERVED_SECTION_TARGETS[row.section_key];
+
+    if (target) {
+      flattened[target].push(...asStringArray(json.items));
+      continue;
+    }
+
+    const type = row.section_type;
+    sections.push({
+      key: row.section_key,
+      title: row.title,
+      type,
+      text: type === 'TEXT' ? asStringOrNull(json.text) : null,
+      items: type === 'BULLETS' ? asStringArray(json.items) : [],
+      entries: type === 'KEY_VALUE'
+        ? (Array.isArray(json.entries) ? json.entries : [])
+            .filter((entry) => entry && entry.label && entry.value)
+            .map((entry) => ({ label: String(entry.label), value: String(entry.value) }))
+        : [],
+      display_order: asDisplayOrder(row.display_order),
+    });
+  }
+
+  return { sections, materials: flattened.materials, care: flattened.care, warnings: flattened.warnings };
+}
+
+/** content.highlights depuis product_attributes(kind='HIGHLIGHT'). */
+function buildHighlights(attributeRows) {
+  return (attributeRows || [])
+    .filter((row) => row.kind === 'HIGHLIGHT')
+    .map((row) => ({ key: row.attribute_key, label: row.label }));
+}
+
+/** content.specifications depuis product_attributes(kind='SPECIFICATION'). */
+function buildSpecifications(attributeRows) {
+  return (attributeRows || [])
+    .filter((row) => row.kind === 'SPECIFICATION')
+    .map((row) => ({
+      group: row.group_key ? row.group_key : null,
+      key: row.attribute_key,
+      label: row.label,
+      value: row.value_text,
+      unit: row.unit || null,
+      display_order: asDisplayOrder(row.display_order),
+    }));
+}
+
+/**
+ * Assemble content.* depuis les 3 sources canoniques (profil, sections,
+ * attributs). Toujours peuplé, même pour un produit pauvre (collections
+ * vides, provenance honnête par défaut) — jamais absent, pour que mobile et
+ * desktop consomment une forme unique sans code conditionnel de présence.
+ * `content` reste néanmoins une clé optionnelle du schéma v1 (cf. tests) :
+ * un contrat construit à la main sans ce bloc reste valide.
+ */
+function buildContent(profileRow, sectionRows, attributeRows) {
+  const { sections, materials, care, warnings } = buildSections(sectionRows);
+
+  return {
+    brand: profileRow ? asStringOrNull(profileRow.brand) : null,
+    short_description: profileRow ? asStringOrNull(profileRow.short_description) : null,
+    highlights: buildHighlights(attributeRows),
+    specifications: buildSpecifications(attributeRows),
+    sections,
+    materials,
+    care,
+    warnings,
+    provenance: {
+      source: (profileRow && profileRow.source) || 'SUPPLIER',
+      enrichment_version: profileRow ? asStringOrNull(profileRow.enrichment_version) : null,
+      reviewed: Boolean(profileRow && profileRow.reviewed),
+    },
+  };
+}
+
+/**
+ * Média canonique depuis catalog_media. Vide pour un produit non promu —
+ * le fallback legacy (buildMedia) reste alors la seule source, jamais un
+ * mélange des deux dans la même réponse.
+ */
+function buildCanonicalMedia(catalogMediaRows) {
+  return (catalogMediaRows || []).map((row) => ({
+    id: row.id,
+    url: row.url,
+    role: row.role,
+    alt: row.alt || null,
+    option_values: canonicalOptionValues(row.option_values || {}),
+  }));
+}
+
 function buildMedia(product, variantRows) {
   const media = [];
   const seen = new Map();
@@ -153,14 +282,18 @@ function buildOptionAxes(variantRows) {
   }));
 }
 
-function buildSellableUnits(product, skuRows, media) {
+function buildSellableUnits(product, skuRows, media, explicitSkuMediaMap = new Map()) {
   if (product.inventory_model !== 'SKU') return [];
 
   return skuRows.map((sku) => {
     const optionValues = canonicalOptionValues(sku.variant_combo || {});
-    const mediaIds = media
-      .filter((item) => mediaMatchesOptions(item.option_values, optionValues))
-      .map((item) => item.id);
+    // Une association explicite SKU <-> média (product_sku_media, PDC-8 Lot 5)
+    // gagne toujours sur le matching heuristique par option_values.
+    const mediaIds = explicitSkuMediaMap.has(sku.id)
+      ? [...explicitSkuMediaMap.get(sku.id)]
+      : media
+          .filter((item) => mediaMatchesOptions(item.option_values, optionValues))
+          .map((item) => item.id);
     const quantity = Math.max(0, Number(sku.stock) || 0);
 
     return {
@@ -238,7 +371,61 @@ async function getProductDetail(dbClient, productId) {
     skuRows = result.rows;
   }
 
-  const media = buildMedia(product, variantRows);
+  // Média canonique (PDC-8) prioritaire ; fallback legacy uniquement si le
+  // produit n'a jamais été promu — jamais un mélange des deux sources.
+  const { rows: catalogMediaRows } = await dbClient.query(
+    `SELECT id, url, role, alt, option_values
+       FROM catalog_media
+      WHERE product_id = $1 AND is_active = TRUE
+      ORDER BY display_order ASC NULLS LAST, created_at ASC`,
+    [productId]
+  );
+  const canonicalMedia = buildCanonicalMedia(catalogMediaRows);
+  const usingCanonicalMedia = canonicalMedia.length > 0;
+  const media = usingCanonicalMedia ? canonicalMedia : buildMedia(product, variantRows);
+
+  // Associations explicites SKU <-> média — seulement pertinentes quand le
+  // média canonique est effectivement utilisé (les ids legacy ne
+  // correspondent à aucune ligne product_sku_media).
+  const explicitSkuMediaMap = new Map();
+  if (usingCanonicalMedia && skuRows.length > 0) {
+    const { rows: skuMediaRows } = await dbClient.query(
+      `SELECT sku_id, media_id
+         FROM product_sku_media
+        WHERE sku_id = ANY($1::uuid[])`,
+      [skuRows.map((sku) => sku.id)]
+    );
+    for (const row of skuMediaRows) {
+      if (!explicitSkuMediaMap.has(row.sku_id)) explicitSkuMediaMap.set(row.sku_id, new Set());
+      explicitSkuMediaMap.get(row.sku_id).add(row.media_id);
+    }
+  }
+
+  // Contenu éditorial canonique — jamais depuis raw_payload ni
+  // normalized_source_contract, toujours depuis les tables promues.
+  const { rows: [profileRow] } = await dbClient.query(
+    `SELECT brand, short_description, source, enrichment_version, reviewed
+       FROM product_content_profile
+      WHERE product_id = $1`,
+    [productId]
+  );
+
+  const { rows: sectionRows } = await dbClient.query(
+    `SELECT section_key, title, section_type, content_json, display_order
+       FROM product_content_sections
+      WHERE product_id = $1 AND is_active = TRUE
+      ORDER BY display_order ASC, section_key ASC`,
+    [productId]
+  );
+
+  const { rows: attributeRows } = await dbClient.query(
+    `SELECT kind, group_key, attribute_key, label, value_text, unit, display_order
+       FROM product_attributes
+      WHERE product_id = $1 AND is_active = TRUE
+      ORDER BY kind ASC, display_order ASC, attribute_key ASC`,
+    [productId]
+  );
+
   const detail = {
     contract_version: CONTRACT_VERSION,
     inventory_model: product.inventory_model,
@@ -258,8 +445,9 @@ async function getProductDetail(dbClient, productId) {
     },
     media,
     option_axes: buildOptionAxes(variantRows),
-    sellable_units: buildSellableUnits(product, skuRows, media),
+    sellable_units: buildSellableUnits(product, skuRows, media, explicitSkuMediaMap),
     delivery_options: buildDeliveryOptions(),
+    content: buildContent(profileRow || null, sectionRows, attributeRows),
   };
 
   return assertContract(detail);
@@ -273,5 +461,10 @@ module.exports = {
   _buildOptionAxes: buildOptionAxes,
   _buildSellableUnits: buildSellableUnits,
   _buildDeliveryOptions: buildDeliveryOptions,
+  _buildContent: buildContent,
+  _buildSections: buildSections,
+  _buildSpecifications: buildSpecifications,
+  _buildHighlights: buildHighlights,
+  _buildCanonicalMedia: buildCanonicalMedia,
   _assertContract: assertContract,
 };
