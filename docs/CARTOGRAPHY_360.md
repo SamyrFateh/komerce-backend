@@ -444,3 +444,11 @@ Pour maintenir cette cartographie :
 6. documenter toute divergence code/doc dans cette section.
 
 Ce document est l'un des documents socle référencés par `docs/README.md`. Toute modification structurelle du backend ou de la gouvernance Boutique doit le mettre à jour dans la même PR. La règle de divergence doc <-> code <-> DB est définie dans `AGENTS.md`.
+
+
+## Delta 2026-07-16 — MDM-9 — galerie produit adaptative
+
+- `public/boutique/js/b-modal-product.js` : propriétaire du mode média explicite `single|multiple`, mesure du sujet et navigation canonique.
+- `public/boutique/js/boutique.js` : suppression du listener délégué legacy qui annulait `goToSlide()`.
+- `public/boutique/css/modal-mobile-canonical.css` : 36 % du viewport visible en single, 48 % conservés en multiple ; CTA et contenu enrichi préservés.
+- Aucun endpoint, aucune route et aucune mutation de schéma introduits par MDM-9. Le snapshot DB documente séparément la migration ING-6 déjà appliquée.

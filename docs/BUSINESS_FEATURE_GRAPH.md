@@ -72,7 +72,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 24 | 24 | 301 | 301 | 0 |
+| backend | 24 | 24 | 304 | 304 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 10 | 10 | 71 | 71 | 0 |
 
@@ -143,14 +143,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.
 
 - utils: 1
-- services: 22
+- services: 25
 - schemas: 3
 - migrations: 9
 - docs: 4
 - routes: 5
-- boutique: 36
+- boutique: 37
 - dash: 4
-- tests: 32
+- tests: 35
 - tables owned (lifecycle): 5 — `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `supplier_catalog_imports`
 - tables written: 14
 - interfaces exposed: 31
@@ -1298,7 +1298,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[CONSUMES-REFERENCE-UNRESOLVED]** _[INVALID_DECLARATION]_ shared-cart -> "products" (entrée: "products") — contract.consumes de shared-cart référence "products", ne correspond à aucun nom de feature connu
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** _[EXPECTED_TOPOLOGY]_ legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
-- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 14 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ... | scripts/feature-audit.js: full) — limitation du modèle statique O5, jamais inventé
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** _[GENERATOR_LIMITATION]_ scope:backend — 15 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** _[GENERATOR_LIMITATION]_ orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSED-ROUTE-OWNER-MISMATCH]** _[ACTIONABLE_DRIFT]_ infrastructure / GET /api/health — contract.exposes déclare "GET /api/health" mais le contrat OpenAPI le résout vers "server.js", non déclaré dans infrastructure.files.routes
@@ -1323,7 +1323,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 11 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> notifications — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 39 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 41 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ customs -> infrastructure — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "customs" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> decision-signals — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "decision-signals"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> infrastructure — dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "infrastructure"
@@ -1430,7 +1430,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 791 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 797 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 104 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
 - dash : 83 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1460,8 +1460,8 @@ Meta Graph monté : oui.
 | auth-identity | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 39 | **OBSERVED_UNDECLARED** |
-| catalog | logistics | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 41 | **OBSERVED_UNDECLARED** |
+| catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1718,7 +1718,7 @@ Meta Graph monté : oui.
 
 ### Dynamic dependencies non résolues statiquement (limitation du modèle, jamais inventées)
 
-- scope `backend` : 14 appel(s) — ex. `scripts/boutique-ownership-full-check.js`: `path.join(abs, f`, `scripts/contract-generate.js`: `...`, `scripts/feature-audit.js`: `full`
+- scope `backend` : 15 appel(s) — ex. `tests/unit/modal-mobile-canonical.test.js`: `CSS_BUNDLES_PATH`, `scripts/boutique-ownership-full-check.js`: `path.join(abs, f`, `scripts/contract-generate.js`: `...`
 
 ## O6 — Dependency Disposition
 

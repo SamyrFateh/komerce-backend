@@ -48,7 +48,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 94 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
+| Tables | 96 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
 | Vues | 16 | Préfixe `v_` ou `customs_*` |
 | ENUMs | 14 | Types métier critiques |
 | Index | 264 | Performance + contraintes uniques |
@@ -231,7 +231,7 @@ Source de vérité : `services/collective-workspace-engine.js` + `services/colle
 
 Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 
-### 4.10 Sourcing et fournisseurs (7 tables)
+### 4.10 Sourcing et fournisseurs (10 tables)
 
 | Table | Rôle |
 |---|---|
@@ -240,7 +240,9 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `purchase_orders` | Bons de commande fournisseur. |
 | `sourcing_candidates` | Candidats sourcing. **Migration 105 (2026-07-12, `intended_migration_schema` — non vérifié live)** : + `normalized_source_contract` JSONB nullable, snapshot du `NormalizedSupplierProduct V2` validé sans dupliquer `raw_payload`. Préserve `media`, `option_axes` et `sellable_units` source ; ne constitue ni le catalogue canonique ni la vérité de stock. |
 | `sourcing_candidate_events` | Événements candidats. |
-| `supplier_catalog_imports` | Imports catalogues. |
+| `supplier_catalog_imports` | Imports catalogues et audit de batch JSON : profil, hash source, version connecteur, statut, compteurs et findings. Migration 110, vérifiée lors du pilote production ING-6 du 2026-07-16. |
+| `supplier_catalog_import_rejections` | Rejets de lignes ou contrats non représentables, séparés des candidats promouvables. Conserve le payload brut, les findings et la cause automatisable ; unicité `(import_id, source_index)`. Migration 110. |
+| `sourcing_candidate_observations` | Historique immuable des observations fournisseur par batch et profil, avec hash de ligne et snapshot du contrat normalisé. Migration 110. |
 | `fabrics` | Tissus (module cérémonie). |
 | `garment_models` | Modèles vêtements (module cérémonie). |
 
