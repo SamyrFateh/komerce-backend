@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/mdm9-modal-gallery-layout
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
 
 permissions:
   contents: write
@@ -34,7 +37,6 @@ jobs:
           base64 --decode /tmp/mdm9-min.b64 > /tmp/mdm9-min.zip
           rm -rf /tmp/mdm9-min
           unzip -q /tmp/mdm9-min.zip -d /tmp
-
           cp /tmp/mdm9-min/js/b-modal-product.js public/boutique/js/b-modal-product.js
           cp /tmp/mdm9-min/js/boutique.js public/boutique/js/boutique.js
           cp /tmp/mdm9-min/css/modal-mobile-canonical.css public/boutique/css/modal-mobile-canonical.css
@@ -51,24 +53,17 @@ jobs:
           python3 - <<'PY'
           import struct, zlib
           from pathlib import Path
-
           out = Path('public/boutique/tests/fixtures/images')
-
           def png(path, pixel):
               w = h = 1200
               raw = bytearray()
               for y in range(h):
                   raw.append(0)
-                  for x in range(w):
-                      raw.extend(pixel(x, y))
+                  for x in range(w): raw.extend(pixel(x, y))
               def chunk(kind, data):
                   return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data) & 0xffffffff)
-              payload = b'\x89PNG\r\n\x1a\n'
-              payload += chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
-              payload += chunk(b'IDAT', zlib.compress(bytes(raw), 9))
-              payload += chunk(b'IEND', b'')
+              payload = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(bytes(raw), 9)) + chunk(b'IEND', b'')
               path.write_bytes(payload)
-
           png(out / 'produit-plein-cadre.png', lambda x, y: (45, 122, 62))
           png(out / 'produit-fond-blanc.png', lambda x, y: (200, 92, 45) if 400 <= x < 800 and 400 <= y < 800 else (255, 255, 255))
           PY
@@ -82,19 +77,16 @@ jobs:
           const path = require('path');
           const manifestPath = 'features/catalog.feature.js';
           let source = fs.readFileSync(manifestPath, 'utf8');
-
           function addAfter(anchor, entry) {
             const line = `      '${entry}',`;
             if (source.includes(line)) return;
             if (!source.includes(anchor)) throw new Error(`Anchor absent: ${anchor}`);
             source = source.replace(anchor, `${anchor}\n${line}`);
           }
-
           addAfter("      'services/suppliers/normalized-product.js',", 'services/suppliers/json-source-pipeline.js');
           addAfter("      'services/suppliers/connectors/noon-connector.js',", 'services/suppliers/connectors/json-connector.js');
           addAfter("      'services/suppliers/catalog-import-orchestrator.js',", 'services/suppliers/catalog-import-json.js');
           source = source.replace("      'css/modal-product-price-normalization.css',\n", '');
-
           const needles = ['json-source-pipeline', 'json-connector', 'catalog-import-json'];
           const tests = [];
           function walk(dir) {
