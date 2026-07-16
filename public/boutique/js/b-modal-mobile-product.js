@@ -23,9 +23,13 @@
  *   OPTIONS (axes from option_axes[], thumbnails if available)
  *   INFO STRIP (dispo chip + delivery_options[] chips — single horizontal row)
  *   ── fold ──
- *   DESCRIPTION (truncated + read more)
- *   DETAILS (composition, entretien — if available)
+ *   DESCRIPTION, POINTS FORTS, CARACTÉRISTIQUES, COMPOSITION, ENTRETIEN,
+ *   À SAVOIR, SECTIONS ÉDITORIALES COMPLÉMENTAIRES — voir renderBelowFold()
+ *   pour l'ordre exact ; contenu piloté par content.* (Lot Content, commit 4)
  *   STICKY CTA BAR (qty + panier + acheter — existing shell actions)
+ *
+ * renderBelowFold() délègue tri/filtrage/regroupement/"lire la suite" à
+ * view-models/product-content-model.js — ce fichier ne possède que le DOM.
  *
  * Removed from mobile composition (MDM-8):
  * - renderSubtotal() → price + qty suffice on product sheet
@@ -47,6 +51,11 @@ import {
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { getCurrentPrice } from './b-modal-buybox-shared.js';
+import {
+  buildProductContentViewModel,
+  shouldOfferReadMore,
+  CONTENT_LABELS,
+} from './view-models/product-content-model.js';
 
 /* ── helpers ──────────────────────────────────────────────────── */
 
@@ -327,41 +336,175 @@ function renderActions(detail, selection) {
   });
 }
 
-/* ── MDM-7 : Description below fold ──────────────────────────── */
+/* ── MDM-7 : Below-fold enriched content ─────────────────────── */
 
-function renderBelowFold(detail, root) {
-  // Fold separator
-  const fold = document.createElement('hr');
-  fold.className = 'k-mdm-fold';
-  root.appendChild(fold);
+/**
+ * Section générique "texte replié" — utilisée par la description longue et
+ * par toute section éditoriale de type TEXT. Le bouton "Lire la suite"
+ * n'est posé que si offerReadMore est vrai (contenu réellement masqué par
+ * le clamp visuel) — jamais un bouton systématique (règle UX mobile).
+ */
+function appendTextSection(root, { heading, text, offerReadMore }) {
+  const section = document.createElement('section');
+  section.className = 'k-mdm-desc-section k-mdm-content-section';
 
-  // Description section — truncated, with "Lire la suite"
-  if (detail.product.description) {
-    const descSection = document.createElement('section');
-    descSection.className = 'k-mdm-desc-section';
+  const headingEl = document.createElement('h4');
+  headingEl.className = 'k-mdm-section-heading';
+  headingEl.textContent = heading;
+  section.appendChild(headingEl);
 
-    const heading = document.createElement('h4');
-    heading.className = 'k-mdm-section-heading';
-    heading.textContent = 'Description';
-    descSection.appendChild(heading);
+  const textEl = document.createElement('div');
+  textEl.className = offerReadMore ? 'k-mdm-desc-text' : 'k-mdm-desc-text k-mdm-desc-text--expanded';
+  textEl.textContent = text;
+  section.appendChild(textEl);
 
-    const text = document.createElement('div');
-    text.className = 'k-mdm-desc-text';
-    text.textContent = detail.product.description;
-    descSection.appendChild(text);
-
+  if (offerReadMore) {
     const readMore = document.createElement('button');
     readMore.className = 'k-mdm-read-more';
     readMore.type = 'button';
     readMore.textContent = 'Lire la suite';
     readMore.addEventListener('click', () => {
-      const expanded = text.classList.toggle('k-mdm-desc-text--expanded');
+      const expanded = textEl.classList.toggle('k-mdm-desc-text--expanded');
       readMore.textContent = expanded ? 'Réduire' : 'Lire la suite';
     });
-    descSection.appendChild(readMore);
-
-    root.appendChild(descSection);
+    section.appendChild(readMore);
   }
+
+  root.appendChild(section);
+}
+
+/** Section liste à puces compacte — points forts, composition, entretien, avertissements. */
+function appendBulletSection(root, { heading, items, variant }) {
+  if (!items.length) return;
+  const section = document.createElement('section');
+  section.className = `k-mdm-content-section k-mdm-content-section--${variant}`;
+
+  const headingEl = document.createElement('h4');
+  headingEl.className = 'k-mdm-section-heading';
+  headingEl.textContent = heading;
+  section.appendChild(headingEl);
+
+  const list = document.createElement('ul');
+  list.className = 'k-mdm-bullet-list';
+  items.forEach((item) => {
+    const li = document.createElement('li');
+    li.textContent = item;
+    list.appendChild(li);
+  });
+  section.appendChild(list);
+  root.appendChild(section);
+}
+
+/** Caractéristiques : liste clé/valeur, regroupée par group_key quand fourni. */
+function appendSpecificationsSection(root, specificationGroups) {
+  if (!specificationGroups.length) return;
+  const section = document.createElement('section');
+  section.className = 'k-mdm-content-section k-mdm-content-section--specs';
+
+  const headingEl = document.createElement('h4');
+  headingEl.className = 'k-mdm-section-heading';
+  headingEl.textContent = CONTENT_LABELS.specifications;
+  section.appendChild(headingEl);
+
+  specificationGroups.forEach((group) => {
+    if (group.group) {
+      const groupHeading = document.createElement('div');
+      groupHeading.className = 'k-mdm-spec-group-label';
+      groupHeading.textContent = group.group;
+      section.appendChild(groupHeading);
+    }
+
+    const dl = document.createElement('dl');
+    dl.className = 'k-mdm-spec-list';
+    group.items.forEach((item) => {
+      const dt = document.createElement('dt');
+      dt.textContent = item.label;
+      const dd = document.createElement('dd');
+      dd.textContent = item.unit ? `${item.value} ${item.unit}` : item.value;
+      dl.appendChild(dt);
+      dl.appendChild(dd);
+    });
+    section.appendChild(dl);
+  });
+
+  root.appendChild(section);
+}
+
+/** Sections éditoriales complémentaires — TEXT/BULLETS/KEY_VALUE, déjà ordonnées et filtrées par le view-model. */
+function appendEditorialSections(root, sections) {
+  sections.forEach((section) => {
+    if (section.type === 'TEXT') {
+      appendTextSection(root, {
+        heading: section.title,
+        text: section.text,
+        offerReadMore: section.offer_read_more,
+      });
+      return;
+    }
+
+    if (section.type === 'BULLETS') {
+      appendBulletSection(root, { heading: section.title, items: section.items, variant: 'editorial' });
+      return;
+    }
+
+    if (section.type === 'KEY_VALUE') {
+      const wrapper = document.createElement('section');
+      wrapper.className = 'k-mdm-content-section k-mdm-content-section--specs';
+      const headingEl = document.createElement('h4');
+      headingEl.className = 'k-mdm-section-heading';
+      headingEl.textContent = section.title;
+      wrapper.appendChild(headingEl);
+
+      const dl = document.createElement('dl');
+      dl.className = 'k-mdm-spec-list';
+      section.entries.forEach((entry) => {
+        const dt = document.createElement('dt');
+        dt.textContent = entry.label;
+        const dd = document.createElement('dd');
+        dd.textContent = entry.value;
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+      });
+      wrapper.appendChild(dl);
+      root.appendChild(wrapper);
+    }
+  });
+}
+
+/**
+ * Rend le contenu enrichi sous le fold, dans l'ordre canonique : description,
+ * points forts, caractéristiques, composition, entretien, avertissements,
+ * sections éditoriales complémentaires. Une collection vide ne rend rien —
+ * aucune coquille vide, aucun titre orphelin (règle MDM-9 : produit simple →
+ * seule la description s'affiche).
+ */
+function renderBelowFold(detail, root) {
+  const fold = document.createElement('hr');
+  fold.className = 'k-mdm-fold';
+  root.appendChild(fold);
+
+  const vm = buildProductContentViewModel(detail.content);
+
+  // Description longue — priorité au texte produit historique ; le chapeau
+  // éditorial (content.short_description), quand distinct, l'introduit sans
+  // jamais dupliquer le même texte deux fois.
+  const description = detail.product.description || '';
+  if (description) {
+    const lead =
+      vm.shortDescription && vm.shortDescription !== description ? `${vm.shortDescription}\n\n` : '';
+    appendTextSection(root, {
+      heading: 'Description',
+      text: `${lead}${description}`,
+      offerReadMore: shouldOfferReadMore(`${lead}${description}`),
+    });
+  }
+
+  appendBulletSection(root, { heading: CONTENT_LABELS.highlights, items: vm.highlights.map((h) => h.label), variant: 'highlights' });
+  appendSpecificationsSection(root, vm.specificationGroups);
+  appendBulletSection(root, { heading: CONTENT_LABELS.materials, items: vm.materials, variant: 'materials' });
+  appendBulletSection(root, { heading: CONTENT_LABELS.care, items: vm.care, variant: 'care' });
+  appendBulletSection(root, { heading: CONTENT_LABELS.warnings, items: vm.warnings, variant: 'warnings' });
+  appendEditorialSections(root, vm.sections);
 }
 
 /* ── Main render ──────────────────────────────────────────────── */

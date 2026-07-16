@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-16T22:32:53.067Z",
+  "generatedAt": "2026-07-16T23:12:34.170Z",
   "summary": {
-    "modules": 70,
-    "withHeader": 70,
+    "modules": 71,
+    "withHeader": 71,
     "events": 18,
     "declaredActive": 12,
     "declaredDead": 5,
@@ -978,7 +978,8 @@
         "b-scroll-owner.js",
         "b-modal-product.js",
         "b-modal-image-ux.js",
-        "view-models/modal-selection-model.js"
+        "view-models/modal-selection-model.js",
+        "view-models/product-content-model.js"
       ],
       "usedBy": [
         "b-modal-product-detail-bootstrap.js"
@@ -992,7 +993,8 @@
         "modal-selection-model",
         "b-modal-product",
         "b-modal-image-ux",
-        "b-modal-buybox-shared"
+        "b-modal-buybox-shared",
+        "product-content-model"
       ],
       "bodyClasses": []
     },
@@ -1055,7 +1057,8 @@
         "modal-selection-model",
         "b-modal-product",
         "b-modal-image-ux",
-        "b-modal-buybox-shared"
+        "b-modal-buybox-shared",
+        "product-content-model"
       ],
       "bodyClasses": []
     },
@@ -2115,6 +2118,30 @@
         "b-utils"
       ],
       "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/view-models/product-content-model.js",
+      "id": "product-content-model",
+      "hasHeader": true,
+      "role": "product-enriched-content-model",
+      "domain": "catalog",
+      "layer": "view-model",
+      "criticality": "medium",
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "b-modal-mobile-product.js",
+        "b-modal-desktop-product.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
     }
   ],
   "events": {
@@ -2304,6 +2331,7 @@
         "modal-product",
         "modal-product-lot4-hybrid",
         "modal-mobile-canonical",
+        "modal-enriched-content",
         "cart",
         "interactions",
         "hero-cart-proxy",

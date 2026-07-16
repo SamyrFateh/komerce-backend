@@ -206,10 +206,14 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(root.textContent).toContain('24 h');
     expect(root.textContent).toContain('Retrait');
 
-    // MDM-7 : description déplacée sous le fold, avec bouton "Lire la suite".
+    // MDM-7 : description déplacée sous le fold. "Robe longue" est courte
+    // (bien sous le seuil READ_MORE_CHAR_THRESHOLD) : Lot Content commit 4
+    // corrige MDM-7 pour ne plus poser de bouton "Lire la suite" quand rien
+    // n'est réellement masqué — voir b-modal-mobile-product.test.js pour la
+    // couverture explicite de cette règle (description longue vs courte).
     const descText = root.querySelector('.k-mdm-desc-text');
     expect(descText.textContent).toBe('Robe longue');
-    expect(root.querySelector('.k-mdm-read-more')).not.toBeNull();
+    expect(root.querySelector('.k-mdm-read-more')).toBeNull();
 
     expect(buildCarouselSlides).toHaveBeenCalledWith({
       name: 'Robe Dubaï',

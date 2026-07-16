@@ -57,6 +57,7 @@ module.exports = {
   files: {
     boutique: [
       '../js/view-models/modal-selection-model.js',
+      '../js/view-models/product-content-model.js',
       '../js/b-modal-product-detail-bootstrap.js',
       '../js/b-modal-mobile-product.js',
       '../js/b-modal-desktop-product.js',
@@ -66,12 +67,15 @@ module.exports = {
       '../css/modal-shell.css',
       '../css/modal-product.css',
       '../css/modal-product-lot4-hybrid.css',
+      '../css/modal-mobile-canonical.css',
+      '../css/modal-enriched-content.css',
     ],
     dist: [
       '../css/dist/components.css',
     ],
     tests: [
       '../tests/unit/modal-selection-model.test.js',
+      '../tests/unit/product-content-model.test.js',
       '../tests/unit/b-modal-mobile-product.test.js',
       '../tests/unit/b-modal-desktop-product.test.js',
       '../tests/unit/b-modal-buybox-shared.test.js',

@@ -132,6 +132,7 @@ module.exports = {
       'js/b-modal-approche-c-hybrid.js',
       'js/b-pdp-curation-suggestions.js',
       'js/view-models/modal-selection-model.js',
+      'js/view-models/product-content-model.js',
       'js/shop-schema.js',
       'js/b-pager.js',
       'js/b-subcat.js',
@@ -148,6 +149,7 @@ module.exports = {
       'css/modal-product.css',
       'css/modal-product-lot4-hybrid.css',
       'css/modal-mobile-canonical.css',
+      'css/modal-enriched-content.css',
     ],
     dash: [
       'dashboards/admin/js/views/SuppliersView.js',

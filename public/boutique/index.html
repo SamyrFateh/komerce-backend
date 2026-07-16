@@ -74,7 +74,7 @@ if('serviceWorker' in navigator){
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=118">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=152">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=154">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=52">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
@@ -454,6 +454,11 @@ if('serviceWorker' in navigator){
           <button class="k-buy-now-btn" id="k-buy-now-btn">⚡ Acheter</button>
         </div>
       </div><!-- end .k-modal-product-zone -->
+      <!-- Contenu enrichi (Lot Content) — sous la zone transactionnelle, peuplé
+           par b-modal-desktop-product.js / renderEnrichedContent(). Masqué mobile
+           (display:none par défaut) · révélé ≥900px via modal-enriched-content.css.
+           Vide/hidden pour un produit sans matière enrichie (aucun bloc fantôme). -->
+      <div id="k-modal-enriched-content" class="k-modal-enriched-content" hidden></div>
       <!-- Suggestions : pleine largeur desktop, dans le scroll mobile -->
       <div class="k-modal-suggestions" id="k-modal-suggestions">
         <h3>Vous aimerez aussi</h3>

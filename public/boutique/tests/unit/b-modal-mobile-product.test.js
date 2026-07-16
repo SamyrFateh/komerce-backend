@@ -208,3 +208,118 @@ describe('b-modal-mobile-product — extinction du sous-total et du paiement (MD
     expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(0);
   });
 });
+
+// Lot Content, commit 4 — below-fold consomme content.* via
+// view-models/product-content-model.js. Ces tests couvrent la composition
+// mobile réelle (DOM), pas le tri/filtrage (déjà couvert par
+// product-content-model.test.js).
+describe('b-modal-mobile-product — contenu enrichi below-fold (Lot Content)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  function belowFoldSections() {
+    return [...document.querySelectorAll('.k-mdm-content-section, .k-mdm-desc-section')];
+  }
+
+  test('produit pauvre (content absent) : seule la description s’affiche, aucune coquille vide (MDM-9)', () => {
+    const detail = baseDetail({ product: { id: 'p1', name: 'T-shirt', description: 'Un t-shirt simple.', category: '' } });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const sections = belowFoldSections();
+    expect(sections).toHaveLength(1);
+    expect(sections[0].querySelector('.k-mdm-section-heading').textContent).toBe('Description');
+    expect(document.querySelector('.k-mdm-content-section--highlights')).toBeNull();
+    expect(document.querySelector('.k-mdm-content-section--specs')).toBeNull();
+  });
+
+  test('produit pauvre sans description non plus : aucune section below-fold', () => {
+    const detail = baseDetail({ product: { id: 'p1', name: 'T-shirt', description: '', category: '' } });
+    renderMobileProductDetail(detail, baseSelection());
+    expect(belowFoldSections()).toHaveLength(0);
+  });
+
+  test('produit enrichi : rend points forts, caractéristiques, composition, entretien, avertissements, dans cet ordre', () => {
+    const detail = baseDetail({
+      product: { id: 'p1', name: 'Chaussure', description: 'Une chaussure de sport.', category: '' },
+      content: {
+        brand: 'Elite Pro',
+        short_description: null,
+        highlights: [{ key: 'h1', label: 'Grip renforcé' }, { key: 'h2', label: 'Ultra léger' }],
+        specifications: [
+          { group: 'Semelle', key: 's1', label: 'Type', value: 'Crampons FG', unit: null, display_order: 0 },
+        ],
+        sections: [],
+        materials: ['Cuir synthétique', 'Semelle TPU'],
+        care: ['Nettoyer avec un chiffon humide'],
+        warnings: ['Ne convient pas au terrain synthétique'],
+        provenance: { source: 'SUPPLIER', enrichment_version: null, reviewed: false },
+      },
+    });
+
+    renderMobileProductDetail(detail, baseSelection());
+
+    const headings = [...document.querySelectorAll('.k-mdm-section-heading')].map((el) => el.textContent);
+    expect(headings).toEqual(['Description', 'Points forts', 'Caractéristiques', 'Composition', 'Entretien', 'À savoir']);
+
+    const highlightItems = [...document.querySelectorAll('.k-mdm-content-section--highlights li')].map((li) => li.textContent);
+    expect(highlightItems).toEqual(['Grip renforcé', 'Ultra léger']);
+
+    expect(document.querySelector('.k-mdm-content-section--specs dt').textContent).toBe('Type');
+    expect(document.querySelector('.k-mdm-content-section--specs dd').textContent).toBe('Crampons FG');
+  });
+
+  test('description courte : aucun bouton "Lire la suite" (contenu non masqué)', () => {
+    const detail = baseDetail({ product: { id: 'p1', name: 'T-shirt', description: 'Court.', category: '' } });
+    renderMobileProductDetail(detail, baseSelection());
+    expect(document.querySelector('.k-mdm-read-more')).toBeNull();
+  });
+
+  test('description longue : bouton "Lire la suite" présent et fonctionnel', () => {
+    const long = 'Un tissu technique. '.repeat(20);
+    const detail = baseDetail({ product: { id: 'p1', name: 'T-shirt', description: long, category: '' } });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const readMore = document.querySelector('.k-mdm-read-more');
+    expect(readMore).not.toBeNull();
+    expect(readMore.textContent).toBe('Lire la suite');
+
+    readMore.click();
+    expect(readMore.textContent).toBe('Réduire');
+    expect(document.querySelector('.k-mdm-desc-text').classList.contains('k-mdm-desc-text--expanded')).toBe(true);
+  });
+
+  test('section éditoriale KEY_VALUE (ex. guide des tailles) : rendue en liste clé/valeur', () => {
+    const detail = baseDetail({
+      product: { id: 'p1', name: 'Chaussure', description: '', category: '' },
+      content: {
+        brand: null,
+        short_description: null,
+        highlights: [],
+        specifications: [],
+        sections: [
+          {
+            key: 'size-guide',
+            title: 'Guide des tailles',
+            type: 'KEY_VALUE',
+            text: null,
+            items: [],
+            entries: [{ label: '40', value: 'EU 40 / UK 6.5' }],
+            display_order: 0,
+          },
+        ],
+        materials: [],
+        care: [],
+        warnings: [],
+        provenance: { source: 'SUPPLIER', enrichment_version: null, reviewed: false },
+      },
+    });
+
+    renderMobileProductDetail(detail, baseSelection());
+
+    expect(document.querySelector('.k-mdm-section-heading').textContent).toBe('Guide des tailles');
+    expect(document.querySelector('.k-mdm-content-section--specs dt').textContent).toBe('40');
+    expect(document.querySelector('.k-mdm-content-section--specs dd').textContent).toBe('EU 40 / UK 6.5');
+  });
+});

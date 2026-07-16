@@ -1,12 +1,12 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-16T22:32:53.067Z.
+> Régénéré le 2026-07-16T23:12:34.170Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **70** (70 headés) · Événements bus : **18** · Bundles CSS : **3**
+- Modules JS : **71** (71 headés) · Événements bus : **18** · Bundles CSS : **3**
 - Endpoints appelés : **52** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
 
@@ -142,7 +142,7 @@ graph LR
 | Bundle | Sources |
 |---|---|
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
-| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `cart`, `interactions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal`, `wallet` |
+| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `cart`, `interactions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal`, `wallet` |
 | `css/dist/desktop.css` | `boutique-desktop` |
 
 ---

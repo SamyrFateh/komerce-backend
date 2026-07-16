@@ -1,0 +1,222 @@
+/**
+ * @komerce-arch-lite
+ * @role          product-enriched-content-styles
+ * @domain        catalog
+ * @layer         ui-style
+ * @owner         modal-product
+ * @purpose       Lot Content, commit 4 — styles du contenu produit enrichi
+ *                (content.*) rendu sous le fold mobile (b-modal-mobile-product.js)
+ *                et sous la zone transactionnelle desktop (b-modal-desktop-product.js).
+ *                Une seule feuille pour les deux compositions : même intelligence
+ *                produit, deux compositions responsive, un seul propriétaire CSS.
+ * @impact-areas  product-modal, mobile, desktop, product-content
+ * @version       2026-07
+ *
+ * Invariant I-3 : aucun hex/rgba — uniquement des tokens de tokens.css.
+ * Invariant I-5 : toute zone desktop-only reste exclusivement sous
+ * @media (min-width: 900px).
+ *
+ * Chargée après modal-mobile-canonical.css et modal-product.css dans le
+ * bundle components.css (voir scripts/css-bundles.js).
+ */
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE — blocs below-fold complémentaires à .k-mdm-desc-section
+   (heading/texte/read-more déjà stylés par modal-mobile-canonical.css ;
+   ce fichier n'ajoute que ce que la description seule ne couvrait pas :
+   listes à puces et listes clé/valeur).
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 899px) {
+
+  .k-mdm-content-section {
+    padding: 12px 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .k-mdm-bullet-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  .k-mdm-bullet-list li { margin-bottom: 2px; }
+  .k-mdm-bullet-list li:last-child { margin-bottom: 0; }
+
+  .k-mdm-content-section--highlights .k-mdm-bullet-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .k-mdm-content-section--highlights li {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .k-mdm-content-section--highlights li::before {
+    content: '✓';
+    color: var(--ocean-dark);
+    flex-shrink: 0;
+  }
+
+  .k-mdm-content-section--warnings .k-mdm-bullet-list {
+    color: var(--terracotta-dark);
+  }
+
+  .k-mdm-spec-group-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin: 8px 0 4px;
+  }
+
+  .k-mdm-spec-group-label:first-child { margin-top: 0; }
+
+  .k-mdm-spec-list {
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    row-gap: 4px;
+    column-gap: 8px;
+    font-size: 12px;
+  }
+
+  .k-mdm-spec-list dt {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .k-mdm-spec-list dd {
+    margin: 0;
+    color: var(--text);
+    font-weight: 500;
+    text-align: right;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP — #k-modal-enriched-content, sous la zone transactionnelle
+   Base mobile : masqué par défaut (règle I-5, même pattern que
+   .k-modal-delivery / .k-modal-payment dans modal-product.css §5).
+   ══════════════════════════════════════════════════════════════ */
+.k-modal-enriched-content { display: none; }
+
+@media (min-width: 900px) {
+
+  .k-modal-enriched-content {
+    display: block;
+    max-width: 920px;
+    margin: 8px auto 0;
+    padding: 24px 0 8px;
+    border-top: 1px solid var(--sand-dark);
+  }
+
+  .k-modal-enriched-content[hidden] { display: none; }
+
+  .k-modal-enriched-block {
+    padding: 16px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .k-modal-enriched-block:last-child { border-bottom: none; }
+
+  .k-modal-enriched-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: pre-line;
+  }
+
+  .k-modal-enriched-text.is-expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+  }
+
+  .k-modal-enriched-read-more {
+    display: block;
+    font-size: 13px;
+    color: var(--ocean);
+    font-weight: 500;
+    border: none;
+    background: none;
+    cursor: pointer;
+    margin-top: 6px;
+    padding: 0;
+  }
+
+  .k-modal-enriched-bullet-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    columns: 2;
+    column-gap: 32px;
+  }
+
+  .k-modal-enriched-block--highlights .k-modal-enriched-bullet-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .k-modal-enriched-block--highlights li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: var(--text);
+    font-weight: 500;
+    break-inside: avoid;
+  }
+
+  .k-modal-enriched-block--highlights li::before {
+    content: '✓';
+    color: var(--ocean-dark);
+    flex-shrink: 0;
+  }
+
+  .k-modal-enriched-block--warnings .k-modal-enriched-bullet-list {
+    color: var(--terracotta-dark);
+  }
+
+  .k-modal-enriched-spec-group-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin: 12px 0 6px;
+  }
+
+  .k-modal-enriched-spec-group-label:first-child { margin-top: 0; }
+
+  .k-modal-enriched-spec-list {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 8px;
+    column-gap: 24px;
+    font-size: 14px;
+  }
+
+  .k-modal-enriched-spec-list dt {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .k-modal-enriched-spec-list dd {
+    margin: 0 0 0 auto;
+    color: var(--text);
+    font-weight: 500;
+  }
+}

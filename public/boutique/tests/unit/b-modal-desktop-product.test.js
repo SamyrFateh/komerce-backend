@@ -153,6 +153,7 @@ function installDom() {
       <div id="k-modal-aed-price">legacy eur</div>
       <div id="k-modal-flash-bar">legacy promo</div>
       <div id="k-modal-stock-bar">legacy stock</div>
+      <div id="k-modal-enriched-content" hidden></div>
     </div>`;
 
   dom.modal = document.getElementById('k-modal');
@@ -369,5 +370,130 @@ describe('desktop product detail renderer', () => {
 
     expect(dom.modalVariants.innerHTML).toBe('');
     expect(buildCarouselSlides).not.toHaveBeenCalled();
+  });
+});
+
+// Lot Content, commit 4 — contenu enrichi sous la zone transactionnelle,
+// consommé via le même view-model partagé que le mobile
+// (view-models/product-content-model.js). Ces tests couvrent la composition
+// desktop réelle (DOM), pas le tri/filtrage.
+describe('desktop product detail renderer — contenu enrichi (Lot Content)', () => {
+  beforeEach(() => {
+    clearDesktopProductDetailState();
+    jest.clearAllMocks();
+    isDesktop.mockReturnValue(true);
+    installDom();
+  });
+
+  test('produit sans content : le conteneur reste vide et hidden, aucun bloc fantôme', () => {
+    const product = detail({ content: undefined });
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const el = document.getElementById('k-modal-enriched-content');
+    expect(el.hidden).toBe(true);
+    expect(el.innerHTML).toBe('');
+  });
+
+  test('produit enrichi : révèle le conteneur et rend les blocs dans l’ordre canonique', () => {
+    const product = detail({
+      content: {
+        brand: 'Elite Pro',
+        short_description: null,
+        highlights: [{ key: 'h1', label: 'Grip renforcé' }],
+        specifications: [
+          { group: 'Semelle', key: 's1', label: 'Type', value: 'Crampons FG', unit: null, display_order: 0 },
+        ],
+        sections: [
+          { key: 'guide', title: 'Guide des tailles', type: 'KEY_VALUE', text: null, items: [], entries: [{ label: '40', value: 'EU 40' }], display_order: 0 },
+        ],
+        materials: ['Cuir synthétique'],
+        care: ['Nettoyer à sec'],
+        warnings: ['Non conçu pour le terrain synthétique'],
+        provenance: { source: 'SUPPLIER', enrichment_version: null, reviewed: false },
+      },
+    });
+
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const el = document.getElementById('k-modal-enriched-content');
+    expect(el.hidden).toBe(false);
+
+    const headings = [...el.querySelectorAll('.k-modal-section-title')].map((h) => h.textContent);
+    expect(headings).toEqual(['Points forts', 'Caractéristiques', 'Composition', 'Entretien', 'À savoir', 'Guide des tailles']);
+  });
+
+  test('re-render (changement de sélection) ne duplique jamais les blocs enrichis', () => {
+    const product = detail({
+      content: {
+        brand: null,
+        short_description: null,
+        highlights: [{ key: 'h1', label: 'Grip renforcé' }],
+        specifications: [],
+        sections: [],
+        materials: [],
+        care: [],
+        warnings: [],
+        provenance: { source: 'SUPPLIER', enrichment_version: null, reviewed: false },
+      },
+    });
+
+    renderDesktopProductDetail(product, createModalSelection(product));
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const el = document.getElementById('k-modal-enriched-content');
+    expect(el.querySelectorAll('.k-modal-enriched-block--highlights')).toHaveLength(1);
+  });
+
+  test('conteneur absent du markup (compat) : le renderer ne casse pas', () => {
+    document.getElementById('k-modal-enriched-content').remove();
+    const product = detail({ content: { brand: null, short_description: null, highlights: [{ key: 'h1', label: 'X' }], specifications: [], sections: [], materials: [], care: [], warnings: [], provenance: { source: 'SUPPLIER', enrichment_version: null, reviewed: false } } });
+
+    expect(() => renderDesktopProductDetail(product, createModalSelection(product))).not.toThrow();
+  });
+
+  test('section éditoriale TEXT longue : bouton "Lire la suite" présent et fonctionnel', () => {
+    const long = 'Entretien détaillé du produit. '.repeat(15);
+    const product = detail({
+      content: {
+        brand: null,
+        short_description: null,
+        highlights: [],
+        specifications: [],
+        sections: [{ key: 'notice', title: 'Notice', type: 'TEXT', text: long, items: [], entries: [], display_order: 0 }],
+        materials: [],
+        care: [],
+        warnings: [],
+        provenance: { source: 'SUPPLIER', enrichment_version: null, reviewed: false },
+      },
+    });
+
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const readMore = document.querySelector('.k-modal-enriched-read-more');
+    expect(readMore).not.toBeNull();
+    readMore.click();
+    expect(readMore.textContent).toBe('Réduire');
+    expect(document.querySelector('.k-modal-enriched-text').classList.contains('is-expanded')).toBe(true);
+  });
+
+  test('section éditoriale BULLETS : rendue en liste à puces', () => {
+    const product = detail({
+      content: {
+        brand: null,
+        short_description: null,
+        highlights: [],
+        specifications: [],
+        sections: [{ key: 'usage', title: 'Conseils', type: 'BULLETS', text: null, items: ['Éviter le sable humide'], entries: [], display_order: 0 }],
+        materials: [],
+        care: [],
+        warnings: [],
+        provenance: { source: 'SUPPLIER', enrichment_version: null, reviewed: false },
+      },
+    });
+
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const items = [...document.querySelectorAll('.k-modal-enriched-block--editorial li')].map((li) => li.textContent);
+    expect(items).toEqual(['Éviter le sable humide']);
   });
 });

@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        product_detail_v1, modal_selection_state
  * @outputs       desktop_product_modal_dom
- * @depends       b-store.js, b-utils.js, b-scroll-owner.js, b-modal-product.js, b-modal-image-ux.js, view-models/modal-selection-model.js
+ * @depends       b-store.js, b-utils.js, b-scroll-owner.js, b-modal-product.js, b-modal-image-ux.js, view-models/modal-selection-model.js, view-models/product-content-model.js
  * @used-by       b-modal-product-detail-bootstrap.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
- * @impact-areas  product-modal, desktop, sku-selection, delivery-options, media-carousel
- * @version       2026-07
+ * @impact-areas  product-modal, desktop, sku-selection, delivery-options, media-carousel, product-content
+ * @version       2026-07 — Lot Content, commit 4 (contenu enrichi partagé)
  */
 
 'use strict';
@@ -28,6 +28,11 @@ import {
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { getCurrentPrice, renderSubtotalInto, renderPaymentModes, startGroupCartFlow } from './b-modal-buybox-shared.js';
+import {
+  buildProductContentViewModel,
+  shouldOfferReadMore,
+  CONTENT_LABELS,
+} from './view-models/product-content-model.js';
 
 let _qtyObserver = null;
 let _qtyObservedEl = null;
@@ -300,6 +305,154 @@ function renderDeliveryOptions(detail) {
   });
 }
 
+/* ── Lot Content, commit 4 : contenu enrichi sous la zone transactionnelle ──
+ * Même view-model que le mobile (view-models/product-content-model.js) —
+ * seule la composition DOM diffère. Aucun recalcul métier ici : tri,
+ * filtrage, regroupement et décision "Lire la suite" viennent tous du
+ * view-model partagé.
+ */
+
+function appendEnrichedTextBlock(container, { heading, text, offerReadMore }) {
+  const block = document.createElement('div');
+  block.className = 'k-modal-enriched-block';
+
+  const title = document.createElement('h3');
+  title.className = 'k-modal-section-title';
+  title.textContent = heading;
+  block.appendChild(title);
+
+  const textEl = document.createElement('p');
+  textEl.className = offerReadMore ? 'k-modal-enriched-text' : 'k-modal-enriched-text is-expanded';
+  textEl.textContent = text;
+  block.appendChild(textEl);
+
+  if (offerReadMore) {
+    const readMore = document.createElement('button');
+    readMore.type = 'button';
+    readMore.className = 'k-modal-enriched-read-more';
+    readMore.textContent = 'Lire la suite';
+    readMore.addEventListener('click', () => {
+      const expanded = textEl.classList.toggle('is-expanded');
+      readMore.textContent = expanded ? 'Réduire' : 'Lire la suite';
+    });
+    block.appendChild(readMore);
+  }
+
+  container.appendChild(block);
+}
+
+function appendEnrichedBulletBlock(container, { heading, items, variant }) {
+  if (!items.length) return;
+  const block = document.createElement('div');
+  block.className = `k-modal-enriched-block k-modal-enriched-block--${variant}`;
+
+  const title = document.createElement('h3');
+  title.className = 'k-modal-section-title';
+  title.textContent = heading;
+  block.appendChild(title);
+
+  const list = document.createElement('ul');
+  list.className = 'k-modal-enriched-bullet-list';
+  items.forEach((item) => {
+    const li = document.createElement('li');
+    li.textContent = item;
+    list.appendChild(li);
+  });
+  block.appendChild(list);
+  container.appendChild(block);
+}
+
+function appendEnrichedKeyValueBlock(container, { heading, entries }) {
+  const block = document.createElement('div');
+  block.className = 'k-modal-enriched-block k-modal-enriched-block--specs';
+
+  const title = document.createElement('h3');
+  title.className = 'k-modal-section-title';
+  title.textContent = heading;
+  block.appendChild(title);
+
+  const dl = document.createElement('dl');
+  dl.className = 'k-modal-enriched-spec-list';
+  entries.forEach(({ label, value }) => {
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.textContent = value;
+    dl.appendChild(dt);
+    dl.appendChild(dd);
+  });
+  block.appendChild(dl);
+  container.appendChild(block);
+}
+
+function appendEnrichedSpecifications(container, specificationGroups) {
+  if (!specificationGroups.length) return;
+  const block = document.createElement('div');
+  block.className = 'k-modal-enriched-block k-modal-enriched-block--specs';
+
+  const title = document.createElement('h3');
+  title.className = 'k-modal-section-title';
+  title.textContent = CONTENT_LABELS.specifications;
+  block.appendChild(title);
+
+  specificationGroups.forEach((group) => {
+    if (group.group) {
+      const groupLabel = document.createElement('div');
+      groupLabel.className = 'k-modal-enriched-spec-group-label';
+      groupLabel.textContent = group.group;
+      block.appendChild(groupLabel);
+    }
+    const dl = document.createElement('dl');
+    dl.className = 'k-modal-enriched-spec-list';
+    group.items.forEach((item) => {
+      const dt = document.createElement('dt');
+      dt.textContent = item.label;
+      const dd = document.createElement('dd');
+      dd.textContent = item.unit ? `${item.value} ${item.unit}` : item.value;
+      dl.appendChild(dt);
+      dl.appendChild(dd);
+    });
+    block.appendChild(dl);
+  });
+
+  container.appendChild(block);
+}
+
+/**
+ * Rend content.* dans #k-modal-enriched-content, sous la zone transactionnelle
+ * (galerie + buy box). No-op si le conteneur est absent du shell (compat
+ * markup non encore migré) ou si le produit n'a aucune matière enrichie —
+ * jamais de bloc vide, comme en mobile.
+ */
+function renderEnrichedContent(detail) {
+  const container = document.getElementById('k-modal-enriched-content');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const vm = buildProductContentViewModel(detail.content);
+  if (!vm.hasEnrichedContent) {
+    container.hidden = true;
+    return;
+  }
+  container.hidden = false;
+
+  appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.highlights, items: vm.highlights.map((h) => h.label), variant: 'highlights' });
+  appendEnrichedSpecifications(container, vm.specificationGroups);
+  appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.materials, items: vm.materials, variant: 'materials' });
+  appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.care, items: vm.care, variant: 'care' });
+  appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.warnings, items: vm.warnings, variant: 'warnings' });
+
+  vm.sections.forEach((section) => {
+    if (section.type === 'TEXT') {
+      appendEnrichedTextBlock(container, { heading: section.title, text: section.text, offerReadMore: section.offer_read_more });
+    } else if (section.type === 'BULLETS') {
+      appendEnrichedBulletBlock(container, { heading: section.title, items: section.items, variant: 'editorial' });
+    } else if (section.type === 'KEY_VALUE') {
+      appendEnrichedKeyValueBlock(container, { heading: section.title, entries: section.entries });
+    }
+  });
+}
+
 function renderSubtotal(detail, selection) {
   const actions = modalZone('.k-modal-actions');
   if (!actions) return;
@@ -381,6 +534,7 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
   renderDeliveryOptions(detail);
   renderSubtotal(detail, selection);
   renderPaymentSection(detail, selection);
+  renderEnrichedContent(detail);
   renderMedia(detail, selection, forceMedia);
   ensureQtyObserver();
 }

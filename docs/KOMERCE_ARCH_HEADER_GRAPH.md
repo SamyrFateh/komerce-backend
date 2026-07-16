@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 376
-- Files with full headers: 349
+- Scanned code files: 377
+- Files with full headers: 350
 - Files with lite headers: 27
-- Files with any headers: 376
+- Files with any headers: 377
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 771
-- Edges: 4345
+- Graph nodes: 773
+- Edges: 4355
 - DB tables: 116
 - Doctrines: 154
-- Impact areas: 125
+- Impact areas: 126
 - Unresolved code edges: 418
 - Tables multi-écrivains directs (>=2): 67
 - Avertissements db-write / db-write-via en chevauchement: 0
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 4
 - bootstrap: 1
 - boutique: 36
-- catalog: 51
+- catalog: 52
 - checkout: 2
 - customs: 6
 - dashboard: 28
@@ -84,7 +84,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - util: 24
 - util-ui: 2
 - validators: 1
-- view-model: 4
+- view-model: 5
 
 ## Critical And High Files
 
