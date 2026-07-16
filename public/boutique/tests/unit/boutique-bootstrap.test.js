@@ -195,6 +195,36 @@ describe('syncModalViewportOwner (fix Samsung Internet)', () => {
     expect(modal.style.maxHeight).toBe('512px');
   });
 
+  it('mobile : expose --k-modal-vvh (même valeur que style.height) pour .k-modal-img-wrap', () => {
+    // Reproduit le bug Samsung Internet MDM-8 phase 3 : la modal est
+    // correctement redimensionnée sur le Visual Viewport, mais sans cette
+    // variable, .k-modal-img-wrap (48vh/48dvh en CSS statique) resterait
+    // désynchronisée de cette même mesure et pourrait rogner le prix.
+    const vvResizeListeners = [];
+    const vv = {
+      height: 540.8,
+      addEventListener: jest.fn((eventName, handler) => {
+        if (eventName === 'resize') vvResizeListeners.push(handler);
+      }),
+    };
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: vv });
+
+    jest.isolateModules(() => {
+      require('../../js/boutique.js');
+    });
+
+    const modal = document.getElementById('k-modal');
+    expect(modal.style.getPropertyValue('--k-modal-vvh')).toBe('540px');
+
+    // Simule le changement de paramétrage d'affichage Samsung (toolbar
+    // qui se rétracte/apparaît) : visualViewport.resize doit resynchroniser
+    // la variable, pas seulement style.height.
+    vv.height = 662.3;
+    vvResizeListeners[0]();
+    expect(modal.style.height).toBe('662px');
+    expect(modal.style.getPropertyValue('--k-modal-vvh')).toBe('662px');
+  });
+
   it('mobile sans visualViewport : utilise innerHeight en fallback', () => {
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 684 });
 
@@ -226,5 +256,6 @@ describe('syncModalViewportOwner (fix Samsung Internet)', () => {
 
     expect(modal.style.height).toBe('');
     expect(modal.style.maxHeight).toBe('');
+    expect(modal.style.getPropertyValue('--k-modal-vvh')).toBe('');
   });
 });

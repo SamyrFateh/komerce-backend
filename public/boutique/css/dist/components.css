@@ -5008,11 +5008,23 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   /* Replaces the tactical guard from modal-product-price-normalization.css.
      48vh cap ensures identity + first axis visible without scroll on ≥700px
-     viewports. min-height prevents excessive compression on short screens. */
+     viewports. min-height prevents excessive compression on short screens.
+
+     FIX Samsung Internet (prix rogné, MDM-8 phase 3) : vh/dvh statiques ne
+     reflètent pas forcément la hauteur réellement visible sur certains
+     Samsung Internet, alors que #k-modal (modal-shell.css + boutique.js
+     syncModalViewportOwner) est déjà fiabilisé sur le Visual Viewport réel.
+     --k-modal-vvh porte cette même mesure (posée par boutique.js) : la
+     dernière déclaration calc() gagne la cascade dès qu'elle est présente
+     (modal ouverte), vh/dvh restent le fallback avant que le JS ne tourne. */
   #k-modal .k-modal-img-wrap {
     min-height: 180px;
     max-height: 48vh;
+    max-height: 48dvh;
+    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
     height: 48vh;
+    height: 48dvh;
+    height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
   }
 
   /* ── MDM-4 : Variant groups (tighter spacing) ──────────────── */

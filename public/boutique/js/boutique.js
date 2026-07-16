@@ -119,8 +119,16 @@ import './b-cart-stepper-guard.js'; // correctif capture document vs boutons +/-
 // L'overlay fixed peut rester dimensionné sur le layout viewport, qui inclut une zone
 // masquée par les barres du navigateur sur certains Samsung Internet. `height:100%`
 // reproduit alors exactement cette hauteur trop grande. La modal reçoit donc directement
-// la hauteur en pixels du Visual Viewport ; aucun bundle CSS ni variable --k-vh n'est
-// nécessaire pour que le runtime prenne effet. `innerHeight` reste le fallback standard.
+// la hauteur en pixels du Visual Viewport. `innerHeight` reste le fallback standard.
+//
+// [MDM-8 phase 3] --k-modal-vvh : .k-modal-img-wrap répartit 48% de la hauteur
+// via une unité vh/dvh statique (modal-mobile-canonical.css), déconnectée de
+// la mesure ci-dessus. Sur certains Samsung Internet, dvh elle-même peut
+// reproduire la hauteur "layout viewport" trop grande — un pourcentage calculé
+// en CSS via vh/dvh hérite donc du même bug, juste déplacé sur la zone média
+// au lieu du prix. On réexpose visibleHeight (déjà fiabilisée ci-dessus) en
+// variable CSS sur #k-modal, réutilisée telle quelle par modal-mobile-canonical.css
+// via calc() — pas une nouvelle source de mesure, la même.
 function syncModalViewportOwner() {
   const modal = document.getElementById('k-modal');
   if (!modal) return;
@@ -134,9 +142,11 @@ function syncModalViewportOwner() {
 
     modal.style.height = visibleHeight + 'px';
     modal.style.maxHeight = visibleHeight + 'px';
+    modal.style.setProperty('--k-modal-vvh', visibleHeight + 'px');
   } else {
     modal.style.removeProperty('height');
     modal.style.removeProperty('max-height');
+    modal.style.removeProperty('--k-modal-vvh');
   }
 }
 
