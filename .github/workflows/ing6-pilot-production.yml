@@ -26,6 +26,7 @@ jobs:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: 1c5c37ab-557b-41b1-885a-8b3ead573795
       RAILWAY_ENVIRONMENT_ID: 7a0ce7dc-93a0-4bfa-88c9-088f70e8883a
+      RAILWAY_POSTGRES_SERVICE_ID: 3b4520db-f7ce-43b4-b37c-acf58ec1bdcb
 
     steps:
       - name: Checkout isolated operations branch
@@ -44,64 +45,61 @@ jobs:
           fi
           railway --version
 
-      - name: Discover project services without secrets
+      - name: Inspect Postgres endpoint variable names without secrets
         shell: bash
         run: |
           set -euo pipefail
-          railway status \
+          railway variable list \
             --project "$RAILWAY_PROJECT_ID" \
             --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --json > /tmp/railway-status.json
+            --service "$RAILWAY_POSTGRES_SERVICE_ID" \
+            --json > /tmp/postgres-vars.json
 
-          node - <<'NODE' > /tmp/railway-services-safe.txt
+          node - <<'NODE' > /tmp/postgres-endpoints-safe.txt
           const fs = require('fs');
-          const root = JSON.parse(fs.readFileSync('/tmp/railway-status.json', 'utf8'));
-          const rows = [];
-          const seen = new Set();
+          const vars = JSON.parse(fs.readFileSync('/tmp/postgres-vars.json', 'utf8'));
+          const entries = Object.entries(vars).sort(([a], [b]) => a.localeCompare(b));
 
-          function walk(value, path = []) {
-            if (Array.isArray(value)) {
-              value.forEach((item, index) => walk(item, path.concat(index)));
-              return;
-            }
-            if (!value || typeof value !== 'object') return;
-
-            const id = typeof value.id === 'string' ? value.id : null;
-            const name = typeof value.name === 'string' ? value.name : null;
-            const serviceId = typeof value.serviceId === 'string' ? value.serviceId : null;
-            const serviceName = typeof value.serviceName === 'string' ? value.serviceName : null;
-            const candidateId = serviceId || id;
-            const candidateName = serviceName || name;
-            const pathText = path.join('.');
-            const looksService = /service|deployment|resource/i.test(pathText)
-              || serviceId || serviceName
-              || /postgres|database|komerce|backend/i.test(candidateName || '');
-
-            if (looksService && candidateId && candidateName) {
-              const key = `${candidateId}:${candidateName}`;
-              if (!seen.has(key)) {
-                seen.add(key);
-                rows.push({ id: candidateId, name: candidateName, path: pathText });
-              }
-            }
-
-            for (const [key, child] of Object.entries(value)) {
-              walk(child, path.concat(key));
+          console.log('POSTGRES_VARIABLE_NAMES');
+          for (const [key] of entries) {
+            if (/(DATABASE|PG|POSTGRES|TCP|PROXY|HOST|PORT|PUBLIC)/i.test(key)) {
+              console.log(key);
             }
           }
 
-          walk(root);
-          console.log('PROJECT_SERVICES');
-          for (const row of rows) {
-            console.log(`${row.name}\t${row.id}\t${row.path}`);
+          console.log('ENDPOINT_CLASSES');
+          for (const [key, raw] of entries) {
+            if (!/(DATABASE|PGHOST|RAILWAY.*(TCP|PROXY|PUBLIC)|HOST|PORT)/i.test(key)) continue;
+            const value = String(raw ?? '');
+            if (!value) continue;
+            let host = null;
+            let port = null;
+            try {
+              if (value.includes('://')) {
+                const parsed = new URL(value);
+                host = parsed.hostname;
+                port = parsed.port || null;
+              } else if (/HOST|DOMAIN/i.test(key)) {
+                host = value;
+              } else if (/PORT/i.test(key)) {
+                port = value;
+              }
+            } catch (_) {}
+
+            if (host) {
+              const kind = host.endsWith('.railway.internal') ? 'private' : 'public-or-external';
+              console.log(`${key}: host-kind=${kind}; port-present=${Boolean(port)}`);
+            } else if (port) {
+              console.log(`${key}: port-present=true`);
+            }
           }
           NODE
 
-      - name: Upload safe service discovery
+      - name: Upload safe Postgres endpoint diagnostic
         uses: actions/upload-artifact@v4
         with:
-          name: railway-services-safe
-          path: /tmp/railway-services-safe.txt
+          name: railway-postgres-endpoints-safe
+          path: /tmp/postgres-endpoints-safe.txt
           if-no-files-found: error
 
       - name: Stop before any database write
