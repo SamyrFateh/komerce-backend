@@ -2,7 +2,7 @@ name: Apply and validate ING6 final
 
 on:
   pull_request:
-    types: [reopened]
+    types: [synchronize]
     branches:
       - main
 
