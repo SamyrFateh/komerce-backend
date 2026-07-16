@@ -3,10 +3,11 @@
 /**
  * tests/unit/catalog-promotion.test.js
  *
- * Couvre services/catalog-promotion.js (PDC-8 Lot 6) : orchestration
- * transactionnelle de la promotion normalized_source_contract V2 →
- * catalogue canonique (catalog_media, product_variants, product_skus,
- * product_sku_media).
+ * Couvre services/catalog-promotion.js (PDC-8 Lot 6 + Lot Content) :
+ * orchestration transactionnelle de la promotion normalized_source_contract
+ * V2 → catalogue canonique (catalog_media, product_variants, product_skus,
+ * product_sku_media, product_content_profile, product_content_sections,
+ * product_attributes).
  *
  * Ce module ne fait jamais BEGIN/COMMIT/ROLLBACK — il reçoit un client déjà
  * en transaction. Les tests fournissent donc un client scripté (mock-db
@@ -18,14 +19,39 @@
  *   ✅ contrat V2 invalide (schema_version incorrecte) → rejet 422, aucune écriture
  *   ✅ sellable_units explicitement vide → rejet 422 explicite
  *   ✅ purchase_price invalide → rejet 422
- *   ✅ nominal complet : media + axes + SKU create + couture SKU↔media
+ *   ✅ nominal complet : media + axes + SKU create + couture SKU↔media + content
  *   ✅ re-promotion : SKU existant conservé (update, pas re-création), média par identité mis à jour
  *   ✅ stock inconnu sur update → stock existant jamais écrasé (CASE WHEN stockKnown)
  *   ✅ SKU disparu → désactivé, jamais supprimé
+ *
+ * Le contenu (profil/sections/attributs) a sa propre suite dédiée :
+ * tests/unit/catalog-promotion-content.test.js (mapping pur) et
+ * tests/unit/catalog-promotion-content-db.test.js (écriture DB idempotente,
+ * override manuel, désactivation, ré-promotion).
  */
 
 const { makeClient } = require('../integration/test-harness/mock-db');
 const { promoteCatalog, validateForPromotion } = require('../../services/catalog-promotion');
+
+// baseContractV2() ne porte aucun champ éditorial (brand/highlights/specifications/
+// sections/materials/care/warnings tous absents) -> mapContentToProfileRow renvoie un
+// profil tout-null, mapContentToSectionRows/AttributeRows renvoient []. promoteContent
+// émet donc systématiquement exactement 3 requêtes dans ce cas : 1 upsert profil (0
+// override manuel préexistant -> mis à jour) + 1 désactivation sections (portée vide,
+// no-op côté données mais la requête part) + 1 désactivation attributs (idem).
+function noEditorialContentMocks() {
+  return [
+    { rows: [{ id: 'content-profile-1' }] }, // INSERT product_content_profile ... RETURNING id
+    { rows: [], rowCount: 0 },               // UPDATE product_content_sections (désactivation, portée vide)
+    { rows: [], rowCount: 0 },               // UPDATE product_attributes (désactivation, portée vide)
+  ];
+}
+
+const EMPTY_CONTENT_RESULT = {
+  profile: 'upserted',
+  sections: { upserted: 0, deactivated: 0 },
+  attributes: { upserted: 0, deactivated: 0 },
+};
 
 function baseContractV2(overrides = {}) {
   return {
@@ -114,6 +140,8 @@ describe('catalog-promotion (Lot 6)', () => {
         { rows: [{ id: 'sku-1', supplier_sku: 'SKU-1' }] },
         // 5. INSERT product_sku_media (sku-1 <-> media-1)
         { rows: [] },
+        // 6-8. Lot Content (contrat sans champ éditorial) : profil + désactivation sections/attributs
+        ...noEditorialContentMocks(),
       ]);
 
       const result = await promoteCatalog(client, {
@@ -127,6 +155,7 @@ describe('catalog-promotion (Lot 6)', () => {
         variants: 1,
         skus: { count: 1 },
         skuMediaLinks: 1,
+        content: EMPTY_CONTENT_RESULT,
       });
 
       expect(client.calls[0].sql).toMatch(/INSERT INTO catalog_media/);
@@ -145,6 +174,7 @@ describe('catalog-promotion (Lot 6)', () => {
         { rows: [{ id: 'sku-1', supplier_sku: 'SKU-1', source: 'SUPPLIER', variant_combo: { couleur: 'Rouge' }, stock: 3, is_active: true }] }, // existing skus
         { rows: [] }, // UPDATE product_skus
         { rows: [] }, // INSERT product_sku_media
+        ...noEditorialContentMocks(),
       ]);
 
       const result = await promoteCatalog(client, {
@@ -153,6 +183,7 @@ describe('catalog-promotion (Lot 6)', () => {
       });
 
       expect(result.skus).toEqual({ count: 1 });
+      expect(result.content).toEqual(EMPTY_CONTENT_RESULT);
       expect(client.calls[3].sql).toMatch(/UPDATE product_skus/);
       expect(client.calls[3].sql).not.toMatch(/INSERT INTO product_skus/);
       // stockKnown=true (stock_available: 10 fourni) -> stock écrasé à 10
@@ -169,6 +200,7 @@ describe('catalog-promotion (Lot 6)', () => {
         { rows: [{ id: 'sku-1', supplier_sku: 'SKU-1', source: 'SUPPLIER', variant_combo: { couleur: 'Rouge' }, stock: 7, is_active: true }] },
         { rows: [] },
         { rows: [] },
+        ...noEditorialContentMocks(),
       ]);
 
       await promoteCatalog(client, { productId: 'prod-1', normalizedSourceContract: contract });
@@ -194,11 +226,13 @@ describe('catalog-promotion (Lot 6)', () => {
         { rows: [{ id: 'sku-2', supplier_sku: 'SKU-2' }] }, // création SKU-2
         { rows: [] }, // désactivation SKU-1
         // aucun media_refs -> pas d'INSERT product_sku_media
+        ...noEditorialContentMocks(),
       ]);
 
       const result = await promoteCatalog(client, { productId: 'prod-1', normalizedSourceContract: contractReplaced });
 
       expect(result.skuMediaLinks).toBe(0);
+      expect(result.content).toEqual(EMPTY_CONTENT_RESULT);
       const deactivateCall = client.calls.find((c) => /UPDATE product_skus SET is_active = false/.test(c.sql));
       expect(deactivateCall).toBeTruthy();
       expect(deactivateCall.params).toEqual(['sku-1']);

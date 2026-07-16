@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 375,
-    "filesWithFullHeaders": 348,
+    "scannedCodeFiles": 376,
+    "filesWithFullHeaders": 349,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 375,
+    "filesWithAnyHeaders": 376,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 769,
-    "edges": 4335,
+    "graphNodes": 771,
+    "edges": 4345,
     "dbTables": 116,
-    "doctrines": 153,
+    "doctrines": 154,
     "impactAreas": 125,
-    "unresolvedCodeEdges": 416,
+    "unresolvedCodeEdges": 418,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 67
   },
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 50,
+    "catalog": 51,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 4,
@@ -84,7 +84,7 @@
     "schema": 1,
     "route": 100,
     "entrypoint": 1,
-    "service": 153,
+    "service": 154,
     "external-adapter": 2,
     "machine": 2,
     "policy": 1,
@@ -94,7 +94,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 103,
-    "high": 162,
+    "high": 163,
     "low": 34
   },
   "nodes": [
@@ -9441,12 +9441,16 @@
         "catalog_media_rows",
         "product_variants_rows",
         "product_skus_rows",
-        "product_sku_media_rows"
+        "product_sku_media_rows",
+        "product_content_profile_row",
+        "product_content_sections_rows",
+        "product_attributes_rows"
       ],
       "depends": [
         "services/catalog-promotion/axes.js",
         "services/catalog-promotion/sku.js",
         "services/catalog-promotion/sku-media.js",
+        "services/catalog-promotion/content.js",
         "services/suppliers/normalized-product.js"
       ],
       "usedBy": [
@@ -9457,6 +9461,9 @@
       ],
       "dbWrite": [
         "catalog_media",
+        "product_attributes",
+        "product_content_profile",
+        "product_content_sections",
         "product_sku_media",
         "product_skus",
         "product_variants"
@@ -9467,12 +9474,13 @@
       ],
       "doctrine": [
         "PDC-8 (tous lots)",
-        "DOCTRINE_INGESTION_CATALOGUE.md"
+        "DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
       ],
       "impactAreas": [
         "catalog"
       ],
-      "version": "2026-07"
+      "version": "2026-07 — fiche produit enrichie : promotion idempotente du contenu"
     },
     {
       "id": "services/catalog-promotion/axes.js",
@@ -9504,6 +9512,45 @@
       "doctrine": [
         "PDC-8 §OPTION AXES",
         "§DOCTRINE ZÉRO HEURISTIQUE"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "version": "2026-07"
+    },
+    {
+      "id": "services/catalog-promotion/content.js",
+      "file": "services/catalog-promotion/content.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-promotion-content-mapping",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "normalized_source_contract (brand",
+        "short_description",
+        "highlights[]"
+      ],
+      "outputs": [
+        "product_content_profile_row",
+        "product_content_sections_rows"
+      ],
+      "depends": [
+        "@none"
+      ],
+      "usedBy": [
+        "services/catalog-promotion.js (Lot Content)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "PDC-8 (fiche produit enrichie)",
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
       ],
       "impactAreas": [
         "catalog"
@@ -15925,9 +15972,9 @@
       ],
       "dbRead": [],
       "dbWrite": [
-        "supplier_catalog_imports",
         "sourcing_candidates",
-        "supplier_catalog_import_rejections"
+        "supplier_catalog_import_rejections",
+        "supplier_catalog_imports"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -18733,6 +18780,11 @@
       "id": "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
       "type": "doctrine",
       "doctrine": "§DOCTRINE ZÉRO HEURISTIQUE"
+    },
+    {
+      "id": "doctrine:PDC-8 (fiche produit enrichie)",
+      "type": "doctrine",
+      "doctrine": "PDC-8 (fiche produit enrichie)"
     },
     {
       "id": "doctrine:PDC-8 §RELATION SKU ↔ MEDIA",
@@ -32986,6 +33038,12 @@
     },
     {
       "from": "services/catalog-promotion.js",
+      "to": "services/catalog-promotion/content.js",
+      "type": "depends",
+      "label": "services/catalog-promotion/content.js"
+    },
+    {
+      "from": "services/catalog-promotion.js",
       "to": "services/suppliers/normalized-product.js",
       "type": "depends",
       "label": "services/suppliers/normalized-product.js"
@@ -33007,6 +33065,24 @@
       "to": "db:catalog_media",
       "type": "db-write",
       "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "db:product_attributes",
+      "type": "db-write",
+      "label": "product_attributes"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "db:product_content_profile",
+      "type": "db-write",
+      "label": "product_content_profile"
+    },
+    {
+      "from": "services/catalog-promotion.js",
+      "to": "db:product_content_sections",
+      "type": "db-write",
+      "label": "product_content_sections"
     },
     {
       "from": "services/catalog-promotion.js",
@@ -33040,6 +33116,12 @@
     },
     {
       "from": "services/catalog-promotion.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
+    },
+    {
+      "from": "services/catalog-promotion.js",
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
@@ -33070,6 +33152,36 @@
     },
     {
       "from": "services/catalog-promotion/axes.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-promotion/content.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/catalog-promotion.js (Lot Content)",
+      "to": "services/catalog-promotion/content.js",
+      "type": "uses",
+      "label": "services/catalog-promotion.js (Lot Content)"
+    },
+    {
+      "from": "services/catalog-promotion/content.js",
+      "to": "doctrine:PDC-8 (fiche produit enrichie)",
+      "type": "doctrine",
+      "label": "PDC-8 (fiche produit enrichie)"
+    },
+    {
+      "from": "services/catalog-promotion/content.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
+    },
+    {
+      "from": "services/catalog-promotion/content.js",
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
@@ -42820,12 +42932,6 @@
     },
     {
       "from": "services/suppliers/catalog-import-json.js",
-      "to": "db:supplier_catalog_imports",
-      "type": "db-write",
-      "label": "supplier_catalog_imports"
-    },
-    {
-      "from": "services/suppliers/catalog-import-json.js",
       "to": "db:sourcing_candidates",
       "type": "db-write",
       "label": "sourcing_candidates"
@@ -42835,6 +42941,12 @@
       "to": "db:supplier_catalog_import_rejections",
       "type": "db-write",
       "label": "supplier_catalog_import_rejections"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-write",
+      "label": "supplier_catalog_imports"
     },
     {
       "from": "services/suppliers/catalog-import-json.js",
@@ -54950,6 +55062,7 @@
         "services/catalog-promotion/axes.js",
         "services/catalog-promotion/sku.js",
         "services/catalog-promotion/sku-media.js",
+        "services/catalog-promotion/content.js",
         "services/suppliers/normalized-product.js"
       ],
       "directUsedBy": [
@@ -54961,6 +55074,9 @@
       ],
       "dbWrite": [
         "catalog_media",
+        "product_attributes",
+        "product_content_profile",
+        "product_content_sections",
         "product_sku_media",
         "product_skus",
         "product_variants"
@@ -54968,21 +55084,27 @@
       "dbWriteVia": [],
       "doctrines": [
         "PDC-8 (tous lots)",
-        "DOCTRINE_INGESTION_CATALOGUE.md"
+        "DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
       ],
       "impactAreas": [
         "catalog"
       ],
       "mustCheck": [
         "db:catalog_media",
+        "db:product_attributes",
+        "db:product_content_profile",
+        "db:product_content_sections",
         "db:product_sku_media",
         "db:product_skus",
         "db:product_variants",
         "doctrine:DOCTRINE_INGESTION_CATALOGUE.md",
         "doctrine:PDC-8 (tous lots)",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
         "impact:catalog",
         "routes/sourcing-scanner.js",
         "services/catalog-promotion/axes.js",
+        "services/catalog-promotion/content.js",
         "services/catalog-promotion/sku-media.js",
         "services/catalog-promotion/sku.js",
         "services/suppliers/normalized-product.js"
@@ -55015,6 +55137,37 @@
       "mustCheck": [
         "doctrine:PDC-8 §OPTION AXES",
         "doctrine:§DOCTRINE ZÉRO HEURISTIQUE",
+        "impact:catalog",
+        "services/catalog-promotion.js"
+      ]
+    },
+    "services/catalog-promotion/content.js": {
+      "role": "catalog-promotion-content-mapping",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "@none"
+      ],
+      "directUsedBy": [
+        "services/catalog-promotion.js (Lot Content)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "PDC-8 (fiche produit enrichie)",
+        "docs/doctrine/DOCTRINE_CATALOGUE.md §5"
+      ],
+      "impactAreas": [
+        "catalog"
+      ],
+      "mustCheck": [
+        "doctrine:PDC-8 (fiche produit enrichie)",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md §5",
         "impact:catalog",
         "services/catalog-promotion.js"
       ]
@@ -61174,9 +61327,9 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [
-        "supplier_catalog_imports",
         "sourcing_candidates",
-        "supplier_catalog_import_rejections"
+        "supplier_catalog_import_rejections",
+        "supplier_catalog_imports"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -65156,6 +65309,18 @@
       "to": "services/catalog-promotion/axes.js",
       "type": "uses",
       "label": "services/catalog-promotion.js (Lot 6)"
+    },
+    {
+      "from": "services/catalog-promotion/content.js",
+      "to": "@none",
+      "type": "depends",
+      "label": "@none"
+    },
+    {
+      "from": "services/catalog-promotion.js (Lot Content)",
+      "to": "services/catalog-promotion/content.js",
+      "type": "uses",
+      "label": "services/catalog-promotion.js (Lot Content)"
     },
     {
       "from": "services/catalog-promotion/sku-media.js",

@@ -312,6 +312,9 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
       { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Robe', purchase_price_kmf: 1000, normalized_source_contract: contract }] },
       { rows: [{ id: 'prod-5' }] }, // INSERT products
       { rows: [] },                  // SELECT product_skus existants (Lot 6, aucun)
+      { rows: [{ id: 'content-profile-5' }] }, // INSERT product_content_profile (contrat sans champ éditorial)
+      { rows: [], rowCount: 0 },     // UPDATE product_content_sections (désactivation, portée vide)
+      { rows: [], rowCount: 0 },     // UPDATE product_attributes (désactivation, portée vide)
       { rows: [] },                  // UPDATE candidate
       { rows: [] },                  // INSERT event
     ]);
@@ -323,7 +326,18 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
       .send({ price_kmf: 5000 });
 
     expect(res.status).toBe(200);
-    expect(res.body.promotion).toEqual({ promoted: true, media: 0, variants: 0, skus: { count: 0 }, skuMediaLinks: 0 });
+    expect(res.body.promotion).toEqual({
+      promoted: true,
+      media: 0,
+      variants: 0,
+      skus: { count: 0 },
+      skuMediaLinks: 0,
+      content: {
+        profile: 'upserted',
+        sections: { upserted: 0, deactivated: 0 },
+        attributes: { upserted: 0, deactivated: 0 },
+      },
+    });
   });
 
   it('rollback si la promotion catalogue échoue (contrat invalide) — produit non commité', async () => {

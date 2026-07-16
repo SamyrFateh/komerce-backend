@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 375
-- Files with full headers: 348
+- Scanned code files: 376
+- Files with full headers: 349
 - Files with lite headers: 27
-- Files with any headers: 375
+- Files with any headers: 376
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 769
-- Edges: 4335
+- Graph nodes: 771
+- Edges: 4345
 - DB tables: 116
-- Doctrines: 153
+- Doctrines: 154
 - Impact areas: 125
-- Unresolved code edges: 416
+- Unresolved code edges: 418
 - Tables multi-écrivains directs (>=2): 67
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 4
 - bootstrap: 1
 - boutique: 36
-- catalog: 50
+- catalog: 51
 - checkout: 2
 - customs: 6
 - dashboard: 28
@@ -69,7 +69,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 100
 - route-manifest: 1
 - schema: 1
-- service: 153
+- service: 154
 - state: 1
 - state-store: 1
 - ui-component: 38
@@ -255,6 +255,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-product-detail.js — catalog-product-detail-contract (catalog, high, full)
 - services/catalog-promotion.js — catalog-promotion-orchestrator (catalog, high, full)
 - services/catalog-promotion/axes.js — catalog-promotion-axes-mapping (catalog, high, full)
+- services/catalog-promotion/content.js — catalog-promotion-content-mapping (catalog, high, full)
 - services/catalog-promotion/sku-media.js — catalog-promotion-sku-media-linking (catalog, high, full)
 - services/catalog-promotion/sku.js — catalog-promotion-sku-reconciliation (catalog, high, full)
 - services/catalog-public-view.js — catalog-public-view (catalog, high, full)

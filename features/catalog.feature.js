@@ -57,6 +57,7 @@ module.exports = {
       'services/catalog-promotion/axes.js',
       'services/catalog-promotion/sku.js',
       'services/catalog-promotion/sku-media.js',
+      'services/catalog-promotion/content.js',
       'services/suppliers/normalized-product.js',
       'services/suppliers/json-source-pipeline.js',
       'services/suppliers/connectors/api-connector.base.js',
@@ -91,7 +92,6 @@ module.exports = {
       'migrations/107_product_variants_axis_display_name.sql',
       'migrations/108_product_skus_supplier_identity.sql',
       'migrations/109_product_sku_media.sql',
-      'migrations/111_product_content.sql',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_CATALOGUE.md',
@@ -169,6 +169,8 @@ module.exports = {
       'tests/unit/catalog-promotion-axes.test.js',
       'tests/unit/catalog-promotion-sku.test.js',
       'tests/unit/catalog-promotion-sku-media.test.js',
+      'tests/unit/catalog-promotion-content.test.js',
+      'tests/unit/catalog-promotion-content-db.test.js',
       'tests/unit/normalized-product.test.js',
       'tests/unit/normalized-product-source-contract-v2.test.js',
       'tests/unit/product-admin-service.test.js',
@@ -176,8 +178,6 @@ module.exports = {
       'tests/unit/product-publication-guard.test.js',
       'tests/unit/products.test.js',
       'tests/unit/catalog-product-detail.test.js',
-      'tests/unit/product-detail-content-schema.test.js',
-      'tests/unit/normalized-supplier-product-v2-content.test.js',
       'tests/unit/modal-mobile-canonical.test.js',
       'tests/unit/supplier-catalog-scanner.test.js',
       'tests/unit/catalog-import-orchestrator.test.js',
@@ -217,6 +217,9 @@ module.exports = {
       'product_skus: RW',            // PDC-8 Lot 4 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
       'product_sku_media: RW',       // PDC-8 Lot 5 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
       'product_variants: RW',        // PDC-8 Lot 3 (schéma) + Lot 6 : écrivain réel = catalog-promotion.js
+      'product_content_profile: RW', // Lot Content (migration 111) : écrivain réel = catalog-promotion.js
+      'product_content_sections: RW',// Lot Content (migration 111) : écrivain réel = catalog-promotion.js
+      'product_attributes: RW',      // Lot Content (migration 111) : écrivain réel = catalog-promotion.js
       'products: RW',
       'sourcing_candidate_events: W',
       'sourcing_candidates: RW',

@@ -5,15 +5,15 @@
  * @layer         service
  * @criticality   high
  * @inputs        product_id, normalized_source_contract (V2 validé)
- * @outputs       catalog_media_rows, product_variants_rows, product_skus_rows, product_sku_media_rows
- * @depends       services/catalog-promotion/axes.js, services/catalog-promotion/sku.js, services/catalog-promotion/sku-media.js, services/suppliers/normalized-product.js
+ * @outputs       catalog_media_rows, product_variants_rows, product_skus_rows, product_sku_media_rows, product_content_profile_row, product_content_sections_rows, product_attributes_rows
+ * @depends       services/catalog-promotion/axes.js, services/catalog-promotion/sku.js, services/catalog-promotion/sku-media.js, services/catalog-promotion/content.js, services/suppliers/normalized-product.js
  * @used-by       routes/sourcing-scanner.js (POST /candidates/:id/import-product)
  * @db-read       product_skus
- * @db-write      catalog_media, product_sku_media, product_skus, product_variants
+ * @db-write      catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants
  * @db-txn        caller_owned
- * @doctrine      PDC-8 (tous lots), DOCTRINE_INGESTION_CATALOGUE.md
+ * @doctrine      PDC-8 (tous lots), DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md §5
  * @impact-areas  catalog
- * @version       2026-07
+ * @version       2026-07 — fiche produit enrichie : promotion idempotente du contenu
  */
 
 /**
@@ -43,6 +43,11 @@
 const { mapOptionAxesToDescriptiveRows } = require('./catalog-promotion/axes');
 const { planSkuReconciliation } = require('./catalog-promotion/sku');
 const { resolveSkuMediaLinks } = require('./catalog-promotion/sku-media');
+const {
+  mapContentToProfileRow,
+  mapContentToSectionRows,
+  mapContentToAttributeRows,
+} = require('./catalog-promotion/content');
 const { _validateRichStructureV2: validateRichStructureV2 } = require('./suppliers/normalized-product');
 
 /**
@@ -90,6 +95,13 @@ function validateForPromotion(contract) {
       }
     }
   }
+
+  // Fiche produit enrichie : projection à blanc (aucune écriture) pour faire échouer tôt une
+  // incohérence de contenu (section_key dupliqué/réservé, type de section invalide, attribut
+  // dupliqué) — même invariant "valider avant d'écrire" que le reste de cette fonction.
+  try { mapContentToProfileRow(contract); } catch (e) { errors.push(e.message); }
+  try { mapContentToSectionRows(contract); } catch (e) { errors.push(e.message); }
+  try { mapContentToAttributeRows(contract); } catch (e) { errors.push(e.message); }
 
   if (errors.length > 0) {
     const e = new Error(`normalized_source_contract invalide pour promotion : ${errors.join(' ; ')}`);
@@ -263,6 +275,148 @@ async function promoteSkuMedia(client, sellableUnits, skuIdBySupplierSku, mediaB
 }
 
 /**
+ * Upsert idempotent du profil éditorial 1:1 (Lot Content — fiche produit enrichie).
+ *
+ * OVERRIDE MANUEL (DOCTRINE_CATALOGUE.md §5, "le pipeline est la source, jamais la fiche") : la
+ * clause `WHERE product_content_profile.source <> 'MANUAL'` fait qu'une ligne déjà retouchée à la
+ * main (source='MANUAL') n'est JAMAIS écrasée par une re-promotion fournisseur — ON CONFLICT DO
+ * UPDATE ne s'applique tout simplement pas, sans logique de lecture préalable en JS.
+ *
+ * @returns {Promise<boolean>} true si la ligne a été (créée ou) mise à jour, false si un override
+ *   manuel existant a été préservé (aucune écriture appliquée).
+ */
+async function promoteContentProfile(client, productId, profileRow) {
+  const { rows } = await client.query(
+    `INSERT INTO product_content_profile (product_id, brand, short_description, source, enrichment_version, reviewed)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (product_id) DO UPDATE SET
+       brand = EXCLUDED.brand,
+       short_description = EXCLUDED.short_description,
+       source = EXCLUDED.source,
+       enrichment_version = EXCLUDED.enrichment_version,
+       reviewed = EXCLUDED.reviewed,
+       updated_at = now()
+     WHERE product_content_profile.source <> 'MANUAL'
+     RETURNING id`,
+    [productId, profileRow.brand, profileRow.short_description, profileRow.source, profileRow.enrichment_version, profileRow.reviewed]
+  );
+  return rows.length > 0;
+}
+
+/**
+ * Upsert idempotent des sections éditoriales + materials/care/warilings (section_key réservés)
+ * vers product_content_sections. Même principe de préservation d'override manuel que le profil
+ * (clause WHERE source <> 'MANUAL' sur le DO UPDATE).
+ *
+ * RÉJOUABILITÉ : une section absente de CE replay (et non MANUAL) est désactivée, jamais
+ * supprimée — même doctrine que la désactivation SKU (Lot 4). Une section qui réapparaît à un
+ * appel suivant est réactivée par le DO UPDATE (is_active = true), sans jamais dupliquer la ligne
+ * grâce à la contrainte UNIQUE(product_id, section_key).
+ *
+ * @returns {Promise<{upserted: number, deactivated: number}>}
+ */
+async function promoteContentSections(client, productId, sectionRows) {
+  for (const row of sectionRows) {
+    await client.query(
+      `INSERT INTO product_content_sections (product_id, section_key, title, section_type, content_json, display_order, source, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+       ON CONFLICT (product_id, section_key) DO UPDATE SET
+         title = EXCLUDED.title,
+         section_type = EXCLUDED.section_type,
+         content_json = EXCLUDED.content_json,
+         display_order = EXCLUDED.display_order,
+         source = EXCLUDED.source,
+         is_active = true,
+         updated_at = now()
+       WHERE product_content_sections.source <> 'MANUAL'`,
+      [productId, row.section_key, row.title, row.section_type, JSON.stringify(row.content_json), row.display_order, row.source]
+    );
+  }
+
+  const keptKeys = sectionRows.map((r) => r.section_key);
+  const { rowCount } = await client.query(
+    `UPDATE product_content_sections
+        SET is_active = false, updated_at = now()
+      WHERE product_id = $1
+        AND is_active = true
+        AND source <> 'MANUAL'
+        AND NOT (section_key = ANY($2::text[]))`,
+    [productId, keptKeys]
+  );
+
+  return { upserted: sectionRows.length, deactivated: rowCount };
+}
+
+/**
+ * Upsert idempotent des attributs (highlights + specifications) vers product_attributes. Même
+ * doctrine d'override manuel et de réjouabilité que promoteContentSections ci-dessus, mais
+ * l'identité est un triplet (kind, group_key, attribute_key) : la désactivation des lignes
+ * disparues du replay s'appuie sur un anti-join via unnest() plutôt qu'une simple colonne.
+ *
+ * @returns {Promise<{upserted: number, deactivated: number}>}
+ */
+async function promoteContentAttributes(client, productId, attributeRows) {
+  for (const row of attributeRows) {
+    await client.query(
+      `INSERT INTO product_attributes (product_id, kind, group_key, attribute_key, label, value_text, unit, display_order, source, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+       ON CONFLICT (product_id, kind, group_key, attribute_key) DO UPDATE SET
+         label = EXCLUDED.label,
+         value_text = EXCLUDED.value_text,
+         unit = EXCLUDED.unit,
+         display_order = EXCLUDED.display_order,
+         source = EXCLUDED.source,
+         is_active = true,
+         updated_at = now()
+       WHERE product_attributes.source <> 'MANUAL'`,
+      [productId, row.kind, row.group_key, row.attribute_key, row.label, row.value_text, row.unit, row.display_order, row.source]
+    );
+  }
+
+  const kinds = attributeRows.map((r) => r.kind);
+  const groups = attributeRows.map((r) => r.group_key);
+  const keys = attributeRows.map((r) => r.attribute_key);
+  const { rowCount } = await client.query(
+    `UPDATE product_attributes pa
+        SET is_active = false, updated_at = now()
+      WHERE pa.product_id = $1
+        AND pa.is_active = true
+        AND pa.source <> 'MANUAL'
+        AND NOT EXISTS (
+          SELECT 1 FROM unnest($2::text[], $3::text[], $4::text[]) AS keep(kind, group_key, attribute_key)
+           WHERE keep.kind = pa.kind AND keep.group_key = pa.group_key AND keep.attribute_key = pa.attribute_key
+        )`,
+    [productId, kinds, groups, keys]
+  );
+
+  return { upserted: attributeRows.length, deactivated: rowCount };
+}
+
+/**
+ * Orchestration Lot Content : profil + sections + attributs, dans cet ordre. Toujours appelée
+ * pour un contrat V2 (même sans aucun champ éditorial) afin que la provenance ('SUPPLIER' par
+ * défaut) reste tracée sur product_content_profile — un produit pauvre reste honnête, jamais
+ * absent de la trace de promotion.
+ *
+ * @param {{source?: string, enrichmentVersion?: string|null, reviewed?: boolean}} [options]
+ */
+async function promoteContent(client, productId, contract, options = {}) {
+  const profileRow = mapContentToProfileRow(contract, options);
+  const sectionRows = mapContentToSectionRows(contract, options);
+  const attributeRows = mapContentToAttributeRows(contract, options);
+
+  const profileUpdated = await promoteContentProfile(client, productId, profileRow);
+  const sections = await promoteContentSections(client, productId, sectionRows);
+  const attributes = await promoteContentAttributes(client, productId, attributeRows);
+
+  return {
+    profile: profileUpdated ? 'upserted' : 'preserved_manual_override',
+    sections,
+    attributes,
+  };
+}
+
+/**
  * Point d'entrée Lot 6. Promeut un normalized_source_contract V2 validé
  * vers le catalogue canonique (catalog_media, product_variants,
  * product_skus, product_sku_media), dans la transaction déjà ouverte par
@@ -294,6 +448,7 @@ async function promoteCatalog(client, { productId, normalizedSourceContract }) {
     skuIdBySupplierSku,
     mediaBySourceId
   );
+  const content = await promoteContent(client, productId, normalizedSourceContract);
 
   return {
     promoted: true,
@@ -301,10 +456,14 @@ async function promoteCatalog(client, { productId, normalizedSourceContract }) {
     variants: variantRows.length,
     skus: { count: skuIdBySupplierSku.size },
     skuMediaLinks: skuMediaLinks.length,
+    content,
   };
 }
 
 module.exports = {
   validateForPromotion,
   promoteCatalog,
+  _promoteContentProfile: promoteContentProfile,
+  _promoteContentSections: promoteContentSections,
+  _promoteContentAttributes: promoteContentAttributes,
 };
