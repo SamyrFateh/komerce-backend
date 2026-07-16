@@ -25,7 +25,6 @@ jobs:
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: 1c5c37ab-557b-41b1-885a-8b3ead573795
-      RAILWAY_SERVICE_ID: 48ee010d-a1c3-4c47-9028-c1aacf90e00f
       RAILWAY_ENVIRONMENT_ID: 7a0ce7dc-93a0-4bfa-88c9-088f70e8883a
 
     steps:
@@ -45,28 +44,64 @@ jobs:
           fi
           railway --version
 
-      - name: Capture safe Railway CLI help
+      - name: Discover project services without secrets
         shell: bash
         run: |
           set -euo pipefail
-          {
-            echo '=== railway status --help ==='
-            railway status --help || true
-            echo '=== railway service --help ==='
-            railway service --help || true
-            echo '=== railway variables --help ==='
-            railway variables --help || true
-            echo '=== railway environment --help ==='
-            railway environment --help || true
-            echo '=== railway link --help ==='
-            railway link --help || true
-          } > /tmp/railway-cli-help.txt 2>&1
+          railway status \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --json > /tmp/railway-status.json
 
-      - name: Upload safe CLI help
+          node - <<'NODE' > /tmp/railway-services-safe.txt
+          const fs = require('fs');
+          const root = JSON.parse(fs.readFileSync('/tmp/railway-status.json', 'utf8'));
+          const rows = [];
+          const seen = new Set();
+
+          function walk(value, path = []) {
+            if (Array.isArray(value)) {
+              value.forEach((item, index) => walk(item, path.concat(index)));
+              return;
+            }
+            if (!value || typeof value !== 'object') return;
+
+            const id = typeof value.id === 'string' ? value.id : null;
+            const name = typeof value.name === 'string' ? value.name : null;
+            const serviceId = typeof value.serviceId === 'string' ? value.serviceId : null;
+            const serviceName = typeof value.serviceName === 'string' ? value.serviceName : null;
+            const candidateId = serviceId || id;
+            const candidateName = serviceName || name;
+            const pathText = path.join('.');
+            const looksService = /service|deployment|resource/i.test(pathText)
+              || serviceId || serviceName
+              || /postgres|database|komerce|backend/i.test(candidateName || '');
+
+            if (looksService && candidateId && candidateName) {
+              const key = `${candidateId}:${candidateName}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                rows.push({ id: candidateId, name: candidateName, path: pathText });
+              }
+            }
+
+            for (const [key, child] of Object.entries(value)) {
+              walk(child, path.concat(key));
+            }
+          }
+
+          walk(root);
+          console.log('PROJECT_SERVICES');
+          for (const row of rows) {
+            console.log(`${row.name}\t${row.id}\t${row.path}`);
+          }
+          NODE
+
+      - name: Upload safe service discovery
         uses: actions/upload-artifact@v4
         with:
-          name: railway-cli-help
-          path: /tmp/railway-cli-help.txt
+          name: railway-services-safe
+          path: /tmp/railway-services-safe.txt
           if-no-files-found: error
 
       - name: Stop before any database write
