@@ -7,13 +7,20 @@ on:
     paths:
       - '.ing6/**'
       - '.github/workflows/apply-ing6-final.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.ing6/**'
+      - '.github/workflows/apply-ing6-final.yml'
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   apply-test-commit:
-    if: github.event.head_commit.message == 'ci: apply and validate ING6 final'
+    if: github.event_name == 'pull_request' || github.event.head_commit.message == 'ci: apply and validate ING6 final'
     runs-on: ubuntu-latest
     services:
       postgres:
