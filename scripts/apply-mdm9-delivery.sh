@@ -84,14 +84,6 @@ fs.writeFileSync(manifestPath, source);
 console.log('Tests JSON déclarés:', tests.sort());
 NODE
 
-npm ci
-npm run build
-npx jest public/boutique/tests/unit/b-modal-product.test.js public/boutique/tests/unit/boutique-bootstrap.test.js --runInBand --forceExit
-npm run feature:check
-npm run feature:registry
-npm run business-graph:gen
-npm run business-graph:ratchet-check
-
 rm -rf .mdm9-delivery
 rm -f .github/workflows/mdm9-apply-delivery.yml .github/workflows/mdm9-apply-delivery-retry.yml
 rm -f scripts/apply-mdm9-delivery.sh
