@@ -30,4 +30,11 @@ describe('modal-mobile-canonical — MDM-9 gallery modes', () => {
     expect(css).toMatch(/calc\(var\(--k-modal-vvh,\s*100dvh\)\s*\*\s*0\.36\)/);
     expect(css).toMatch(/calc\(var\(--k-modal-vvh,\s*100dvh\)\s*\*\s*0\.48\)/);
   });
+
+  test('keeps the adaptive gallery rules inside the mobile breakpoint', () => {
+    const mobileBlock = css.match(/@media\s*\(max-width:\s*899px\)\s*\{([\s\S]*)\}\s*$/);
+    expect(mobileBlock).not.toBeNull();
+    expect(mobileBlock[1]).toMatch(/data-gallery-mode=["']single["']/);
+    expect(mobileBlock[1]).toMatch(/data-gallery-mode=["']multiple["']/);
+  });
 });
