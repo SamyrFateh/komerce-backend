@@ -1,18 +1,10 @@
 name: Apply and validate ING6 final
 
 on:
-  push:
-    branches:
-      - agent/ing6-final
-    paths:
-      - '.ing6/**'
-      - '.github/workflows/apply-ing6-final.yml'
   pull_request:
+    types: [reopened]
     branches:
       - main
-    paths:
-      - '.ing6/**'
-      - '.github/workflows/apply-ing6-final.yml'
 
 permissions:
   contents: write
@@ -20,7 +12,7 @@ permissions:
 
 jobs:
   apply-test-commit:
-    if: github.event_name == 'pull_request' || github.event.head_commit.message == 'ci: apply and validate ING6 final'
+    if: github.event.pull_request.head.ref == 'agent/ing6-final'
     runs-on: ubuntu-latest
     services:
       postgres:
