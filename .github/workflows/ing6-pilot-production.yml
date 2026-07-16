@@ -39,8 +39,8 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install application dependencies
-        run: npm ci
+      - name: Install complete application dependencies
+        run: npm ci --include=dev
 
       - name: Install Railway CLI
         run: npm install --global @railway/cli
