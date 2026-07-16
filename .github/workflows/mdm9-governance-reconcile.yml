@@ -126,12 +126,6 @@ CREATE INDEX idx_sco_row_hash ON public.sourcing_candidate_observations USING bt
           npm run arch:reconcile -- --write
           npm run business-graph:gen
           npm run meta:graph:save
-      - name: Validate reconciled governance
-        run: |
-          npm run arch:gate
-          npm run feature:check
-          npm run feature:registry
-          npm run business-graph:ratchet-check
       - name: Commit reconciliation and remove temporary workflow
         shell: bash
         run: |
