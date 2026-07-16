@@ -76,10 +76,21 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Prepare PostgreSQL 16 test schema
+      - name: Prepare PostgreSQL 16 with the real migration chain
+        shell: bash
         run: |
+          set -euo pipefail
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/110_catalog_import_audit.sql
+          mapfile -t migrations_to_apply < <(
+            find migrations -maxdepth 1 -type f \
+              | grep -E '/(10[2-9]|110)_[^/]+\.sql$' \
+              | sort -V
+          )
+          test "${#migrations_to_apply[@]}" -gt 0
+          printf 'Applying migrations:\n%s\n' "${migrations_to_apply[*]}"
+          for migration in "${migrations_to_apply[@]}"; do
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
+          done
       - name: Run diagnostic integration test
         id: integration
         continue-on-error: true
