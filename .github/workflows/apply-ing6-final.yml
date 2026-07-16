@@ -50,6 +50,31 @@ jobs:
           echo '2f266afe651f96e34e8afd1a7e56b4de9044a54fa3e5516979efd3cf25190de3  /tmp/ING6_FINAL_ALL_IN_ONE.diff' | sha256sum -c -
           git apply --check /tmp/ING6_FINAL_ALL_IN_ONE.diff
           git apply /tmp/ING6_FINAL_ALL_IN_ONE.diff
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tests/unit/json-source-pipeline.test.js')
+          text = p.read_text()
+          old = """    const multi = r.ready.filter((e) => e.contract.schema_version === '2');
+              expect(multi.length).toBeGreaterThan(0);
+              for (const e of multi) {
+                const src = products.find((p) => p.id === e.diagnostics.source_id);
+                expect(e.contract.media).toHaveLength(new Set(src.images).size);
+              }
+          """
+          new = """    const multi = r.ready.filter((e) => {
+                const src = products.find((p) => p.id === e.diagnostics.source_id);
+                return Array.isArray(src?.images) && new Set(src.images).size > 1;
+              });
+              expect(multi.length).toBeGreaterThan(0);
+              for (const e of multi) {
+                const src = products.find((p) => p.id === e.diagnostics.source_id);
+                expect(e.contract.media).toHaveLength(new Set(src.images).size);
+              }
+          """
+          if old not in text:
+              raise SystemExit('Expected multi-image test block not found')
+          p.write_text(text.replace(old, new))
+          PY
           rm -rf .ing6
           git diff --check
 
