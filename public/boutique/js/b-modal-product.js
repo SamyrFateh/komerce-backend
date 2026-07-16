@@ -52,6 +52,80 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
   /* ════ CAROUSEL IMAGES ════ */
 
   /**
+   * MDM-9 §1/§2 — Calcule le bounding box réel du sujet (pixels non-blancs)
+   * dans l'image via un canvas same-origin, puis pose --k-modal-subject-scale
+   * sur le wrapper pour que le CSS (modal-mobile-canonical.css, mode single
+   * uniquement) zoome le sujet sans jamais rogner ses bords utiles.
+   *
+   * Stratégie : le zoom est plafonné à la fraction limitante du sujet
+   * (largeur OU hauteur, la plus contraignante) avec une marge de sécurité
+   * de 12 % — le sujet ne touche donc jamais les bords du wrapper — et un
+   * plafond global (MAX_SCALE) pour éviter un zoom absurde sur un sujet
+   * minuscule. Échec silencieux (image cross-origin, canvas indisponible,
+   * jsdom en tests unitaires) : on retire simplement la variable et l'image
+   * s'affiche sans zoom (comportement d'avant MDM-9).
+   *
+   * @param {HTMLElement} wrap - .k-modal-img-wrap
+   * @param {HTMLImageElement} img - image chargée (img.complete === true)
+   */
+  function _applySubjectScale(wrap, img) {
+    if (!wrap || !img) return;
+    try {
+      let nw = img.naturalWidth;
+      let nh = img.naturalHeight;
+      if (!nw || !nh) return;
+
+      let canvas = document.createElement('canvas');
+      let maxDim = 200; // suffisant pour un bounding box, coût de scan négligeable
+      let scaleFactor = Math.min(1, maxDim / Math.max(nw, nh));
+      let cw = Math.max(1, Math.round(nw * scaleFactor));
+      let ch = Math.max(1, Math.round(nh * scaleFactor));
+      canvas.width = cw;
+      canvas.height = ch;
+      let ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) { wrap.style.removeProperty('--k-modal-subject-scale'); return; }
+
+      ctx.drawImage(img, 0, 0, cw, ch);
+      let data = ctx.getImageData(0, 0, cw, ch).data;
+      let WHITE = 245;
+      let minX = cw, minY = ch, maxX = 0, maxY = 0, found = false;
+      for (let y = 0; y < ch; y++) {
+        for (let x = 0; x < cw; x++) {
+          let idx = (y * cw + x) * 4;
+          if (data[idx] < WHITE || data[idx + 1] < WHITE || data[idx + 2] < WHITE) {
+            found = true;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      if (!found || maxX <= minX || maxY <= minY) {
+        wrap.style.removeProperty('--k-modal-subject-scale');
+        return;
+      }
+
+      let subjectFracW = (maxX - minX + 1) / cw;
+      let subjectFracH = (maxY - minY + 1) / ch;
+      let limitingFrac = Math.max(subjectFracW, subjectFracH);
+      if (limitingFrac <= 0) { wrap.style.removeProperty('--k-modal-subject-scale'); return; }
+
+      let SAFETY = 0.88;   // marge pour ne jamais toucher les bords du wrapper
+      let MAX_SCALE = 2.5; // plafond raisonnable (sujet minuscule → pas de zoom absurde)
+      let scale = Math.min(MAX_SCALE, (1 / limitingFrac) * SAFETY);
+      scale = Math.max(1, scale); // jamais de zoom arrière
+
+      wrap.style.setProperty('--k-modal-subject-scale', scale.toFixed(3));
+    } catch (_) {
+      // Canvas cross-origin ou indisponible (ex. jsdom en test unitaire) —
+      // on retombe sur l'affichage d'origine (object-fit:contain, scale 1).
+      wrap.style.removeProperty('--k-modal-subject-scale');
+    }
+  }
+
+  /**
    * Construit le carousel d'images dans le modal produit.
    * Swipe ↔ mandatory snap + dots indicateurs.
    * @param {Array<string>} images - URLs des images
@@ -73,6 +147,19 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     if (imgWrapForSkeleton && _existingFirstSrc !== _newFirstSrc) {
       imgWrapForSkeleton.classList.remove('is-image-loaded');
     }
+
+    // ── MDM-9 : mode galerie (single vs multiple) ───────────────
+    // Piloté par CSS (modal-mobile-canonical.css) pour compresser la
+    // hauteur du wrapper en mode single sans réduire le sujet visuellement
+    // (voir _applySubjectScale ci-dessous — --k-modal-subject-scale).
+    let galleryMode = images.length > 1 ? 'multiple' : 'single';
+    if (imgWrapForSkeleton) {
+      imgWrapForSkeleton.dataset.galleryMode = galleryMode;
+      imgWrapForSkeleton.dataset.mediaCount = String(images.length);
+      // Toujours repartir d'un état propre : le mode multiple ne zoome jamais,
+      // le mode single recalcule sa propre valeur une fois l'image chargée.
+      imgWrapForSkeleton.style.removeProperty('--k-modal-subject-scale');
+    }
     images.forEach(function(url, i) {
       let img = document.createElement('img');
       img.className = 'k-modal-slide';
@@ -89,6 +176,19 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
         if (img.complete && img.naturalWidth > 0) killShimmer();
         // Fallback Android Chrome : si load/error ne se déclenchent pas en 3s, on retire le shimmer
         setTimeout(killShimmer, 3000);
+
+        // MDM-9 §1 : en mode single, une fois l'image réellement décodée,
+        // on mesure le sujet (bounding box pixels non-blancs) et on pose
+        // --k-modal-subject-scale pour que le CSS zoome dessus sans jamais
+        // rogner ses bords (cf. _applySubjectScale).
+        if (galleryMode === 'single') {
+          let applyScale = function() { _applySubjectScale(imgWrapForSkeleton, img); };
+          if (img.complete && img.naturalWidth > 0) {
+            applyScale();
+          } else {
+            img.addEventListener('load', applyScale, { once: true });
+          }
+        }
       }
       track.appendChild(img);
     });

@@ -237,19 +237,10 @@ if (document.readyState === 'loading') {
 
 // ── Side cart checkout : pont window pour éviter la dépendance circulaire b-cart↔b-checkout ──
 // ARCH-1 : checkout désormais via bus.on('checkout:open') — voir plus haut.
-// ── Listener global délégué : modal carousel dots ──
-document.addEventListener('click', function(e) {
-  let dot = e.target.closest('.k-modal-dot');
-  if (!dot) return;
-  e.preventDefault();
-  e.stopPropagation();
-  let idx = parseInt(dot.dataset.index || dot.getAttribute('data-index') || '0', 10);
-  let track = document.querySelector('.k-modal-carousel-track');
-  if (!track) return;
-  let slides = track.querySelectorAll('.k-modal-slide');
-  if (!slides.length) return;
-  track.style.transform = 'translateX(-' + (idx * 100) + '%)';
-  document.querySelectorAll('.k-modal-dot').forEach(function(d, i) {
-    d.classList.toggle('active', i === idx);
-  });
-});
+// MDM-9 §6 : le listener délégué legacy sur .k-modal-dot a été retiré ici —
+// dead code jamais synchronisé avec data-index (jamais posé par
+// b-modal-product.js), il retombait systématiquement sur idx=0 et écrasait
+// track.style.transform juste après le vrai goToSlide() (listener direct
+// posé par b-modal-product.js à la création de chaque dot), cassant la
+// navigation carousel dès qu'on cliquait un dot ≠ 0. Source unique de
+// navigation désormais : b-modal-product.js::goToSlide.

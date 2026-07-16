@@ -114,6 +114,47 @@ describe('b-modal-product', () => {
       dots[1].click();
       expect(state.carouselIndex).toBe(1);
     });
+
+    // ── MDM-9 : data-gallery-mode et data-media-count ────────────
+    it('MDM-9 — une seule image → data-gallery-mode="single", data-media-count="1"', () => {
+      buildCarouselSlides(makeProduct({ image_url: 'single.jpg' }));
+      const wrap = dom.modal.querySelector('.k-modal-img-wrap');
+      expect(wrap.dataset.galleryMode).toBe('single');
+      expect(wrap.dataset.mediaCount).toBe('1');
+    });
+
+    it('MDM-9 — plusieurs images → data-gallery-mode="multiple", data-media-count correct', () => {
+      buildCarouselSlides(makeProduct({ images: ['a.jpg', 'b.jpg', 'c.jpg'] }));
+      const wrap = dom.modal.querySelector('.k-modal-img-wrap');
+      expect(wrap.dataset.galleryMode).toBe('multiple');
+      expect(wrap.dataset.mediaCount).toBe('3');
+    });
+
+    it('MDM-9 — rebuild multiple ne change pas le mode si même nombre d\'images', () => {
+      buildCarouselSlides(makeProduct({ images: ['a.jpg', 'b.jpg'] }));
+      buildCarouselSlides(makeProduct({ images: ['c.jpg', 'd.jpg'] }));
+      const wrap = dom.modal.querySelector('.k-modal-img-wrap');
+      expect(wrap.dataset.galleryMode).toBe('multiple');
+      expect(wrap.dataset.mediaCount).toBe('2');
+      // Pas de duplication
+      expect(dom.modalCarouselTrack.querySelectorAll('.k-modal-slide')).toHaveLength(2);
+      expect(dom.modalDots.querySelectorAll('.k-modal-dot')).toHaveLength(2);
+    });
+
+    it('MDM-9 — passage de multiple à single met à jour le mode', () => {
+      buildCarouselSlides(makeProduct({ images: ['a.jpg', 'b.jpg'] }));
+      expect(dom.modal.querySelector('.k-modal-img-wrap').dataset.galleryMode).toBe('multiple');
+      buildCarouselSlides(makeProduct({ image_url: 'only.jpg' }));
+      expect(dom.modal.querySelector('.k-modal-img-wrap').dataset.galleryMode).toBe('single');
+      expect(dom.modal.querySelector('.k-modal-img-wrap').dataset.mediaCount).toBe('1');
+    });
+
+    it('MDM-9 — mode multiple nettoie --k-modal-subject-scale', () => {
+      const wrap = dom.modal.querySelector('.k-modal-img-wrap');
+      wrap.style.setProperty('--k-modal-subject-scale', '1.3');
+      buildCarouselSlides(makeProduct({ images: ['a.jpg', 'b.jpg'] }));
+      expect(wrap.style.getPropertyValue('--k-modal-subject-scale')).toBe('');
+    });
   });
 
   describe('goToSlide', () => {
