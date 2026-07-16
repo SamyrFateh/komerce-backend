@@ -1,0 +1,38 @@
+name: MDM9 map diagnostic
+
+on:
+  pull_request:
+    types: [reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run verbose map check
+        shell: bash
+        run: |
+          set +e
+          npm run map:check -- --verbose 2>&1 | tee /tmp/mdm9-map-check.log
+          status=${PIPESTATUS[0]}
+          echo "MAP_CHECK_EXIT=$status" >> /tmp/mdm9-map-check.log
+          exit $status
+      - name: Upload diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdm9-map-diagnostic
+          path: /tmp/mdm9-map-check.log
+          if-no-files-found: error
