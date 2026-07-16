@@ -1,0 +1,128 @@
+name: Apply and validate ING6 final
+
+on:
+  pull_request:
+    types: [reopened]
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  apply-test-commit:
+    if: github.event.pull_request.head.ref == 'agent/ing6-final'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      NODE_ENV: test
+      CI: true
+    steps:
+      - name: Checkout orchestration branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/ing6-final
+
+      - name: Rebuild, verify and apply final patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .ing6/part-* > /tmp/ing6.diff.gz.b64
+          echo '6f3d029d1579ffb9821aa090d4d881622d86107af043584eb0403365a85c1bae  /tmp/ing6.diff.gz.b64' | sha256sum -c -
+          base64 -d /tmp/ing6.diff.gz.b64 | gunzip > /tmp/ING6_FINAL_ALL_IN_ONE.diff
+          echo '2f266afe651f96e34e8afd1a7e56b4de9044a54fa3e5516979efd3cf25190de3  /tmp/ING6_FINAL_ALL_IN_ONE.diff' | sha256sum -c -
+          git apply --check /tmp/ING6_FINAL_ALL_IN_ONE.diff
+          git apply /tmp/ING6_FINAL_ALL_IN_ONE.diff
+          rm -rf .ing6
+          git diff --check
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax checks
+        run: |
+          node --check services/suppliers/json-source-pipeline.js
+          node --check services/suppliers/catalog-import-json.js
+          node --check services/suppliers/connectors/json-connector.js
+          node --check services/suppliers/catalog-import-orchestrator.js
+          node --check routes/sourcing-scanner.js
+          node --check scripts/dry-run-import.js
+          node --check scripts/pilot-json-import.js
+
+      - name: JSON refinery unit tests
+        run: npx jest tests/unit/json-source-pipeline.test.js --runInBand
+
+      - name: Official 82-product dry-run
+        run: |
+          node scripts/dry-run-import.js \
+            --input data/catalogue-test-raw/komerce_catalogue_brut_tests/komerce-catalogue-brut-sample.json \
+            --profile config/import-profiles/komerce-test-dummyjson.v1.json \
+            --out /tmp/dry-run-report-final.json
+          node - <<'NODE'
+          const r = require('/tmp/dry-run-report-final.json');
+          const s = r.summary;
+          if (!s || s.total !== 82 || s.ready !== 49 || s.quarantined !== 33 || s.rejected !== 0) {
+            throw new Error(`Unexpected dry-run counts: ${JSON.stringify(s)}`);
+          }
+          if (s.sum_check !== 82 || s.sum_check_expected !== 82) {
+            throw new Error(`Dry-run sum mismatch: ${JSON.stringify(s)}`);
+          }
+          if (!Array.isArray(r.ready_contracts) || r.ready_contracts.length !== 49) {
+            throw new Error('Expected 49 ready contracts');
+          }
+          if (r.ready_contracts.some(c => String(c.schema_version) !== '2')) {
+            throw new Error('Every READY product must expose a V2 contract');
+          }
+          NODE
+
+      - name: Prepare PostgreSQL 16 test schema
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/110_catalog_import_audit.sql
+
+      - name: PostgreSQL integration tests
+        run: npx jest tests/integration/catalog-import-json.integration.test.js --runInBand
+
+      - name: Legacy orchestrator non-regression tests
+        shell: bash
+        run: |
+          mapfile -t tests < <(find tests -type f -name 'catalog-import-orchestrator*.test.js' | sort)
+          if ((${#tests[@]})); then
+            npx jest --runInBand "${tests[@]}"
+          else
+            echo 'No dedicated legacy orchestrator test files found; JSON unit and integration suites remain authoritative.'
+          fi
+
+      - name: Commit validated ING6 implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(catalog): add transactional JSON refinery import'
+          git push origin HEAD:agent/ing6-final
