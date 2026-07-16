@@ -1,0 +1,66 @@
+name: ING6 palette modal production
+
+on:
+  push:
+    branches:
+      - ops/ing6-pilot-production
+    paths:
+      - .github/workflows/ing6-palette-modal-production.yml
+      - public/boutique/tests/e2e/ing6-palette-modal.spec.js
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/ing6-palette-modal-production.yml
+      - public/boutique/tests/e2e/ing6-palette-modal.spec.js
+
+permissions:
+  contents: read
+
+jobs:
+  modal:
+    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'ops/ing6-pilot-production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: public/boutique
+    env:
+      CI: true
+      BASE_URL: https://komerce.co/boutique/
+
+    steps:
+      - name: Checkout operations branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install boutique dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate published palette modal desktop and Samsung-like mobile
+        shell: bash
+        run: |
+          set -o pipefail
+          npx playwright test tests/e2e/ing6-palette-modal.spec.js \
+            --project='Desktop Chrome' \
+            --project='Mobile Chrome' \
+            --workers=1 2>&1 | tee /tmp/ing6-palette-modal.log
+
+      - name: Upload modal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ing6-palette-modal-production-evidence
+          path: |
+            /tmp/ing6-palette-modal.log
+            public/boutique/test-results/
+          if-no-files-found: warn
