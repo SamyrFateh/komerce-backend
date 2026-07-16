@@ -1118,7 +1118,7 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 36,
+            "count": 37,
             "files": [
               {
                 "declared": "css/categories.css",
@@ -1133,6 +1133,11 @@
               {
                 "declared": "css/modal-media.css",
                 "resolvedPath": "public/boutique/css/modal-media.css",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "css/modal-mobile-canonical.css",
+                "resolvedPath": "public/boutique/css/modal-mobile-canonical.css",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -1453,7 +1458,7 @@
             ]
           },
           "services": {
-            "count": 22,
+            "count": 25,
             "files": [
               {
                 "declared": "services/catalog-approval.js",
@@ -1531,6 +1536,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/suppliers/catalog-import-json.js",
+                "resolvedPath": "services/suppliers/catalog-import-json.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/suppliers/catalog-import-orchestrator.js",
                 "resolvedPath": "services/suppliers/catalog-import-orchestrator.js",
                 "status": "resolved-in-technical-graph"
@@ -1551,6 +1561,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/suppliers/connectors/json-connector.js",
+                "resolvedPath": "services/suppliers/connectors/json-connector.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/suppliers/connectors/manual-connector.js",
                 "resolvedPath": "services/suppliers/connectors/manual-connector.js",
                 "status": "resolved-in-technical-graph"
@@ -1561,6 +1576,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/suppliers/json-source-pipeline.js",
+                "resolvedPath": "services/suppliers/json-source-pipeline.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/suppliers/normalized-product.js",
                 "resolvedPath": "services/suppliers/normalized-product.js",
                 "status": "resolved-in-technical-graph"
@@ -1568,8 +1588,13 @@
             ]
           },
           "tests": {
-            "count": 32,
+            "count": 35,
             "files": [
+              {
+                "declared": "tests/integration/catalog-import-json.integration.test.js",
+                "resolvedPath": "tests/integration/catalog-import-json.integration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/admin-boutique-categories.test.js",
                 "resolvedPath": "tests/unit/admin-boutique-categories.test.js",
@@ -1671,6 +1696,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/json-source-pipeline.test.js",
+                "resolvedPath": "tests/unit/json-source-pipeline.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/manual-connector-source-v2.test.js",
                 "resolvedPath": "tests/unit/manual-connector-source-v2.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1678,6 +1708,11 @@
               {
                 "declared": "tests/unit/manual-connector.test.js",
                 "resolvedPath": "tests/unit/manual-connector.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/modal-mobile-canonical.test.js",
+                "resolvedPath": "tests/unit/modal-mobile-canonical.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -1743,10 +1778,10 @@
             ]
           }
         },
-        "totalFiles": 116,
+        "totalFiles": 123,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 21,
+          "count": 20,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -1758,13 +1793,6 @@
             {
               "declared": "../css/modal-product-lot4-hybrid.css",
               "resolvedPath": "public/boutique/css/modal-product-lot4-hybrid.css",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../css/modal-product-price-normalization.css",
-              "resolvedPath": "public/boutique/css/modal-product-price-normalization.css",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
