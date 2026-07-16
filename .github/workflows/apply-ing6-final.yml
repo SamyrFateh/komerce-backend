@@ -73,7 +73,25 @@ jobs:
           node --check scripts/pilot-json-import.js
 
       - name: JSON refinery unit tests
-        run: npx jest tests/unit/json-source-pipeline.test.js --runInBand
+        id: unit_tests
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npx jest tests/unit/json-source-pipeline.test.js --runInBand 2>&1 | tee /tmp/ing6-unit-tests.log
+
+      - name: Persist exact unit-test failure
+        if: steps.unit_tests.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/ing6-unit-tests.log .ing6-unit-test-failure.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .ing6-unit-test-failure.log
+          git commit -m 'chore: capture ING6 unit-test failure'
+          git push origin HEAD:agent/ing6-final
+          exit 1
 
       - name: Official 82-product dry-run
         run: |
