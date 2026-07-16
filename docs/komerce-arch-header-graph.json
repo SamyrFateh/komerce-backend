@@ -15925,9 +15925,9 @@
       ],
       "dbRead": [],
       "dbWrite": [
+        "supplier_catalog_imports",
         "sourcing_candidates",
-        "supplier_catalog_import_rejections",
-        "supplier_catalog_imports"
+        "supplier_catalog_import_rejections"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -42820,6 +42820,12 @@
     },
     {
       "from": "services/suppliers/catalog-import-json.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-write",
+      "label": "supplier_catalog_imports"
+    },
+    {
+      "from": "services/suppliers/catalog-import-json.js",
       "to": "db:sourcing_candidates",
       "type": "db-write",
       "label": "sourcing_candidates"
@@ -42829,12 +42835,6 @@
       "to": "db:supplier_catalog_import_rejections",
       "type": "db-write",
       "label": "supplier_catalog_import_rejections"
-    },
-    {
-      "from": "services/suppliers/catalog-import-json.js",
-      "to": "db:supplier_catalog_imports",
-      "type": "db-write",
-      "label": "supplier_catalog_imports"
     },
     {
       "from": "services/suppliers/catalog-import-json.js",
@@ -61174,9 +61174,9 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [
+        "supplier_catalog_imports",
         "sourcing_candidates",
-        "supplier_catalog_import_rejections",
-        "supplier_catalog_imports"
+        "supplier_catalog_import_rejections"
       ],
       "dbWriteVia": [],
       "doctrines": [
