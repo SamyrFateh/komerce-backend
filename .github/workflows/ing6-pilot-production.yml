@@ -21,7 +21,7 @@ jobs:
   pilot:
     if: github.event_name == 'push' || github.event.pull_request.head.ref == 'ops/ing6-pilot-production'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: 1c5c37ab-557b-41b1-885a-8b3ead573795
@@ -31,12 +31,6 @@ jobs:
     steps:
       - name: Checkout isolated operations branch
         uses: actions/checkout@v4
-
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
 
       - name: Install Railway CLI
         run: npm install --global @railway/cli
@@ -51,54 +45,28 @@ jobs:
           fi
           railway --version
 
-      - name: Inspect database endpoint names without secrets
+      - name: Capture safe Railway CLI help
         shell: bash
         run: |
           set -euo pipefail
-          railway run \
-            --project "$RAILWAY_PROJECT_ID" \
-            --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --service "$RAILWAY_SERVICE_ID" \
-            node - <<'NODE' | tee /tmp/railway-db-endpoints.txt
-          const selected = Object.keys(process.env)
-            .filter((k) => /(DATABASE|PGHOST|PGPORT|RAILWAY.*(TCP|PROXY))/i.test(k))
-            .sort();
+          {
+            echo '=== railway status --help ==='
+            railway status --help || true
+            echo '=== railway service --help ==='
+            railway service --help || true
+            echo '=== railway variables --help ==='
+            railway variables --help || true
+            echo '=== railway environment --help ==='
+            railway environment --help || true
+            echo '=== railway link --help ==='
+            railway link --help || true
+          } > /tmp/railway-cli-help.txt 2>&1
 
-          console.log('VARIABLE_NAMES');
-          for (const key of selected) console.log(key);
-          console.log('ENDPOINT_CLASSES');
-
-          for (const key of selected) {
-            const value = process.env[key];
-            if (!value) continue;
-            let host = null;
-            let port = null;
-            try {
-              if (value.includes('://')) {
-                const parsed = new URL(value);
-                host = parsed.hostname;
-                port = parsed.port || null;
-              } else if (/HOST$/i.test(key)) {
-                host = value;
-              } else if (/PORT$/i.test(key)) {
-                port = value;
-              }
-            } catch (_) {}
-
-            if (host) {
-              const kind = host.endsWith('.railway.internal') ? 'private' : 'public-or-external';
-              console.log(`${key}: host-kind=${kind}; port-present=${Boolean(port)}`);
-            } else if (port) {
-              console.log(`${key}: port-present=true`);
-            }
-          }
-          NODE
-
-      - name: Upload safe database endpoint diagnostic
+      - name: Upload safe CLI help
         uses: actions/upload-artifact@v4
         with:
-          name: railway-db-endpoint-names
-          path: /tmp/railway-db-endpoints.txt
+          name: railway-cli-help
+          path: /tmp/railway-cli-help.txt
           if-no-files-found: error
 
       - name: Stop before any database write
