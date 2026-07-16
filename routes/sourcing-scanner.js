@@ -476,6 +476,34 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
       });
     }
 
+    // ING-6 (barrière de promotion) — un candidat en quarantaine n'est pas
+    // promouvable : il n'est ni prêt ni rejeté, seulement non représentable
+    // aujourd'hui (cf. migration 110). Et un candidat issu d'un batch
+    // BLOCKED_* ou encore PROCESSING/FAILED ne l'est pas davantage : le
+    // seuil de blocage (ING-I4/ING-I9) ne protège rien si un candidat
+    // 'normalized' isolé peut être promu sans regarder l'état de son batch.
+    if (c.state === 'quarantined') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'Candidat en quarantaine — non promouvable en l\'état (cf. supplier_catalog_import_rejections / batch_findings).',
+      });
+    }
+    if (c.import_id) {
+      const batchRes = await client.query(
+        'SELECT status FROM supplier_catalog_imports WHERE id = $1',
+        [c.import_id]
+      );
+      const batchStatus = batchRes.rows[0]?.status;
+      if (batchStatus && batchStatus !== 'COMPLETED' && batchStatus !== 'COMPLETED_WITH_QUARANTINE') {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: `Import parent non promouvable (statut batch: ${batchStatus}).`,
+          import_id: c.import_id,
+          batch_status: batchStatus,
+        });
+      }
+    }
+
     const sr = c.scan_result || {};
     const initialPrice = req.body?.price_kmf
       || sr.test_price_kmf

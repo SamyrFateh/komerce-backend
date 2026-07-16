@@ -1,0 +1,3131 @@
+{
+  "dataset": {
+    "name": "Komerce Raw Catalogue Test Dataset",
+    "version": "2026-07-16",
+    "generatedAt": "2026-07-16T08:17:59.913602+00:00",
+    "source": {
+      "name": "DummyJSON",
+      "api": "https://dummyjson.com/products?limit=0",
+      "repository": "https://github.com/Ovi/DummyJSON"
+    },
+    "purpose": [
+      "raw catalogue import",
+      "refinery normalization",
+      "enriched product modal",
+      "mixed image and short-video media"
+    ],
+    "productCount": 82,
+    "videoProductCount": 33,
+    "intentionalEdgeCases": [
+      "price as localized string",
+      "stock as string",
+      "empty images",
+      "null thumbnail",
+      "missing or blank brand",
+      "uppercase category",
+      "invalid video URL",
+      "duplicate media",
+      "long Unicode description",
+      "special characters in title",
+      "H.264, H.265 and VP9 video samples"
+    ]
+  },
+  "products": [
+    {
+      "id": 1,
+      "sourceId": "dummyjson-derived-1",
+      "title": "Essence Mascara Lash Princess",
+      "description": "Raw test product: Essence Mascara Lash Princess. Data intentionally left heterogeneous for refinery validation.",
+      "category": "beauty",
+      "price": 9.99,
+      "discountPercentage": 6.37,
+      "rating": 2.78,
+      "stock": 1,
+      "tags": [
+        "Beauty",
+        "Mascara"
+      ],
+      "sku": "RAW-BEA-0001",
+      "weight": 5,
+      "dimensions": {
+        "width": 8.8,
+        "height": 13.59,
+        "depth": 30.27
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 11,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/beauty/essence-mascara-lash-princess/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/beauty/essence-mascara-lash-princess/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000007919",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Essence"
+    },
+    {
+      "id": 2,
+      "sourceId": "dummyjson-derived-2",
+      "title": "Eyeshadow Palette with Mirror",
+      "description": "Raw test product: Eyeshadow Palette with Mirror. Data intentionally left heterogeneous for refinery validation.",
+      "category": "beauty",
+      "price": 19.99,
+      "discountPercentage": 7.1,
+      "rating": 4.53,
+      "stock": 2,
+      "tags": [
+        "Beauty",
+        "Eyeshadow"
+      ],
+      "sku": "RAW-BEA-0002",
+      "weight": 5,
+      "dimensions": {
+        "width": 17.03,
+        "height": 19.32,
+        "depth": 22.44
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 8,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/beauty/eyeshadow-palette-with-mirror/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/beauty/eyeshadow-palette-with-mirror/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000015838",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Glamour Beauty"
+    },
+    {
+      "id": 3,
+      "sourceId": "dummyjson-derived-3",
+      "title": "Powder Canister",
+      "description": "Raw test product: Powder Canister. Data intentionally left heterogeneous for refinery validation.",
+      "category": "beauty",
+      "price": 14.99,
+      "discountPercentage": 8.86,
+      "rating": 3.14,
+      "stock": 4,
+      "tags": [
+        "Beauty",
+        "Face Powder"
+      ],
+      "sku": "RAW-BEA-0003",
+      "weight": 11,
+      "dimensions": {
+        "width": 14.23,
+        "height": 12.38,
+        "depth": 24.13
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 7,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/beauty/powder-canister/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/beauty/powder-canister/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000023757",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Velvet Touch"
+    },
+    {
+      "id": 4,
+      "sourceId": "dummyjson-derived-4",
+      "title": "Red Lipstick",
+      "description": "Raw test product: Red Lipstick. Data intentionally left heterogeneous for refinery validation.",
+      "category": "beauty",
+      "price": 12.99,
+      "discountPercentage": 10.96,
+      "rating": 3.07,
+      "stock": 12,
+      "tags": [
+        "Beauty",
+        "Lipstick"
+      ],
+      "sku": "RAW-BEA-0004",
+      "weight": 10,
+      "dimensions": {
+        "width": 21.24,
+        "height": 6.16,
+        "depth": 29.38
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 4,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/beauty/red-lipstick/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/beauty/red-lipstick/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000031676",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Chic Cosmetics",
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/beauty/red-lipstick/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "sourceId": "dummyjson-derived-5",
+      "title": "Red Nail Polish",
+      "description": "Raw test product: Red Nail Polish. Data intentionally left heterogeneous for refinery validation.",
+      "category": "beauty",
+      "price": "8,99 EUR",
+      "discountPercentage": 0.3,
+      "rating": 3.22,
+      "stock": 35,
+      "tags": [
+        "Beauty",
+        "Nail Polish"
+      ],
+      "sku": "RAW-BEA-0005",
+      "weight": 9,
+      "dimensions": {
+        "width": 31.28,
+        "height": 24.99,
+        "depth": 20.03
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/beauty/red-nail-polish/1.webp",
+        "https://cdn.dummyjson.com/product-images/beauty/red-nail-polish/2.webp",
+        "https://cdn.dummyjson.com/product-images/beauty/red-nail-polish/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/beauty/red-nail-polish/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000039595",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Nail Couture"
+    },
+    {
+      "id": 6,
+      "sourceId": "dummyjson-derived-6",
+      "title": "Calvin Klein CK One",
+      "description": "Raw test product: Calvin Klein CK One. Data intentionally left heterogeneous for refinery validation.",
+      "category": "fragrances",
+      "price": 49.99,
+      "discountPercentage": 15.01,
+      "rating": 3.22,
+      "stock": 88,
+      "tags": [
+        "Fragrances",
+        "Perfumes"
+      ],
+      "sku": "RAW-FRA-0006",
+      "weight": 1,
+      "dimensions": {
+        "width": 29.23,
+        "height": 9.72,
+        "depth": 32.83
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 12,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/fragrances/calvin-klein-ck-one/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/fragrances/calvin-klein-ck-one/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000047514",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Calvin Klein"
+    },
+    {
+      "id": 7,
+      "sourceId": "dummyjson-derived-7",
+      "title": "Chanel Coco Noir Eau De",
+      "description": "Raw test product: Chanel Coco Noir Eau De. Data intentionally left heterogeneous for refinery validation.",
+      "category": "fragrances",
+      "price": 129.99,
+      "discountPercentage": 18.94,
+      "rating": 4.48,
+      "stock": 0,
+      "tags": [
+        "Fragrances",
+        "Perfumes"
+      ],
+      "sku": "RAW-FRA-0007",
+      "weight": 2,
+      "dimensions": {
+        "width": 32.46,
+        "height": 21.76,
+        "depth": 34.36
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/fragrances/chanel-coco-noir-eau-de/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/fragrances/chanel-coco-noir-eau-de/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000055433",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Chanel"
+    },
+    {
+      "id": 8,
+      "sourceId": "dummyjson-derived-8",
+      "title": "Dior J'adore",
+      "description": "Raw test product: Dior J'adore. Data intentionally left heterogeneous for refinery validation.",
+      "category": "fragrances",
+      "price": 89.99,
+      "discountPercentage": 4.59,
+      "rating": 4.07,
+      "stock": 1,
+      "tags": [
+        "Fragrances",
+        "Perfumes"
+      ],
+      "sku": "RAW-FRA-0008",
+      "weight": 3,
+      "dimensions": {
+        "width": 23.8,
+        "height": 32.19,
+        "depth": 5.65
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 9,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/fragrances/dior-j-adore/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/fragrances/dior-j-adore/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000063352",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Dior",
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-h265.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.265/HEVC",
+          "poster": "https://cdn.dummyjson.com/product-images/fragrances/dior-j-adore/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "sourceId": "dummyjson-derived-9",
+      "title": "Dolce Shine Eau de",
+      "description": "Raw test product: Dolce Shine Eau de. Data intentionally left heterogeneous for refinery validation.",
+      "category": "fragrances",
+      "price": 69.99,
+      "discountPercentage": 10.27,
+      "rating": 4.26,
+      "stock": 2,
+      "tags": [
+        "Fragrances",
+        "Perfumes"
+      ],
+      "sku": "RAW-FRA-0009",
+      "weight": 8,
+      "dimensions": {
+        "width": 7.11,
+        "height": 30.33,
+        "depth": 24.18
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/fragrances/dolce-shine-eau-de/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/fragrances/dolce-shine-eau-de/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000071271",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Dolce & Gabbana",
+      "video": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+      "videoPoster": "https://cdn.dummyjson.com/product-images/fragrances/dolce-shine-eau-de/thumbnail.webp"
+    },
+    {
+      "id": 10,
+      "sourceId": "dummyjson-derived-10",
+      "title": "Gucci Bloom Eau de",
+      "description": "Raw test product: Gucci Bloom Eau de. Data intentionally left heterogeneous for refinery validation.",
+      "category": "fragrances",
+      "price": 79.99,
+      "discountPercentage": 12.54,
+      "rating": 3.7,
+      "stock": 4,
+      "tags": [
+        "Fragrances",
+        "Perfumes"
+      ],
+      "sku": "RAW-FRA-0010",
+      "weight": 9,
+      "dimensions": {
+        "width": 29.99,
+        "height": 10.42,
+        "depth": 19.32
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 8,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/fragrances/gucci-bloom-eau-de/1.webp",
+        "https://cdn.dummyjson.com/product-images/fragrances/gucci-bloom-eau-de/2.webp",
+        "https://cdn.dummyjson.com/product-images/fragrances/gucci-bloom-eau-de/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/fragrances/gucci-bloom-eau-de/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000079190",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Gucci"
+    },
+    {
+      "id": 11,
+      "sourceId": "dummyjson-derived-11",
+      "title": "Annibale Colombo Bed",
+      "description": "Raw test product: Annibale Colombo Bed. Data intentionally left heterogeneous for refinery validation.",
+      "category": "furniture",
+      "price": 1899.99,
+      "discountPercentage": 2.15,
+      "rating": 2.88,
+      "stock": 12,
+      "tags": [
+        "Furniture",
+        "Beds"
+      ],
+      "sku": "RAW-FUR-0011",
+      "weight": 1,
+      "dimensions": {
+        "width": 7.58,
+        "height": 29.36,
+        "depth": 32.8
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/furniture/annibale-colombo-bed/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/furniture/annibale-colombo-bed/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000087109",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Annibale Colombo"
+    },
+    {
+      "id": 12,
+      "sourceId": "dummyjson-derived-12",
+      "title": "Annibale Colombo Sofa",
+      "description": "Raw test product: Annibale Colombo Sofa. Data intentionally left heterogeneous for refinery validation.",
+      "category": "furniture",
+      "price": 2499.99,
+      "discountPercentage": 18.52,
+      "rating": 3.93,
+      "stock": 35,
+      "tags": [
+        "Furniture",
+        "Sofas"
+      ],
+      "sku": "RAW-FUR-0012",
+      "weight": 8,
+      "dimensions": {
+        "width": 7.63,
+        "height": 27.35,
+        "depth": 31.33
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/furniture/annibale-colombo-sofa/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/furniture/annibale-colombo-sofa/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000095028",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Annibale Colombo",
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-vp9.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "VP9",
+          "poster": "https://cdn.dummyjson.com/product-images/furniture/annibale-colombo-sofa/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "sourceId": "dummyjson-derived-13",
+      "title": "Bedside Table African Cherry",
+      "description": "Raw test product: Bedside Table African Cherry. Data intentionally left heterogeneous for refinery validation.",
+      "category": "furniture",
+      "price": 299.99,
+      "discountPercentage": 19.46,
+      "rating": 3.11,
+      "stock": 88,
+      "tags": [
+        "Furniture",
+        "Bedside Tables"
+      ],
+      "sku": "RAW-FUR-0013",
+      "weight": 12,
+      "dimensions": {
+        "width": 9.98,
+        "height": 13.56,
+        "depth": 30.93
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/furniture/bedside-table-african-cherry/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/furniture/bedside-table-african-cherry/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000102947",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Furniture Co.",
+      "media": [
+        {
+          "type": "image",
+          "url": "https://cdn.dummyjson.com/product-images/furniture/bedside-table-african-cherry/1.webp",
+          "position": 1
+        },
+        {
+          "type": "video",
+          "url": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+          "poster": "https://cdn.dummyjson.com/product-images/furniture/bedside-table-african-cherry/thumbnail.webp",
+          "position": 2
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "sourceId": "dummyjson-derived-14",
+      "title": "Knoll Saarinen Executive Conference Chair",
+      "description": "Raw test product: Knoll Saarinen Executive Conference Chair. Data intentionally left heterogeneous for refinery validation.",
+      "category": "furniture",
+      "price": 499.99,
+      "discountPercentage": 2.59,
+      "rating": 4.92,
+      "stock": 0,
+      "tags": [
+        "Furniture",
+        "Office Chairs"
+      ],
+      "sku": "RAW-FUR-0014",
+      "weight": 3,
+      "dimensions": {
+        "width": 8.16,
+        "height": 19.13,
+        "depth": 15.77
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/furniture/knoll-saarinen-executive-conference-chair/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/furniture/knoll-saarinen-executive-conference-chair/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000110866",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Knoll"
+    },
+    {
+      "id": 15,
+      "sourceId": "dummyjson-derived-15",
+      "title": "Wooden Bathroom Sink With Mirror",
+      "description": "Raw test product: Wooden Bathroom Sink With Mirror. Data intentionally left heterogeneous for refinery validation.",
+      "category": "furniture",
+      "price": 799.99,
+      "discountPercentage": 20.6,
+      "rating": 4.47,
+      "stock": 1,
+      "tags": [
+        "Furniture",
+        "Bathroom"
+      ],
+      "sku": "RAW-FUR-0015",
+      "weight": 9,
+      "dimensions": {
+        "width": 34.65,
+        "height": 21.75,
+        "depth": 15.12
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 1,
+      "images": [],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/furniture/wooden-bathroom-sink-with-mirror/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000118785",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Bath Trends"
+    },
+    {
+      "id": 16,
+      "sourceId": "dummyjson-derived-16",
+      "title": "Apple",
+      "description": "Raw test product: Apple. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 1.99,
+      "discountPercentage": 16.26,
+      "rating": 4.81,
+      "stock": 2,
+      "tags": [
+        "Fruits"
+      ],
+      "sku": "RAW-GRO-0016",
+      "weight": 2,
+      "dimensions": {
+        "width": 19.81,
+        "height": 10.22,
+        "depth": 15.54
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/apple/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/apple/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000126704",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-5s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 5,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/groceries/apple/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "sourceId": "dummyjson-derived-17",
+      "title": "Beef Steak",
+      "description": "Raw test product: Beef Steak. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 12.99,
+      "discountPercentage": 3.66,
+      "rating": 4.11,
+      "stock": 4,
+      "tags": [
+        "Meat"
+      ],
+      "sku": "RAW-GRO-0017",
+      "weight": 7,
+      "dimensions": {
+        "width": 30.39,
+        "height": 30.97,
+        "depth": 19.1
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/beef-steak/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/beef-steak/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000134623",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 18,
+      "sourceId": "dummyjson-derived-18",
+      "title": "Cat Food",
+      "description": "Raw test product: Cat Food. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 8.99,
+      "discountPercentage": 14.15,
+      "rating": 4.66,
+      "stock": 12,
+      "tags": [
+        "Pet Supplies",
+        "Cat Food"
+      ],
+      "sku": "RAW-GRO-0018",
+      "weight": 1,
+      "dimensions": {
+        "width": 32.8,
+        "height": 22.91,
+        "depth": 12.26
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 5,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/cat-food/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/cat-food/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000142542",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "video": "https://samplelib.com/mp4/sample-10s-h265.mp4",
+      "videoPoster": "https://cdn.dummyjson.com/product-images/groceries/cat-food/thumbnail.webp"
+    },
+    {
+      "id": 19,
+      "sourceId": "dummyjson-derived-19",
+      "title": "Chicken Meat",
+      "description": "Raw test product: Chicken Meat. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 9.99,
+      "discountPercentage": 1.74,
+      "rating": 3.51,
+      "stock": 35,
+      "tags": [
+        "Meat"
+      ],
+      "sku": "RAW-GRO-0019",
+      "weight": 7,
+      "dimensions": {
+        "width": 24.47,
+        "height": 13.73,
+        "depth": 14.96
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/chicken-meat/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/chicken-meat/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000150461",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 20,
+      "sourceId": "dummyjson-derived-20",
+      "title": "Cooking Oil",
+      "description": "Raw test product: Cooking Oil. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 4.99,
+      "discountPercentage": 16.14,
+      "rating": 3.31,
+      "stock": 88,
+      "tags": [
+        "Cooking Essentials"
+      ],
+      "sku": "RAW-GRO-0020",
+      "weight": 1,
+      "dimensions": {
+        "width": 22.78,
+        "height": 23.61,
+        "depth": 34.39
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 11,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/cooking-oil/1.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/cooking-oil/2.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/cooking-oil/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/cooking-oil/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000158380",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/groceries/cooking-oil/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "sourceId": "dummyjson-derived-21",
+      "title": "Cucumber",
+      "description": "Raw test product: Cucumber. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 1.49,
+      "discountPercentage": 2.48,
+      "rating": 3.58,
+      "stock": 0,
+      "tags": [
+        "Vegetables"
+      ],
+      "sku": "RAW-GRO-0021",
+      "weight": 12,
+      "dimensions": {
+        "width": 24.12,
+        "height": 16.82,
+        "depth": 20.3
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 3,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/cucumber/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/cucumber/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000166299",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 22,
+      "sourceId": "dummyjson-derived-22",
+      "title": "Dog Food",
+      "description": "Raw test product: Dog Food. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 10.99,
+      "discountPercentage": 7.12,
+      "rating": 4.62,
+      "stock": 1,
+      "tags": [
+        "Pet Supplies",
+        "Dog Food"
+      ],
+      "sku": "RAW-GRO-0022",
+      "weight": 8,
+      "dimensions": {
+        "width": 10.5,
+        "height": 5.6,
+        "depth": 30.18
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 7,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/dog-food/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/dog-food/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000174218",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 23,
+      "sourceId": "dummyjson-derived-23",
+      "title": "Eggs",
+      "description": "Raw test product: Eggs. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 2.99,
+      "discountPercentage": 18.58,
+      "rating": 3.28,
+      "stock": 2,
+      "tags": [
+        "Dairy"
+      ],
+      "sku": "RAW-GRO-0023",
+      "weight": 2,
+      "dimensions": {
+        "width": 14.74,
+        "height": 10.73,
+        "depth": 14.41
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 3,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/eggs/1.webp"
+      ],
+      "thumbnail": null,
+      "meta": {
+        "barcode": "1000000182137",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 24,
+      "sourceId": "dummyjson-derived-24",
+      "title": "Fish Steak",
+      "description": "Raw test product: Fish Steak. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 14.99,
+      "discountPercentage": 3.98,
+      "rating": 3.38,
+      "stock": 4,
+      "tags": [
+        "Seafood"
+      ],
+      "sku": "RAW-GRO-0024",
+      "weight": 10,
+      "dimensions": {
+        "width": 22.96,
+        "height": 20.95,
+        "depth": 8.78
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/fish-steak/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/fish-steak/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000190056",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-h265.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.265/HEVC",
+          "poster": "https://cdn.dummyjson.com/product-images/groceries/fish-steak/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "sourceId": "dummyjson-derived-25",
+      "title": "Green Bell Pepper",
+      "description": "Raw test product: Green Bell Pepper. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 1.29,
+      "discountPercentage": 11.26,
+      "rating": 2.53,
+      "stock": 12,
+      "tags": [
+        "Vegetables"
+      ],
+      "sku": "RAW-GRO-0025",
+      "weight": 3,
+      "dimensions": {
+        "width": 32.66,
+        "height": 27.12,
+        "depth": 32.56
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 12,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/green-bell-pepper/1.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/green-bell-pepper/2.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/green-bell-pepper/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/green-bell-pepper/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000197975",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 26,
+      "sourceId": "dummyjson-derived-26",
+      "title": "Green Chili Pepper",
+      "description": "Raw test product: Green Chili Pepper. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 0.99,
+      "discountPercentage": 19.66,
+      "rating": 3.08,
+      "stock": 35,
+      "tags": [
+        "Vegetables"
+      ],
+      "sku": "RAW-GRO-0026",
+      "weight": 3,
+      "dimensions": {
+        "width": 9.9,
+        "height": 6.39,
+        "depth": 10.68
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 5,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/green-chili-pepper/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/green-chili-pepper/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000205894",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "media": [
+        {
+          "type": "image",
+          "url": "https://cdn.dummyjson.com/product-images/groceries/green-chili-pepper/1.webp",
+          "position": 1
+        },
+        {
+          "type": "video",
+          "url": "https://samplelib.com/mp4/sample-10s-h265.mp4",
+          "poster": "https://cdn.dummyjson.com/product-images/groceries/green-chili-pepper/thumbnail.webp",
+          "position": 2
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "sourceId": "dummyjson-derived-27",
+      "title": "Honey Jar",
+      "description": "Raw test product: Honey Jar. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 6.99,
+      "discountPercentage": 0.57,
+      "rating": 3.28,
+      "stock": 88,
+      "tags": [
+        "Condiments"
+      ],
+      "sku": "RAW-GRO-0027",
+      "weight": 10,
+      "dimensions": {
+        "width": 30.44,
+        "height": 11.19,
+        "depth": 5.59
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 8,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/honey-jar/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/honey-jar/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000213813",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "video": "https://samplelib.com/mp4/sample-10s-vp9.mp4",
+      "videoPoster": "https://cdn.dummyjson.com/product-images/groceries/honey-jar/thumbnail.webp"
+    },
+    {
+      "id": 28,
+      "sourceId": "dummyjson-derived-28",
+      "title": "Ice Cream",
+      "description": "Raw test product: Ice Cream. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 5.49,
+      "discountPercentage": 1.76,
+      "rating": 4.21,
+      "stock": 0,
+      "tags": [
+        "Desserts"
+      ],
+      "sku": "RAW-GRO-0028",
+      "weight": 6,
+      "dimensions": {
+        "width": 34.0,
+        "height": 16.69,
+        "depth": 17.33
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 2,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/ice-cream/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/ice-cream/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000221732",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-vp9.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "VP9",
+          "poster": "https://cdn.dummyjson.com/product-images/groceries/ice-cream/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "sourceId": "dummyjson-derived-29",
+      "title": "Juice",
+      "description": "Raw test product: Juice. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 3.99,
+      "discountPercentage": 13.94,
+      "rating": 4.21,
+      "stock": 1,
+      "tags": [
+        "Beverages"
+      ],
+      "sku": "RAW-GRO-0029",
+      "weight": 7,
+      "dimensions": {
+        "width": 32.59,
+        "height": 14.51,
+        "depth": 28.32
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 10,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/juice/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/juice/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000229651",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 30,
+      "sourceId": "dummyjson-derived-30",
+      "title": "Kiwi",
+      "description": "Raw test product: Kiwi. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 2.49,
+      "discountPercentage": 7.54,
+      "rating": 4.03,
+      "stock": 2,
+      "tags": [
+        "Fruits"
+      ],
+      "sku": "RAW-GRO-0030",
+      "weight": 8,
+      "dimensions": {
+        "width": 11.59,
+        "height": 25.18,
+        "depth": 26.91
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 11,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/kiwi/1.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/kiwi/2.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/kiwi/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/kiwi/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000237570",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 31,
+      "sourceId": "dummyjson-derived-31",
+      "title": "Lemon",
+      "description": "Raw test product: Lemon. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 0.79,
+      "discountPercentage": 20.42,
+      "rating": 2.55,
+      "stock": 4,
+      "tags": [
+        "Fruits"
+      ],
+      "sku": "RAW-GRO-0031",
+      "weight": 7,
+      "dimensions": {
+        "width": 8.04,
+        "height": 32.62,
+        "depth": 15.07
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 3,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/lemon/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/lemon/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000245489",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": ""
+    },
+    {
+      "id": 32,
+      "sourceId": "dummyjson-derived-32",
+      "title": "Milk",
+      "description": "Raw test product: Milk. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 3.49,
+      "discountPercentage": 6.03,
+      "rating": 3.86,
+      "stock": 12,
+      "tags": [
+        "Dairy"
+      ],
+      "sku": "RAW-GRO-0032",
+      "weight": 9,
+      "dimensions": {
+        "width": 33.01,
+        "height": 11.93,
+        "depth": 12.97
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 10,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/milk/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/milk/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000253408",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-5s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 5,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/groceries/milk/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "sourceId": "dummyjson-derived-33",
+      "title": "Mulberry",
+      "description": "Raw test product: Mulberry. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 4.99,
+      "discountPercentage": 8.27,
+      "rating": 3.19,
+      "stock": 35,
+      "tags": [
+        "Fruits"
+      ],
+      "sku": "RAW-GRO-0033",
+      "weight": 2,
+      "dimensions": {
+        "width": 16.79,
+        "height": 29.8,
+        "depth": 31.49
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 6,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/mulberry/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/mulberry/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000261327",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 34,
+      "sourceId": "dummyjson-derived-34",
+      "title": "Nescafe Coffee",
+      "description": "Raw test product: Nescafe Coffee. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 7.99,
+      "discountPercentage": 0.45,
+      "rating": 3.46,
+      "stock": 88,
+      "tags": [
+        "Beverages",
+        "Coffee"
+      ],
+      "sku": "RAW-GRO-0034",
+      "weight": 8,
+      "dimensions": {
+        "width": 26.63,
+        "height": 6.49,
+        "depth": 16.18
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 6,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/nescafe-coffee/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/nescafe-coffee/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000269246",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Nescafe"
+    },
+    {
+      "id": 35,
+      "sourceId": "dummyjson-derived-35",
+      "title": "Potatoes",
+      "description": "Raw test product: Potatoes. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 2.29,
+      "discountPercentage": 3.05,
+      "rating": 3.08,
+      "stock": 0,
+      "tags": [
+        "Vegetables"
+      ],
+      "sku": "RAW-GRO-0035",
+      "weight": 11,
+      "dimensions": {
+        "width": 18.58,
+        "height": 15.06,
+        "depth": 25.66
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 6,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/potatoes/1.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/potatoes/2.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/potatoes/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/potatoes/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000277165",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 36,
+      "sourceId": "dummyjson-derived-36",
+      "title": "Protein Powder",
+      "description": "Raw test product: Protein Powder. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 19.99,
+      "discountPercentage": 3.34,
+      "rating": 2.86,
+      "stock": 1,
+      "tags": [
+        "Health Supplements"
+      ],
+      "sku": "RAW-GRO-0036",
+      "weight": 1,
+      "dimensions": {
+        "width": 17.06,
+        "height": 27.05,
+        "depth": 32.76
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 7,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/protein-powder/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/protein-powder/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000285084",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/groceries/protein-powder/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "sourceId": "dummyjson-derived-37",
+      "title": "Red Onions",
+      "description": "Raw test product: Red Onions. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 1.99,
+      "discountPercentage": 10.74,
+      "rating": 3.65,
+      "stock": 2,
+      "tags": [
+        "Vegetables"
+      ],
+      "sku": "RAW-GRO-0037",
+      "weight": 12,
+      "dimensions": {
+        "width": 25.42,
+        "height": 29.5,
+        "depth": 15.39
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 3,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/red-onions/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/red-onions/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000293003",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 38,
+      "sourceId": "dummyjson-derived-38",
+      "title": "Rice",
+      "description": "Raw test product: Rice. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 5.99,
+      "discountPercentage": 2.69,
+      "rating": 3.58,
+      "stock": 4,
+      "tags": [
+        "Grains"
+      ],
+      "sku": "RAW-GRO-0038",
+      "weight": 11,
+      "dimensions": {
+        "width": 30.83,
+        "height": 16.82,
+        "depth": 21.16
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 11,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/rice/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/rice/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000300922",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 39,
+      "sourceId": "dummyjson-derived-39",
+      "title": "Soft Drinks",
+      "description": "Raw test product: Soft Drinks. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 1.99,
+      "discountPercentage": 0.64,
+      "rating": 3.12,
+      "stock": "12",
+      "tags": [
+        "Beverages"
+      ],
+      "sku": "RAW-GRO-0039",
+      "weight": 9,
+      "dimensions": {
+        "width": 6.31,
+        "height": 18.0,
+        "depth": 7.93
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 8,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/soft-drinks/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/soft-drinks/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000308841",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "media": [
+        {
+          "type": "image",
+          "url": "https://cdn.dummyjson.com/product-images/groceries/soft-drinks/1.webp",
+          "position": 1
+        },
+        {
+          "type": "video",
+          "url": "https://samplelib.com/mp4/sample-10s-vp9.mp4",
+          "poster": "https://cdn.dummyjson.com/product-images/groceries/soft-drinks/thumbnail.webp",
+          "position": 2
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "sourceId": "dummyjson-derived-40",
+      "title": "Strawberry",
+      "description": "Raw test product: Strawberry. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 3.99,
+      "discountPercentage": 16.96,
+      "rating": 3.17,
+      "stock": 35,
+      "tags": [
+        "Fruits"
+      ],
+      "sku": "RAW-GRO-0040",
+      "weight": 7,
+      "dimensions": {
+        "width": 14.79,
+        "height": 22.33,
+        "depth": 34.72
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/strawberry/1.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/strawberry/2.webp",
+        "https://cdn.dummyjson.com/product-images/groceries/strawberry/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/strawberry/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000316760",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-h265.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.265/HEVC",
+          "poster": "https://cdn.dummyjson.com/product-images/groceries/strawberry/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "sourceId": "dummyjson-derived-41",
+      "title": "Tissue Paper Box",
+      "description": "Raw test product: Tissue Paper Box. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 2.49,
+      "discountPercentage": 9.74,
+      "rating": 3.47,
+      "stock": 88,
+      "tags": [
+        "Household Essentials"
+      ],
+      "sku": "RAW-GRO-0041",
+      "weight": 4,
+      "dimensions": {
+        "width": 7.51,
+        "height": 11.04,
+        "depth": 14.66
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/tissue-paper-box/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/tissue-paper-box/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000324679",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 42,
+      "sourceId": "dummyjson-derived-42",
+      "title": "Water",
+      "description": "Raw test product: Water. Data intentionally left heterogeneous for refinery validation.",
+      "category": "groceries",
+      "price": 0.99,
+      "discountPercentage": 15.75,
+      "rating": 4.95,
+      "stock": 0,
+      "tags": [
+        "Beverages"
+      ],
+      "sku": "RAW-GRO-0042",
+      "weight": 10,
+      "dimensions": {
+        "width": 24.37,
+        "height": 10.68,
+        "depth": 8.64
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 10,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/groceries/water/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/groceries/water/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000332598",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 43,
+      "sourceId": "dummyjson-derived-43",
+      "title": "Decoration Swing",
+      "description": "Raw test product: Decoration Swing. Data intentionally left heterogeneous for refinery validation.",
+      "category": "home-decoration",
+      "price": 59.99,
+      "discountPercentage": 2.03,
+      "rating": 4.23,
+      "stock": 1,
+      "tags": [
+        "Home Decor",
+        "Swing"
+      ],
+      "sku": "RAW-HOM-0043",
+      "weight": 1,
+      "dimensions": {
+        "width": 8.92,
+        "height": 8.69,
+        "depth": 19.64
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 4,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/home-decoration/decoration-swing/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/home-decoration/decoration-swing/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000340517",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 44,
+      "sourceId": "dummyjson-derived-44",
+      "title": "Family Tree Photo Frame",
+      "description": "Raw test product: Family Tree Photo Frame. Data intentionally left heterogeneous for refinery validation.",
+      "category": "home-decoration",
+      "price": 29.99,
+      "discountPercentage": 6.18,
+      "rating": 2.58,
+      "stock": 2,
+      "tags": [
+        "Home Decor",
+        "Photo Frame"
+      ],
+      "sku": "RAW-HOM-0044",
+      "weight": 12,
+      "dimensions": {
+        "width": 27.17,
+        "height": 25.17,
+        "depth": 5.99
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 6,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/home-decoration/family-tree-photo-frame/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/home-decoration/family-tree-photo-frame/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000348436",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-vp9.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "VP9",
+          "poster": "https://cdn.dummyjson.com/product-images/home-decoration/family-tree-photo-frame/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "sourceId": "dummyjson-derived-45",
+      "title": "House Showpiece Plant",
+      "description": "Raw test product: House Showpiece Plant. Data intentionally left heterogeneous for refinery validation.",
+      "category": "home-decoration",
+      "price": 39.99,
+      "discountPercentage": 19.63,
+      "rating": 2.95,
+      "stock": 4,
+      "tags": [
+        "Home Decor",
+        "Artificial Plants"
+      ],
+      "sku": "RAW-HOM-0045",
+      "weight": 3,
+      "dimensions": {
+        "width": 9.27,
+        "height": 8.32,
+        "depth": 12.74
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 11,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/home-decoration/house-showpiece-plant/1.webp",
+        "https://cdn.dummyjson.com/product-images/home-decoration/house-showpiece-plant/2.webp",
+        "https://cdn.dummyjson.com/product-images/home-decoration/house-showpiece-plant/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/home-decoration/house-showpiece-plant/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000356355",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "video": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+      "videoPoster": "https://cdn.dummyjson.com/product-images/home-decoration/house-showpiece-plant/thumbnail.webp"
+    },
+    {
+      "id": 46,
+      "sourceId": "dummyjson-derived-46",
+      "title": "Plant Pot",
+      "description": "Raw test product: Plant Pot. Data intentionally left heterogeneous for refinery validation.",
+      "category": "home-decoration",
+      "price": 14.99,
+      "discountPercentage": 14.99,
+      "rating": 3.84,
+      "stock": 12,
+      "tags": [
+        "Home Decor",
+        "Plant Accessories"
+      ],
+      "sku": "RAW-HOM-0046",
+      "weight": 9,
+      "dimensions": {
+        "width": 16.57,
+        "height": 6.19,
+        "depth": 13.59
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 2,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/home-decoration/plant-pot/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/home-decoration/plant-pot/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000364274",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 47,
+      "sourceId": "dummyjson-derived-47",
+      "title": "Table Lamp",
+      "description": "Raw test product: Table Lamp. Data intentionally left heterogeneous for refinery validation.",
+      "category": "HOME DECORATION",
+      "price": 49.99,
+      "discountPercentage": 14.06,
+      "rating": 2.99,
+      "stock": 35,
+      "tags": [
+        "Home Decor",
+        "Lighting"
+      ],
+      "sku": "RAW-HOM-0047",
+      "weight": 8,
+      "dimensions": {
+        "width": 33.55,
+        "height": 18.4,
+        "depth": 29.57
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 10,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/home-decoration/table-lamp/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/home-decoration/table-lamp/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000372193",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 48,
+      "sourceId": "dummyjson-derived-48",
+      "title": "Bamboo Spatula",
+      "description": "Raw test product: Bamboo Spatula. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 7.99,
+      "discountPercentage": 0.07,
+      "rating": 4.02,
+      "stock": 88,
+      "tags": [
+        "Kitchen Tools",
+        "Utensils"
+      ],
+      "sku": "RAW-KIT-0048",
+      "weight": 11,
+      "dimensions": {
+        "width": 10.86,
+        "height": 26.41,
+        "depth": 29.57
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 5,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/bamboo-spatula/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/bamboo-spatula/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000380112",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-5s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 5,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/bamboo-spatula/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "sourceId": "dummyjson-derived-49",
+      "title": "Black Aluminium Cup",
+      "description": "Raw test product: Black Aluminium Cup. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 5.99,
+      "discountPercentage": 10.42,
+      "rating": 3.81,
+      "stock": 0,
+      "tags": [
+        "Drinkware",
+        "Cups"
+      ],
+      "sku": "RAW-KIT-0049",
+      "weight": 8,
+      "dimensions": {
+        "width": 28.06,
+        "height": 28.09,
+        "depth": 12.37
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/black-aluminium-cup/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/black-aluminium-cup/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000388031",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 50,
+      "sourceId": "dummyjson-derived-50",
+      "title": "Black Whisk",
+      "description": "Raw test product: Black Whisk. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 9.99,
+      "discountPercentage": 21.12,
+      "rating": 2.88,
+      "stock": 1,
+      "tags": [
+        "Kitchen Tools",
+        "Utensils"
+      ],
+      "sku": "RAW-KIT-0050",
+      "weight": 6,
+      "dimensions": {
+        "width": 5.44,
+        "height": 25.27,
+        "depth": 25.03
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 5,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/black-whisk/1.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/black-whisk/2.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/black-whisk/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/black-whisk/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000395950",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 51,
+      "sourceId": "dummyjson-derived-51",
+      "title": "Boxed Blender",
+      "description": "Raw test product: Boxed Blender. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 39.99,
+      "discountPercentage": 14.1,
+      "rating": 4.41,
+      "stock": 2,
+      "tags": [
+        "Kitchen Appliances",
+        "Blenders"
+      ],
+      "sku": "RAW-KIT-0051",
+      "weight": 4,
+      "dimensions": {
+        "width": 5.63,
+        "height": 19.68,
+        "depth": 27.91
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/boxed-blender/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/boxed-blender/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000403869",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 52,
+      "sourceId": "dummyjson-derived-52",
+      "title": "Carbon Steel Wok",
+      "description": "Raw test product: Carbon Steel Wok. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 29.99,
+      "discountPercentage": 12.74,
+      "rating": 4.92,
+      "stock": 4,
+      "tags": [
+        "Cookware",
+        "Woks"
+      ],
+      "sku": "RAW-KIT-0052",
+      "weight": 1,
+      "dimensions": {
+        "width": 20.17,
+        "height": 11.18,
+        "depth": 17.87
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 8,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/carbon-steel-wok/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/carbon-steel-wok/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000411788",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/carbon-steel-wok/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "sourceId": "dummyjson-derived-53",
+      "title": "Chopping Board",
+      "description": "Raw test product: Chopping Board. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 12.99,
+      "discountPercentage": 9.72,
+      "rating": 2.78,
+      "stock": 12,
+      "tags": [
+        "Kitchen Tools",
+        "Cutting Boards"
+      ],
+      "sku": "RAW-KIT-0053",
+      "weight": 4,
+      "dimensions": {
+        "width": 31.05,
+        "height": 16.05,
+        "depth": 23.79
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 6,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/chopping-board/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/chopping-board/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000419707",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 54,
+      "sourceId": "dummyjson-derived-54",
+      "title": "Citrus Squeezer Yellow",
+      "description": "Raw test product: Citrus Squeezer Yellow. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 8.99,
+      "discountPercentage": 3.9,
+      "rating": 3.94,
+      "stock": 35,
+      "tags": [
+        "Kitchen Tools",
+        "Juicers"
+      ],
+      "sku": "RAW-KIT-0054",
+      "weight": 4,
+      "dimensions": {
+        "width": 10.25,
+        "height": 10.16,
+        "depth": 27.86
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 9,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/citrus-squeezer-yellow/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/citrus-squeezer-yellow/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000427626",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "video": "https://samplelib.com/mp4/sample-10s-h265.mp4",
+      "videoPoster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/citrus-squeezer-yellow/thumbnail.webp"
+    },
+    {
+      "id": 55,
+      "sourceId": "dummyjson-derived-55",
+      "title": "Egg Slicer",
+      "description": "Raw test product: Egg Slicer. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 6.99,
+      "discountPercentage": 12.55,
+      "rating": 2.72,
+      "stock": 88,
+      "tags": [
+        "Kitchen Tools",
+        "Slicers"
+      ],
+      "sku": "RAW-KIT-0055",
+      "weight": 10,
+      "dimensions": {
+        "width": 7.92,
+        "height": 9.2,
+        "depth": 23.99
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/egg-slicer/1.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/egg-slicer/2.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/egg-slicer/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/egg-slicer/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000435545",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://invalid.example.test/video-not-found.mp4",
+          "mimeType": "video/mp4"
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "sourceId": "dummyjson-derived-56",
+      "title": "Electric Stove",
+      "description": "Raw test product: Electric Stove. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 49.99,
+      "discountPercentage": 12.47,
+      "rating": 2.52,
+      "stock": 0,
+      "tags": [
+        "Kitchen Appliances",
+        "Cooktops"
+      ],
+      "sku": "RAW-KIT-0056",
+      "weight": 2,
+      "dimensions": {
+        "width": 10.55,
+        "height": 28.89,
+        "depth": 28.08
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 4,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/electric-stove/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/electric-stove/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000443464",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-h265.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.265/HEVC",
+          "poster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/electric-stove/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "sourceId": "dummyjson-derived-57",
+      "title": "Fine Mesh Strainer",
+      "description": "Raw test product: Fine Mesh Strainer. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 9.99,
+      "discountPercentage": 7.51,
+      "rating": 3.17,
+      "stock": 1,
+      "tags": [
+        "Kitchen Tools",
+        "Strainers"
+      ],
+      "sku": "RAW-KIT-0057",
+      "weight": 2,
+      "dimensions": {
+        "width": 28.85,
+        "height": 28.27,
+        "depth": 17.52
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 10,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/fine-mesh-strainer/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/fine-mesh-strainer/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000451383",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 58,
+      "sourceId": "dummyjson-derived-58",
+      "title": "Fork",
+      "description": "Raw test product: Fork. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 3.99,
+      "discountPercentage": 12.15,
+      "rating": 4.07,
+      "stock": 2,
+      "tags": [
+        "Kitchen Tools",
+        "Utensils"
+      ],
+      "sku": "RAW-KIT-0058",
+      "weight": 9,
+      "dimensions": {
+        "width": 25.44,
+        "height": 32.45,
+        "depth": 10.65
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 2,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/fork/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/fork/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000459302",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 59,
+      "sourceId": "dummyjson-derived-59",
+      "title": "Glass",
+      "description": "Raw test product: Glass. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 4.99,
+      "discountPercentage": 4.42,
+      "rating": 3.61,
+      "stock": 4,
+      "tags": [
+        "Drinkware",
+        "Glasses"
+      ],
+      "sku": "RAW-KIT-0059",
+      "weight": 8,
+      "dimensions": {
+        "width": 22.79,
+        "height": 17.6,
+        "depth": 28.88
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 9,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/glass/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/glass/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000467221",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 60,
+      "sourceId": "dummyjson-derived-60",
+      "title": "Grater Black",
+      "description": "Raw test product: Grater Black. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 10.99,
+      "discountPercentage": 11.92,
+      "rating": 4.2,
+      "stock": 12,
+      "tags": [
+        "Kitchen Tools",
+        "Graters"
+      ],
+      "sku": "RAW-KIT-0060",
+      "weight": 12,
+      "dimensions": {
+        "width": 21.16,
+        "height": 26.67,
+        "depth": 9.07
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/grater-black/1.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/grater-black/2.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/grater-black/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/grater-black/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000475140",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-vp9.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "VP9",
+          "poster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/grater-black/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "sourceId": "dummyjson-derived-61",
+      "title": "Hand Blender",
+      "description": "Raw test product: Hand Blender. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 34.99,
+      "discountPercentage": 8.43,
+      "rating": 3.62,
+      "stock": 35,
+      "tags": [
+        "Kitchen Appliances",
+        "Blenders"
+      ],
+      "sku": "RAW-KIT-0061",
+      "weight": 2,
+      "dimensions": {
+        "width": 31.39,
+        "height": 15.6,
+        "depth": 25.76
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/hand-blender/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/hand-blender/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000483059",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 62,
+      "sourceId": "dummyjson-derived-62",
+      "title": "Ice Cube Tray",
+      "description": "Raw test product: Ice Cube Tray. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 5.99,
+      "discountPercentage": 8.53,
+      "rating": 4.26,
+      "stock": 88,
+      "tags": [
+        "Kitchen Tools",
+        "Ice Cube Trays"
+      ],
+      "sku": "RAW-KIT-0062",
+      "weight": 12,
+      "dimensions": {
+        "width": 5.96,
+        "height": 12.59,
+        "depth": 8.73
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 8,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/ice-cube-tray/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/ice-cube-tray/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000490978",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 63,
+      "sourceId": "dummyjson-derived-63",
+      "title": "Kitchen Sieve",
+      "description": "Raw test product: Kitchen Sieve. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 7.99,
+      "discountPercentage": 0.44,
+      "rating": 3.69,
+      "stock": 0,
+      "tags": [
+        "Kitchen Tools",
+        "Strainers"
+      ],
+      "sku": "RAW-KIT-0063",
+      "weight": 12,
+      "dimensions": {
+        "width": 11.05,
+        "height": 21.17,
+        "depth": 29.32
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/kitchen-sieve/1.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/kitchen-sieve/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/kitchen-sieve/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000498897",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "video": "https://samplelib.com/mp4/sample-10s-vp9.mp4",
+      "videoPoster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/kitchen-sieve/thumbnail.webp"
+    },
+    {
+      "id": 64,
+      "sourceId": "dummyjson-derived-64",
+      "title": "Knife",
+      "description": "Raw test product: Knife. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 14.99,
+      "discountPercentage": 21.8,
+      "rating": 2.54,
+      "stock": 1,
+      "tags": [
+        "Kitchen Tools",
+        "Cutlery"
+      ],
+      "sku": "RAW-KIT-0064",
+      "weight": 8,
+      "dimensions": {
+        "width": 16.14,
+        "height": 23.04,
+        "depth": 31.14
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 7,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/knife/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/knife/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000506816",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-5s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 5,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/knife/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "sourceId": "dummyjson-derived-65",
+      "title": "Lunch Box",
+      "description": "Raw test product: Lunch Box. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 12.99,
+      "discountPercentage": 19.78,
+      "rating": 3.79,
+      "stock": 2,
+      "tags": [
+        "Kitchen Tools",
+        "Storage"
+      ],
+      "sku": "RAW-KIT-0065",
+      "weight": 5,
+      "dimensions": {
+        "width": 23.86,
+        "height": 17.22,
+        "depth": 17.11
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 7,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/lunch-box/1.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/lunch-box/2.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/lunch-box/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/lunch-box/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000514735",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "media": [
+        {
+          "type": "image",
+          "url": "https://cdn.dummyjson.com/product-images/kitchen-accessories/lunch-box/1.webp",
+          "position": 1
+        },
+        {
+          "type": "video",
+          "url": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+          "poster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/lunch-box/thumbnail.webp",
+          "position": 2
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "sourceId": "dummyjson-derived-66",
+      "title": "Microwave Oven",
+      "description": "Raw test product: Microwave Oven. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 89.99,
+      "discountPercentage": 4.83,
+      "rating": 3.85,
+      "stock": 4,
+      "tags": [
+        "Kitchen Appliances",
+        "Microwaves"
+      ],
+      "sku": "RAW-KIT-0066",
+      "weight": 9,
+      "dimensions": {
+        "width": 32.54,
+        "height": 11.69,
+        "depth": 7.77
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 11,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/microwave-oven/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/microwave-oven/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000522654",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 67,
+      "sourceId": "dummyjson-derived-67",
+      "title": "Mug Tree Stand",
+      "description": "Raw test product: Mug Tree Stand. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 15.99,
+      "discountPercentage": 1.54,
+      "rating": 4.13,
+      "stock": 12,
+      "tags": [
+        "Kitchen Tools",
+        "Organization"
+      ],
+      "sku": "RAW-KIT-0067",
+      "weight": 5,
+      "dimensions": {
+        "width": 8.81,
+        "height": 32.04,
+        "depth": 7.78
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/mug-tree-stand/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/mug-tree-stand/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000530573",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 68,
+      "sourceId": "dummyjson-derived-68",
+      "title": "Pan",
+      "description": "Raw test product: Pan. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 24.99,
+      "discountPercentage": 12.19,
+      "rating": 3.78,
+      "stock": 35,
+      "tags": [
+        "Cookware",
+        "Pans"
+      ],
+      "sku": "RAW-KIT-0068",
+      "weight": 4,
+      "dimensions": {
+        "width": 33.14,
+        "height": 31.58,
+        "depth": 26.33
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/pan/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/pan/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000538492",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/pan/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "sourceId": "dummyjson-derived-69",
+      "title": "Plate",
+      "description": "Raw test product: Plate. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 3.99,
+      "discountPercentage": 12.53,
+      "rating": 4.62,
+      "stock": 88,
+      "tags": [
+        "Dinnerware",
+        "Plates"
+      ],
+      "sku": "RAW-KIT-0069",
+      "weight": 7,
+      "dimensions": {
+        "width": 11.75,
+        "height": 5.11,
+        "depth": 28.81
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 11,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/plate/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/plate/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000546411",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 70,
+      "sourceId": "dummyjson-derived-70",
+      "title": "Red Tongs",
+      "description": "Raw test product: Red Tongs. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 6.99,
+      "discountPercentage": 5.61,
+      "rating": 4.93,
+      "stock": 0,
+      "tags": [
+        "Kitchen Tools",
+        "Tongs"
+      ],
+      "sku": "RAW-KIT-0070",
+      "weight": 5,
+      "dimensions": {
+        "width": 8.97,
+        "height": 17.89,
+        "depth": 14.45
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 8,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/red-tongs/1.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/red-tongs/2.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/red-tongs/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/red-tongs/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000554330",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 71,
+      "sourceId": "dummyjson-derived-71",
+      "title": "Silver Pot With Glass Cap",
+      "description": "Très long — Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. Description de test Unicode, accents et contenu détaillé. ",
+      "category": "kitchen-accessories",
+      "price": 39.99,
+      "discountPercentage": 0.53,
+      "rating": 3.88,
+      "stock": 1,
+      "tags": [
+        "Cookware",
+        "Pots"
+      ],
+      "sku": "RAW-KIT-0071",
+      "weight": 6,
+      "dimensions": {
+        "width": 29.76,
+        "height": 10.27,
+        "depth": 25.9
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 7,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/silver-pot-with-glass-cap/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/silver-pot-with-glass-cap/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000562249",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 72,
+      "sourceId": "dummyjson-derived-72",
+      "title": "Slotted Turner",
+      "description": "Raw test product: Slotted Turner. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 8.99,
+      "discountPercentage": 17.71,
+      "rating": 3.55,
+      "stock": 2,
+      "tags": [
+        "Kitchen Tools",
+        "Turners"
+      ],
+      "sku": "RAW-KIT-0072",
+      "weight": 4,
+      "dimensions": {
+        "width": 7.8,
+        "height": 34.56,
+        "depth": 8.38
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 12,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/slotted-turner/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/slotted-turner/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000570168",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-h265.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "H.265/HEVC",
+          "poster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/slotted-turner/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "sourceId": "dummyjson-derived-73",
+      "title": "Spice Rack",
+      "description": "Raw test product: Spice Rack. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 19.99,
+      "discountPercentage": 4.42,
+      "rating": 4.78,
+      "stock": 4,
+      "tags": [
+        "Kitchen Tools",
+        "Organization"
+      ],
+      "sku": "RAW-KIT-0073",
+      "weight": 12,
+      "dimensions": {
+        "width": 8.13,
+        "height": 24.9,
+        "depth": 26.64
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 9,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/spice-rack/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/spice-rack/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000578087",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 74,
+      "sourceId": "dummyjson-derived-74",
+      "title": "Spoon",
+      "description": "Raw test product: Spoon. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 4.99,
+      "discountPercentage": 17.18,
+      "rating": 4.78,
+      "stock": 12,
+      "tags": [
+        "Kitchen Tools",
+        "Utensils"
+      ],
+      "sku": "RAW-KIT-0074",
+      "weight": 3,
+      "dimensions": {
+        "width": 26.78,
+        "height": 8.76,
+        "depth": 11.29
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 4,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/spoon/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/spoon/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000586006",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 75,
+      "sourceId": "dummyjson-derived-75",
+      "title": "Tray",
+      "description": "Raw test product: Tray. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 16.99,
+      "discountPercentage": 20.82,
+      "rating": 2.71,
+      "stock": 35,
+      "tags": [
+        "Serveware",
+        "Trays"
+      ],
+      "sku": "RAW-KIT-0075",
+      "weight": 10,
+      "dimensions": {
+        "width": 17.45,
+        "height": 19.25,
+        "depth": 32.44
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 6,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/tray/1.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/tray/2.webp",
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/tray/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/tray/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000593925",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 76,
+      "sourceId": "dummyjson-derived-76",
+      "title": "Produit spécial – édition limitée ✨ / test caractères",
+      "description": "Raw test product: Wooden Rolling Pin. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 11.99,
+      "discountPercentage": 11.32,
+      "rating": 4.52,
+      "stock": 88,
+      "tags": [
+        "Kitchen Tools",
+        "Baking"
+      ],
+      "sku": "RAW-KIT-0076",
+      "weight": 3,
+      "dimensions": {
+        "width": 26.35,
+        "height": 9.56,
+        "depth": 32.77
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 7,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/wooden-rolling-pin/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/wooden-rolling-pin/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000601844",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-10s-vp9.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 10,
+          "codec": "VP9",
+          "poster": "https://cdn.dummyjson.com/product-images/kitchen-accessories/wooden-rolling-pin/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "sourceId": "dummyjson-derived-77",
+      "title": "Yellow Peeler",
+      "description": "Raw test product: Yellow Peeler. Data intentionally left heterogeneous for refinery validation.",
+      "category": "kitchen-accessories",
+      "price": 5.99,
+      "discountPercentage": 1.04,
+      "rating": 3.79,
+      "stock": 0,
+      "tags": [
+        "Kitchen Tools",
+        "Peelers"
+      ],
+      "sku": "RAW-KIT-0077",
+      "weight": 1,
+      "dimensions": {
+        "width": 10.68,
+        "height": 23.44,
+        "depth": 33.96
+      },
+      "availabilityStatus": "Out of Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/kitchen-accessories/yellow-peeler/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/kitchen-accessories/yellow-peeler/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000609763",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      }
+    },
+    {
+      "id": 78,
+      "sourceId": "dummyjson-derived-78",
+      "title": "Apple MacBook Pro 14 Inch Space Grey",
+      "description": "Raw test product: Apple MacBook Pro 14 Inch Space Grey. Data intentionally left heterogeneous for refinery validation.",
+      "category": "laptops",
+      "price": 1999.99,
+      "discountPercentage": 12.04,
+      "rating": 3.67,
+      "stock": 1,
+      "tags": [
+        "Laptops",
+        "Apple"
+      ],
+      "sku": "RAW-LAP-0078",
+      "weight": 7,
+      "dimensions": {
+        "width": 31.62,
+        "height": 10.27,
+        "depth": 29.37
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/laptops/apple-macbook-pro-14-inch-space-grey/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/laptops/apple-macbook-pro-14-inch-space-grey/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000617682",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Apple",
+      "media": [
+        {
+          "type": "image",
+          "url": "https://cdn.dummyjson.com/product-images/laptops/apple-macbook-pro-14-inch-space-grey/1.webp",
+          "position": 1
+        },
+        {
+          "type": "video",
+          "url": "https://samplelib.com/mp4/sample-10s-h265.mp4",
+          "poster": "https://cdn.dummyjson.com/product-images/laptops/apple-macbook-pro-14-inch-space-grey/thumbnail.webp",
+          "position": 2
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "sourceId": "dummyjson-derived-79",
+      "title": "Asus Zenbook Pro Dual Screen Laptop",
+      "description": "Raw test product: Asus Zenbook Pro Dual Screen Laptop. Data intentionally left heterogeneous for refinery validation.",
+      "category": "laptops",
+      "price": 1799.99,
+      "discountPercentage": 0.99,
+      "rating": 4.22,
+      "stock": 2,
+      "tags": [
+        "Laptops"
+      ],
+      "sku": "RAW-LAP-0079",
+      "weight": 3,
+      "dimensions": {
+        "width": 21.76,
+        "height": 29.56,
+        "depth": 34.33
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/laptops/asus-zenbook-pro-dual-screen-laptop/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/laptops/asus-zenbook-pro-dual-screen-laptop/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000625601",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Asus"
+    },
+    {
+      "id": 80,
+      "sourceId": "dummyjson-derived-80",
+      "title": "Huawei Matebook X Pro",
+      "description": "Raw test product: Huawei Matebook X Pro. Data intentionally left heterogeneous for refinery validation.",
+      "category": "laptops",
+      "price": 1399.99,
+      "discountPercentage": 3.65,
+      "rating": 2.74,
+      "stock": 4,
+      "tags": [
+        "Laptops"
+      ],
+      "sku": "RAW-LAP-0080",
+      "weight": 2,
+      "dimensions": {
+        "width": 11.07,
+        "height": 6.0,
+        "depth": 29.7
+      },
+      "availabilityStatus": "Low Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/laptops/huawei-matebook-x-pro/1.webp",
+        "https://cdn.dummyjson.com/product-images/laptops/huawei-matebook-x-pro/2.webp",
+        "https://cdn.dummyjson.com/product-images/laptops/huawei-matebook-x-pro/3.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/laptops/huawei-matebook-x-pro/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000633520",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Huawei",
+      "videos": [
+        {
+          "url": "https://samplelib.com/mp4/sample-5s-360p.mp4",
+          "mimeType": "video/mp4",
+          "durationSeconds": 5,
+          "codec": "H.264/AAC",
+          "poster": "https://cdn.dummyjson.com/product-images/laptops/huawei-matebook-x-pro/thumbnail.webp",
+          "label": "Présentation courte"
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "sourceId": "dummyjson-derived-81",
+      "title": "Lenovo Yoga 920",
+      "description": "Raw test product: Lenovo Yoga 920. Data intentionally left heterogeneous for refinery validation.",
+      "category": "laptops",
+      "price": 1099.99,
+      "discountPercentage": 19.86,
+      "rating": 2.6,
+      "stock": 12,
+      "tags": [
+        "Laptops"
+      ],
+      "sku": "RAW-LAP-0081",
+      "weight": 2,
+      "dimensions": {
+        "width": 15.27,
+        "height": 33.56,
+        "depth": 27.03
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/laptops/lenovo-yoga-920/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/laptops/lenovo-yoga-920/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000641439",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Lenovo",
+      "video": "https://samplelib.com/mp4/sample-10s-360p.mp4",
+      "videoPoster": "https://cdn.dummyjson.com/product-images/laptops/lenovo-yoga-920/thumbnail.webp"
+    },
+    {
+      "id": 82,
+      "sourceId": "dummyjson-derived-82",
+      "title": "New DELL XPS 13 9300 Laptop",
+      "description": "Raw test product: New DELL XPS 13 9300 Laptop. Data intentionally left heterogeneous for refinery validation.",
+      "category": "laptops",
+      "price": 1499.99,
+      "discountPercentage": 0.61,
+      "rating": 3.46,
+      "stock": 35,
+      "tags": [
+        "Laptops"
+      ],
+      "sku": "RAW-LAP-0082",
+      "weight": 3,
+      "dimensions": {
+        "width": 6.25,
+        "height": 8.8,
+        "depth": 28.66
+      },
+      "availabilityStatus": "In Stock",
+      "minimumOrderQuantity": 1,
+      "images": [
+        "https://cdn.dummyjson.com/product-images/laptops/new-dell-xps-13-9300-laptop/1.webp"
+      ],
+      "thumbnail": "https://cdn.dummyjson.com/product-images/laptops/new-dell-xps-13-9300-laptop/thumbnail.webp",
+      "meta": {
+        "barcode": "1000000649358",
+        "createdAt": "2025-04-30T09:41:02.053Z",
+        "updatedAt": "2025-04-30T09:41:02.053Z",
+        "source": "DummyJSON-derived test fixture"
+      },
+      "brand": "Dell"
+    }
+  ]
+}
