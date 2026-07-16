@@ -1,0 +1,77 @@
+name: ING6 production pilot
+
+on:
+  push:
+    branches:
+      - ops/ing6-pilot-production
+    paths:
+      - .github/workflows/ing6-pilot-production.yml
+      - scripts/ops-ing6-pilot-promote.js
+
+permissions:
+  contents: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: 1c5c37ab-557b-41b1-885a-8b3ead573795
+      RAILWAY_SERVICE_ID: 48ee010d-a1c3-4c47-9028-c1aacf90e00f
+      RAILWAY_ENVIRONMENT_ID: 7a0ce7dc-93a0-4bfa-88c9-088f70e8883a
+
+    steps:
+      - name: Checkout isolated operations branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Install Railway CLI
+        run: npm install --global @railway/cli
+
+      - name: Verify Railway credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${RAILWAY_TOKEN:-}" ]]; then
+            echo 'RAILWAY_TOKEN repository secret is missing.'
+            exit 42
+          fi
+          railway --version
+
+      - name: Link successful production service
+        shell: bash
+        run: |
+          set -euo pipefail
+          railway link \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID"
+          railway status
+
+      - name: Verify and apply pending migrations idempotently
+        shell: bash
+        run: |
+          set -euo pipefail
+          railway run node scripts/run-migrations.js --dry-run
+          railway run node scripts/run-migrations.js
+
+      - name: Import five-product pilot batch
+        shell: bash
+        run: |
+          set -euo pipefail
+          railway run node scripts/pilot-json-import.js --count 5
+
+      - name: Scan and promote Eyeshadow Palette only
+        shell: bash
+        run: |
+          set -euo pipefail
+          railway run node scripts/ops-ing6-pilot-promote.js
