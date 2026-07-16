@@ -69,6 +69,27 @@ async function deduplicateProductMedia(client, productId) {
   return removed;
 }
 
+async function projectCanonicalMediaToPublicProduct(client, productId) {
+  const { rows } = await client.query(
+    `SELECT url
+       FROM catalog_media
+      WHERE product_id = $1 AND is_active = TRUE
+      ORDER BY display_order NULLS LAST, created_at ASC, id ASC`,
+    [productId]
+  );
+  const urls = [...new Set(rows.map((row) => String(row.url || '').trim()).filter(Boolean))];
+  if (!urls.length) throw new Error('Projection publique impossible : aucun média canonique actif');
+
+  await client.query(
+    `UPDATE products
+        SET image_url = $1,
+            images = $2::jsonb
+      WHERE id = $3`,
+    [urls[0], JSON.stringify(urls), productId]
+  );
+  return urls;
+}
+
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis');
 
@@ -88,6 +109,7 @@ async function main() {
   const client = await db.getClient();
   let promotion;
   let duplicatesRemoved = 0;
+  let publicUrls = [];
   try {
     await client.query('BEGIN');
     await client.query(
@@ -101,6 +123,7 @@ async function main() {
       normalizedSourceContract: contract,
     });
     duplicatesRemoved = await deduplicateProductMedia(client, candidate.product_id);
+    publicUrls = await projectCanonicalMediaToPublicProduct(client, candidate.product_id);
     await client.query('COMMIT');
   } catch (error) {
     try { await client.query('ROLLBACK'); } catch (_) {}
@@ -109,7 +132,7 @@ async function main() {
     client.release();
   }
 
-  const [skus, links, media] = await Promise.all([
+  const [skus, links, media, product] = await Promise.all([
     db.query(
       `SELECT id, supplier_sku, stock, is_active
          FROM product_skus WHERE product_id = $1 ORDER BY supplier_sku`,
@@ -127,6 +150,7 @@ async function main() {
          FROM catalog_media WHERE product_id = $1 ORDER BY display_order, id`,
       [candidate.product_id]
     ),
+    db.query('SELECT image_url, images FROM products WHERE id = $1', [candidate.product_id]),
   ]);
 
   if (skus.rows.length < 1) throw new Error('Réparation échouée : aucun SKU');
@@ -134,15 +158,21 @@ async function main() {
   if (links.rows[0].n < 1) throw new Error('Réparation échouée : aucun lien SKU↔média');
   const uniqueKeys = new Set(media.rows.map((row) => `${row.url}|${row.role}|${row.display_order ?? ''}`));
   if (uniqueKeys.size !== media.rows.length) throw new Error('Réparation échouée : galerie encore dupliquée');
+  const publicProduct = product.rows[0];
+  if (!publicProduct?.image_url || !Array.isArray(publicProduct.images) || !publicProduct.images.length) {
+    throw new Error('Réparation échouée : projection publique image_url/images absente');
+  }
 
   console.log(JSON.stringify({
     ok: true,
     product_id: candidate.product_id,
     promotion,
     duplicates_removed: duplicatesRemoved,
+    public_urls: publicUrls,
     skus: skus.rows,
     media: media.rows,
     sku_media_links: links.rows[0].n,
+    public_product: publicProduct,
   }, null, 2));
 }
 
