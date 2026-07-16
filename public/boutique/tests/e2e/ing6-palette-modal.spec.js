@@ -40,6 +40,12 @@ async function openPaletteModal(page) {
 }
 
 async function assertPaletteModal(page, testInfo) {
+  if (testInfo.project.name === 'Mobile Chrome') {
+    // Samsung Internet est basé Chromium ; 360×800 reproduit le viewport compact
+    // où les régressions prix/CTA et visualViewport ont été observées.
+    await page.setViewportSize({ width: 360, height: 800 });
+  }
+
   const failed = await openPaletteModal(page);
 
   await expect(page.locator('#k-modal-price')).toContainText('KMF');
@@ -89,6 +95,7 @@ async function assertPaletteModal(page, testInfo) {
   expect(layout.priceVisible).toBe(true);
 
   if (testInfo.project.name === 'Mobile Chrome') {
+    expect(layout.viewport).toEqual({ width: 360, height: 800 });
     expect(layout.ctaVisible).toBe(true);
   }
 
