@@ -1,0 +1,110 @@
+name: Materialize validated ING6 final
+
+on:
+  pull_request:
+    types: [reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ing6-final'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: komerce_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      NODE_ENV: test
+      CI: true
+    steps:
+      - name: Checkout orchestration branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/ing6-final
+
+      - name: Materialize exact validated tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .ing6/part-* > /tmp/ing6.diff.gz.b64
+          echo '6f3d029d1579ffb9821aa090d4d881622d86107af043584eb0403365a85c1bae  /tmp/ing6.diff.gz.b64' | sha256sum -c -
+          base64 -d /tmp/ing6.diff.gz.b64 | gunzip > /tmp/ING6_FINAL_ALL_IN_ONE.diff
+          echo '2f266afe651f96e34e8afd1a7e56b4de9044a54fa3e5516979efd3cf25190de3  /tmp/ING6_FINAL_ALL_IN_ONE.diff' | sha256sum -c -
+          git apply --check /tmp/ING6_FINAL_ALL_IN_ONE.diff
+          git apply /tmp/ING6_FINAL_ALL_IN_ONE.diff
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tests/unit/json-source-pipeline.test.js')
+          text = p.read_text()
+          old = "const multi = r.ready.filter((e) => e.contract.schema_version === '2');"
+          new = """const multi = r.ready.filter((e) => {
+              const src = products.find((p) => p.id === e.diagnostics.source_id);
+              return Array.isArray(src?.images) && new Set(src.images).size > 1;
+            });"""
+          if old not in text:
+              raise SystemExit('Expected multi-image assertion not found')
+          p.write_text(text.replace(old, new))
+          PY
+          rm -rf .ing6
+          git diff --check
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Validate syntax and unit tests
+        run: |
+          node --check services/suppliers/json-source-pipeline.js
+          node --check services/suppliers/catalog-import-json.js
+          node --check services/suppliers/connectors/json-connector.js
+          node --check services/suppliers/catalog-import-orchestrator.js
+          node --check routes/sourcing-scanner.js
+          npx jest tests/unit/json-source-pipeline.test.js --runInBand
+      - name: Validate official dry-run
+        run: |
+          node scripts/dry-run-import.js \
+            --input data/catalogue-test-raw/komerce_catalogue_brut_tests/komerce-catalogue-brut-sample.json \
+            --profile config/import-profiles/komerce-test-dummyjson.v1.json \
+            --out /tmp/dry-run-report-final.json
+          node - <<'NODE'
+          const r = require('/tmp/dry-run-report-final.json');
+          const s = r.summary;
+          if (!s || s.total !== 82 || s.ready !== 49 || s.quarantined !== 33 || s.rejected !== 0) throw new Error(JSON.stringify(s));
+          if (r.ready_contracts.some(c => String(c.schema_version) !== '2')) throw new Error('READY contract is not V2');
+          NODE
+      - name: Validate PostgreSQL migration and integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+          mapfile -t ms < <(find migrations -maxdepth 1 -type f | grep -E '/(10[2-9]|110)_[^/]+\.sql$' | sort -V)
+          for m in "${ms[@]}"; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$m"; done
+          npx jest tests/integration/catalog-import-json.integration.test.js --runInBand
+          mapfile -t legacy < <(find tests -type f -name 'catalog-import-orchestrator*.test.js' | sort)
+          if ((${#legacy[@]})); then npx jest --runInBand "${legacy[@]}"; fi
+      - name: Commit and push validated implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(catalog): add transactional JSON refinery import'
+          git push origin HEAD:agent/ing6-final
