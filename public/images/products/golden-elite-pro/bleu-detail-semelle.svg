@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" role="img" aria-labelledby="title desc">
+  <title id="title">Elite Pro Bleu — détail semelle</title><desc id="desc">Gros plan de la semelle multi-crampons TPU de la chaussure bleue.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b1831"/><stop offset="1" stop-color="#163f72"/></linearGradient>
+    <linearGradient id="sole" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#111827"/><stop offset=".45" stop-color="#26344d"/><stop offset="1" stop-color="#05080f"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe8a4"/><stop offset=".5" stop-color="#c59432"/><stop offset="1" stop-color="#6f4d11"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="28" stdDeviation="30" flood-color="#000" flood-opacity=".55"/></filter>
+  </defs>
+  <rect width="1200" height="1400" fill="url(#bg)"/>
+  <circle cx="1010" cy="210" r="240" fill="#4e8fe9" opacity=".12"/>
+  <text x="80" y="108" font-family="Arial,Helvetica,sans-serif" font-size="27" letter-spacing="7" fill="#dbe9ff">ELITE PRO / SOLE DETAIL</text>
+  <g transform="translate(165 205) rotate(-11 430 480)" filter="url(#shadow)">
+    <path d="M210 85 C370 22 598 60 720 190 C842 320 870 618 777 855 C699 1055 536 1147 364 1080 C195 1014 95 821 89 609 C84 420 101 130 210 85Z" fill="url(#sole)" stroke="#5575a9" stroke-width="13"/>
+    <path d="M235 190 C393 118 592 159 686 269 C770 367 793 567 736 738" fill="none" stroke="url(#gold)" stroke-width="32" stroke-linecap="round"/>
+    <path d="M202 329 C375 264 584 299 704 415" fill="none" stroke="#3b82f6" stroke-width="28" stroke-linecap="round" opacity=".9"/>
+    <g fill="url(#gold)" stroke="#2a1b05" stroke-width="9">
+      <path d="M222 244 l42 -38 48 22 -5 73 -52 31 -41 -30Z"/><path d="M468 177 l48 -31 49 30 -1 74 -49 32 -48 -33Z"/>
+      <path d="M646 298 l48 -20 42 42 -16 71 -55 21 -37 -45Z"/><path d="M208 503 l45 -30 49 28 1 73 -48 34 -46 -33Z"/>
+      <path d="M548 450 l51 -27 46 36 -10 72 -54 27 -41 -42Z"/><path d="M667 622 l50 -23 44 39 -13 71 -54 24 -39 -43Z"/>
+      <path d="M256 748 l49 -29 47 33 -7 73 -52 29 -42 -39Z"/><path d="M490 842 l50 -27 46 35 -9 72 -54 28 -41 -41Z"/>
+    </g>
+    <g fill="#4a6a9f" opacity=".7"><circle cx="390" cy="350" r="34"/><circle cx="403" cy="635" r="42"/><circle cx="579" cy="690" r="30"/></g>
+    <path d="M284 971 C421 1030 595 1008 694 899" fill="none" stroke="#9bbef7" stroke-width="18" stroke-linecap="round" opacity=".65"/>
+  </g>
+  <text x="80" y="1248" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="58" fill="#fff">TPU injecté</text>
+  <text x="82" y="1300" font-family="Arial,Helvetica,sans-serif" font-size="25" fill="#b9d3ff">Crampons multi-directionnels · Répartition des pressions · Flexion contrôlée</text>
+</svg>

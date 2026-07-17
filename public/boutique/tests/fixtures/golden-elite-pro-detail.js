@@ -40,14 +40,14 @@ module.exports = {
   "media": [
     {
       "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2001",
-      "url": "https://cdn.example.com/golden-elite-pro/neutral-main.jpg",
+      "url": "/images/products/golden-elite-pro/neutral-main.svg",
       "role": "PRODUCT",
       "alt": "Chaussure de football Elite Pro",
       "option_values": {}
     },
     {
       "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2002",
-      "url": "https://cdn.example.com/golden-elite-pro/bleu-main.jpg",
+      "url": "/images/products/golden-elite-pro/bleu-main.svg",
       "role": "PRODUCT",
       "alt": "Elite Pro Bleu",
       "option_values": {
@@ -56,7 +56,7 @@ module.exports = {
     },
     {
       "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2003",
-      "url": "https://cdn.example.com/golden-elite-pro/bleu-scene.jpg",
+      "url": "/images/products/golden-elite-pro/bleu-scene.svg",
       "role": "SCENE",
       "alt": "Elite Pro Bleu en situation",
       "option_values": {
@@ -65,7 +65,7 @@ module.exports = {
     },
     {
       "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2004",
-      "url": "https://cdn.example.com/golden-elite-pro/bleu-detail-semelle.jpg",
+      "url": "/images/products/golden-elite-pro/bleu-detail-semelle.svg",
       "role": "DETAIL",
       "alt": "Détail semelle Elite Pro Bleu",
       "option_values": {
@@ -74,7 +74,7 @@ module.exports = {
     },
     {
       "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2005",
-      "url": "https://cdn.example.com/golden-elite-pro/noir-main.jpg",
+      "url": "/images/products/golden-elite-pro/noir-main.svg",
       "role": "PRODUCT",
       "alt": "Elite Pro Noir",
       "option_values": {
@@ -83,7 +83,7 @@ module.exports = {
     },
     {
       "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2006",
-      "url": "https://cdn.example.com/golden-elite-pro/noir-scene.jpg",
+      "url": "/images/products/golden-elite-pro/noir-scene.svg",
       "role": "SCENE",
       "alt": "Elite Pro Noir en situation",
       "option_values": {
@@ -92,7 +92,7 @@ module.exports = {
     },
     {
       "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2007",
-      "url": "https://cdn.example.com/golden-elite-pro/size-guide.jpg",
+      "url": "/images/products/golden-elite-pro/size-guide.svg",
       "role": "SIZE_GUIDE",
       "alt": "Guide des tailles Elite Pro",
       "option_values": {}
@@ -105,11 +105,11 @@ module.exports = {
       "values": [
         {
           "value": "Bleu",
-          "thumbnail_url": "https://cdn.example.com/golden-elite-pro/bleu-main.jpg"
+          "thumbnail_url": "/images/products/golden-elite-pro/bleu-main.svg"
         },
         {
           "value": "Noir",
-          "thumbnail_url": "https://cdn.example.com/golden-elite-pro/noir-main.jpg"
+          "thumbnail_url": "/images/products/golden-elite-pro/noir-main.svg"
         }
       ]
     },
