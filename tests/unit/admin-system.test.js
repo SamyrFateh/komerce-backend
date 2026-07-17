@@ -287,8 +287,9 @@ describe('admin/system — POST /reset', () => {
     const res = await request(app).post('/api/admin/reset').send({ mode: 'users', confirm: true });
     expect(res.status).toBe(200);
     expect(res.body.deleted.users_non_admin).toBe(12);
-    // toutes les 13 requêtes user-deps ont réussi
-    expect(res.body.deleted.user_deps_cleaned).toBe(13);
+    // toutes les 15 requêtes user-deps ont réussi (wallet_consumptions + wallet_credit_lots
+    // ajoutées à l'ordre FK — cf. fix ordre de nettoyage wallets en factory reset)
+    expect(res.body.deleted.user_deps_cleaned).toBe(15);
     // mode !== factory → restock exécuté
     expect(client.calls.some(c => c.includes('UPDATE products') && c.includes("inventory_model = 'LEGACY_VARIANTS'"))).toBe(true);
   });
@@ -303,8 +304,8 @@ describe('admin/system — POST /reset', () => {
 
     const res = await request(app).post('/api/admin/reset').send({ mode: 'users', confirm: true });
     expect(res.status).toBe(200);
-    // une des 13 a échoué → 12 comptées comme réussies
-    expect(res.body.deleted.user_deps_cleaned).toBe(12);
+    // une des 15 a échoué → 14 comptées comme réussies
+    expect(res.body.deleted.user_deps_cleaned).toBe(14);
     expect(client.calls.some(c => c.startsWith('ROLLBACK TO SAVEPOINT sp_udep_'))).toBe(true);
   });
 

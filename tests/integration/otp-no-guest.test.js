@@ -31,7 +31,11 @@ if (!hasEnv) {
     await new Promise(r => setTimeout(r, 2000));
   });
 
-  afterAll(async () => { await cleanup(); await new Promise(r => setTimeout(r, 300)); });
+  afterAll(async () => {
+    if (app && app.get && app.get('httpServer')) { await new Promise((resolve) => app.get('httpServer').close(resolve)); }
+    await cleanup();
+    await new Promise(r => setTimeout(r, 300));
+  });
 
   const ORDER_BODY = {
     items: [{ product_id: '00000000-0000-0000-0000-000000000000', quantity: 1 }],

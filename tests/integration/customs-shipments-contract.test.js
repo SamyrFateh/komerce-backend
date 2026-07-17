@@ -108,6 +108,7 @@ if (!hasIntegrationEnv) {
   }, 30000);
 
   afterAll(async () => {
+    if (app && app.get && app.get('httpServer')) { await new Promise((resolve) => app.get('httpServer').close(resolve)); }
     const ids = Array.from(createdShipmentIds);
     try {
       if (ids.length) {

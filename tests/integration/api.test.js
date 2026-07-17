@@ -53,6 +53,7 @@ if (!hasIntegrationEnv) {
   });
 
   afterAll(async () => {
+    if (app && app.get && app.get('httpServer')) { await new Promise((resolve) => app.get('httpServer').close(resolve)); }
     // Give time for connections to close
     await new Promise(r => setTimeout(r, 1000));
   });

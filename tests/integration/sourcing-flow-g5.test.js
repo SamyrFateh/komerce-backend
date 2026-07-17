@@ -71,6 +71,7 @@ if (!hasIntegrationEnv) {
   }, 30000);
 
   afterAll(async () => {
+    if (app && app.get && app.get('httpServer')) { await new Promise((resolve) => app.get('httpServer').close(resolve)); }
     try { await db.query(`DELETE FROM product_variants WHERE product_id = $1`, [productId]); } catch (_) {}
     try { await db.query(`DELETE FROM products WHERE id = $1`, [productId]); } catch (_) {}
     await cleanup();

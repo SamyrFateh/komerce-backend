@@ -113,6 +113,7 @@ if (!hasIntegrationEnv) {
   }, 30000);
 
   afterAll(async () => {
+    if (app && app.get && app.get('httpServer')) { await new Promise((resolve) => app.get('httpServer').close(resolve)); }
     try { await db.query(`DELETE FROM scan_events WHERE parcel_id = $1`, [parcelId]); } catch (_) {}
     try { await db.query(`DELETE FROM parcels WHERE id = $1`, [parcelId]); } catch (_) {}
     try { await db.query(`DELETE FROM orders WHERE id = $1`, [orderId]); } catch (_) {}

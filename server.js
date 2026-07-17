@@ -239,7 +239,7 @@ const { runStartupMigrations } = require('./bootstrap/startup-migrations');
 
 // ── Server lifecycle ────────────────────────────────────────────────────────
 const { startServerLifecycle } = require('./bootstrap/server-lifecycle');
-startServerLifecycle({
+const httpServer = startServerLifecycle({
   app,
   db,
   walletService,
@@ -250,4 +250,8 @@ startServerLifecycle({
   fixMissingSchema,
   runAllSeeds,
 });
+// Exposé pour les tests d'intégration qui font require('../../server') dans le
+// même process (--runInBand) : sans ça, aucun moyen de libérer le port entre
+// deux fichiers → EADDRINUSE :::3000 sur tous les fichiers suivants.
+app.set('httpServer', httpServer);
 module.exports = app;

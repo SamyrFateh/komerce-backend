@@ -78,6 +78,7 @@ if (!hasIntegrationEnv) {
   }, 30000);
 
   afterAll(async () => {
+    if (app && app.get && app.get('httpServer')) { await new Promise((resolve) => app.get('httpServer').close(resolve)); }
     try { await db.query(`DELETE FROM transaction_documents WHERE id = ANY($1::uuid[])`, [[walletDoc?.id, refundDoc?.id].filter(Boolean)]); } catch (_) {}
     await cleanup();
     if (db.end) await db.end().catch(() => {});
