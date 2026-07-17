@@ -21,6 +21,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set +e
           set -u -o pipefail
           product_id='aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001'
           media=(neutral-main.svg bleu-main.svg bleu-scene.svg bleu-detail-semelle.svg noir-main.svg noir-scene.svg size-guide.svg)
@@ -49,6 +50,11 @@ jobs:
           const urls = (d.media || []).map(m => String(m.url));
           const local = urls.filter(url => url.startsWith('/images/products/golden-elite-pro/'));
           const external = urls.filter(url => url.includes('cdn.example.com'));
+          const valid = d.inventory_model === 'SKU'
+            && (d.sellable_units || []).length === 5
+            && local.length === 7
+            && external.length === 0
+            && d.content?.brand === 'Elite Pro';
           console.log(`- inventory_model: ${d.inventory_model}`);
           console.log(`- media: ${urls.length}`);
           console.log(`- local_media: ${local.length}`);
@@ -56,19 +62,14 @@ jobs:
           console.log(`- sellable_units: ${(d.sellable_units || []).length}`);
           console.log(`- brand: ${d.content?.brand ?? 'null'}`);
           console.log(`- enrichment_version: ${d.content?.provenance?.enrichment_version ?? 'null'}`);
-          process.exitCode = d.inventory_model === 'SKU'
-            && (d.sellable_units || []).length === 5
-            && local.length === 7
-            && external.length === 0
-            && d.content?.brand === 'Elite Pro' ? 0 : 1;
+          fs.writeFileSync('/tmp/api-valid', valid ? '1' : '0');
           NODE
-            summary_status=$?
             report+="$(cat /tmp/api-summary.txt)\n"
-            [ "$summary_status" = '0' ] || ok=0
+            [ "$(cat /tmp/api-valid)" = '1' ] || ok=0
           else
             ok=0
           fi
 
           printf '%b' "$report" | tee /tmp/golden-report.md
           gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/golden-report.md || true
-          [ "$ok" = '1' ]
+          exit $((1-ok))
