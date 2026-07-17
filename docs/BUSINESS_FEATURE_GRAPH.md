@@ -261,7 +261,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 6
 - scripts: 85
 - docs: 167
-- ci: 25
+- ci: 23
 - assets: 37
 - db: 16
 - config: 11

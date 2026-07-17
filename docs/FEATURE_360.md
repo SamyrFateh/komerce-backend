@@ -657,10 +657,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `UNRESOLVED_INTERNAL_API` (medium) — utils/rules.js — moteur de règles métier centralisé (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — validators/index.js — barrel des schémas Joi (null) — statut: undeclared-in-graph
 
-**Implementation** : 384 fichier(s) déclaré(s)
+**Implementation** : 382 fichier(s) déclaré(s)
   - assets : 37
   - bootstrap : 8
-  - ci : 25
+  - ci : 23
   - config : 11
   - db : 16
   - docs : 167

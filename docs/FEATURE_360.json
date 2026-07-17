@@ -6701,7 +6701,7 @@
             ]
           },
           "ci": {
-            "count": 25,
+            "count": 23,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -6754,11 +6754,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": ".github/workflows/carto-guard.yml",
-                "resolvedPath": ".github/workflows/carto-guard.yml",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": ".github/workflows/ci.yml",
                 "resolvedPath": ".github/workflows/ci.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6806,11 +6801,6 @@
               {
                 "declared": ".github/workflows/impact-check.yml",
                 "resolvedPath": ".github/workflows/impact-check.yml",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": ".github/workflows/pr-governance.yml",
-                "resolvedPath": ".github/workflows/pr-governance.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8446,7 +8436,7 @@
             ]
           }
         },
-        "totalFiles": 384,
+        "totalFiles": 382,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
