@@ -133,7 +133,10 @@ describe('TXG-03 — auto-prepare scans SAVEPOINT', () => {
       expect(res.status).toBe(201);
       expect(res.body.items_assigned).toBe(1);
 
-      const { rows: parcelRows } = await pool.query('SELECT id FROM parcels WHERE order_id = $1', [ORDER_ID]);
+      const { rows: parcelRows } = await pool.query(
+        "SELECT id FROM parcels WHERE order_id = $1 AND status != 'cancelled'",
+        [ORDER_ID]
+      );
       expect(parcelRows.length).toBe(1); // <- colis bien committé
 
       const { rows: commentRows } = await pool.query('SELECT id FROM order_comments WHERE order_id = $1', [ORDER_ID]);

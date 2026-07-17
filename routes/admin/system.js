@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, partners, products, relais, users
- * @db-write      basket_items, baskets, incidents, invoices, order_items, order_status_history, orders, parcel_items, parcels, partners, products, relais, scan_events, sms_log, users, wallet_transactions, wallets
+ * @db-write      basket_items, baskets, incidents, invoices, order_items, order_status_history, orders, parcel_items, parcels, partners, products, relais, scan_events, sms_log, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  dashboard, admin-dashboard
@@ -120,6 +120,8 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
     if (mode === 'users' || mode === 'factory') {
       const userDepTables = [
         "UPDATE sms_log SET user_id = NULL WHERE user_id IS NOT NULL",
+        "DELETE FROM wallet_consumptions WHERE credit_lot_id IN (SELECT id FROM wallet_credit_lots WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')))",
+        "DELETE FROM wallet_credit_lots WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin'))",
         "DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin'))",
         "DELETE FROM wallets WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",
         "DELETE FROM loyalty_points WHERE user_id IN (SELECT id FROM users WHERE role != 'admin')",

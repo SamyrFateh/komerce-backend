@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 773,
-    "edges": 4355,
+    "edges": 4357,
     "dbTables": 116,
     "doctrines": 154,
     "impactAreas": 126,
@@ -4993,6 +4993,8 @@
         "scan_events",
         "sms_log",
         "users",
+        "wallet_consumptions",
+        "wallet_credit_lots",
         "wallet_transactions",
         "wallets"
       ],
@@ -17997,6 +17999,16 @@
       "table": "scan_events"
     },
     {
+      "id": "db:wallet_consumptions",
+      "type": "db-table",
+      "table": "wallet_consumptions"
+    },
+    {
+      "id": "db:wallet_credit_lots",
+      "type": "db-table",
+      "table": "wallet_credit_lots"
+    },
+    {
       "id": "db:wallet_transactions",
       "type": "db-table",
       "table": "wallet_transactions"
@@ -18185,16 +18197,6 @@
       "id": "db:v_unsold_pipeline",
       "type": "db-table",
       "table": "v_unsold_pipeline"
-    },
-    {
-      "id": "db:wallet_credit_lots",
-      "type": "db-table",
-      "table": "wallet_credit_lots"
-    },
-    {
-      "id": "db:wallet_consumptions",
-      "type": "db-table",
-      "table": "wallet_consumptions"
     },
     {
       "id": "db:alerts",
@@ -26754,6 +26756,18 @@
       "to": "db:users",
       "type": "db-write",
       "label": "users"
+    },
+    {
+      "from": "routes/admin/system.js",
+      "to": "db:wallet_consumptions",
+      "type": "db-write",
+      "label": "wallet_consumptions"
+    },
+    {
+      "from": "routes/admin/system.js",
+      "to": "db:wallet_credit_lots",
+      "type": "db-write",
+      "label": "wallet_credit_lots"
     },
     {
       "from": "routes/admin/system.js",
@@ -50903,6 +50917,8 @@
         "scan_events",
         "sms_log",
         "users",
+        "wallet_consumptions",
+        "wallet_credit_lots",
         "wallet_transactions",
         "wallets"
       ],
@@ -50931,6 +50947,8 @@
         "db:scan_events",
         "db:sms_log",
         "db:users",
+        "db:wallet_consumptions",
+        "db:wallet_credit_lots",
         "db:wallet_transactions",
         "db:wallets",
         "doctrine:resolve_before_behavior_change",
@@ -63736,6 +63754,24 @@
       ]
     },
     {
+      "table": "wallet_consumptions",
+      "writerCount": 3,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/wallet.js",
+        "services/wallet-service.js"
+      ]
+    },
+    {
+      "table": "wallet_credit_lots",
+      "writerCount": 3,
+      "writers": [
+        "routes/admin/system.js",
+        "routes/wallet.js",
+        "services/wallet-service.js"
+      ]
+    },
+    {
       "table": "cart_shares",
       "writerCount": 2,
       "writers": [
@@ -63949,22 +63985,6 @@
       "writers": [
         "routes/purchasing.js",
         "services/purchasing-admin-service.js"
-      ]
-    },
-    {
-      "table": "wallet_consumptions",
-      "writerCount": 2,
-      "writers": [
-        "routes/wallet.js",
-        "services/wallet-service.js"
-      ]
-    },
-    {
-      "table": "wallet_credit_lots",
-      "writerCount": 2,
-      "writers": [
-        "routes/wallet.js",
-        "services/wallet-service.js"
       ]
     }
   ],

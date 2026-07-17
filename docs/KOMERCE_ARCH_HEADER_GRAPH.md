@@ -14,7 +14,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 773
-- Edges: 4355
+- Edges: 4357
 - DB tables: 116
 - Doctrines: 154
 - Impact areas: 126
@@ -560,6 +560,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - product_skus: 3 écrivains directs — routes/sourcing-scanner.js, services/catalog-promotion.js, services/product-admin-service.js
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
 - sourcing_candidates: 3 écrivains directs — routes/sourcing-scanner.js, services/suppliers/catalog-import-json.js, services/suppliers/catalog-import-orchestrator.js
+- wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
+- wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - cart_shares: 2 écrivains directs — routes/orders/create.js, routes/shares.js
 - cash_collections: 2 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js
 - catalog_field_overrides: 2 écrivains directs — services/catalog-overrides.js, services/product-admin-service.js
@@ -580,8 +582,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - product_sku_media: 2 écrivains directs — routes/sourcing-scanner.js, services/catalog-promotion.js
 - product_suppliers: 2 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js
 - refunds: 2 écrivains directs — services/refund-service.js, utils/refunds.js
-- relais: 2 écrivains directs — routes/admin/system.js, services/routing.js
-- revoked_tokens: 2 écrivains directs — bootstrap/crons.js, routes/auth.js
 
 ## DB Write / Write-Via Overlap Warnings
 

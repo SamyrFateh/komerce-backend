@@ -63,6 +63,11 @@ async function restorePartners() {
 
 async function seedFactoryFixtures() {
   await pool.query(`
+    INSERT INTO users (id, full_name, email, role)
+    VALUES ('${ADMIN_ID}', 'Admin Test', 'admin-test@komerce.test', 'admin')
+    ON CONFLICT (id) DO NOTHING;
+  `);
+  await pool.query(`
     INSERT INTO products (id, name, price_kmf)
     VALUES ('00000000-0000-0000-0000-0000000000b1', 'Produit Test TXG', 10000)
     ON CONFLICT (id) DO NOTHING;
@@ -146,6 +151,11 @@ describe('TXG-04 — factory reset partners SAVEPOINT', () => {
       const res = await request(app)
         .post('/api/admin/reset')
         .send({ mode: 'factory', confirm: true });
+
+      if (res.status !== 200) {
+        // eslint-disable-next-line no-console
+        console.error('[TXG-04] unexpected response:', res.status, JSON.stringify(res.body));
+      }
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
