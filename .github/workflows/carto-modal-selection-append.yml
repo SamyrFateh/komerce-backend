@@ -1,0 +1,57 @@
+name: Append MODAL-SELECTION-1 cartography delta
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  append-delta:
+    if: github.head_ref == 'ops/modal-selection-carto-delta'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops/modal-selection-carto-delta
+          fetch-depth: 0
+      - name: Insert cartography delta
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('docs/CARTOGRAPHY_360.md')
+          text = path.read_text(encoding='utf-8')
+          heading = '### 2 quinquies. Delta modal SKU — synchronisation ciblée du 17 juillet 2026'
+          if heading in text:
+              raise SystemExit('delta already present')
+          marker = '\n---\n\n## 3. Domaines API montés'
+          if marker not in text:
+              raise SystemExit('cartography insertion marker not found')
+          delta = '''
+
+### 2 quinquies. Delta modal SKU — synchronisation ciblée du 17 juillet 2026
+
+La disponibilité affichée par la modal possède désormais une projection unique dans `public/boutique/js/b-modal-buybox-shared.js`. Cette projection pilote de façon fail-closed le statut et l’activation des CTA dans les compositions mobile et desktop.
+
+Invariants actifs :
+
+- `#k-modal-stock` est synchronisé sur mobile comme sur desktop : choix initial, sélection partielle, SKU disponible ou combinaison indisponible ;
+- la quantité brute de stock n’est pas exposée par défaut ;
+- sur desktop, une sélection met à jour en place les axes, le message, la référence, le prix, le stock, le sous-total, les CTA et les médias ;
+- le contenu enrichi, la livraison, le paiement et les éléments de sélection existants ne sont plus reconstruits à chaque clic ;
+- `modal-selection-model.js` reste l’unique owner de la résolution SKU et des états d’option ; les renderers ne recalculent aucun stock.
+'''
+          path.write_text(text.replace(marker, delta + marker), encoding='utf-8')
+          PY
+      - name: Commit cartography delta
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/CARTOGRAPHY_360.md
+          git commit -m 'docs(carto): record modal SKU selection synchronization'
+          git push origin HEAD:ops/modal-selection-carto-delta
