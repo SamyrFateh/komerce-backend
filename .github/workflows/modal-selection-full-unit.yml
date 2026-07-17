@@ -28,7 +28,7 @@ jobs:
       - name: Install Boutique dependencies
         working-directory: public/boutique
         run: npm ci --ignore-scripts
-      - name: Run full Boutique unit suite and report failed assertions
+      - name: Run full Boutique unit suite and expose failed assertions
         working-directory: public/boutique
         shell: bash
         env:
@@ -38,41 +38,33 @@ jobs:
           npx jest tests/unit --runInBand --json --outputFile=/tmp/jest-results.json >/tmp/full-unit.log 2>&1
           status=$?
           set -e
-          node - <<'NODE' > /tmp/full-unit-comment.md
+          node - <<'NODE' > /tmp/full-unit-result.md
           const fs = require('fs');
           const strip = (s = '') => String(s).replace(/\u001b\[[0-9;]*m/g, '');
           const r = JSON.parse(fs.readFileSync('/tmp/jest-results.json', 'utf8'));
           const lines = [];
-          lines.push(`### Full Boutique unit suite: ${r.success ? 'PASS' : 'FAIL'}`);
+          lines.push(`## Full Boutique unit suite: ${r.success ? 'PASS' : 'FAIL'}`);
           lines.push('');
           lines.push(`Suites: ${r.numPassedTestSuites}/${r.numTotalTestSuites} passed · Tests: ${r.numPassedTests}/${r.numTotalTests} passed`);
           const failures = [];
           for (const suite of r.testResults || []) {
             for (const assertion of suite.assertionResults || []) {
               if (assertion.status !== 'failed') continue;
-              failures.push({
-                suite: suite.name,
-                name: assertion.fullName || assertion.title,
-                message: (assertion.failureMessages || []).map(strip).join('\n\n'),
-              });
+              failures.push({ suite: suite.name, name: assertion.fullName || assertion.title, message: (assertion.failureMessages || []).map(strip).join('\n\n') });
             }
             if (suite.status === 'failed' && !(suite.assertionResults || []).some(a => a.status === 'failed') && suite.message) {
               failures.push({ suite: suite.name, name: 'suite failure', message: strip(suite.message) });
             }
           }
-          if (failures.length) {
+          failures.forEach((failure, index) => {
             lines.push('');
-            failures.forEach((failure, index) => {
-              lines.push(`#### ${index + 1}. ${failure.name}`);
-              lines.push('');
-              lines.push(`Suite: \`${failure.suite}\``);
-              lines.push('');
-              lines.push('```text');
-              lines.push(failure.message.slice(0, 7000));
-              lines.push('```');
-            });
-          }
-          fs.writeFileSync('/tmp/full-unit-comment.md', lines.join('\n'));
+            lines.push(`### ${index + 1}. ${failure.name}`);
+            lines.push(`Suite: \`${failure.suite}\``);
+            lines.push('```text');
+            lines.push(failure.message.slice(0, 7000));
+            lines.push('```');
+          });
+          fs.writeFileSync('/tmp/full-unit-result.md', lines.join('\n'));
           NODE
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/full-unit-comment.md
+          gh pr edit "${{ github.event.pull_request.number }}" --body-file /tmp/full-unit-result.md
           exit "$status"
