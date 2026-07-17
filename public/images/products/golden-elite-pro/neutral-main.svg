@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" role="img" aria-labelledby="title desc">
+  <title id="title">Elite Pro — vue produit neutre</title>
+  <desc id="desc">Chaussure de football Elite Pro blanche, noire et dorée sur fond studio.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#faf8f3"/><stop offset="1" stop-color="#e9e5db"/></linearGradient>
+    <linearGradient id="upper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f7f5ef"/><stop offset=".58" stop-color="#d9d6ce"/><stop offset="1" stop-color="#9f9b92"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f0d790"/><stop offset=".5" stop-color="#b68a2d"/><stop offset="1" stop-color="#6f4e10"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="34" stdDeviation="34" flood-color="#171717" flood-opacity=".28"/></filter>
+  </defs>
+  <rect width="1200" height="1400" fill="url(#bg)"/>
+  <circle cx="970" cy="200" r="170" fill="#ffffff" opacity=".42"/>
+  <circle cx="160" cy="1160" r="250" fill="#c8b47c" opacity=".14"/>
+  <text x="86" y="120" font-family="Arial,Helvetica,sans-serif" font-size="34" letter-spacing="8" fill="#252525">ELITE PRO</text>
+  <text x="86" y="170" font-family="Arial,Helvetica,sans-serif" font-size="20" letter-spacing="3" fill="#7b6a43">GOLDEN PERFORMANCE SERIES</text>
+  <g transform="translate(115 330) rotate(-7 500 360)" filter="url(#shadow)">
+    <path d="M98 505 C190 466 275 405 338 285 C377 209 430 161 500 156 C588 149 645 224 705 300 C763 374 841 429 978 478 C1028 496 1052 536 1027 568 C1005 598 942 608 863 612 L246 620 C158 620 91 585 74 548 C63 526 72 515 98 505Z" fill="url(#upper)" stroke="#292929" stroke-width="12"/>
+    <path d="M315 292 C415 331 531 352 686 345" fill="none" stroke="#222" stroke-width="38" stroke-linecap="round" opacity=".9"/>
+    <path d="M339 337 L575 245" fill="none" stroke="url(#gold)" stroke-width="26" stroke-linecap="round"/>
+    <path d="M383 370 L618 277" fill="none" stroke="#252525" stroke-width="13" stroke-linecap="round"/>
+    <g stroke="#3b3b3b" stroke-width="10" stroke-linecap="round"><path d="M452 219 l-34 171"/><path d="M507 202 l-24 190"/><path d="M559 210 l-11 183"/><path d="M611 231 l3 166"/></g>
+    <g stroke="#dedad0" stroke-width="13" stroke-linecap="round"><path d="M430 255 l186 45"/><path d="M417 296 l211 49"/><path d="M410 340 l220 49"/></g>
+    <path d="M75 548 C292 575 747 573 1024 532 L1029 579 C751 632 273 647 111 606 C83 599 64 575 75 548Z" fill="#171717"/>
+    <path d="M135 584 C355 615 760 602 984 566" fill="none" stroke="url(#gold)" stroke-width="11"/>
+    <g fill="#171717"><ellipse cx="230" cy="626" rx="30" ry="43"/><ellipse cx="370" cy="635" rx="29" ry="44"/><ellipse cx="526" cy="637" rx="29" ry="45"/><ellipse cx="690" cy="632" rx="29" ry="44"/><ellipse cx="840" cy="618" rx="28" ry="42"/></g>
+    <path d="M762 394 C840 425 902 448 968 477" fill="none" stroke="url(#gold)" stroke-width="34" stroke-linecap="round"/>
+  </g>
+  <text x="86" y="1270" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="58" fill="#1f1f1f">Maîtrise. Adhérence. Vitesse.</text>
+  <text x="88" y="1322" font-family="Arial,Helvetica,sans-serif" font-size="25" fill="#655b48">Terrain synthétique · Semelle multi-crampons · Maintien ajusté</text>
+</svg>
