@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" role="img" aria-labelledby="title desc">
+  <title id="title">Elite Pro Bleu — vue produit</title><desc id="desc">Chaussure de football bleue et dorée sur fond studio clair.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5f8ff"/><stop offset="1" stop-color="#dfe8f6"/></linearGradient>
+    <linearGradient id="upper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2f72df"/><stop offset=".55" stop-color="#12499e"/><stop offset="1" stop-color="#08295f"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe8a3"/><stop offset=".5" stop-color="#c49535"/><stop offset="1" stop-color="#725015"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="34" stdDeviation="34" flood-color="#062453" flood-opacity=".28"/></filter>
+  </defs>
+  <rect width="1200" height="1400" fill="url(#bg)"/><path d="M0 1090 Q360 910 1200 1030 V1400 H0Z" fill="#0c3b7e" opacity=".07"/>
+  <text x="86" y="120" font-family="Arial,Helvetica,sans-serif" font-size="34" letter-spacing="8" fill="#0b3472">ELITE PRO</text>
+  <text x="86" y="170" font-family="Arial,Helvetica,sans-serif" font-size="20" letter-spacing="3" fill="#b08227">BLEU / PERFORMANCE</text>
+  <g transform="translate(105 330) rotate(-7 500 360)" filter="url(#shadow)">
+    <path d="M98 505 C190 466 275 405 338 285 C377 209 430 161 500 156 C588 149 645 224 705 300 C763 374 841 429 978 478 C1028 496 1052 536 1027 568 C1005 598 942 608 863 612 L246 620 C158 620 91 585 74 548 C63 526 72 515 98 505Z" fill="url(#upper)" stroke="#061b40" stroke-width="12"/>
+    <path d="M298 300 C430 347 546 359 696 343" fill="none" stroke="#071e46" stroke-width="42" stroke-linecap="round" opacity=".82"/>
+    <path d="M328 341 L588 245" fill="none" stroke="url(#gold)" stroke-width="28" stroke-linecap="round"/>
+    <g stroke="#05275d" stroke-width="10" stroke-linecap="round"><path d="M452 219 l-34 171"/><path d="M507 202 l-24 190"/><path d="M559 210 l-11 183"/><path d="M611 231 l3 166"/></g>
+    <g stroke="#dfe9ff" stroke-width="13" stroke-linecap="round"><path d="M430 255 l186 45"/><path d="M417 296 l211 49"/><path d="M410 340 l220 49"/></g>
+    <path d="M75 548 C292 575 747 573 1024 532 L1029 579 C751 632 273 647 111 606 C83 599 64 575 75 548Z" fill="#061a3c"/>
+    <path d="M135 584 C355 615 760 602 984 566" fill="none" stroke="url(#gold)" stroke-width="11"/>
+    <g fill="#061a3c"><ellipse cx="230" cy="626" rx="30" ry="43"/><ellipse cx="370" cy="635" rx="29" ry="44"/><ellipse cx="526" cy="637" rx="29" ry="45"/><ellipse cx="690" cy="632" rx="29" ry="44"/><ellipse cx="840" cy="618" rx="28" ry="42"/></g>
+    <path d="M762 394 C840 425 902 448 968 477" fill="none" stroke="url(#gold)" stroke-width="34" stroke-linecap="round"/>
+  </g>
+  <rect x="86" y="1212" width="170" height="7" rx="4" fill="#c49535"/>
+  <text x="86" y="1280" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="58" fill="#08295f">Bleu Électrique</text>
+  <text x="88" y="1330" font-family="Arial,Helvetica,sans-serif" font-size="25" fill="#385987">Contraste doré · Tige textile renforcée · TPU injecté</text>
+</svg>
