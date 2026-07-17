@@ -61,7 +61,7 @@ describe('catalog-promotion — _promoteContentSections (Lot Content)', () => {
       { rows: [], rowCount: 0 }, // désactivation (portée vide car la seule section est conservée)
     ]);
     const sectionRow = {
-      section_key: 'guide-taille', title: 'Guide des tailles', section_type: 'TABLE',
+      section_key: 'guide-taille', title: 'Guide des tailles', section_type: 'KEY_VALUE',
       content_json: { rows: [] }, display_order: 0, source: 'SUPPLIER',
     };
     const result = await promoteContentSections(client, 'prod-1', [sectionRow]);
@@ -71,7 +71,7 @@ describe('catalog-promotion — _promoteContentSections (Lot Content)', () => {
     expect(client.calls[0].sql).toMatch(/INSERT INTO product_content_sections/);
     expect(client.calls[0].sql).toMatch(/ON CONFLICT \(product_id, section_key\) DO UPDATE/);
     expect(client.calls[0].params).toEqual([
-      'prod-1', 'guide-taille', 'Guide des tailles', 'TABLE', JSON.stringify({ rows: [] }), 0, 'SUPPLIER',
+      'prod-1', 'guide-taille', 'Guide des tailles', 'KEY_VALUE', JSON.stringify({ rows: [] }), 0, 'SUPPLIER',
     ]);
     expect(client.calls[1].sql).toMatch(/UPDATE product_content_sections/);
     expect(client.calls[1].params).toEqual(['prod-1', ['guide-taille']]);

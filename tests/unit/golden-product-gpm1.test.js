@@ -21,6 +21,16 @@
  *     exécuté contre une vraie DB) ;
  *   - le rendu de la modal mobile (GPM-2/GPM-3, Playwright) ;
  *   - les captures visuelles (GPM-6).
+ *
+ * FIX (Lot Content, commit 5) : getProductDetail() lit désormais aussi
+ * catalog_media, product_content_profile, product_content_sections et
+ * product_attributes (Lot Content, commits 1-3, migration 111). Ce fixture
+ * GPM-1 date d'avant ces requêtes — sans catalog_media promu, usingCanonicalMedia
+ * reste false donc product_sku_media n'est pas interrogée (voir la garde dans
+ * services/catalog-product-detail.js). mockDb() complété avec les 4 réponses
+ * manquantes (produit pauvre en contenu à ce stade — la richesse éditoriale
+ * réelle du Golden Product est verrouillée séparément par
+ * tests/integration/golden-product-content-e2e.test.js).
  */
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
@@ -37,7 +47,11 @@ function mockDb() {
     query: jest.fn()
       .mockResolvedValueOnce({ rows: [golden.productRow()] })
       .mockResolvedValueOnce({ rows: golden.variantRows() })
-      .mockResolvedValueOnce({ rows: golden.skuRows() }),
+      .mockResolvedValueOnce({ rows: golden.skuRows() })
+      .mockResolvedValueOnce({ rows: [] }) // catalog_media (pas de média canonique dans ce fixture historique)
+      .mockResolvedValueOnce({ rows: [] }) // product_content_profile
+      .mockResolvedValueOnce({ rows: [] }) // product_content_sections
+      .mockResolvedValueOnce({ rows: [] }), // product_attributes
   };
 }
 
@@ -205,6 +219,7 @@ describe('GPM-1 — Golden Product "Chaussure de football Elite Pro" — Product
         'option_axes',
         'sellable_units',
         'delivery_options',
+        'content',
       ].sort()
     );
   });

@@ -34,9 +34,9 @@
  *   - highlights[]       : string[] — puces courtes, ordre porté par la position
  *   - specifications[]   : { group_key?, attribute_key, label?, value, unit? }[]
  *   - sections[]         : { section_key, title, section_type, content, display_order? }[]
- *   - materials          : string|null — texte libre, projeté en section réservée
- *   - care               : string|null — idem
- *   - warnings           : string|null — idem
+ *   - materials          : string[]|null — puces courtes, aplaties en content.materials
+ *   - care               : string[]|null — idem, content.care
+ *   - warnings           : string[]|null — idem, content.warnings
  *
  * CLÉS RÉSERVÉES (DOCTRINE ZÉRO HEURISTIQUE) : 'materials', 'care', 'warnings' sont des
  * section_key réservées à ces trois champs dédiés du contrat — un contrat qui tente de
@@ -53,7 +53,13 @@
 'use strict';
 
 const RESERVED_SECTION_KEYS = new Set(['materials', 'care', 'warnings']);
-const ALLOWED_SECTION_TYPES = new Set(['TEXT', 'HTML', 'TABLE']);
+// Doit rester en couture exacte avec l'enum "type" de
+// schemas/catalog/product-detail.v1.schema.json et avec ce que
+// services/catalog-product-detail.js::buildSections sait projeter
+// (content_json.text pour TEXT, .items pour BULLETS, .entries pour
+// KEY_VALUE) — un HTML/TABLE ici serait accepté à la promotion puis
+// silencieusement vidé à la lecture (aucun champ text/items/entries connu).
+const ALLOWED_SECTION_TYPES = new Set(['TEXT', 'BULLETS', 'KEY_VALUE']);
 
 function invalid(message) {
   const e = new Error(message);
@@ -66,6 +72,22 @@ function nonEmptyTrimmedStringOrNull(value) {
   if (typeof value !== 'string') throw invalid('valeur textuelle attendue (string) ou null');
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * materials/care/warnings sont des tableaux de puces courtes dans le contrat
+ * public (schemas/catalog/product-detail.v1.schema.json), jamais un bloc de
+ * texte libre — aligné sur content.materials/care/warnings côté lecture
+ * (services/catalog-product-detail.js::buildSections, RESERVED_SECTION_TARGETS).
+ */
+function nonEmptyTrimmedStringArrayOrNull(value, fieldName) {
+  if (value === null || value === undefined) return null;
+  if (!Array.isArray(value)) throw invalid(`${fieldName} doit être un tableau de chaînes ou null`);
+  const items = value.map((item) => {
+    if (typeof item !== 'string') throw invalid(`${fieldName}[] contient une valeur non textuelle`);
+    return item.trim();
+  }).filter((item) => item.length > 0);
+  return items.length > 0 ? items : null;
 }
 
 /**
@@ -90,17 +112,19 @@ function mapContentToProfileRow(contract, options = {}) {
 
 /**
  * Projette une section réservée (materials/care/warnings) si le contrat porte le champ
- * correspondant. Toujours `section_type: 'TEXT'`, `content_json: { text }` — ces trois
- * champs sont du texte libre par construction, jamais une structure riche.
+ * correspondant. Toujours `section_type: 'BULLETS'`, `content_json: { items }` — ces
+ * trois champs sont des listes de puces par construction (schéma public), jamais un
+ * bloc de texte libre. Couture exacte avec services/catalog-product-detail.js::buildSections,
+ * qui aplatit RESERVED_SECTION_TARGETS[section_key] en lisant `content_json.items`,
+ * quel que soit section_type déclaré.
  */
-function reservedSectionRow(sectionKey, rawValue, displayOrder, source) {
-  const text = nonEmptyTrimmedStringOrNull(rawValue);
-  if (text === null) return null;
+function reservedSectionRow(sectionKey, items, displayOrder, source) {
+  if (!items || items.length === 0) return null;
   return {
     section_key: sectionKey,
     title: null,
-    section_type: 'TEXT',
-    content_json: { text },
+    section_type: 'BULLETS',
+    content_json: { items },
     display_order: displayOrder,
     source,
   };
@@ -167,7 +191,8 @@ function mapContentToSectionRows(contract, options = {}) {
     ['warnings', contract.warnings],
   ];
   reservedInOrder.forEach(([key, value], i) => {
-    const row = reservedSectionRow(key, value, baseOrder + i, source);
+    const items = nonEmptyTrimmedStringArrayOrNull(value, key);
+    const row = reservedSectionRow(key, items, baseOrder + i, source);
     if (row) rows.push(row);
   });
 

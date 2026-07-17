@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS public.product_content_sections (
   product_id     uuid NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
   section_key    text NOT NULL,          -- libre, ou réservé : materials | care | warnings
   title          text,
-  section_type   varchar(20) NOT NULL DEFAULT 'TEXT',  -- TEXT | HTML | TABLE
+  section_type   varchar(20) NOT NULL DEFAULT 'TEXT',  -- TEXT | BULLETS | KEY_VALUE (schemas/catalog/product-detail.v1.schema.json)
   content_json   jsonb,
   display_order  integer,
   source         varchar(20) NOT NULL DEFAULT 'SUPPLIER',

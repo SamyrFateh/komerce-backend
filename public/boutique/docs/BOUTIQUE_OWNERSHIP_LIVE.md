@@ -32,10 +32,10 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 |-----------|:---:|:-------:|:-----------:|-------------------|
 | `b-cart.js` | 58 | 31 | 1/6 | Modal produit, Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
 | `b-modal-core.js` | 33 | 54 | 3/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
+| `b-modal-desktop-product.js` | 77 | 0 | 0/0 | Modal produit |
+| `b-modal-mobile-product.js` | 68 | 0 | 0/0 | Modal produit |
 | `b-checkout.js` | 60 | 4 | 0/2 | Bottom-nav mobile |
 | `b-checkout-render.js` | 56 | 0 | 0/0 | — |
-| `b-modal-desktop-product.js` | 38 | 0 | 0/0 | Modal produit |
-| `b-modal-mobile-product.js` | 38 | 0 | 0/0 | Modal produit |
 | `b-modal-product.js` | 25 | 11 | 0/1 | Modal produit |
 | `b-phone.js` | 16 | 17 | 0/0 | — |
 | `b-modal-desktop-enhancers.js` | 27 | 0 | 2/1 | Modal produit |
@@ -92,6 +92,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | categories.css | 900px, 1200px, 899px | 🔴 899px |
 | group-cart-flow.css | 900px, 1200px, 380px | 🔴 380px |
 | interactions.css | 899px | 🔴 899px |
+| modal-enriched-content.css | 900px, 899px | 🔴 899px |
 | modal-media.css | 400px, 900px | 🔴 400px |
 | modal-mobile-canonical.css | 899px | 🔴 899px |
 | modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
@@ -139,7 +140,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Composants en multipropriété CSS | 8 | 0 |
 | Modules JS écrivant le DOM | 40 | ≤ 5 |
 | Breakpoints distincts | 7 | ≤ 2 |
-| Violations breakpoint | 12 | 0 |
+| Violations breakpoint | 13 | 0 |
 | `!important` | 23 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

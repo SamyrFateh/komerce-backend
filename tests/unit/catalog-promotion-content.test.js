@@ -75,11 +75,11 @@ describe('catalog-promotion/content — mapContentToSectionRows', () => {
   it('projette une section custom avec display_order fourni', () => {
     const rows = mapContentToSectionRows({
       sections: [
-        { section_key: 'guide-taille', title: 'Guide des tailles', section_type: 'TABLE', content: { rows: [] }, display_order: 5 },
+        { section_key: 'guide-taille', title: 'Guide des tailles', section_type: 'KEY_VALUE', content: { entries: [{ label: '42', value: 'EU 42' }] }, display_order: 5 },
       ],
     });
     expect(rows).toEqual([
-      { section_key: 'guide-taille', title: 'Guide des tailles', section_type: 'TABLE', content_json: { rows: [] }, display_order: 5, source: 'SUPPLIER' },
+      { section_key: 'guide-taille', title: 'Guide des tailles', section_type: 'KEY_VALUE', content_json: { entries: [{ label: '42', value: 'EU 42' }] }, display_order: 5, source: 'SUPPLIER' },
     ]);
   });
 
@@ -118,23 +118,23 @@ describe('catalog-promotion/content — mapContentToSectionRows', () => {
       .toThrow(/réservé/);
   });
 
-  it('materials/care/warnings projetés en sections réservées TEXT, après les sections custom', () => {
+  it('materials/care/warnings projetés en sections réservées BULLETS, après les sections custom', () => {
     const rows = mapContentToSectionRows({
       sections: [{ section_key: 'guide-taille', content: 'x' }],
-      materials: '100% coton',
-      care: 'Lavage à 30°C',
-      warnings: 'Ne pas repasser',
+      materials: ['100% coton'],
+      care: ['Lavage à 30°C'],
+      warnings: ['Ne pas repasser'],
     });
     expect(rows).toEqual([
       { section_key: 'guide-taille', title: null, section_type: 'TEXT', content_json: 'x', display_order: 0, source: 'SUPPLIER' },
-      { section_key: 'materials', title: null, section_type: 'TEXT', content_json: { text: '100% coton' }, display_order: 1, source: 'SUPPLIER' },
-      { section_key: 'care', title: null, section_type: 'TEXT', content_json: { text: 'Lavage à 30°C' }, display_order: 2, source: 'SUPPLIER' },
-      { section_key: 'warnings', title: null, section_type: 'TEXT', content_json: { text: 'Ne pas repasser' }, display_order: 3, source: 'SUPPLIER' },
+      { section_key: 'materials', title: null, section_type: 'BULLETS', content_json: { items: ['100% coton'] }, display_order: 1, source: 'SUPPLIER' },
+      { section_key: 'care', title: null, section_type: 'BULLETS', content_json: { items: ['Lavage à 30°C'] }, display_order: 2, source: 'SUPPLIER' },
+      { section_key: 'warnings', title: null, section_type: 'BULLETS', content_json: { items: ['Ne pas repasser'] }, display_order: 3, source: 'SUPPLIER' },
     ]);
   });
 
   it('materials/care/warnings absents ou vides -> aucune section réservée générée', () => {
-    const rows = mapContentToSectionRows({ materials: null, care: '   ', warnings: undefined });
+    const rows = mapContentToSectionRows({ materials: null, care: [], warnings: undefined });
     expect(rows).toEqual([]);
   });
 

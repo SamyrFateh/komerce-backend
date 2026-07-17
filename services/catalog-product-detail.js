@@ -90,9 +90,9 @@ function mediaMatchesOptions(mediaOptions, unitOptions) {
 // aplatis vers content.materials/care/warnings plutôt que content.sections[].
 // Cf. migrations/111_product_content.sql §2 pour la justification.
 const RESERVED_SECTION_TARGETS = Object.freeze({
-  MATERIALS: 'materials',
-  CARE: 'care',
-  WARNINGS: 'warnings',
+  materials: 'materials',
+  care: 'care',
+  warnings: 'warnings',
 });
 
 function asStringOrNull(value) {
@@ -155,7 +155,10 @@ function buildSections(sectionRows) {
 function buildHighlights(attributeRows) {
   return (attributeRows || [])
     .filter((row) => row.kind === 'HIGHLIGHT')
-    .map((row) => ({ key: row.attribute_key, label: row.label }));
+    // La promotion (services/catalog-promotion/content.js) stocke le texte du
+    // highlight dans value_text et laisse label à null (un highlight est une
+    // puce courte, pas un couple label/valeur) — cf. mapContentToAttributeRows.
+    .map((row) => ({ key: row.attribute_key, label: row.label || row.value_text }));
 }
 
 /** content.specifications depuis product_attributes(kind='SPECIFICATION'). */

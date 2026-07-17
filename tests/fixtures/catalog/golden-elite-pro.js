@@ -150,15 +150,119 @@ const EXPECTED_DELIVERY_OPTIONS = Object.freeze([
   },
 ]);
 
+// ─────────────────────────────────────────────────────────────────────
+// LOT CONTENT (commit 5) — matière éditoriale réelle du Golden Product.
+//
+// contentContract() a la forme normalized_source_contract V2 attendue par
+// services/catalog-promotion/content.js (mapContentToProfileRow /
+// mapContentToSectionRows / mapContentToAttributeRows) — PAS la forme du
+// contrat public (celle-ci est reconstruite par
+// services/catalog-product-detail.js::buildContent à la lecture). Une
+// seule source de vérité éditoriale ici ; jamais dupliquée à la main dans
+// un fixture frontend (voir public/boutique/tests/fixtures/golden-elite-pro-detail.js,
+// régénéré depuis ce fichier + le service réel, jamais édité à la main).
+//
+// Richesse minimale exigée par la doctrine du chantier (§ PRODUIT PILOTE) :
+// marque, description courte, ≥4 points forts, ≥6 caractéristiques (2
+// groupes), matériaux, entretien, ≥1 avertissement, ≥1 section éditoriale
+// KEY_VALUE (guide des tailles).
+function contentContract() {
+  return {
+    brand: 'Elite Pro',
+    short_description: 'Chaussure de football terrain synthétique, maintien ajusté.',
+    highlights: [
+      'Semelle multi-crampons adhérence optimale sur synthétique',
+      'Tige textile renforcée résistante à l’abrasion',
+      'Maintien ajusté sans point de pression',
+      'Doublure respirante anti-transpiration',
+    ],
+    specifications: [
+      { group_key: 'Semelle', attribute_key: 'type-semelle', label: 'Type', value: 'Crampons FG multi-directionnels' },
+      { group_key: 'Semelle', attribute_key: 'matiere-semelle', label: 'Matière', value: 'TPU injecté' },
+      { group_key: 'Tige', attribute_key: 'matiere-tige', label: 'Matière', value: 'Textile technique renforcé' },
+      { group_key: 'Tige', attribute_key: 'fermeture', label: 'Fermeture', value: 'Lacets classiques' },
+      { group_key: 'Général', attribute_key: 'poids', label: 'Poids (paire, taille 42)', value: '420', unit: 'g' },
+      { group_key: 'Général', attribute_key: 'terrain', label: 'Terrain recommandé', value: 'Synthétique (SG/AG)' },
+    ],
+    sections: [
+      {
+        section_key: 'size-guide',
+        title: 'Guide des tailles',
+        section_type: 'KEY_VALUE',
+        content: {
+          entries: [
+            { label: '42', value: 'EU 42 / UK 8' },
+            { label: '43', value: 'EU 43 / UK 9' },
+            { label: '44', value: 'EU 44 / UK 9.5' },
+          ],
+        },
+        display_order: 0,
+      },
+    ],
+    materials: [
+      'Tige textile technique renforcée',
+      'Semelle TPU injecté',
+      'Doublure respirante',
+    ],
+    care: [
+      'Nettoyer avec un chiffon humide après usage',
+      'Ne pas laver en machine',
+      'Laisser sécher à l’air libre, loin d’une source de chaleur directe',
+    ],
+    warnings: [
+      'Ne convient pas à un usage sur terrain naturel ou stabilisé (crampons non adaptés)',
+    ],
+  };
+}
+
+// catalog_media : rôles PRODUCT / SCENE / DETAIL / SIZE_GUIDE, certains
+// associés explicitement à la couleur (option_values.Couleur) pour prouver
+// le filtrage média par sélection sans heuristique de nom de fichier.
+const MEDIA_IDS = Object.freeze({
+  productNeutral: 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2001',
+  bleuProduct: 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2002',
+  bleuScene: 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2003',
+  bleuDetail: 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2004',
+  noirProduct: 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2005',
+  noirScene: 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2006',
+  sizeGuide: 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2007',
+});
+
+function catalogMediaRows() {
+  return [
+    { id: MEDIA_IDS.productNeutral, url: `${MEDIA_BASE}/neutral-main.jpg`, role: 'PRODUCT', alt: 'Chaussure de football Elite Pro', option_values: {} },
+    { id: MEDIA_IDS.bleuProduct, url: `${MEDIA_BASE}/bleu-main.jpg`, role: 'PRODUCT', alt: 'Elite Pro Bleu', option_values: { Couleur: 'Bleu' } },
+    { id: MEDIA_IDS.bleuScene, url: `${MEDIA_BASE}/bleu-scene.jpg`, role: 'SCENE', alt: 'Elite Pro Bleu en situation', option_values: { Couleur: 'Bleu' } },
+    { id: MEDIA_IDS.bleuDetail, url: `${MEDIA_BASE}/bleu-detail-semelle.jpg`, role: 'DETAIL', alt: 'Détail semelle Elite Pro Bleu', option_values: { Couleur: 'Bleu' } },
+    { id: MEDIA_IDS.noirProduct, url: `${MEDIA_BASE}/noir-main.jpg`, role: 'PRODUCT', alt: 'Elite Pro Noir', option_values: { Couleur: 'Noir' } },
+    { id: MEDIA_IDS.noirScene, url: `${MEDIA_BASE}/noir-scene.jpg`, role: 'SCENE', alt: 'Elite Pro Noir en situation', option_values: { Couleur: 'Noir' } },
+    { id: MEDIA_IDS.sizeGuide, url: `${MEDIA_BASE}/size-guide.jpg`, role: 'SIZE_GUIDE', alt: 'Guide des tailles Elite Pro', option_values: {} },
+  ];
+}
+
+// product_sku_media — association explicite : le SKU Bleu-44 (palier de
+// prix différent) pointe en plus vers le détail semelle, pour prouver que
+// explicitSkuMediaMap étend (jamais ne remplace) les médias dérivés de la
+// couleur.
+function skuMediaRows() {
+  return [
+    { sku_id: SKU_IDS['Bleu-44'], media_id: MEDIA_IDS.bleuDetail },
+  ];
+}
+
 module.exports = {
   PRODUCT_ID,
   PRODUCT_REF,
   SKU_IDS,
   MEDIA_BASE,
+  MEDIA_IDS,
   productRow,
   variantRows,
   skuRows,
   SCENARIOS,
   commercialTransportRails,
   EXPECTED_DELIVERY_OPTIONS,
+  contentContract,
+  catalogMediaRows,
+  skuMediaRows,
 };

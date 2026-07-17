@@ -10,7 +10,7 @@
 
 ## 1. Inventaire CSS
 
-21 fichier(s) sur disque, 21 orphelin(s).
+22 fichier(s) sur disque, 22 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
@@ -23,6 +23,7 @@
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
 | `interactions.css` | 436 | 🔴 **ORPHELIN** |
 | `layout.css` | 1168 | 🔴 **ORPHELIN** |
+| `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 299 | 🔴 **ORPHELIN** |
 | `modal-mobile-canonical.css` | 332 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 364 | 🔴 **ORPHELIN** |
@@ -42,7 +43,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=118
- 2. /boutique/css/dist/components.css?v=152
+ 2. /boutique/css/dist/components.css?v=154
  3. /boutique/css/dist/desktop.css?v=52
  4. /boutique/css/dist/event.css?v=32
 ```
@@ -108,7 +109,7 @@ Aucun. ✅
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 21 (cible : 0)
+- **CSS orphelins** : 22 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 25 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)

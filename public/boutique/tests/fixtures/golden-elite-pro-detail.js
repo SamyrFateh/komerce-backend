@@ -6,14 +6,18 @@
  *   Ce JSON est la sortie réelle et déjà validée (Ajv, schema v1) de
  *   services/catalog-product-detail.js::getProductDetail() appelé avec
  *   les lignes de tests/fixtures/catalog/golden-elite-pro.js (racine du
- *   repo). Une seule source de vérité produit : si le fixture racine
- *   change, régénérer ce fichier avec le même service plutôt que
- *   d'éditer les valeurs ci-dessous à la main (doctrine : un seul
- *   produit métier, zéro divergence entre backend et tests front).
+ *   repo), y compris désormais le contenu enrichi promu (Lot Content,
+ *   commit 5 : golden.contentContract() → mappers purs de
+ *   services/catalog-promotion/content.js → buildContent()). Une seule
+ *   source de vérité produit : si le fixture racine change, régénérer
+ *   ce fichier avec le même service plutôt que d'éditer les valeurs
+ *   ci-dessous à la main (doctrine : un seul produit métier, zéro
+ *   divergence entre backend et tests front).
  *
  * Utilisé par : tests/unit/golden-product-selection-gpm3.test.js
- * pour verrouiller modal-selection-model.js (front-end pur, sans DOM ni
- * fetch) sur les 6 scénarios du chantier GPM.
+ * (front-end pur, sans DOM ni fetch) et, depuis le Lot Content commit 5,
+ * par tests/unit/golden-product-content-render.test.js pour verrouiller
+ * le rendu mobile/desktop du contenu enrichi réel.
  */
 'use strict';
 
@@ -35,47 +39,63 @@ module.exports = {
   },
   "media": [
     {
-      "id": "product-1",
+      "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2001",
       "url": "https://cdn.example.com/golden-elite-pro/neutral-main.jpg",
       "role": "PRODUCT",
       "alt": "Chaussure de football Elite Pro",
       "option_values": {}
     },
     {
-      "id": "variant-1-1",
+      "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2002",
       "url": "https://cdn.example.com/golden-elite-pro/bleu-main.jpg",
       "role": "PRODUCT",
-      "alt": "Chaussure de football Elite Pro",
+      "alt": "Elite Pro Bleu",
       "option_values": {
         "Couleur": "Bleu"
       }
     },
     {
-      "id": "variant-1-3",
+      "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2003",
       "url": "https://cdn.example.com/golden-elite-pro/bleu-scene.jpg",
-      "role": "PRODUCT",
-      "alt": "Chaussure de football Elite Pro",
+      "role": "SCENE",
+      "alt": "Elite Pro Bleu en situation",
       "option_values": {
         "Couleur": "Bleu"
       }
     },
     {
-      "id": "variant-2-1",
+      "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2004",
+      "url": "https://cdn.example.com/golden-elite-pro/bleu-detail-semelle.jpg",
+      "role": "DETAIL",
+      "alt": "Détail semelle Elite Pro Bleu",
+      "option_values": {
+        "Couleur": "Bleu"
+      }
+    },
+    {
+      "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2005",
       "url": "https://cdn.example.com/golden-elite-pro/noir-main.jpg",
       "role": "PRODUCT",
-      "alt": "Chaussure de football Elite Pro",
+      "alt": "Elite Pro Noir",
       "option_values": {
         "Couleur": "Noir"
       }
     },
     {
-      "id": "variant-2-3",
+      "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2006",
       "url": "https://cdn.example.com/golden-elite-pro/noir-scene.jpg",
-      "role": "PRODUCT",
-      "alt": "Chaussure de football Elite Pro",
+      "role": "SCENE",
+      "alt": "Elite Pro Noir en situation",
       "option_values": {
         "Couleur": "Noir"
       }
+    },
+    {
+      "id": "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2007",
+      "url": "https://cdn.example.com/golden-elite-pro/size-guide.jpg",
+      "role": "SIZE_GUIDE",
+      "alt": "Guide des tailles Elite Pro",
+      "option_values": {}
     }
   ],
   "option_axes": [
@@ -124,8 +144,9 @@ module.exports = {
       "available_quantity": 8,
       "price_kmf": 42000,
       "media_ids": [
-        "variant-1-1",
-        "variant-1-3"
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2002",
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2003",
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2004"
       ]
     },
     {
@@ -139,8 +160,9 @@ module.exports = {
       "available_quantity": 0,
       "price_kmf": 42000,
       "media_ids": [
-        "variant-1-1",
-        "variant-1-3"
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2002",
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2003",
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2004"
       ]
     },
     {
@@ -154,8 +176,7 @@ module.exports = {
       "available_quantity": 5,
       "price_kmf": 45000,
       "media_ids": [
-        "variant-1-1",
-        "variant-1-3"
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2004"
       ]
     },
     {
@@ -169,8 +190,8 @@ module.exports = {
       "available_quantity": 4,
       "price_kmf": 42000,
       "media_ids": [
-        "variant-2-1",
-        "variant-2-3"
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2005",
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2006"
       ]
     },
     {
@@ -184,8 +205,8 @@ module.exports = {
       "available_quantity": 3,
       "price_kmf": 43000,
       "media_ids": [
-        "variant-2-1",
-        "variant-2-3"
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2005",
+        "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa2006"
       ]
     }
   ],
@@ -198,5 +219,119 @@ module.exports = {
       "eta_label": null,
       "unavailable_reason": null
     }
-  ]
+  ],
+  "content": {
+    "brand": "Elite Pro",
+    "short_description": "Chaussure de football terrain synthétique, maintien ajusté.",
+    "highlights": [
+      {
+        "key": "h1",
+        "label": "Semelle multi-crampons adhérence optimale sur synthétique"
+      },
+      {
+        "key": "h2",
+        "label": "Tige textile renforcée résistante à l’abrasion"
+      },
+      {
+        "key": "h3",
+        "label": "Maintien ajusté sans point de pression"
+      },
+      {
+        "key": "h4",
+        "label": "Doublure respirante anti-transpiration"
+      }
+    ],
+    "specifications": [
+      {
+        "group": "Semelle",
+        "key": "type-semelle",
+        "label": "Type",
+        "value": "Crampons FG multi-directionnels",
+        "unit": null,
+        "display_order": 0
+      },
+      {
+        "group": "Semelle",
+        "key": "matiere-semelle",
+        "label": "Matière",
+        "value": "TPU injecté",
+        "unit": null,
+        "display_order": 1
+      },
+      {
+        "group": "Tige",
+        "key": "matiere-tige",
+        "label": "Matière",
+        "value": "Textile technique renforcé",
+        "unit": null,
+        "display_order": 2
+      },
+      {
+        "group": "Tige",
+        "key": "fermeture",
+        "label": "Fermeture",
+        "value": "Lacets classiques",
+        "unit": null,
+        "display_order": 3
+      },
+      {
+        "group": "Général",
+        "key": "poids",
+        "label": "Poids (paire, taille 42)",
+        "value": "420",
+        "unit": "g",
+        "display_order": 4
+      },
+      {
+        "group": "Général",
+        "key": "terrain",
+        "label": "Terrain recommandé",
+        "value": "Synthétique (SG/AG)",
+        "unit": null,
+        "display_order": 5
+      }
+    ],
+    "sections": [
+      {
+        "key": "size-guide",
+        "title": "Guide des tailles",
+        "type": "KEY_VALUE",
+        "text": null,
+        "items": [],
+        "entries": [
+          {
+            "label": "42",
+            "value": "EU 42 / UK 8"
+          },
+          {
+            "label": "43",
+            "value": "EU 43 / UK 9"
+          },
+          {
+            "label": "44",
+            "value": "EU 44 / UK 9.5"
+          }
+        ],
+        "display_order": 0
+      }
+    ],
+    "materials": [
+      "Tige textile technique renforcée",
+      "Semelle TPU injecté",
+      "Doublure respirante"
+    ],
+    "care": [
+      "Nettoyer avec un chiffon humide après usage",
+      "Ne pas laver en machine",
+      "Laisser sécher à l’air libre, loin d’une source de chaleur directe"
+    ],
+    "warnings": [
+      "Ne convient pas à un usage sur terrain naturel ou stabilisé (crampons non adaptés)"
+    ],
+    "provenance": {
+      "source": "SUPPLIER",
+      "enrichment_version": null,
+      "reviewed": false
+    }
+  }
 };
