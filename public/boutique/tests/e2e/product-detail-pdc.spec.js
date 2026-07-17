@@ -13,17 +13,20 @@ const {
   IS_REMOTE,
 } = require('./helpers/boutique.helpers');
 
-const CARD_SELECTOR = '#k-grid .k-promo-card, #k-grid .k-card';
 const PDC_PROJECTS = new Set(['Desktop Chrome', 'Mobile Chrome']);
+
+// Taille de page pour GET /api/products?limit=&offset= (catalogue complet,
+// tri stable côté serveur — indépendant du rendu client).
+const PRODUCTS_LIST_PAGE_SIZE = 200;
+// Concurrence des fetch /detail au sein d'une page de découverte.
 const SKU_DISCOVERY_BATCH_SIZE = 12;
 
 function escapeAttr(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-function cardSelector(productId) {
-  const id = escapeAttr(productId);
-  return `#k-grid .k-promo-card[data-id="${id}"], #k-grid .k-card[data-id="${id}"]`;
+function searchItemSelector(productId) {
+  return `#k-search-dropdown .k-search-item[data-id="${escapeAttr(productId)}"]`;
 }
 
 function optionSelector(axisKey, optionValue) {
@@ -50,6 +53,22 @@ function targetAvailableUnit(detail) {
   ) || null;
 }
 
+/** Une page de GET /api/products — source stable, non échantillonnée. */
+async function fetchProductsPage(page, offset, limit) {
+  return page.evaluate(async ({ offset, limit }) => {
+    try {
+      const response = await fetch(`/api/products?limit=${limit}&offset=${offset}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) return { products: [], total: 0 };
+      const data = await response.json();
+      return { products: Array.isArray(data.products) ? data.products : [], total: Number(data.total) || 0 };
+    } catch (_) {
+      return { products: [], total: 0 };
+    }
+  }, { offset, limit });
+}
+
 async function fetchProductDetails(page, productIds) {
   return page.evaluate(async (ids) => Promise.all(ids.map(async (id) => {
     try {
@@ -64,36 +83,68 @@ async function fetchProductDetails(page, productIds) {
   })), productIds);
 }
 
+/**
+ * Découvre un produit SKU réel + unité vendable AVAILABLE en interrogeant
+ * directement /api/products (catalogue entier, paginé, tri serveur stable).
+ *
+ * IMPORTANT : on ne scanne plus les cartes de #k-grid. b-catalog.js::_balancedPick
+ * tire un échantillon ALÉATOIRE (Math.random(), non seedé) du catalogue à
+ * chaque chargement de page pour l'affichage — scanner le DOM rendait la
+ * découverte non-déterministe (un candidat valide pouvait être absent du
+ * tirage d'un run à l'autre sans qu'aucun code métier n'ait changé).
+ * /api/products, lui, est une source stable et exhaustive.
+ */
 async function discoverRealSkuProduct(page) {
-  await waitForGrid(page);
-  const productIds = await page.locator(CARD_SELECTOR).evaluateAll((cards) => [
-    ...new Set(cards.map((card) => card.getAttribute('data-id')).filter(Boolean)),
-  ]);
+  await waitForGrid(page); // attend que l'app ait fini de charger le catalogue
 
-  for (let offset = 0; offset < productIds.length; offset += SKU_DISCOVERY_BATCH_SIZE) {
-    const batch = productIds.slice(offset, offset + SKU_DISCOVERY_BATCH_SIZE);
-    const results = await fetchProductDetails(page, batch);
+  let offset = 0;
+  let total = Infinity;
 
-    for (const { productId, detail } of results) {
-      const unit = targetAvailableUnit(detail);
-      if (unit) return { productId, detail, unit };
+  while (offset < total) {
+    const { products: pageProducts, total: pageTotal } = await fetchProductsPage(page, offset, PRODUCTS_LIST_PAGE_SIZE);
+    total = pageTotal || 0;
+    if (!pageProducts.length) break;
+
+    for (let i = 0; i < pageProducts.length; i += SKU_DISCOVERY_BATCH_SIZE) {
+      const batch = pageProducts.slice(i, i + SKU_DISCOVERY_BATCH_SIZE);
+      const results = await fetchProductDetails(page, batch.map((p) => p.id));
+
+      for (const { productId, detail } of results) {
+        const unit = targetAvailableUnit(detail);
+        if (unit) {
+          const listEntry = batch.find((p) => p.id === productId);
+          return { productId, name: listEntry ? listEntry.name : null, detail, unit };
+        }
+      }
     }
+
+    offset += pageProducts.length;
   }
 
   return null;
 }
 
-async function openCandidate(page, candidate, testInfo) {
-  const card = page.locator(cardSelector(candidate.productId)).first();
-  await expect(card, `carte produit ${candidate.productId}`).toBeVisible({ timeout: 5_000 });
-  await card.scrollIntoViewIfNeeded();
+/**
+ * Ouvre la modale via la recherche plutôt que via un clic sur une carte de
+ * grille : #k-search-input filtre sur state.products (catalogue COMPLET en
+ * mémoire, pas l'échantillon rendu), et .k-search-item porte déjà data-id.
+ * Déterministe quel que soit le tirage aléatoire de la grille.
+ */
+async function openCandidate(page, candidate) {
+  const input = page.locator('#k-search-input');
+  await expect(input, 'le champ de recherche doit être visible').toBeVisible({ timeout: 5_000 });
 
-  if (testInfo) await captureStockDiagnostics(page, testInfo, '00-before-open');
+  const term = (candidate.name || candidate.productId).trim();
+  await input.fill(term.length >= 2 ? term : candidate.productId);
 
-  await card.click();
+  const dropdown = page.locator('#k-search-dropdown');
+  await expect(dropdown, 'le dropdown de recherche doit s\'ouvrir').toHaveClass(/open/, { timeout: 5_000 });
+
+  const item = page.locator(searchItemSelector(candidate.productId));
+  await expect(item, `résultat de recherche pour ${candidate.productId} (terme: "${term}")`).toBeVisible({ timeout: 5_000 });
+  await item.click();
+
   await waitForModalOpen(page);
-
-  if (testInfo) await captureStockDiagnostics(page, testInfo, '00b-after-open');
 
   const viewport = page.viewportSize();
   const isMobile = viewport ? viewport.width < 900 : false;
@@ -101,53 +152,9 @@ async function openCandidate(page, candidate, testInfo) {
   await expect(page.locator(root)).toBeVisible({ timeout: 8_000 });
 }
 
-/**
- * DIAG-STOCK — instrumentation E-PDC-2. Capture l'état DOM autour de
- * #k-modal-stock à un point donné, sans influer sur le flux du test.
- * Attaché au rapport Playwright via testInfo.attach (visible même si le
- * test réussit, pour audit).
- */
-async function captureStockDiagnostics(page, testInfo, checkpoint) {
-  const diag = await page.evaluate(() => {
-    const stockEl = document.querySelector('#k-modal-stock');
-    const metaEl = document.querySelector('.k-modal-meta');
-    const byIdSubstr = Array.from(document.querySelectorAll('[id*="stock"]')).map((el) => ({
-      tag: el.tagName,
-      id: el.id,
-      className: el.className,
-      hidden: el.hidden,
-      textContent: (el.textContent || '').slice(0, 120),
-    }));
-    const byClassSubstr = Array.from(document.querySelectorAll('[class*="stock"]')).map((el) => ({
-      tag: el.tagName,
-      id: el.id,
-      className: el.className,
-      hidden: el.hidden,
-      textContent: (el.textContent || '').slice(0, 120),
-    }));
-    return {
-      stockElExists: Boolean(stockEl),
-      stockElHidden: stockEl ? stockEl.hidden : null,
-      stockElText: stockEl ? stockEl.textContent : null,
-      metaOuterHTML: metaEl ? metaEl.outerHTML : null,
-      elementsWithStockInId: byIdSubstr,
-      elementsWithStockInClass: byClassSubstr,
-    };
-  });
-
-  await testInfo.attach(`diag-stock--${checkpoint}`, {
-    body: JSON.stringify(diag, null, 2),
-    contentType: 'application/json',
-  });
-
-  return diag;
-}
-
-async function selectTargetUnit(page, candidate, testInfo) {
+async function selectTargetUnit(page, candidate) {
   const addButton = page.locator('#k-add-cart-btn');
   await expect(addButton, 'un produit SKU doit être verrouillé avant résolution complète').toBeDisabled();
-
-  if (testInfo) await captureStockDiagnostics(page, testInfo, '01-before-selection');
 
   for (const axis of candidate.detail.option_axes) {
     const value = candidate.unit.option_values[axis.key];
@@ -161,9 +168,6 @@ async function selectTargetUnit(page, candidate, testInfo) {
   }
 
   await expect(addButton, 'le CTA doit être actif une fois le SKU réel résolu').toBeEnabled();
-
-  if (testInfo) await captureStockDiagnostics(page, testInfo, '02-after-selection-before-assert');
-
   await expect(page.locator('#k-modal-stock')).toContainText('Disponible');
 
   if (candidate.unit.sku) {
@@ -211,18 +215,18 @@ test.describe('E-PDC — Clôture catalogue raffiné + modal enrichie', () => {
     assertCanonicalContract(candidate);
   });
 
-  test('E-PDC-2 — la modal résout un SKU réel et met à jour disponibilité, référence et prix', async ({ page }, testInfo) => {
+  test('E-PDC-2 — la modal résout un SKU réel et met à jour disponibilité, référence et prix', async ({ page }) => {
     await page.goto(BASE_URL);
     const candidate = await discoverRealSkuProduct(page);
 
     expect(
       candidate,
-      'aucun produit SKU canonique disponible trouvé dans les cartes actuellement exposées'
+      'aucun produit SKU canonique disponible trouvé dans le catalogue distant'
     ).not.toBeNull();
 
     assertCanonicalContract(candidate);
-    await openCandidate(page, candidate, testInfo);
-    await selectTargetUnit(page, candidate, testInfo);
+    await openCandidate(page, candidate);
+    await selectTargetUnit(page, candidate);
   });
 
   test('E-PDC-3 — la sélection survit au passage mobile → desktop sans second fetch /detail', async ({ page }, testInfo) => {
