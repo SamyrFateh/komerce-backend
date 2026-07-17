@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" role="img" aria-labelledby="title desc">
+  <title id="title">Elite Pro Bleu — scène terrain</title><desc id="desc">Chaussure de football bleue en mouvement sur un terrain synthétique nocturne.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#07162f"/><stop offset=".65" stop-color="#113c70"/><stop offset="1" stop-color="#17644f"/></linearGradient>
+    <linearGradient id="shoe" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3f85f0"/><stop offset=".55" stop-color="#1551ad"/><stop offset="1" stop-color="#072b65"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe7a0"/><stop offset=".55" stop-color="#bd8c2d"/><stop offset="1" stop-color="#6d4b12"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="22"/></filter><filter id="shadow"><feDropShadow dx="0" dy="30" stdDeviation="26" flood-color="#000" flood-opacity=".55"/></filter>
+  </defs>
+  <rect width="1200" height="1400" fill="url(#sky)"/>
+  <g opacity=".75"><circle cx="150" cy="180" r="14" fill="#fff"/><circle cx="250" cy="145" r="10" fill="#fff"/><circle cx="950" cy="168" r="12" fill="#fff"/><circle cx="1060" cy="220" r="9" fill="#fff"/></g>
+  <g filter="url(#glow)" opacity=".4"><circle cx="150" cy="180" r="75" fill="#fff"/><circle cx="1050" cy="210" r="80" fill="#fff"/></g>
+  <path d="M0 890 Q310 760 610 850 T1200 820 V1400 H0Z" fill="#0c7b51"/><path d="M0 1020 Q360 890 1200 960" fill="none" stroke="#9ce9c8" stroke-width="6" opacity=".65"/>
+  <g stroke="#d8fff0" opacity=".22"><path d="M70 910 l-120 480"/><path d="M230 870 l-70 530"/><path d="M420 850 l-20 550"/><path d="M640 845 l45 555"/><path d="M880 850 l105 550"/></g>
+  <text x="78" y="105" font-family="Arial,Helvetica,sans-serif" font-size="28" letter-spacing="7" fill="#fff">ELITE PRO / MATCH NIGHT</text>
+  <g transform="translate(95 350) rotate(-13 500 350)" filter="url(#shadow)">
+    <path d="M100 500 C190 465 270 400 335 280 C376 205 430 158 500 154 C585 150 645 223 705 299 C765 376 842 430 980 478 C1030 496 1050 536 1028 570 C1004 605 936 610 850 612 L245 620 C155 620 90 584 74 548 C64 526 74 512 100 500Z" fill="url(#shoe)" stroke="#06152f" stroke-width="12"/>
+    <path d="M322 336 L592 244" fill="none" stroke="url(#gold)" stroke-width="30" stroke-linecap="round"/>
+    <g stroke="#e2edff" stroke-width="13" stroke-linecap="round"><path d="M428 255 l190 45"/><path d="M416 298 l214 48"/><path d="M409 340 l220 49"/></g>
+    <path d="M75 548 C292 575 747 573 1024 532 L1029 579 C751 632 273 647 111 606 C83 599 64 575 75 548Z" fill="#06142e"/>
+    <path d="M138 584 C355 615 760 602 984 566" fill="none" stroke="url(#gold)" stroke-width="11"/>
+    <g fill="#06142e"><ellipse cx="230" cy="626" rx="30" ry="43"/><ellipse cx="370" cy="635" rx="29" ry="44"/><ellipse cx="526" cy="637" rx="29" ry="45"/><ellipse cx="690" cy="632" rx="29" ry="44"/><ellipse cx="840" cy="618" rx="28" ry="42"/></g>
+  </g>
+  <g fill="#b9f7df" opacity=".75"><circle cx="210" cy="990" r="8"/><circle cx="300" cy="930" r="5"/><circle cx="450" cy="1060" r="7"/><circle cx="720" cy="980" r="6"/><circle cx="880" cy="1080" r="8"/></g>
+  <text x="78" y="1280" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="62" fill="#fff">Accroche instantanée.</text>
+  <text x="80" y="1332" font-family="Arial,Helvetica,sans-serif" font-size="25" fill="#c6e8dc">Multi-crampons · Terrain synthétique · Appuis rapides</text>
+</svg>
