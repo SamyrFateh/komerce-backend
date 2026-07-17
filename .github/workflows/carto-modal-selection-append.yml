@@ -6,12 +6,17 @@ on:
       - fix/modal-selection-stock-sync-apply
     paths:
       - '.github/workflows/carto-modal-selection-append.yml'
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   append-delta:
+    if: github.event_name == 'push' || github.head_ref == 'fix/modal-selection-stock-sync-apply'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
