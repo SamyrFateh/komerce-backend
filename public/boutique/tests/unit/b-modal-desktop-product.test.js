@@ -281,6 +281,48 @@ describe('desktop product detail renderer', () => {
     expect(setupImageUX).toHaveBeenCalled();
   });
 
+  test('met à jour la sélection en place sans reconstruire la composition', () => {
+    const product = detail({
+      content: {
+        brand: 'Elite Pro',
+        short_description: null,
+        highlights: [{ key: 'h1', label: 'Grip renforcé' }],
+        specifications: [],
+        sections: [],
+        materials: [],
+        care: [],
+        warnings: [],
+        provenance: { source: 'SUPPLIER', enrichment_version: 'test', reviewed: false },
+      },
+    });
+    renderDesktopProductDetail(product, createModalSelection(product), { forceMedia: true });
+
+    const rootBefore = document.querySelector('[data-pdc5-root="1"]');
+    const enrichedBefore = document.getElementById('k-modal-enriched-content').firstElementChild;
+    const deliveryBefore = document.getElementById('k-modal-delivery').firstElementChild;
+    const paymentBefore = document.getElementById('k-modal-payment').firstElementChild;
+    const sizeMBefore = document.querySelector(
+      '[data-axis-key="Taille"] [data-option-value="M"]'
+    );
+
+    document.querySelector(
+      '[data-axis-key="Couleur"] [data-option-value="Marron"]'
+    ).click();
+
+    expect(document.querySelector('[data-pdc5-root="1"]')).toBe(rootBefore);
+    expect(document.getElementById('k-modal-enriched-content').firstElementChild).toBe(enrichedBefore);
+    expect(document.getElementById('k-modal-delivery').firstElementChild).toBe(deliveryBefore);
+    expect(document.getElementById('k-modal-payment').firstElementChild).toBe(paymentBefore);
+    expect(document.querySelector('[data-axis-key="Taille"] [data-option-value="M"]')).toBe(sizeMBefore);
+
+    sizeMBefore.click();
+
+    expect(state.modalSelection.selected_sku_id).toBe(SKU_MAR_M);
+    expect(dom.modalSku.textContent).toBe('Réf. ROB-MAR-M');
+    expect(dom.modalStock.textContent).toBe('✓ Disponible');
+    expect(dom.addCartBtn.disabled).toBe(false);
+  });
+
   test('Beige + L porte le prix SKU et le sous-total suit la quantité', () => {
     const product = detail();
     renderDesktopProductDetail(product, createModalSelection(product));

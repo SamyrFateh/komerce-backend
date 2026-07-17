@@ -50,7 +50,12 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { getCurrentPrice } from './b-modal-buybox-shared.js';
+import {
+  SELECTION_AVAILABILITY,
+  getCurrentPrice,
+  getSelectionAvailability,
+  renderSelectionStockInto,
+} from './b-modal-buybox-shared.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -262,20 +267,15 @@ function renderInfoStrip(detail, selection, root) {
   strip.className = 'k-mdm-info-strip';
   strip.dataset.infoStrip = '1';
 
-  // Availability chip — only when selection is supported
-  if (selection.selection_supported) {
+  // Availability chip — même projection que #k-modal-stock.
+  const availability = getSelectionAvailability(detail, selection);
+  if (availability.state !== SELECTION_AVAILABILITY.HIDDEN) {
     const availChip = document.createElement('span');
-    if (selection.selected_sku_id) {
-      availChip.className = 'k-mdm-chip k-mdm-chip--ok';
-      availChip.textContent = '✓ Disponible';
-    } else {
-      const hasSelections =
-        Object.keys(selection.selected_options).length > 0;
-      availChip.className = 'k-mdm-chip';
-      availChip.textContent = hasSelections
-        ? 'Choisissez la suite'
-        : 'Choisissez vos options';
-    }
+    availChip.className = availability.state === SELECTION_AVAILABILITY.AVAILABLE
+      ? 'k-mdm-chip k-mdm-chip--ok'
+      : 'k-mdm-chip';
+    availChip.dataset.availabilityState = availability.state;
+    availChip.textContent = availability.label;
     strip.appendChild(availChip);
   }
 
@@ -317,7 +317,7 @@ function renderInfoStrip(detail, selection, root) {
 
 function renderActions(detail, selection) {
   const isSku = detail.inventory_model === 'SKU';
-  const enabled = !isSku || Boolean(selection.selected_sku_id);
+  const enabled = !isSku || getSelectionAvailability(detail, selection).canPurchase;
   [dom.addCartBtn, document.getElementById('k-buy-now-btn')].forEach(
     (button) => {
       if (!button) return;
@@ -573,6 +573,9 @@ export function renderMobileProductDetail(
 
   // MDM-3: Identity into shell DOM
   renderIdentity(detail, selection);
+
+  // Statut canonique du shell — présent et synchronisé aussi sur mobile.
+  renderSelectionStockInto(dom.modalStock, detail, selection);
 
   // MDM-6: Actions state into shell CTA bar
   renderActions(detail, selection);
