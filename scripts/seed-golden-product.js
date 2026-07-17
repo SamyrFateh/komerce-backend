@@ -86,7 +86,25 @@ async function upsertProductParent(client) {
 // Appelle le VRAI promoteCatalog avec le contrat source V2 de la fixture.
 // C'est la seule façon de prouver que la raffinerie sait produire la sortie
 // verrouillée par golden-product-gpm1.test.js.
+//
+// TRANSITION v1 → v2 : l'ancien seed écrivait des product_skus en SQL direct
+// avec supplier_sku = NULL. planSkuReconciliation matche par supplier_sku :
+// il ne retrouve pas les anciens → tente un INSERT → conflit sur
+// (product_id, variant_combo). On nettoie les orphelins legacy UNE FOIS.
+// Après le premier run v2, supplier_sku est renseigné et les re-promotions
+// matchent normalement.
 async function promoteSupplierData(client, productId) {
+  // Nettoyage one-shot : supprimer les SKU sans supplier_sku (posés par le
+  // seed v1). Idempotent : si aucune ligne ne matche, 0 rows deleted.
+  const { rowCount } = await client.query(
+    `DELETE FROM product_skus
+      WHERE product_id = $1 AND supplier_sku IS NULL`,
+    [productId]
+  );
+  if (rowCount > 0) {
+    console.log(`  ⚠ nettoyage transition v1→v2 : ${rowCount} SKU legacy sans supplier_sku supprimé(s)`);
+  }
+
   const sourceContract = fixture.sourceContract();
   validateForPromotion(sourceContract);
   await promoteCatalog(client, { productId, normalizedSourceContract: sourceContract });
