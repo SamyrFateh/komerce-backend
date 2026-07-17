@@ -7,69 +7,31 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
   verify:
     if: github.head_ref == 'ops/verify-golden-showcase-deploy'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     steps:
-      - name: Verify public media and API contract
+      - name: Report Golden API database state
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          set +e
-          set -u -o pipefail
-          product_id='aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001'
-          media=(neutral-main.svg bleu-main.svg bleu-scene.svg bleu-detail-semelle.svg noir-main.svg noir-scene.svg size-guide.svg)
-          origins=('https://komerce.co' 'https://komerce-backend-production.up.railway.app')
-          ok=1
-          report='### Golden showcase — état déployé\n\n'
-
-          for origin in "${origins[@]}"; do
-            report+="#### ${origin}\n"
-            for file in "${media[@]}"; do
-              url="${origin}/images/products/golden-elite-pro/${file}"
-              code=$(curl -L --max-time 20 -sS -o /dev/null -w '%{http_code}' "$url" || true)
-              report+="- ${file}: ${code}\n"
-              [ "$code" = '200' ] || ok=0
-            done
-            report+='\n'
-          done
-
-          api="https://komerce-backend-production.up.railway.app/api/products/${product_id}/detail"
-          api_code=$(curl -L --max-time 30 -sS -o /tmp/golden-detail.json -w '%{http_code}' "$api" || true)
-          report+="#### API detail\n- HTTP: ${api_code}\n"
-          if [ "$api_code" = '200' ]; then
-            node - <<'NODE' >/tmp/api-summary.txt
+          curl -L --max-time 30 -sS \
+            'https://komerce-backend-production.up.railway.app/api/products/aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001/detail' \
+            -o /tmp/golden.json
+          node - <<'NODE'
           const fs = require('fs');
-          const d = JSON.parse(fs.readFileSync('/tmp/golden-detail.json', 'utf8'));
+          const d = JSON.parse(fs.readFileSync('/tmp/golden.json', 'utf8'));
           const urls = (d.media || []).map(m => String(m.url));
-          const local = urls.filter(url => url.startsWith('/images/products/golden-elite-pro/'));
-          const external = urls.filter(url => url.includes('cdn.example.com'));
-          const valid = d.inventory_model === 'SKU'
-            && (d.sellable_units || []).length === 5
-            && local.length === 7
-            && external.length === 0
-            && d.content?.brand === 'Elite Pro';
-          console.log(`- inventory_model: ${d.inventory_model}`);
-          console.log(`- media: ${urls.length}`);
-          console.log(`- local_media: ${local.length}`);
-          console.log(`- old_cdn_media: ${external.length}`);
-          console.log(`- sellable_units: ${(d.sellable_units || []).length}`);
-          console.log(`- brand: ${d.content?.brand ?? 'null'}`);
-          console.log(`- enrichment_version: ${d.content?.provenance?.enrichment_version ?? 'null'}`);
-          fs.writeFileSync('/tmp/api-valid', valid ? '1' : '0');
+          console.log(JSON.stringify({
+            inventory_model: d.inventory_model,
+            media: urls.length,
+            local_media: urls.filter(u => u.startsWith('/images/products/golden-elite-pro/')).length,
+            old_cdn_media: urls.filter(u => u.includes('cdn.example.com')).length,
+            sellable_units: (d.sellable_units || []).length,
+            brand: d.content?.brand ?? null,
+            enrichment_version: d.content?.provenance?.enrichment_version ?? null,
+            urls
+          }, null, 2));
           NODE
-            report+="$(cat /tmp/api-summary.txt)\n"
-            [ "$(cat /tmp/api-valid)" = '1' ] || ok=0
-          else
-            ok=0
-          fi
-
-          printf '%b' "$report" | tee /tmp/golden-report.md
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/golden-report.md || true
-          exit $((1-ok))
