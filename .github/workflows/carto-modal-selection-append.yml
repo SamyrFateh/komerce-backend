@@ -1,6 +1,11 @@
 name: Append MODAL-SELECTION-1 cartography delta
 
 on:
+  push:
+    branches:
+      - ops/modal-selection-carto-delta
+    paths:
+      - '.github/workflows/carto-modal-selection-append.yml'
   pull_request:
     branches:
       - main
@@ -11,7 +16,7 @@ permissions:
 
 jobs:
   append-delta:
-    if: github.head_ref == 'ops/modal-selection-carto-delta'
+    if: github.event_name == 'push' || github.head_ref == 'ops/modal-selection-carto-delta'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
