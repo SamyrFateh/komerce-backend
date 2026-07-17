@@ -5,39 +5,52 @@
  * @layer         script
  * @criticality   low
  * @inputs        none
- * @outputs       products, product_variants, product_skus rows (Golden Product)
- * @depends       db.js, tests/fixtures/catalog/golden-elite-pro.js
- * @used-by       chantier GPM (modal mobile enrichie), futur chantier Raffinerie E2E
+ * @outputs       products, catalog_media, product_variants, product_skus,
+ *                product_sku_media, product_content_profile,
+ *                product_content_sections, product_attributes
+ * @depends       db.js, tests/fixtures/catalog/golden-elite-pro.js,
+ *                services/catalog-promotion.js, services/product-admin-service.js
+ * @used-by       chantier GPM (modal mobile enrichie), Raffinerie E2E,
+ *                E-PDC, E-CONTENT-LIVE
  * @db-read       products, product_variants, product_skus
- * @db-write      products, product_variants, product_skus
- * @db-txn        yes (BEGIN/COMMIT)
- * @doctrine      docs/chantier/PDC4_MOBILE_MODAL.md, migrations/104_product_skus.sql,
- *                migrations/101_variant_images.sql, migrations/081_product_ref.sql
- * @version       2026-07
+ * @db-write      products, catalog_media, product_variants, product_skus,
+ *                product_sku_media, product_content_profile,
+ *                product_content_sections, product_attributes
+ * @db-txn        yes (BEGIN/COMMIT, ROLLBACK sur toute incohérence)
+ * @doctrine      AUDIT_v2_RAFFINERIE_GATES_MODALE.md §1, PLAN_GOLDEN_CHAIN.md
+ * @version       2026-07-v2
  *
- * NON EXÉCUTÉ dans l'environnement où ce script a été écrit (pas de
- * PostgreSQL disponible). Écrit pour être lancé avec :
+ * SEED v2 — deux owners officiels, dans l'ordre de la chaîne réelle :
  *
- *   node scripts/seed-golden-product.js
+ *   1. upsertProductParent      → products (promoteCatalog n'écrit PAS products)
+ *   2. promoteCatalog           → OWNER 1 : vérité fournisseur
+ *      catalog_media · product_variants · product_skus (supplier_sku, source, stock)
+ *      product_sku_media · product_content_profile · product_content_sections
+ *      product_attributes
+ *   3. upsertProductSku ×N      → OWNER 2 : décision commerciale
+ *      sku · price_kmf · is_active (JAMAIS supplier_sku ni source)
+ *   4. auditProductSkuReadiness → THROW si !ready
+ *   5. bascule inventory_model='SKU'
  *
- * contre une base réelle (DATABASE_URL). Idempotent : peut être rejoué sans
- * dupliquer de lignes — s'appuie sur les mêmes contraintes d'unicité que le
- * reste du schéma (products.product_ref UNIQUE, product_variants
- * (product_id, variant_type, variant_value) UNIQUE, product_skus
- * (product_id, variant_combo) UNIQUE partiel — cf. migrations 081, patch_variants,
- * 104_product_skus).
+ * IDEMPOTENT : peut être rejoué sans dupliquer de lignes.
+ * TRANSACTIONNEL : ROLLBACK intégral à la moindre incohérence.
+ * BRUYANT : échoue sur toute erreur, jamais de catch silencieux.
  *
- * N'utilise aucune table, route ou service inventé : uniquement les mêmes
- * tables que tests/integration/test-harness/seed-helpers.EXTENDED.js
- * (createSkuProduct) et que services/catalog-product-detail.js lit.
+ *   DATABASE_URL=… node scripts/seed-golden-product.js
  */
 
 'use strict';
 
 const db = require('../db');
 const fixture = require('../tests/fixtures/catalog/golden-elite-pro');
+const { validateForPromotion, promoteCatalog } = require('../services/catalog-promotion');
+const { upsertProductSku, auditProductSkuReadiness } = require('../services/product-admin-service');
 
-async function upsertProduct(client) {
+// ── 1. Produit parent ────────────────────────────────────────────────────
+// promoteCatalog n'écrit PAS products → on doit le créer/upserter nous-mêmes.
+// inventory_model commence à 'LEGACY_VARIANTS' : la bascule vers 'SKU' est
+// explicite en fin de chaîne, APRÈS auditProductSkuReadiness.
+async function upsertProductParent(client) {
   const p = fixture.productRow();
   const { rows: [product] } = await client.query(
     `INSERT INTO products
@@ -47,7 +60,7 @@ async function upsertProduct(client) {
      VALUES
        ($1, $2, $3, $4, $5, $6,
         $7, $8, $9, $10, $11::jsonb,
-        0, 'SKU', true, true)
+        0, 'LEGACY_VARIANTS', true, true)
      ON CONFLICT (product_ref) DO UPDATE SET
        name         = EXCLUDED.name,
        description  = EXCLUDED.description,
@@ -57,82 +70,92 @@ async function upsertProduct(client) {
        promo_pct    = EXCLUDED.promo_pct,
        image_url    = EXCLUDED.image_url,
        images       = EXCLUDED.images,
-       inventory_model = 'SKU',
        has_variants = true,
        is_active    = true,
        updated_at   = now()
      RETURNING *`,
     [
-      p.id,
-      p.product_ref,
-      p.name,
-      p.description,
-      p.category,
-      p.subcategory,
-      p.price_kmf,
-      // price_eur : pas de taux officiel porté par ce fixture, laissé à 0
-      // plutôt que de fabriquer un taux de change fictif.
-      0,
-      p.promo_pct,
-      p.image_url,
-      JSON.stringify(p.images),
+      p.id, p.product_ref, p.name, p.description, p.category, p.subcategory,
+      p.price_kmf, 0, p.promo_pct, p.image_url, JSON.stringify(p.images),
     ]
   );
   return product;
 }
 
-async function upsertVariants(client, productId) {
-  const rows = [];
-  for (const v of fixture.variantRows()) {
-    const { rows: [row] } = await client.query(
-      `INSERT INTO product_variants
-         (product_id, variant_type, variant_value, image_url, images, display_order, stock)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, 0)
-       ON CONFLICT (product_id, variant_type, variant_value) DO UPDATE SET
-         image_url     = EXCLUDED.image_url,
-         images        = EXCLUDED.images,
-         display_order = EXCLUDED.display_order,
-         updated_at    = now()
-       RETURNING *`,
-      [productId, v.variant_type, v.variant_value, v.image_url, JSON.stringify(v.images), v.display_order]
-    );
-    rows.push(row);
-  }
-  return rows;
+// ── 2. Promotion fournisseur ─────────────────────────────────────────────
+// Appelle le VRAI promoteCatalog avec le contrat source V2 de la fixture.
+// C'est la seule façon de prouver que la raffinerie sait produire la sortie
+// verrouillée par golden-product-gpm1.test.js.
+async function promoteSupplierData(client, productId) {
+  const sourceContract = fixture.sourceContract();
+  validateForPromotion(sourceContract);
+  await promoteCatalog(client, { productId, normalizedSourceContract: sourceContract });
 }
 
-async function upsertSkus(client, productId) {
-  const rows = [];
-  for (const s of fixture.skuRows()) {
-    const { rows: [row] } = await client.query(
-      `INSERT INTO product_skus
-         (id, product_id, sku, variant_combo, stock, price_kmf, is_active)
-       VALUES ($1, $2, $3, $4::jsonb, $5, $6, true)
-       ON CONFLICT (product_id, variant_combo) DO UPDATE SET
-         sku        = EXCLUDED.sku,
-         stock      = EXCLUDED.stock,
-         price_kmf  = EXCLUDED.price_kmf,
-         is_active  = true,
-         updated_at = now()
-       RETURNING *`,
-      [s.id, productId, s.sku, JSON.stringify(s.variant_combo), s.stock, s.price_kmf]
-    );
-    rows.push(row);
+// ── 3. Décision commerciale ──────────────────────────────────────────────
+// Appelle le VRAI upsertProductSku — owner officiel du prix de vente.
+// Chaque scénario SCENARIOS porte price_kmf (décision Komerce).
+// On passe `client` et non le pool : même interface (.query()), et on reste
+// dans la transaction (R3 vérifié : les deux fonctions n'utilisent que .query()).
+async function applyCommercialDecisions(client, productId) {
+  for (const s of fixture.SCENARIOS) {
+    if (!s.sku) continue;
+    await upsertProductSku(client, productId, {
+      variant_combo: { Couleur: s.couleur, Taille: s.taille },
+      sku: s.sku,
+      price_kmf: s.price_kmf,
+      stock: s.stock,
+      is_active: s.expected !== 'inexistant',
+    });
   }
-  return rows;
 }
 
+// ── 4. Audit + bascule ──────────────────────────────────────────────────
+async function switchToSku(client, productId) {
+  const audit = await auditProductSkuReadiness(client, productId);
+  if (audit.already_sku) return audit;
+  if (!audit.ready) {
+    throw new Error(
+      `[seed-golden-product] auditProductSkuReadiness NOT READY : ${audit.reasons.join(' ; ')}`
+    );
+  }
+  // Bascule explicite — pas de service dédié aujourd'hui (R2/option A du plan).
+  // L'UPDATE est tracé, gardé par l'audit ci-dessus, et dans la transaction.
+  await client.query(
+    `UPDATE products SET inventory_model = 'SKU', updated_at = now() WHERE id = $1`,
+    [productId]
+  );
+  return audit;
+}
+
+// ── Orchestration ────────────────────────────────────────────────────────
 async function seedGoldenProduct() {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-    const product = await upsertProduct(client);
-    const variants = await upsertVariants(client, product.id);
-    const skus = await upsertSkus(client, product.id);
+
+    // Étape 1 : produit parent
+    const product = await upsertProductParent(client);
+    console.log(`  ✓ produit parent ${product.product_ref} (${product.id})`);
+
+    // Étape 2 : vérité fournisseur (promoteCatalog)
+    await promoteSupplierData(client, product.id);
+    console.log('  ✓ promoteCatalog — médias, axes, SKU fournisseur, contenu enrichi');
+
+    // Étape 3 : décision commerciale (upsertProductSku)
+    await applyCommercialDecisions(client, product.id);
+    console.log('  ✓ décisions commerciales — sku, price_kmf, is_active');
+
+    // Étape 4 : audit + bascule
+    const audit = await switchToSku(client, product.id);
+    console.log(`  ✓ inventory_model = SKU (ready: ${audit.ready ?? audit.already_sku})`);
+
     await client.query('COMMIT');
-    return { product, variants, skus };
+    console.log('  ✅ COMMIT — chaîne Golden complète');
+    return { product, audit };
   } catch (err) {
     await client.query('ROLLBACK');
+    console.error('  ❌ ROLLBACK —', err.message);
     throw err;
   } finally {
     client.release();
@@ -140,21 +163,19 @@ async function seedGoldenProduct() {
 }
 
 async function main() {
-  const result = await seedGoldenProduct();
-  // eslint-disable-next-line no-console
+  const { product, audit } = await seedGoldenProduct();
   console.log(JSON.stringify({
-    product_id: result.product.id,
-    product_ref: result.product.product_ref,
-    variants: result.variants.length,
-    skus: result.skus.length,
+    product_id: product.id,
+    product_ref: product.product_ref,
+    inventory_model: 'SKU',
+    audit_ready: audit.ready ?? audit.already_sku,
   }, null, 2));
   process.exit(0);
 }
 
 if (require.main === module) {
   main().catch((err) => {
-    // eslint-disable-next-line no-console
-    console.error('[seed-golden-product] échec :', err);
+    console.error('[seed-golden-product] échec fatal :', err);
     process.exit(1);
   });
 }

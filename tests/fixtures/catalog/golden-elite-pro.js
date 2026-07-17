@@ -250,6 +250,81 @@ function skuMediaRows() {
   ];
 }
 
+// ── SOURCE CONTRACT V2 ──────────────────────────────────────────────────
+// Contrat d'entrée normalisé fournisseur, en forme NormalizedSupplierProduct V2.
+// DÉRIVÉ de SCENARIOS, contentContract(), catalogMediaRows() — jamais dupliqué.
+//
+// C'est l'entrée de promoteCatalog(). Les fonctions ci-dessus décrivent la
+// SORTIE canonique. L'enchaînement source → promoteCatalog → sortie canonique
+// est la preuve de bout en bout de la raffinerie.
+//
+// purchase_price: null — le fournisseur du golden ne donne pas de prix d'achat
+// dans ce scénario de seed. Le schéma V2 l'autorise (type: ["number","null"],
+// non required). Le prix de vente (price_kmf) est une DÉCISION COMMERCIALE :
+// il sera posé par upsertProductSku(), jamais par la raffinerie.
+function sourceContract() {
+  const p = productRow();
+  const content = contentContract();
+  const media = catalogMediaRows();
+
+  // option_axes — dérivés de SCENARIOS (jamais dupliqués)
+  const couleurs = [...new Set(SCENARIOS.map((s) => s.couleur))];
+  const tailles = [...new Set(SCENARIOS.map((s) => s.taille))];
+
+  // sellable_units — dérivés de SCENARIOS
+  const sellableUnits = SCENARIOS
+    .filter((s) => s.sku !== null)
+    .map((s) => {
+      // media_refs : les supplier_media_id dont la couleur matche
+      const refs = media
+        .filter((m) => {
+          const ov = m.option_values || {};
+          return !ov.Couleur || ov.Couleur === s.couleur;
+        })
+        .map((m) => m.id); // id de la fixture = supplier_media_id stable
+      return {
+        supplier_sku: s.sku,
+        option_values: { Couleur: s.couleur, Taille: s.taille },
+        stock_available: s.stock,
+        purchase_price: null,     // ← cf. commentaire ci-dessus
+        media_refs: refs,
+        is_active: true,
+      };
+    });
+
+  // media — transformé depuis catalogMediaRows (id → supplier_media_id)
+  const v2Media = media.map((m, i) => ({
+    supplier_media_id: m.id,       // UUID stable de la fixture
+    url: m.url,
+    role: m.role,
+    alt: m.alt,
+    option_values: m.option_values || {},
+    display_order: i + 1,
+  }));
+
+  return {
+    schema_version: '2',
+    supplier_name: 'Golden Seed (fixture)',
+    supplier_product_id: `${PRODUCT_REF}-SRC`,
+    product_name: p.name,
+    supplier_category: 'sport',
+    currency: 'KMF',
+    description: p.description,
+    source_locale: 'fr',
+    raw_payload: { origin: 'seed-golden-product', fixture_version: 1 },
+
+    media: v2Media,
+    option_axes: [
+      { key: 'Couleur', values: couleurs },
+      { key: 'Taille', values: tailles },
+    ],
+    sellable_units: sellableUnits,
+
+    // Contenu éditorial — contentContract() est déjà en forme V2 (:156)
+    ...content,
+  };
+}
+
 module.exports = {
   PRODUCT_ID,
   PRODUCT_REF,
@@ -265,4 +340,5 @@ module.exports = {
   contentContract,
   catalogMediaRows,
   skuMediaRows,
+  sourceContract,
 };
