@@ -4,7 +4,7 @@
 |---|:--:|:--:|:--:|
 | arch headers / hygiène / drift / SQL / doctrine | ✅ | ✅ governance.yml | non (statique) |
 | **backend:audit** (invariants I-BACK-*) | ✅ **(nouveau)** | ✅ **ci.yml/unit (nouveau)** | non (statique) |
-| boutique / dashboards / meta 360 | ✅ | ✅ (carto-guard / governance) | non (statique) |
+| boutique / dashboards / meta 360 | ✅ | ✅ contract.yml | non (statique) |
 | contrat OpenAPI — drift `git diff` | — | ✅ contract.yml | oui (introspection) |
 | security:360:check | — | ✅ contract.yml | oui (introspection) |
 | tests unit (TOUTE la suite, 52/52) | — | ✅ ci.yml/unit (bloquant, quarantaine résorbée) | non |

@@ -38,23 +38,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: PR governance body
+      - name: Install boutique dependencies
         if: github.event_name == 'pull_request'
-        run: npm run gate:pr-governance
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: npm --prefix public/boutique ci
 
       - name: Touched files ownership
         if: github.event_name == 'pull_request'
         run: npm run gate:touched-files
 
-      - name: Touched tests signal
+      # ── Gate : body PR contient un plan d'attaque structuré ──────────────
+      - name: Plan d'attaque PR (body)
         if: github.event_name == 'pull_request'
-        run: npm run gate:touched-tests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/pr-governance-check.js
+
+      # ── Gate : fichiers applicatifs touchés ↔ signal test ───────────────
+      # --strict active la règle de complétion au contact (QUALITY_PYRAMID_DOCTRINE.md
+      # Niveau 3.1) : si un fichier ET son test sont touchés, la couverture doit
+      # atteindre le seuil cible (governance/coverage-thresholds.json), pas juste
+      # "un test existe". Le gate sélectionne le Jest du workspace concerné
+      # (backend racine ou public/boutique) — d'où l'install boutique ci-dessus.
+      - name: Code touché ↔ signal test (touched-tests, strict)
+        if: github.event_name == 'pull_request'
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict
 
       - name: Feature card schema
         run: npm run gate:schema
