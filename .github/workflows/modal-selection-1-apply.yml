@@ -7,12 +7,19 @@ on:
     paths:
       - '.github/patches/modal-selection-1.b64.part*'
       - '.github/workflows/modal-selection-1-apply.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/patches/modal-selection-1.b64.part*'
+      - '.github/workflows/modal-selection-1-apply.yml'
 
 permissions:
   contents: write
 
 jobs:
   apply-and-test:
+    if: github.event_name == 'push' || github.head_ref == 'fix/modal-selection-stock-sync-apply'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
