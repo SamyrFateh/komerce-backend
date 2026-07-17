@@ -1,0 +1,91 @@
+name: Apply MODAL-SELECTION-1
+
+on:
+  push:
+    branches:
+      - fix/modal-selection-stock-sync-apply
+    paths:
+      - '.github/patches/modal-selection-1.b64.part*'
+      - '.github/patches/modal-selection-1-test-fix.patch'
+      - '.github/workflows/modal-selection-1-apply.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/patches/modal-selection-1.b64.part*'
+      - '.github/patches/modal-selection-1-test-fix.patch'
+      - '.github/workflows/modal-selection-1-apply.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apply-and-test:
+    if: github.event_name == 'push' || github.head_ref == 'fix/modal-selection-stock-sync-apply'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/modal-selection-stock-sync-apply
+          fetch-depth: 0
+
+      - name: Rebuild and validate patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/patches/modal-selection-1.b64.part{1..6} \
+            | tr -d '\r\n' \
+            | base64 --decode > /tmp/modal-selection-1.patch
+          git apply --check /tmp/modal-selection-1.patch
+          git apply /tmp/modal-selection-1.patch
+          git apply --check .github/patches/modal-selection-1-test-fix.patch
+          git apply .github/patches/modal-selection-1-test-fix.patch
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install boutique dependencies
+        working-directory: public/boutique
+        run: npm ci --ignore-scripts
+
+      - name: Syntax checks
+        shell: bash
+        run: |
+          node --check public/boutique/js/b-modal-buybox-shared.js
+          node --check public/boutique/js/b-modal-mobile-product.js
+          node --check public/boutique/js/b-modal-desktop-product.js
+
+      - name: Targeted boutique unit tests
+        working-directory: public/boutique
+        run: >-
+          npx jest
+          tests/unit/b-modal-mobile-product.test.js
+          tests/unit/b-modal-desktop-product.test.js
+          tests/unit/modal-selection-model.test.js
+          --runInBand
+
+      - name: Package validated correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/modal-selection-1/public/boutique/js
+          mkdir -p /tmp/modal-selection-1/public/boutique/tests/unit
+          cp public/boutique/js/b-modal-buybox-shared.js /tmp/modal-selection-1/public/boutique/js/
+          cp public/boutique/js/b-modal-mobile-product.js /tmp/modal-selection-1/public/boutique/js/
+          cp public/boutique/js/b-modal-desktop-product.js /tmp/modal-selection-1/public/boutique/js/
+          cp public/boutique/tests/unit/b-modal-mobile-product.test.js /tmp/modal-selection-1/public/boutique/tests/unit/
+          cp public/boutique/tests/unit/b-modal-desktop-product.test.js /tmp/modal-selection-1/public/boutique/tests/unit/
+
+      - name: Upload validated correction
+        uses: actions/upload-artifact@v4
+        with:
+          name: modal-selection-1-validated
+          path: /tmp/modal-selection-1
+          if-no-files-found: error
+          retention-days: 3
