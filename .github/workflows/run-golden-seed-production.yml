@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   seed:
@@ -35,15 +37,39 @@ jobs:
             exit 2
           fi
           node - <<'NODE'
-          const value = process.env.DATABASE_URL || '';
-          const url = new URL(value);
-          if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+          const url = new URL(process.env.DATABASE_URL || '');
+          if (!['postgres:', 'postgresql:'].includes(url.protocol)) {
             throw new Error('RAILWAY_DATABASE_URL is not PostgreSQL');
           }
           console.log('Railway PostgreSQL secret present; hostname intentionally hidden.');
           NODE
       - name: Run transactional idempotent Golden seed
-        run: node scripts/seed-golden-product.js
+        id: seed_run
+        shell: bash
+        run: |
+          set +e
+          node scripts/seed-golden-product.js > /tmp/golden-seed.log 2>&1
+          status=$?
+          cat /tmp/golden-seed.log
+          echo "status=${status}" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Publish seed result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### Golden production seed — exit ${{ steps.seed_run.outputs.status }}"
+            echo
+            echo '```text'
+            tail -n 100 /tmp/golden-seed.log
+            echo '```'
+          } > /tmp/seed-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/seed-comment.md
+      - name: Stop after rollback
+        if: steps.seed_run.outputs.status != '0'
+        run: exit 1
       - name: Verify public Golden contract after seed
         shell: bash
         run: |
@@ -58,7 +84,7 @@ jobs:
           const summary = {
             inventory_model: d.inventory_model,
             media: urls.length,
-            local_media: urls.filter(u => u.startsWith('/images/products/golden-elite-pro/')).length,
+            showcase_media: urls.filter(u => u.includes('/images/products/golden-elite-pro/')).length,
             old_cdn_media: urls.filter(u => u.includes('cdn.example.com')).length,
             sellable_units: (d.sellable_units || []).length,
             brand: d.content?.brand ?? null,
@@ -67,7 +93,7 @@ jobs:
           console.log(JSON.stringify(summary, null, 2));
           const valid = summary.inventory_model === 'SKU'
             && summary.media === 7
-            && summary.local_media === 7
+            && summary.showcase_media === 7
             && summary.old_cdn_media === 0
             && summary.sellable_units === 5
             && summary.brand === 'Elite Pro';
@@ -80,5 +106,5 @@ jobs:
             echo "API not refreshed yet (${attempt}/10); retrying in 10s..."
             sleep 10
           done
-          echo 'Golden API did not expose the seeded local media.'
+          echo 'Golden API did not expose the seeded showcase media.'
           exit 1
