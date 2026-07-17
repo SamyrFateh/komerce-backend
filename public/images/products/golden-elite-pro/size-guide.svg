@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" role="img" aria-labelledby="title desc">
+  <title id="title">Elite Pro — guide des tailles</title><desc id="desc">Tableau de correspondance des tailles européennes, britanniques et longueur de pied.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fbfaf6"/><stop offset="1" stop-color="#e8e2d5"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ead18a"/><stop offset=".5" stop-color="#b98527"/><stop offset="1" stop-color="#704d10"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#3b2c12" flood-opacity=".18"/></filter>
+  </defs>
+  <rect width="1200" height="1400" fill="url(#bg)"/>
+  <rect x="74" y="70" width="1052" height="1260" rx="42" fill="#fff" filter="url(#shadow)"/>
+  <rect x="74" y="70" width="1052" height="226" rx="42" fill="#151515"/>
+  <text x="126" y="150" font-family="Arial,Helvetica,sans-serif" font-size="30" letter-spacing="7" fill="#d9ba69">ELITE PRO</text>
+  <text x="126" y="225" font-family="Arial,Helvetica,sans-serif" font-size="58" font-weight="700" fill="#fff">Guide des tailles</text>
+  <text x="126" y="345" font-family="Arial,Helvetica,sans-serif" font-size="25" fill="#4d463b">Mesurez votre pied du talon à l’orteil le plus long, debout et en chaussettes.</text>
+  <g transform="translate(126 410)">
+    <rect width="948" height="84" rx="18" fill="url(#gold)"/>
+    <text x="64" y="54" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="700" fill="#171717">EU</text>
+    <text x="294" y="54" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="700" fill="#171717">UK</text>
+    <text x="518" y="54" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="700" fill="#171717">Pied</text>
+    <text x="758" y="54" font-family="Arial,Helvetica,sans-serif" font-size="25" font-weight="700" fill="#171717">Conseil</text>
+    <g font-family="Arial,Helvetica,sans-serif" font-size="28" fill="#242424">
+      <rect y="112" width="948" height="118" rx="16" fill="#f5f2eb"/>
+      <text x="64" y="184" font-weight="700">42</text><text x="294" y="184">8</text><text x="518" y="184">26,5 cm</text><text x="758" y="184">Ajusté</text>
+      <rect y="252" width="948" height="118" rx="16" fill="#fff" stroke="#e2ddd2" stroke-width="3"/>
+      <text x="64" y="324" font-weight="700">43</text><text x="294" y="324">9</text><text x="518" y="324">27,2 cm</text><text x="758" y="324">Standard</text>
+      <rect y="392" width="948" height="118" rx="16" fill="#f5f2eb"/>
+      <text x="64" y="464" font-weight="700">44</text><text x="294" y="464">9.5</text><text x="518" y="464">27,8 cm</text><text x="758" y="464">Confort</text>
+    </g>
+  </g>
+  <g transform="translate(126 1000)">
+    <circle cx="48" cy="48" r="48" fill="#151515"/><path d="M24 57 C42 20 78 21 92 58 C72 52 55 60 41 83Z" fill="url(#gold)"/>
+    <text x="122" y="38" font-family="Arial,Helvetica,sans-serif" font-size="27" font-weight="700" fill="#202020">Entre deux tailles ?</text>
+    <text x="122" y="80" font-family="Arial,Helvetica,sans-serif" font-size="24" fill="#5f584c">Choisissez la taille supérieure pour un usage intensif.</text>
+  </g>
+  <line x1="126" y1="1160" x2="1074" y2="1160" stroke="#ded8cc" stroke-width="3"/>
+  <text x="126" y="1225" font-family="Arial,Helvetica,sans-serif" font-size="23" fill="#655d50">Coupe : ajustée · Semelle intérieure amovible · Chaussettes sport recommandées</text>
+  <text x="126" y="1275" font-family="Arial,Helvetica,sans-serif" font-size="21" fill="#8a8172">Les mesures sont indicatives et servent à comparer les tailles du produit vitrine.</text>
+</svg>
