@@ -92,7 +92,10 @@ function mapOptionAxesToDescriptiveRows(optionAxes) {
         variant_type: variantType,
         variant_value: variantValue,
         display_name: displayName,
-        display_order: null,
+        // L'ordre du tableau V2 option_axes[].values EST le display_order.
+        // L'index est 1-based pour cohérence avec le seed historique et les
+        // contraintes NOT NULL de product_variants.display_order.
+        display_order: rows.filter((r) => r.variant_type === variantType).length + 1,
       });
     }
   }
