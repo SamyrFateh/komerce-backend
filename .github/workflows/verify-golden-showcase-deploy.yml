@@ -22,7 +22,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set -u -o pipefail
           product_id='aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001'
           media=(
             neutral-main.svg
