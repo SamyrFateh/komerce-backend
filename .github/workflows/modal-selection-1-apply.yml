@@ -16,6 +16,8 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   apply-and-test:
@@ -63,12 +65,29 @@ jobs:
           node --check public/boutique/js/b-modal-desktop-product.js
 
       - name: Targeted unit tests
-        run: >-
-          npx jest
-          public/boutique/tests/unit/b-modal-mobile-product.test.js
-          public/boutique/tests/unit/b-modal-desktop-product.test.js
-          public/boutique/tests/unit/modal-selection-model.test.js
-          --runInBand
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          npx jest \
+            public/boutique/tests/unit/b-modal-mobile-product.test.js \
+            public/boutique/tests/unit/b-modal-desktop-product.test.js \
+            public/boutique/tests/unit/modal-selection-model.test.js \
+            --runInBand 2>&1 | tee /tmp/modal-selection-tests.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            {
+              echo '### MODAL-SELECTION-1 — targeted tests failed'
+              echo
+              echo '```text'
+              tail -n 180 /tmp/modal-selection-tests.log
+              echo '```'
+            } > /tmp/modal-selection-comment.md
+            gh pr comment 627 --body-file /tmp/modal-selection-comment.md
+            exit "$status"
+          fi
 
       - name: Commit functional correction
         shell: bash
