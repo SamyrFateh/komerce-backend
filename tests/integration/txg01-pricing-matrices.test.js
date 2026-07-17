@@ -1,6 +1,6 @@
 'use strict';
 /**
- * TXG-01 / TXG-01b — RED-avant / GREEN-après (REAL_DB_INTEGRATION)
+ * TXG-01 / TXG-01b — preuve de régression SAVEPOINT (REAL_DB_INTEGRATION)
  * Cible: routes/admin-pricing-matrices.js — PUT /dims/:category (TXG-01,
  * scope officiel) et PUT /taxes/:category (TXG-01b, twin trouvé dans le
  * meme fichier lors de la passe instances jumelles).
@@ -8,16 +8,23 @@
  * Mécanisme: l'INSERT pricing_matrices_audit best-effort échoue (table
  * absente, simulée par rename) => sans SAVEPOINT le client est "aborted",
  * le COMMIT suivant devient un ROLLBACK silencieux mais renvoie succès.
+ *
+ * 2026-07 : le volet RED-avant (comparaison contre un BASELINE pré-fix)
+ * a été retiré. Il dépendait de fichiers sandbox /home/claude/baseline/
+ * et /home/claude/fixed/ jamais commités dans le repo — non reproductible
+ * hors de la session d'origine, et le mécanisme réécrivait le fichier
+ * route réel sur disque pendant les tests. Le fix SAVEPOINT est
+ * permanent dans routes/admin-pricing-matrices.js (voir sp_pricing_matrices_audit*
+ * / sp_pricing_matrices_audit_taxes) ; ce test vérifie désormais
+ * uniquement le comportement GREEN contre le fichier tel que commité,
+ * sans jamais l'écrire.
  */
-const fs = require('fs');
 const path = require('path');
 const request = require('supertest');
 const express = require('express');
 const { Pool } = require('pg');
 
 const TARGET = path.join(__dirname, '../../routes/admin-pricing-matrices.js');
-const BASELINE = fs.readFileSync('/home/claude/baseline/admin-pricing-matrices.js', 'utf8');
-const FIXED = fs.readFileSync('/home/claude/fixed/admin-pricing-matrices.js', 'utf8');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -61,29 +68,7 @@ afterAll(async () => {
 });
 
 describe('TXG-01 — dims route', () => {
-  test('RED-avant: fix absent -> UPDATE dims perdu MAIS success:true renvoyé', async () => {
-    fs.writeFileSync(TARGET, BASELINE);
-    const app = buildApp();
-    await hideAuditTable();
-    try {
-      const res = await request(app)
-        .put('/api/admin/pricing-matrices/dims/electronique')
-        .send({ length_cm: 99, width_cm: 88, height_cm: 77, reason: 'red proof dims baseline' });
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true); // <- le mensonge du bug
-
-      const { rows: [row] } = await pool.query(
-        "SELECT length_cm FROM pricing_category_dims WHERE category='electronique'"
-      );
-      expect(row.length_cm).not.toBe(99); // <- l'update a été perdu
-    } finally {
-      await restoreAuditTable();
-    }
-  });
-
-  test('GREEN-après: fix present -> UPDATE dims persiste, audit best-effort loggué', async () => {
-    fs.writeFileSync(TARGET, FIXED);
+  test('GREEN: UPDATE dims persiste, audit best-effort loggué malgré table absente', async () => {
     const app = buildApp();
     await hideAuditTable();
     try {
@@ -107,30 +92,7 @@ describe('TXG-01 — dims route', () => {
 });
 
 describe('TXG-01b — taxes route (twin instance, meme fichier)', () => {
-  test('RED-avant: fix absent -> UPDATE taxes perdu, mais reponse pretend success', async () => {
-    fs.writeFileSync(TARGET, BASELINE);
-    const app = buildApp();
-    await hideAuditTable();
-    try {
-      const res = await request(app)
-        .put('/api/admin/pricing-matrices/taxes/electronique')
-        .send({ douane_pct: 0.5, tva_pct: 0.5, taxe_add_pct: 0.01, reason: 'red proof taxes baseline' });
-
-      // Baseline outer-catch pattern still returns 200 success:true/warning
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-
-      const { rows: [row] } = await pool.query(
-        "SELECT douane_pct FROM pricing_category_taxes WHERE category='electronique'"
-      );
-      expect(Number(row.douane_pct)).not.toBe(0.5); // <- update perdu
-    } finally {
-      await restoreAuditTable();
-    }
-  });
-
-  test('GREEN-apres: fix present -> UPDATE taxes persiste malgre audit KO', async () => {
-    fs.writeFileSync(TARGET, FIXED);
+  test('GREEN: UPDATE taxes persiste malgre audit KO', async () => {
     const app = buildApp();
     await hideAuditTable();
     try {
@@ -149,7 +111,6 @@ describe('TXG-01b — taxes route (twin instance, meme fichier)', () => {
       expect(Number(row.taxe_add_pct)).toBe(0.01);
     } finally {
       await restoreAuditTable();
-      fs.writeFileSync(TARGET, FIXED); // leave repo in fixed state
     }
   });
 });

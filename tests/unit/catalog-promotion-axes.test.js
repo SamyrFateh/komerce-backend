@@ -13,8 +13,8 @@ describe('catalog-promotion/axes — mapOptionAxesToDescriptiveRows (PDC-8 Lot 3
       { key: 'couleur', display_name: 'Couleur', values: ['Rouge', 'Noir'] },
     ]);
     expect(rows).toEqual([
-      { variant_type: 'couleur', variant_value: 'Rouge', display_name: 'Couleur', display_order: null },
-      { variant_type: 'couleur', variant_value: 'Noir', display_name: 'Couleur', display_order: null },
+      { variant_type: 'couleur', variant_value: 'Rouge', display_name: 'Couleur', display_order: 1 },
+      { variant_type: 'couleur', variant_value: 'Noir', display_name: 'Couleur', display_order: 2 },
     ]);
   });
 
@@ -74,7 +74,7 @@ describe('catalog-promotion/axes — mapOptionAxesToDescriptiveRows (PDC-8 Lot 3
       { key: '  couleur  ', display_name: '  Couleur  ', values: [' Rouge '] },
     ]);
     expect(rows[0]).toEqual({
-      variant_type: 'couleur', variant_value: 'Rouge', display_name: 'Couleur', display_order: null,
+      variant_type: 'couleur', variant_value: 'Rouge', display_name: 'Couleur', display_order: 1,
     });
   });
 });

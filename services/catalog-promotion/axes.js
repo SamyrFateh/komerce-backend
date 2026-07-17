@@ -31,18 +31,19 @@
  * display_name : préservé au niveau de l'axe (PDC-8 Lot 3, migration 107)
  * si la source le fournit. Jamais fabriqué — null sinon.
  *
- * display_order : préservé au niveau de la VALEUR si la source le porte
- * réellement (option_axes[].display_order est un ordre d'AXE, pas de
- * valeur — les schémas V2 ne portent pas d'ordre par valeur individuelle
- * aujourd'hui ; on ne l'invente donc pas ici : display_order reste null
- * pour chaque ligne tant qu'aucune source ne fournit un ordre par valeur).
+ * display_order : ordre positionnel 1-based au sein de chaque variant_type,
+ * dérivé de l'ordre du tableau V2 option_axes[].values (jamais fabriqué au
+ * hasard, jamais null — product_variants.display_order est NOT NULL en base,
+ * violation trouvée et corrigée via le golden product 2026-07). Les schémas
+ * V2 ne portent pas d'ordre par valeur individuelle en amont ; l'ordre du
+ * tableau source EST le display_order.
  */
 
 'use strict';
 
 /**
  * @param {Array<{key: string, display_name?: string|null, values: string[], display_order?: number|null}>} optionAxes
- * @returns {Array<{variant_type: string, variant_value: string, display_name: string|null, display_order: null}>}
+ * @returns {Array<{variant_type: string, variant_value: string, display_name: string|null, display_order: number}>}
  *
  * Dédoublonne par (variant_type, variant_value) au sein de l'appel — la
  * persistance (Lot 6) s'appuie en plus sur la contrainte UNIQUE DB réelle

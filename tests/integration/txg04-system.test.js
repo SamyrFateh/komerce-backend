@@ -1,6 +1,6 @@
 'use strict';
 /**
- * TXG-04 — RED-avant / GREEN-après (REAL_DB_INTEGRATION)
+ * TXG-04 — preuve de régression SAVEPOINT (REAL_DB_INTEGRATION)
  * Cible: routes/admin/system.js — POST /api/admin/reset mode=factory (~l.155)
  *
  * Mécanisme: le DELETE FROM partners best-effort échoue (table absente,
@@ -10,21 +10,25 @@
  * pourtant déjà exécutés dans la même transaction sont annulés, MAIS la
  * route renvoie quand même 200/success:true avec un report mensonger.
  *
- * RED-avant : la requête renvoie 200/success:true (mensonge), mais
- *             products/relais NE sont PAS vidés (rollback silencieux).
- * GREEN-après : la requête réussit (200 success:true, cette fois honnête),
- *               products/relais sont bien vidés, seul le DELETE partners
- *               est sauté (loggué best-effort).
+ * GREEN : la requête réussit (200 success:true, honnête cette fois),
+ *         products/relais sont bien vidés, seul le DELETE partners
+ *         est sauté (loggué best-effort).
+ *
+ * 2026-07 : le volet RED-avant (comparaison contre un BASELINE pré-fix)
+ * a été retiré. Il dépendait de fichiers sandbox /home/claude/baseline/
+ * et /home/claude/fixed/ jamais commités dans le repo — non reproductible
+ * hors de la session d'origine, et le mécanisme réécrivait le fichier
+ * route réel sur disque pendant les tests. Le fix SAVEPOINT est permanent
+ * dans routes/admin/system.js (sp_factory_reset_partners) ; ce test
+ * vérifie désormais uniquement le comportement GREEN contre le fichier
+ * tel que commité, sans jamais l'écrire.
  */
-const fs = require('fs');
 const path = require('path');
 const request = require('supertest');
 const express = require('express');
 const { Pool } = require('pg');
 
 const TARGET = path.join(__dirname, '../../routes/admin/system.js');
-const BASELINE = fs.readFileSync('/home/claude/baseline/system.js', 'utf8');
-const FIXED = fs.readFileSync('/home/claude/fixed/system.js', 'utf8');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -134,35 +138,7 @@ afterAll(async () => {
 });
 
 describe('TXG-04 — factory reset partners SAVEPOINT', () => {
-  test('RED-avant: fix absent -> partners KO fait échouer tout le reset factory, products/relais non vidés', async () => {
-    fs.writeFileSync(TARGET, BASELINE);
-    await seedFactoryFixtures();
-    const app = buildApp();
-    await hidePartners();
-    try {
-      const res = await request(app)
-        .post('/api/admin/reset')
-        .send({ mode: 'factory', confirm: true });
-
-      // Comportement réel observé (diffère de l'hypothèse initiale en
-      // en-tête) : sans SAVEPOINT, le COMMIT sur un client "aborted" ne
-      // lève PAS d'erreur côté pg — il exécute un ROLLBACK silencieux et
-      // renvoie quand même 200/success:true. Même mécanisme que TXG-01
-      // (COMMIT-devient-ROLLBACK-silencieux), pas une 500.
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true); // <- le mensonge du bug : le report ment
-
-      const { rows: prodRows } = await pool.query(
-        "SELECT id FROM products WHERE id = '00000000-0000-0000-0000-0000000000b1'"
-      );
-      expect(prodRows.length).toBe(1); // <- le DELETE products a été annulé (rollback silencieux), rien de vidé
-    } finally {
-      await restorePartners();
-    }
-  });
-
-  test('GREEN-après: fix present -> products/relais vidés malgré partners indisponible', async () => {
-    fs.writeFileSync(TARGET, FIXED);
+  test('GREEN: products/relais vidés malgré partners indisponible', async () => {
     await seedFactoryFixtures();
     const app = buildApp();
     await hidePartners();
@@ -185,7 +161,6 @@ describe('TXG-04 — factory reset partners SAVEPOINT', () => {
       expect(relaisRows.length).toBe(0); // <- relais bien vidés
     } finally {
       await restorePartners();
-      fs.writeFileSync(TARGET, FIXED); // leave repo in fixed state
     }
   });
 });

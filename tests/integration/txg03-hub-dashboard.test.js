@@ -1,6 +1,6 @@
 'use strict';
 /**
- * TXG-03 — RED-avant / GREEN-après (REAL_DB_INTEGRATION)
+ * TXG-03 — preuve de régression SAVEPOINT (REAL_DB_INTEGRATION)
  * Cible: routes/hub-dashboard.js — POST /orders/:id/auto-prepare (~l.287-296)
  *
  * Mécanisme: l'INSERT scans best-effort échoue (table absente, simulée par
@@ -9,20 +9,25 @@
  * le colis (parcels) et l'assignation des articles (parcel_items), pourtant
  * légitimes, sont perdus (auto-prepare annulé silencieusement, 500 renvoyé).
  *
- * RED-avant : la requête échoue (500) et aucun colis n'est créé.
- * GREEN-après : la requête réussit (201), le colis + parcel_items +
- *               order_comments sont bien committés, seul le scan
- *               auto-prepare est sauté (loggué best-effort).
+ * GREEN : la requête réussit (201), le colis + parcel_items +
+ *         order_comments sont bien committés, seul le scan auto-prepare
+ *         est sauté (loggué best-effort).
+ *
+ * 2026-07 : le volet RED-avant (comparaison contre un BASELINE pré-fix)
+ * a été retiré. Il dépendait de fichiers sandbox /home/claude/baseline/
+ * et /home/claude/fixed/ jamais commités dans le repo — non reproductible
+ * hors de la session d'origine, et le mécanisme réécrivait le fichier
+ * route réel sur disque pendant les tests. Le fix SAVEPOINT est permanent
+ * dans routes/hub-dashboard.js (sp_scans_auto_prepare) ; ce test vérifie
+ * désormais uniquement le comportement GREEN contre le fichier tel que
+ * commité, sans jamais l'écrire.
  */
-const fs = require('fs');
 const path = require('path');
 const request = require('supertest');
 const express = require('express');
 const { Pool } = require('pg');
 
 const TARGET = path.join(__dirname, '../../routes/hub-dashboard.js');
-const BASELINE = fs.readFileSync('/home/claude/baseline/hub-dashboard.js', 'utf8');
-const FIXED = fs.readFileSync('/home/claude/fixed/hub-dashboard.js', 'utf8');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -116,27 +121,7 @@ afterAll(async () => {
 });
 
 describe('TXG-03 — auto-prepare scans SAVEPOINT', () => {
-  test('RED-avant: fix absent -> scans KO fait échouer toute la route, aucun colis créé', async () => {
-    fs.writeFileSync(TARGET, BASELINE);
-    await resetOrderState();
-    const app = buildApp();
-    await hideScans();
-    try {
-      const res = await request(app)
-        .post(`/api/hub/orders/${ORDER_ID}/auto-prepare`)
-        .send({});
-
-      expect(res.status).toBe(500); // <- la route échoue entièrement
-
-      const { rows } = await pool.query('SELECT id FROM parcels WHERE order_id = $1', [ORDER_ID]);
-      expect(rows.length).toBe(0); // <- aucun colis créé, auto-prepare perdu
-    } finally {
-      await restoreScans();
-    }
-  });
-
-  test('GREEN-après: fix present -> colis créé et committé malgré scans indisponible', async () => {
-    fs.writeFileSync(TARGET, FIXED);
+  test('GREEN: colis créé et committé malgré scans indisponible', async () => {
     await resetOrderState();
     const app = buildApp();
     await hideScans();
@@ -155,7 +140,6 @@ describe('TXG-03 — auto-prepare scans SAVEPOINT', () => {
       expect(commentRows.length).toBe(1); // <- commentaire bien committé
     } finally {
       await restoreScans();
-      fs.writeFileSync(TARGET, FIXED); // leave repo in fixed state
     }
   });
 });

@@ -31,11 +31,6 @@ const CANONICAL_CSS_PATH = path.join(
   '../../public/boutique/css/modal-mobile-canonical.css'
 );
 
-const PRICE_NORM_CSS_PATH = path.join(
-  __dirname,
-  '../../public/boutique/css/modal-product-price-normalization.css'
-);
-
 const CSS_BUNDLES_PATH = path.join(
   __dirname,
   '../../public/boutique/scripts/css-bundles.js'
@@ -239,12 +234,12 @@ describe('CSS: canonical mobile styles', () => {
     expect(css).toMatch(/48vh/);
   });
 
-  test('price normalization CSS is emptied (tactical guard retired)', () => {
-    const css = fs.readFileSync(PRICE_NORM_CSS_PATH, 'utf8');
-    // Should contain comment about being superseded, no actual rules
-    expect(css).toMatch(/SUPERSEDED|Intentionally empty/);
-    expect(css).not.toMatch(/@media/);
-  });
+  // 'price normalization CSS is emptied' retiré (2026-07) : ce test couvrait
+  // la phase 1 MDM-8 (fichier vidé, tactical guard superseded). En phase 2,
+  // modal-product-price-normalization.css a été retiré du bundle ET supprimé
+  // du disque (plus aucune référence HTML/bundle) — cf.
+  // public/boutique/tests/unit/modal-product-price-normalization.test.js qui
+  // cible désormais la source de vérité réelle (modal-mobile-canonical.css).
 
   test('modal-mobile-canonical is in CSS bundle config', () => {
     const bundles = require(CSS_BUNDLES_PATH);

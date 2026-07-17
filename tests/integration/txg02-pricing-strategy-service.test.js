@@ -1,6 +1,6 @@
 'use strict';
 /**
- * TXG-02 — RED-avant / GREEN-après (REAL_DB_INTEGRATION)
+ * TXG-02 — preuve de régression SAVEPOINT (REAL_DB_INTEGRATION)
  * Cible: services/pricing-strategy-service.js — applyStrategy() (~l.386-395)
  *
  * Mécanisme: l'INSERT price_history best-effort échoue (table absente,
@@ -10,20 +10,22 @@
  * products.price_kmf pourtant légitime est perdu et l'appel entier échoue
  * pour une cause non liée (table optionnelle manquante).
  *
- * RED-avant : applyStrategy() rejette (Error) et products.price_kmf
- *             n'est PAS mis à jour, alors que la stratégie elle-même
- *             était valide.
- * GREEN-après : applyStrategy() résout ok:true, products.price_kmf EST
- *               mis à jour, pricing_strategy_history reçoit l'entrée,
- *               price_history est simplement sauté (loggué best-effort).
+ * GREEN : applyStrategy() résout ok:true, products.price_kmf EST
+ *         mis à jour, pricing_strategy_history reçoit l'entrée,
+ *         price_history est simplement sauté (loggué best-effort).
+ *
+ * 2026-07 : le volet RED-avant (comparaison contre un BASELINE pré-fix)
+ * a été retiré — dépendait de fichiers sandbox /home/claude/baseline/ et
+ * /home/claude/fixed/ jamais commités, et réécrivait le fichier service réel
+ * sur disque pendant les tests. Le fix SAVEPOINT (sp_price_history) est
+ * permanent dans services/pricing-strategy-service.js ; ce test vérifie
+ * désormais le comportement GREEN contre le fichier tel que commité, sans
+ * jamais l'écrire.
  */
-const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
 
 const TARGET = path.join(__dirname, '../../services/pricing-strategy-service.js');
-const BASELINE = fs.readFileSync('/home/claude/baseline/pricing-strategy-service.js', 'utf8');
-const FIXED = fs.readFileSync('/home/claude/fixed/pricing-strategy-service.js', 'utf8');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -59,27 +61,7 @@ afterAll(async () => {
 });
 
 describe('TXG-02 — applyStrategy price_history SAVEPOINT', () => {
-  test('RED-avant: fix absent -> price_history KO fait échouer applyStrategy et perd l\'UPDATE prix', async () => {
-    fs.writeFileSync(TARGET, BASELINE);
-    await resetProductPrice();
-    const svc = loadService();
-    await hidePriceHistory();
-    try {
-      await expect(svc.applyStrategy(
-        require('../../db'),
-        { product_id: PRODUCT_ID, strategy_type: 'manual', final_price_kmf: 12345, reason: 'red proof' },
-        USER_ID
-      )).rejects.toThrow();
-
-      const { rows: [row] } = await pool.query('SELECT price_kmf FROM products WHERE id = $1', [PRODUCT_ID]);
-      expect(row.price_kmf).not.toBe(12345); // <- update perdu, transaction totalement rollback
-    } finally {
-      await restorePriceHistory();
-    }
-  });
-
-  test('GREEN-après: fix present -> UPDATE prix persiste malgré price_history indisponible', async () => {
-    fs.writeFileSync(TARGET, FIXED);
+  test('GREEN: UPDATE prix persiste malgré price_history indisponible', async () => {
     await resetProductPrice();
     const svc = loadService();
     await hidePriceHistory();
@@ -102,7 +84,6 @@ describe('TXG-02 — applyStrategy price_history SAVEPOINT', () => {
       expect(histRows[0].new_price_kmf).toBe(54321); // <- historique stratégie toujours écrit
     } finally {
       await restorePriceHistory();
-      fs.writeFileSync(TARGET, FIXED); // leave repo in fixed state
     }
   });
 });

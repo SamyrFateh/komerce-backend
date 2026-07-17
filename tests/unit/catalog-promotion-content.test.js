@@ -127,9 +127,9 @@ describe('catalog-promotion/content — mapContentToSectionRows', () => {
     });
     expect(rows).toEqual([
       { section_key: 'guide-taille', title: null, section_type: 'TEXT', content_json: 'x', display_order: 0, source: 'SUPPLIER' },
-      { section_key: 'materials', title: null, section_type: 'BULLETS', content_json: { items: ['100% coton'] }, display_order: 1, source: 'SUPPLIER' },
-      { section_key: 'care', title: null, section_type: 'BULLETS', content_json: { items: ['Lavage à 30°C'] }, display_order: 2, source: 'SUPPLIER' },
-      { section_key: 'warnings', title: null, section_type: 'BULLETS', content_json: { items: ['Ne pas repasser'] }, display_order: 3, source: 'SUPPLIER' },
+      { section_key: 'materials', title: 'Matériaux', section_type: 'BULLETS', content_json: { items: ['100% coton'] }, display_order: 1, source: 'SUPPLIER' },
+      { section_key: 'care', title: 'Entretien', section_type: 'BULLETS', content_json: { items: ['Lavage à 30°C'] }, display_order: 2, source: 'SUPPLIER' },
+      { section_key: 'warnings', title: 'Avertissements', section_type: 'BULLETS', content_json: { items: ['Ne pas repasser'] }, display_order: 3, source: 'SUPPLIER' },
     ]);
   });
 
@@ -156,8 +156,8 @@ describe('catalog-promotion/content — mapContentToAttributeRows', () => {
   it('projette highlights[] avec attribute_key ordinal stable (h1, h2, ...)', () => {
     const rows = mapContentToAttributeRows({ highlights: ['Léger', 'Respirant'] });
     expect(rows).toEqual([
-      { kind: 'HIGHLIGHT', group_key: '', attribute_key: 'h1', label: null, value_text: 'Léger', unit: null, display_order: 0, source: 'SUPPLIER' },
-      { kind: 'HIGHLIGHT', group_key: '', attribute_key: 'h2', label: null, value_text: 'Respirant', unit: null, display_order: 1, source: 'SUPPLIER' },
+      { kind: 'HIGHLIGHT', group_key: '', attribute_key: 'h1', label: 'Léger', value_text: null, unit: null, display_order: 0, source: 'SUPPLIER' },
+      { kind: 'HIGHLIGHT', group_key: '', attribute_key: 'h2', label: 'Respirant', value_text: null, unit: null, display_order: 1, source: 'SUPPLIER' },
     ]);
   });
 
