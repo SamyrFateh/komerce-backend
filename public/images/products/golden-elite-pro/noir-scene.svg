@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" role="img" aria-labelledby="title desc">
+  <title id="title">Elite Pro Noir — scène tunnel</title><desc id="desc">Chaussure de football noire sur fond de tunnel de stade avec lumière dorée.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#080808"/><stop offset=".58" stop-color="#1e1b16"/><stop offset="1" stop-color="#3a2b15"/></linearGradient>
+    <linearGradient id="shoe" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#4c4c4c"/><stop offset=".52" stop-color="#151515"/><stop offset="1" stop-color="#020202"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe9a8"/><stop offset=".48" stop-color="#c08e31"/><stop offset="1" stop-color="#6d4a10"/></linearGradient>
+    <radialGradient id="light"><stop stop-color="#ffd977" stop-opacity=".85"/><stop offset="1" stop-color="#ffd977" stop-opacity="0"/></radialGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="34" stdDeviation="34" flood-color="#000" flood-opacity=".68"/></filter>
+  </defs>
+  <rect width="1200" height="1400" fill="url(#bg)"/>
+  <ellipse cx="600" cy="350" rx="520" ry="430" fill="url(#light)" opacity=".28"/>
+  <path d="M0 0 H215 L360 900 H0Z" fill="#050505"/><path d="M1200 0 H985 L840 900 H1200Z" fill="#050505"/>
+  <path d="M0 980 L1200 870 V1400 H0Z" fill="#18120b"/>
+  <g stroke="#af8540" stroke-width="4" opacity=".28"><path d="M0 1120 L1200 980"/><path d="M0 1240 L1200 1090"/><path d="M180 1400 L470 900"/><path d="M1020 1400 L760 900"/></g>
+  <text x="76" y="105" font-family="Arial,Helvetica,sans-serif" font-size="28" letter-spacing="7" fill="#f6e9c8">ELITE PRO / CONTROL</text>
+  <g transform="translate(102 360) rotate(-11 500 350)" filter="url(#shadow)">
+    <path d="M100 500 C190 465 270 400 335 280 C376 205 430 158 500 154 C585 150 645 223 705 299 C765 376 842 430 980 478 C1030 496 1050 536 1028 570 C1004 605 936 610 850 612 L245 620 C155 620 90 584 74 548 C64 526 74 512 100 500Z" fill="url(#shoe)" stroke="#000" stroke-width="12"/>
+    <path d="M322 336 L592 244" fill="none" stroke="url(#gold)" stroke-width="30" stroke-linecap="round"/>
+    <g stroke="#bfbfbf" stroke-width="13" stroke-linecap="round"><path d="M428 255 l190 45"/><path d="M416 298 l214 48"/><path d="M409 340 l220 49"/></g>
+    <path d="M75 548 C292 575 747 573 1024 532 L1029 579 C751 632 273 647 111 606 C83 599 64 575 75 548Z" fill="#020202"/>
+    <path d="M138 584 C355 615 760 602 984 566" fill="none" stroke="url(#gold)" stroke-width="11"/>
+    <g fill="#020202"><ellipse cx="230" cy="626" rx="30" ry="43"/><ellipse cx="370" cy="635" rx="29" ry="44"/><ellipse cx="526" cy="637" rx="29" ry="45"/><ellipse cx="690" cy="632" rx="29" ry="44"/><ellipse cx="840" cy="618" rx="28" ry="42"/></g>
+  </g>
+  <text x="76" y="1276" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="62" fill="#f7ecd0">Calme avant l’impact.</text>
+  <text x="78" y="1328" font-family="Arial,Helvetica,sans-serif" font-size="25" fill="#cbb78a">Maintien ajusté · Toucher précis · Accélération contrôlée</text>
+</svg>
