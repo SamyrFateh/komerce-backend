@@ -1,0 +1,92 @@
+name: Verify Golden showcase deployment
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  verify:
+    if: github.head_ref == 'ops/verify-golden-showcase-deploy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for Railway and verify public media plus API contract
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          product_id='aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001'
+          media=(
+            neutral-main.svg
+            bleu-main.svg
+            bleu-scene.svg
+            bleu-detail-semelle.svg
+            noir-main.svg
+            noir-scene.svg
+            size-guide.svg
+          )
+          origins=(
+            'https://komerce.co'
+            'https://komerce-backend-production.up.railway.app'
+          )
+
+          ok=0
+          report=''
+          for attempt in $(seq 1 12); do
+            report="### Golden showcase deploy check — tentative ${attempt}\n\n"
+            ok=1
+            for origin in "${origins[@]}"; do
+              report+="#### ${origin}\n\n"
+              for file in "${media[@]}"; do
+                url="${origin}/images/products/golden-elite-pro/${file}"
+                code=$(curl -L --max-time 20 -sS -o /tmp/golden-media -w '%{http_code}' "$url" || true)
+                type=$(curl -L --max-time 20 -sSI "$url" | awk -F': ' 'tolower($1)=="content-type" {gsub("\r", "", $2); print $2; exit}' || true)
+                report+="- \`${file}\` : **${code}** ${type}\n"
+                [ "$code" = '200' ] || ok=0
+              done
+              report+='\n'
+            done
+
+            api="https://komerce-backend-production.up.railway.app/api/products/${product_id}/detail"
+            api_code=$(curl -L --max-time 30 -sS -o /tmp/golden-detail.json -w '%{http_code}' "$api" || true)
+            report+="#### API detail\n\n- HTTP : **${api_code}**\n"
+            if [ "$api_code" = '200' ]; then
+              node - <<'NODE' >/tmp/api-summary.txt
+          const fs = require('fs');
+          const d = JSON.parse(fs.readFileSync('/tmp/golden-detail.json', 'utf8'));
+          const urls = (d.media || []).map(m => m.url);
+          const local = urls.filter(url => String(url).startsWith('/images/products/golden-elite-pro/'));
+          const external = urls.filter(url => String(url).includes('cdn.example.com'));
+          console.log(`- inventory_model : **${d.inventory_model}**`);
+          console.log(`- media : **${urls.length}**`);
+          console.log(`- médias locaux Golden : **${local.length}**`);
+          console.log(`- anciens médias CDN : **${external.length}**`);
+          console.log(`- sellable_units : **${(d.sellable_units || []).length}**`);
+          console.log(`- content.brand : **${d.content?.brand ?? 'null'}**`);
+          console.log(`- enrichment_version : **${d.content?.provenance?.enrichment_version ?? 'null'}**`);
+          if (d.inventory_model !== 'SKU' || (d.sellable_units || []).length !== 5) process.exitCode = 2;
+          if (local.length !== 7 || external.length !== 0) process.exitCode = 3;
+          if (d.content?.brand !== 'Elite Pro') process.exitCode = 4;
+          NODE
+              summary_status=$?
+              report+="$(cat /tmp/api-summary.txt)\n"
+              [ "$summary_status" = '0' ] || ok=0
+            else
+              ok=0
+            fi
+
+            printf '%b' "$report" > /tmp/golden-deploy-report.md
+            if [ "$ok" = '1' ]; then break; fi
+            sleep 15
+          done
+
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/golden-deploy-report.md
+          [ "$ok" = '1' ]
