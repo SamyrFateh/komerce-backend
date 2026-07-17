@@ -5106,131 +5106,6 @@
         }
       }
     },
-    "/api/admin/documents": {
-      "get": {
-        "summary": "GET /api/admin/documents",
-        "x-route-file": "routes/admin/documents.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "documents": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "total": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "limit": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "offset": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/documents/summary": {
-      "get": {
-        "summary": "GET /api/admin/documents/summary",
-        "x-route-file": "routes/admin/documents.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "table_exists": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "by_type": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "sequences": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "type_constraint": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "diagnosis": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/documents/{id}": {
-      "get": {
-        "summary": "GET /api/admin/documents/{id}",
-        "x-route-file": "routes/admin/documents.js",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "document": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
     "/api/admin/catalog/approval-queue": {
       "get": {
         "summary": "GET /api/admin/catalog/approval-queue",
@@ -5531,6 +5406,131 @@
                       "x-observed": true
                     },
                     "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/documents": {
+      "get": {
+        "summary": "GET /api/admin/documents",
+        "x-route-file": "routes/admin/documents.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "documents": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "limit": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "offset": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/documents/summary": {
+      "get": {
+        "summary": "GET /api/admin/documents/summary",
+        "x-route-file": "routes/admin/documents.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "table_exists": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "by_type": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "sequences": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "type_constraint": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "diagnosis": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/documents/{id}": {
+      "get": {
+        "summary": "GET /api/admin/documents/{id}",
+        "x-route-file": "routes/admin/documents.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "document": {
                       "type": "string",
                       "x-observed": true
                     }
