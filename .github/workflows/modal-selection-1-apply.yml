@@ -53,8 +53,10 @@ jobs:
         with:
           node-version: '20'
           cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
 
-      - name: Install dependencies
+      - name: Install boutique dependencies
+        working-directory: public/boutique
         run: npm ci --ignore-scripts
 
       - name: Syntax checks
@@ -64,16 +66,17 @@ jobs:
           node --check public/boutique/js/b-modal-mobile-product.js
           node --check public/boutique/js/b-modal-desktop-product.js
 
-      - name: Targeted unit tests
+      - name: Targeted boutique unit tests
+        working-directory: public/boutique
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set +e
           npx jest \
-            public/boutique/tests/unit/b-modal-mobile-product.test.js \
-            public/boutique/tests/unit/b-modal-desktop-product.test.js \
-            public/boutique/tests/unit/modal-selection-model.test.js \
+            tests/unit/b-modal-mobile-product.test.js \
+            tests/unit/b-modal-desktop-product.test.js \
+            tests/unit/modal-selection-model.test.js \
             --runInBand 2>&1 | tee /tmp/modal-selection-tests.log
           status=${PIPESTATUS[0]}
           set -e
@@ -82,7 +85,7 @@ jobs:
               echo '### MODAL-SELECTION-1 — targeted tests failed'
               echo
               echo '```text'
-              tail -n 180 /tmp/modal-selection-tests.log
+              tail -n 220 /tmp/modal-selection-tests.log
               echo '```'
             } > /tmp/modal-selection-comment.md
             gh pr comment 627 --body-file /tmp/modal-selection-comment.md
