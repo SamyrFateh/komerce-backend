@@ -1,0 +1,285 @@
+name: Validate MODAL-SELECTION-1 owner isolation
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-commit:
+    if: github.head_ref == 'fix/modal-selection-stock-sync-apply'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/modal-selection-stock-sync-apply
+          fetch-depth: 0
+      - name: Merge current main
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Isolate availability owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout origin/main -- public/boutique/js/b-modal-buybox-shared.js
+          cat > public/boutique/js/b-modal-selection-availability.js <<'EOF'
+          /**
+           * @komerce-arch
+           * @role          product-modal-selection-availability
+           * @domain        catalog
+           * @layer         ui-view-model
+           * @criticality   high
+           * @inputs        product_detail_v1, modal_selection_state
+           * @outputs       modal_availability_projection, modal_stock_dom
+           * @depends       none
+           * @used-by       b-modal-mobile-product.js, b-modal-desktop-product.js
+           * @db-read       none
+           * @db-write      none
+           * @db-txn        none
+           * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
+           * @impact-areas  product-modal, mobile, desktop, sku-selection, stock, checkout-entry
+           * @version       2026-07
+           */
+          'use strict';
+
+          export const SELECTION_AVAILABILITY = Object.freeze({
+            HIDDEN: 'HIDDEN',
+            PENDING: 'PENDING',
+            AVAILABLE: 'AVAILABLE',
+            UNAVAILABLE: 'UNAVAILABLE',
+          });
+
+          function unavailableLabel(message) {
+            const text = String(message || '');
+            if (!/(rupture de stock|indisponible|combinaison non proposée|non proposé)/i.test(text)) return null;
+            return /rupture de stock/i.test(text) ? 'Rupture de stock' : 'Indisponible';
+          }
+
+          export function getSelectionAvailability(detail, selection) {
+            const isSku = detail?.inventory_model === 'SKU';
+            if (!isSku || !selection?.selection_supported) {
+              return {
+                state: SELECTION_AVAILABILITY.HIDDEN,
+                label: '',
+                className: 'k-modal-stock',
+                canPurchase: !isSku,
+              };
+            }
+
+            if (selection.selected_sku_id) {
+              return {
+                state: SELECTION_AVAILABILITY.AVAILABLE,
+                label: '✓ Disponible',
+                className: 'k-modal-stock k-modal-stock--ok',
+                canPurchase: true,
+              };
+            }
+
+            const unavailable = unavailableLabel(selection.selection_message);
+            if (unavailable) {
+              return {
+                state: SELECTION_AVAILABILITY.UNAVAILABLE,
+                label: unavailable,
+                className: 'k-modal-stock',
+                canPurchase: false,
+              };
+            }
+
+            const hasSelections = Object.keys(selection.selected_options || {}).length > 0;
+            return {
+              state: SELECTION_AVAILABILITY.PENDING,
+              label: hasSelections ? 'Choisissez la suite' : 'Choisissez vos options',
+              className: 'k-modal-stock',
+              canPurchase: false,
+            };
+          }
+
+          export function renderSelectionStockInto(el, detail, selection) {
+            const availability = getSelectionAvailability(detail, selection);
+            if (!el) return availability;
+            el.hidden = availability.state === SELECTION_AVAILABILITY.HIDDEN;
+            el.textContent = availability.label;
+            el.className = availability.className;
+            el.dataset.availabilityState = availability.state;
+            return availability;
+          }
+
+          export const _selectionAvailabilityTestApi = Object.freeze({ unavailableLabel });
+          EOF
+
+          cat > public/boutique/tests/unit/b-modal-selection-availability.test.js <<'EOF'
+          'use strict';
+
+          const {
+            SELECTION_AVAILABILITY,
+            getSelectionAvailability,
+            renderSelectionStockInto,
+            _selectionAvailabilityTestApi,
+          } = require('../../js/b-modal-selection-availability.js');
+
+          function detail(inventory_model = 'SKU') { return { inventory_model }; }
+          function selection(overrides = {}) {
+            return {
+              selection_supported: true,
+              selected_options: {},
+              selected_sku_id: null,
+              selection_message: null,
+              ...overrides,
+            };
+          }
+
+          describe('b-modal-selection-availability', () => {
+            test('masque le statut legacy et autorise le parcours historique', () => {
+              expect(getSelectionAvailability(detail('LEGACY_VARIANTS'), selection())).toEqual({
+                state: SELECTION_AVAILABILITY.HIDDEN,
+                label: '',
+                className: 'k-modal-stock',
+                canPurchase: true,
+              });
+            });
+
+            test('reste fail-closed pour un SKU sans modèle de sélection utilisable', () => {
+              expect(getSelectionAvailability(detail(), null).canPurchase).toBe(false);
+              expect(getSelectionAvailability(detail(), selection({ selection_supported: false })).state)
+                .toBe(SELECTION_AVAILABILITY.HIDDEN);
+            });
+
+            test('projette un SKU résolu comme disponible', () => {
+              expect(getSelectionAvailability(detail(), selection({ selected_sku_id: 'sku-1' }))).toEqual({
+                state: SELECTION_AVAILABILITY.AVAILABLE,
+                label: '✓ Disponible',
+                className: 'k-modal-stock k-modal-stock--ok',
+                canPurchase: true,
+              });
+            });
+
+            test('distingue rupture et combinaison indisponible', () => {
+              expect(getSelectionAvailability(detail(), selection({ selection_message: '44 indisponible — rupture de stock' })).label)
+                .toBe('Rupture de stock');
+              expect(getSelectionAvailability(detail(), selection({ selection_message: 'Noir indisponible — combinaison non proposée' })).label)
+                .toBe('Indisponible');
+            });
+
+            test('ignore un message générique tant qu’aucune indisponibilité n’est établie', () => {
+              expect(getSelectionAvailability(detail(), selection({ selection_message: 'Choisissez' }))).toEqual({
+                state: SELECTION_AVAILABILITY.PENDING,
+                label: 'Choisissez vos options',
+                className: 'k-modal-stock',
+                canPurchase: false,
+              });
+              expect(getSelectionAvailability(detail(), selection({ selected_options: { Couleur: 'Bleu' } })).label)
+                .toBe('Choisissez la suite');
+            });
+
+            test('écrit la projection dans le shell et accepte un élément absent', () => {
+              const el = document.createElement('span');
+              const available = renderSelectionStockInto(el, detail(), selection({ selected_sku_id: 'sku-1' }));
+              expect(el.hidden).toBe(false);
+              expect(el.textContent).toBe('✓ Disponible');
+              expect(el.className).toBe('k-modal-stock k-modal-stock--ok');
+              expect(el.dataset.availabilityState).toBe('AVAILABLE');
+              expect(available.canPurchase).toBe(true);
+
+              const hidden = renderSelectionStockInto(el, detail('LEGACY_VARIANTS'), selection());
+              expect(el.hidden).toBe(true);
+              expect(hidden.state).toBe('HIDDEN');
+              expect(renderSelectionStockInto(null, detail(), selection()).state).toBe('PENDING');
+            });
+
+            test('le classifieur ne transforme pas un conseil générique en rupture', () => {
+              expect(_selectionAvailabilityTestApi.unavailableLabel('Choisissez')).toBeNull();
+              expect(_selectionAvailabilityTestApi.unavailableLabel('Non proposé')).toBe('Indisponible');
+            });
+          });
+          EOF
+
+          python - <<'PY'
+          from pathlib import Path
+
+          mobile = Path('public/boutique/js/b-modal-mobile-product.js')
+          text = mobile.read_text(encoding='utf-8')
+          old = """import {
+            SELECTION_AVAILABILITY,
+            getCurrentPrice,
+            getSelectionAvailability,
+            renderSelectionStockInto,
+          } from './b-modal-buybox-shared.js';"""
+          new = """import { getCurrentPrice } from './b-modal-buybox-shared.js';
+          import {
+            SELECTION_AVAILABILITY,
+            getSelectionAvailability,
+            renderSelectionStockInto,
+          } from './b-modal-selection-availability.js';"""
+          if old not in text: raise SystemExit('mobile import block not found')
+          mobile.write_text(text.replace(old, new), encoding='utf-8')
+
+          desktop = Path('public/boutique/js/b-modal-desktop-product.js')
+          text = desktop.read_text(encoding='utf-8')
+          old = """import {
+            getCurrentPrice,
+            getSelectionAvailability,
+            renderSelectionStockInto,
+            renderSubtotalInto,
+            renderPaymentModes,
+            startGroupCartFlow,
+          } from './b-modal-buybox-shared.js';"""
+          new = """import {
+            getCurrentPrice,
+            renderSubtotalInto,
+            renderPaymentModes,
+            startGroupCartFlow,
+          } from './b-modal-buybox-shared.js';
+          import {
+            getSelectionAvailability,
+            renderSelectionStockInto,
+          } from './b-modal-selection-availability.js';"""
+          if old not in text: raise SystemExit('desktop import block not found')
+          desktop.write_text(text.replace(old, new), encoding='utf-8')
+
+          carto = Path('docs/CARTOGRAPHY_360.md')
+          text = carto.read_text(encoding='utf-8')
+          old = '`public/boutique/js/b-modal-buybox-shared.js`. Cette projection'
+          new = '`public/boutique/js/b-modal-selection-availability.js`. Cette projection'
+          if old not in text: raise SystemExit('cartography owner reference not found')
+          carto.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci --ignore-scripts
+      - name: Syntax and full Boutique unit suite
+        shell: bash
+        run: |
+          node --check public/boutique/js/b-modal-selection-availability.js
+          node --check public/boutique/js/b-modal-mobile-product.js
+          node --check public/boutique/js/b-modal-desktop-product.js
+          npm --prefix public/boutique run test:unit
+      - name: Strict touched-tests gate
+        env:
+          PR_BODY: |
+            ## Tests
+            Full Boutique unit suite and direct owner tests.
+        run: |
+          node scripts/touched-tests-gate.js --base origin/main --strict
+      - name: Commit validated helper state
+        shell: bash
+        run: |
+          git add -A
+          git commit -m 'fix(boutique): isolate modal SKU availability owner'
+          git push origin HEAD:fix/modal-selection-stock-sync-apply
