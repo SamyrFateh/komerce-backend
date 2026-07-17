@@ -1,0 +1,53 @@
+name: Diagnose modal selection full unit suite
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  full-unit:
+    if: github.head_ref == 'ops/modal-selection-full-unit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops/modal-selection-full-unit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci --ignore-scripts
+      - name: Run full Boutique unit suite and report
+        working-directory: public/boutique
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          npm run test:unit 2>&1 | tee /tmp/full-unit.log
+          status=${PIPESTATUS[0]}
+          set -e
+          {
+            if [ "$status" -eq 0 ]; then
+              echo '### Full Boutique unit suite: PASS'
+            else
+              echo '### Full Boutique unit suite: FAIL'
+            fi
+            echo
+            echo '```text'
+            tail -n 240 /tmp/full-unit.log
+            echo '```'
+          } > /tmp/full-unit-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/full-unit-comment.md
+          exit "$status"
