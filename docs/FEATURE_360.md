@@ -22,7 +22,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | admin-dashboard | projection | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | sourcing | _aucune_ | 0 |
 | auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | catalog, customs, dashboard, documents, economic-engine, infrastructure, inventory, logistics, orders, purchasing, shared-cart, sourcing, unsold-resolution | 4 |
 | auth-identity | technical-transversal | 🟢 HEALTHY | 🟡 ATTENTION | otp_codes | notifications | payments, shared-cart, wallet | 1 |
-| catalog | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, supplier_catalog_imports | auth, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, sourcing | 9 |
+| catalog | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, product_attributes, product_content_profile, product_content_sections, supplier_catalog_imports | auth, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, sourcing | 9 |
 | customs | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | customs_categories, customs_shipment_parcels, customs_shipments | auth, documents, economic-engine | dashboard, infrastructure, orders, shared-cart | 3 |
 | dashboard | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | order_incidents, partners | auth, customs, decision-signals, documents, economic-engine, logistics, orders, purchasing | economic-engine, infrastructure | 13 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | logistics | dashboard, notifications | 0 |
@@ -227,7 +227,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css
 - aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux
 
-**Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `supplier_catalog_imports`
+**Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `product_attributes`, `product_content_profile`, `product_content_sections`, `supplier_catalog_imports`
 **Writes (not owner)** : `alerts` (ambiguous), `catalog_media` (ambiguous), `price_history` (ambiguous), `product_sku_media` (ambiguous), `product_skus` (ambiguous), `product_variants` (ambiguous), `products` (ambiguous), `sourcing_candidate_events` (ambiguous), `sourcing_candidates` (ambiguous)
 
 **Exposes** : 0 internal API(s), 31 HTTP interface(s)
@@ -253,15 +253,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidate_events — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 123 fichier(s) déclaré(s), boutique: 20 fichier(s)
-  - boutique : 37
+**Implementation** : 128 fichier(s) déclaré(s), boutique: 24 fichier(s)
+  - boutique : 39
   - dash : 4
   - docs : 4
   - migrations : 9
   - routes : 5
   - schemas : 3
-  - services : 25
-  - tests : 35
+  - services : 26
+  - tests : 37
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_

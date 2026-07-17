@@ -72,9 +72,9 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 24 | 24 | 304 | 304 | 0 |
+| backend | 24 | 24 | 305 | 305 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 10 | 10 | 71 | 71 | 0 |
+| boutique | 10 | 10 | 72 | 72 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -143,16 +143,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.
 
 - utils: 1
-- services: 25
+- services: 26
 - schemas: 3
 - migrations: 9
 - docs: 4
 - routes: 5
-- boutique: 37
+- boutique: 39
 - dash: 4
-- tests: 35
-- tables owned (lifecycle): 5 — `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `supplier_catalog_imports`
-- tables written: 14
+- tests: 37
+- tables owned (lifecycle): 8 — `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
+- tables written: 17
 - interfaces exposed: 31
 - internal APIs: 0
 - dependencies (consumes): 4 — economic-engine, logistics, shared-cart, auth
@@ -597,6 +597,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `pricing_matrices_audit` | `economic-engine` | single-writer | economic-engine | — |
 | `pricing_strategies` | `economic-engine` | single-writer | economic-engine | — |
 | `pricing_strategy_history` | `economic-engine` | single-writer | economic-engine | — |
+| `product_attributes` | `catalog` | single-writer | catalog | — |
+| `product_content_profile` | `catalog` | single-writer | catalog | — |
+| `product_content_sections` | `catalog` | single-writer | catalog | — |
 | `product_sku_media` | _ambiguë_ | ambiguous-multi-writer | catalog, sourcing | — |
 | `product_skus` | _ambiguë_ | ambiguous-multi-writer | catalog, sourcing | — |
 | `product_suppliers` | `purchasing` | single-writer | purchasing | logistics |
@@ -1323,7 +1326,7 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> infrastructure — dépendance cross-feature observée (canal: static-code, 11 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> logistics — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ auth-identity -> notifications — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "auth-identity" vers "notifications"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 41 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ catalog -> infrastructure — dépendance cross-feature observée (canal: static-code, 42 preuve(s)) sans contract.consumes déclaré chez "catalog" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ customs -> infrastructure — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "customs" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> decision-signals — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "decision-signals"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ dashboard -> infrastructure — dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "infrastructure"
@@ -1430,8 +1433,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 797 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 104 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
+- backend : 800 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 106 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
 - dash : 83 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1460,7 +1463,7 @@ Meta Graph monté : oui.
 | auth-identity | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
 | catalog | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 41 | **OBSERVED_UNDECLARED** |
+| catalog | infrastructure | static-code | 42 | **OBSERVED_UNDECLARED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |

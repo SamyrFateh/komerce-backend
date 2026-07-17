@@ -1118,7 +1118,7 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 37,
+            "count": 39,
             "files": [
               {
                 "declared": "css/categories.css",
@@ -1128,6 +1128,11 @@
               {
                 "declared": "css/hero.css",
                 "resolvedPath": "public/boutique/css/hero.css",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "css/modal-enriched-content.css",
+                "resolvedPath": "public/boutique/css/modal-enriched-content.css",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -1304,6 +1309,11 @@
                 "declared": "js/view-models/product-card-view-model.js",
                 "resolvedPath": "public/boutique/js/view-models/product-card-view-model.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "js/view-models/product-content-model.js",
+                "resolvedPath": "public/boutique/js/view-models/product-content-model.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
@@ -1458,7 +1468,7 @@
             ]
           },
           "services": {
-            "count": 25,
+            "count": 26,
             "files": [
               {
                 "declared": "services/catalog-approval.js",
@@ -1493,6 +1503,11 @@
               {
                 "declared": "services/catalog-promotion/axes.js",
                 "resolvedPath": "services/catalog-promotion/axes.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-promotion/content.js",
+                "resolvedPath": "services/catalog-promotion/content.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -1588,7 +1603,7 @@
             ]
           },
           "tests": {
-            "count": 35,
+            "count": 37,
             "files": [
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
@@ -1653,6 +1668,16 @@
               {
                 "declared": "tests/unit/catalog-promotion-axes.test.js",
                 "resolvedPath": "tests/unit/catalog-promotion-axes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-promotion-content-db.test.js",
+                "resolvedPath": "tests/unit/catalog-promotion-content-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-promotion-content.test.js",
+                "resolvedPath": "tests/unit/catalog-promotion-content.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -1778,15 +1803,29 @@
             ]
           }
         },
-        "totalFiles": 123,
+        "totalFiles": 128,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 20,
+          "count": 24,
           "files": [
             {
               "declared": "../css/dist/components.css",
               "resolvedPath": "public/boutique/css/dist/components.css",
               "category": "dist",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-enriched-content.css",
+              "resolvedPath": "public/boutique/css/modal-enriched-content.css",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-mobile-canonical.css",
+              "resolvedPath": "public/boutique/css/modal-mobile-canonical.css",
+              "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
             },
@@ -1861,6 +1900,13 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../js/view-models/product-content-model.js",
+              "resolvedPath": "public/boutique/js/view-models/product-content-model.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../tests/unit/b-modal-approche-c-hybrid.test.js",
               "resolvedPath": "public/boutique/tests/unit/b-modal-approche-c-hybrid.test.js",
               "category": "tests",
@@ -1922,6 +1968,13 @@
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/product-content-model.test.js",
+              "resolvedPath": "public/boutique/tests/unit/product-content-model.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
             }
           ]
         }
@@ -1942,6 +1995,18 @@
           },
           {
             "table": "catalog_field_overrides",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "product_attributes",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "product_content_profile",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "product_content_sections",
             "resolution": "single-writer"
           },
           {
@@ -1991,6 +2056,24 @@
             "mode": "W",
             "lifecycleOwner": null,
             "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "product_attributes",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "product_content_profile",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "product_content_sections",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "product_sku_media",
@@ -2073,6 +2156,18 @@
             "resolution": "single-writer"
           },
           {
+            "table": "product_attributes",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "product_content_profile",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "product_content_sections",
+            "resolution": "single-writer"
+          },
+          {
             "table": "supplier_catalog_imports",
             "resolution": "single-writer"
           }
@@ -2119,6 +2214,24 @@
             "mode": "W",
             "lifecycleOwner": null,
             "ownershipStatus": "ambiguous"
+          },
+          {
+            "table": "product_attributes",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "product_content_profile",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "product_content_sections",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           },
           {
             "table": "product_sku_media",

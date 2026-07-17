@@ -30,7 +30,7 @@
  * services/catalog-product-detail.js). mockDb() complété avec les 4 réponses
  * manquantes (produit pauvre en contenu à ce stade — la richesse éditoriale
  * réelle du Golden Product est verrouillée séparément par
- * tests/integration/golden-product-content-e2e.test.js).
+ * tests/integration/golden-product-content-e2e-seam.test.js).
  */
 
 jest.mock('../../db', () => ({ query: jest.fn() }));

@@ -448,7 +448,10 @@ async function promoteCatalog(client, { productId, normalizedSourceContract }) {
     skuIdBySupplierSku,
     mediaBySourceId
   );
-  const content = await promoteContent(client, productId, normalizedSourceContract);
+  const content = await promoteContent(client, productId, normalizedSourceContract, {
+    source: 'SUPPLIER',
+    enrichmentVersion: normalizedSourceContract._enrichmentVersion || 'promoted',
+  });
 
   return {
     promoted: true,

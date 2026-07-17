@@ -859,6 +859,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/catalog-promotion/content.js",
+        "resolvedPath": "services/catalog-promotion/content.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/suppliers/normalized-product.js",
         "resolvedPath": "services/suppliers/normalized-product.js",
         "status": "resolved-in-technical-graph"
@@ -1307,6 +1314,13 @@
       {
         "feature": "catalog",
         "category": "boutique",
+        "declared": "js/view-models/product-content-model.js",
+        "resolvedPath": "public/boutique/js/view-models/product-content-model.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "boutique",
         "declared": "js/shop-schema.js",
         "resolvedPath": "public/boutique/js/shop-schema.js",
         "status": "resolved-in-technical-graph"
@@ -1386,6 +1400,13 @@
         "category": "boutique",
         "declared": "css/modal-mobile-canonical.css",
         "resolvedPath": "public/boutique/css/modal-mobile-canonical.css",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "boutique",
+        "declared": "css/modal-enriched-content.css",
+        "resolvedPath": "public/boutique/css/modal-enriched-content.css",
         "status": "resolved-on-disk-no-header"
       },
       {
@@ -1505,6 +1526,20 @@
         "category": "tests",
         "declared": "tests/unit/catalog-promotion-sku-media.test.js",
         "resolvedPath": "tests/unit/catalog-promotion-sku-media.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-promotion-content.test.js",
+        "resolvedPath": "tests/unit/catalog-promotion-content.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-promotion-content-db.test.js",
+        "resolvedPath": "tests/unit/catalog-promotion-content-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15193,6 +15228,14 @@
       {
         "boutiqueManifest": "modal-product",
         "category": "boutique",
+        "declared": "../js/view-models/product-content-model.js",
+        "resolvedPath": "public/boutique/js/view-models/product-content-model.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
         "declared": "../js/b-modal-product-detail-bootstrap.js",
         "resolvedPath": "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "exists": true,
@@ -15264,6 +15307,22 @@
       },
       {
         "boutiqueManifest": "modal-product",
+        "category": "boutique",
+        "declared": "../css/modal-mobile-canonical.css",
+        "resolvedPath": "public/boutique/css/modal-mobile-canonical.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
+        "declared": "../css/modal-enriched-content.css",
+        "resolvedPath": "public/boutique/css/modal-enriched-content.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
         "category": "dist",
         "declared": "../css/dist/components.css",
         "resolvedPath": "public/boutique/css/dist/components.css",
@@ -15275,6 +15334,14 @@
         "category": "tests",
         "declared": "../tests/unit/modal-selection-model.test.js",
         "resolvedPath": "public/boutique/tests/unit/modal-selection-model.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "tests",
+        "declared": "../tests/unit/product-content-model.test.js",
+        "resolvedPath": "public/boutique/tests/unit/product-content-model.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16331,6 +16398,10 @@
               },
               {
                 "sourceFileId": "tests/unit/catalog-promotion.test.js",
+                "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-promotion-content-db.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
               {
@@ -22082,10 +22153,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 797
+        "filesObserved": 800
       },
       "boutique": {
-        "filesObserved": 104,
+        "filesObserved": 106,
         "nonCanonicalManifestFiles": 60
       },
       "dash": {
@@ -23703,6 +23774,39 @@
       "lifecycleOwner": null,
       "resolution": "ambiguous-multi-writer"
     },
+    "product_content_profile": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "single-writer"
+    },
+    "product_content_sections": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "single-writer"
+    },
+    "product_attributes": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW"
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "single-writer"
+    },
     "sourcing_candidate_events": {
       "writers": [
         {
@@ -24860,8 +24964,8 @@
       "backend": {
         "manifestsDiscovered": 24,
         "manifestsConnected": 24,
-        "technicalNodesTotal": 304,
-        "technicalNodesOwned": 304,
+        "technicalNodesTotal": 305,
+        "technicalNodesOwned": 305,
         "technicalOrphans": 0
       },
       "dash": {
@@ -24875,8 +24979,8 @@
       "boutique": {
         "manifestsDiscovered": 10,
         "manifestsConnected": 10,
-        "technicalNodesTotal": 71,
-        "technicalNodesOwned": 71,
+        "technicalNodesTotal": 72,
+        "technicalNodesOwned": 72,
         "technicalOrphans": 0
       }
     },
@@ -25154,7 +25258,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 41 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 42 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

@@ -9,7 +9,7 @@
  * SQL, couture de service, view-model, schéma AJV, layout galerie). Tous sont
  * verts. Aucun ne touche l'environnement réel :
  *
- *   tests/integration/golden-product-content-e2e.test.js  → jest.mock('../../db')
+ *   tests/integration/golden-product-content-e2e-seam.test.js  → jest.mock('../../db')
  *   tests/unit/catalog-promotion-content*.test.js         → mappers purs
  *   tests/unit/product-detail-content-schema.test.js      → schéma (content vide = valide)
  *   tests/e2e/modal-mdm9-gallery-layout.spec.js           → données injectées
@@ -82,7 +82,7 @@ test.describe('E-CONTENT-LIVE — Livraison du contenu enrichi (Golden Product)'
     // ── Le cœur : content peuplé, pas seulement présent ──────────────────
     expect(
       content.brand,
-      'content.brand est null — migration 111 non déployée, ou raffinerie non exécutée sur le Golden Product'
+      'content.brand est null — contenu Golden non promu — seed Golden incomplet ou non exécuté'
     ).toBe(EXPECTED.brand);
 
     expect(content.short_description, 'content.short_description est vide').toBe(EXPECTED.short_description);
