@@ -371,11 +371,37 @@ function renderGrid() {
   }
 
   const useSections = state.activeCat === 'all' || _isMobile;
+
+  // ── RECHERCHE ACTIVE : jamais d'équilibrage ──────────────────────────────
+  // _balancedPick est un sélecteur de VITRINE (éviter qu'une catégorie riche
+  // écrase la home). Appliqué à un résultat de recherche, il DÉTRUIT des
+  // résultats que l'utilisateur a explicitement demandés, via trois mécanismes :
+  //   1. MIN_PER_SECTION=4  → une catégorie < 4 résultats part au reliquat ;
+  //                           un reliquat < 4 est jeté.
+  //   2. count = take%2 ? take-1 : take → tout nombre impair perd un produit
+  //                           (contrainte de grille visuelle appliquée à de la
+  //                           pertinence).
+  //   3. take >= 2 ? ... : 0 → un résultat UNIQUE donne toujours ZÉRO.
+  //
+  // Mesuré en prod (969 produits, 2026-07-17) — filtre vs rendu :
+  //   "chaussure" 15 trouvés → 14 rendus | "football"  10 → 8
+  //   "elite"      1 trouvé  →  0 rendus | "elite pro"  1 → 0
+  // Soit : plus la recherche est précise, moins le client trouve. Un client
+  // cherchant le nom exact d'un produit en stock obtenait une page vide.
+  //
+  // On conserve le chemin de rendu (useSections pilote renderHomeSections ET
+  // tout le pager mobile — le basculer casserait le scroll). On retire
+  // uniquement la sélection. render-home-sections.js n'a aucun seuil de
+  // section maigre : lui passer la liste entière est sûr.
+  const _searching = !!(dom.searchInput && dom.searchInput.value.trim().length >= 2);
+
   let pageItems;
   if (useSections) {
     // Desktop : 16 par section max (4 visibles + 12 révélables via "Voir plus").
     // Mobile : inchangé.
-    pageItems = _isMobile ? _balancedPick(list, 160) : _balancedPick(list, 160, 16);
+    pageItems = _searching
+      ? list
+      : (_isMobile ? _balancedPick(list, 160) : _balancedPick(list, 160, 16));
   } else {
     pageItems = list.slice(0, state.pageSize);
   }
