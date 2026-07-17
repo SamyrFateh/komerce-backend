@@ -1,0 +1,128 @@
+name: Apply Golden showcase media
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'feat/golden-showcase-media'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/golden-showcase-media
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            public/boutique/package-lock.json
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci --ignore-scripts
+      - name: Wire the canonical Golden to served showcase media
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          names = [
+              'neutral-main', 'bleu-main', 'bleu-scene', 'bleu-detail-semelle',
+              'noir-main', 'noir-scene', 'size-guide'
+          ]
+          old_base = 'https://cdn.example.com/golden-elite-pro'
+          new_base = '/images/products/golden-elite-pro'
+
+          fixture = Path('tests/fixtures/catalog/golden-elite-pro.js')
+          text = fixture.read_text(encoding='utf-8')
+          text = text.replace(
+              " * Les URLs média sont volontairement opaques et stables (cdn.example.com),\n"
+              " * conformément à la convention déjà en place dans\n"
+              " * tests/unit/catalog-product-detail.test.js. Aucune dépendance réseau.\n"
+              " *\n"
+              " * Pour les assets visuels locaux (GPM-6 / Playwright), voir\n"
+              " * public/images/fixtures/golden-elite-pro/ et le mapping\n"
+              " * public/images/fixtures/golden-elite-pro/media-map.json qui fait\n"
+              " * correspondre chaque URL cdn.example.com à un SVG local déterministe.\n",
+              " * Les médias du Golden sont des assets showcase locaux, stables et réellement\n"
+              " * servis par la boutique depuis public/images/products/golden-elite-pro/.\n"
+              " * Ils permettent d'observer le rendu réel sans dépendance réseau externe.\n"
+          )
+          text = text.replace(
+              "const MEDIA_BASE = 'https://cdn.example.com/golden-elite-pro';",
+              "const MEDIA_BASE = '/images/products/golden-elite-pro';"
+          )
+          for name in names:
+              text = text.replace(f'{name}.jpg', f'{name}.svg')
+          fixture.write_text(text, encoding='utf-8')
+
+          front = Path('public/boutique/tests/fixtures/golden-elite-pro-detail.js')
+          text = front.read_text(encoding='utf-8')
+          text = text.replace(old_base + '/', new_base + '/')
+          for name in names:
+              text = text.replace(f'{name}.jpg', f'{name}.svg')
+          front.write_text(text, encoding='utf-8')
+
+          mapping = Path('public/images/fixtures/golden-elite-pro/media-map.json')
+          mapping.write_text(json.dumps({
+              '_comment': 'Compatibilité GPM-6 : les médias Golden sont désormais servis directement par la boutique. Aucun proxy CDN n’est requis.',
+              'map': {
+                  f'{new_base}/{name}.svg': f'{new_base}/{name}.svg'
+                  for name in names
+              }
+          }, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+      - name: Verify every Golden URL is a served asset
+        shell: bash
+        run: |
+          node --check tests/fixtures/catalog/golden-elite-pro.js
+          node --check public/boutique/tests/fixtures/golden-elite-pro-detail.js
+          node - <<'NODE'
+          const fs = require('fs');
+          const golden = require('./tests/fixtures/catalog/golden-elite-pro');
+          const rows = golden.catalogMediaRows();
+          if (rows.length !== 7) throw new Error(`Expected 7 media, got ${rows.length}`);
+          for (const row of rows) {
+            if (!row.url.startsWith('/images/products/golden-elite-pro/')) {
+              throw new Error(`External or unexpected Golden URL: ${row.url}`);
+            }
+            const path = `public${row.url}`;
+            if (!fs.existsSync(path)) throw new Error(`Missing served Golden asset: ${path}`);
+          }
+          const product = golden.productRow();
+          if (!fs.existsSync(`public${product.image_url}`)) {
+            throw new Error(`Missing product image: public${product.image_url}`);
+          }
+          console.log(`Golden showcase: ${rows.length} served media verified`);
+          NODE
+      - name: Run Golden contract and rendering tests
+        run: |
+          npx jest tests/unit/golden-product-gpm1.test.js --runInBand --no-coverage
+          npm --prefix public/boutique test -- --runInBand \
+            tests/unit/golden-product-selection-gpm3.test.js \
+            tests/unit/golden-product-content-render.test.js
+      - name: Commit deterministic wiring
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/fixtures/catalog/golden-elite-pro.js \
+                  public/boutique/tests/fixtures/golden-elite-pro-detail.js \
+                  public/images/fixtures/golden-elite-pro/media-map.json
+          if git diff --cached --quiet; then
+            echo 'Golden showcase wiring already applied.'
+            exit 0
+          fi
+          git commit -m 'feat(showcase): serve Golden media from the boutique'
+          git push origin HEAD:feat/golden-showcase-media
