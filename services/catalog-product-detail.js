@@ -156,8 +156,11 @@ function buildHighlights(attributeRows) {
   return (attributeRows || [])
     .filter((row) => row.kind === 'HIGHLIGHT')
     // La promotion (services/catalog-promotion/content.js) stocke le texte du
-    // highlight dans value_text et laisse label à null (un highlight est une
-    // puce courte, pas un couple label/valeur) — cf. mapContentToAttributeRows.
+    // highlight dans label et laisse value_text à null (contrainte live
+    // product_attributes_highlight_no_value : kind<>'HIGHLIGHT' OR value_text
+    // IS NULL — un highlight n'a pas de couple label/valeur comme une spec).
+    // Fallback value_text conservé pour compat avec d'éventuelles lignes
+    // legacy déjà en base avant ce fix.
     .map((row) => ({ key: row.attribute_key, label: row.label || row.value_text }));
 }
 

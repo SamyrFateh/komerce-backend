@@ -243,12 +243,15 @@ function mapContentToAttributeRows(contract, options = {}) {
         // dupliqueraient silencieusement au lieu de mettre à jour la même ligne).
         group_key: '',
         attribute_key: attributeKey,
-        // label contrainte croisée en base :
-        //   NOT NULL (label text NOT NULL sur le schéma live)
-        //   + CHECK product_attributes_highlight_no_value → HIGHLIGHT doit avoir label = ''
-        // Donc : chaîne vide, ni null ni une valeur.
-        label: '',
-        value_text: raw.trim(),
+        // Contrainte réelle en base (absente du repo, confirmée via
+        // pg_get_constraintdef le 2026-07-17) :
+        //   label      NOT NULL
+        //   value_text NULLABLE + CHECK product_attributes_highlight_no_value :
+        //     (kind <> 'HIGHLIGHT' OR value_text IS NULL)
+        // Un HIGHLIGHT n'a pas de couple label/valeur distinct comme une
+        // SPECIFICATION : tout le texte vit dans label, value_text est null.
+        label: raw.trim(),
+        value_text: null,
         unit: null,
         display_order: index,
         source,
