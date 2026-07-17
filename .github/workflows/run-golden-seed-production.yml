@@ -1,0 +1,84 @@
+name: Run Golden production seed
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    if: github.head_ref == 'ops/run-golden-seed-production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      NODE_ENV: production
+      DB_POOL_MAX: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops/run-golden-seed-production
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Guard Railway production secret
+        shell: bash
+        run: |
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo 'RAILWAY_DATABASE_URL secret absent.'
+            exit 2
+          fi
+          node - <<'NODE'
+          const value = process.env.DATABASE_URL || '';
+          const url = new URL(value);
+          if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+            throw new Error('RAILWAY_DATABASE_URL is not PostgreSQL');
+          }
+          console.log('Railway PostgreSQL secret present; hostname intentionally hidden.');
+          NODE
+      - name: Run transactional idempotent Golden seed
+        run: node scripts/seed-golden-product.js
+      - name: Verify public Golden contract after seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://komerce-backend-production.up.railway.app/api/products/aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001/detail'
+          for attempt in $(seq 1 10); do
+            curl -L --max-time 30 -sS "$url" -o /tmp/golden.json
+            if node - <<'NODE'
+          const fs = require('fs');
+          const d = JSON.parse(fs.readFileSync('/tmp/golden.json', 'utf8'));
+          const urls = (d.media || []).map(m => String(m.url));
+          const summary = {
+            inventory_model: d.inventory_model,
+            media: urls.length,
+            local_media: urls.filter(u => u.startsWith('/images/products/golden-elite-pro/')).length,
+            old_cdn_media: urls.filter(u => u.includes('cdn.example.com')).length,
+            sellable_units: (d.sellable_units || []).length,
+            brand: d.content?.brand ?? null,
+            enrichment_version: d.content?.provenance?.enrichment_version ?? null,
+          };
+          console.log(JSON.stringify(summary, null, 2));
+          const valid = summary.inventory_model === 'SKU'
+            && summary.media === 7
+            && summary.local_media === 7
+            && summary.old_cdn_media === 0
+            && summary.sellable_units === 5
+            && summary.brand === 'Elite Pro';
+          process.exit(valid ? 0 : 1);
+          NODE
+            then
+              echo 'Golden production seed verified.'
+              exit 0
+            fi
+            echo "API not refreshed yet (${attempt}/10); retrying in 10s..."
+            sleep 10
+          done
+          echo 'Golden API did not expose the seeded local media.'
+          exit 1
