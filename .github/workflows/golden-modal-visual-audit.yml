@@ -1,0 +1,222 @@
+name: Golden modal visual audit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    if: github.head_ref == 'ops/golden-modal-visual-audit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ops/golden-modal-visual-audit
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci --ignore-scripts
+
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+
+      - name: Capture mobile and desktop Golden modal
+        shell: bash
+        run: |
+          cat > /tmp/golden-modal-audit.cjs <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { chromium } = require(process.cwd() + '/public/boutique/node_modules/@playwright/test');
+
+          const BASE_URL = 'https://komerce.co/boutique/';
+          const GOLDEN_ID = 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001';
+          const GOLDEN_NAME = 'Chaussure de football Elite Pro';
+          const OUT = '/tmp/golden-modal-audit';
+          fs.mkdirSync(OUT, { recursive: true });
+
+          function clean(value) {
+            return String(value || '').replace(/\s+/g, ' ').trim();
+          }
+
+          async function captureViewport(browser, config) {
+            const context = await browser.newContext({
+              viewport: config.viewport,
+              deviceScaleFactor: config.mobile ? 2 : 1,
+              isMobile: config.mobile,
+              hasTouch: config.mobile,
+              locale: 'fr-FR',
+            });
+            const page = await context.newPage();
+            const consoleErrors = [];
+            const failedRequests = [];
+            page.on('console', msg => {
+              if (msg.type() === 'error') consoleErrors.push(clean(msg.text()));
+            });
+            page.on('requestfailed', req => {
+              failedRequests.push({ url: req.url(), error: req.failure()?.errorText || 'unknown' });
+            });
+
+            await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+            await page.locator('#k-search-input').waitFor({ state: 'visible', timeout: 20_000 });
+            await page.locator('#k-search-input').fill(GOLDEN_NAME);
+            const item = page.locator(`#k-search-dropdown .k-search-item[data-id="${GOLDEN_ID}"]`);
+            await item.waitFor({ state: 'visible', timeout: 15_000 });
+            await item.click();
+
+            const rootSelector = config.mobile ? '[data-pdc4-root="1"]' : '[data-pdc5-root="1"]';
+            await page.locator(rootSelector).waitFor({ state: 'visible', timeout: 20_000 });
+            await page.waitForTimeout(1200);
+
+            const modal = page.locator('#k-modal');
+            const scroll = page.locator('.k-modal-scroll').first();
+            await page.screenshot({ path: path.join(OUT, `${config.name}-01-open.png`) });
+
+            const before = await page.evaluate(({ rootSelector }) => {
+              const modal = document.querySelector('#k-modal');
+              const root = document.querySelector(rootSelector);
+              const scroller = document.querySelector('.k-modal-scroll');
+              const stock = document.querySelector('#k-modal-stock');
+              const price = document.querySelector('#k-modal-price');
+              const sku = document.querySelector('#k-modal-sku');
+              const add = document.querySelector('#k-add-cart-btn');
+              const headings = [...document.querySelectorAll('#k-modal h1,#k-modal h2,#k-modal h3,#k-modal .k-modal-section-title,#k-modal [data-section-title]')]
+                .map(el => (el.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+              const images = [...document.querySelectorAll('#k-modal img')].map(img => ({
+                src: img.currentSrc || img.src,
+                naturalWidth: img.naturalWidth,
+                naturalHeight: img.naturalHeight,
+                complete: img.complete,
+                visible: !!(img.offsetWidth || img.offsetHeight || img.getClientRects().length),
+              }));
+              function rect(el) {
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height, top: r.top, bottom: r.bottom };
+              }
+              return {
+                modalRect: rect(modal), rootRect: rect(root), scrollerRect: rect(scroller),
+                scroller: scroller ? { scrollTop: scroller.scrollTop, scrollHeight: scroller.scrollHeight, clientHeight: scroller.clientHeight } : null,
+                bodyOverflow: getComputedStyle(document.body).overflow,
+                stock: stock ? { text: stock.textContent.trim(), hidden: stock.hidden, className: stock.className } : null,
+                price: price?.textContent?.trim() || '', sku: sku?.textContent?.trim() || '',
+                addDisabled: add ? add.disabled : null,
+                headings, images,
+                rootChildren: root ? root.children.length : null,
+              };
+            }, { rootSelector });
+
+            const color = page.locator('[data-axis-key="Couleur"] button[data-option-value="Bleu"]');
+            const size = page.locator('[data-axis-key="Taille"] button[data-option-value="42"]');
+            await color.waitFor({ state: 'visible', timeout: 10_000 });
+            await color.click();
+            await page.waitForTimeout(350);
+            await size.waitFor({ state: 'visible', timeout: 10_000 });
+            await size.click();
+            await page.waitForTimeout(900);
+
+            await page.screenshot({ path: path.join(OUT, `${config.name}-02-selected-top.png`) });
+
+            const after = await page.evaluate(({ rootSelector }) => {
+              const modal = document.querySelector('#k-modal');
+              const root = document.querySelector(rootSelector);
+              const scroller = document.querySelector('.k-modal-scroll');
+              const stock = document.querySelector('#k-modal-stock');
+              const price = document.querySelector('#k-modal-price');
+              const sku = document.querySelector('#k-modal-sku');
+              const add = document.querySelector('#k-add-cart-btn');
+              const selected = [...document.querySelectorAll('#k-modal [aria-pressed="true"]')].map(el => ({
+                axis: el.closest('[data-axis-key]')?.dataset.axisKey || '', value: el.dataset.optionValue || '', text: el.textContent.trim()
+              }));
+              const images = [...document.querySelectorAll('#k-modal img')].map(img => ({
+                src: img.currentSrc || img.src, naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight,
+                complete: img.complete, visible: !!(img.offsetWidth || img.offsetHeight || img.getClientRects().length),
+              }));
+              function rect(el) {
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height, top: r.top, bottom: r.bottom };
+              }
+              return {
+                modalRect: rect(modal), rootRect: rect(root), scrollerRect: rect(scroller),
+                scroller: scroller ? { scrollTop: scroller.scrollTop, scrollHeight: scroller.scrollHeight, clientHeight: scroller.clientHeight } : null,
+                stock: stock ? { text: stock.textContent.trim(), hidden: stock.hidden, className: stock.className } : null,
+                price: price?.textContent?.trim() || '', sku: sku?.textContent?.trim() || '',
+                addDisabled: add ? add.disabled : null, selected, images,
+              };
+            }, { rootSelector });
+
+            if (await scroll.count()) {
+              await scroll.evaluate(el => { el.scrollTop = Math.max(0, (el.scrollHeight - el.clientHeight) / 2); });
+              await page.waitForTimeout(400);
+              await page.screenshot({ path: path.join(OUT, `${config.name}-03-selected-middle.png`) });
+              await scroll.evaluate(el => { el.scrollTop = el.scrollHeight; });
+              await page.waitForTimeout(400);
+              await page.screenshot({ path: path.join(OUT, `${config.name}-04-selected-bottom.png`) });
+            }
+
+            await modal.screenshot({ path: path.join(OUT, `${config.name}-05-modal-element.png`) }).catch(() => {});
+
+            const report = {
+              name: config.name,
+              viewport: config.viewport,
+              url: page.url(),
+              before,
+              after,
+              consoleErrors,
+              failedRequests,
+            };
+            fs.writeFileSync(path.join(OUT, `${config.name}.json`), JSON.stringify(report, null, 2));
+            await context.close();
+            return report;
+          }
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const reports = [];
+            try {
+              reports.push(await captureViewport(browser, { name: 'mobile-390x844', viewport: { width: 390, height: 844 }, mobile: true }));
+              reports.push(await captureViewport(browser, { name: 'desktop-1440x1000', viewport: { width: 1440, height: 1000 }, mobile: false }));
+            } finally {
+              await browser.close();
+            }
+            fs.writeFileSync(path.join(OUT, 'summary.json'), JSON.stringify(reports, null, 2));
+            for (const r of reports) {
+              console.log(JSON.stringify({
+                name: r.name,
+                beforeStock: r.before.stock,
+                afterStock: r.after.stock,
+                afterPrice: r.after.price,
+                afterSku: r.after.sku,
+                addDisabled: r.after.addDisabled,
+                selected: r.after.selected,
+                scroller: r.after.scroller,
+                consoleErrors: r.consoleErrors.length,
+                failedRequests: r.failedRequests.length,
+              }, null, 2));
+            }
+          })().catch(err => {
+            console.error(err.stack || err);
+            process.exit(1);
+          });
+          NODE
+          node /tmp/golden-modal-audit.cjs
+
+      - name: Upload visual audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-modal-visual-audit
+          path: /tmp/golden-modal-audit
+          if-no-files-found: error
+          retention-days: 7
