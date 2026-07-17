@@ -86,6 +86,18 @@ Invariants actifs :
 
 Le premier garde runtime basé sur `height: 100%` du parent a été invalidé par un test réel sur Samsung Internet : un overlay `position: fixed` ancré aux quatre côtés peut encore suivre le layout viewport et inclure une zone masquée par les barres du navigateur. Le shell mobile `#k-modal` reçoit désormais directement une hauteur en pixels issue de `window.visualViewport.height`, avec `window.innerHeight` en fallback. La mesure est resynchronisée à l'initialisation, à l'ouverture de la modal, au resize, au changement d'orientation et au `resize` du Visual Viewport. La barre d'actions reste un enfant flex direct de `#k-modal`, hors de `.k-modal-scroll`, afin que le scroll occupe uniquement l'espace réellement visible restant.
 
+### 2 quinquies. Delta modal SKU — synchronisation ciblée du 17 juillet 2026
+
+La disponibilité affichée par la modal possède désormais une projection unique dans `public/boutique/js/b-modal-buybox-shared.js`. Cette projection pilote de façon fail-closed le statut et l’activation des CTA dans les compositions mobile et desktop.
+
+Invariants actifs :
+
+- `#k-modal-stock` est synchronisé sur mobile comme sur desktop : choix initial, sélection partielle, SKU disponible ou combinaison indisponible ;
+- la quantité brute de stock n’est pas exposée par défaut ;
+- sur desktop, une sélection met à jour en place les axes, le message, la référence, le prix, le stock, le sous-total, les CTA et les médias ;
+- le contenu enrichi, la livraison, le paiement et les éléments de sélection existants ne sont plus reconstruits à chaque clic ;
+- `modal-selection-model.js` reste l’unique owner de la résolution SKU et des états d’option ; les renderers ne recalculent aucun stock.
+
 ---
 
 ## 3. Domaines API montés
