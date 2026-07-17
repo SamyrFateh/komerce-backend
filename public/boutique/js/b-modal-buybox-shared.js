@@ -49,6 +49,71 @@ export function getCurrentPrice(detail, selection) {
   return unit?.price_kmf ?? detail?.pricing?.price_kmf ?? null;
 }
 
+export const SELECTION_AVAILABILITY = Object.freeze({
+  HIDDEN: 'HIDDEN',
+  PENDING: 'PENDING',
+  AVAILABLE: 'AVAILABLE',
+  UNAVAILABLE: 'UNAVAILABLE',
+});
+
+/**
+ * Projection unique de disponibilité pour les deux compositions de la modal.
+ * Ne relit jamais un stock legacy : la résolution d'un SKU vendable appartient
+ * exclusivement à modal-selection-model.js.
+ */
+export function getSelectionAvailability(detail, selection) {
+  const isSku = detail?.inventory_model === 'SKU';
+
+  if (!isSku || !selection?.selection_supported) {
+    return {
+      state: SELECTION_AVAILABILITY.HIDDEN,
+      label: '',
+      className: 'k-modal-stock',
+      canPurchase: !isSku,
+    };
+  }
+
+  if (selection.selected_sku_id) {
+    return {
+      state: SELECTION_AVAILABILITY.AVAILABLE,
+      label: '✓ Disponible',
+      className: 'k-modal-stock k-modal-stock--ok',
+      canPurchase: true,
+    };
+  }
+
+  if (selection.selection_message) {
+    return {
+      state: SELECTION_AVAILABILITY.UNAVAILABLE,
+      label: /rupture de stock/i.test(selection.selection_message)
+        ? 'Rupture de stock'
+        : 'Indisponible',
+      className: 'k-modal-stock',
+      canPurchase: false,
+    };
+  }
+
+  const hasSelections = Object.keys(selection.selected_options || {}).length > 0;
+  return {
+    state: SELECTION_AVAILABILITY.PENDING,
+    label: hasSelections ? 'Choisissez la suite' : 'Choisissez vos options',
+    className: 'k-modal-stock',
+    canPurchase: false,
+  };
+}
+
+/** Écrit la projection partagée dans le shell DOM existant. */
+export function renderSelectionStockInto(el, detail, selection) {
+  if (!el) return getSelectionAvailability(detail, selection);
+
+  const availability = getSelectionAvailability(detail, selection);
+  el.hidden = availability.state === SELECTION_AVAILABILITY.HIDDEN;
+  el.textContent = availability.label;
+  el.className = availability.className;
+  el.dataset.availabilityState = availability.state;
+  return availability;
+}
+
 /**
  * Sous-total = prix courant × quantité (bornée à 1 minimum). Retourne null
  * si aucun prix n'est disponible (contrat incomplet) : c'est à l'appelant de
@@ -201,4 +266,6 @@ export function renderPaymentModes(el, { activeMode, onModeChange, onGroupSelect
 
 export const _buyboxSharedTestApi = Object.freeze({
   buildPaymentDetail,
+  getSelectionAvailability,
+  renderSelectionStockInto,
 });

@@ -144,7 +144,10 @@ describe('b-modal-mobile-product — renderActions (CTA + stepper, PDC-6)', () =
 
   test('SKU résolu (selected_sku_id présent) : CTA actif, mais stepper TOUJOURS verrouillé', () => {
     const detail = baseDetail({ inventory_model: 'SKU' });
-    const selection = baseSelection({ selected_sku_id: 'sku-42' });
+    const selection = baseSelection({
+      selection_supported: true,
+      selected_sku_id: 'sku-42',
+    });
 
     renderMobileProductDetail(detail, selection);
 
@@ -152,6 +155,56 @@ describe('b-modal-mobile-product — renderActions (CTA + stepper, PDC-6)', () =
     // Preuve : aucune mutation panier "product-id first" possible même une
     // fois le SKU résolu — le stepper reste hors service en SKU.
     stepperControls().forEach((btn) => expect(btn.disabled).toBe(true));
+  });
+});
+
+describe('b-modal-mobile-product — stock canonique synchronisé', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  test('SKU sans sélection : affiche la précondition', () => {
+    renderMobileProductDetail(
+      baseDetail({ inventory_model: 'SKU' }),
+      baseSelection({ selection_supported: true })
+    );
+    expect(dom.modalStock.textContent).toBe('Choisissez vos options');
+    expect(dom.modalStock.dataset.availabilityState).toBe('PENDING');
+  });
+
+  test('sélection partielle : invite à choisir la suite', () => {
+    renderMobileProductDetail(
+      baseDetail({ inventory_model: 'SKU' }),
+      baseSelection({
+        selection_supported: true,
+        selected_options: { Couleur: 'Bleu' },
+      })
+    );
+    expect(dom.modalStock.textContent).toBe('Choisissez la suite');
+  });
+
+  test('SKU résolu : affiche Disponible et active les CTA', () => {
+    renderMobileProductDetail(
+      baseDetail({ inventory_model: 'SKU' }),
+      baseSelection({ selection_supported: true, selected_sku_id: 'sku-42' })
+    );
+    expect(dom.modalStock.textContent).toBe('✓ Disponible');
+    expect(dom.modalStock.classList.contains('k-modal-stock--ok')).toBe(true);
+    transactionalControls().forEach((btn) => expect(btn.disabled).toBe(false));
+  });
+
+  test('rupture expliquée : aucun faux Disponible et CTA verrouillés', () => {
+    renderMobileProductDetail(
+      baseDetail({ inventory_model: 'SKU' }),
+      baseSelection({
+        selection_supported: true,
+        selection_message: '44 indisponible pour Bleu — rupture de stock',
+      })
+    );
+    expect(dom.modalStock.textContent).toBe('Rupture de stock');
+    expect(dom.modalStock.textContent).not.toContain('Disponible');
+    transactionalControls().forEach((btn) => expect(btn.disabled).toBe(true));
   });
 });
 

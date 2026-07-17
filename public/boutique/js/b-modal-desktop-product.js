@@ -27,7 +27,14 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { getCurrentPrice, renderSubtotalInto, renderPaymentModes, startGroupCartFlow } from './b-modal-buybox-shared.js';
+import {
+  getCurrentPrice,
+  getSelectionAvailability,
+  renderSelectionStockInto,
+  renderSubtotalInto,
+  renderPaymentModes,
+  startGroupCartFlow,
+} from './b-modal-buybox-shared.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -116,31 +123,13 @@ function renderPriceAndReference(detail, selection) {
   }
 }
 
-function renderStock(selection) {
-  if (!dom.modalStock) return;
-
-  if (!selection.selection_supported) {
-    dom.modalStock.textContent = '';
-    dom.modalStock.hidden = true;
-    return;
-  }
-
-  dom.modalStock.hidden = false;
-  if (selection.selected_sku_id) {
-    dom.modalStock.textContent = '✓ Disponible';
-    dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
-    return;
-  }
-
-  dom.modalStock.textContent = Object.keys(selection.selected_options).length > 0
-    ? 'Choisissez la suite'
-    : 'Choisissez vos options';
-  dom.modalStock.className = 'k-modal-stock';
+function renderStock(detail, selection) {
+  renderSelectionStockInto(dom.modalStock, detail, selection);
 }
 
 function renderActions(detail, selection) {
   const isSku = detail.inventory_model === 'SKU';
-  const enabled = !isSku || Boolean(selection.selected_sku_id);
+  const enabled = !isSku || getSelectionAvailability(detail, selection).canPurchase;
   [dom.addCartBtn, document.getElementById('k-buy-now-btn')].forEach((button) => {
     if (!button) return;
     button.disabled = !enabled;
@@ -246,6 +235,68 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
 
   group.appendChild(wrap);
   return group;
+}
+
+function updateSelectionMessage(root, selection) {
+  const message = root.querySelector('#k-modal-selection-message');
+  if (!message) return;
+  message.textContent = selection.selection_message || '';
+  message.hidden = !selection.selection_message;
+}
+
+function updateAxisDom(root, detail, selection) {
+  const groups = [...root.querySelectorAll('[data-axis-key]')];
+
+  (detail.option_axes || []).forEach((axis) => {
+    const group = groups.find((candidate) => candidate.dataset.axisKey === axis.key);
+    if (!group) return;
+
+    const selected = selection.selected_options[axis.key] || '';
+    const label = group.querySelector('.k-vg-label-val');
+    if (label) label.textContent = selected || 'Choisir';
+
+    const states = new Map(
+      (selection.option_states[axis.key] || []).map((entry) => [entry.value, entry.state])
+    );
+
+    group.querySelectorAll('[data-option-value]').forEach((button) => {
+      const value = button.dataset.optionValue;
+      const stateValue = states.get(value) || OPTION_STATE.INCOMPATIBLE;
+      const active = selected === value;
+      const unavailable = stateValue !== OPTION_STATE.AVAILABLE;
+      const activeClass = button.classList.contains('k-sku')
+        ? 'k-sku--active'
+        : 'k-vp--active';
+
+      button.dataset.optionState = stateValue;
+      button.classList.toggle(activeClass, active);
+      button.classList.toggle('k-vp--out', unavailable);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      button.setAttribute(
+        'aria-label',
+        `${axis.display_name} ${value}${unavailable ? ` — ${optionReason(stateValue)}` : ''}`
+      );
+    });
+  });
+}
+
+/**
+ * Rafraîchit uniquement ce qui dépend de la sélection. Aucun nœud structurel,
+ * bloc éditorial, livraison ou paiement n'est recréé pendant un clic d'option.
+ */
+function refreshDesktopSelection(detail, root, { forceMedia = false } = {}) {
+  const selection = state.modalSelection;
+  state.modalVariantCombo = selection.selection_supported
+    ? { ...selection.selected_options }
+    : {};
+
+  updateAxisDom(root, detail, selection);
+  updateSelectionMessage(root, selection);
+  renderPriceAndReference(detail, selection);
+  renderStock(detail, selection);
+  renderActions(detail, selection);
+  renderSubtotal(detail, selection);
+  renderMedia(detail, selection, forceMedia);
 }
 
 function deliveryMeta(option) {
@@ -507,36 +558,28 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
 
   state.modalProductDetail = detail;
   state.modalSelection = selection;
-  state.modalVariantCombo = selection.selection_supported
-    ? { ...selection.selected_options }
-    : {};
 
-  function rerender() {
-    renderDesktopProductDetail(detail, state.modalSelection);
-  }
+  let root;
+  function refreshSelection() { refreshDesktopSelection(detail, root); }
 
   container.innerHTML = '';
-  const root = document.createElement('div');
+  root = document.createElement('div');
   root.dataset.pdc5Root = '1';
   container.appendChild(root);
 
   if (selection.selection_supported) {
     (detail.option_axes || []).forEach((axis) => {
-      root.appendChild(renderAxis(detail, selection, axis, rerender));
+      root.appendChild(renderAxis(detail, selection, axis, refreshSelection));
     });
   }
   renderSelectionMessage(root, selection);
 
   renderIdentity(detail);
-  renderPriceAndReference(detail, selection);
-  renderStock(selection);
-  renderActions(detail, selection);
   renderDeliveryOptions(detail);
-  renderSubtotal(detail, selection);
   renderPaymentSection(detail, selection);
   renderEnrichedContent(detail);
-  renderMedia(detail, selection, forceMedia);
   ensureQtyObserver();
+  refreshDesktopSelection(detail, root, { forceMedia });
 }
 
 export function refreshDesktopProductSubtotal() {
