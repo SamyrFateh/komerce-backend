@@ -6,12 +6,14 @@ on:
       - fix/modal-selection-stock-sync-apply
     paths:
       - '.github/patches/modal-selection-1.b64.part*'
+      - '.github/patches/modal-selection-1-test-fix.patch'
       - '.github/workflows/modal-selection-1-apply.yml'
   pull_request:
     branches:
       - main
     paths:
       - '.github/patches/modal-selection-1.b64.part*'
+      - '.github/patches/modal-selection-1-test-fix.patch'
       - '.github/workflows/modal-selection-1-apply.yml'
 
 permissions:
@@ -40,11 +42,14 @@ jobs:
             | base64 --decode > /tmp/modal-selection-1.patch
           git apply --check /tmp/modal-selection-1.patch
           git apply /tmp/modal-selection-1.patch
+          git apply --check .github/patches/modal-selection-1-test-fix.patch
+          git apply .github/patches/modal-selection-1-test-fix.patch
 
       - name: Remove temporary delivery files
         shell: bash
         run: |
           rm -f .github/patches/modal-selection-1.b64.part{1..6}
+          rm -f .github/patches/modal-selection-1-test-fix.patch
           rm -f .github/workflows/modal-selection-1-apply.yml
           rmdir .github/patches 2>/dev/null || true
 
