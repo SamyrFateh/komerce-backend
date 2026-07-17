@@ -118,11 +118,20 @@ function mapContentToProfileRow(contract, options = {}) {
  * qui aplatit RESERVED_SECTION_TARGETS[section_key] en lisant `content_json.items`,
  * quel que soit section_type déclaré.
  */
+// Titres par défaut des sections réservées. Le contrat V2 ne porte pas de titre
+// pour ces sections (elles sont identifiées par section_key), mais
+// product_content_sections.title est NOT NULL en base.
+const RESERVED_SECTION_TITLES = {
+  materials: 'Matériaux',
+  care: 'Entretien',
+  warnings: 'Avertissements',
+};
+
 function reservedSectionRow(sectionKey, items, displayOrder, source) {
   if (!items || items.length === 0) return null;
   return {
     section_key: sectionKey,
-    title: null,
+    title: RESERVED_SECTION_TITLES[sectionKey] || sectionKey,
     section_type: 'BULLETS',
     content_json: { items },
     display_order: displayOrder,
@@ -234,7 +243,11 @@ function mapContentToAttributeRows(contract, options = {}) {
         // dupliqueraient silencieusement au lieu de mettre à jour la même ligne).
         group_key: '',
         attribute_key: attributeKey,
-        label: null,
+        // label contrainte croisée en base :
+        //   NOT NULL (label text NOT NULL sur le schéma live)
+        //   + CHECK product_attributes_highlight_no_value → HIGHLIGHT doit avoir label = ''
+        // Donc : chaîne vide, ni null ni une valeur.
+        label: '',
         value_text: raw.trim(),
         unit: null,
         display_order: index,
