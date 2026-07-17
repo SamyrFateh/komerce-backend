@@ -10,14 +10,9 @@
  * Doctrine : UN SEUL PRODUIT MÉTIER. Ce fichier ne doit PAS être dupliqué
  * ou réécrit ailleurs — toute donnée du Golden Product vient d'ici.
  *
- * Les URLs média sont volontairement opaques et stables (cdn.example.com),
- * conformément à la convention déjà en place dans
- * tests/unit/catalog-product-detail.test.js. Aucune dépendance réseau.
- *
- * Pour les assets visuels locaux (GPM-6 / Playwright), voir
- * public/images/fixtures/golden-elite-pro/ et le mapping
- * public/images/fixtures/golden-elite-pro/media-map.json qui fait
- * correspondre chaque URL cdn.example.com à un SVG local déterministe.
+ * Les médias du Golden sont des assets showcase locaux, stables et réellement
+ * servis par la boutique depuis public/images/products/golden-elite-pro/.
+ * Ils permettent d'observer le rendu réel sans dépendance réseau externe.
  */
 
 const PRODUCT_ID = 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa0001';
@@ -33,7 +28,7 @@ const SKU_IDS = Object.freeze({
   // Noir-44 : combinaison inexistante — volontairement absente.
 });
 
-const MEDIA_BASE = 'https://cdn.example.com/golden-elite-pro';
+const MEDIA_BASE = '/images/products/golden-elite-pro';
 
 function productRow() {
   return {
@@ -51,8 +46,8 @@ function productRow() {
     // (buildSellableUnits), jamais de ce champ pour une combinaison précise.
     price_kmf: 42000,
     promo_pct: null,
-    image_url: `${MEDIA_BASE}/neutral-main.jpg`,
-    images: [`${MEDIA_BASE}/neutral-main.jpg`],
+    image_url: `${MEDIA_BASE}/neutral-main.svg`,
+    images: [`${MEDIA_BASE}/neutral-main.svg`],
     has_variants: true,
     inventory_model: 'SKU',
   };
@@ -63,15 +58,15 @@ function variantRows() {
     {
       variant_type: 'Couleur',
       variant_value: 'Bleu',
-      image_url: `${MEDIA_BASE}/bleu-main.jpg`,
-      images: [`${MEDIA_BASE}/bleu-main.jpg`, `${MEDIA_BASE}/bleu-scene.jpg`],
+      image_url: `${MEDIA_BASE}/bleu-main.svg`,
+      images: [`${MEDIA_BASE}/bleu-main.svg`, `${MEDIA_BASE}/bleu-scene.svg`],
       display_order: 1,
     },
     {
       variant_type: 'Couleur',
       variant_value: 'Noir',
-      image_url: `${MEDIA_BASE}/noir-main.jpg`,
-      images: [`${MEDIA_BASE}/noir-main.jpg`, `${MEDIA_BASE}/noir-scene.jpg`],
+      image_url: `${MEDIA_BASE}/noir-main.svg`,
+      images: [`${MEDIA_BASE}/noir-main.svg`, `${MEDIA_BASE}/noir-scene.svg`],
       display_order: 2,
     },
     {
@@ -230,13 +225,13 @@ const MEDIA_IDS = Object.freeze({
 
 function catalogMediaRows() {
   return [
-    { id: MEDIA_IDS.productNeutral, url: `${MEDIA_BASE}/neutral-main.jpg`, role: 'PRODUCT', alt: 'Chaussure de football Elite Pro', option_values: {} },
-    { id: MEDIA_IDS.bleuProduct, url: `${MEDIA_BASE}/bleu-main.jpg`, role: 'PRODUCT', alt: 'Elite Pro Bleu', option_values: { Couleur: 'Bleu' } },
-    { id: MEDIA_IDS.bleuScene, url: `${MEDIA_BASE}/bleu-scene.jpg`, role: 'SCENE', alt: 'Elite Pro Bleu en situation', option_values: { Couleur: 'Bleu' } },
-    { id: MEDIA_IDS.bleuDetail, url: `${MEDIA_BASE}/bleu-detail-semelle.jpg`, role: 'DETAIL', alt: 'Détail semelle Elite Pro Bleu', option_values: { Couleur: 'Bleu' } },
-    { id: MEDIA_IDS.noirProduct, url: `${MEDIA_BASE}/noir-main.jpg`, role: 'PRODUCT', alt: 'Elite Pro Noir', option_values: { Couleur: 'Noir' } },
-    { id: MEDIA_IDS.noirScene, url: `${MEDIA_BASE}/noir-scene.jpg`, role: 'SCENE', alt: 'Elite Pro Noir en situation', option_values: { Couleur: 'Noir' } },
-    { id: MEDIA_IDS.sizeGuide, url: `${MEDIA_BASE}/size-guide.jpg`, role: 'SIZE_GUIDE', alt: 'Guide des tailles Elite Pro', option_values: {} },
+    { id: MEDIA_IDS.productNeutral, url: `${MEDIA_BASE}/neutral-main.svg`, role: 'PRODUCT', alt: 'Chaussure de football Elite Pro', option_values: {} },
+    { id: MEDIA_IDS.bleuProduct, url: `${MEDIA_BASE}/bleu-main.svg`, role: 'PRODUCT', alt: 'Elite Pro Bleu', option_values: { Couleur: 'Bleu' } },
+    { id: MEDIA_IDS.bleuScene, url: `${MEDIA_BASE}/bleu-scene.svg`, role: 'SCENE', alt: 'Elite Pro Bleu en situation', option_values: { Couleur: 'Bleu' } },
+    { id: MEDIA_IDS.bleuDetail, url: `${MEDIA_BASE}/bleu-detail-semelle.svg`, role: 'DETAIL', alt: 'Détail semelle Elite Pro Bleu', option_values: { Couleur: 'Bleu' } },
+    { id: MEDIA_IDS.noirProduct, url: `${MEDIA_BASE}/noir-main.svg`, role: 'PRODUCT', alt: 'Elite Pro Noir', option_values: { Couleur: 'Noir' } },
+    { id: MEDIA_IDS.noirScene, url: `${MEDIA_BASE}/noir-scene.svg`, role: 'SCENE', alt: 'Elite Pro Noir en situation', option_values: { Couleur: 'Noir' } },
+    { id: MEDIA_IDS.sizeGuide, url: `${MEDIA_BASE}/size-guide.svg`, role: 'SIZE_GUIDE', alt: 'Guide des tailles Elite Pro', option_values: {} },
   ];
 }
 

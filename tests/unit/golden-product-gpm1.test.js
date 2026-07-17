@@ -97,8 +97,8 @@ describe('GPM-1 — Golden Product "Chaussure de football Elite Pro" — Product
         key: 'Couleur',
         display_name: 'Couleur',
         values: [
-          { value: 'Bleu', thumbnail_url: `${golden.MEDIA_BASE}/bleu-main.jpg` },
-          { value: 'Noir', thumbnail_url: `${golden.MEDIA_BASE}/noir-main.jpg` },
+          { value: 'Bleu', thumbnail_url: `${golden.MEDIA_BASE}/bleu-main.svg` },
+          { value: 'Noir', thumbnail_url: `${golden.MEDIA_BASE}/noir-main.svg` },
         ],
       },
       {
@@ -123,7 +123,7 @@ describe('GPM-1 — Golden Product "Chaussure de football Elite Pro" — Product
     expect(neutral).toHaveLength(1);
     expect(bleu).toHaveLength(2);
     expect(noir).toHaveLength(2);
-    expect(neutral[0].url).toBe(`${golden.MEDIA_BASE}/neutral-main.jpg`);
+    expect(neutral[0].url).toBe(`${golden.MEDIA_BASE}/neutral-main.svg`);
   });
 
   test('5 sellable units réelles sur 6 combinaisons théoriques', () => {

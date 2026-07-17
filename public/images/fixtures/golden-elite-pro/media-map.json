@@ -1,10 +1,12 @@
 {
-  "_comment": "Mapping test-only : URL cdn.example.com (contrat) -> asset SVG local (rendu Playwright GPM-6). La production continue de servir les URLs du contrat telles quelles ; ce mapping n’est utilisé que par le harness de test.",
+  "_comment": "Compatibilité GPM-6 : les médias Golden sont désormais servis directement par la boutique. Aucun proxy CDN n’est requis.",
   "map": {
-    "https://cdn.example.com/golden-elite-pro/neutral-main.jpg": "/images/fixtures/golden-elite-pro/neutral-main.svg",
-    "https://cdn.example.com/golden-elite-pro/bleu-main.jpg": "/images/fixtures/golden-elite-pro/bleu-main.svg",
-    "https://cdn.example.com/golden-elite-pro/bleu-scene.jpg": "/images/fixtures/golden-elite-pro/bleu-scene.svg",
-    "https://cdn.example.com/golden-elite-pro/noir-main.jpg": "/images/fixtures/golden-elite-pro/noir-main.svg",
-    "https://cdn.example.com/golden-elite-pro/noir-scene.jpg": "/images/fixtures/golden-elite-pro/noir-scene.svg"
+    "/images/products/golden-elite-pro/neutral-main.svg": "/images/products/golden-elite-pro/neutral-main.svg",
+    "/images/products/golden-elite-pro/bleu-main.svg": "/images/products/golden-elite-pro/bleu-main.svg",
+    "/images/products/golden-elite-pro/bleu-scene.svg": "/images/products/golden-elite-pro/bleu-scene.svg",
+    "/images/products/golden-elite-pro/bleu-detail-semelle.svg": "/images/products/golden-elite-pro/bleu-detail-semelle.svg",
+    "/images/products/golden-elite-pro/noir-main.svg": "/images/products/golden-elite-pro/noir-main.svg",
+    "/images/products/golden-elite-pro/noir-scene.svg": "/images/products/golden-elite-pro/noir-scene.svg",
+    "/images/products/golden-elite-pro/size-guide.svg": "/images/products/golden-elite-pro/size-guide.svg"
   }
 }
