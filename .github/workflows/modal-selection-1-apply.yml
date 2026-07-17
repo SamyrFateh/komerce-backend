@@ -31,7 +31,7 @@ jobs:
           ref: fix/modal-selection-stock-sync-apply
           fetch-depth: 0
 
-      - name: Rebuild and validate patch
+      - name: Rebuild and validate correction
         shell: bash
         run: |
           set -euo pipefail
@@ -40,8 +40,20 @@ jobs:
             | base64 --decode > /tmp/modal-selection-1.patch
           git apply --check /tmp/modal-selection-1.patch
           git apply /tmp/modal-selection-1.patch
-          git apply --check .github/patches/modal-selection-1-test-fix.patch
-          git apply .github/patches/modal-selection-1-test-fix.patch
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('public/boutique/tests/unit/b-modal-mobile-product.test.js')
+          text = path.read_text(encoding='utf-8')
+          old = "const selection = baseSelection({ selected_sku_id: 'sku-42' });"
+          new = """const selection = baseSelection({
+                selection_supported: true,
+                selected_sku_id: 'sku-42',
+              });"""
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'expected exactly one incoherent resolved-SKU fixture, found {count}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
 
       - name: Setup Node
         uses: actions/setup-node@v4
