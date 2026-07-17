@@ -551,7 +551,7 @@ export function renderMobileProductDetail(
   // Clear and rebuild the variants container
   container.innerHTML = '';
   const root = document.createElement('div');
-  root.dataset.mdmRoot = '1';
+  root.dataset.pdc4Root = '1';
   root.className = 'k-mdm-root';
   container.appendChild(root);
 

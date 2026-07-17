@@ -154,7 +154,7 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     renderMobileProductDetail(detail, selection, { forceMedia: true });
 
     expect(dom.modal.querySelector('[data-mobile-reassurance]')).toBeNull();
-    const root = dom.modalVariants.querySelector('[data-mdm-root]');
+    const root = dom.modalVariants.querySelector('[data-pdc4-root]');
     expect(root).not.toBeNull();
     expect(root.querySelectorAll('.k-vg')).toHaveLength(2);
 
@@ -227,7 +227,7 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     colorButtons[1].click();
     expect(selectModalOption).toHaveBeenCalledWith(detail, selection, 'coloris', 'Bleu');
     expect(state.modalSelection).toBe(nextSelection);
-    expect(dom.modalVariants.querySelectorAll('[data-mdm-root]')).toHaveLength(1);
+    expect(dom.modalVariants.querySelectorAll('[data-pdc4-root]')).toHaveLength(1);
     expect(dom.modalPrice.textContent).toBe('7000 KMF');
     expect(dom.modalSku.textContent).toBe('Réf. SKU-BM');
   });
