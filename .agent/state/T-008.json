@@ -5,7 +5,7 @@
   "finding_id": "M7",
   "wave": "P1",
   "parallel_lane": "LANE-MOBILE-SHELL",
-  "status": "REVIEW",
+  "status": "DONE",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -26,18 +26,20 @@
     "npm --prefix public/boutique run audit:gate"
   ],
   "agent": "claude-sonnet-session-2",
-  "reviewer": null,
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
   "branch": "agent/lane-mobile-renderer",
   "started_at": "2026-07-18T20:03:30Z",
   "lease_until": null,
   "finished_at": "2026-07-18T20:03:30Z",
-  "reviewed_at": null,
+  "reviewed_at": "2026-07-18T22:32:00Z",
   "base_commit": null,
-  "last_commit": "7411fd51",
+  "last_commit": "7411fd512bfe9140a7d721e1ba031ff7d8dac5aa",
   "changed_files": [
     "public/boutique/css/modal-shell.css",
-    "public/boutique/css/dist/components.css"
+    "public/boutique/css/dist/components.css",
+    ".agent/evidence/T-008/css-audit.txt",
+    ".agent/evidence/T-008/mobile-cart-badge.png"
   ],
   "gate_results": [
     {
@@ -55,11 +57,14 @@
     {
       "gate": "check:breakpoints",
       "result": "PASS"
+    },
+    {
+      "gate": "reviewer regression validation",
+      "result": "PASS — contraste documenté 5.31:1; style final présent; check:cache et feature-audit consolidés PASS"
     }
   ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": "M7 : --coral → --cta-green + border --page-bg sur badge. Contraste 5.31:1 AA. Bundle v161.",
-  "next_action": "Revue humaine.",
-  "commit": "7411fd51"
+  "review_decision": "APPROVE",
+  "summary": "M7 approuvé : badge panier vert, bordure page-bg, logique compteur inchangée.",
+  "next_action": "T-008 clôturée."
 }
