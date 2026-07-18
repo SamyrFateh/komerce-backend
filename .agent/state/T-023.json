@@ -5,7 +5,7 @@
   "finding_id": "D11",
   "wave": "P2",
   "parallel_lane": "LANE-DESKTOP-COMPOSITION",
-  "status": "IN_PROGRESS",
+  "status": "BLOCKED",
   "priority": "HIGH",
   "depends_on": [
     "T-016"
@@ -44,11 +44,12 @@
   "finished_at": null,
   "reviewed_at": null,
   "base_commit": "cbb6517b955cb4ced497d59249e5fdd9a54ac754",
-  "last_commit": "fc6fe5d2799c457289d5d11d44697223cfe3da4f",
+  "last_commit": "1f6248744e77473abf61dd04f0f542c5afc3d22b",
   "changed_files": [
     ".agent/arbitrations/T-023.md",
     ".agent/tasks/T-023.md",
     ".agent/state/T-023.json",
+    ".agent/evidence/T-023/tests.txt",
     "public/boutique/css/modal-product.css",
     "public/boutique/css/modal-shell.css",
     "public/boutique/js/b-modal-desktop-product.js",
@@ -65,10 +66,10 @@
     { "gate": "audit:gate", "result": "pass" },
     { "gate": "check:imports", "result": "pass" },
     { "gate": "audit:arch", "result": "pass" },
-    { "gate": "test:unit", "result": "pass (92 suites / 1751 tests)" }
+    { "gate": "test:unit", "result": "pass (92 suites / 1751 tests, voir .agent/evidence/T-023/tests.txt)" }
   ],
-  "blocking_reason": null,
+  "blocking_reason": "Preuves visuelles obligatoires non générables dans le sandbox : aucun navigateur Chromium disponible et téléchargement Playwright bloqué par les restrictions réseau. Les captures desktop-actions-empty.png et desktop-actions-filled.png restent requises avant passage en REVIEW.",
   "review_decision": null,
-  "summary": "Dette CSS Guardian soldée (#k-modal-payment). Layout desktop AVAILABLE_EMPTY/AVAILABLE_FILLED implémenté : grille 3 colonnes de .k-modal-actions remplacée par flex (modal-shell.css) ; .k-modal-actions--filled posé par renderActions() selon state.cart. Reste : captures des 2 états + preuves .agent/evidence/T-023.",
-  "next_action": "Générer les captures EMPTY/FILLED (.agent/evidence/T-023/desktop-actions-empty.png, desktop-actions-filled.png) et tests.txt, puis passer la tâche en REVIEW."
+  "summary": "Travail fonctionnel terminé : dette CSS Guardian soldée (#k-modal-payment, ownership unique cédé à modal-product-lot4-hybrid.css) ; layout desktop AVAILABLE_EMPTY/AVAILABLE_FILLED implémenté (modal-shell.css + renderActions()) avec tests unitaires dédiés. Tous les gates automatisés sont verts (92 suites / 1751 tests, voir .agent/evidence/T-023/tests.txt). Seul le contrôle visuel (captures EMPTY/FILLED) est bloqué, pour raison d'environnement (pas de navigateur dans ce sandbox).",
+  "next_action": "Générer les deux captures depuis le commit 1f624874 sur un environnement disposant de Chromium, les déposer dans .agent/evidence/T-023/, vérifier visuellement l'absence de layout shift, puis passer BLOCKED -> REVIEW."
 }

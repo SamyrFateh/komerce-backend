@@ -26,7 +26,7 @@
 | T-020 | LANE-DESKTOP-LAYOUT | READY | — | — | — |
 | T-021 | LANE-DESKTOP-LAYOUT | READY | — | — | — |
 | T-022 | LANE-DESKTOP-LAYOUT | READY | — | — | — |
-| T-023 | LANE-DESKTOP-COMPOSITION | READY | — | — | Dépendance T-016 satisfaite; peut démarrer sur la branche durable. |
+| T-023 | LANE-DESKTOP-COMPOSITION | BLOCKED | claude-chat-session | agent/lane-mobile-renderer | Générer desktop-actions-empty.png / desktop-actions-filled.png (Chromium indisponible dans ce sandbox), puis BLOCKED → REVIEW. |
 | T-024 | LANE-FINISH | READY | — | — | — |
 | T-025 | LANE-FINISH | READY | — | — | — |
 | T-026 | LANE-TRANSVERSE | READY | — | — | — |
