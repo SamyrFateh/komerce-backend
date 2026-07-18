@@ -1,18 +1,10 @@
 'use strict';
 
-jest.mock('../../js/b-catalog.js', () => ({ setActiveCat: jest.fn() }));
-jest.mock('../../js/b-cart-core.js', () => ({ showToast: jest.fn() }));
-jest.mock('../../js/b-modal.js', () => ({ openModal: jest.fn() }));
 jest.mock('../../js/b-scroll-owner.js', () => ({ isDesktop: jest.fn(() => true) }));
 
-describe('b-modal-desktop-enhancers — composition only', () => {
+describe('b-modal-desktop-enhancers — D-P1 : panneau commercial allégé', () => {
   let bus;
-  let state;
   let dom;
-  let isDesktop;
-  let showToast;
-  let setActiveCat;
-  let openModal;
   let enhancers;
 
   function installDom() {
@@ -36,83 +28,48 @@ describe('b-modal-desktop-enhancers — composition only', () => {
     document.body.innerHTML = '';
 
     ({ bus } = require('../../js/b-bus.js'));
-    ({ state, dom } = require('../../js/b-store.js'));
-    ({ isDesktop } = require('../../js/b-scroll-owner.js'));
-    ({ showToast } = require('../../js/b-cart-core.js'));
-    ({ setActiveCat } = require('../../js/b-catalog.js'));
-    ({ openModal } = require('../../js/b-modal.js'));
+    ({ dom } = require('../../js/b-store.js'));
     enhancers = require('../../js/b-modal-desktop-enhancers.js');
 
     installDom();
-    isDesktop.mockReturnValue(true);
-    state.modalProduct = {
-      id: 42,
-      name: 'Sac à main tressé',
-      category: 'Mode & Beauté',
-      price_kmf: 5000,
-      stock: 3,
-    };
-    state.modalProductDetail = null;
-    state.products = [
-      state.modalProduct,
-      { id: 7, name: 'Sandales', category: 'Mode & Beauté', price_kmf: 3000, image_url: '/sandales.jpg' },
-    ];
-    state.viewedHistory = [7, 42];
-
-    jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(); return 1; });
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText: jest.fn(() => Promise.resolve()) },
-      configurable: true,
-    });
-    jest.spyOn(window, 'open').mockImplementation(() => {});
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  test('mobile : setup branche les listeners mais aucun enrichissement ne s’exécute (MDP-3)', () => {
-    isDesktop.mockReturnValue(false);
-    const spy = jest.spyOn(bus, 'on');
-    enhancers.setupModalDesktopEnhancers();
-    // MDP-3 : l'installation des listeners ne dépend plus du viewport au
-    // moment du setup — sinon un modal ouvert en mobile puis resizé vers
-    // desktop ratait la réconciliation (breadcrumb/trust/partage absents).
-    // Chaque injecteur reste auto-gardé sur isDesktop() : rien ne s'affiche.
-    expect(spy).toHaveBeenCalledWith('modal:opened', expect.any(Function));
-    expect(spy).toHaveBeenCalledWith('modal:composition-synced', expect.any(Function));
-
-    bus.emit('modal:opened', state.modalProduct);
-    expect(dom.modal.querySelector('.k-modal-breadcrumb')).toBeNull();
-  });
-
-  test('desktop : setup est idempotent et rend les enrichissements éditoriaux', () => {
+  test('D-P1 : setup est idempotent et branche modal:opened / modal:composition-synced', () => {
     const onSpy = jest.spyOn(bus, 'on');
     enhancers.setupModalDesktopEnhancers();
     enhancers.setupModalDesktopEnhancers();
     expect(onSpy).toHaveBeenCalledTimes(2);
     expect(onSpy).toHaveBeenCalledWith('modal:opened', expect.any(Function));
     expect(onSpy).toHaveBeenCalledWith('modal:composition-synced', expect.any(Function));
-
-    bus.emit('modal:opened', state.modalProduct);
-
-    expect(dom.modal.querySelector('.k-modal-breadcrumb')).not.toBeNull();
-    expect(dom.modal.querySelector('.k-modal-share-row')).not.toBeNull();
-    expect(dom.modal.querySelector('.k-modal-trust')).not.toBeNull();
-    expect(dom.modal.querySelector('.k-modal-recent')).not.toBeNull();
   });
 
-  test('resize mobile→desktop (modal:composition-synced) rend les mêmes enrichissements sans réouvrir la modal', () => {
+  test('D-P1 : modal:opened n\'injecte plus ni fil d\'Ariane, ni réassurance, ni partage, ni vu récemment', () => {
+    enhancers.setupModalDesktopEnhancers();
+    bus.emit('modal:opened', { id: 42, name: 'Sac à main tressé', category: 'Mode & Beauté', price_kmf: 5000 });
+
+    expect(dom.modal.querySelector('.k-modal-breadcrumb')).toBeNull();
+    expect(dom.modal.querySelector('.k-modal-share-row')).toBeNull();
+    expect(dom.modal.querySelector('.k-modal-trust')).toBeNull();
+    expect(dom.modal.querySelector('.k-modal-recent')).toBeNull();
+  });
+
+  test('D-P1 : modal:composition-synced (resize mobile→desktop) n\'injecte rien non plus', () => {
     enhancers.setupModalDesktopEnhancers();
     bus.emit('modal:composition-synced');
 
-    expect(dom.modal.querySelector('.k-modal-breadcrumb')).not.toBeNull();
-    expect(dom.modal.querySelector('.k-modal-trust')).not.toBeNull();
+    expect(dom.modal.querySelector('.k-modal-breadcrumb')).toBeNull();
+    expect(dom.modal.querySelector('.k-modal-trust')).toBeNull();
+    expect(dom.modal.querySelector('.k-modal-share-row')).toBeNull();
+    expect(dom.modal.querySelector('.k-modal-recent')).toBeNull();
   });
 
-  test('n’écrit plus aucune vérité prix, stock, livraison, paiement ou sous-total', () => {
+  test('n\'écrit toujours aucune vérité prix, stock, livraison, paiement ou sous-total', () => {
     enhancers.setupModalDesktopEnhancers();
-    bus.emit('modal:opened', state.modalProduct);
+    bus.emit('modal:opened', { id: 42, name: 'Sac à main tressé', category: 'Mode & Beauté', price_kmf: 5000 });
 
     expect(document.getElementById('k-modal-aed-price').textContent).toBe('legacy eur');
     expect(document.getElementById('k-modal-flash-bar').textContent).toBe('legacy promo');
@@ -122,71 +79,7 @@ describe('b-modal-desktop-enhancers — composition only', () => {
     expect(dom.modal.querySelector('.k-modal-subtotal').textContent).toBe('legacy subtotal');
   });
 
-  test('breadcrumb utilise le contrat détail lorsqu’il est disponible et filtre la catégorie au clic', () => {
-    state.modalProductDetail = {
-      product: { id: 42, name: 'Robe Dubaï', category: 'vetements' },
-      pricing: { price_kmf: 12500 },
-    };
-    enhancers.setupModalDesktopEnhancers();
-    bus.emit('modal:opened', state.modalProduct);
-
-    const breadcrumb = dom.modal.querySelector('.k-modal-breadcrumb');
-    expect(breadcrumb.textContent).toContain('Robe Dubaï');
-    expect(breadcrumb.textContent).toContain('vetements');
-
-    breadcrumb.querySelectorAll('.k-modal-breadcrumb-cat')[1].click();
-    expect(setActiveCat).toHaveBeenCalledWith('vetements');
-  });
-
-  test('catégorie vide : le breadcrumb ne déclenche aucun filtre', () => {
-    state.modalProduct = { id: 1, name: 'Produit', category: '', price_kmf: 1000 };
-    enhancers.setupModalDesktopEnhancers();
-    bus.emit('modal:opened', state.modalProduct);
-
-    dom.modal.querySelector('.k-modal-breadcrumb-cat').click();
-    expect(setActiveCat).not.toHaveBeenCalled();
-  });
-
-  test('partage utilise identité/prix du contrat détail et copie le lien', async () => {
-    state.modalProductDetail = {
-      product: { id: 42, name: 'Robe Dubaï', category: 'vetements' },
-      pricing: { price_kmf: 12500 },
-    };
-    enhancers.setupModalDesktopEnhancers();
-    bus.emit('modal:opened', state.modalProduct);
-
-    const row = dom.modal.querySelector('.k-modal-share-row');
-    const wa = row.querySelector('.k-modal-share-btn--wa');
-    expect(decodeURIComponent(wa.dataset.href)).toContain('Robe Dubaï');
-    expect(decodeURIComponent(wa.dataset.href)).toContain('12');
-    wa.click();
-    expect(window.open).toHaveBeenCalled();
-
-    row.querySelector('[data-action="copy"]').click();
-    await Promise.resolve();
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(`${window.location.origin}/?p=42`);
-    expect(showToast).toHaveBeenCalledWith('🔗 Lien copié !');
-  });
-
-  test('réassurance ne contient plus de promesse stock produit reconstruite', () => {
-    enhancers.setupModalDesktopEnhancers();
-    bus.emit('modal:opened', state.modalProduct);
-    const trust = dom.modal.querySelector('.k-modal-trust');
-    expect(trust.textContent).toContain('Paiement sécurisé');
-    expect(trust.textContent).toContain('Support Komerce');
-    expect(trust.textContent).not.toContain('Stock garanti');
-  });
-
-  test('vu récemment ouvre le produit sélectionné sans dupliquer la logique produit', () => {
-    enhancers.setupModalDesktopEnhancers();
-    bus.emit('modal:opened', state.modalProduct);
-    const card = dom.modal.querySelector('.k-modal-recent-card');
-    expect(card.textContent).toContain('Sandales');
-    card.click();
-    expect(openModal).toHaveBeenCalledWith('7', true);
-  });
-
-  test('PDC-6 : setupModalContractClasses n\'existe plus et modal-view-model.js n\'est plus une dépendance', () => {
+  test('PDC-6/D-P1 : aucune dépendance morte (view-model legacy, injecteurs éditoriaux supprimés)', () => {
     expect(enhancers.setupModalContractClasses).toBeUndefined();
 
     const fs = require('fs');
@@ -198,5 +91,9 @@ describe('b-modal-desktop-enhancers — composition only', () => {
     expect(source).not.toMatch(/modal-view-model/);
     expect(source).not.toMatch(/buildModalViewModel/);
     expect(source).not.toMatch(/applyModalClasses/);
+    expect(source).not.toMatch(/injectBreadcrumb/);
+    expect(source).not.toMatch(/injectShareRow/);
+    expect(source).not.toMatch(/injectTrustBadges/);
+    expect(source).not.toMatch(/injectRecentlyViewed/);
   });
 });

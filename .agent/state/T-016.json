@@ -5,7 +5,7 @@
   "finding_id": "D4",
   "wave": "P1",
   "parallel_lane": "LANE-DESKTOP-COMPOSITION",
-  "status": "READY",
+  "status": "IN_PROGRESS",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -46,20 +46,23 @@
     "npm run gate:feature-audit",
     "npm run gate:boutique-ownership"
   ],
-  "agent": null,
+  "agent": "sonnet",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T00:00:00Z",
   "lease_until": null,
   "finished_at": null,
   "reviewed_at": null,
   "base_commit": null,
   "last_commit": null,
-  "changed_files": [],
+  "changed_files": [
+    "public/boutique/js/b-modal-desktop-enhancers.js",
+    "public/boutique/tests/unit/b-modal-desktop-enhancers.test.js"
+  ],
   "gate_results": [],
-  "blocking_reason": null,
+  "blocking_reason": "Point 1 (vider l'enhancer desktop) fait échouer tests/unit/b-modal-desktop-enhancers-pdc6-coverage.test.js, hors périmètre autorisé T-016 (teste exclusivement le comportement injectBreadcrumb/injectShareRow retiré). Le même risque existe au point 2 (retrait d'Approche-C dans main.js) contre tests/unit/main.test.js, également hors périmètre. Arbitrage demandé avant de poursuivre.",
   "review_decision": null,
   "summary": null,
-  "next_action": null
+  "next_action": "Arbitrage : élargir le périmètre T-016 à ces 2 fichiers de test, ou traiter séparément (skip/xfail documenté, ou tâche de nettoyage dédiée)."
 }
