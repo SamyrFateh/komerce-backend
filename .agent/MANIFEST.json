@@ -1,5 +1,5 @@
 {
-  "governance_version": "2.0",
+  "governance_version": "2.1",
   "project": "Komerce",
   "worksite": "PDP_MAQUETTE_PREMIUM",
   "package_id": "KOMERCE-PDP-BASE-0001",
@@ -12,6 +12,7 @@
   "next_ready_task": "T-001",
   "packaging_mode": "zip-local",
   "include_git": false,
-  "status": "READY_TO_COMMIT",
-  "delivery_protocol": "bundle-inbox-import-validate-review-stage"
+  "status": "ACTIVE",
+  "delivery_protocol": "bundle-inbox-import-validate-review-stage",
+  "encoding": "UTF-8 BOM for Windows PowerShell 5.1 scripts"
 }

@@ -1,48 +1,48 @@
-# HANDOFF â€” {{TASK_ID}}
+# HANDOFF — {{TASK_ID}}
 
 ## Identification
 
-- TÃ¢che :
+- Tâche :
 - Agent :
-- Package de dÃ©part :
+- Package de départ :
 - Package de restitution :
 - Date :
 - Statut final :
 
-## RÃ©sultat obtenu
+## Résultat obtenu
 
-DÃ©crire prÃ©cisÃ©ment ce qui fonctionne maintenant.
+Décrire précisément ce qui fonctionne maintenant.
 
-## Travail rÃ©alisÃ©
-
--
--
--
-
-## Travail non rÃ©alisÃ©
+## Travail réalisé
 
 -
 -
+-
 
-## Fichiers modifiÃ©s
+## Travail non réalisé
+
+-
+-
+
+## Fichiers modifiés
 
 ```text
-Ã€ renseigner
+À renseigner
 ```
 
 ## Tests et gates
 
-| Gate | RÃ©sultat | Preuve |
+| Gate | Résultat | Preuve |
 |---|---|---|
-| Ã€ renseigner | PASS / FAIL / NOT_RUN | chemin ou explication |
+| À renseigner | PASS / FAIL / NOT_RUN | chemin ou explication |
 
-## Preuves dÃ©posÃ©es
+## Preuves déposées
 
 ```text
 .agent/evidence/{{TASK_ID}}/
 ```
 
-## HypothÃ¨ses prises
+## Hypothèses prises
 
 -
 
@@ -54,9 +54,9 @@ DÃ©crire prÃ©cisÃ©ment ce qui fonctionne maintenant.
 
 - Aucun, ou description exacte.
 
-## Ã‰tat technique
+## État technique
 
-- Commit de dÃ©part :
+- Commit de départ :
 - Dernier commit :
 - Working tree propre :
 - Patch produit :
@@ -64,4 +64,4 @@ DÃ©crire prÃ©cisÃ©ment ce qui fonctionne maintenant.
 
 ## Prochaine action exacte
 
-Ã‰crire une instruction directement exÃ©cutable par lâ€™agent suivant ou le reviewer.
+Écrire une instruction directement exécutable par l’agent suivant ou le reviewer.

@@ -1,32 +1,32 @@
-# {{TASK_ID}} â€” {{TITLE}}
+# {{TASK_ID}} — {{TITLE}}
 
-## MÃ©tadonnÃ©es
+## Métadonnées
 
 - Feature ID : `{{FEATURE_ID}}`
-- Ã‰cart dâ€™audit / besoin : `{{FINDING_ID}}`
-- PrioritÃ© : `MEDIUM`
-- DÃ©pendances : aucune
+- Écart d’audit / besoin : `{{FINDING_ID}}`
+- Priorité : `MEDIUM`
+- Dépendances : aucune
 - ADR applicables : aucune
 
 ## Objectif
 
-DÃ©crire un seul rÃ©sultat observable.
+Décrire un seul résultat observable.
 
 ## Contexte minimal
 
-Donner uniquement les informations nÃ©cessaires Ã  lâ€™exÃ©cution de cette tÃ¢che.
+Donner uniquement les informations nécessaires à l’exécution de cette tâche.
 
-## PÃ©rimÃ¨tre autorisÃ©
+## Périmètre autorisé
 
 ```text
 chemin/fichier-1
 chemin/fichier-2
 ```
 
-## PÃ©rimÃ¨tre interdit
+## Périmètre interdit
 
 ```text
-Ã€ renseigner
+À renseigner
 ```
 
 ## Action attendue
@@ -35,18 +35,18 @@ chemin/fichier-2
 2.
 3.
 
-## CritÃ¨res dâ€™acceptation
+## Critères d’acceptation
 
-- [ ] Le rÃ©sultat principal est observable.
-- [ ] Aucun comportement hors pÃ©rimÃ¨tre nâ€™a changÃ©.
-- [ ] Les fichiers modifiÃ©s correspondent au pÃ©rimÃ¨tre dÃ©clarÃ©.
-- [ ] Les preuves sont dÃ©posÃ©es.
+- [ ] Le résultat principal est observable.
+- [ ] Aucun comportement hors périmètre n’a changé.
+- [ ] Les fichiers modifiés correspondent au périmètre déclaré.
+- [ ] Les preuves sont déposées.
 - [ ] Le handoff est complet.
 
 ## Gates
 
 ```text
-Ã€ remplacer par les commandes rÃ©elles.
+À remplacer par les commandes réelles.
 ```
 
 ## Preuves attendues
@@ -57,10 +57,10 @@ chemin/fichier-2
 
 ## Risques particuliers
 
-- Aucun risque identifiÃ© Ã  ce stade.
+- Aucun risque identifié à ce stade.
 
 ## Notes pour le reviewer
 
-- VÃ©rifier la conformitÃ© au pÃ©rimÃ¨tre.
-- VÃ©rifier les critÃ¨res dâ€™acceptation.
-- VÃ©rifier les effets de bord.
+- Vérifier la conformité au périmètre.
+- Vérifier les critères d’acceptation.
+- Vérifier les effets de bord.
