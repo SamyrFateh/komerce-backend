@@ -5,7 +5,7 @@
   "finding_id": "M2",
   "wave": "P1",
   "parallel_lane": "LANE-MOBILE-RENDERER",
-  "status": "READY",
+  "status": "IN_PROGRESS",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -41,20 +41,21 @@
     "npm run gate:feature-audit",
     "npm run gate:boutique-ownership"
   ],
-  "agent": null,
+  "agent": "sonnet-chat",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T19:12:23.550Z",
   "lease_until": null,
   "finished_at": null,
   "reviewed_at": null,
-  "base_commit": null,
+  "base_commit": "21d019335a37f43c8cc2a991fdde2fd6844ab64a",
   "last_commit": null,
   "changed_files": [],
   "gate_results": [],
   "blocking_reason": null,
   "review_decision": null,
   "summary": null,
-  "next_action": null
+  "next_action": "Exécuter une petite unité cohérente puis save.",
+  "resumed_at": "2026-07-18T19:12:23.552Z"
 }
