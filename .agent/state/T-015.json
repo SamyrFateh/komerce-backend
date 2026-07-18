@@ -5,7 +5,7 @@
   "finding_id": "D3",
   "wave": "P1",
   "parallel_lane": "LANE-DESKTOP-TYPE",
-  "status": "REVIEW",
+  "status": "DONE",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -29,21 +29,36 @@
     "npm --prefix public/boutique run audit:gate"
   ],
   "agent": "claude-sonnet-session-3",
-  "reviewer": null,
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
   "branch": "agent/lane-mobile-renderer",
   "started_at": "2026-07-18T20:21:50Z",
   "lease_until": null,
   "finished_at": "2026-07-18T20:21:50Z",
-  "reviewed_at": null,
+  "reviewed_at": "2026-07-18T22:32:00Z",
   "base_commit": null,
   "last_commit": null,
   "changed_files": [
-    "public/boutique/css/modal-product-lot4-hybrid.css"
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    ".agent/evidence/T-015/desktop-cta-1440.png"
   ],
-  "gate_results": [],
+  "gate_results": [
+    {
+      "gate": "reviewer source verification",
+      "result": "PASS — valeur finale conforme dans modal-shell.css / modal-product-lot4-hybrid.css"
+    },
+    {
+      "gate": "consolidated boutique gates",
+      "result": "PASS — deploy:css, check:cache, check:breakpoints, audit:ownership, audit:gate; feature-audit 0 FAIL / 0 WARN"
+    },
+    {
+      "gate": "consolidated unit suite",
+      "result": "PASS — 92/92 suites, 1748/1748 tests"
+    }
+  ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": "D3 : buy-now ocean shadow purgé dans lot4-hybrid → ombre verte douce. font-weight 900→600 buy-now, 850→500 add-cart. Bundle v166.",
-  "next_action": "Revue humaine."
+  "review_decision": "APPROVE",
+  "summary": "D3 approuvé : CTA Acheter final vert aplat, ombre tokenisée, poids typographiques conformes; logique d’achat inchangée.",
+  "next_action": "T-015 clôturée."
 }
