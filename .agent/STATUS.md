@@ -5,7 +5,7 @@
 | ID | Statut | Agent | Branche | Prochaine action |
 |---|---|---|---|---|
 | T-001 | DONE | sonnet-chat-1 | agent/t-001-preflight-modal-mobile | Revue humaine (CHARTER §11) puis, si approuvé, débloque T-002/T-003 (M2/M3) sur la base des owners confirmés ici. |
-| T-002 | IN_PROGRESS | sonnet | agent/t-002 | Compléter tests unit b-modal-mobile-product.test.js |
+| T-002 | REVIEW | sonnet | agent/t-002 | Revue humaine et merge. |
 | T-003 | READY | — | — | — |
 | T-004 | READY | — | — | — |
 | T-005 | READY | — | — | — |

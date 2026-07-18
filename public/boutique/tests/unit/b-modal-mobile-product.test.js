@@ -61,6 +61,10 @@ function installDom() {
   document.body.innerHTML =
     '<div id="k-modal">' +
       '<div id="k-modal-variants"></div>' +
+      '<div class="k-modal-price-row">' +
+        '<span id="k-modal-price"></span>' +
+        '<span id="k-modal-old-price"></span>' +
+      '</div>' +
       '<button id="k-add-cart-btn"></button>' +
       '<button id="k-buy-now-btn"></button>' +
       '<button id="k-qty-minus"></button>' +
@@ -76,8 +80,8 @@ function installDom() {
   dom.modalDesc = document.createElement('div');
   dom.modalCat = document.createElement('div');
   dom.modalPromoBadge = document.createElement('div');
-  dom.modalPrice = document.createElement('div');
-  dom.modalOldPrice = document.createElement('div');
+  dom.modalPrice = document.getElementById('k-modal-price');
+  dom.modalOldPrice = document.getElementById('k-modal-old-price');
   dom.modalSku = document.createElement('div');
   dom.modalStock = document.createElement('div');
 }
@@ -321,5 +325,82 @@ describe('b-modal-mobile-product — contenu enrichi below-fold (Lot Content)', 
     expect(document.querySelector('.k-mdm-section-heading').textContent).toBe('Guide des tailles');
     expect(document.querySelector('.k-mdm-content-section--specs dt').textContent).toBe('40');
     expect(document.querySelector('.k-mdm-content-section--specs dd').textContent).toBe('EU 40 / UK 6.5');
+  });
+});
+
+describe('b-modal-mobile-product — renderStockPill (M1, spec §5.5)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  function unit(overrides) {
+    return Object.assign({
+      sku_id: 'sku-1',
+      sku: 'GOLD-BLU-42',
+      option_values: {},
+      stock_status: 'AVAILABLE',
+      available_quantity: 8,
+      price_kmf: 5000,
+      media_ids: [],
+    }, overrides);
+  }
+
+  function pill() {
+    return document.querySelector('#k-modal-stock-pill');
+  }
+
+  test('stock > 5 : pill "En stock", variant ok', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [unit({ available_quantity: 8 })] });
+    const selection = baseSelection({ selection_supported: true, selected_sku_id: 'sku-1' });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(pill().hidden).toBe(false);
+    expect(pill().className).toBe('k-mdm-stock-pill k-mdm-stock-pill--ok');
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('En stock');
+  });
+
+  test('1 ≤ stock ≤ 5 : pill "Plus que N", variant low', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [unit({ available_quantity: 3 })] });
+    const selection = baseSelection({ selection_supported: true, selected_sku_id: 'sku-1' });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(pill().className).toBe('k-mdm-stock-pill k-mdm-stock-pill--low');
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('Plus que 3');
+  });
+
+  test('stock = 0 : pill "Épuisé", variant out', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [unit({ available_quantity: 0, stock_status: 'OUT_OF_STOCK' })] });
+    const selection = baseSelection({ selection_supported: true, selected_sku_id: 'sku-1' });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(pill().className).toBe('k-mdm-stock-pill k-mdm-stock-pill--out');
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('Épuisé');
+  });
+
+  test('aucune unité résolue (sélection incomplète) : pill absent/masqué, aucune donnée inventée', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [unit({ available_quantity: 8 })] });
+    const selection = baseSelection({ selection_supported: true, selected_sku_id: null });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(pill()).toBeNull();
+  });
+
+  test('changement de sélection : le pill se met à jour sans dupliquer le noeud', () => {
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      sellable_units: [unit({ sku_id: 'sku-1', available_quantity: 8 }), unit({ sku_id: 'sku-2', available_quantity: 2 })],
+    });
+
+    renderMobileProductDetail(detail, baseSelection({ selection_supported: true, selected_sku_id: 'sku-1' }));
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('En stock');
+
+    renderMobileProductDetail(detail, baseSelection({ selection_supported: true, selected_sku_id: 'sku-2' }));
+    expect(document.querySelectorAll('#k-modal-stock-pill').length).toBe(1);
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('Plus que 2');
   });
 });

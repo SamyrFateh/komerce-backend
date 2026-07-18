@@ -1,2 +1,3 @@
 {"at":"2026-07-18T17:30:20.613Z","action":"STARTED","task":"T-002","agent":"sonnet","branch":"agent/t-002","details":""}
 {"at":"2026-07-18T17:34:37.778Z","action":"CHECKPOINT","task":"T-002","agent":"sonnet","branch":"agent/t-002","details":"M1: pill stock ajouté à droite du prix (renderStockPill, 3 états spec §5.5, tokens existants)"}
+{"at":"2026-07-18T17:40:04.250Z","action":"FINISHED","task":"T-002","agent":"sonnet","branch":"agent/t-002","details":"REVIEW"}
