@@ -567,3 +567,46 @@ describe('b-modal-mobile-product — sélecteur Taille (M3, spec §5.6)', () => 
     expect(document.querySelector('.k-vg-sizes')).toBeNull();
   });
 });
+
+describe('b-modal-mobile-product — carrousel suggestions mobile (M4, spec §5.7)', () => {
+  // M4 est un override CSS-only dans modal-mobile-canonical.css :
+  // b-modal-suggestions.js produit les nœuds .k-sug-grid / .k-sug-card
+  // sans modification, l'event modal:suggestions-rendered est conservé.
+  // Ces tests vérifient (1) que b-modal-mobile-product.js ne produit PAS
+  // de .k-sug-grid lui-même (ownership clair → b-modal-suggestions.js) et
+  // (2) que le conteneur #k-modal-suggestions est bien présent dans le DOM
+  // après renderMobileProductDetail pour que b-modal-suggestions.js
+  // puisse l'alimenter (non-régression de la composition).
+
+  beforeEach(() => {
+    installDom();
+    // Ajouter le conteneur suggestions que le shell fournit
+    const sugContainer = document.createElement('div');
+    sugContainer.className = 'k-modal-suggestions';
+    sugContainer.id = 'k-modal-suggestions';
+    document.getElementById('k-modal').appendChild(sugContainer);
+    state.detail = null;
+  });
+
+  test('renderMobileProductDetail ne produit aucun .k-sug-grid (ownership b-modal-suggestions.js)', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [] });
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    // b-modal-mobile-product.js ne doit pas injecter de grille de suggestions
+    expect(document.querySelector('.k-sug-grid')).toBeNull();
+  });
+
+  test('le conteneur #k-modal-suggestions reste intact après renderMobileProductDetail', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [] });
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    // b-modal-suggestions.js a besoin de ce nœud pour injecter le rail
+    const sugContainer = document.getElementById('k-modal-suggestions');
+    expect(sugContainer).not.toBeNull();
+    expect(sugContainer.id).toBe('k-modal-suggestions');
+  });
+});

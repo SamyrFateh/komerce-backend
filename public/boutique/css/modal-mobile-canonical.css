@@ -311,6 +311,35 @@
     color: var(--text-muted);
   }
 
+  /* ── M4 : Carrousel suggestions mobile ───────────────────────
+     .k-sug-grid / .k-sug-card sont produits par b-modal-suggestions.js
+     (event modal:suggestions-rendered conservé, non touché ici) et sont
+     partagés avec d'autres contextes (catalogue, desktop) — leur style
+     de base (grid 2 colonnes) reste dans modal-product.css/modal-shell.css,
+     hors périmètre T-005. Sur mobile, seul le contexte PDP (#k-modal) est
+     réécrit en rail scroll-x teasé, sans scrollbar visible. La coupure
+     derrière le sticky CTA est déjà gérée par la variable unique
+     --k-modal-cta-h sur .k-modal-scroll (modal-shell.css) — rien à
+     dupliquer ici. */
+  #k-modal .k-sug-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 10px;
+    padding: 2px 2px 4px;
+    scrollbar-width: none;
+  }
+
+  #k-modal .k-sug-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  #k-modal .k-sug-grid .k-sug-card {
+    flex: 0 0 110px;
+    width: 110px;
+    max-width: 110px;
+  }
+
   /* ── MDM-4 : Selection message ─────────────────────────────── */
 
   .k-mdm-selection-msg {

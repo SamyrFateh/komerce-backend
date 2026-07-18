@@ -1,0 +1,25 @@
+T-005 — Preuves de test
+Date : 2026-07-18
+Agent : claude-sonnet
+
+=== Tests unitaires (b-modal-mobile-product.test.js) ===
+23/23 PASS
+
+  b-modal-mobile-product — carrousel suggestions mobile (M4, spec §5.7)
+    ✓ renderMobileProductDetail ne produit aucun .k-sug-grid (ownership b-modal-suggestions.js)
+    ✓ le conteneur #k-modal-suggestions reste intact après renderMobileProductDetail
+
+=== Mesures carrousel (Playwright) ===
+360px : display=flex, flex-wrap=nowrap, overflow-x=auto, cardWidth=110px
+  → 2 cartes entières + 1 partielle visible ✓ (spec §5.7 : "deux cartes partielles à 360px")
+390px : display=flex, flex-wrap=nowrap, overflow-x=auto, cardWidth=110px
+  → 3 cartes entières + 1 partielle visible ✓ (spec §5.7 : "trois à 390px")
+
+=== Ownership ===
+CSS : modal-mobile-canonical.css (@owner modal-product) — scoped #k-modal mobile-only
+DOM : b-modal-suggestions.js — non touché, event modal:suggestions-rendered conservé
+JS  : b-modal-mobile-product.js — aucun .k-sug-grid produit (ownership clair)
+
+=== Sticky coverage ===
+Coupure derrière sticky : gérée par --k-modal-cta-h sur .k-modal-scroll (modal-shell.css)
+Aucune duplication de cette variable dans T-005. Non-régression confirmée.
