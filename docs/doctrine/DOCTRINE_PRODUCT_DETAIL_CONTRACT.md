@@ -1,6 +1,6 @@
 # Doctrine du contrat détail produit Komerce
 
-> **Version** : 1.1 — 2026-07-12
+> **Version** : 1.2 — 2026-07-19
 > **Statut** : doctrine active — frontière canonique entre catalogue, moteurs métier et fiche produit
 > **Feature propriétaire** : `catalog`
 > **Endpoint public v1** : `GET /api/products/:id/detail`
@@ -137,7 +137,8 @@ Exemple conceptuel :
     "name": "Robe Dubaï",
     "description": "...",
     "category": "vetements",
-    "subcategory": "robes"
+    "subcategory": "robes",
+    "series": null
   },
   "pricing": {
     "price_kmf": 12500,
@@ -223,7 +224,7 @@ Le contrat v1 actuel projette **uniquement les structures canoniques existantes*
 
 | Bloc public | Source actuelle |
 |---|---|
-| `product` | `products` |
+| `product` | `products` (dont `products.series`, nullable — `null` lorsqu'aucune série produit n'est renseignée) |
 | `pricing` | champs commerciaux publiés de `products` / prix SKU explicite |
 | `media` | `products.image_url`, `products.images`, médias explicites de `product_variants` |
 | `option_axes` | `product_variants` |

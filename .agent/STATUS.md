@@ -10,7 +10,7 @@
 | T-004 | LANE-MOBILE-RENDERER | DONE | sonnet-chat | agent/lane-mobile-renderer | — |
 | T-005 | LANE-MOBILE-RENDERER | DONE | claude-sonnet-session-2 | agent/lane-mobile-renderer | — |
 | T-006 | LANE-MOBILE-RENDERER | DONE | claude-sonnet-session-2 | agent/lane-mobile-renderer | — |
-| T-007 | LANE-META | REVIEW | claude-sonnet-session-2 | agent/lane-mobile-renderer | Exécuter le test backend ciblé puis la suite racine; si verts, passer DONE. |
+| T-007 | LANE-META | DONE | claude-sonnet-session-2 | agent/lane-mobile-renderer | — |
 | T-008 | LANE-MOBILE-SHELL | DONE | claude-sonnet-session-2 | agent/lane-mobile-renderer | — |
 | T-009 | LANE-MOBILE-SHELL | DONE | claude-sonnet-session-2 | agent/lane-mobile-renderer | — |
 | T-010 | LANE-BUYBOX | DONE | claude-sonnet-session-2 | agent/lane-mobile-renderer | — |
