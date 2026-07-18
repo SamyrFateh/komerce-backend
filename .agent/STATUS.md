@@ -8,7 +8,7 @@
 | T-002 | LANE-MOBILE-RENDERER | DONE | sonnet | agent/lane-mobile-renderer | Démarrer automatiquement T-003 sur la même branche agent/lane-mobile-renderer. |
 | T-003 | LANE-MOBILE-RENDERER | DONE | sonnet-chat | agent/lane-mobile-renderer | Passer automatiquement à la tâche suivante de la même lane. |
 | T-004 | LANE-MOBILE-RENDERER | DONE | sonnet-chat | agent/lane-mobile-renderer | Passer automatiquement à la tâche suivante de la même lane. |
-| T-005 | LANE-MOBILE-RENDERER | READY | — | — | — |
+| T-005 | LANE-MOBILE-RENDERER | IN_PROGRESS | sonnet-chat | agent/lane-mobile-renderer | Exécuter une petite unité cohérente puis save. |
 | T-006 | LANE-MOBILE-RENDERER | READY | — | — | — |
 | T-007 | LANE-META | READY | — | — | — |
 | T-008 | LANE-MOBILE-SHELL | READY | — | — | — |
