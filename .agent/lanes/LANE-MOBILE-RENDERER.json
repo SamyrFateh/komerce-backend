@@ -1,0 +1,7 @@
+{
+  "lane": "LANE-MOBILE-RENDERER",
+  "branch": "agent/lane-mobile-renderer",
+  "tasks": ["T-002", "T-003", "T-004", "T-005", "T-006"],
+  "status": "IN_PROGRESS",
+  "review_mode": "single-pr-at-lane-end"
+}

@@ -1,127 +1,110 @@
-# CHARTER — GitHub Continuous Push
+# CHARTER — GitHub Lane Branch
 
-Version : 3.2  
+Version : 3.3  
 Statut : norme permanente du chantier.
 
 ## 1. Runtime unique
 
-Le runtime canonique est exclusivement :
+Le seul runtime actif est :
 
 ```bash
 node scripts/agent.mjs
 ```
 
-Les scripts PowerShell historiques sont dépréciés et ne doivent jamais être recherchés, exécutés ou utilisés comme fallback.
+Les scripts PowerShell historiques sont interdits comme fallback.
 
-## 2. Exécuter, ne pas narrer
+## 2. Exécuter sans narrer
 
-L’agent ne commente pas son plan et ne transforme pas la conversation en journal de
-travail. Il lit les règles, exécute et sauvegarde sur GitHub.
-
-Les informations de continuité sont écrites dans `.agent/`, dans les commits et dans
-la PR, pas dans le chat.
+L’agent lit les règles, exécute et sauvegarde. Le chat n’est ni un journal de travail
+ni une source de vérité.
 
 ## 3. Authentification avant travail
 
-Avant toute modification substantielle, l’agent utilise le token ou l’identifiant
-GitHub fourni dans son environnement.
+L’accès GitHub provient des credentials Git, de `GH_TOKEN` ou de `GITHUB_TOKEN`.
+Le secret ne doit jamais être affiché, versionné, journalisé ou placé dans une URL
+enregistrée.
 
-La commande `start` doit réussir son premier push. Ce push constitue la preuve
-d’accès en écriture. En cas d’échec, aucun travail ne commence.
+Le premier push doit réussir avant tout travail substantiel.
 
-Le token ne doit jamais être affiché, enregistré dans le repo, ajouté à un log,
-placé dans une preuve ou inclus dans un message de commit.
+## 4. Une branche par sujet
 
-## 4. Une tâche, une branche distante
-
-Chaque tâche s’exécute sur :
+La lane est l’unité de sujet et possède une branche durable :
 
 ```text
-agent/t-001
+LANE-MOBILE-RENDERER → agent/lane-mobile-renderer
 ```
 
-Il est interdit de travailler directement sur `main`.
+Toutes les tâches de la lane utilisent cette même branche. Une tâche ne crée jamais
+sa propre branche.
 
-## 5. Premier push immédiat
+Un nouveau sujet ou une autre lane peut utiliser une autre branche. Le simple passage
+à la tâche suivante ne justifie jamais un changement de branche.
 
-`start` :
+## 5. Réutilisation des fichiers
 
-1. vérifie l’accès à `origin` ;
-2. contrôle les sources obligatoires ;
-3. crée la branche depuis `origin/main` ;
-4. crée l’état et le worklog ;
-5. committe et pousse immédiatement.
+L’agent peut et doit revenir sur les mêmes fichiers pendant toute la vie du sujet :
+tests, couverture, correction découverte tardivement, refactorisation locale ou
+ajustement d’un comportement déjà traité.
 
-Aucune analyse longue ne précède ce premier push.
+La branche conserve l’ensemble du contexte. Les commits atomiques conservent
+l’historique. Il est interdit de fragmenter ce contexte entre plusieurs branches.
 
-## 6. Petits lots obligatoires
+## 6. Petits lots et push continu
 
 Après chaque unité cohérente, l’agent exécute `save`.
 
-Une unité cohérente est, par ordre de préférence :
+Une unité cohérente est un constat, une preuve, une correction atomique ou un petit
+groupe indissociable de fichiers. L’agent pousse aussi avant une commande longue,
+une opération risquée et toute réponse finale.
 
-- un constat vérifié ;
-- une preuve produite ;
-- une correction atomique ;
-- un petit groupe indissociable de fichiers ;
-- au maximum trois fichiers source lorsque le découpage est possible.
+## 7. Enchaînement des tâches
 
-L’agent pousse également avant :
+Quand les gates d’une tâche passent :
 
-- un test ou une commande longue ;
-- une refactorisation risquée ;
-- l’ouverture d’un nouvel axe d’analyse ;
-- toute réponse finale.
+1. la tâche passe à `DONE` dans la branche de lane ;
+2. aucun PR individuel n’est créé ;
+3. la prochaine tâche `READY` de la même lane est démarrée automatiquement ;
+4. le travail continue sur les fichiers déjà présents dans la branche.
 
-Dix minutes sans push constituent une anomalie de procédure, pas une cible à
-atteindre.
+Une revue humaine intermédiaire n’est requise que si la tâche déclare explicitement
+un arrêt obligatoire ou si un arbitrage réel est nécessaire.
 
-## 7. Continuité
+## 8. Fin de lane
 
-La continuité repose sur cinq éléments versionnés :
+Quand aucune autre tâche exécutable ne reste dans la lane :
 
-| Élément | Fonction |
-|---|---|
-| `state/T-XXX.json` | état machine courant |
-| `worklogs/T-XXX.md` | chronologie de reprise |
-| commits atomiques | code et preuves sauvegardés |
-| `handoffs/T-XXX.md` | synthèse de sortie |
-| PR brouillon | revue humaine |
+1. un handoff global de lane est produit ;
+2. la lane passe à `REVIEW` ;
+3. une seule PR couvre tout le sujet ;
+4. la revue porte sur l’historique et le diff complet ;
+5. après validation, la branche est mergée dans `main`.
 
-Un dossier `/mnt` et une conversation sont temporaires et non fiables.
+## 9. Continuité après coupure
 
-## 8. Reprise
+La reprise se fait depuis la branche de lane, jamais depuis `main`.
 
-Après une coupure, l’agent suivant clone le repo et utilise `resume`.
+L’agent lit les états des tâches, les worklogs, les commits et le handoff de lane,
+puis reprend l’action exacte enregistrée.
 
-Il lit en priorité :
+## 10. Périmètre
 
-1. l’état ;
-2. le worklog ;
-3. les derniers commits ;
-4. le handoff s’il existe ;
-5. la tâche.
+La branche peut contenir l’union des périmètres autorisés des tâches de la lane.
+À un instant donné, l’agent respecte le périmètre de la tâche active.
 
-Il reprend l’action suivante enregistrée et ne recommence pas le travail déjà poussé.
+Un bug découvert dans un fichier déjà autorisé par le sujet est corrigé sur la même
+branche et documenté par un commit. Une extension réelle hors sujet exige un arbitrage.
 
-## 9. Périmètre
+## 11. Arbitrage
 
-Chaque checkpoint vérifie les fichiers modifiés. L’agent ne modifie que :
+L’agent demande une décision uniquement pour une contradiction de spécifications,
+un changement produit, API, données, architecture, sécurité, périmètre ou action
+irréversible.
 
-- le périmètre autorisé de la tâche ;
-- les sorties générées déclarées ;
-- les fichiers de gouvernance propres à la tâche.
+Avant la question, tout le travail courant doit être committé et poussé.
 
-## 10. Gates et livraison
+## 12. Réponse finale
 
-`finish` exécute les gates, écrit les preuves, le handoff et le dernier worklog, puis
-pousse l’ensemble avant d’essayer d’ouvrir la PR.
-
-L’agent termine en `REVIEW` ou `BLOCKED`, jamais directement en `DONE`.
-
-## 11. Réponse finale
-
-La réponse finale ne contient que :
+La réponse contient uniquement :
 
 ```text
 Tâche:
@@ -132,23 +115,3 @@ PR:
 Gates:
 Résumé:
 ```
-
-Aucun commentaire supplémentaire n’est autorisé.
-
-## 12. Exception d’arbitrage
-
-Le mode silencieux cesse uniquement lorsqu’une décision répond aux critères de
-`.agent/ARBITRATION.md`.
-
-L’agent ne demande jamais un arbitrage avant d’avoir poussé :
-
-- le code ou les preuves déjà produits ;
-- l’état `AWAITING_DECISION` ;
-- le worklog ;
-- la fiche d’arbitrage.
-
-Une difficulté technique ordinaire n’autorise pas une question. L’agent utilise les
-conventions du repo et les fallbacks disponibles.
-
-Après décision, la branche existante est reprise. Il est interdit de recommencer la
-tâche depuis `main`.

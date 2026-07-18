@@ -1,26 +1,51 @@
-# Gouvernance agents — GitHub Continuous Push V3.2
+# Gouvernance agents — GitHub Lane Branch V3.3
 
 ## Instruction unique
 
-> Lis `.agent/`, prends la prochaine tâche, exécute-la et pousse chaque petit lot
-> cohérent sur sa branche GitHub.
+> Lis `.agent/`, prends la prochaine tâche de la lane active, exécute-la et pousse
+> chaque petit lot cohérent sur la branche durable de cette lane.
+
+## Modèle de branche
+
+Une **lane représente un sujet cohérent**. Toutes ses tâches, corrections, tests et
+retours sur des fichiers déjà modifiés restent sur la même branche.
+
+Exemple :
+
+```text
+LANE-MOBILE-RENDERER
+→ agent/lane-mobile-renderer
+→ T-002
+→ T-003
+→ T-004
+→ T-005
+→ T-006
+→ une seule revue
+→ une seule PR
+→ merge dans main
+```
+
+Il est normal de modifier plusieurs fois le même fichier au fil du sujet. Les petits
+commits permettent de revenir en arrière sans fragmenter le travail entre des branches.
 
 ## Parcours obligatoire
 
 ```text
 accès GitHub vérifié
-→ branche distante créée
-→ état IN_PROGRESS poussé
-→ petit lot de travail
+→ branche de lane créée ou reprise
+→ tâche active poussée
+→ petit lot
 → commit + push
 → petit lot suivant
 → commit + push
-→ gates
-→ état REVIEW/BLOCKED poussé
-→ PR brouillon
+→ gates de la tâche
+→ tâche DONE dans la lane
+→ tâche suivante automatiquement sur la même branche
+→ fin de lane
+→ REVIEW + PR unique
 ```
 
-## Runtime unique
+## Runtime
 
 ```bash
 node scripts/agent.mjs start --agent "sonnet"
@@ -28,56 +53,23 @@ node scripts/agent.mjs save --message "résultat précis" --next-action "action 
 node scripts/agent.mjs finish --summary "résumé court"
 ```
 
-Les scripts PowerShell historiques ne font plus partie du protocole actif.
-
-En cas de coupure :
+Après une coupure :
 
 ```bash
-node scripts/agent.mjs resume --task T-001 --agent "sonnet-2"
+node scripts/agent.mjs resume --task T-003 --agent "sonnet-2"
 ```
 
-## Règle essentielle
+## Interdictions
 
-L’agent ne connaît pas le moment de la coupure. Il ne doit donc jamais attendre une
-jauge, 70 %, 90 % ou la fin de la tâche.
+- une branche par micro-tâche ;
+- une PR par micro-tâche ;
+- repartir de `main` entre deux tâches d’une même lane ;
+- recopier manuellement les fichiers d’une branche vers une autre ;
+- attendre une estimation de fin de session avant de pousser ;
+- raconter le plan dans le chat.
 
-Chaque unité cohérente est poussée immédiatement. Une unité recommandée représente
-environ un constat, une correction atomique ou au maximum trois fichiers source.
+## Arbitrage
 
-## Communication
-
-Pendant l’exécution :
-
-- aucun plan raconté ;
-- aucun compte rendu intermédiaire dans le chat ;
-- aucune demande de confirmation ;
-- aucune longue synthèse ;
-- priorité absolue à l’écriture, au commit et au push.
-
-La réponse finale contient uniquement les sept champs déclarés dans le manifeste.
-
-## Exception : arbitrage
-
-L’agent interrompt le mode silencieux uniquement pour une décision couverte par
-`.agent/ARBITRATION.md`.
-
-Il pousse obligatoirement le travail courant avant de poser la question :
-
-```bash
-node scripts/agent.mjs arbitrate \
-  --question "décision exacte" \
-  --options "Option A|Option B" \
-  --recommendation "Option B" \
-  --context "faits vérifiés" \
-  --next-action "action après décision"
-```
-
-Après la décision, la tâche reprend avec :
-
-```bash
-node scripts/agent.mjs decide \
-  --task T-001 \
-  --decision "Option B" \
-  --decider "Samyr" \
-  --agent "sonnet"
-```
+L’agent interrompt le mode silencieux uniquement pour un arbitrage réel. Il pousse
+d’abord tout le travail courant, puis pose une seule question avec options et
+recommandation.

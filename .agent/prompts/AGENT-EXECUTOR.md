@@ -1,27 +1,27 @@
-Tu travailles directement sur le repo GitHub Komerce avec l’accès fourni.
+Tu exécutes le chantier directement dans GitHub.
 
-Le seul runtime de gouvernance autorisé est :
+Ne raconte pas ton plan. Ne demande pas si tu dois continuer. Exécute et pousse.
 
-```bash
-node scripts/agent.mjs
+## Modèle de branche obligatoire
+
+Une lane est un sujet cohérent et possède une seule branche durable.
+
+Toutes les tâches d’une même lane utilisent la même branche, même lorsqu’elles
+modifient plusieurs fois les mêmes fichiers. Ne crée jamais une branche par tâche.
+
+Exemple :
+
+```text
+LANE-MOBILE-RENDERER → agent/lane-mobile-renderer
 ```
 
-N’utilise jamais les anciens scripts PowerShell, même comme fallback.
-
-Ne raconte pas ton plan. Ne donne pas de mises à jour intermédiaires. Ne demande pas
-de confirmation. Exécute.
-
-Commence immédiatement par :
+Commence par :
 
 ```bash
 node scripts/agent.mjs start --agent "{{AGENT_NAME}}"
 ```
 
-Cette commande doit pousser la branche avant tout travail substantiel. Si elle échoue,
-ne modifie rien.
-
-Ensuite, travaille par petits lots. Après chaque constat, preuve ou correction
-atomique, pousse immédiatement :
+Après chaque petit lot :
 
 ```bash
 node scripts/agent.mjs save \
@@ -29,31 +29,28 @@ node scripts/agent.mjs save \
   --next-action "prochaine action exacte"
 ```
 
-N’attends jamais une estimation de fin de session : tu n’y as pas accès. Ne conserve
-jamais plus d’une petite unité cohérente uniquement dans le container.
-
-Avant un test long ou une opération risquée, pousse d’abord le travail courant.
-
-À la fin :
+Quand la tâche active est terminée :
 
 ```bash
 node scripts/agent.mjs finish --summary "résumé court"
 ```
 
-En cas de blocage :
+La CLI doit alors rester sur la branche de lane et démarrer automatiquement la tâche
+suivante compatible. Elle n’ouvre une PR qu’à la fin de la lane.
+
+Tu peux revenir sur un fichier déjà modifié, enrichir un test, ajouter de la couverture
+ou corriger un bug découvert plus tard : tout reste sur la même branche de sujet.
+
+Après une coupure :
 
 ```bash
-node scripts/agent.mjs block \
-  --reason "cause exacte" \
-  --next-action "prochaine action exacte"
+node scripts/agent.mjs resume --task {{TASK_ID}} --agent "{{AGENT_NAME}}"
 ```
 
-Tu n’interromps l’utilisateur que si `.agent/ARBITRATION.md` impose une décision.
+Interromps l’utilisateur uniquement pour un arbitrage réel couvert par
+`.agent/ARBITRATION.md`, après avoir poussé tout le travail courant.
 
-Dans ce cas, pousse d’abord tout le travail, puis utilise `arbitrate`. Ne pose qu’une
-seule question et propose deux ou trois options maximum avec une recommandation.
-
-Ta réponse normale contient exactement et uniquement :
+Réponse finale uniquement :
 
 Tâche:
 Statut:
@@ -62,14 +59,3 @@ Dernier commit:
 PR:
 Gates:
 Résumé:
-
-Réponse exceptionnelle d’arbitrage :
-
-Tâche:
-Statut: AWAITING_DECISION
-Branche:
-Dernier commit:
-PR:
-Décision attendue:
-Options:
-Recommandation:
