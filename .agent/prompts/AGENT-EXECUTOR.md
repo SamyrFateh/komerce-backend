@@ -1,64 +1,75 @@
-Tu es l’agent exécuteur d’une tâche gouvernée.
+Tu travailles directement sur le repo GitHub Komerce avec l’accès fourni.
 
-Tâche assignée : {{TASK_ID}}
+Le seul runtime de gouvernance autorisé est :
 
-Lis impérativement :
-
-1. `.agent/CHARTER.md`
-2. `.agent/CHANTIER.md`
-3. `.agent/MANIFEST.json`
-4. `.agent/tasks/{{TASK_ID}}.md`
-5. `.agent/state/{{TASK_ID}}.json`
-
-Puis exécute :
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\agent-start.ps1 `
-  -TaskId {{TASK_ID}} `
-  -Agent "{{AGENT_NAME}}"
+```bash
+node scripts/agent.mjs
 ```
 
-Règles :
+N’utilise jamais les anciens scripts PowerShell, même comme fallback.
 
-- ne travaille sur aucune autre tâche ;
-- ne modifie aucun fichier hors périmètre ;
-- ne masque aucun test en échec ;
-- dépose les preuves dans `.agent/evidence/{{TASK_ID}}/` ;
-- documente toute hypothèse ;
-- cesse de commencer de nouvelles actions vers 80 % de ta fenêtre.
+Ne raconte pas ton plan. Ne donne pas de mises à jour intermédiaires. Ne demande pas
+de confirmation. Exécute.
+
+Commence immédiatement par :
+
+```bash
+node scripts/agent.mjs start --agent "{{AGENT_NAME}}"
+```
+
+Cette commande doit pousser la branche avant tout travail substantiel. Si elle échoue,
+ne modifie rien.
+
+Ensuite, travaille par petits lots. Après chaque constat, preuve ou correction
+atomique, pousse immédiatement :
+
+```bash
+node scripts/agent.mjs save \
+  --message "résultat précis" \
+  --next-action "prochaine action exacte"
+```
+
+N’attends jamais une estimation de fin de session : tu n’y as pas accès. Ne conserve
+jamais plus d’une petite unité cohérente uniquement dans le container.
+
+Avant un test long ou une opération risquée, pousse d’abord le travail courant.
 
 À la fin :
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\agent-finish.ps1 `
-  -TaskId {{TASK_ID}} `
-  -Agent "{{AGENT_NAME}}" `
-  -Summary "Résumé précis"
+```bash
+node scripts/agent.mjs finish --summary "résumé court"
 ```
 
 En cas de blocage :
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\agent-block.ps1 `
-  -TaskId {{TASK_ID}} `
-  -Agent "{{AGENT_NAME}}" `
-  -Reason "Cause exacte" `
-  -NextAction "Prochaine action exacte"
+```bash
+node scripts/agent.mjs block \
+  --reason "cause exacte" \
+  --next-action "prochaine action exacte"
 ```
 
-Ne termine jamais une session sans état et handoff cohérents.
+Tu n’interromps l’utilisateur que si `.agent/ARBITRATION.md` impose une décision.
 
+Dans ce cas, pousse d’abord tout le travail, puis utilise `arbitrate`. Ne pose qu’une
+seule question et propose deux ou trois options maximum avec une recommandation.
 
-## Livraison obligatoire
+Ta réponse normale contient exactement et uniquement :
 
-Après `agent-finish.ps1` ou `agent-block.ps1`, créer le bundle :
+Tâche:
+Statut:
+Branche:
+Dernier commit:
+PR:
+Gates:
+Résumé:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\agent-export-delivery.ps1 `
-  -TaskId {{TASK_ID}} `
-  -Agent "{{AGENT_NAME}}"
-```
+Réponse exceptionnelle d’arbitrage :
 
-Remettre le fichier `.agent/deliveries/outbox/DEL-{{TASK_ID}}-....zip`.
-
-Ne jamais livrer les fichiers uniquement comme blocs de texte dans la réponse.
+Tâche:
+Statut: AWAITING_DECISION
+Branche:
+Dernier commit:
+PR:
+Décision attendue:
+Options:
+Recommandation:
