@@ -625,7 +625,15 @@
   .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
   #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
 
-  /* ── Actions : col droite, row 2, sticky bas ─────────────── */
+  /* ── Actions : col droite, row 2, sticky bas ─────────────────────
+     T-023/D11 : grille 3 colonnes remplacée par un flex simple. Deux
+     variantes selon l'état posé par renderActions() (b-modal-desktop-
+     product.js) :
+       - AVAILABLE_EMPTY  (par défaut, pas de modificateur) : Ajouter +
+         Acheter, deux CTA flex:1 côte à côte, stepper masqué.
+       - AVAILABLE_FILLED (.k-modal-actions--filled) : stepper largeur
+         auto + Acheter flex:1, Ajouter masqué.
+     Spec : .agent/sources/CHANTIER_PDP_MAQUETTE_PREMIUM_ORIGINAL.md §13. */
   #k-modal .k-modal-product-zone .k-modal-actions {
     order: unset; /* annule le order mobile */
     grid-column: 2; grid-row: 2;
@@ -635,22 +643,30 @@
     border-top: 1px solid var(--border-text-10);
     box-shadow: 0 -12px 28px var(--border-text-06);
     backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    display: grid;
-    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
-    grid-template-rows: auto;
+    display: flex;
     align-items: center; gap: 10px;
   }
   /* PR-D3 — CTA redesign desktop : Acheter vert solid, Ajouter outlined, sous-total coral */
-  #k-modal .k-modal-product-zone .k-modal-actions .k-qty { grid-column: 1; grid-row: 1; height: 44px; }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-qty {
+    display: none;
+    flex: 0 0 auto;
+    height: 44px;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-qty {
+    display: flex;
+  }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
-    grid-column: 2; grid-row: 1; height: 44px; border-radius: 999px;
+    flex: 1 1 0; height: 44px; border-radius: 999px;
     background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark);
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-add-cart-btn {
+    display: none;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover {
     border-color: var(--sand-dark); background: var(--sand);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
-    grid-column: 3; grid-row: 1; height: 44px; border-radius: 999px;
+    flex: 1 1 0; height: 44px; border-radius: 999px;
     background: var(--cta-green); color: var(--white);
     font-size: 15px; font-weight: 600;
     box-shadow: 0 4px 14px var(--shadow-cta-22);

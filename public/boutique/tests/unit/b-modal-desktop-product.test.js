@@ -224,6 +224,30 @@ describe('desktop product detail renderer', () => {
     stepperControls().forEach((control) => expect(control.disabled).toBe(true));
   });
 
+  test('T-023/D11 — produit absent du panier : AVAILABLE_EMPTY (pas de modificateur --filled)', () => {
+    const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
+    state.cart = [];
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.modal.querySelector('.k-modal-actions').classList.contains('k-modal-actions--filled')).toBe(false);
+  });
+
+  test('T-023/D11 — produit dans le panier (qty > 0) : AVAILABLE_FILLED (.k-modal-actions--filled posé)', () => {
+    const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
+    state.cart = [{ product: { id: PRODUCT_ID }, qty: 2 }];
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.modal.querySelector('.k-modal-actions').classList.contains('k-modal-actions--filled')).toBe(true);
+  });
+
+  test('T-023/D11 — entrée panier avec qty 0 : reste AVAILABLE_EMPTY', () => {
+    const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
+    state.cart = [{ product: { id: PRODUCT_ID }, qty: 0 }];
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.modal.querySelector('.k-modal-actions').classList.contains('k-modal-actions--filled')).toBe(false);
+  });
+
   test('compose galerie gauche / Buy Box depuis le contrat sans vérité legacy', () => {
     const product = detail();
     renderDesktopProductDetail(product, createModalSelection(product), { forceMedia: true });

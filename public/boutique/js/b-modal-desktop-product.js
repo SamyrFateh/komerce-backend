@@ -163,6 +163,20 @@ function renderActions(detail, selection) {
     if (!control) return;
     control.disabled = isSku;
   });
+
+  // T-023/D11 : layout AVAILABLE_EMPTY (Ajouter + Acheter côte à côte) vs
+  // AVAILABLE_FILLED (stepper + Acheter) — porté par modal-shell.css via
+  // .k-modal-actions--filled. État dérivé de la présence du produit dans
+  // le panier (state.cart, clé product.id), pas de la sélection SKU.
+  const actionsEl = modalZone('.k-modal-actions');
+  if (actionsEl) {
+    const productId = detail.product?.id;
+    const inCart = Boolean(
+      productId != null
+      && (state.cart || []).some((item) => String(item.product?.id) === String(productId) && (item.qty || 0) > 0)
+    );
+    actionsEl.classList.toggle('k-modal-actions--filled', inCart);
+  }
 }
 
 function optionReason(optionState) {
