@@ -7,7 +7,7 @@
 | T-001 | LANE-0 | DONE | sonnet-chat-1 | agent/t-001-preflight-modal-mobile | Revue humaine (CHARTER §11) puis, si approuvé, débloque T-002/T-003 (M2/M3) sur la base des owners confirmés ici. |
 | T-002 | LANE-MOBILE-RENDERER | DONE | sonnet | agent/lane-mobile-renderer | Démarrer automatiquement T-003 sur la même branche agent/lane-mobile-renderer. |
 | T-003 | LANE-MOBILE-RENDERER | DONE | sonnet-chat | agent/lane-mobile-renderer | Passer automatiquement à la tâche suivante de la même lane. |
-| T-004 | LANE-MOBILE-RENDERER | IN_PROGRESS | sonnet-chat | agent/lane-mobile-renderer | Exécuter une petite unité cohérente puis save. |
+| T-004 | LANE-MOBILE-RENDERER | IN_PROGRESS | sonnet-chat | agent/lane-mobile-renderer | Générer les captures 390px puis exécuter les gates de T-004 |
 | T-005 | LANE-MOBILE-RENDERER | READY | — | — | — |
 | T-006 | LANE-MOBILE-RENDERER | READY | — | — | — |
 | T-007 | LANE-META | READY | — | — | — |

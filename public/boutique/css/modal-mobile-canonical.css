@@ -260,6 +260,57 @@
     height: 100%;
   }
 
+  /* ── M3 : Sélecteur Taille mobile — conforme spec §5.6 ───────
+     modal-product.css porte une grille avec wrap (auto-fill) et un état
+     sélectionné coral, hérité du style carte partagé mobile/desktop. Sur
+     mobile la maquette premium demande une rangée scrollable (comme les
+     vignettes Couleur, cohérence M2/M3), un état sélectionné neutre
+     (fond/bordure --text, texte blanc — jamais coral, D-P3) et un état
+     indisponible avec fond --border explicite plutôt qu'une simple
+     opacité. Override ciblé ici, aucune modification de modal-product.css
+     (partagé desktop, hors périmètre T-004). */
+  #k-modal .k-vg-sizes {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    scrollbar-width: none;
+  }
+
+  #k-modal .k-vg-sizes::-webkit-scrollbar {
+    display: none;
+  }
+
+  #k-modal .k-vp {
+    flex: 0 0 auto;
+    height: 40px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 0.5px solid var(--border);
+    background: var(--white);
+    color: var(--text-muted);
+  }
+
+  #k-modal .k-vp:hover:not(:disabled) {
+    border-color: var(--border);
+    background: var(--white);
+  }
+
+  #k-modal .k-vp.k-vp--active {
+    border-color: var(--text);
+    border-width: 1.5px;
+    background: var(--text);
+    color: var(--white);
+    box-shadow: none;
+  }
+
+  #k-modal .k-vp--out {
+    opacity: 1;
+    background: var(--border);
+    border-color: var(--border);
+    color: var(--text-muted);
+  }
+
   /* ── MDM-4 : Selection message ─────────────────────────────── */
 
   .k-mdm-selection-msg {

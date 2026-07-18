@@ -480,3 +480,90 @@ describe('b-modal-mobile-product — sélecteur Couleur (M2, spec §5.4)', () =>
     expect(document.querySelector('.k-vg-skus')).toBeNull();
   });
 });
+
+describe('b-modal-mobile-product — sélecteur Taille (M3, spec §5.6)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  function sizeAxis(overrides) {
+    return Object.assign({
+      key: 'taille',
+      display_name: 'Taille',
+      values: [
+        { value: 'S' },
+        { value: 'M' },
+        { value: 'L' },
+        { value: 'XL' },
+      ],
+    }, overrides);
+  }
+
+  function skuUnit(overrides) {
+    return Object.assign({
+      sku_id: 'sku-m',
+      sku: 'GOLD-M',
+      option_values: { taille: 'M' },
+      stock_status: 'AVAILABLE',
+      available_quantity: 8,
+      price_kmf: 5000,
+      media_ids: [],
+    }, overrides);
+  }
+
+  test('SKU avec axe Taille : au moins quatre chips rendus, une seule source de sélection', () => {
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      option_axes: [sizeAxis()],
+      sellable_units: [skuUnit()],
+    });
+    const selection = baseSelection({
+      selection_supported: true,
+      selected_options: { taille: 'M' },
+      selected_sku_id: 'sku-m',
+      option_states: {
+        taille: [
+          { value: 'S', state: 'AVAILABLE' },
+          { value: 'M', state: 'AVAILABLE' },
+          { value: 'L', state: 'OUT_OF_STOCK' },
+          { value: 'XL', state: 'AVAILABLE' },
+        ],
+      },
+    });
+
+    renderMobileProductDetail(detail, selection);
+
+    const group = document.querySelector('.k-vg[data-axis-key="taille"]');
+    expect(group).not.toBeNull();
+
+    const chips = group.querySelectorAll('.k-vg-sizes .k-vp');
+    expect(chips.length).toBeGreaterThanOrEqual(4);
+
+    // État sélectionné et indisponible distincts, une seule vignette active.
+    const active = group.querySelectorAll('.k-vp.k-vp--active');
+    expect(active.length).toBe(1);
+    expect(active[0].textContent).toBe('M');
+
+    const unavailable = group.querySelectorAll('.k-vp--out');
+    expect(unavailable.length).toBe(1);
+    expect(unavailable[0].textContent).toBe('L');
+    expect(unavailable[0].className).not.toContain('k-vp--active');
+
+    expect(group.querySelector('.k-vg-label-val').textContent).toBe('M');
+  });
+
+  test('LEGACY (selection_supported=false) : aucun sélecteur Taille, même si option_axes est fourni', () => {
+    const detail = baseDetail({
+      inventory_model: 'LEGACY_VARIANTS',
+      option_axes: [sizeAxis()],
+      sellable_units: [],
+    });
+    const selection = baseSelection({ selection_supported: false });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(document.querySelector('.k-vg')).toBeNull();
+    expect(document.querySelector('.k-vg-sizes')).toBeNull();
+  });
+});

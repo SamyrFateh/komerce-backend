@@ -49,6 +49,7 @@
   "blocking_reason": null,
   "review_decision": null,
   "summary": null,
-  "next_action": "Exécuter une petite unité cohérente puis save.",
-  "resumed_at": "2026-07-18T19:22:10.112Z"
+  "next_action": "Générer les captures 390px puis exécuter les gates de T-004",
+  "resumed_at": "2026-07-18T19:22:10.112Z",
+  "last_checkpoint_at": "2026-07-18T19:23:18.928Z"
 }
