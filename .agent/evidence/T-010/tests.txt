@@ -1,0 +1,35 @@
+T-010 — Preuves de test
+Agent : claude-sonnet
+
+=== Tests unitaires ===
+b-modal-buybox-shared.test.js : 11/11 PASS
+b-modal-mobile-product.test.js : 25/25 PASS
+
+=== Computed styles Playwright (390px) ===
+Bouton "Ajouter au panier" :
+  - texte : "Ajouter au panier" ✓ (était "Ajouter")
+  - background : rgb(255,255,255) blanc outlined ✓
+  - border : rgb(240,235,224) = --sand-dark ✓
+
+Bouton "Acheter maintenant" :
+  - texte : "⚡ Acheter maintenant" ✓ (était "⚡ Acheter")
+  - background : rgb(42,122,62) = --cta-green ✓ (était gradient ocean bleu)
+  - color : rgb(255,255,255) blanc ✓
+  - bolt : <span aria-hidden="true"> isolé ✓
+
+=== Delta CSS (modal-shell.css) ===
+BASE L252  : gradient ocean → background: var(--cta-green) + font-weight 600
+DESKTOP L646 : background: var(--ocean) → var(--cta-green) + shadow vert
+DESKTOP L643 : hover ocean → hover sand neutre sur Ajouter
+DESKTOP L653 : hover ocean-dark → hover cta-green-dark
+
+=== Delta HTML (index.html) ===
+"Ajouter" → "Ajouter au panier"
+"⚡ Acheter" → "<span aria-hidden>⚡</span> Acheter maintenant"
+
+=== Gates ===
+deploy:css --force : PASS v163/v57
+audit:ownership    : PASS
+audit:gate         : PASS Stable
+check:imports      : PASS
+audit:arch         : PASS

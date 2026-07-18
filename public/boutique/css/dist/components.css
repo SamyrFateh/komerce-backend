@@ -2216,7 +2216,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 600; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
-.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-dark) 100%); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
+.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
 .k-modal-subtotal strong { color: var(--coral); font-weight: 700; font-size: 13px; }
 
@@ -2608,17 +2608,17 @@ html.k-mobile-premium-v1 .k-chip-label {
     background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover {
-    border-color: var(--ocean); background: var(--ocean-bg-08);
+    border-color: var(--sand-dark); background: var(--sand);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     grid-column: 3; grid-row: 1; height: 44px; border-radius: 999px;
-    background: var(--ocean); color: var(--white);
-    font-size: 15px; font-weight: 700;
-    box-shadow: 0 4px 14px var(--shadow-ocean-10);
+    background: var(--cta-green); color: var(--white);
+    font-size: 15px; font-weight: 600;
+    box-shadow: 0 4px 14px rgba(42,122,62,0.22);
     transition: background .18s, box-shadow .18s, transform .1s;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn:hover {
-    background: var(--ocean-dark); box-shadow: 0 6px 20px var(--shadow-ocean-10);
+    background: var(--cta-green-dark, var(--cta-green)); box-shadow: 0 6px 20px rgba(42,122,62,0.30);
   }
   #k-modal .k-modal-subtotal {
     grid-column: 1 / -1; grid-row: 2;

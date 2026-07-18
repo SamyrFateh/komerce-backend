@@ -5,7 +5,7 @@
   "finding_id": "M9",
   "wave": "P1",
   "parallel_lane": "LANE-BUYBOX",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "HIGH",
   "depends_on": [
     "T-001"
@@ -33,20 +33,53 @@
     "npm --prefix public/boutique run audit:gate",
     "npm --prefix public/boutique run test:unit"
   ],
-  "agent": null,
+  "agent": "claude-sonnet-session-2",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:05:45Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-18T20:05:45Z",
   "reviewed_at": null,
   "base_commit": null,
-  "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "last_commit": "pending",
+  "changed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/index.html",
+    "public/boutique/css/dist/components.css"
+  ],
+  "gate_results": [
+    {
+      "gate": "deploy:css --force",
+      "result": "PASS v163/v57"
+    },
+    {
+      "gate": "audit:ownership",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:gate",
+      "result": "PASS Stable"
+    },
+    {
+      "gate": "check:imports",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:arch",
+      "result": "PASS"
+    },
+    {
+      "gate": "test:unit buybox-shared",
+      "result": "11/11 PASS"
+    },
+    {
+      "gate": "test:unit mobile-product",
+      "result": "25/25 PASS"
+    }
+  ],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "M9 : libellés CTA complets (\"Ajouter au panier\" / \"⚡ Acheter maintenant\"), bolt en span aria-hidden. D3 inclus : buy-now gradient ocean → --cta-green solide, hover Ajouter purge ocean. Bundle v163.",
+  "next_action": "Revue humaine."
 }
