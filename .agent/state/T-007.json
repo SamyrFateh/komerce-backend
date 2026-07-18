@@ -15,6 +15,8 @@
     "schemas/catalog/product-detail.v1.schema.json",
     "services/catalog-product-detail.js",
     "tests/unit/catalog-product-detail.test.js",
+    "tests/unit/golden-product-gpm1.test.js",
+    "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
     "public/boutique/tests/fixtures/golden-elite-pro-detail.js",
     "public/boutique/js/b-modal-mobile-product.js",
     "public/boutique/js/b-modal-desktop-product.js",
@@ -43,7 +45,7 @@
   "finished_at": "2026-07-18T22:49:03Z",
   "reviewed_at": "2026-07-18T23:05:48Z",
   "base_commit": null,
-  "last_commit": "ffc0b21160f88fc95cc33283f9cfe0df40004811",
+  "last_commit": "8d077ef32eb1588db84758e0a277b5dbebfa7e98",
   "changed_files": [
     "migrations/112_add_series_to_products.sql",
     "schemas/catalog/product-detail.v1.schema.json",
