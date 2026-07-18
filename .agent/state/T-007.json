@@ -5,13 +5,17 @@
   "finding_id": "M6",
   "wave": "P2",
   "parallel_lane": "LANE-META",
-  "status": "REVIEW",
+  "status": "BLOCKED",
   "priority": "MEDIUM",
   "depends_on": [
     "T-001"
   ],
   "allowed_files": [
-    "public/boutique/js/b-modal-image-ux.js",
+    "migrations/112_add_series_to_products.sql",
+    "schemas/catalog/product-detail.v1.schema.json",
+    "services/catalog-product-detail.js",
+    "tests/unit/catalog-product-detail.test.js",
+    "public/boutique/tests/fixtures/golden-elite-pro-detail.js",
     "public/boutique/js/b-modal-mobile-product.js",
     "public/boutique/js/b-modal-desktop-product.js",
     "public/boutique/tests/unit/**",
@@ -25,16 +29,17 @@
     "npm --prefix public/boutique run audit:arch",
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate",
-    "npm --prefix public/boutique run test:unit"
+    "npm --prefix public/boutique run test:unit",
+    "npm test -- tests/unit/catalog-product-detail.test.js"
   ],
   "agent": "claude-sonnet-session-2",
-  "reviewer": null,
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
   "branch": "agent/lane-mobile-renderer",
   "started_at": "2026-07-18T20:10:55Z",
   "lease_until": null,
   "finished_at": "2026-07-18T20:10:55Z",
-  "reviewed_at": null,
+  "reviewed_at": "2026-07-18T22:32:00Z",
   "base_commit": null,
   "last_commit": null,
   "changed_files": [
@@ -65,24 +70,20 @@
       "result": "PASS Stable"
     },
     {
-      "gate": "gate:touched-files",
-      "result": "PASS"
-    },
-    {
-      "gate": "gate:boutique-ownership",
-      "result": "PASS"
-    },
-    {
       "gate": "test:unit mobile-product",
       "result": "28/28 PASS"
     },
     {
       "gate": "test:unit desktop-product",
       "result": "22/22 PASS"
+    },
+    {
+      "gate": "backend contract review",
+      "result": "REQUEST_CHANGES — tests/unit/catalog-product-detail.test.js attend encore l’objet product sans propriété series; la preuve 92/92 ne couvre que public/boutique"
     }
   ],
-  "blocking_reason": null,
-  "review_decision": null,
-  "summary": "M6 Option D : product.series ajouté au contrat v1 (migration 112, schéma Ajv, service, fixture). Renderers mobile + desktop branchés sur detail.product.series avec fallback silencieux. 50/50 tests PASS.",
-  "next_action": "Revue humaine. Note : migration 112 doit être appliquée en prod avant déploiement."
+  "blocking_reason": "Extension backend non validée : le service renvoie désormais product.series, mais tests/unit/catalog-product-detail.test.js attend encore exactement l’ancien objet sans series. La suite boutique enregistrée ne couvre pas ce test backend.",
+  "review_decision": "REQUEST_CHANGES",
+  "summary": "Option D produit acceptée, mais T-007 ne peut pas être clôturée avant adaptation et exécution des tests backend du contrat Product Detail v1.",
+  "next_action": "Ajouter series:null au cas par défaut, un test explicite de mapping d’une série non nulle et un test de compatibilité null; exécuter le test backend ciblé puis la suite racine. Conserver la tâche BLOCKED jusqu’aux preuves."
 }
