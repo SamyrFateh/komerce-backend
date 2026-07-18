@@ -48,5 +48,6 @@
   "blocking_reason": null,
   "review_decision": null,
   "summary": null,
-  "next_action": "Exécuter une petite unité puis save."
+  "next_action": "Compléter tests unit b-modal-mobile-product.test.js",
+  "last_checkpoint_at": "2026-07-18T17:34:37.772Z"
 }

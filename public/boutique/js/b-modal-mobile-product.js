@@ -19,7 +19,7 @@
  *
  *   TOPBAR (sticky, existing shell)
  *   MEDIA (image carousel, promo badge, voir en grand, favori overlay)
- *   IDENTITY COMPACT (name 1-line + ref inline | price + old_price + promo tag)
+ *   IDENTITY COMPACT (name 1-line + ref inline | price + old_price + stock pill + promo tag)
  *   OPTIONS (axes from option_axes[], thumbnails if available)
  *   INFO STRIP (dispo chip + delivery_options[] chips — single horizontal row)
  *   ── fold ──
@@ -108,6 +108,49 @@ function renderMedia(detail, selection, force = false) {
 
 /* ── MDM-3 : Identity compact ─────────────────────────────────── */
 
+/**
+ * M1 — Badge stock à droite du prix (spec mobile §5.5).
+ * Trois états dérivés uniquement de `unit.available_quantity` (contrat
+ * product_detail_v1, sellable_units[]) : jamais de donnée inventée.
+ * Sans unité résolue (ex. sélection incomplète), le pill reste masqué —
+ * aucune valeur de repli fictive.
+ */
+function renderStockPill(unit) {
+  const row = dom.modalPrice?.closest('.k-modal-price-row') || dom.modal?.querySelector('.k-modal-price-row');
+  if (!row) return;
+
+  const qty = unit?.available_quantity;
+  let pill = row.querySelector('#k-modal-stock-pill');
+
+  if (qty == null || Number.isNaN(qty)) {
+    if (pill) pill.hidden = true;
+    return;
+  }
+
+  if (!pill) {
+    pill = document.createElement('span');
+    pill.id = 'k-modal-stock-pill';
+    pill.innerHTML =
+      '<span class="k-mdm-stock-pill-dot"></span>' +
+      '<span class="k-mdm-stock-pill-label"></span>';
+    row.appendChild(pill);
+  }
+
+  let variant = 'ok';
+  let label = 'En stock';
+  if (qty === 0) {
+    variant = 'out';
+    label = 'Épuisé';
+  } else if (qty <= 5) {
+    variant = 'low';
+    label = `Plus que ${qty}`;
+  }
+
+  pill.hidden = false;
+  pill.className = `k-mdm-stock-pill k-mdm-stock-pill--${variant}`;
+  pill.querySelector('.k-mdm-stock-pill-label').textContent = label;
+}
+
 function renderIdentity(detail, selection) {
   // Name — single line, overflow handled by CSS clamp
   if (dom.modalName) dom.modalName.textContent = detail.product.name;
@@ -134,6 +177,10 @@ function renderIdentity(detail, selection) {
       dom.modalOldPrice.classList.add('u-hidden');
     }
   }
+
+  // Stock pill — right of price (M1, spec §5.5). Reuses available_quantity
+  // from the active SKU unit already resolved above ; never reconstructed.
+  renderStockPill(unit);
 
   // Promo badge on media
   const promo = Number(detail.pricing.promo_pct || 0);
