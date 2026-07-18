@@ -5426,6 +5426,24 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     content: '⚠';
     flex: 0 0 auto;
   }
+
+  /* ── M8 : Fond cream continu sur mobile (spec §4) ────────────
+     .k-modal a background:var(--white) en base (modal-shell.css).
+     Sur mobile, on le remplace par --page-bg (cream) sur la modale
+     ET sur la zone scroll, pour supprimer la bande blanche qui apparaît
+     après le hero.
+     Le sticky footer .k-modal-actions reste blanc (#k-modal .k-modal-actions
+     est déjà forcé à var(--white) + backdrop:none dans modal-shell.css L182 :
+     cette règle a spécificité #k-modal .k-modal-actions — notre override
+     ci-dessous est sur #k-modal seul (spécificité inférieure), donc le footer
+     n'est pas affecté). */
+  #k-modal {
+    background: var(--page-bg);
+  }
+
+  #k-modal .k-modal-scroll {
+    background: var(--page-bg);
+  }
 }
 
 

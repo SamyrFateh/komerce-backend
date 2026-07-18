@@ -5,7 +5,7 @@
   "finding_id": "M8",
   "wave": "P1",
   "parallel_lane": "LANE-MOBILE-SHELL",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "HIGH",
   "depends_on": [
     "T-001"
@@ -27,13 +27,13 @@
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate"
   ],
-  "agent": null,
+  "agent": "claude-sonnet-session-2",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:03:30Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-18T20:03:30Z",
   "reviewed_at": null,
   "base_commit": null,
   "last_commit": null,
@@ -41,6 +41,7 @@
   "gate_results": [],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "M8 : fond cream continu sur mobile — #k-modal + .k-modal-scroll → var(--page-bg). Footer blanc intact. Bundle v162.",
+  "next_action": "Revue humaine.",
+  "commit": "pending"
 }
