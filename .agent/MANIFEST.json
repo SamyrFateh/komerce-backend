@@ -1,17 +1,18 @@
 {
-  "governance_version": "3.2",
+  "governance_version": "3.3",
   "project": "Komerce",
   "worksite": "PDP_MAQUETTE_PREMIUM",
   "base_branch": "main",
   "runtime": "scripts/agent.mjs",
   "source": "github-direct-continuous-push",
-  "delivery_protocol": "remote-branch-draft-pr",
+  "delivery_protocol": "remote-lane-branch-single-pr",
   "status": "ACTIVE",
-  "next_ready_task": "T-001",
+  "next_ready_task": "T-002",
   "legacy_runtime": "deprecated",
   "execution_mode": "silent_execute_push_except_arbitration",
-  "continuity_model": "state-worklog-atomic-commits-pr",
-  "worklog": ".agent/worklogs/<TASK_ID>.md",
+  "branch_model": "one-long-lived-branch-per-lane",
+  "branch_pattern": "agent/<lane-slug>",
+  "continuity_model": "lane-branch-task-state-worklog-atomic-commits-single-pr",
   "checkpoint_policy": {
     "first_push_before_substantive_work": true,
     "after_each_coherent_unit": true,
@@ -19,6 +20,14 @@
     "maximum_minutes_without_push": 10,
     "before_long_or_risky_command": true,
     "before_final_response": true
+  },
+  "lane_policy": {
+    "same_lane_same_branch": true,
+    "reuse_and_modify_existing_files": true,
+    "task_completion_without_individual_pr": true,
+    "automatic_next_task_in_lane": true,
+    "human_review_at_lane_end": true,
+    "single_pr_per_lane": true
   },
   "final_response_fields": [
     "task",
@@ -31,18 +40,7 @@
   ],
   "arbitration": {
     "status": "AWAITING_DECISION",
-    "artifact": ".agent/arbitrations/<TASK_ID>.md",
     "rule": "push_before_asking",
     "single_question_only": true
-  },
-  "final_response_fields_arbitration": [
-    "task",
-    "status",
-    "branch",
-    "last_commit",
-    "pull_request",
-    "decision_required",
-    "options",
-    "recommendation"
-  ]
+  }
 }

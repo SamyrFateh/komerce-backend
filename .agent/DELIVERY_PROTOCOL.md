@@ -1,35 +1,41 @@
-# Livraison — GitHub Direct
+# Livraison — branche durable par lane
 
 ## Livraison primaire
 
-Une tâche est livrée lorsque :
+Une lane est livrée lorsque :
 
-- sa branche `agent/t-xxx` est poussée ;
-- son dernier commit contient l’état final ;
-- les preuves et le handoff sont versionnés ;
-- les gates sont enregistrés ;
-- une PR brouillon existe lorsque `gh` est disponible.
+- sa branche durable `agent/<lane-slug>` contient toutes ses tâches terminées ;
+- chaque tâche possède ses commits, worklogs, preuves et gates ;
+- le handoff global de lane est versionné ;
+- une seule PR couvre le sujet complet.
 
-Le chat ne transporte pas les fichiers. Aucun ZIP de livraison et aucun script PowerShell ne font partie du protocole actif.
+Le chat ne transporte pas les fichiers. Aucun ZIP de livraison et aucun script
+PowerShell ne font partie du protocole actif.
 
-## Résultat attendu de l’agent
+## Tâches intermédiaires
+
+Une tâche dont les gates passent est marquée `DONE` dans la branche de lane. Elle ne
+crée ni nouvelle branche ni PR individuelle. La tâche suivante de la même lane reprend
+immédiatement les fichiers existants.
+
+## Résultat attendu en fin de lane
 
 ```text
-Tâche     : T-001
+Tâche     : T-006
 Statut    : REVIEW
-Branche   : agent/t-001
+Branche   : agent/lane-mobile-renderer
 Commit    : <sha>
 PR        : <url ou non créée>
 Gates     : PASS/PASS
-Résumé    : ...
+Résumé    : lane mobile renderer complète
 ```
 
 ## Coupure
 
-La branche distante suffit pour reprendre. Aucun accès au `/mnt` précédent n’est
-nécessaire.
+La branche distante de lane suffit pour reprendre. Aucun accès au container ou à la
+conversation précédente n’est nécessaire.
 
 ## Merge
 
-L’agent ne merge pas sa propre PR. Le reviewer contrôle la PR, les gates et le diff.
-Après merge, `approve` ferme l’état de gouvernance sur `main`.
+La revue porte sur le diff complet de la lane. Après validation humaine, la PR unique
+est mergée dans `main`.
