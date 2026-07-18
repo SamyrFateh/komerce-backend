@@ -1,174 +1,154 @@
-# CHARTER — Constitution permanente des agents
+# CHARTER — GitHub Continuous Push
 
-Version : 1.0
-Statut : immuable pendant un chantier, sauf décision formelle enregistrée dans `decisions/`.
+Version : 3.2  
+Statut : norme permanente du chantier.
 
-## 1. Source de vérité
+## 1. Runtime unique
 
-Le code, les tâches, les états, les décisions et les preuves présents dans le paquet
-de chantier sont la source de vérité.
+Le runtime canonique est exclusivement :
 
-Une conversation d’agent ne constitue jamais une source de vérité durable.
+```bash
+node scripts/agent.mjs
+```
 
-## 2. Lecture obligatoire
+Les scripts PowerShell historiques sont dépréciés et ne doivent jamais être recherchés, exécutés ou utilisés comme fallback.
 
-Avant toute modification, l’agent lit dans cet ordre :
+## 2. Exécuter, ne pas narrer
 
-1. `.agent/CHARTER.md`
-2. `.agent/CHANTIER.md`
-3. `.agent/MANIFEST.json`
-4. `.agent/tasks/<TASK_ID>.md`
-5. `.agent/state/<TASK_ID>.json`
-6. les décisions ADR référencées par la tâche
+L’agent ne commente pas son plan et ne transforme pas la conversation en journal de
+travail. Il lit les règles, exécute et sauvegarde sur GitHub.
 
-## 3. Attribution
+Les informations de continuité sont écrites dans `.agent/`, dans les commits et dans
+la PR, pas dans le chat.
 
-L’agent doit réclamer une tâche avec `agent-start.ps1`.
+## 3. Authentification avant travail
 
-Il est interdit de travailler sur :
+Avant toute modification substantielle, l’agent utilise le token ou l’identifiant
+GitHub fourni dans son environnement.
 
-- une tâche non `READY` ;
-- une tâche déjà réclamée par un autre agent ;
-- une tâche dont les dépendances ne sont pas `DONE` ;
-- un périmètre non défini.
+La commande `start` doit réussir son premier push. Ce push constitue la preuve
+d’accès en écriture. En cas d’échec, aucun travail ne commence.
 
-## 4. Périmètre
+Le token ne doit jamais être affiché, enregistré dans le repo, ajouté à un log,
+placé dans une preuve ou inclus dans un message de commit.
 
-Chaque tâche déclare :
+## 4. Une tâche, une branche distante
 
-- les fichiers autorisés ;
-- les fichiers explicitement interdits ;
-- les composants ou features concernés ;
-- les critères d’acceptation ;
-- les gates obligatoires.
+Chaque tâche s’exécute sur :
 
-Toute extension de périmètre impose :
+```text
+agent/t-001
+```
 
-- soit la création d’une sous-tâche ;
-- soit le passage de la tâche à `BLOCKED` ;
-- soit une décision ADR validée.
+Il est interdit de travailler directement sur `main`.
 
-## 5. Feature-First
+## 5. Premier push immédiat
 
-Toute tâche doit être rattachée à au moins un `feature_id`.
+`start` :
 
-Une modification sans rattachement fonctionnel, architectural ou de gouvernance
-explicite est interdite.
+1. vérifie l’accès à `origin` ;
+2. contrôle les sources obligatoires ;
+3. crée la branche depuis `origin/main` ;
+4. crée l’état et le worklog ;
+5. committe et pousse immédiatement.
 
-## 6. Atomicité
+Aucune analyse longue ne précède ce premier push.
 
-Une tâche doit produire un résultat vérifiable et réversible.
+## 6. Petits lots obligatoires
 
-Un commit ou un paquet de changements ne doit pas mélanger plusieurs objectifs
-indépendants.
+Après chaque unité cohérente, l’agent exécute `save`.
 
-## 7. Tests et gates
+Une unité cohérente est, par ordre de préférence :
 
-L’agent exécute les gates déclarées dans la tâche.
+- un constat vérifié ;
+- une preuve produite ;
+- une correction atomique ;
+- un petit groupe indissociable de fichiers ;
+- au maximum trois fichiers source lorsque le découpage est possible.
 
-Un gate non exécuté doit être marqué `NOT_RUN` avec une justification précise.
-Un gate en échec interdit le passage direct à `DONE`.
+L’agent pousse également avant :
 
-## 8. Preuves
+- un test ou une commande longue ;
+- une refactorisation risquée ;
+- l’ouverture d’un nouvel axe d’analyse ;
+- toute réponse finale.
 
-Les preuves sont déposées dans `.agent/evidence/<TASK_ID>/`.
+Dix minutes sans push constituent une anomalie de procédure, pas une cible à
+atteindre.
 
-Exemples :
+## 7. Continuité
 
-- captures avant/après ;
-- logs ;
-- résultats de tests ;
-- sortie de commandes ;
-- rapport de contrôle ;
-- fichier patch.
+La continuité repose sur cinq éléments versionnés :
 
-## 9. Handoff
+| Élément | Fonction |
+|---|---|
+| `state/T-XXX.json` | état machine courant |
+| `worklogs/T-XXX.md` | chronologie de reprise |
+| commits atomiques | code et preuves sauvegardés |
+| `handoffs/T-XXX.md` | synthèse de sortie |
+| PR brouillon | revue humaine |
 
-Avant de s’arrêter, l’agent produit un handoff dans
-`.agent/handoffs/<TASK_ID>.md`.
+Un dossier `/mnt` et une conversation sont temporaires et non fiables.
 
-Le handoff indique au minimum :
+## 8. Reprise
 
-- ce qui a été fait ;
-- ce qui n’a pas été fait ;
-- les fichiers modifiés ;
-- les tests exécutés ;
-- les hypothèses ;
-- les risques ;
-- la prochaine action exacte ;
-- l’état Git ou l’inventaire de fichiers.
+Après une coupure, l’agent suivant clone le repo et utilise `resume`.
 
-## 10. Fin de fenêtre
+Il lit en priorité :
 
-L’agent cesse de commencer de nouvelles tâches lorsqu’il estime avoir consommé
-environ 80 % de sa fenêtre de travail.
+1. l’état ;
+2. le worklog ;
+3. les derniers commits ;
+4. le handoff s’il existe ;
+5. la tâche.
 
-Il utilise le temps restant pour :
+Il reprend l’action suivante enregistrée et ne recommence pas le travail déjà poussé.
 
-- stabiliser l’état ;
-- enregistrer les preuves ;
-- mettre à jour le handoff ;
-- terminer proprement ou bloquer la tâche.
+## 9. Périmètre
 
-## 11. Revue
+Chaque checkpoint vérifie les fichiers modifiés. L’agent ne modifie que :
 
-L’agent exécutant ne peut pas déclarer seul une tâche sensible `DONE`.
+- le périmètre autorisé de la tâche ;
+- les sorties générées déclarées ;
+- les fichiers de gouvernance propres à la tâche.
 
-La tâche passe d’abord à `REVIEW`, puis un reviewer l’approuve ou la rejette.
+## 10. Gates et livraison
 
-## 12. Travail parallèle
+`finish` exécute les gates, écrit les preuves, le handoff et le dernier worklog, puis
+pousse l’ensemble avant d’essayer d’ouvrir la PR.
 
-Deux tâches actives ne doivent pas modifier les mêmes fichiers, sauf coordination
-explicite par dépendance ou décision ADR.
+L’agent termine en `REVIEW` ou `BLOCKED`, jamais directement en `DONE`.
 
-Chaque agent parallèle travaille depuis le même `base_package_id`.
+## 11. Réponse finale
 
-## 13. Interdictions
+La réponse finale ne contient que :
 
-Il est interdit de :
+```text
+Tâche:
+Statut:
+Branche:
+Dernier commit:
+PR:
+Gates:
+Résumé:
+```
 
-- supprimer ou contourner la gouvernance ;
-- réécrire l’historique du chantier sans décision ;
-- masquer un test en échec ;
-- déclarer une tâche terminée sans preuves ;
-- modifier un fichier hors périmètre sans le signaler ;
-- transférer la responsabilité au prochain agent sans handoff exploitable ;
-- laisser une tâche indéfiniment en `IN_PROGRESS`.
+Aucun commentaire supplémentaire n’est autorisé.
 
-## 14. Priorité
+## 12. Exception d’arbitrage
 
-En cas de conflit :
+Le mode silencieux cesse uniquement lorsqu’une décision répond aux critères de
+`.agent/ARBITRATION.md`.
 
-1. sécurité et intégrité des données ;
-2. décisions ADR validées ;
-3. CHARTER ;
-4. CHANTIER ;
-5. tâche ;
-6. préférence locale de l’agent.
+L’agent ne demande jamais un arbitrage avant d’avoir poussé :
 
+- le code ou les preuves déjà produits ;
+- l’état `AWAITING_DECISION` ;
+- le worklog ;
+- la fiche d’arbitrage.
 
-## 15. Livraison structurée
+Une difficulté technique ordinaire n’autorise pas une question. L’agent utilise les
+conventions du repo et les fallbacks disponibles.
 
-L’agent ne livre jamais des fichiers à copier-coller depuis sa réponse.
-
-Après avoir terminé ou bloqué sa tâche, il produit un bundle avec
-`agent-export-delivery.ps1` et remet ce ZIP à l’utilisateur.
-
-Le repo principal applique le bundle uniquement avec
-`agent-import-delivery.ps1`. L’extraction manuelle par-dessus le repo est interdite.
-
-## 16. Validation locale
-
-Les gates exécutés dans la copie de l’agent constituent une preuve, mais pas
-l’autorisation de commit.
-
-Après import, le repo principal exécute `agent-validate-delivery.ps1`.
-Une tâche importée ne peut être approuvée que si la validation locale est `PASS`.
-
-## 17. Traçabilité de livraison
-
-Le ZIP brut est archivé localement. Le record léger, le patch, le handoff, les
-preuves et l’état sont versionnés avec le code.
-
-Aucun fichier livré ne doit exister uniquement dans une conversation ou un dossier
-temporaire non référencé.
+Après décision, la branche existante est reprise. Il est interdit de recommencer la
+tâche depuis `main`.
