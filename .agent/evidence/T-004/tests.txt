@@ -1,0 +1,6 @@
+
+Test Suites: 93 passed, 93 total
+Tests:       1744 passed, 1744 total
+Snapshots:   0 total
+Time:        32.334 s
+Ran all test suites matching tests/unit.
