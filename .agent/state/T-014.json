@@ -5,7 +5,7 @@
   "finding_id": "D2",
   "wave": "P1",
   "parallel_lane": "LANE-DESKTOP-TYPE",
-  "status": "REVIEW",
+  "status": "DONE",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -27,22 +27,36 @@
     "npm --prefix public/boutique run audit:gate"
   ],
   "agent": "claude-sonnet-session-3",
-  "reviewer": null,
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
   "branch": "agent/lane-mobile-renderer",
   "started_at": "2026-07-18T20:21:50Z",
   "lease_until": null,
   "finished_at": "2026-07-18T20:21:50Z",
-  "reviewed_at": null,
+  "reviewed_at": "2026-07-18T22:32:00Z",
   "base_commit": null,
   "last_commit": null,
   "changed_files": [
     "public/boutique/css/modal-shell.css",
-    "public/boutique/css/modal-product-lot4-hybrid.css"
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    ".agent/evidence/T-014/desktop-title-1440.png"
   ],
-  "gate_results": [],
+  "gate_results": [
+    {
+      "gate": "reviewer source verification",
+      "result": "PASS — valeur finale conforme dans modal-shell.css / modal-product-lot4-hybrid.css"
+    },
+    {
+      "gate": "consolidated boutique gates",
+      "result": "PASS — deploy:css, check:cache, check:breakpoints, audit:ownership, audit:gate; feature-audit 0 FAIL / 0 WARN"
+    },
+    {
+      "gate": "consolidated unit suite",
+      "result": "PASS — 92/92 suites, 1748/1748 tests"
+    }
+  ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": "D2 : titre desktop 18px/500/1.2/inherit. Source unique modal-shell.css. Règle lot4-hybrid (clamp 30-46px/700/font-display) supprimée. Playwright=18px/500.",
-  "next_action": "Revue humaine."
+  "review_decision": "APPROVE",
+  "summary": "D2 approuvé : titre desktop final 18px/500/1.2, police héritée; contenu du titre inchangé.",
+  "next_action": "T-014 clôturée."
 }
