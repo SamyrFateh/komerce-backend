@@ -15,8 +15,10 @@
     "public/boutique/css/modal-product-lot4-hybrid.css",
     "public/boutique/js/b-modal-desktop-product.js",
     "public/boutique/tests/unit/b-modal-desktop-product.test.js",
-    ".agent/evidence/T-023/**"
+    ".agent/evidence/T-023/**",
+    "public/boutique/css/modal-product.css"
   ],
+  "scope_extension_ref": ".agent/arbitrations/T-023.md",
   "forbidden_files": [
     "renderPdpActions partagé",
     "computeSubtotal"
