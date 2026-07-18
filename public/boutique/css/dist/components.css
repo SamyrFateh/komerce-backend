@@ -4424,12 +4424,9 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   white-space: nowrap;
 }
 @media (min-width: 900px) {
-  #k-modal-payment.k-modal-payment {
-    display: block;
-    border-top: 1px solid var(--sand-dark);
-    margin-top: 14px;
-    padding-top: 14px;
-  }
+  /* T-023 : layout desktop (display/border-top/margin-top) de #k-modal-payment
+     retiré ici — ownership cédé à modal-product-lot4-hybrid.css (bloc
+     "Livraison + paiement", ligne ~71). Voir .agent/arbitrations/T-023.md. */
   #k-modal-payment .k-modal-section-title { margin-bottom: 10px; }
 }
 

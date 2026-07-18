@@ -5,7 +5,7 @@
   "finding_id": "D11",
   "wave": "P2",
   "parallel_lane": "LANE-DESKTOP-COMPOSITION",
-  "status": "READY",
+  "status": "IN_PROGRESS",
   "priority": "HIGH",
   "depends_on": [
     "T-016"
@@ -15,8 +15,10 @@
     "public/boutique/css/modal-product-lot4-hybrid.css",
     "public/boutique/js/b-modal-desktop-product.js",
     "public/boutique/tests/unit/b-modal-desktop-product.test.js",
-    ".agent/evidence/T-023/**"
+    ".agent/evidence/T-023/**",
+    "public/boutique/css/modal-product.css"
   ],
+  "scope_extension_ref": ".agent/arbitrations/T-023.md",
   "forbidden_files": [
     "renderPdpActions partagé",
     "computeSubtotal"
@@ -33,20 +35,37 @@
     "npm --prefix public/boutique run audit:gate",
     "npm --prefix public/boutique run test:unit"
   ],
-  "agent": null,
+  "agent": "claude-chat-session",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T23:47:25Z",
   "lease_until": null,
   "finished_at": null,
   "reviewed_at": null,
-  "base_commit": null,
+  "base_commit": "cbb6517b955cb4ced497d59249e5fdd9a54ac754",
   "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "changed_files": [
+    ".agent/arbitrations/T-023.md",
+    ".agent/tasks/T-023.md",
+    ".agent/state/T-023.json",
+    "public/boutique/css/modal-product.css",
+    "public/boutique/css/dist/components.css",
+    "public/boutique/.cache-buster-state.json",
+    "public/boutique/index.html"
+  ],
+  "gate_results": [
+    { "gate": "check:css-guard", "result": "pass" },
+    { "gate": "check:cache", "result": "pass" },
+    { "gate": "check:breakpoints", "result": "pass (stable vs baseline)" },
+    { "gate": "audit:ownership", "result": "pass" },
+    { "gate": "audit:gate", "result": "pass" },
+    { "gate": "check:imports", "result": "pass" },
+    { "gate": "audit:arch", "result": "pass" },
+    { "gate": "test:unit", "result": "pass (92 suites / 1748 tests)" }
+  ],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "Dette CSS Guardian soldée : conflit #k-modal-payment entre modal-product.css et modal-product-lot4-hybrid.css résolu (ownership unique cédé à lot4-hybrid.css), périmètre étendu via arbitrage documenté. Reste à faire : layout AVAILABLE_EMPTY/AVAILABLE_FILLED des actions desktop.",
+  "next_action": "Implémenter et tester le layout desktop EMPTY/FILLED (b-modal-desktop-product.js)."
 }
