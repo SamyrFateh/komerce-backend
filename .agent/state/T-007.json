@@ -5,7 +5,7 @@
   "finding_id": "M6",
   "wave": "P2",
   "parallel_lane": "LANE-META",
-  "status": "READY",
+  "status": "BLOCKED",
   "priority": "MEDIUM",
   "depends_on": [
     "T-001"
@@ -27,11 +27,11 @@
     "npm --prefix public/boutique run audit:gate",
     "npm --prefix public/boutique run test:unit"
   ],
-  "agent": null,
+  "agent": "claude-sonnet-session-2",
   "reviewer": null,
   "base_package_id": null,
   "branch": null,
-  "started_at": null,
+  "started_at": "2026-07-18T20:00:20Z",
   "lease_until": null,
   "finished_at": null,
   "reviewed_at": null,
@@ -39,8 +39,8 @@
   "last_commit": null,
   "changed_files": [],
   "gate_results": [],
-  "blocking_reason": null,
+  "blocking_reason": "product.series absent du contrat Product Detail v1 et du schéma DB. La maquette montrait un label démo inexistant en prod. Options : A=subcategory normalisée, C=masquer silencieusement, D=extension contrat. Voir .agent/evidence/T-007/escalade.md.",
   "review_decision": null,
   "summary": null,
-  "next_action": null
+  "next_action": "Décision produit sur Option A, C ou D (voir escalade.md) puis relancer T-007."
 }
