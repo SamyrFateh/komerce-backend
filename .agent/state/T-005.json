@@ -5,7 +5,7 @@
   "finding_id": "M4",
   "wave": "P1",
   "parallel_lane": "LANE-MOBILE-RENDERER",
-  "status": "IN_PROGRESS",
+  "status": "REVIEW",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -33,21 +33,71 @@
     "npm --prefix public/boutique run audit:gate",
     "npm --prefix public/boutique run test:unit"
   ],
-  "agent": "sonnet-chat",
+  "agent": "claude-sonnet-session-2",
   "reviewer": null,
   "base_package_id": null,
   "branch": "agent/lane-mobile-renderer",
-  "started_at": "2026-07-18T19:25:00.330Z",
+  "started_at": "2026-07-18T17:00:00Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-18T19:47:35Z",
   "reviewed_at": null,
   "base_commit": "ceef1df5947334e1f1d039a232d976a799e624e2",
-  "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "last_commit": "61606c64",
+  "changed_files": [
+    "public/boutique/css/modal-mobile-canonical.css",
+    "public/boutique/css/dist/components.css",
+    "public/boutique/.cache-buster-state.json",
+    "public/boutique/index.html",
+    "public/boutique/tests/unit/b-modal-mobile-product.test.js",
+    ".agent/evidence/T-005/mobile-360-suggestions.png",
+    ".agent/evidence/T-005/mobile-390-suggestions.png",
+    ".agent/evidence/T-005/tests.txt"
+  ],
+  "gate_results": [
+    {
+      "gate": "deploy:css (--force)",
+      "result": "PASS — 3 bundles rebuilt, v159/v53"
+    },
+    {
+      "gate": "check:cache",
+      "result": "PASS — hash identique post-rebuild"
+    },
+    {
+      "gate": "check:breakpoints",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:ownership",
+      "result": "PASS — 0 nouvelles dettes"
+    },
+    {
+      "gate": "audit:gate",
+      "result": "PASS — Stable vs baseline"
+    },
+    {
+      "gate": "check:imports",
+      "result": "PASS — 0 fantôme"
+    },
+    {
+      "gate": "audit:arch",
+      "result": "PASS — 0 violation"
+    },
+    {
+      "gate": "gate:touched-files",
+      "result": "PASS"
+    },
+    {
+      "gate": "gate:boutique-ownership",
+      "result": "PASS"
+    },
+    {
+      "gate": "test:unit (b-modal-mobile-product)",
+      "result": "PASS — 23/23"
+    }
+  ],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": "Exécuter une petite unité cohérente puis save.",
+  "summary": "M4 terminé dans la lane mobile renderer : carrousel suggestions scroll-x teasé scoped #k-modal, CSS-only, ownership b-modal-suggestions.js conservé. 2 cartes + tease à 360px, 3 cartes + tease à 390px. 2 tests unitaires ajoutés. Travail de calibration de l'agent précédent récupéré depuis fichiers uploadés et commité proprement (le précédent agent n'avait pas commité).",
+  "next_action": "Revue humaine (CHARTER §11) puis débloque T-006.",
   "resumed_at": "2026-07-18T19:25:00.330Z"
 }
