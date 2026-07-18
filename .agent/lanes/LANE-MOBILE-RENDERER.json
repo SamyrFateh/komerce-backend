@@ -2,6 +2,9 @@
   "lane": "LANE-MOBILE-RENDERER",
   "branch": "agent/lane-mobile-renderer",
   "tasks": ["T-002", "T-003", "T-004", "T-005", "T-006"],
+  "completed_tasks": ["T-002"],
+  "current_task": "T-003",
   "status": "IN_PROGRESS",
-  "review_mode": "single-pr-at-lane-end"
+  "review_mode": "single-pr-at-lane-end",
+  "next_action": "Démarrer T-003 sur la même branche sans recréer ni déplacer les fichiers."
 }
