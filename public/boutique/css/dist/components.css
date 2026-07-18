@@ -4711,7 +4711,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
     font-size: 15px;
     font-weight: 600;
-    box-shadow: 0 4px 14px rgba(42,122,62,0.22);
+    box-shadow: 0 4px 14px var(--shadow-cta-22);
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal {
