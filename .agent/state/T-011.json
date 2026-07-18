@@ -5,7 +5,7 @@
   "finding_id": "M10",
   "wave": "P2",
   "parallel_lane": "LANE-MOBILE-SHELL",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "MEDIUM",
   "depends_on": [
     "T-001"
@@ -25,20 +25,40 @@
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate"
   ],
-  "agent": null,
+  "agent": "claude-sonnet-session-3",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:21:50Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-18T20:21:50Z",
   "reviewed_at": null,
   "base_commit": null,
   "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "changed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/dist/components.css"
+  ],
+  "gate_results": [
+    {
+      "gate": "deploy:css --force",
+      "result": "PASS v164/v58"
+    },
+    {
+      "gate": "audit:ownership",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:gate",
+      "result": "PASS Stable"
+    },
+    {
+      "gate": "check:breakpoints",
+      "result": "PASS"
+    }
+  ],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "M10 : stepper border-radius 50px→8px, background sand→hero-bg. Playwright=8px hero-bg. Bundle v164.",
+  "next_action": "Revue humaine."
 }

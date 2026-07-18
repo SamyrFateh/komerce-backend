@@ -2209,7 +2209,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   backface-visibility: visible;
   -webkit-backface-visibility: visible;
 }
-.k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
+.k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--hero-bg); border-radius: 8px; overflow: hidden; height: 44px; flex-shrink: 0; }
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
 .k-qty-btn:active { background: var(--sand-dark); }
 .k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 700; }
@@ -2533,7 +2533,9 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   /* ── Titre produit ───────────────────────────────────────── */
   #k-modal .k-modal-name-row { margin-top: 14px; }
-  #k-modal .k-modal-info h2 { font-size: clamp(21px, 1.65vw, 28px); line-height: 1.18; font-weight: 600; letter-spacing: -.02em; }
+  /* D2 — Titre desktop : 18px/500/1.2 — source unique (spec §9.1)
+     Purge font-display, clamp trop grand et weight>500. */
+  #k-modal .k-modal-info h2 { font-family: inherit; font-size: 18px; line-height: 1.2; font-weight: 500; letter-spacing: 0; color: var(--text); max-width: none; }
 
   #k-modal .k-modal-desc { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--text-muted); overflow: visible; }
 
@@ -2541,11 +2543,15 @@ html.k-mobile-premium-v1 .k-chip-label {
      formatPriceMarkup() (b-modal.js) split la valeur et l'unité en deux spans
      avec un espace HTML entre. Sur mobile : pas de règle dédiée, rendu naturel
      "15 700 KMF". Sur desktop (ci-dessous) : styling fin distinct. */
-  /* PR-D1 — Prix massif mockup : clamp élevé, old-price barré plus lisible */
+  /* D1 — Prix desktop : 28px/500/text, unité 13px/500/muted — source unique (spec §9.3)
+     Promo active (.k-modal--has-promo) reste autorisée en coral via D-P3
+     (règle séparée plus bas). Purge coral hors promo. */
   #k-modal .k-modal-price-row { margin-top: 12px; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-  #k-modal .k-modal-price { font-size: clamp(28px, 2.2vw, 36px); font-weight: 850; color: var(--coral); line-height: 1; display: inline-flex; align-items: baseline; gap: 6px; }
+  #k-modal .k-modal-price { font-size: 28px; font-weight: 500; color: var(--text); line-height: 1.15; letter-spacing: -.015em; display: inline-flex; align-items: baseline; gap: 4px; }
   #k-modal .k-modal-price-val { font-size: inherit; font-weight: inherit; color: inherit; }
-  #k-modal .k-modal-price-unit { font-size: .44em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
+  #k-modal .k-modal-price-unit { font-size: 13px; font-weight: 500; color: var(--text-muted); letter-spacing: 0; text-transform: none; }
+  #k-modal.k-modal--has-promo .k-modal-price { color: var(--coral); }
+  #k-modal.k-modal--has-promo .k-modal-price-unit { color: var(--coral); }
   #k-modal .k-modal-old-price { font-size: 16px; color: var(--text-light); text-decoration: line-through; }
   #k-modal .k-modal-old-price .k-modal-price-val,
   #k-modal .k-modal-old-price .k-modal-price-unit { color: inherit; font-weight: 400; text-decoration: inherit; }
@@ -4582,23 +4588,15 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     padding-bottom: 14px;
   }
 
-  /* ── Typographie titre + prix ── */
-  #k-modal .k-modal-info h2 {
-    font-family: var(--font-display, var(--font));
-    font-size: clamp(30px, 3vw, 46px);
-    line-height: .98;
-    font-weight: 700;
-    letter-spacing: -.035em;
-    color: var(--text);
-    max-width: 760px;
-  }
-
+  /* ── Typographie titre ── */
+  /* D2 : titre desktop géré par modal-shell.css §D2 (18px/500/1.2) —
+     règle supprimée ici pour éviter tout conflit de spécificité. */
   #k-modal .k-modal-name-row { margin-top: 10px; align-items: flex-start; }
   #k-modal .k-modal-fav-btn  { margin-top: 2px; }
 
+  /* D1 : prix desktop géré par modal-shell.css §D1 — règles supprimées ici
+     pour éviter tout conflit de spécificité et garantir une source unique. */
   #k-modal .k-modal-price-row  { margin-top: 18px; gap: 12px; }
-  #k-modal .k-modal-price      { font-size: clamp(34px, 4vw, 56px); letter-spacing: -.04em; color: var(--coral); }
-  #k-modal .k-modal-price-unit { font-size: .34em; letter-spacing: .06em; }
   #k-modal .k-modal-old-price  { font-size: 16px; opacity: .72; }
   #k-modal .k-modal-aed-price  { margin-top: 8px; margin-bottom: 10px; }
 
@@ -4698,13 +4696,13 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn {
     background: var(--white);
     font-size: 14px;
-    font-weight: 850;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
     font-size: 15px;
-    font-weight: 900;
-    box-shadow: 0 14px 30px color-mix(in srgb, var(--ocean) 24%, transparent);
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(42,122,62,0.22);
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal {

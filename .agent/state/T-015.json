@@ -5,7 +5,7 @@
   "finding_id": "D3",
   "wave": "P1",
   "parallel_lane": "LANE-DESKTOP-TYPE",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -28,20 +28,22 @@
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate"
   ],
-  "agent": null,
+  "agent": "claude-sonnet-session-3",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:21:50Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-18T20:21:50Z",
   "reviewed_at": null,
   "base_commit": null,
   "last_commit": null,
-  "changed_files": [],
+  "changed_files": [
+    "public/boutique/css/modal-product-lot4-hybrid.css"
+  ],
   "gate_results": [],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "D3 : buy-now ocean shadow purgé dans lot4-hybrid → ombre verte douce. font-weight 900→600 buy-now, 850→500 add-cart. Bundle v166.",
+  "next_action": "Revue humaine."
 }

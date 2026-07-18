@@ -5,7 +5,7 @@
   "finding_id": "D1",
   "wave": "P1",
   "parallel_lane": "LANE-DESKTOP-TYPE",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -27,20 +27,23 @@
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate"
   ],
-  "agent": null,
+  "agent": "claude-sonnet-session-3",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:21:50Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-18T20:21:50Z",
   "reviewed_at": null,
   "base_commit": null,
   "last_commit": null,
-  "changed_files": [],
+  "changed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/modal-product-lot4-hybrid.css"
+  ],
   "gate_results": [],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "D1 : prix desktop 28px/500/--text, unité 13px/500/--text-muted, purge coral hors promo. Source unique modal-shell.css. Règle lot4-hybrid supprimée. Bundle v165.",
+  "next_action": "Revue humaine."
 }

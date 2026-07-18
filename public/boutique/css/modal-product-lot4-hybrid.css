@@ -33,23 +33,15 @@
     padding-bottom: 14px;
   }
 
-  /* ── Typographie titre + prix ── */
-  #k-modal .k-modal-info h2 {
-    font-family: var(--font-display, var(--font));
-    font-size: clamp(30px, 3vw, 46px);
-    line-height: .98;
-    font-weight: 700;
-    letter-spacing: -.035em;
-    color: var(--text);
-    max-width: 760px;
-  }
-
+  /* ── Typographie titre ── */
+  /* D2 : titre desktop géré par modal-shell.css §D2 (18px/500/1.2) —
+     règle supprimée ici pour éviter tout conflit de spécificité. */
   #k-modal .k-modal-name-row { margin-top: 10px; align-items: flex-start; }
   #k-modal .k-modal-fav-btn  { margin-top: 2px; }
 
+  /* D1 : prix desktop géré par modal-shell.css §D1 — règles supprimées ici
+     pour éviter tout conflit de spécificité et garantir une source unique. */
   #k-modal .k-modal-price-row  { margin-top: 18px; gap: 12px; }
-  #k-modal .k-modal-price      { font-size: clamp(34px, 4vw, 56px); letter-spacing: -.04em; color: var(--coral); }
-  #k-modal .k-modal-price-unit { font-size: .34em; letter-spacing: .06em; }
   #k-modal .k-modal-old-price  { font-size: 16px; opacity: .72; }
   #k-modal .k-modal-aed-price  { margin-top: 8px; margin-bottom: 10px; }
 
@@ -149,13 +141,13 @@
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn {
     background: var(--white);
     font-size: 14px;
-    font-weight: 850;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
     font-size: 15px;
-    font-weight: 900;
-    box-shadow: 0 14px 30px color-mix(in srgb, var(--ocean) 24%, transparent);
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(42,122,62,0.22);
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal {
