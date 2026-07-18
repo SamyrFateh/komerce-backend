@@ -4,39 +4,502 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
-const die = m => { console.error(`ERREUR: ${m}`); process.exit(1); };
-const norm = s => String(s).replaceAll('\\','/').replace(/^\.\//,'');
-function root(){ let d=process.cwd(); while(!fs.existsSync(path.join(d,'.agent','MANIFEST.json'))){const p=path.dirname(d);if(p===d)throw Error('.agent introuvable');d=p;}return d; }
-function json(f){return JSON.parse(fs.readFileSync(f,'utf8').replace(/^\uFEFF/,''));}
-function put(f,v){fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(v,null,2)+'\n','utf8');}
-function run(r,args,opt={}){return spawnSync(args[0],args.slice(1),{cwd:r,encoding:'utf8',shell:false,stdio:opt.inherit?'inherit':['ignore','pipe','pipe']});}
-function ok(x,label){if(x.status!==0)throw Error(`${label}: ${(x.stderr||x.stdout||'').trim()}`);return (x.stdout||'').trim();}
-const git=(r,...a)=>run(r,['git',...a]);
-const branch=r=>ok(git(r,'branch','--show-current'),'git branch');
-const head=r=>ok(git(r,'rev-parse','HEAD'),'git rev-parse');
-function args(){const [cmd='help',...a]=process.argv.slice(2),o={};for(let i=0;i<a.length;i++)if(a[i].startsWith('--')){const k=a[i].slice(2),n=a[i+1];if(n&&!n.startsWith('--')){o[k]=n;i++;}else o[k]=true;}return{cmd,o};}
-function req(o,k){if(!o[k]||o[k]===true)throw Error(`Option obligatoire: --${k}`);return String(o[k]);}
-function paths(r,id){return{task:path.join(r,'.agent','tasks',id+'.md'),state:path.join(r,'.agent','state',id+'.json'),worklog:path.join(r,'.agent','worklogs',id+'.md'),handoff:path.join(r,'.agent','handoffs',id+'.md'),evidence:path.join(r,'.agent','evidence',id),arbitration:path.join(r,'.agent','arbitrations',id+'.md')};}
-function states(r){return fs.readdirSync(path.join(r,'.agent','state')).filter(x=>/^T-\d{3}\.json$/.test(x)).map(x=>json(path.join(r,'.agent','state',x))).sort((a,b)=>a.task_id.localeCompare(b.task_id));}
-function depsDone(r,s){return(s.depends_on||[]).every(id=>json(paths(r,id).state).status==='DONE');}
-function nextReady(r){const m=json(path.join(r,'.agent','MANIFEST.json')),all=states(r),p=all.find(s=>s.task_id===m.next_ready_task);return p?.status==='READY'&&depsDone(r,p)?p:all.find(s=>s.status==='READY'&&depsDone(r,s));}
-function dirty(r){const raw=run(r,['git','status','--porcelain=v1','-uall']);if(raw.status!==0)throw Error(`git status: ${(raw.stderr||raw.stdout||'').trim()}`);const out=(raw.stdout||'').replace(/\r?\n$/,'');if(!out)return[];return out.split(/\r?\n/).map(l=>norm(l.slice(3).trim()));}
-function audit(r,action,s,actor,details=''){const f=path.join(r,'.agent','audit.ndjson');fs.appendFileSync(f,JSON.stringify({at:new Date().toISOString(),action,task:s.task_id,agent:actor,branch:s.branch,details})+'\n');}
-function dash(r){const l=['# STATUS — Chantier PDP','','> Généré par `scripts/agent.mjs`.','', '| ID | Statut | Agent | Branche | Prochaine action |','|---|---|---|---|---|'];for(const s of states(r))l.push(`| ${s.task_id} | ${s.status} | ${s.agent||'—'} | ${s.branch||'—'} | ${(s.next_action||'—').replaceAll('|','/')} |`);fs.writeFileSync(path.join(r,'.agent','STATUS.md'),l.join('\n')+'\n');}
-function log(r,s,event,msg,next=s.next_action){const p=paths(r,s.task_id);fs.mkdirSync(path.dirname(p.worklog),{recursive:true});if(!fs.existsSync(p.worklog))fs.writeFileSync(p.worklog,`# WORKLOG — ${s.task_id}\n\n- Tâche : ${s.title}\n- Branche : ${s.branch}\n\n`);fs.appendFileSync(p.worklog,`## ${new Date().toISOString()} — ${event}\n\n- Résultat : ${String(msg).replace(/\r?\n/g,' ')}\n- Commit : ${head(r)}\n- Prochaine action : ${next||'—'}\n\n`);}
-function sha(f){return crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');}
-function sources(r,id){const f=path.join(r,'.agent','SOURCES.json');if(!fs.existsSync(f))return;for(const s of(json(f).sources||[]).filter(x=>!(x.required_for||[]).length||x.required_for.includes(id))){const p=path.join(r,norm(s.path));if(!fs.existsSync(p))throw Error(`Source absente: ${s.path}`);if(s.sha256&&sha(p)!==s.sha256.toLowerCase())throw Error(`Checksum source invalide: ${s.path}`);}}
-function active(r){const b=branch(r),a=states(r).filter(s=>s.branch===b&&['IN_PROGRESS','AWAITING_DECISION','BLOCKED','REVIEW'].includes(s.status));if(a.length!==1)throw Error(`Tâche active introuvable sur ${b}`);return a[0];}
-function push(r,s,msg){const files=dirty(r);for(const f of files)ok(git(r,'add','-A','--',f),`git add ${f}`);if(git(r,'diff','--cached','--quiet').status!==0)ok(git(r,'commit','-m',msg),'git commit');ok(git(r,'push','-u','origin',s.branch),'git push');return head(r);}
-function start(r,o){const agent=req(o,'agent'),m=json(path.join(r,'.agent','MANIFEST.json')),s=o.task?json(paths(r,o.task).state):nextReady(r);if(!s)throw Error('Aucune tâche READY');if(s.status!=='READY'||!depsDone(r,s))throw Error('Tâche non exécutable');if(dirty(r).length)throw Error('Working tree non propre');ok(git(r,'ls-remote','origin','HEAD'),'Accès GitHub');ok(git(r,'fetch','origin','--prune'),'git fetch');sources(r,s.task_id);const b=`agent/${s.task_id.toLowerCase()}`;if(git(r,'ls-remote','--exit-code','--heads','origin',b).status===0)throw Error(`${b} existe déjà: utiliser resume`);ok(git(r,'switch','-C',b,`origin/${m.base_branch||'main'}`),'git switch');s.status='IN_PROGRESS';s.agent=agent;s.branch=b;s.started_at=new Date().toISOString();s.base_commit=head(r);s.next_action='Exécuter une petite unité puis save.';put(paths(r,s.task_id).state,s);log(r,s,'START','Accès écriture validé et branche créée.');audit(r,'STARTED',s,agent);dash(r);const c=push(r,s,`chore(${s.task_id.toLowerCase()}): start by ${agent}`);console.log(`TASK=${s.task_id}\nBRANCH=${b}\nPUSH=${c}`);}
-function save(r,o){const s=active(r);if(s.status!=='IN_PROGRESS')throw Error('Tâche non IN_PROGRESS');const msg=req(o,'message');s.next_action=o['next-action']||'Continuer.';s.last_checkpoint_at=new Date().toISOString();put(paths(r,s.task_id).state,s);log(r,s,'CHECKPOINT',msg);audit(r,'CHECKPOINT',s,s.agent,msg);dash(r);console.log(`PUSH=${push(r,s,`wip(${s.task_id.toLowerCase()}): ${msg}`)}`);}
-function gate(r,c){const x=spawnSync(c,{cwd:r,shell:true,encoding:'utf8',maxBuffer:50*1024*1024});return{command:c,result:x.status===0?'PASS':'FAIL',exit_code:x.status,output:`${x.stdout||''}${x.stderr||''}`.trim()};}
-function pr(r,s){if(run(r,['gh','--version']).status!==0||run(r,['gh','auth','status']).status!==0)return null;const v=run(r,['gh','pr','view',s.branch,'--json','url','--jq','.url']);if(v.status===0&&v.stdout.trim())return v.stdout.trim();const x=run(r,['gh','pr','create','--draft','--base','main','--head',s.branch,'--title',`${s.task_id} — ${s.title}`,'--body',s.summary||s.title]);return x.status===0?x.stdout.trim():null;}
-function finish(r,o){const s=active(r),summary=req(o,'summary');if(s.status!=='IN_PROGRESS')throw Error('Tâche non IN_PROGRESS');const results=(s.gates||[]).map(c=>gate(r,c)),failed=results.some(x=>x.result==='FAIL'),p=paths(r,s.task_id);s.status=failed?'BLOCKED':'REVIEW';s.finished_at=new Date().toISOString();s.summary=summary;s.gate_results=results;s.blocking_reason=failed?'Gate en échec':null;s.next_action=failed?'Corriger les gates.':'Revue humaine et merge.';fs.mkdirSync(p.evidence,{recursive:true});put(path.join(p.evidence,'agent-gates.json'),results);fs.writeFileSync(p.handoff,`# HANDOFF — ${s.task_id}\n\n- Statut : ${s.status}\n- Branche : ${s.branch}\n- Résumé : ${summary}\n- Prochaine action : ${s.next_action}\n`);put(p.state,s);log(r,s,'FINISH',summary);audit(r,'FINISHED',s,s.agent,s.status);dash(r);const c=push(r,s,`${failed?'wip':'feat'}(${s.task_id.toLowerCase()}): ${s.title}`),url=pr(r,s);console.log(`Tâche: ${s.task_id}\nStatut: ${s.status}\nBranche: ${s.branch}\nDernier commit: ${c}\nPR: ${url||'non créée'}\nGates: ${results.map(x=>x.result).join('/')||'Aucun'}\nRésumé: ${summary}`);}
-function block(r,o){const s=active(r),reason=req(o,'reason'),next=req(o,'next-action');s.status='BLOCKED';s.blocking_reason=reason;s.next_action=next;put(paths(r,s.task_id).state,s);log(r,s,'BLOCKED',reason,next);audit(r,'BLOCKED',s,s.agent,reason);dash(r);console.log(`PUSH=${push(r,s,`wip(${s.task_id.toLowerCase()}): blocked`)}`);}
-function resume(r,o){const id=req(o,'task'),agent=req(o,'agent'),b=`agent/${id.toLowerCase()}`;ok(git(r,'fetch','origin','--prune'),'git fetch');ok(git(r,'switch','-C',b,`origin/${b}`),'git switch');ok(git(r,'pull','--ff-only','origin',b),'git pull');const s=json(paths(r,id).state);if(!['IN_PROGRESS','BLOCKED'].includes(s.status))throw Error('Tâche non reprenable');s.status='IN_PROGRESS';s.agent=agent;s.resumed_at=new Date().toISOString();put(paths(r,id).state,s);log(r,s,'RESUME','Reprise depuis GitHub.');audit(r,'RESUMED',s,agent);dash(r);console.log(`PUSH=${push(r,s,`chore(${id.toLowerCase()}): resume by ${agent}`)}`);}
-function arbitrate(r,o){const s=active(r),q=req(o,'question'),opts=req(o,'options').split('|').map(x=>x.trim()).filter(Boolean),rec=req(o,'recommendation'),ctx=req(o,'context'),next=req(o,'next-action');if(opts.length<2||opts.length>3)throw Error('2 ou 3 options requises');s.status='AWAITING_DECISION';s.arbitration={question:q,options:opts,recommendation:rec,context:ctx,requested_at:new Date().toISOString()};s.next_action=`Après décision: ${next}`;const p=paths(r,s.task_id);fs.mkdirSync(path.dirname(p.arbitration),{recursive:true});fs.writeFileSync(p.arbitration,`# ARBITRAGE — ${s.task_id}\n\n## Décision attendue\n${q}\n\n## Faits\n${ctx}\n\n## Options\n${opts.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\n## Recommandation\n${rec}\n\n## Décision\n_En attente._\n`);put(p.state,s);log(r,s,'ARBITRATION',q,s.next_action);audit(r,'ARBITRATION_REQUIRED',s,s.agent,q);dash(r);const c=push(r,s,`chore(${s.task_id.toLowerCase()}): request arbitration`);console.log(`Tâche: ${s.task_id}\nStatut: AWAITING_DECISION\nBranche: ${s.branch}\nDernier commit: ${c}\nPR: ${pr(r,s)||'non créée'}\nDécision attendue: ${q}\nOptions: ${opts.join(' | ')}\nRecommandation: ${rec}`);}
-function doctor(r){const m=json(path.join(r,'.agent','MANIFEST.json'));ok(git(r,'rev-parse','--is-inside-work-tree'),'Git');ok(git(r,'ls-remote','origin','HEAD'),'Origin');sources(r);console.log(`Gouvernance: ${m.governance_version}\nRuntime: ${m.runtime}\nMode: ${m.execution_mode}\nDiagnostic: PASS`);}
-function status(r){dash(r);console.log(fs.readFileSync(path.join(r,'.agent','STATUS.md'),'utf8'));}
-function help(){console.log('node scripts/agent.mjs start|save|finish|block|resume|arbitrate|doctor|status');}
-try{const r=root(),{cmd,o}=args();({start,save,finish,block,resume,arbitrate,doctor,status}[cmd]||help)(r,o);}catch(e){die(e.message||String(e));}
+const die = message => { console.error(`ERREUR: ${message}`); process.exit(1); };
+const norm = value => String(value).replaceAll('\\', '/').replace(/^\.\//, '');
+const slug = value => String(value || 'subject')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+
+function root() {
+  let dir = process.cwd();
+  while (!fs.existsSync(path.join(dir, '.agent', 'MANIFEST.json'))) {
+    const parent = path.dirname(dir);
+    if (parent === dir) throw new Error('.agent introuvable');
+    dir = parent;
+  }
+  return dir;
+}
+
+function json(file) {
+  return JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
+}
+
+function put(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+function run(repo, args, options = {}) {
+  return spawnSync(args[0], args.slice(1), {
+    cwd: repo,
+    encoding: 'utf8',
+    shell: false,
+    stdio: options.inherit ? 'inherit' : ['ignore', 'pipe', 'pipe'],
+    maxBuffer: 50 * 1024 * 1024
+  });
+}
+
+function ok(result, label) {
+  if (result.status !== 0) {
+    throw new Error(`${label}: ${(result.stderr || result.stdout || '').trim()}`);
+  }
+  return (result.stdout || '').trim();
+}
+
+const git = (repo, ...args) => run(repo, ['git', ...args]);
+const branch = repo => ok(git(repo, 'branch', '--show-current'), 'git branch');
+const head = repo => ok(git(repo, 'rev-parse', 'HEAD'), 'git rev-parse');
+
+function parseArgs() {
+  const [command = 'help', ...args] = process.argv.slice(2);
+  const options = {};
+  for (let index = 0; index < args.length; index += 1) {
+    if (!args[index].startsWith('--')) continue;
+    const key = args[index].slice(2);
+    const next = args[index + 1];
+    if (next && !next.startsWith('--')) {
+      options[key] = next;
+      index += 1;
+    } else {
+      options[key] = true;
+    }
+  }
+  return { command, options };
+}
+
+function required(options, key) {
+  if (!options[key] || options[key] === true) throw new Error(`Option obligatoire: --${key}`);
+  return String(options[key]);
+}
+
+function taskPaths(repo, taskId) {
+  return {
+    task: path.join(repo, '.agent', 'tasks', `${taskId}.md`),
+    state: path.join(repo, '.agent', 'state', `${taskId}.json`),
+    worklog: path.join(repo, '.agent', 'worklogs', `${taskId}.md`),
+    handoff: path.join(repo, '.agent', 'handoffs', `${taskId}.md`),
+    evidence: path.join(repo, '.agent', 'evidence', taskId),
+    arbitration: path.join(repo, '.agent', 'arbitrations', `${taskId}.md`)
+  };
+}
+
+function lanePaths(repo, lane) {
+  return {
+    state: path.join(repo, '.agent', 'lanes', `${lane}.json`),
+    handoff: path.join(repo, '.agent', 'handoffs', `${lane}.md`)
+  };
+}
+
+function states(repo) {
+  return fs.readdirSync(path.join(repo, '.agent', 'state'))
+    .filter(name => /^T-\d{3}\.json$/.test(name))
+    .map(name => json(path.join(repo, '.agent', 'state', name)))
+    .sort((a, b) => a.task_id.localeCompare(b.task_id));
+}
+
+function depsDone(repo, state) {
+  return (state.depends_on || []).every(taskId => json(taskPaths(repo, taskId).state).status === 'DONE');
+}
+
+function laneOf(state) {
+  if (!state.parallel_lane) throw new Error(`${state.task_id} sans parallel_lane`);
+  return state.parallel_lane;
+}
+
+function laneBranch(state) {
+  return `agent/${slug(laneOf(state))}`;
+}
+
+function laneTasks(repo, lane) {
+  return states(repo).filter(state => laneOf(state) === lane);
+}
+
+function nextReadyInLane(repo, lane) {
+  return laneTasks(repo, lane).find(state => state.status === 'READY' && depsDone(repo, state));
+}
+
+function nextReady(repo) {
+  const manifest = json(path.join(repo, '.agent', 'MANIFEST.json'));
+  const all = states(repo);
+  const preferred = all.find(state => state.task_id === manifest.next_ready_task);
+  if (preferred?.status === 'READY' && depsDone(repo, preferred)) return preferred;
+  return all.find(state => state.status === 'READY' && depsDone(repo, state));
+}
+
+function dirty(repo) {
+  const result = run(repo, ['git', 'status', '--porcelain=v1', '-uall']);
+  if (result.status !== 0) throw new Error(`git status: ${(result.stderr || result.stdout || '').trim()}`);
+  const output = (result.stdout || '').replace(/\r?\n$/, '');
+  if (!output) return [];
+  return output.split(/\r?\n/).map(line => norm(line.slice(3).trim()));
+}
+
+function audit(repo, action, state, actor, details = '') {
+  const file = path.join(repo, '.agent', 'audit.ndjson');
+  fs.appendFileSync(file, `${JSON.stringify({
+    at: new Date().toISOString(),
+    action,
+    task: state.task_id,
+    lane: laneOf(state),
+    agent: actor,
+    branch: state.branch,
+    details
+  })}\n`);
+}
+
+function dashboard(repo) {
+  const lines = [
+    '# STATUS — Chantier PDP',
+    '',
+    '> Généré par `scripts/agent.mjs`.',
+    '',
+    '| ID | Lane | Statut | Agent | Branche | Prochaine action |',
+    '|---|---|---|---|---|---|'
+  ];
+  for (const state of states(repo)) {
+    lines.push(`| ${state.task_id} | ${state.parallel_lane || '—'} | ${state.status} | ${state.agent || '—'} | ${state.branch || '—'} | ${(state.next_action || '—').replaceAll('|', '/')} |`);
+  }
+  fs.writeFileSync(path.join(repo, '.agent', 'STATUS.md'), `${lines.join('\n')}\n`);
+}
+
+function log(repo, state, event, message, next = state.next_action) {
+  const paths = taskPaths(repo, state.task_id);
+  fs.mkdirSync(path.dirname(paths.worklog), { recursive: true });
+  if (!fs.existsSync(paths.worklog)) {
+    fs.writeFileSync(paths.worklog, [
+      `# WORKLOG — ${state.task_id}`,
+      '',
+      `- Tâche : ${state.title}`,
+      `- Lane : ${laneOf(state)}`,
+      `- Branche : ${state.branch}`,
+      ''
+    ].join('\n'));
+  }
+  fs.appendFileSync(paths.worklog, [
+    `## ${new Date().toISOString()} — ${event}`,
+    '',
+    `- Résultat : ${String(message).replace(/\r?\n/g, ' ')}`,
+    `- Commit : ${head(repo)}`,
+    `- Prochaine action : ${next || '—'}`,
+    ''
+  ].join('\n') + '\n');
+}
+
+function checksum(file) {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+function validateSources(repo, taskId) {
+  const file = path.join(repo, '.agent', 'SOURCES.json');
+  if (!fs.existsSync(file)) return;
+  const requiredSources = (json(file).sources || []).filter(source =>
+    !(source.required_for || []).length || source.required_for.includes(taskId)
+  );
+  for (const source of requiredSources) {
+    const sourcePath = path.join(repo, norm(source.path));
+    if (!fs.existsSync(sourcePath)) throw new Error(`Source absente: ${source.path}`);
+    if (source.sha256 && checksum(sourcePath) !== source.sha256.toLowerCase()) {
+      throw new Error(`Checksum source invalide: ${source.path}`);
+    }
+  }
+}
+
+function active(repo) {
+  const currentBranch = branch(repo);
+  const activeStates = states(repo).filter(state =>
+    state.branch === currentBranch &&
+    ['IN_PROGRESS', 'AWAITING_DECISION', 'BLOCKED'].includes(state.status)
+  );
+  if (activeStates.length !== 1) throw new Error(`Tâche active introuvable sur ${currentBranch}`);
+  return activeStates[0];
+}
+
+function push(repo, state, message) {
+  for (const file of dirty(repo)) ok(git(repo, 'add', '-A', '--', file), `git add ${file}`);
+  if (git(repo, 'diff', '--cached', '--quiet').status !== 0) {
+    ok(git(repo, 'commit', '-m', message), 'git commit');
+  }
+  ok(git(repo, 'push', '-u', 'origin', state.branch), 'git push');
+  return head(repo);
+}
+
+function switchToLane(repo, state, baseBranch) {
+  const subjectBranch = laneBranch(state);
+  ok(git(repo, 'fetch', 'origin', '--prune'), 'git fetch');
+  const exists = git(repo, 'ls-remote', '--exit-code', '--heads', 'origin', subjectBranch).status === 0;
+  if (exists) {
+    ok(git(repo, 'switch', '-C', subjectBranch, `origin/${subjectBranch}`), 'git switch');
+    ok(git(repo, 'pull', '--ff-only', 'origin', subjectBranch), 'git pull');
+  } else {
+    ok(git(repo, 'switch', '-C', subjectBranch, `origin/${baseBranch}`), 'git switch');
+  }
+  return { subjectBranch, exists };
+}
+
+function startTask(repo, state, agent, subjectBranch, message = 'START') {
+  state.status = 'IN_PROGRESS';
+  state.agent = agent;
+  state.branch = subjectBranch;
+  state.started_at = state.started_at || new Date().toISOString();
+  state.resumed_at = new Date().toISOString();
+  state.base_commit = state.base_commit || head(repo);
+  state.next_action = 'Exécuter une petite unité cohérente puis save.';
+  put(taskPaths(repo, state.task_id).state, state);
+  log(repo, state, message, `Tâche active dans ${laneOf(state)}.`);
+  audit(repo, message, state, agent);
+  dashboard(repo);
+  return push(repo, state, `chore(${state.task_id.toLowerCase()}): start in ${slug(laneOf(state))}`);
+}
+
+function start(repo, options) {
+  if (dirty(repo).length) throw new Error('Working tree non propre');
+  ok(git(repo, 'ls-remote', 'origin', 'HEAD'), 'Accès GitHub');
+
+  const manifest = json(path.join(repo, '.agent', 'MANIFEST.json'));
+  const initial = options.task ? json(taskPaths(repo, options.task).state) : nextReady(repo);
+  if (!initial) throw new Error('Aucune tâche READY');
+  const agent = required(options, 'agent');
+  const lane = laneOf(initial);
+
+  const { subjectBranch } = switchToLane(repo, initial, manifest.base_branch || 'main');
+  const selected = options.task
+    ? json(taskPaths(repo, options.task).state)
+    : nextReadyInLane(repo, lane);
+
+  if (!selected) throw new Error(`Aucune tâche READY dans ${lane}`);
+  if (selected.status !== 'READY' || !depsDone(repo, selected)) throw new Error('Tâche non exécutable');
+
+  validateSources(repo, selected.task_id);
+  const commit = startTask(repo, selected, agent, subjectBranch);
+  console.log(`TASK=${selected.task_id}\nLANE=${lane}\nBRANCH=${subjectBranch}\nPUSH=${commit}`);
+}
+
+function save(repo, options) {
+  const state = active(repo);
+  if (state.status !== 'IN_PROGRESS') throw new Error('Tâche non IN_PROGRESS');
+  const message = required(options, 'message');
+  state.next_action = options['next-action'] || 'Continuer dans la même lane.';
+  state.last_checkpoint_at = new Date().toISOString();
+  put(taskPaths(repo, state.task_id).state, state);
+  log(repo, state, 'CHECKPOINT', message);
+  audit(repo, 'CHECKPOINT', state, state.agent, message);
+  dashboard(repo);
+  console.log(`PUSH=${push(repo, state, `wip(${state.task_id.toLowerCase()}): ${message}`)}`);
+}
+
+function runGate(repo, command) {
+  const result = spawnSync(command, {
+    cwd: repo,
+    shell: true,
+    encoding: 'utf8',
+    maxBuffer: 50 * 1024 * 1024
+  });
+  return {
+    command,
+    result: result.status === 0 ? 'PASS' : 'FAIL',
+    exit_code: result.status,
+    output: `${result.stdout || ''}${result.stderr || ''}`.trim()
+  };
+}
+
+function openPr(repo, state) {
+  if (run(repo, ['gh', '--version']).status !== 0 || run(repo, ['gh', 'auth', 'status']).status !== 0) return null;
+  const current = run(repo, ['gh', 'pr', 'view', state.branch, '--json', 'url', '--jq', '.url']);
+  if (current.status === 0 && current.stdout.trim()) return current.stdout.trim();
+  const lane = laneOf(state);
+  const result = run(repo, [
+    'gh', 'pr', 'create', '--draft',
+    '--base', 'main',
+    '--head', state.branch,
+    '--title', `${lane} — livraison du sujet`,
+    '--body', state.summary || `Livraison complète de ${lane}`
+  ]);
+  return result.status === 0 ? result.stdout.trim() : null;
+}
+
+function writeLaneReview(repo, state, summary) {
+  const lane = laneOf(state);
+  const paths = lanePaths(repo, lane);
+  const completed = laneTasks(repo, lane).filter(item => item.status === 'DONE').map(item => item.task_id);
+  const laneState = {
+    lane,
+    branch: state.branch,
+    status: 'REVIEW',
+    tasks_done: completed,
+    last_task: state.task_id,
+    summary,
+    updated_at: new Date().toISOString()
+  };
+  put(paths.state, laneState);
+  fs.writeFileSync(paths.handoff, [
+    `# HANDOFF — ${lane}`,
+    '',
+    `- Statut : REVIEW`,
+    `- Branche : ${state.branch}`,
+    `- Tâches terminées : ${completed.join(', ') || '—'}`,
+    `- Résumé : ${summary}`,
+    '- Prochaine action : revue humaine de la branche complète puis merge dans main.',
+    ''
+  ].join('\n'));
+}
+
+function finish(repo, options) {
+  const state = active(repo);
+  const summary = required(options, 'summary');
+  if (state.status !== 'IN_PROGRESS') throw new Error('Tâche non IN_PROGRESS');
+
+  const results = (state.gates || []).map(command => runGate(repo, command));
+  const failed = results.some(result => result.result === 'FAIL');
+  const paths = taskPaths(repo, state.task_id);
+  fs.mkdirSync(paths.evidence, { recursive: true });
+  put(path.join(paths.evidence, 'agent-gates.json'), results);
+
+  state.finished_at = new Date().toISOString();
+  state.summary = summary;
+  state.gate_results = results;
+  state.blocking_reason = failed ? 'Gate en échec' : null;
+
+  if (failed) {
+    state.status = 'BLOCKED';
+    state.next_action = 'Corriger les gates dans la même branche de lane.';
+    put(paths.state, state);
+    log(repo, state, 'BLOCKED', summary);
+    audit(repo, 'BLOCKED', state, state.agent, 'Gate en échec');
+    dashboard(repo);
+    const commit = push(repo, state, `wip(${state.task_id.toLowerCase()}): gates failed`);
+    console.log(`Tâche: ${state.task_id}\nStatut: BLOCKED\nBranche: ${state.branch}\nDernier commit: ${commit}\nPR: non créée\nGates: ${results.map(result => result.result).join('/')}\nRésumé: ${summary}`);
+    return;
+  }
+
+  state.status = 'DONE';
+  state.next_action = 'Passer automatiquement à la tâche suivante de la même lane.';
+  put(paths.state, state);
+  log(repo, state, 'DONE', summary);
+  audit(repo, 'DONE_IN_LANE', state, state.agent, summary);
+  dashboard(repo);
+  let commit = push(repo, state, `feat(${state.task_id.toLowerCase()}): ${state.title}`);
+
+  const next = nextReadyInLane(repo, laneOf(state));
+  if (next) {
+    commit = startTask(repo, next, state.agent, state.branch, 'AUTO_START');
+    console.log(`Tâche: ${state.task_id}\nStatut: DONE\nBranche: ${state.branch}\nDernier commit: ${commit}\nPR: non créée\nGates: ${results.map(result => result.result).join('/')}\nRésumé: ${summary}; poursuite automatique sur ${next.task_id}`);
+    return;
+  }
+
+  state.next_action = 'Revue humaine de la branche complète puis merge.';
+  put(paths.state, state);
+  writeLaneReview(repo, state, summary);
+  dashboard(repo);
+  commit = push(repo, state, `chore(${slug(laneOf(state))}): ready for review`);
+  const url = openPr(repo, state);
+  console.log(`Tâche: ${state.task_id}\nStatut: REVIEW\nBranche: ${state.branch}\nDernier commit: ${commit}\nPR: ${url || 'non créée'}\nGates: ${results.map(result => result.result).join('/') || 'Aucun'}\nRésumé: ${summary}`);
+}
+
+function block(repo, options) {
+  const state = active(repo);
+  const reason = required(options, 'reason');
+  const next = required(options, 'next-action');
+  state.status = 'BLOCKED';
+  state.blocking_reason = reason;
+  state.next_action = next;
+  put(taskPaths(repo, state.task_id).state, state);
+  log(repo, state, 'BLOCKED', reason, next);
+  audit(repo, 'BLOCKED', state, state.agent, reason);
+  dashboard(repo);
+  console.log(`PUSH=${push(repo, state, `wip(${state.task_id.toLowerCase()}): blocked`)}`);
+}
+
+function resume(repo, options) {
+  const taskId = required(options, 'task');
+  const agent = required(options, 'agent');
+  const initial = json(taskPaths(repo, taskId).state);
+  const subjectBranch = laneBranch(initial);
+  ok(git(repo, 'fetch', 'origin', '--prune'), 'git fetch');
+  ok(git(repo, 'switch', '-C', subjectBranch, `origin/${subjectBranch}`), 'git switch');
+  ok(git(repo, 'pull', '--ff-only', 'origin', subjectBranch), 'git pull');
+  const state = json(taskPaths(repo, taskId).state);
+  if (!['IN_PROGRESS', 'BLOCKED'].includes(state.status)) throw new Error('Tâche non reprenable');
+  state.status = 'IN_PROGRESS';
+  state.agent = agent;
+  state.branch = subjectBranch;
+  state.resumed_at = new Date().toISOString();
+  put(taskPaths(repo, taskId).state, state);
+  log(repo, state, 'RESUME', 'Reprise depuis la branche de lane.');
+  audit(repo, 'RESUMED', state, agent);
+  dashboard(repo);
+  console.log(`PUSH=${push(repo, state, `chore(${taskId.toLowerCase()}): resume by ${agent}`)}`);
+}
+
+function arbitrate(repo, options) {
+  const state = active(repo);
+  const question = required(options, 'question');
+  const choices = required(options, 'options').split('|').map(value => value.trim()).filter(Boolean);
+  const recommendation = required(options, 'recommendation');
+  const context = required(options, 'context');
+  const next = required(options, 'next-action');
+  if (choices.length < 2 || choices.length > 3) throw new Error('2 ou 3 options requises');
+
+  state.status = 'AWAITING_DECISION';
+  state.arbitration = {
+    question,
+    options: choices,
+    recommendation,
+    context,
+    requested_at: new Date().toISOString()
+  };
+  state.next_action = `Après décision: ${next}`;
+  const paths = taskPaths(repo, state.task_id);
+  fs.mkdirSync(path.dirname(paths.arbitration), { recursive: true });
+  fs.writeFileSync(paths.arbitration, [
+    `# ARBITRAGE — ${state.task_id}`,
+    '',
+    '## Décision attendue',
+    question,
+    '',
+    '## Faits',
+    context,
+    '',
+    '## Options',
+    ...choices.map((choice, index) => `${index + 1}. ${choice}`),
+    '',
+    '## Recommandation',
+    recommendation,
+    '',
+    '## Décision',
+    '_En attente._',
+    ''
+  ].join('\n'));
+  put(paths.state, state);
+  log(repo, state, 'ARBITRATION', question, state.next_action);
+  audit(repo, 'ARBITRATION_REQUIRED', state, state.agent, question);
+  dashboard(repo);
+  const commit = push(repo, state, `chore(${state.task_id.toLowerCase()}): request arbitration`);
+  console.log(`Tâche: ${state.task_id}\nStatut: AWAITING_DECISION\nBranche: ${state.branch}\nDernier commit: ${commit}\nPR: non créée\nDécision attendue: ${question}\nOptions: ${choices.join(' | ')}\nRecommandation: ${recommendation}`);
+}
+
+function doctor(repo) {
+  const manifest = json(path.join(repo, '.agent', 'MANIFEST.json'));
+  ok(git(repo, 'rev-parse', '--is-inside-work-tree'), 'Git');
+  ok(git(repo, 'ls-remote', 'origin', 'HEAD'), 'Origin');
+  validateSources(repo);
+  console.log(`Gouvernance: ${manifest.governance_version}\nRuntime: ${manifest.runtime}\nBranch model: ${manifest.branch_model}\nMode: ${manifest.execution_mode}\nDiagnostic: PASS`);
+}
+
+function status(repo) {
+  dashboard(repo);
+  console.log(fs.readFileSync(path.join(repo, '.agent', 'STATUS.md'), 'utf8'));
+}
+
+function help() {
+  console.log('node scripts/agent.mjs start|save|finish|block|resume|arbitrate|doctor|status');
+}
+
+try {
+  const repo = root();
+  const { command, options } = parseArgs();
+  const commands = { start, save, finish, block, resume, arbitrate, doctor, status };
+  (commands[command] || help)(repo, options);
+} catch (error) {
+  die(error.message || String(error));
+}
