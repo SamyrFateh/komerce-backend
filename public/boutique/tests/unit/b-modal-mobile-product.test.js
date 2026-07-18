@@ -61,6 +61,7 @@ function installDom() {
   document.body.innerHTML =
     '<div id="k-modal">' +
       '<div id="k-modal-variants"></div>' +
+      '<span class="k-modal-sku" id="k-modal-sku"></span>' +
       '<div class="k-modal-price-row">' +
         '<span id="k-modal-price"></span>' +
         '<span id="k-modal-old-price"></span>' +
@@ -82,7 +83,7 @@ function installDom() {
   dom.modalPromoBadge = document.createElement('div');
   dom.modalPrice = document.getElementById('k-modal-price');
   dom.modalOldPrice = document.getElementById('k-modal-old-price');
-  dom.modalSku = document.createElement('div');
+  dom.modalSku = document.getElementById('k-modal-sku');
   dom.modalStock = document.createElement('div');
 }
 
@@ -608,5 +609,46 @@ describe('b-modal-mobile-product — carrousel suggestions mobile (M4, spec §5.
     const sugContainer = document.getElementById('k-modal-suggestions');
     expect(sugContainer).not.toBeNull();
     expect(sugContainer.id).toBe('k-modal-suggestions');
+  });
+});
+
+describe('b-modal-mobile-product — référence produit sous le titre (M5, spec §5.3)', () => {
+  // La référence est rendue dans dom.modalSku (#k-modal-sku) par renderIdentity.
+  // Spec §5.3 : 11px / 400 / muted, fallback silencieux si propriété absente.
+  // CSS vérifié dans modal-mobile-canonical.css (override mobile-only).
+
+  beforeEach(() => {
+    installDom();
+    state.detail = null;
+  });
+
+  test('référence présente dans le contrat : affichée avec préfixe Réf.', () => {
+    const detail = baseDetail({
+      product: { id: 'p1', name: 'Chaussure Elite Pro', description: '', category: '', reference: 'GOLD-BLU-44' },
+      inventory_model: 'SKU',
+      sellable_units: [],
+    });
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    const sku = document.getElementById('k-modal-sku');
+    expect(sku.textContent).toBe('Réf. GOLD-BLU-44');
+    expect(sku.hidden).toBe(false);
+  });
+
+  test('référence absente du contrat : nœud masqué, aucun placeholder vide', () => {
+    const detail = baseDetail({
+      product: { id: 'p1', name: 'Chaussure Elite Pro', description: '', category: '' },
+      inventory_model: 'SKU',
+      sellable_units: [],
+    });
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    const sku = document.getElementById('k-modal-sku');
+    expect(sku.hidden).toBe(true);
+    expect(sku.textContent.trim()).toBe('');
   });
 });

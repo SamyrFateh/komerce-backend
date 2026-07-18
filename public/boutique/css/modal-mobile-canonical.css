@@ -40,10 +40,11 @@
     overflow: hidden;
   }
 
-  /* Reference: compact */
+  /* Reference: compact — spec §5.3 : 11px / 400 / muted, fallback silencieux si absente */
   #k-modal .k-modal-sku {
     font-size: 11px;
-    color: var(--text-light);
+    font-weight: 400;
+    color: var(--text-muted);
     margin-top: 1px;
   }
 
