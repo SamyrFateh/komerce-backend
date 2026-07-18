@@ -74,7 +74,7 @@ if('serviceWorker' in navigator){
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=126">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=166">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=168">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=60">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
@@ -416,7 +416,6 @@ if('serviceWorker' in navigator){
           <div class="k-modal-info">
             <div class="k-modal-name-row">
               <h2 id="k-modal-name"></h2>
-              <button class="k-modal-fav-btn" id="k-modal-fav-btn" aria-label="Ajouter aux favoris">🤍</button>
             </div>
             <span class="k-modal-sku" id="k-modal-sku"></span>
             <div class="k-modal-price-row">
@@ -426,7 +425,6 @@ if('serviceWorker' in navigator){
             <!-- ── Zones desktop enrichies — peuplées par b-modal-desktop-enhancers.js ── -->
             <!-- Masquées mobile (display:none par défaut) · révélées ≥900px via modal.css -->
             <div id="k-modal-aed-price" class="k-modal-aed-price"></div>
-            <div id="k-modal-flash-bar" class="k-modal-flash-bar"></div>
             <div id="k-modal-stock-bar" class="k-modal-stock-bar"></div>
             <!-- Variant picker (Taille / Couleur / Pointure) — juste après le prix -->
             <div id="k-modal-variants" class="k-modal-variants"></div>
@@ -435,9 +433,6 @@ if('serviceWorker' in navigator){
               <span id="k-modal-cat"></span>
               <span id="k-modal-stock"></span>
             </div>
-            <!-- ── Livraison + Paiement — injectés par b-modal-desktop-enhancers.js ── -->
-            <div id="k-modal-delivery" class="k-modal-delivery"></div>
-            <div id="k-modal-payment" class="k-modal-payment"></div>
           </div><!-- end .k-modal-info -->
         <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
         <!-- Sur mobile : display:contents rend product-zone transparent → ordre naturel -->
@@ -464,6 +459,13 @@ if('serviceWorker' in navigator){
         <h3>Vous aimerez aussi</h3>
         <div class="k-sug-rail" id="k-sug-rail"></div>
       </div>
+      <!-- D4 (T-016) : Livraison + Paiement déplacés sous les suggestions —
+           panneau commercial allégé conformément à D-P1. Rendus par
+           renderDeliveryOptions() / renderPaymentSection() dans
+           b-modal-desktop-product.js (getElementById, insensible à la
+           position DOM). -->
+      <div id="k-modal-delivery" class="k-modal-delivery"></div>
+      <div id="k-modal-payment" class="k-modal-payment"></div>
     </div>
   </div>
 </div>

@@ -20,7 +20,8 @@ import { setupModalDesktopEnhancers } from './b-modal-desktop-enhancers.js';
 import { isDesktop } from './b-scroll-owner.js';
 import { setupProductOpenContract } from './b-product-open-contract.js';
 import { setupCartProductOpenStyle } from './b-cart-product-open-style.js';
-import { setupApprocheCHybridPdp } from './b-modal-approche-c-hybrid.js';
+// D-P1 (T-016 pt.2) : Approche-C hybride désactivée sur PDP — plus importée
+// ici. Module conservé (dormant) pour un usage hors PDP éventuel.
 import { setupPdpCurationSuggestions } from './b-pdp-curation-suggestions.js';
 import { setupHomePremiumV1 } from './b-home-premium-v1.js';
 import { setupProductDetailModal } from './b-modal-product-detail-bootstrap.js';
@@ -34,7 +35,6 @@ function setupBoutiqueRuntime() {
   // idempotent ; ré-appelé sans effet par setupDesktopUpgrade() ci-dessous).
   setupModalDesktopEnhancers();
   setupDesktopUpgrade();
-  setupApprocheCHybridPdp();
   setupPdpCurationSuggestions();
   setupHomePremiumV1();
   setupProductDetailModal();
@@ -62,7 +62,6 @@ if (typeof window !== 'undefined') {
       if (isDesktop() && !_desktopUpgradeDone) {
         _desktopUpgradeDone = true;
         setupDesktopUpgrade();
-        setupApprocheCHybridPdp();
         setupPdpCurationSuggestions();
         setupHomePremiumV1();
       }

@@ -2620,18 +2620,17 @@ html.k-mobile-premium-v1 .k-chip-label {
     grid-column: 3; grid-row: 1; height: 44px; border-radius: 999px;
     background: var(--cta-green); color: var(--white);
     font-size: 15px; font-weight: 600;
-    box-shadow: 0 4px 14px rgba(42,122,62,0.22);
+    box-shadow: 0 4px 14px var(--shadow-cta-22);
     transition: background .18s, box-shadow .18s, transform .1s;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn:hover {
-    background: var(--cta-green-dark, var(--cta-green)); box-shadow: 0 6px 20px rgba(42,122,62,0.30);
+    background: var(--cta-green-dark, var(--cta-green)); box-shadow: 0 6px 20px var(--shadow-cta-30);
   }
   #k-modal .k-modal-subtotal {
-    grid-column: 1 / -1; grid-row: 2;
-    text-align: right; padding: 2px 2px 0;
-    font-size: 12px; color: var(--text-muted);
+    /* D4 pt.4 — masqué : seconde source transactionnelle hors panier, sous-total
+       sticky supprimé du panneau commercial desktop conformément à D-P1. */
+    display: none;
   }
-  #k-modal .k-modal-subtotal strong { color: var(--coral); font-size: 14px; font-weight: 700; }
 
   /* ── Suggestions : pleine largeur SOUS product-zone ─────── */
   /* Layout commun — owned : modal-shell */
@@ -2674,6 +2673,16 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: static; margin-bottom: 16px; padding: 0 0 10px; border-bottom: 1px solid var(--sand-dark); background: none; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: static; background: none; padding: 0 0 16px; margin-bottom: 0; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section { margin-top: 32px; }
+
+  /* ── Livraison + Paiement : pleine largeur SOUS suggestions (D4 pt.3) ──── */
+  /* Position/layout owned : modal-shell. Contenu interne (options, badges…) reste owned modal-product.css. */
+  #k-modal-delivery.k-modal-delivery,
+  #k-modal-payment.k-modal-payment {
+    display: block; width: 100%;
+    margin-top: 0; padding: 28px 36px 0;
+    border-top: none;
+  }
+  #k-modal-payment.k-modal-payment { padding-top: 0; padding-bottom: 36px; }
 
   /* ── Hover & focus ───────────────────────────────────────── */
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px var(--border-ocean-10); }

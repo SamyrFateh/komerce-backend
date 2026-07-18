@@ -97,8 +97,8 @@ Il est interdit de recréer un fetch Product Detail mobile et un fetch Product D
 | Composition produit mobile | `public/boutique/js/b-modal-mobile-product.js` |
 | Composition produit desktop | `public/boutique/js/b-modal-desktop-product.js` |
 | Images, carousel, compteur, lightbox fullscreen, **Voir en grand** | `public/boutique/js/b-modal-image-ux.js` |
-| Navigation / partage / trust / récemment vus desktop | `public/boutique/js/b-modal-desktop-enhancers.js` |
-| Placement actions + UI paiement hybride desktop | `public/boutique/js/b-modal-approche-c-hybrid.js` |
+| Navigation / partage / trust / récemment vus desktop | `public/boutique/js/b-modal-desktop-enhancers.js` — no-op depuis T-016/D-P1 (bloc retiré du panneau commercial) |
+| Placement actions + UI paiement hybride desktop | `public/boutique/js/b-modal-approche-c-hybrid.js` — désactivé sur PDP depuis T-016/D-P1 (non importé par `main.js` ; module conservé, non appelé) |
 | Social proof conditionnel | `public/boutique/js/b-modal-social-proof.js` |
 | Navigation produit précédent/suivant | `public/boutique/js/b-modal-nav.js` |
 | Suggestions / recommandations | `public/boutique/js/b-modal-suggestions.js` |
@@ -269,6 +269,20 @@ Gratuit
 - mobile : `b-modal-mobile-product.js` ;
 - desktop : `b-modal-desktop-product.js`.
 
+### Placement DOM (desktop)
+
+Depuis T-016/D4 pt.3, `#k-modal-delivery` et `#k-modal-payment` sont
+positionnés dans `index.html` **sous** `#k-modal-suggestions` (pleine largeur,
+hors colonne `.k-modal-info`). Les IDs et le peuplement (`getElementById`)
+sont inchangés — seule la position DOM a bougé. Layout/position owned
+`modal-shell.css` ; contenu interne (options, badges…) reste owned
+`modal-product.css`.
+
+Le sous-total sticky desktop (`.k-modal-subtotal`) est masqué depuis
+T-016/D4 pt.4 (`display: none` dans `modal-shell.css`, `@media (min-width: 900px)`)
+: seconde source transactionnelle jugée redondante avec le panier, hors
+périmètre panier lui-même (non touché).
+
 ### Interdit
 
 - `product.delivery_delay || '3 à 5 semaines'` ;
@@ -343,14 +357,18 @@ Il ne calcule aucune vérité métier nouvelle.
 
 ### `b-modal-desktop-enhancers.js`
 
-Est un enhancer de composition uniquement :
+**Désactivé sur PDP depuis T-016/D-P1** — `onModalOpened()` est un no-op ;
+les injecteurs de breadcrumb, partage, trust générique et récemment vus ont
+été retirés du module (dette de code résiduelle : les abonnements bus restent
+idempotents, cf. MDP-3). Documentation des anciennes responsabilités
+conservée à titre historique — n'est plus vraie tant que D-P1 tient :
 
 - breadcrumb ;
 - partage ;
 - trust générique ;
 - récemment vus.
 
-Il est interdit qu'il reconstruise :
+Il reste interdit qu'un futur enhancer reconstruise :
 
 - prix ;
 - ancien prix ;
@@ -363,14 +381,17 @@ Il est interdit qu'il reconstruise :
 
 ### `b-modal-approche-c-hybrid.js`
 
-Peut composer :
+**Désactivé sur PDP depuis T-016/D-P1** — non importé/appelé par `main.js`.
+Le module et ses tests sont conservés (dormants), mais ne s'exécutent plus
+au runtime PDP. Ancien périmètre de composition (n'est plus vrai tant que
+D-P1 tient) :
 
 - placement des actions ;
 - garde minimale de quantité ;
 - UI de choix paiement ;
 - entrée partage existante.
 
-Il ne rend plus :
+Il ne rendait déjà plus :
 
 - livraison produit ;
 - sous-total produit.
@@ -443,8 +464,8 @@ Invariants :
 | Composition mobile | `b-modal-mobile-product.js` |
 | Composition desktop transactionnelle | `b-modal-desktop-product.js` |
 | Carousel / compteur / fullscreen | `b-modal-image-ux.js` |
-| Navigation / partage / trust / récemment vus desktop | `b-modal-desktop-enhancers.js` |
-| Placement actions / UI paiement hybride | `b-modal-approche-c-hybrid.js` |
+| Navigation / partage / trust / récemment vus desktop | `b-modal-desktop-enhancers.js` — no-op depuis T-016/D-P1 |
+| Placement actions / UI paiement hybride | `b-modal-approche-c-hybrid.js` — désactivé sur PDP depuis T-016/D-P1 |
 | Suggestions | `b-modal-suggestions.js` |
 | Panier depuis modal | `b-modal-cart.js` |
 
@@ -547,7 +568,6 @@ TOPBAR (sticky shell existant)
 MEDIA (48vh max, aspect natif)
 ├── Carousel swipe
 ├── Badge promo -N% (si pricing.promo_pct > 0)
-├── ♡ Favori (overlay sur image)
 ├── Voir en grand
 └── Compteur 1/N
 

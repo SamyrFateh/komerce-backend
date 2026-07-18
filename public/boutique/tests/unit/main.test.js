@@ -11,7 +11,6 @@ const mockSetupSharePhoneGuard = jest.fn();
 const mockSetupDesktopUpgrade = jest.fn();
 const mockSetupProductOpenContract = jest.fn();
 const mockSetupCartProductOpenStyle = jest.fn();
-const mockSetupApprocheCHybridPdp = jest.fn();
 const mockSetupPdpCurationSuggestions = jest.fn();
 const mockSetupHomePremiumV1 = jest.fn();
 const mockSetupProductDetailModal = jest.fn();
@@ -42,9 +41,6 @@ jest.mock('../../js/b-product-open-contract.js', () => ({
 }));
 jest.mock('../../js/b-cart-product-open-style.js', () => ({
   setupCartProductOpenStyle: mockSetupCartProductOpenStyle,
-}));
-jest.mock('../../js/b-modal-approche-c-hybrid.js', () => ({
-  setupApprocheCHybridPdp: mockSetupApprocheCHybridPdp,
 }));
 jest.mock('../../js/b-pdp-curation-suggestions.js', () => ({
   setupPdpCurationSuggestions: mockSetupPdpCurationSuggestions,
@@ -79,7 +75,6 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   jest.advanceTimersByTime(150);
 
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(2);
-  expect(mockSetupApprocheCHybridPdp).toHaveBeenCalledTimes(2);
   expect(mockSetupPdpCurationSuggestions).toHaveBeenCalledTimes(2);
   expect(mockSetupHomePremiumV1).toHaveBeenCalledTimes(2);
 
@@ -88,4 +83,12 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   expect(mockSetupDesktopUpgrade).toHaveBeenCalledTimes(2);
   expect(mockSetupProductDetailModal).toHaveBeenCalledTimes(1);
   jest.useRealTimers();
+});
+
+test('T-016 : main.js n\'importe plus b-modal-approche-c-hybrid.js (D-P1/D-P2)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../../js/main.js'), 'utf8');
+  expect(source).not.toMatch(/b-modal-approche-c-hybrid/);
+  expect(source).not.toMatch(/setupApprocheCHybridPdp/);
 });

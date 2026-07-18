@@ -1,0 +1,39 @@
+T-016 — Preuve DOM (index.html, état final post-implémentation)
+==================================================================
+
+1) Favori absent du DOM initial PDP (D-P2, pt.6)
+--------------------------------------------------
+$ grep -n "k-modal-fav-btn" public/boutique/index.html
+(aucune occurrence — attendu)
+
+2) k-modal-flash-bar retiré du DOM initial (pt.5)
+--------------------------------------------------
+$ grep -n "k-modal-flash-bar" public/boutique/index.html
+(aucune occurrence dans index.html — attendu ; le code de population dans b-modal-desktop-product.js reste gardé par un null-check, cf. pt.5)
+
+3) Livraison/Paiement positionnés SOUS #k-modal-suggestions (pt.3)
+--------------------------------------------------------------------
+$ grep -n "k-modal-suggestions\|k-modal-delivery\|k-modal-payment" public/boutique/index.html
+458:      <div class="k-modal-suggestions" id="k-modal-suggestions">
+467:      <div id="k-modal-delivery" class="k-modal-delivery"></div>
+468:      <div id="k-modal-payment" class="k-modal-payment"></div>
+
+4) Sous-total sticky desktop masqué (pt.4)
+--------------------------------------------------
+$ grep -n "k-modal-subtotal" public/boutique/css/modal-shell.css
+253:.k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
+254:.k-modal-subtotal strong { color: var(--coral); font-weight: 700; font-size: 13px; }
+662:  #k-modal .k-modal-subtotal {
+
+5) Approche-C hybride non importée sur PDP (pt.2)
+--------------------------------------------------
+$ grep -n "approche-c-hybrid\|ApprocheCHybrid" public/boutique/js/main.js
+(aucune occurrence — attendu)
+
+6) Enhancer desktop (breadcrumb/trust/share/récemment vus) neutralisé (pt.1)
+------------------------------------------------------------------------------
+$ grep -n "function onModalOpened" public/boutique/js/b-modal-desktop-enhancers.js
+45:function onModalOpened() {}
+
+==================================================================
+Tous les critères D-P1/D-P2 vérifiés factuellement ci-dessus.
