@@ -5,7 +5,7 @@
   "finding_id": "M10",
   "wave": "P2",
   "parallel_lane": "LANE-MOBILE-SHELL",
-  "status": "REVIEW",
+  "status": "DONE",
   "priority": "MEDIUM",
   "depends_on": [
     "T-001"
@@ -26,18 +26,19 @@
     "npm --prefix public/boutique run audit:gate"
   ],
   "agent": "claude-sonnet-session-3",
-  "reviewer": null,
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
   "branch": "agent/lane-mobile-renderer",
   "started_at": "2026-07-18T20:21:50Z",
   "lease_until": null,
   "finished_at": "2026-07-18T20:21:50Z",
-  "reviewed_at": null,
+  "reviewed_at": "2026-07-18T22:32:00Z",
   "base_commit": null,
   "last_commit": null,
   "changed_files": [
     "public/boutique/css/modal-shell.css",
-    "public/boutique/css/dist/components.css"
+    "public/boutique/css/dist/components.css",
+    ".agent/evidence/T-011/mobile-stepper.png"
   ],
   "gate_results": [
     {
@@ -55,10 +56,14 @@
     {
       "gate": "check:breakpoints",
       "result": "PASS"
+    },
+    {
+      "gate": "reviewer source verification",
+      "result": "PASS — .k-qty final border-radius:8px et background:var(--hero-bg); logique inchangée"
     }
   ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": "M10 : stepper border-radius 50px→8px, background sand→hero-bg. Playwright=8px hero-bg. Bundle v164.",
-  "next_action": "Revue humaine."
+  "review_decision": "APPROVE",
+  "summary": "M10 approuvé : modification CSS strictement visuelle du stepper.",
+  "next_action": "T-011 clôturée."
 }
