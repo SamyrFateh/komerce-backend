@@ -1,0 +1,45 @@
+{
+  "task_id": "T-020",
+  "title": "D8 — Grille desktop 60/1fr/310 puis 64/1fr/340",
+  "feature_id": "modal-product",
+  "finding_id": "D8",
+  "wave": "P2",
+  "parallel_lane": "LANE-DESKTOP-LAYOUT",
+  "status": "READY",
+  "priority": "HIGH",
+  "depends_on": [
+    "T-001"
+  ],
+  "allowed_files": [
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    ".agent/evidence/T-020/**"
+  ],
+  "forbidden_files": [
+    "display:grid",
+    "Gate render-static"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run deploy:css",
+    "npm --prefix public/boutique run check:cache",
+    "npm --prefix public/boutique run check:breakpoints",
+    "npm --prefix public/boutique run audit:ownership",
+    "npm --prefix public/boutique run audit:gate",
+    "npm run gate:feature-audit"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}

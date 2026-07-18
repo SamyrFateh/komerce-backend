@@ -1,0 +1,55 @@
+{
+  "task_id": "T-027",
+  "title": "T2 — Purge du coral hors promotion",
+  "feature_id": "modal-product",
+  "finding_id": "T2",
+  "wave": "P1",
+  "parallel_lane": "LANE-TRANSVERSE",
+  "status": "READY",
+  "priority": "CRITICAL",
+  "depends_on": [
+    "T-008",
+    "T-012",
+    "T-013",
+    "T-015",
+    "T-026"
+  ],
+  "allowed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/modal-media.css",
+    "public/boutique/css/modal-product.css",
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    "public/boutique/css/modal-mobile-canonical.css",
+    "public/boutique/css/modal-enriched-content.css",
+    "public/boutique/css/tokens.css",
+    ".agent/evidence/T-027/**"
+  ],
+  "forbidden_files": [
+    "k-modal--has-promo",
+    "k-modal-promo-badge"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run deploy:css",
+    "npm --prefix public/boutique run check:cache",
+    "npm --prefix public/boutique run check:breakpoints",
+    "npm --prefix public/boutique run audit:ownership",
+    "npm --prefix public/boutique run audit:gate",
+    "npm run gate:feature-audit"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}

@@ -1,0 +1,56 @@
+{
+  "task_id": "T-029",
+  "title": "T4 — Normalisation globale ombres et dégradés",
+  "feature_id": "modal-product",
+  "finding_id": "T4",
+  "wave": "P3",
+  "parallel_lane": "LANE-FINISH",
+  "status": "READY",
+  "priority": "HIGH",
+  "depends_on": [
+    "T-018",
+    "T-019",
+    "T-021",
+    "T-022",
+    "T-025",
+    "T-027"
+  ],
+  "allowed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/modal-media.css",
+    "public/boutique/css/modal-product.css",
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    "public/boutique/css/modal-mobile-canonical.css",
+    "public/boutique/css/modal-enriched-content.css",
+    "public/boutique/css/tokens.css",
+    ".agent/evidence/T-029/**"
+  ],
+  "forbidden_files": [
+    "Ombre modale neutre",
+    "Ombre sticky 0 -1px 0 var(--border)"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run deploy:css",
+    "npm --prefix public/boutique run check:cache",
+    "npm --prefix public/boutique run check:breakpoints",
+    "npm --prefix public/boutique run audit:ownership",
+    "npm --prefix public/boutique run audit:gate",
+    "npm run gate:feature-audit"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}

@@ -1,0 +1,45 @@
+{
+  "task_id": "T-017",
+  "title": "D5 — Validation série sur desktop",
+  "feature_id": "modal-product",
+  "finding_id": "D5",
+  "wave": "P2",
+  "parallel_lane": "LANE-META",
+  "status": "READY",
+  "priority": "MEDIUM",
+  "depends_on": [
+    "T-007"
+  ],
+  "allowed_files": [
+    "public/boutique/js/b-modal-desktop-product.js",
+    "public/boutique/js/b-modal-image-ux.js",
+    "public/boutique/tests/unit/**",
+    ".agent/evidence/T-017/**"
+  ],
+  "forbidden_files": [
+    "b-modal-social-proof.js"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run check:imports",
+    "npm --prefix public/boutique run audit:arch",
+    "npm --prefix public/boutique run audit:ownership",
+    "npm --prefix public/boutique run audit:gate",
+    "npm --prefix public/boutique run test:unit"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}

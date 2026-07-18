@@ -1,0 +1,5 @@
+# Baselines et reçus de packages locaux.
+*.json
+issued-packages/
+!README.md
+!.gitignore

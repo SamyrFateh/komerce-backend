@@ -1,0 +1,44 @@
+{
+  "task_id": "T-019",
+  "title": "D7 — Zone produit et détails en aplats",
+  "feature_id": "modal-product",
+  "finding_id": "D7",
+  "wave": "P2",
+  "parallel_lane": "LANE-DESKTOP-VISUAL",
+  "status": "READY",
+  "priority": "HIGH",
+  "depends_on": [
+    "T-001"
+  ],
+  "allowed_files": [
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    "public/boutique/css/modal-product.css",
+    ".agent/evidence/T-019/**"
+  ],
+  "forbidden_files": [
+    "Hero et sticky footer"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run deploy:css",
+    "npm --prefix public/boutique run check:cache",
+    "npm --prefix public/boutique run check:breakpoints",
+    "npm --prefix public/boutique run audit:ownership",
+    "npm --prefix public/boutique run audit:gate"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}

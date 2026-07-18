@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "purpose": "Generated files allowed in addition to each task's explicit scope.",
+  "allowed_patterns": [
+    "public/boutique/dist/**",
+    "public/boutique/css/components.css",
+    "public/boutique/css/components.css.map",
+    "public/boutique/*cache-buster*",
+    "public/boutique/**/*cache-buster*",
+    "public/boutique/sw.js",
+    "public/boutique/service-worker.js"
+  ],
+  "rules": [
+    "T-001 must confirm the real deploy-css and cache-buster outputs.",
+    "Remove patterns that do not exist in the repository.",
+    "Do not add source files here to bypass task ownership."
+  ]
+}

@@ -1,0 +1,17 @@
+# Les bundles bruts et sauvegardes restent locaux pour éviter de gonfler Git.
+inbox/*
+outbox/*
+archive/*
+backups/*
+rejected/*
+
+# Conserver les notices.
+!inbox/README.md
+!outbox/README.md
+!archive/README.md
+!backups/README.md
+!rejected/README.md
+
+# Les records sont volontairement versionnés.
+!records/
+!records/**

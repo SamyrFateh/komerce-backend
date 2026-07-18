@@ -1,0 +1,62 @@
+{
+  "task_id": "T-026",
+  "title": "T1 — Normalisation des graisses PDP",
+  "feature_id": "modal-product",
+  "finding_id": "T1",
+  "wave": "P1",
+  "parallel_lane": "LANE-TRANSVERSE",
+  "status": "READY",
+  "priority": "CRITICAL",
+  "depends_on": [
+    "T-002",
+    "T-003",
+    "T-004",
+    "T-005",
+    "T-006",
+    "T-008",
+    "T-009",
+    "T-010",
+    "T-011",
+    "T-012",
+    "T-013",
+    "T-014",
+    "T-015",
+    "T-016"
+  ],
+  "allowed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/modal-media.css",
+    "public/boutique/css/modal-product.css",
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    "public/boutique/css/modal-mobile-canonical.css",
+    "public/boutique/css/modal-enriched-content.css",
+    ".agent/evidence/T-026/**"
+  ],
+  "forbidden_files": [
+    "Sélecteur global #k-modal *",
+    "Styles hors PDP"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run deploy:css",
+    "npm --prefix public/boutique run check:cache",
+    "npm --prefix public/boutique run check:breakpoints",
+    "npm --prefix public/boutique run audit:ownership",
+    "npm --prefix public/boutique run audit:gate"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}

@@ -1,0 +1,46 @@
+{
+  "task_id": "T-013",
+  "title": "D1 — Prix desktop 28/500 sombre",
+  "feature_id": "modal-product",
+  "finding_id": "D1",
+  "wave": "P1",
+  "parallel_lane": "LANE-DESKTOP-TYPE",
+  "status": "READY",
+  "priority": "CRITICAL",
+  "depends_on": [
+    "T-001"
+  ],
+  "allowed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    "public/boutique/css/modal-product.css",
+    "public/boutique/css/tokens.css",
+    ".agent/evidence/T-013/**"
+  ],
+  "forbidden_files": [
+    "Calcul et formatage du prix"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run deploy:css",
+    "npm --prefix public/boutique run check:cache",
+    "npm --prefix public/boutique run check:breakpoints",
+    "npm --prefix public/boutique run audit:ownership",
+    "npm --prefix public/boutique run audit:gate"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}

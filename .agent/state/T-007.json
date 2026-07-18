@@ -1,0 +1,46 @@
+{
+  "task_id": "T-007",
+  "title": "M6 — Série produit dans la meta hero",
+  "feature_id": "modal-product",
+  "finding_id": "M6",
+  "wave": "P2",
+  "parallel_lane": "LANE-META",
+  "status": "READY",
+  "priority": "MEDIUM",
+  "depends_on": [
+    "T-001"
+  ],
+  "allowed_files": [
+    "public/boutique/js/b-modal-image-ux.js",
+    "public/boutique/js/b-modal-mobile-product.js",
+    "public/boutique/js/b-modal-desktop-product.js",
+    "public/boutique/tests/unit/**",
+    ".agent/evidence/T-007/**"
+  ],
+  "forbidden_files": [
+    "b-modal-social-proof.js"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run check:imports",
+    "npm --prefix public/boutique run audit:arch",
+    "npm --prefix public/boutique run audit:ownership",
+    "npm --prefix public/boutique run audit:gate",
+    "npm --prefix public/boutique run test:unit"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}

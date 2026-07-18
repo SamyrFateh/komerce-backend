@@ -1,0 +1,45 @@
+{
+  "task_id": "T-025",
+  "title": "D13 — Ombre modale gris chaud",
+  "feature_id": "modal-product",
+  "finding_id": "D13",
+  "wave": "P3",
+  "parallel_lane": "LANE-FINISH",
+  "status": "READY",
+  "priority": "MEDIUM",
+  "depends_on": [
+    "T-001"
+  ],
+  "allowed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/tokens.css",
+    ".agent/evidence/T-025/**"
+  ],
+  "forbidden_files": [
+    "Autres ombres traitées par T-029"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run deploy:css",
+    "npm --prefix public/boutique run check:cache",
+    "npm --prefix public/boutique run check:breakpoints",
+    "npm --prefix public/boutique run audit:ownership",
+    "npm --prefix public/boutique run audit:gate",
+    "npm run gate:feature-audit"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}

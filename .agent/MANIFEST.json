@@ -1,0 +1,17 @@
+{
+  "governance_version": "2.0",
+  "project": "Komerce",
+  "worksite": "PDP_MAQUETTE_PREMIUM",
+  "package_id": "KOMERCE-PDP-BASE-0001",
+  "base_package_id": null,
+  "created_at": "2026-07-18T00:00:00-04:00",
+  "source": "local-working-copy-zip",
+  "git_commit": null,
+  "working_tree_clean": null,
+  "last_completed_task": null,
+  "next_ready_task": "T-001",
+  "packaging_mode": "zip-local",
+  "include_git": false,
+  "status": "READY_TO_COMMIT",
+  "delivery_protocol": "bundle-inbox-import-validate-review-stage"
+}

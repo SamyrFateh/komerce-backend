@@ -1,0 +1,47 @@
+{
+  "task_id": "T-001",
+  "title": "Préflight ownership, modules mobiles et fixture",
+  "feature_id": "modal-product",
+  "finding_id": "PRECHECK",
+  "wave": "P0",
+  "parallel_lane": "LANE-0",
+  "status": "READY",
+  "priority": "CRITICAL",
+  "depends_on": [],
+  "allowed_files": [
+    "public/boutique/index.html",
+    "public/boutique/js/main.js",
+    "public/boutique/js/b-mobile-modal-v1.js",
+    "public/boutique/js/b-mobile-premium-v1.js",
+    "public/boutique/js/b-modal-mobile-product.js",
+    "public/boutique/css/modal-mobile-canonical.css",
+    "public/boutique/css/modal-enriched-content.css",
+    "04_VALIDATION_ET_PREUVES/**",
+    ".agent/evidence/T-001/**",
+    ".agent/GENERATED_OUTPUTS.json"
+  ],
+  "forbidden_files": [
+    "Toute modification de logique produit",
+    "Tout fichier de state machine ou panier"
+  ],
+  "gates": [
+    "npm --prefix public/boutique run check:imports",
+    "npm --prefix public/boutique run audit:ownership"
+  ],
+  "agent": null,
+  "reviewer": null,
+  "base_package_id": null,
+  "branch": null,
+  "started_at": null,
+  "lease_until": null,
+  "finished_at": null,
+  "reviewed_at": null,
+  "base_commit": null,
+  "last_commit": null,
+  "changed_files": [],
+  "gate_results": [],
+  "blocking_reason": null,
+  "review_decision": null,
+  "summary": null,
+  "next_action": null
+}
