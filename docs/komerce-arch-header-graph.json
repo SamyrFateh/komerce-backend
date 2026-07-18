@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 773,
-    "edges": 4357,
+    "edges": 4353,
     "dbTables": 116,
     "doctrines": 154,
     "impactAreas": 126,
@@ -2167,17 +2167,12 @@
         "desktop_viewport",
         "bus_events"
       ],
-      "outputs": [
-        "desktop_navigation_and_editorial_enhancements"
-      ],
+      "outputs": [],
       "depends": [
-        "b-bus.js",
-        "b-catalog.js",
-        "b-modal.js",
-        "b-scroll-owner.js"
+        "b-bus.js"
       ],
       "usedBy": [
-        "b-desktop-upgrade.js"
+        "main.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -2189,10 +2184,9 @@
       ],
       "impactAreas": [
         "modal-desktop",
-        "product-discovery",
         "responsive-layout"
       ],
-      "version": "2026-07"
+      "version": "2026-07 — D-P1 (T-016)"
     },
     {
       "id": "public/boutique/js/b-modal-desktop-product.js",
@@ -22857,28 +22851,10 @@
       "label": "b-bus.js"
     },
     {
-      "from": "public/boutique/js/b-modal-desktop-enhancers.js",
-      "to": "public/boutique/js/b-catalog.js",
-      "type": "depends",
-      "label": "b-catalog.js"
-    },
-    {
-      "from": "public/boutique/js/b-modal-desktop-enhancers.js",
-      "to": "public/boutique/js/b-modal.js",
-      "type": "depends",
-      "label": "b-modal.js"
-    },
-    {
-      "from": "public/boutique/js/b-modal-desktop-enhancers.js",
-      "to": "public/boutique/js/b-scroll-owner.js",
-      "type": "depends",
-      "label": "b-scroll-owner.js"
-    },
-    {
-      "from": "public/boutique/js/b-desktop-upgrade.js",
+      "from": "public/boutique/js/main.js",
       "to": "public/boutique/js/b-modal-desktop-enhancers.js",
       "type": "uses",
-      "label": "b-desktop-upgrade.js"
+      "label": "main.js"
     },
     {
       "from": "public/boutique/js/b-modal-desktop-enhancers.js",
@@ -22897,12 +22873,6 @@
       "to": "impact:modal-desktop",
       "type": "impact",
       "label": "modal-desktop"
-    },
-    {
-      "from": "public/boutique/js/b-modal-desktop-enhancers.js",
-      "to": "impact:product-discovery",
-      "type": "impact",
-      "label": "product-discovery"
     },
     {
       "from": "public/boutique/js/b-modal-desktop-enhancers.js",
@@ -47372,7 +47342,6 @@
         "public/boutique/js/b-greeting.js",
         "public/boutique/js/b-home-premium-v1.js",
         "public/boutique/js/b-modal-core.js",
-        "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-modal.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-pager.js",
@@ -47569,8 +47538,7 @@
       ],
       "mustCheck": [
         "impact:boutique",
-        "public/boutique/js/b-catalog.js",
-        "public/boutique/js/b-modal-desktop-enhancers.js"
+        "public/boutique/js/b-catalog.js"
       ]
     },
     "public/boutique/js/b-favs.js": {
@@ -48157,13 +48125,10 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "public/boutique/js/b-bus.js",
-        "public/boutique/js/b-catalog.js",
-        "public/boutique/js/b-modal.js",
-        "public/boutique/js/b-scroll-owner.js"
+        "public/boutique/js/b-bus.js"
       ],
       "directUsedBy": [
-        "public/boutique/js/b-desktop-upgrade.js"
+        "public/boutique/js/main.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -48175,21 +48140,16 @@
       ],
       "impactAreas": [
         "modal-desktop",
-        "product-discovery",
         "responsive-layout"
       ],
       "mustCheck": [
         "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
         "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
         "impact:modal-desktop",
-        "impact:product-discovery",
         "impact:responsive-layout",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart-core.js",
-        "public/boutique/js/b-catalog.js",
-        "public/boutique/js/b-desktop-upgrade.js",
-        "public/boutique/js/b-modal.js",
-        "public/boutique/js/b-scroll-owner.js"
+        "public/boutique/js/main.js"
       ]
     },
     "public/boutique/js/b-modal-desktop-product.js": {
@@ -48548,7 +48508,6 @@
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-core.js",
-        "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-subcat.js",
         "public/boutique/js/boutique.js"
       ]
@@ -48825,7 +48784,6 @@
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
-        "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-pager.js",
@@ -49555,6 +49513,7 @@
         "impact:boutique",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-modal-approche-c-hybrid.js",
+        "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "public/boutique/js/boutique.js"
       ]
