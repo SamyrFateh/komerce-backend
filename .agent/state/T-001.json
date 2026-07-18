@@ -5,7 +5,7 @@
   "finding_id": "PRECHECK",
   "wave": "P0",
   "parallel_lane": "LANE-0",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "CRITICAL",
   "depends_on": [],
   "allowed_files": [
@@ -28,20 +28,29 @@
     "npm --prefix public/boutique run check:imports",
     "npm --prefix public/boutique run audit:ownership"
   ],
-  "agent": null,
+  "agent": "sonnet-chat-1",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/t-001-preflight-modal-mobile",
+  "started_at": "2026-07-18T15:46:00Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-18T16:10:00Z",
   "reviewed_at": null,
-  "base_commit": null,
+  "base_commit": "145699d7df2ca0d42086fc0e74f9da75636f3b00",
   "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "changed_files": [
+    ".agent/GENERATED_OUTPUTS.json",
+    ".agent/evidence/T-001/preflight-report.md",
+    ".agent/evidence/T-001/grep-results.txt",
+    ".agent/evidence/T-001/fixture-analysis.md"
+  ],
+  "gate_results": [
+    { "gate": "npm --prefix public/boutique run check:imports", "result": "PASS" },
+    { "gate": "npm --prefix public/boutique run audit:ownership", "result": "PASS" },
+    { "gate": "npm --prefix public/boutique run check:cache", "result": "PASS (dry, not a declared T-001 gate but required by task action item 5)" }
+  ],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "Préflight complet : b-mobile-modal-v1.js/b-mobile-premium-v1.js confirmés NON chargés pour la PDP (code mort hors feature modal-product). Owners réels confirmés : b-modal-mobile-product.js pour Couleur/Taille/stock, modal-mobile-canonical.css + modal-enriched-content.css (owner modal-product) pour le CSS. Fixture golden-elite-pro-detail.js classée SKU. GENERATED_OUTPUTS.json corrigé (chemins css/dist/** réels, patterns inexistants retirés). Aucune correction visuelle appliquée. 2 divergences signalées (specs/validation absentes du repo racine ; ownership js/dist/** indéterminé).",
+  "next_action": "Revue humaine (CHARTER §11) puis, si approuvé, débloque T-002/T-003 (M2/M3) sur la base des owners confirmés ici."
 }

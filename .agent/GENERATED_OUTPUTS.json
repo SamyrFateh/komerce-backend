@@ -2,17 +2,15 @@
   "version": 1,
   "purpose": "Generated files allowed in addition to each task's explicit scope.",
   "allowed_patterns": [
-    "public/boutique/dist/**",
-    "public/boutique/css/components.css",
-    "public/boutique/css/components.css.map",
+    "public/boutique/css/dist/**",
     "public/boutique/*cache-buster*",
-    "public/boutique/**/*cache-buster*",
-    "public/boutique/sw.js",
-    "public/boutique/service-worker.js"
+    "public/boutique/**/*cache-buster*"
   ],
   "rules": [
-    "T-001 must confirm the real deploy-css and cache-buster outputs.",
-    "Remove patterns that do not exist in the repository.",
+    "T-001 confirmed the real deploy-css and cache-buster outputs (2026-07-18) — see .agent/evidence/T-001/preflight-report.md §4.",
+    "Real bundles are compiled to public/boutique/css/dist/ (base.css, components.css, desktop.css, event.css) — no .css.map is generated.",
+    "public/boutique/dist/**, css/components.css(.map), sw.js and service-worker.js were removed: none exist in the repository.",
+    "public/boutique/js/dist/** exists (JS bundle + chunks + .bundle-state.json) but is intentionally NOT listed here: no deploy-css/cache-buster script regenerates it, and its regeneration ownership is undetermined — flagged for review in T-001 evidence, not decided here.",
     "Do not add source files here to bypass task ownership."
   ]
 }
