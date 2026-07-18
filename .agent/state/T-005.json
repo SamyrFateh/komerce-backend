@@ -5,7 +5,7 @@
   "finding_id": "M4",
   "wave": "P1",
   "parallel_lane": "LANE-MOBILE-RENDERER",
-  "status": "REVIEW",
+  "status": "DONE",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -34,15 +34,15 @@
     "npm --prefix public/boutique run test:unit"
   ],
   "agent": "claude-sonnet-session-2",
-  "reviewer": null,
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
   "branch": "agent/lane-mobile-renderer",
   "started_at": "2026-07-18T17:00:00Z",
   "lease_until": null,
   "finished_at": "2026-07-18T19:47:35Z",
-  "reviewed_at": null,
+  "reviewed_at": "2026-07-18T22:32:00Z",
   "base_commit": "ceef1df5947334e1f1d039a232d976a799e624e2",
-  "last_commit": "61606c64",
+  "last_commit": "61606c64aa73f9c07d8fcd0f17d358b5c4be5ef3",
   "changed_files": [
     "public/boutique/css/modal-mobile-canonical.css",
     "public/boutique/css/dist/components.css",
@@ -93,11 +93,14 @@
     {
       "gate": "test:unit (b-modal-mobile-product)",
       "result": "PASS — 23/23"
+    },
+    {
+      "gate": "reviewer regression validation",
+      "result": "PASS — code toujours présent; suite consolidée boutique 92/92 suites, 1748/1748 tests; feature-audit 0 FAIL / 0 WARN"
     }
   ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": "M4 terminé dans la lane mobile renderer : carrousel suggestions scroll-x teasé scoped #k-modal, CSS-only, ownership b-modal-suggestions.js conservé. 2 cartes + tease à 360px, 3 cartes + tease à 390px. 2 tests unitaires ajoutés. Travail de calibration de l'agent précédent récupéré depuis fichiers uploadés et commité proprement (le précédent agent n'avait pas commité).",
-  "next_action": "Revue humaine (CHARTER §11) puis débloque T-006.",
-  "resumed_at": "2026-07-18T19:25:00.330Z"
+  "review_decision": "APPROVE",
+  "summary": "M4 approuvé : carrousel suggestions mobile scoped #k-modal, CSS-only, ownership b-modal-suggestions.js conservé. Mesures 360/390 et tests unitaires fournis; modification toujours présente après consolidation.",
+  "next_action": "T-005 clôturée."
 }
