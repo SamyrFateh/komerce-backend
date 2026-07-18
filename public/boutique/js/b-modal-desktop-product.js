@@ -79,7 +79,13 @@ function renderIdentity(detail) {
     dom.modalDesc.textContent = detail.product.description || '';
     dom.modalDesc.classList.remove('is-expanded');
   }
-  if (dom.modalCat) dom.modalCat.textContent = detail.product.category || '';
+  // Series — ligne 2 meta hero desktop (spec M6, contrat v1 product.series)
+  // Fallback silencieux : si series absent, on n'affiche pas la catégorie brute.
+  if (dom.modalCat) {
+    const series = detail.product.series || null;
+    dom.modalCat.textContent = series || '';
+    dom.modalCat.hidden = !series;
+  }
 
   const promo = Number(detail.pricing.promo_pct || 0);
   if (dom.modalPromoBadge) {

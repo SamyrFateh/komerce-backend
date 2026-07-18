@@ -5,7 +5,7 @@
   "finding_id": "M6",
   "wave": "P2",
   "parallel_lane": "LANE-META",
-  "status": "BLOCKED",
+  "status": "REVIEW",
   "priority": "MEDIUM",
   "depends_on": [
     "T-001"
@@ -30,17 +30,59 @@
   "agent": "claude-sonnet-session-2",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": "2026-07-18T20:00:20Z",
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:10:55Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-18T20:10:55Z",
   "reviewed_at": null,
   "base_commit": null,
   "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
-  "blocking_reason": "product.series absent du contrat Product Detail v1 et du schéma DB. La maquette montrait un label démo inexistant en prod. Options : A=subcategory normalisée, C=masquer silencieusement, D=extension contrat. Voir .agent/evidence/T-007/escalade.md.",
+  "changed_files": [
+    "migrations/112_add_series_to_products.sql",
+    "schemas/catalog/product-detail.v1.schema.json",
+    "services/catalog-product-detail.js",
+    "public/boutique/tests/fixtures/golden-elite-pro-detail.js",
+    "public/boutique/js/b-modal-mobile-product.js",
+    "public/boutique/js/b-modal-desktop-product.js",
+    "public/boutique/tests/unit/b-modal-mobile-product.test.js",
+    "public/boutique/tests/unit/b-modal-desktop-product.test.js"
+  ],
+  "gate_results": [
+    {
+      "gate": "check:imports",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:arch",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:ownership",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:gate",
+      "result": "PASS Stable"
+    },
+    {
+      "gate": "gate:touched-files",
+      "result": "PASS"
+    },
+    {
+      "gate": "gate:boutique-ownership",
+      "result": "PASS"
+    },
+    {
+      "gate": "test:unit mobile-product",
+      "result": "28/28 PASS"
+    },
+    {
+      "gate": "test:unit desktop-product",
+      "result": "22/22 PASS"
+    }
+  ],
+  "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": "Décision produit sur Option A, C ou D (voir escalade.md) puis relancer T-007."
+  "summary": "M6 Option D : product.series ajouté au contrat v1 (migration 112, schéma Ajv, service, fixture). Renderers mobile + desktop branchés sur detail.product.series avec fallback silencieux. 50/50 tests PASS.",
+  "next_action": "Revue humaine. Note : migration 112 doit être appliquée en prod avant déploiement."
 }

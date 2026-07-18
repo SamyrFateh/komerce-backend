@@ -25,7 +25,8 @@
         "name": { "type": "string", "minLength": 1, "maxLength": 300 },
         "description": { "type": ["string", "null"], "maxLength": 10000 },
         "category": { "type": ["string", "null"], "maxLength": 200 },
-        "subcategory": { "type": ["string", "null"], "maxLength": 200 }
+        "subcategory": { "type": ["string", "null"], "maxLength": 200 },
+        "series": { "type": ["string", "null"], "maxLength": 300 }
       }
     },
     "pricing": {

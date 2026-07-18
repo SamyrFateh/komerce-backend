@@ -62,6 +62,7 @@ function installDom() {
     '<div id="k-modal">' +
       '<div id="k-modal-variants"></div>' +
       '<span class="k-modal-sku" id="k-modal-sku"></span>' +
+      '<span id="k-modal-cat"></span>' +
       '<div class="k-modal-price-row">' +
         '<span id="k-modal-price"></span>' +
         '<span id="k-modal-old-price"></span>' +
@@ -84,6 +85,7 @@ function installDom() {
   dom.modalPrice = document.getElementById('k-modal-price');
   dom.modalOldPrice = document.getElementById('k-modal-old-price');
   dom.modalSku = document.getElementById('k-modal-sku');
+  dom.modalCat = document.getElementById('k-modal-cat');
   dom.modalStock = document.createElement('div');
 }
 
@@ -650,5 +652,54 @@ describe('b-modal-mobile-product — référence produit sous le titre (M5, spec
     const sku = document.getElementById('k-modal-sku');
     expect(sku.hidden).toBe(true);
     expect(sku.textContent.trim()).toBe('');
+  });
+});
+
+describe('b-modal-mobile-product — série produit meta hero (M6, spec §5.2, contrat v1 product.series)', () => {
+  // product.series est un nouveau champ nullable du contrat Product Detail v1
+  // (migration 112, Option D). Sur mobile, il remplace la catégorie brute dans
+  // dom.modalCat. Fallback silencieux : nœud masqué si series absent.
+
+  beforeEach(() => {
+    installDom();
+    state.detail = null;
+  });
+
+  test('product.series présent : affiché dans dom.modalCat, nœud visible', () => {
+    const detail = baseDetail({
+      product: {
+        id: 'p1', name: 'Chaussure Elite Pro', description: '',
+        category: 'sport', series: 'Golden Performance Series',
+      },
+    });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const cat = document.getElementById('k-modal-cat');
+    expect(cat.textContent).toBe('Golden Performance Series');
+    expect(cat.hidden).toBe(false);
+  });
+
+  test('product.series absent (null) : nœud masqué, catégorie brute non affichée', () => {
+    const detail = baseDetail({
+      product: {
+        id: 'p1', name: 'Chaussure Elite Pro', description: '',
+        category: 'sport', series: null,
+      },
+    });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const cat = document.getElementById('k-modal-cat');
+    expect(cat.hidden).toBe(true);
+    expect(cat.textContent.trim()).toBe('');
+  });
+
+  test('product.series absent (champ manquant) : même comportement que null', () => {
+    const detail = baseDetail({
+      product: { id: 'p1', name: 'Robe', description: '', category: 'mode' },
+    });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const cat = document.getElementById('k-modal-cat');
+    expect(cat.hidden).toBe(true);
   });
 });

@@ -203,9 +203,12 @@ function renderIdentity(detail, selection) {
     dom.modalDesc.classList.add('u-hidden');
   }
 
-  // Category — hidden on mobile (no visual weight needed)
+  // Series — ligne 2 meta hero mobile (spec M6, contrat v1 product.series)
+  // Fallback silencieux si absent : nœud vidé et masqué.
   if (dom.modalCat) {
-    dom.modalCat.textContent = '';
+    const series = detail.product.series || null;
+    dom.modalCat.textContent = series || '';
+    dom.modalCat.hidden = !series;
   }
 }
 

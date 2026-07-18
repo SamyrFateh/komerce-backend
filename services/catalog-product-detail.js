@@ -349,7 +349,7 @@ function assertContract(detail) {
 
 async function getProductDetail(dbClient, productId) {
   const { rows: [product] } = await dbClient.query(
-    `SELECT id, product_ref, sku, name, description, category, subcategory,
+    `SELECT id, product_ref, sku, name, description, category, subcategory, series,
             price_kmf, promo_pct, image_url, images, has_variants, inventory_model
        FROM products
       WHERE id = $1 AND is_active = TRUE`,
@@ -442,6 +442,7 @@ async function getProductDetail(dbClient, productId) {
       description: product.description || null,
       category: product.category || null,
       subcategory: product.subcategory || null,
+      series: product.series || null,
     },
     pricing: {
       price_kmf: asNullableInteger(product.price_kmf),
