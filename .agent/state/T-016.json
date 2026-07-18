@@ -5,7 +5,7 @@
   "finding_id": "D4",
   "wave": "P1",
   "parallel_lane": "LANE-DESKTOP-COMPOSITION",
-  "status": "REVIEW",
+  "status": "DONE",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -50,13 +50,13 @@
     "npm run gate:boutique-ownership"
   ],
   "agent": "sonnet",
-  "reviewer": null,
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
   "branch": "agent/lane-mobile-renderer",
   "started_at": "2026-07-18T00:00:00Z",
   "lease_until": null,
   "finished_at": "2026-07-18T22:16:53Z",
-  "reviewed_at": null,
+  "reviewed_at": "2026-07-18T22:31:00Z",
   "base_commit": "9ecad5deae98655dfe4ffbfbf098327f46450125",
   "last_commit": "548d19f7c8d8d2546e8be8a077fbbf43f65c83bd",
   "changed_files": [
@@ -79,21 +79,57 @@
     ".agent/evidence/T-016/gate-feature-audit-final.txt"
   ],
   "gate_results": [
-    { "gate": "npm --prefix public/boutique run deploy:css", "result": "PASS" },
-    { "gate": "npm --prefix public/boutique run check:cache", "result": "PASS" },
-    { "gate": "npm --prefix public/boutique run check:breakpoints", "result": "PASS (stable vs baseline, 3 violations préexistantes hors périmètre)" },
-    { "gate": "npm --prefix public/boutique run audit:ownership", "result": "PASS" },
-    { "gate": "npm --prefix public/boutique run audit:gate", "result": "PASS (0 vulnérabilité high/critical)" },
-    { "gate": "npm --prefix public/boutique run check:imports", "result": "PASS (0 import fantôme)" },
-    { "gate": "npm --prefix public/boutique run audit:arch", "result": "PASS" },
-    { "gate": "npm --prefix public/boutique run check:html", "result": "PASS" },
-    { "gate": "npm --prefix public/boutique run test:unit", "result": "PASS — 92 suites / 92, 1748 tests / 1748, toutes vertes. Aucun rapport de couverture ligne-à-ligne généré pour cette tâche (pas de --coverage lancé)." },
-    { "gate": "npm run gate:touched-files", "result": "PASS" },
-    { "gate": "npm run gate:feature-audit", "result": "PASS — 0 FAIL, 0 WARN. Dernier littéral rgba(42,122,62,0.22) tokenisé dans modal-product-lot4-hybrid.css (arbitrage consolidation 2026-07-19) → var(--shadow-cta-22). Sortie complète : .agent/evidence/T-016/gate-feature-audit-final.txt." },
-    { "gate": "npm run gate:boutique-ownership", "result": "PASS" }
+    {
+      "gate": "npm --prefix public/boutique run deploy:css",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm --prefix public/boutique run check:cache",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm --prefix public/boutique run check:breakpoints",
+      "result": "PASS (stable vs baseline, 3 violations préexistantes hors périmètre)"
+    },
+    {
+      "gate": "npm --prefix public/boutique run audit:ownership",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm --prefix public/boutique run audit:gate",
+      "result": "PASS (0 vulnérabilité high/critical)"
+    },
+    {
+      "gate": "npm --prefix public/boutique run check:imports",
+      "result": "PASS (0 import fantôme)"
+    },
+    {
+      "gate": "npm --prefix public/boutique run audit:arch",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm --prefix public/boutique run check:html",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm --prefix public/boutique run test:unit",
+      "result": "PASS — 92 suites / 92, 1748 tests / 1748, toutes vertes. Aucun rapport de couverture ligne-à-ligne généré."
+    },
+    {
+      "gate": "npm run gate:touched-files",
+      "result": "PASS"
+    },
+    {
+      "gate": "npm run gate:feature-audit",
+      "result": "PASS — 0 FAIL, 0 WARN. Preuve : .agent/evidence/T-016/gate-feature-audit-final.txt."
+    },
+    {
+      "gate": "npm run gate:boutique-ownership",
+      "result": "PASS"
+    }
   ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": "Points 1 à 7 de T-016 implémentés et consolidés. Pt.1 (enhancer desktop neutralisé) et l'arbitrage tests initial étaient déjà commités avant cette session (dd102724, 9ecad5de). Complété ensuite : pt.2 (retrait import/appels setupApprocheCHybridPdp dans main.js), pt.3 (livraison/paiement déplacés sous #k-modal-suggestions), pt.4 (sous-total sticky desktop masqué), pt.5 (div #k-modal-flash-bar retirée du DOM initial, code de population gardé par null-check), pt.6 (bouton favori retiré du DOM initial, handlers b-modal-core.js hors périmètre déjà gardés par null-check), pt.7 (doctrine mise à jour). Commit e7872666 a pushé ce lot avec gate:feature-audit encore en FAIL documenté (1 littéral résiduel hors périmètre initial dans modal-product-lot4-hybrid.css). Consolidation de revue (2026-07-19, arbitrage reviewer) : périmètre étendu à modal-product-lot4-hybrid.css pour tokeniser ce dernier littéral (rgba(42,122,62,0.22) → var(--shadow-cta-22), même token que les deux autres déjà corrigés dans modal-shell.css) ; gate:feature-audit repasse à 0 FAIL / 0 WARN (preuve complète : .agent/evidence/T-016/gate-feature-audit-final.txt) ; bundle components.css recompilé (deploy:css, ?v=169) ; suite Jest complète revérifiée : 92/92 suites, 1748/1748 tests verts (aucune mesure de couverture ligne-à-ligne produite — la formulation « tests à 100 % » a été corrigée en conséquence dans T-016.md). Tous les gates listés dans .agent/tasks/T-016.md sont désormais PASS sans exception.",
-  "next_action": "Reviewer : valider ce lot de consolidation (diff modal-product-lot4-hybrid.css + state/tasks/worklog) et statuer sur le passage de T-016 à DONE. Une fois DONE, T-023 (LANE-DESKTOP-COMPOSITION, dépend de T-016) devient exécutable."
+  "review_decision": "APPROVE",
+  "summary": "Points 1 à 7 de T-016 implémentés, consolidés et approuvés. Tous les gates sont PASS, y compris feature-audit à 0 FAIL / 0 WARN. Suite boutique complète : 92/92 suites et 1748/1748 tests verts. Aucun rapport de couverture ligne-à-ligne n’a été produit.",
+  "next_action": "T-016 clôturée. T-023 peut démarrer sur la même branche durable après consolidation des revues antérieures."
 }
