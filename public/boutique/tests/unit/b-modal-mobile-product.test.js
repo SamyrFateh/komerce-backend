@@ -404,3 +404,79 @@ describe('b-modal-mobile-product — renderStockPill (M1, spec §5.5)', () => {
     expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('Plus que 2');
   });
 });
+
+describe('b-modal-mobile-product — sélecteur Couleur (M2, spec §5.4)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  function colorAxis(overrides) {
+    return Object.assign({
+      key: 'couleur',
+      display_name: 'Couleur',
+      values: [
+        { value: 'Bleu', thumbnail_url: 'https://cdn/bleu.png' },
+        { value: 'Rouge', thumbnail_url: 'https://cdn/rouge.png' },
+      ],
+    }, overrides);
+  }
+
+  function skuUnit(overrides) {
+    return Object.assign({
+      sku_id: 'sku-1',
+      sku: 'GOLD-BLU-42',
+      option_values: { couleur: 'Bleu' },
+      stock_status: 'AVAILABLE',
+      available_quantity: 8,
+      price_kmf: 5000,
+      media_ids: [],
+    }, overrides);
+  }
+
+  test('SKU avec axe Couleur : la rangée de vignettes est rendue avec une seule source de sélection', () => {
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      option_axes: [colorAxis()],
+      sellable_units: [skuUnit()],
+    });
+    const selection = baseSelection({
+      selection_supported: true,
+      selected_options: { couleur: 'Bleu' },
+      selected_sku_id: 'sku-1',
+      option_states: {
+        couleur: [
+          { value: 'Bleu', state: 'AVAILABLE' },
+          { value: 'Rouge', state: 'AVAILABLE' },
+        ],
+      },
+    });
+
+    renderMobileProductDetail(detail, selection);
+
+    const group = document.querySelector('.k-vg[data-axis-key="couleur"]');
+    expect(group).not.toBeNull();
+
+    const skus = group.querySelectorAll('.k-vg-skus .k-sku');
+    expect(skus.length).toBe(2);
+    // Une seule vignette active à la fois — une seule source de sélection.
+    const active = group.querySelectorAll('.k-sku.k-sku--active');
+    expect(active.length).toBe(1);
+    expect(active[0].querySelector('.k-sku-name').textContent).toBe('Bleu');
+    expect(group.querySelector('.k-vg-label-val').textContent).toBe('Bleu');
+  });
+
+  test('LEGACY (selection_supported=false) : aucun sélecteur Couleur, même si option_axes est fourni', () => {
+    const detail = baseDetail({
+      inventory_model: 'LEGACY_VARIANTS',
+      option_axes: [colorAxis()],
+      sellable_units: [],
+    });
+    const selection = baseSelection({ selection_supported: false });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(document.querySelector('.k-vg')).toBeNull();
+    expect(document.querySelector('.k-vg-skus')).toBeNull();
+  });
+});

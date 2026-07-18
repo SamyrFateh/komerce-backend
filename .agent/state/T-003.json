@@ -56,6 +56,7 @@
   "blocking_reason": null,
   "review_decision": null,
   "summary": null,
-  "next_action": "Exécuter une petite unité cohérente puis save.",
-  "resumed_at": "2026-07-18T19:12:23.552Z"
+  "next_action": "Ownership BOUTIQUE_COMPONENT_OWNERSHIP.md puis exécuter les gates de T-003",
+  "resumed_at": "2026-07-18T19:12:23.552Z",
+  "last_checkpoint_at": "2026-07-18T19:18:08.498Z"
 }
