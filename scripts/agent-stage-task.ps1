@@ -30,7 +30,6 @@ $pathsToStage += ".agent/state/$TaskId.json"
 $pathsToStage += ".agent/handoffs/$TaskId.md"
 $pathsToStage += ".agent/evidence/$TaskId"
 $pathsToStage += ".agent/changes/$TaskId.patch"
-$pathsToStage += ".agent/generated/STATE.md"
 $pathsToStage += ".agent/GENERATED_OUTPUTS.json"
 $pathsToStage += ".agent/logs/audit.ndjson"
 
