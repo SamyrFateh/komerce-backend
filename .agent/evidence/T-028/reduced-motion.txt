@@ -1,0 +1,32 @@
+=== Preuve prefers-reduced-motion — T-028 ===
+
+Bloc ajouté en fin de modal-shell.css :
+
+929:/* [T-028] Reduced motion : neutralise les animations fonctionnelles
+930-   (ouverture modale, morph sticky topbar) sans modifier les règles
+931-   originales ci-dessus. Ne touche pas au focus visible (protégé). */
+932-@media (prefers-reduced-motion: reduce) {
+933-  .k-modal {
+934-    animation: none;
+935-  }
+936-
+937-  .k-modal-topbar-product {
+938-    transition: none;
+939-  }
+
+Règles originales protégées, non modifiées (rappel) :
+
+1. Ouverture modale (k-slide-up), déclarée L25 :
+25:  animation: k-slide-up .3s cubic-bezier(.22,1,.36,1);
+
+2. Morph sticky topbar-product (déclaration originale intacte) :
+258:.k-modal-topbar-product { display: none; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-left: 8px; opacity: 0; transform: translateY(-4px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
+263:.k-modal.is-scrolled .k-modal-topbar-product { display: flex; opacity: 1; transform: translateY(0); }
+937:  .k-modal-topbar-product {
+
+3. Focus visible (protégé, non touché) :
+715:  .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
+716:  .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }
+717:  button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--focus-cta-45); outline-offset: 2px; }
+922:  .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
+923:  .k-modal-slide:focus,    .k-modal-slide:focus-visible {
