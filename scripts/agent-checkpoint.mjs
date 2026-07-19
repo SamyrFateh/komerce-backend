@@ -61,6 +61,12 @@ function parseArgs(argv) {
   return { message: message.trim(), files };
 }
 
+function taskIdFromMessage(message) {
+  const match = /\bT-\d+\b/i.exec(message);
+  if (!match) fail('le message de checkpoint doit contenir un identifiant T-XXX');
+  return match[0].toUpperCase();
+}
+
 function normalize(value) {
   return String(value).replaceAll('\\', '/').replace(/^\.\//, '');
 }
@@ -103,8 +109,24 @@ function printDivergence(repo, branchName) {
   }
 }
 
+function resolvedCurrentTask(repo) {
+  const resolver = run(repo, [process.execPath, path.join(repo, 'scripts', 'agent-resolve-status.mjs')]);
+  const text = output(resolver, 'résolution du statut');
+  const line = text.split(/\r?\n/).find(item => item.startsWith('RESOLVED_STATUS_JSON='));
+  if (!line) fail('le résolveur n’a pas produit RESOLVED_STATUS_JSON');
+
+  try {
+    const resolved = JSON.parse(line.slice('RESOLVED_STATUS_JSON='.length));
+    if (!resolved.current_task) fail('aucune tâche courante résolue');
+    return resolved;
+  } catch (error) {
+    fail(`sortie du résolveur invalide: ${error.message}`);
+  }
+}
+
 const repo = findRepoRoot();
 const { message, files } = parseArgs(process.argv.slice(2));
+const messageTaskId = taskIdFromMessage(message);
 const manifest = JSON.parse(fs.readFileSync(path.join(repo, '.agent', 'MANIFEST.json'), 'utf8'));
 const executionBranch = manifest.execution_branch;
 
@@ -127,6 +149,11 @@ const remoteBefore = output(git(repo, 'rev-parse', `origin/${executionBranch}`),
 if (localBefore !== remoteBefore) {
   printDivergence(repo, executionBranch);
   fail('HEAD local différent du HEAD distant avant checkpoint; aucune intégration automatique', 2);
+}
+
+const resolved = resolvedCurrentTask(repo);
+if (resolved.current_task !== messageTaskId) {
+  fail(`tâche du checkpoint incorrecte: message=${messageTaskId}; résolue=${resolved.current_task}`);
 }
 
 const selections = [...new Set(files.map(normalize))];
@@ -171,4 +198,5 @@ if (localAfterCommit !== remoteAfter) {
 
 console.log(`CHECKPOINT_DISTANT=${remoteAfter}`);
 console.log(`BRANCHE=${executionBranch}`);
+console.log(`TACHE=${messageTaskId}`);
 console.log(`FICHIERS=${staged.split(/\r?\n/).join(',')}`);
