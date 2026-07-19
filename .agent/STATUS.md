@@ -8,12 +8,14 @@
 
 ## Action courante
 
-1. Reprendre `T-023` pour produire et vérifier les deux captures EMPTY/FILLED avec le
-   Chromium/Puppeteer local déjà détecté.
-2. Passer `T-023` de `BLOCKED` à `REVIEW` si le contrôle visuel est conforme.
-3. Démarrer ensuite `T-019`.
+1. Rapatrier `T-021` depuis la branche accidentelle `agent/lane-desktop-layout` vers
+   `agent/lane-mobile-renderer` : code, artefacts, preuves, puis gates réexécutés.
+2. Passer `T-021` à `REVIEW` dans un checkpoint documentaire séparé, référant les SHA de
+   travail réellement présents sur la branche durable.
+3. Démarrer ensuite `T-022` sur cette même branche, sans créer de nouvelle branche.
 
-`T-017` et `T-018` sont déjà en `REVIEW`; ne pas les réimplémenter.
+`T-017`, `T-018`, `T-019` et `T-020` sont déjà en `REVIEW`; ne pas les réimplémenter.
+`T-023` reste bloquée uniquement sur ses deux captures EMPTY/FILLED.
 
 | ID | Lane | Statut | Agent | Branche | Prochaine action |
 |---|---|---|---|---|---|
@@ -35,11 +37,11 @@
 | T-016 | LANE-DESKTOP-COMPOSITION | DONE | sonnet | agent/lane-mobile-renderer | — |
 | T-017 | LANE-META | REVIEW | claude-sonnet-chat | agent/lane-mobile-renderer | Revue humaine des captures et preuves; aucune réimplémentation. |
 | T-018 | LANE-DESKTOP-VISUAL | REVIEW | claude-sonnet-chat | agent/lane-mobile-renderer | Revue humaine du diff CSS, arbitrage, mesures et captures. |
-| T-019 | LANE-DESKTOP-VISUAL | READY | — | agent/lane-mobile-renderer | Démarrer après le checkpoint visuel T-023. |
-| T-020 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Après T-019. |
-| T-021 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Après T-020. |
-| T-022 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Après T-021. |
-| T-023 | LANE-DESKTOP-COMPOSITION | BLOCKED | claude-chat-session | agent/lane-mobile-renderer | Action courante : générer desktop-actions-empty.png / desktop-actions-filled.png avec Chromium local, vérifier le layout, puis BLOCKED → REVIEW. |
+| T-019 | LANE-DESKTOP-VISUAL | REVIEW | claude-chat-session | agent/lane-mobile-renderer | Revue humaine du diff, de desktop-zone.png et des gates. |
+| T-020 | LANE-DESKTOP-LAYOUT | REVIEW | claude-chat-session | agent/lane-mobile-renderer | Revue humaine de la grille 3 pistes, de l’arbitrage ownership et des captures 1024/1440/1600. |
+| T-021 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Action courante : rapatrier le rail miniatures et ses preuves, réexécuter les gates, puis REVIEW. |
+| T-022 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Après T-021 en REVIEW sur la branche durable. |
+| T-023 | LANE-DESKTOP-COMPOSITION | BLOCKED | claude-chat-session | agent/lane-mobile-renderer | Générer desktop-actions-empty.png / desktop-actions-filled.png avec Chromium local, vérifier le layout, puis BLOCKED → REVIEW. |
 | T-024 | LANE-FINISH | READY | — | agent/lane-mobile-renderer | Après T-022. |
 | T-025 | LANE-FINISH | READY | — | agent/lane-mobile-renderer | Après T-024. |
 | T-026 | LANE-TRANSVERSE | READY | — | agent/lane-mobile-renderer | Après T-025. |
