@@ -1,18 +1,34 @@
 {
-  "governance_version": "3.3",
+  "governance_version": "3.4-integrated",
   "project": "Komerce",
   "worksite": "PDP_MAQUETTE_PREMIUM",
   "base_branch": "main",
+  "execution_branch": "agent/lane-mobile-renderer",
+  "source_of_truth_ref": "origin/agent/lane-mobile-renderer",
+  "start_here": ".agent/START-HERE.md",
   "runtime": "scripts/agent.mjs",
   "source": "github-direct-continuous-push",
-  "delivery_protocol": "remote-lane-branch-single-pr",
+  "delivery_protocol": "single-integrated-durable-branch-single-final-pr",
   "status": "ACTIVE",
-  "next_ready_task": "T-002",
+  "current_operational_task": "T-023",
+  "next_ready_task": "T-019",
+  "in_review_tasks": ["T-017", "T-018"],
+  "blocked_tasks": ["T-023"],
   "legacy_runtime": "deprecated",
   "execution_mode": "silent_execute_push_except_arbitration",
-  "branch_model": "one-long-lived-branch-per-lane",
-  "branch_pattern": "agent/<lane-slug>",
-  "continuity_model": "lane-branch-task-state-worklog-atomic-commits-single-pr",
+  "branch_model": "single-integrated-durable-branch",
+  "branch_pattern": "agent/lane-mobile-renderer",
+  "lane_labels_are_classifications": true,
+  "main_is_intentionally_stale_until_final_pr": true,
+  "task_index_is_catalog_only": true,
+  "continuity_model": "integrated-branch-task-state-worklog-atomic-commits-single-final-pr",
+  "mandatory_read_order": [
+    ".agent/START-HERE.md",
+    ".agent/MANIFEST.json",
+    ".agent/EXECUTION_MAP.md",
+    ".agent/lanes/LANE-MOBILE-RENDERER.json",
+    ".agent/STATUS.md"
+  ],
   "checkpoint_policy": {
     "first_push_before_substantive_work": true,
     "after_each_coherent_unit": true,
@@ -21,13 +37,13 @@
     "before_long_or_risky_command": true,
     "before_final_response": true
   },
-  "lane_policy": {
-    "same_lane_same_branch": true,
+  "branch_policy": {
+    "all_remaining_tasks_same_branch": true,
     "reuse_and_modify_existing_files": true,
     "task_completion_without_individual_pr": true,
-    "automatic_next_task_in_lane": true,
-    "human_review_at_lane_end": true,
-    "single_pr_per_lane": true
+    "human_review_per_task_when_declared": true,
+    "single_final_pr": true,
+    "no_checkpoint_on_main": true
   },
   "final_response_fields": [
     "task",
