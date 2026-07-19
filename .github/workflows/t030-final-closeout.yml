@@ -152,7 +152,38 @@ jobs:
         run: |
           set -euo pipefail
           source <(sed '$d' .agent/generated/t030-final-runner.sh)
-          generate_visual_evidence
+          generate_visual_evidence 2>&1 | tee /tmp/t030-capture.log
+
+      - name: Persist capture failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          capture_log="$(tail -n 240 /tmp/t030-capture.log 2>/dev/null || true)"
+          serve_log="$(tail -n 120 /tmp/t030-serve.log 2>/dev/null || true)"
+          partial_files="$(find .agent/evidence/T-030/captures .agent/evidence/T-030/states -type f 2>/dev/null | sort || true)"
+          git reset --hard HEAD
+          git clean -fd
+          mkdir -p .agent/evidence/T-030
+          {
+            echo 'T030_CAPTURE_FAILURE=1'
+            echo
+            echo 'CAPTURE_LOG_LAST_240'
+            printf '%s\n' "$capture_log"
+            echo
+            echo 'SERVER_LOG_LAST_120'
+            printf '%s\n' "$serve_log"
+            echo
+            echo 'PARTIAL_FILES'
+            printf '%s\n' "$partial_files"
+          } > .agent/evidence/T-030/capture-error.txt
+          git config user.name 'komerce-t030-bot'
+          git config user.email 'komerce-t030-bot@users.noreply.github.com'
+          git add .agent/evidence/T-030/capture-error.txt
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(t-030): record Playwright capture failure'
+            git push origin HEAD:agent/lane-final
+          fi
 
       - name: Build final report and package
         shell: bash
