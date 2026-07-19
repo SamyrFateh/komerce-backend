@@ -14,13 +14,13 @@
     "T-002", "T-003", "T-004", "T-005", "T-006", "T-007", "T-008", "T-009",
     "T-010", "T-011", "T-012", "T-013", "T-014", "T-015", "T-016"
   ],
-  "in_review_tasks": ["T-017", "T-018"],
+  "in_review_tasks": ["T-017", "T-018", "T-019", "T-020"],
   "blocked_tasks": ["T-023"],
-  "current_task": "T-023",
-  "current_action": "Reprendre T-023 uniquement pour générer et vérifier desktop-actions-empty.png et desktop-actions-filled.png avec le Chromium/Puppeteer local déjà détecté, puis passer BLOCKED -> REVIEW sans changement fonctionnel sauf défaut visuel réel.",
-  "next_implementation_task": "T-019",
+  "current_task": "T-021",
+  "current_action": "Rapatrier uniquement le code, les artefacts et les preuves T-021 depuis origin/agent/lane-desktop-layout vers agent/lane-mobile-renderer; réexécuter les gates sur la branche durable; pousser le travail avant les métadonnées; passer ensuite T-021 à REVIEW.",
+  "next_implementation_task": "T-022",
   "status": "IN_PROGRESS",
   "review_mode": "single-final-pr",
   "execution_map": ".agent/EXECUTION_MAP.md",
-  "next_action": "Après le checkpoint visuel T-023 poussé, démarrer T-019 sur la même branche. T-017 et T-018 restent en REVIEW pour décision humaine."
+  "next_action": "Après T-021 en REVIEW sur la branche durable, démarrer T-022 sur cette même branche. Ne pas écrire ni pousser sur agent/lane-desktop-layout."
 }
