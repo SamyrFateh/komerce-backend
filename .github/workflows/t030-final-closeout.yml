@@ -95,4 +95,30 @@ jobs:
 
       - name: Execute reproducible T030 closeout
         shell: bash
-        run: bash .agent/generated/t030-final-runner.sh
+        run: |
+          set +e
+          bash .agent/generated/t030-final-runner.sh 2>&1 | tee /tmp/t030-runner.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            current_status="$(git status --short || true)"
+            git reset --hard HEAD
+            mkdir -p .agent/evidence/T-030
+            {
+              echo "RUNNER_EXIT=$status"
+              echo
+              echo 'GIT_STATUS_AT_FAILURE'
+              printf '%s\n' "$current_status"
+              echo
+              echo 'RUNNER_LOG'
+              cat /tmp/t030-runner.log
+            } > .agent/evidence/T-030/runner-last-error.txt
+            git config user.name 'komerce-t030-bot'
+            git config user.email 'komerce-t030-bot@users.noreply.github.com'
+            git add .agent/evidence/T-030/runner-last-error.txt
+            if ! git diff --cached --quiet; then
+              git commit -m 'chore(t030): record runner failure details'
+              git push origin HEAD:agent/lane-final
+            fi
+            exit "$status"
+          fi
