@@ -1,6 +1,9 @@
 # STATUS — Chantier PDP
 
 > Synchronisé depuis les fichiers `.agent/state/T-*.json` après revue humaine.
+>
+> Exécution intégrée : les lanes sont des classifications de sujet. Toutes les tâches restantes
+> s’exécutent séquentiellement sur `agent/lane-mobile-renderer`; aucune branche par lane/tâche.
 
 | ID | Lane | Statut | Agent | Branche | Prochaine action |
 |---|---|---|---|---|---|
@@ -19,18 +22,18 @@
 | T-013 | LANE-DESKTOP-TYPE | DONE | claude-sonnet-session-3 | agent/lane-mobile-renderer | — |
 | T-014 | LANE-DESKTOP-TYPE | DONE | claude-sonnet-session-3 | agent/lane-mobile-renderer | — |
 | T-015 | LANE-DESKTOP-TYPE | DONE | claude-sonnet-session-3 | agent/lane-mobile-renderer | — |
-| T-016 | LANE-DESKTOP-COMPOSITION | DONE | sonnet | agent/lane-mobile-renderer | T-023 est exécutable. |
-| T-017 | LANE-META | READY | — | — | — |
-| T-018 | LANE-DESKTOP-VISUAL | READY | — | — | — |
-| T-019 | LANE-DESKTOP-VISUAL | READY | — | — | — |
-| T-020 | LANE-DESKTOP-LAYOUT | READY | — | — | — |
-| T-021 | LANE-DESKTOP-LAYOUT | READY | — | — | — |
-| T-022 | LANE-DESKTOP-LAYOUT | READY | — | — | — |
-| T-023 | LANE-DESKTOP-COMPOSITION | BLOCKED | claude-chat-session | agent/lane-mobile-renderer | Générer desktop-actions-empty.png / desktop-actions-filled.png (Chromium indisponible dans ce sandbox), puis BLOCKED → REVIEW. |
-| T-024 | LANE-FINISH | READY | — | — | — |
-| T-025 | LANE-FINISH | READY | — | — | — |
-| T-026 | LANE-TRANSVERSE | READY | — | — | — |
-| T-027 | LANE-TRANSVERSE | READY | — | — | — |
-| T-028 | LANE-FINISH | READY | — | — | — |
-| T-029 | LANE-FINISH | READY | — | — | — |
-| T-030 | LANE-FINAL | READY | — | — | — |
+| T-016 | LANE-DESKTOP-COMPOSITION | DONE | sonnet | agent/lane-mobile-renderer | — |
+| T-017 | LANE-META | READY | — | agent/lane-mobile-renderer | Démarrer maintenant; dépendance T-007 satisfaite. |
+| T-018 | LANE-DESKTOP-VISUAL | READY | — | agent/lane-mobile-renderer | Après T-017. |
+| T-019 | LANE-DESKTOP-VISUAL | READY | — | agent/lane-mobile-renderer | Après T-018. |
+| T-020 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Après T-019. |
+| T-021 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Après T-020. |
+| T-022 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Après T-021. |
+| T-023 | LANE-DESKTOP-COMPOSITION | BLOCKED | claude-chat-session | agent/lane-mobile-renderer | Générer desktop-actions-empty.png / desktop-actions-filled.png dès qu’un Chromium est disponible, puis BLOCKED → REVIEW. |
+| T-024 | LANE-FINISH | READY | — | agent/lane-mobile-renderer | Après T-022. |
+| T-025 | LANE-FINISH | READY | — | agent/lane-mobile-renderer | Après T-024. |
+| T-026 | LANE-TRANSVERSE | READY | — | agent/lane-mobile-renderer | Après T-025. |
+| T-027 | LANE-TRANSVERSE | READY | — | agent/lane-mobile-renderer | Après T-026. |
+| T-028 | LANE-FINISH | READY | — | agent/lane-mobile-renderer | Après clôture T-023, T-024, T-026 et T-027. |
+| T-029 | LANE-FINISH | READY | — | agent/lane-mobile-renderer | Après clôture de ses dépendances visuelles et T-027. |
+| T-030 | LANE-FINAL | READY | — | agent/lane-mobile-renderer | Après T-001 à T-029 toutes DONE. |
