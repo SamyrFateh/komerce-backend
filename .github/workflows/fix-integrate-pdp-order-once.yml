@@ -1,0 +1,73 @@
+name: Fix PDP Integration Workflow Order Once
+
+on:
+  push:
+    branches:
+      - agent/lane-mobile-renderer
+    paths:
+      - .github/workflows/fix-integrate-pdp-order-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lane-mobile-renderer
+      - name: Move resolver validation after push
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/integrate-pdp-t021-t024-t027-once.yml')
+          text = path.read_text(encoding='utf-8')
+          old = '''      - name: Validate resolver selects T028
+        run: |
+          node scripts/agent-resolve-status.mjs | tee /tmp/resolved.txt
+          grep -q '^CURRENT_TASK=T-028$' /tmp/resolved.txt
+          grep -q '^EFFECTIVE_STATUS=READY$' /tmp/resolved.txt
+
+      - name: Commit and push integration
+        run: |
+          rm -f public/boutique/.tmp-t027-harness.html public/boutique/.tmp-t027-capture.mjs
+          git config user.name "komerce-integration-bot"
+          git config user.email "komerce-integration-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No integration changes to commit."
+            exit 1
+          fi
+          git commit -m "integrate(pdp): recover T-021 T-024 and resolve T-027"
+          git push origin HEAD:agent/lane-mobile-renderer
+'''
+          new = '''      - name: Commit and push integration
+        run: |
+          rm -f public/boutique/.tmp-t027-harness.html public/boutique/.tmp-t027-capture.mjs
+          git config user.name "komerce-integration-bot"
+          git config user.email "komerce-integration-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No integration changes to commit."
+            exit 1
+          fi
+          git commit -m "integrate(pdp): recover T-021 T-024 and resolve T-027"
+          git push origin HEAD:agent/lane-mobile-renderer
+
+      - name: Validate resolver selects T028 after push
+        run: |
+          git fetch origin agent/lane-mobile-renderer
+          node scripts/agent-resolve-status.mjs | tee /tmp/resolved.txt
+          grep -q '^CURRENT_TASK=T-028$' /tmp/resolved.txt
+          grep -q '^EFFECTIVE_STATUS=READY$' /tmp/resolved.txt
+'''
+          if text.count(old) != 1:
+              raise SystemExit('target workflow block not found exactly once')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          git config user.name "komerce-integration-bot"
+          git config user.email "komerce-integration-bot@users.noreply.github.com"
+          git add .github/workflows/integrate-pdp-t021-t024-t027-once.yml
+          git commit -m "fix(ci): validate PDP resolver after push"
+          git push origin HEAD:agent/lane-mobile-renderer
