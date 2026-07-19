@@ -394,8 +394,10 @@
     }
   }
 
-  /* D10 — 5 colonnes sur large si la largeur le permet. */
-  @media (min-width: 1600px) {
+  /* D10 — 5 colonnes sur large si la largeur le permet.
+     Seuil 1440px réutilisé (déjà baseliné T-020) — pas de nouveau
+     breakpoint hors garde-fou (900/1200) ni de régression ratchet. */
+  @media (min-width: 1440px) {
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
