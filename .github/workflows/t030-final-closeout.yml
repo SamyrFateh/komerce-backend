@@ -76,7 +76,7 @@ jobs:
               ('favorite active scale removed', '.k-modal-fav-btn:active' not in clean['media']),
               ('favorite base transition has no transform', 'transform' not in block(files['media'], '.k-modal-fav-btn {')),
               ('recent-card hover has no transform', 'transform' not in block(files['media'], '.k-modal-recent-card:hover')),
-              ('keyboard hint hidden', 'display: none' in block(files['shell'], '.k-modal-keyboard-hint')),
+              ('keyboard hint hidden', 'display: none' in block(files['media'], '.k-modal-keyboard-hint')),
               ('reduced motion block present', '@media (prefers-reduced-motion: reduce)' in clean['shell']),
               ('SKU base transition has no transform', 'transform' not in block(files['product'], '.k-sku {')),
               ('SKU hover has no transform', 'transform' not in block(files['product'], '.k-sku:hover:not(.k-sku--out)')),
