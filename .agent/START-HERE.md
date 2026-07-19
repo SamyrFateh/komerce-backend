@@ -59,8 +59,11 @@ Après synchronisation sur la branche durable, lire dans cet ordre :
 6. `.agent/STATUS.md`
 7. le ou les fichiers `.agent/state/T-XXX.json` cités par la lane
 8. les tâches, worklogs, arbitrages et preuves correspondants
+9. l’historique Git et les diffs distants de la tâche avant de conclure qu’un travail manque
 
 `.agent/TASK-INDEX.json` est un catalogue statique. Ses compteurs et son ordre initial ne sont jamais une preuve d’avancement.
+
+Un state peut être en retard après une coupure. Le code, les tests, les preuves et l’historique réellement poussés ont priorité pour reconstruire l’état.
 
 ## 4. État opérationnel courant
 
@@ -70,6 +73,7 @@ Après synchronisation sur la branche durable, lire dans cet ordre :
 - prochaine nouvelle implémentation après ce déblocage : `T-019`.
 
 Ne jamais recommencer une tâche marquée `DONE` ou `REVIEW` sur la ref autoritative.
+Ne jamais recommencer non plus un travail source déjà présent dans les commits distants au seul motif que son state est encore `READY` ou `IN_PROGRESS`.
 
 ## 5. Garde-fou runtime
 
@@ -85,15 +89,26 @@ Ce runtime legacy sélectionne encore une branche depuis `parallel_lane` et peut
 
 Après le préflight, les changements de state sont faits explicitement dans les fichiers autoritatifs, puis sauvegardés par le protocole de checkpoint distant.
 
-## 6. Checkpoint distant obligatoire
+## 6. Checkpoint distant obligatoire — travail d’abord, statut ensuite
 
-Un checkpoint signifie obligatoirement :
+Une unité de travail se sauvegarde en deux phases distinctes :
 
 ```text
-petit lot cohérent → commit atomique → push immédiat → SHA distant confirmé
+PHASE 1
+code / tests / artefacts / preuves
+→ commit
+→ push immédiat
+→ CHECKPOINT_DISTANT=<sha_travail>
+
+PHASE 2
+state / worklog / audit / STATUS
+→ référence à <sha_travail>
+→ commit
+→ push immédiat
+→ CHECKPOINT_DISTANT=<sha_metadata>
 ```
 
-Utiliser pour chaque lot :
+Utiliser pour chaque phase :
 
 ```bash
 node scripts/agent-checkpoint.mjs \
@@ -101,24 +116,23 @@ node scripts/agent-checkpoint.mjs \
   -- chemin/du/fichier-1 chemin/du/fichier-2
 ```
 
-Le lot suivant ne commence qu’après :
-
-```text
-CHECKPOINT_DISTANT=<sha>
-```
+Le travail récupérable doit toujours être poussé avant sa description administrative. Un agent suivant peut relire un diff et reconstruire un state ; il ne peut pas récupérer des fichiers restés dans la sandbox précédente.
 
 Il est interdit :
 
+- d’écrire le state de sortie avant le push du code, des tests ou des preuves correspondants ;
 - d’accumuler plusieurs commits locaux avant un push groupé ;
 - de commencer un second lot avec un commit local non confirmé sur `origin` ;
 - de répondre à l’utilisateur avant d’avoir poussé le travail courant ;
-- de lancer une commande longue ou risquée sans checkpoint distant préalable.
+- de lancer une commande longue ou risquée sans checkpoint distant préalable ;
+- de conclure « aucun travail » en lisant seulement le state sans inspecter la branche distante.
 
 Au premier `non-fast-forward` ou écart local/distant : arrêter immédiatement. Aucun merge, rebase, cherry-pick, reset, stash ou force-push automatique. Appliquer `.agent/CHECKPOINT-PROTOCOL.md`.
 
 ## 7. Livraison
 
 - checkpoints distants petits et fréquents sur `agent/lane-mobile-renderer` ;
+- travail récupérable poussé avant les métadonnées de statut ;
 - aucun checkpoint sur `main` ;
 - aucune branche par tâche ou par label de lane ;
 - aucune preuve visuelle fabriquée ;
