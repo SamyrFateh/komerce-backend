@@ -1,8 +1,23 @@
 {
-  "governance_version": "4.1-computed-status",
+  "governance_version": "4.2-branch-first-computed-status",
   "project": "Komerce",
   "worksite": "PDP_MAQUETTE_PREMIUM",
+  "repository": "https://github.com/SamyrFateh/komerce-backend.git",
   "execution_branch": "agent/lane-mobile-renderer",
+  "branch_acquisition_required_before_repository_inspection": true,
+  "fresh_clone_command": "git clone --branch agent/lane-mobile-renderer --single-branch https://github.com/SamyrFateh/komerce-backend.git",
+  "existing_clone_sequence": [
+    "refuse if git status --porcelain is non-empty",
+    "git fetch origin agent/lane-mobile-renderer",
+    "switch to or create tracking branch agent/lane-mobile-renderer",
+    "git pull --ff-only origin agent/lane-mobile-renderer",
+    "node scripts/agent-bootstrap.mjs"
+  ],
+  "forbidden_pre_acquisition_refs": [
+    "main",
+    "agent/t-*",
+    "agent/lane-desktop-layout"
+  ],
   "bootstrap_command": "node scripts/agent-bootstrap.mjs",
   "status_resolver": "scripts/agent-resolve-status.mjs",
   "operational_status": "computed_from_remote_states_history_and_refs",
@@ -15,6 +30,7 @@
   "legacy_runtime_forbidden": [
     "node scripts/agent.mjs start",
     "node scripts/agent.mjs resume",
-    "node scripts/agent.mjs finish"
+    "node scripts/agent.mjs finish",
+    "node scripts/agent.mjs status"
   ]
 }
