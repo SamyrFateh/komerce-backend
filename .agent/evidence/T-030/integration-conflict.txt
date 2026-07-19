@@ -1,0 +1,21 @@
+CHERRY_PICK_CONFLICT=T-028:0889a759a8683acf9cdf9a9e1e348c87bad7ac7d
+
+STATUS
+UU .agent/state/T-028.json
+UU public/boutique/css/modal-product.css
+?? .agent/evidence/T-030/
+
+UNMERGED_FILES
+.agent/state/T-028.json
+public/boutique/css/modal-product.css
+
+CONFLICT_MARKERS
+.agent/state/T-028.json:8: leftover conflict marker
+.agent/state/T-028.json:10: leftover conflict marker
+.agent/state/T-028.json:12: leftover conflict marker
+.agent/state/T-028.json:54: leftover conflict marker
+.agent/state/T-028.json:101: leftover conflict marker
+.agent/state/T-028.json:108: leftover conflict marker
+public/boutique/css/modal-product.css:386: leftover conflict marker
+public/boutique/css/modal-product.css:389: leftover conflict marker
+public/boutique/css/modal-product.css:392: leftover conflict marker
