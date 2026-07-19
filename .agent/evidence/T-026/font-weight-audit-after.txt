@@ -1,0 +1,30 @@
+T-026 — Audit font-weight >500 dans le périmètre PDP (APRÈS)
+
+68 déclarations IN-scope normalisées à font-weight: 500 (voir diff CSS et
+font-weight-audit-before.txt pour la liste complète des 68 sélecteurs).
+
+Vérification exhaustive post-normalisation (grep sur les 6 fichiers autorisés,
+toutes valeurs font-weight >500) :
+
+  Restent >500 en scope IN  : 2 (les deux exceptions D-P3, valeur inchangée à 700)
+    modal-product.css:64            .k-modal--has-promo .k-modal-price
+    modal-mobile-canonical.css:112  #k-modal.k-modal--has-promo .k-modal-price
+
+  Restent >500 en scope OUT (recherche interne + suggestions/curation,
+  non touchées par construction — hors périmètre T-026) :
+    modal-shell.css:141             .k-topbar-search-clear-btn            600
+    modal-product.css: k-msearch-*, k-sug-* (14 sélecteurs)               600-700
+    modal-product.css:183           .k-sug-title-text                     800
+    modal-product.css:1345          #k-modal-suggestions.k-pdp-curation
+                                     .k-pdp-curation-badge                 850
+
+Résultat : conforme au critère d'acceptation T-026. Aucune occurrence IN-scope
+>500 en dehors de l'exception D-P3 documentée. Aucun sélecteur OUT-scope
+modifié (recherche/suggestions intactes).
+
+Correction apportée en cours de route : 2 sélecteurs de la liste "before"
+avaient été notés avec un préfixe tronqué (ellipse) dans l'inventaire —
+#k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn (modal-shell.css)
+et #k-modal .k-buybox-payment-copy strong (modal-product-lot4-hybrid.css).
+Les deux ont été vérifiés dans le fichier réel et normalisés à 500, portant
+le total réel à 68/68 attendues (aucune omission).

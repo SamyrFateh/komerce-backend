@@ -5,7 +5,7 @@
   "finding_id": "T1",
   "wave": "P1",
   "parallel_lane": "LANE-TRANSVERSE",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "CRITICAL",
   "depends_on": [
     "T-002",
@@ -53,10 +53,29 @@
   "reviewed_at": null,
   "base_commit": null,
   "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "changed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/modal-media.css",
+    "public/boutique/css/modal-product.css",
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    "public/boutique/css/modal-mobile-canonical.css",
+    "public/boutique/css/modal-enriched-content.css",
+    "public/boutique/index.html",
+    "public/boutique/.cache-buster-state.json",
+    "public/boutique/css/dist/components.css",
+    ".agent/evidence/T-026/font-weight-audit-before.txt",
+    ".agent/evidence/T-026/font-weight-audit-after.txt",
+    ".agent/evidence/T-026/css-specificity.txt"
+  ],
+  "gate_results": [
+    { "gate": "deploy:css", "result": "PASS" },
+    { "gate": "check:cache", "result": "PASS", "note": "aucun changement résiduel après deploy:css" },
+    { "gate": "check:breakpoints", "result": "PASS", "note": "stable vs baseline (6 violations pré-existantes, inchangées)" },
+    { "gate": "audit:ownership", "result": "PASS" },
+    { "gate": "audit:gate", "result": "PASS", "note": "0 vulnérabilité high/critical" }
+  ],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "Normalisation de 68 déclarations font-weight >500 vers 500 dans le périmètre PDP (6 fichiers CSS modal-*). Classification IN/OUT faite par ownership réel (JS propriétaire des features recherche interne et suggestions/curation, exclues du scope). Exception D-P3 (prix en promo active, font-weight:700) préservée intacte sur les 2 sélecteurs concernés (desktop + mobile). Dérogation d'ordre resolver (T-026 avant T-021) documentée via .agent/ADDITIONAL-INSTRUCTION.json (task_override), mécanisme officiellement prévu par la gouvernance du dépôt. Les 5 gates automatisés passent. Captures visuelles mobile/desktop NON produites : cet environnement d'exécution n'a pas de Chromium disponible et le réseau n'autorise pas le téléchargement de binaires navigateur — preuve non fabriquée, à générer manuellement ou dans un environnement avec navigateur avant clôture définitive si requis par la revue.",
+  "next_action": "Revue humaine requise : (1) valider les 68 changements de font-weight sur préférence 400 vs 500 (500 retenu comme valeur conservatrice uniforme, cf. audit-after.txt), (2) fournir/produire les captures mobile-final-type.png et desktop-final-type.png manquantes si nécessaires à la clôture, (3) statuer sur le passage à T-021 (READY, non traité, resolver bloqué par task_override tant qu'il reste actif)."
 }
