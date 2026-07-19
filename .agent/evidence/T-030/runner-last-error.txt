@@ -1,0 +1,12 @@
+RUNNER_EXIT=128
+
+GIT_STATUS_AT_FAILURE
+ D .agent/evidence/T-030/integration-conflict.txt
+ M .agent/generated/t030-final-runner.sh
+
+RUNNER_LOG
+  File "<stdin>", line 35
+    checks = []
+               ^
+IndentationError: unindent does not match any outer indentation level
+fatal: pathspec '.agent/evidence/T-030/t028-integration-check.txt' did not match any files
