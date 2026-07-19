@@ -1,25 +1,56 @@
 Tu exécutes le chantier directement dans GitHub.
 
-Ne raconte pas ton plan. Ne demande pas si tu dois continuer. Exécute et pousse.
+## Première action obligatoire
 
-## Modèle de branche obligatoire
+Lis `.agent/START-HERE.md` avant toute autre lecture ou commande.
 
-Une lane est un sujet cohérent et possède une seule branche durable.
+Ne déduis jamais la tâche courante depuis `main`, depuis `.agent/TASK-INDEX.json`, depuis
+le numéro le plus bas encore `READY`, ni depuis le label de lane.
 
-Toutes les tâches d’une même lane utilisent la même branche, même lorsqu’elles
-modifient plusieurs fois les mêmes fichiers. Ne crée jamais une branche par tâche.
-
-Exemple :
+La source de vérité est exclusivement :
 
 ```text
-LANE-MOBILE-RENDERER → agent/lane-mobile-renderer
+origin/agent/lane-mobile-renderer
 ```
 
-Commence par :
+Avant toute analyse de tâche :
 
 ```bash
-node scripts/agent.mjs start --agent "{{AGENT_NAME}}"
+git fetch origin --prune
+git status --short
+git branch --show-current
+git rev-parse HEAD
+git rev-parse origin/agent/lane-mobile-renderer
 ```
+
+Si le worktree est propre, bascule et synchronise la branche durable. S’il ne l’est pas,
+affiche les modifications et arrête-toi sans reset, stash automatique ou suppression.
+
+## Ordre de lecture
+
+Après synchronisation, lis exactement :
+
+1. `.agent/START-HERE.md`
+2. `.agent/MANIFEST.json`
+3. `.agent/EXECUTION_MAP.md`
+4. `.agent/lanes/LANE-MOBILE-RENDERER.json`
+5. `.agent/STATUS.md`
+6. les states cités par `current_task`, `in_review_tasks`, `blocked_tasks` et `next_action`
+7. les tâches, arbitrages, worklogs et preuves correspondants
+
+Les labels de lane sont des classifications. Toutes les tâches restantes s’exécutent sur
+`agent/lane-mobile-renderer`. Ne crée aucune autre branche et ne pousse rien sur `main`.
+
+## Exécution
+
+Ne raconte pas ton plan. Ne demande pas si tu dois continuer lorsqu’une action est déjà
+indiquée par la gouvernance. Exécute de petits lots, committe et pousse régulièrement.
+
+Ne lance jamais `node scripts/agent.mjs start` avant le préflight et la synchronisation.
+Ne recommence jamais une tâche `DONE` ou `REVIEW` sur la ref autoritative.
+
+Pour une tâche `BLOCKED` devenue réalisable, reprends-la explicitement. Pour une nouvelle
+tâche, démarre uniquement celle indiquée par la lane / execution map.
 
 Après chaque petit lot :
 
@@ -27,24 +58,6 @@ Après chaque petit lot :
 node scripts/agent.mjs save \
   --message "résultat précis" \
   --next-action "prochaine action exacte"
-```
-
-Quand la tâche active est terminée :
-
-```bash
-node scripts/agent.mjs finish --summary "résumé court"
-```
-
-La CLI doit alors rester sur la branche de lane et démarrer automatiquement la tâche
-suivante compatible. Elle n’ouvre une PR qu’à la fin de la lane.
-
-Tu peux revenir sur un fichier déjà modifié, enrichir un test, ajouter de la couverture
-ou corriger un bug découvert plus tard : tout reste sur la même branche de sujet.
-
-Après une coupure :
-
-```bash
-node scripts/agent.mjs resume --task {{TASK_ID}} --agent "{{AGENT_NAME}}"
 ```
 
 Interromps l’utilisateur uniquement pour un arbitrage réel couvert par
