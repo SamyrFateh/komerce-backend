@@ -5,7 +5,7 @@
   "finding_id": "D5",
   "wave": "P2",
   "parallel_lane": "LANE-META",
-  "status": "READY",
+  "status": "BLOCKED",
   "priority": "MEDIUM",
   "depends_on": [
     "T-007"
@@ -26,20 +26,45 @@
     "npm --prefix public/boutique run audit:gate",
     "npm --prefix public/boutique run test:unit"
   ],
-  "agent": null,
+  "agent": "claude-sonnet-chat",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-19T00:19:26Z",
   "lease_until": null,
   "finished_at": null,
   "reviewed_at": null,
-  "base_commit": null,
+  "base_commit": "6c805613e8ffdc6868fd96dec6b42aa849fe9aa0",
   "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
-  "blocking_reason": null,
+  "changed_files": [
+    ".agent/evidence/T-017/tests.txt",
+    ".agent/worklogs/T-017.md",
+    ".agent/state/T-017.json"
+  ],
+  "gate_results": [
+    {
+      "gate": "check:imports",
+      "result": "PASS — aucun import fantôme, cycle inconnu ni module manquant (45 exports non consommés, informatif, pré-existant)"
+    },
+    {
+      "gate": "audit:arch",
+      "result": "PASS — aucune violation"
+    },
+    {
+      "gate": "audit:ownership",
+      "result": "PASS — carte de propriété régénérée"
+    },
+    {
+      "gate": "audit:gate",
+      "result": "PASS — 0 vulnérabilité high/critical"
+    },
+    {
+      "gate": "test:unit",
+      "result": "PASS — 92 suites, 1751 tests, dont 2/2 sur la suite série desktop (M6, contrat v1 product.series)"
+    }
+  ],
+  "blocking_reason": "Preuves visuelles desktop-series-1024.png et desktop-series-1440.png non générables : aucun binaire Chromium/Playwright installé dans ce sandbox et réseau restreint aux registres npm/pip/GitHub (pas d'accès au CDN de téléchargement des navigateurs Playwright). Même blocage que T-023. Code, fallback silencieux et tests unitaires entièrement conformes et vérifiés.",
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "Aucun code desktop manquant : l'implémentation product.series (T-007) est déjà présente et correcte dans b-modal-desktop-product.js, avec fallback silencieux identique au pattern mobile. Aucune duplication ajoutée par T-017. Gates et tests unitaires entièrement verts. Seule la capture visuelle 1024/1440 manque, faute de navigateur disponible.",
+  "next_action": "Débloquer dès qu'un Chromium/Playwright est disponible dans l'environnement d'exécution : générer desktop-series-1024.png et desktop-series-1440.png, puis passer BLOCKED → REVIEW."
 }

@@ -1,0 +1,164 @@
+=== npm run check:imports ===
+
+> boutique@1.0.0 check:imports
+> node scripts/check-js-imports.js
+
+
+[1m[36m━━━ check-js-imports v2 — Komerce Boutique ━━━[0m
+[2mAnalyse de 72 module(s)…[0m
+
+[33m[1m── Cycles documentés (non bloquants) ──────────────────────[0m
+  [33m⚠[0m Cycle connu [acceptable] : b-cart.js ↔ b-catalog.js
+    [2m↳ scrollToCategorySection — couplage scroll/catalogue, cycle isolé à 1 fonction[0m
+  [33m⚠[0m Cycle connu [acceptable] : b-catalog.js ↔ b-subcat.js
+    [2m↳ _renderCard/renderGrid — refactoring Phase 4 en cours, à supprimer une fois découplé[0m
+  [33m⚠[0m Cycle connu [acceptable] : b-catalog.js ↔ home-controller.js
+    [2m↳ syncRailActiveState/renderSubcatRail — couplage bidirectionnel connu controllers/[0m
+
+[2m── Exports non consommés [I-4] (informatif) ────────────────[0m
+  [33m⚠[0m [2mjs/b-boutique-wow-style.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupBoutiqueWowStyle'[0m
+  [33m⚠[0m [2mjs/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'guardStepperControlClick'[0m
+    [2m↳ 'installCartStepperGuard'[0m
+  [33m⚠[0m [2mjs/b-cart.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'openCartWithHighlight'[0m
+    [2m↳ 'removeFromCart'[0m
+  [33m⚠[0m [2mjs/b-catalog.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'initCats'[0m
+    [2m↳ 'initSearch'[0m
+  [33m⚠[0m [2mjs/b-checkout-render.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'renderRelaisForIle'[0m
+  [33m⚠[0m [2mjs/b-checkout.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'getDefaultPhoneCodeForZone'[0m
+  [33m⚠[0m [2mjs/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupDesktopGlobalCartAccess'[0m
+  [33m⚠[0m [2mjs/b-desktop-sidebar.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'setupDesktopSidebar'[0m
+    [2m↳ 'syncDesktopSidebar'[0m
+  [33m⚠[0m [2mjs/b-friendly-group-redirect.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupFriendlyGroupRedirect'[0m
+  [33m⚠[0m [2mjs/b-group-cart-flow.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupGroupCartFlow'[0m
+  [33m⚠[0m [2mjs/b-mini-cart.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupMiniCart'[0m
+  [33m⚠[0m [2mjs/b-mobile-modal-v1.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupMobileModalV1'[0m
+  [33m⚠[0m [2mjs/b-mobile-premium-v1.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupMobilePremiumV1'[0m
+  [33m⚠[0m [2mjs/b-modal-approche-c-hybrid.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'setupApprocheCHybridPdp'[0m
+    [2m↳ '_hybridPdpTestApi'[0m
+  [33m⚠[0m [2mjs/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :[0m
+    [2m↳ 'computeSubtotal'[0m
+    [2m↳ 'PAYMENT_MODES'[0m
+    [2m↳ '_buyboxSharedTestApi'[0m
+  [33m⚠[0m [2mjs/b-modal-desktop-product.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'refreshDesktopProductSubtotal'[0m
+  [33m⚠[0m [2mjs/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ '_productDetailBootstrapTestApi'[0m
+  [33m⚠[0m [2mjs/b-modal.js — 7 export(s) non consommé(s) :[0m
+    [2m↳ 'buildCarouselSlides'[0m
+    [2m↳ 'goToSlide'[0m
+    [2m↳ 'renderSuggestions'[0m
+    [2m↳ 'setupImageZoneTouch'[0m
+    [2m↳ … et 3 autre(s)[0m
+  [33m⚠[0m [2mjs/b-pager.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ '_setupPagerDots'[0m
+  [33m⚠[0m [2mjs/b-paypal.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'ensurePayPalSDK'[0m
+  [33m⚠[0m [2mjs/b-phone.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'initEventPhoneBlock'[0m
+    [2m↳ 'readEventPhone'[0m
+  [33m⚠[0m [2mjs/b-product-open-contract.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'openProductFromCart'[0m
+  [33m⚠[0m [2mjs/b-scroll-owner.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'DESKTOP_BREAKPOINT'[0m
+    [2m↳ 'getMobileScrollContainer'[0m
+  [33m⚠[0m [2mjs/b-share-cart.js — 3 export(s) non consommé(s) :[0m
+    [2m↳ 'clearShareState'[0m
+    [2m↳ 'restoreSharedCartFromBackend'[0m
+    [2m↳ 'refreshSharedBadges'[0m
+  [33m⚠[0m [2mjs/b-store.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'CLOUD_BASE'[0m
+  [33m⚠[0m [2mjs/b-subcat.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ '_scrollFlatPagerToSub'[0m
+    [2m↳ '_syncFlatActiveTab'[0m
+  [33m⚠[0m [2mjs/b-utils.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'getAPI'[0m
+
+
+[1m[36m━━━ Résultat ━━━[0m
+[32m[1m✔ Aucun import fantôme ni cycle inconnu ni module manquant.[0m
+[2m  72 modules analysés — 72 cartes d'exports construites.[0m
+[33m  45 export(s) non consommés [I-4] (informatif uniquement).[0m
+
+
+=== npm run audit:arch ===
+
+> boutique@1.0.0 audit:arch
+> node scripts/audit-boutique-arch.js
+
+
+  🔍  Audit architecture Komerce – invariants boutique/docs/BOUTIQUE_ARCHITECTURE.md
+
+  ✅  Aucune violation. Architecture conforme.
+
+
+=== npm run audit:ownership ===
+
+> boutique@1.0.0 audit:ownership
+> node scripts/gen-ownership.js
+
+✅ Carte de propriété générée → docs/BOUTIQUE_OWNERSHIP_LIVE.md
+
+=== npm run audit:gate ===
+
+> boutique@1.0.0 audit:gate
+> node scripts/audit-gate.js --strict
+
+
+╔══════════════════════════════════════════════════════════╗
+║  KOMERCE BOUTIQUE — Audit Gate (N1 — dépendances)        ║
+╚══════════════════════════════════════════════════════════╝
+
+  Vulnérabilités high/critical : 0
+  Dette connue (baseline)      : 0
+  Nouvelles (non acceptées)    : 0
+
+  ✅ Audit N1 — CONFORME (0 vulnérabilité high/critical).
+
+
+=== npm run test:unit ===
+PASS tests/unit/b-modal-product-detail-bootstrap-pdc6-coverage.test.js
+PASS tests/unit/main.test.js
+PASS tests/unit/b-group-cart-flow.test.js
+PASS tests/unit/b-boutique-wow-style.test.js
+
+Test Suites: 92 passed, 92 total
+Tests:       1751 passed, 1751 total
+Snapshots:   0 total
+Time:        37.742 s, estimated 45 s
+Ran all test suites matching tests/unit.
+
+=== npx jest b-modal-desktop-product.test.js -t serie (ciblé) ===
+    ○ skipped une option Express apparaît uniquement quand le contrat la fournit
+    ○ skipped delivery_options absent reste honnête et ne crashe pas
+    ○ skipped le cleanup observer permet de rattacher le sous-total à un nouveau DOM quantité
+    ○ skipped hors desktop le renderer ne modifie pas la modal
+  desktop product detail renderer — contenu enrichi (Lot Content)
+    ○ skipped produit sans content : le conteneur reste vide et hidden, aucun bloc fantôme
+    ○ skipped produit enrichi : révèle le conteneur et rend les blocs dans l’ordre canonique
+    ○ skipped re-render (changement de sélection) ne duplique jamais les blocs enrichis
+    ○ skipped conteneur absent du markup (compat) : le renderer ne casse pas
+    ○ skipped section éditoriale TEXT longue : bouton "Lire la suite" présent et fonctionnel
+    ○ skipped section éditoriale BULLETS : rendue en liste à puces
+  b-modal-desktop-product — série produit meta hero (M6, spec §9.1, contrat v1 product.series)
+    ✓ product.series présent : affiché dans #k-modal-cat, nœud visible (52 ms)
+    ✓ product.series absent (null) : #k-modal-cat masqué, catégorie brute non affichée (20 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       23 skipped, 2 passed, 25 total
+Snapshots:   0 total
+Time:        1.044 s
+Ran all test suites matching tests/unit/b-modal-desktop-product.test.js with tests matching "série".
