@@ -1,14 +1,18 @@
-RUNNER_EXIT=4
+RUNNER_EXIT=3
 
 GIT_STATUS_AT_FAILURE
- D .agent/evidence/T-030/integration-conflict.txt
- D .agent/evidence/T-030/runner-last-error.txt
- M .agent/generated/t030-final-runner.sh
+
 
 RUNNER_LOG
-T-028 invariants missing: favorite pop removed
-[agent/lane-final 103eebd1] chore(t030): record T-028 semantic integration check
- 1 file changed, 12 insertions(+)
- create mode 100644 .agent/evidence/T-030/t028-integration-check.txt
+Applied patch to 'public/boutique/css/modal-media.css' cleanly.
+Applied patch to 'public/boutique/css/modal-product-lot4-hybrid.css' with conflicts.
+Applied patch to 'public/boutique/css/modal-product.css' with conflicts.
+Applied patch to 'public/boutique/css/modal-shell.css' with conflicts.
+U public/boutique/css/modal-product-lot4-hybrid.css
+U public/boutique/css/modal-product.css
+U public/boutique/css/modal-shell.css
+HEAD is now at c9b8bc61 ci(t030): ignore comments in favorite-pop invariant
+[agent/lane-final 70e18699] chore(t030): record T-029 targeted patch conflict
+ 1 file changed, 52 insertions(+), 15 deletions(-)
 To https://github.com/SamyrFateh/komerce-backend
-   c15554ff..103eebd1  HEAD -> agent/lane-final
+   c9b8bc61..70e18699  HEAD -> agent/lane-final
