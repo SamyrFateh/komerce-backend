@@ -53,11 +53,12 @@ Après synchronisation sur la branche durable, lire dans cet ordre :
 
 1. `.agent/START-HERE.md`
 2. `.agent/MANIFEST.json`
-3. `.agent/EXECUTION_MAP.md`
-4. `.agent/lanes/LANE-MOBILE-RENDERER.json`
-5. `.agent/STATUS.md`
-6. le ou les fichiers `.agent/state/T-XXX.json` cités par la lane
-7. les tâches, worklogs, arbitrages et preuves correspondants
+3. `.agent/CHECKPOINT-PROTOCOL.md`
+4. `.agent/EXECUTION_MAP.md`
+5. `.agent/lanes/LANE-MOBILE-RENDERER.json`
+6. `.agent/STATUS.md`
+7. le ou les fichiers `.agent/state/T-XXX.json` cités par la lane
+8. les tâches, worklogs, arbitrages et preuves correspondants
 
 `.agent/TASK-INDEX.json` est un catalogue statique. Ses compteurs et son ordre initial ne sont jamais une preuve d’avancement.
 
@@ -82,11 +83,42 @@ finish
 
 Ce runtime legacy sélectionne encore une branche depuis `parallel_lane` et peut relire les states de `main`. Il ne doit pas être utilisé pour choisir, reprendre ou clôturer une tâche tant qu’il n’a pas été refactorisé pour respecter `MANIFEST.execution_branch`.
 
-Après le préflight, les changements de state sont faits explicitement dans les fichiers autoritatifs, puis committés et poussés sur la branche durable. Les commandes de diagnostic sans mutation peuvent être utilisées seulement après vérification de leur sortie.
+Après le préflight, les changements de state sont faits explicitement dans les fichiers autoritatifs, puis sauvegardés par le protocole de checkpoint distant.
 
-## 6. Livraison
+## 6. Checkpoint distant obligatoire
 
-- petits commits et pushs réguliers sur `agent/lane-mobile-renderer` ;
+Un checkpoint signifie obligatoirement :
+
+```text
+petit lot cohérent → commit atomique → push immédiat → SHA distant confirmé
+```
+
+Utiliser pour chaque lot :
+
+```bash
+node scripts/agent-checkpoint.mjs \
+  --message "type(t-xxx): résultat atomique" \
+  -- chemin/du/fichier-1 chemin/du/fichier-2
+```
+
+Le lot suivant ne commence qu’après :
+
+```text
+CHECKPOINT_DISTANT=<sha>
+```
+
+Il est interdit :
+
+- d’accumuler plusieurs commits locaux avant un push groupé ;
+- de commencer un second lot avec un commit local non confirmé sur `origin` ;
+- de répondre à l’utilisateur avant d’avoir poussé le travail courant ;
+- de lancer une commande longue ou risquée sans checkpoint distant préalable.
+
+Au premier `non-fast-forward` ou écart local/distant : arrêter immédiatement. Aucun merge, rebase, cherry-pick, reset, stash ou force-push automatique. Appliquer `.agent/CHECKPOINT-PROTOCOL.md`.
+
+## 7. Livraison
+
+- checkpoints distants petits et fréquents sur `agent/lane-mobile-renderer` ;
 - aucun checkpoint sur `main` ;
 - aucune branche par tâche ou par label de lane ;
 - aucune preuve visuelle fabriquée ;
