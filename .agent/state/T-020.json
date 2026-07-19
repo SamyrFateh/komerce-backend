@@ -5,13 +5,15 @@
   "finding_id": "D8",
   "wave": "P2",
   "parallel_lane": "LANE-DESKTOP-LAYOUT",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "HIGH",
   "depends_on": [
     "T-001"
   ],
   "allowed_files": [
     "public/boutique/css/modal-product-lot4-hybrid.css",
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/index.html",
     ".agent/evidence/T-020/**"
   ],
   "forbidden_files": [
@@ -26,20 +28,46 @@
     "npm --prefix public/boutique run audit:gate",
     "npm run gate:feature-audit"
   ],
-  "agent": null,
+  "agent": "claude-chat-session",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-19T12:24:21Z",
   "lease_until": null,
   "finished_at": null,
   "reviewed_at": null,
-  "base_commit": null,
-  "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "base_commit": "f8e954f22ed222732865ee9fb3cf43c18b38e14f",
+  "last_commit": "d33d5a0b6cf167cc59370b1e38a53b818967a35f",
+  "changed_files": [
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/index.html",
+    "public/boutique/css/dist/components.css",
+    "public/boutique/.cache-buster-state.json",
+    "public/boutique/scripts/.breakpoints-baseline.json",
+    "public/boutique/scripts/.css-guard-baseline.json",
+    ".agent/evidence/T-020/computed-validation.json",
+    ".agent/evidence/T-020/desktop-grid-1024.png",
+    ".agent/evidence/T-020/desktop-grid-1440.png",
+    ".agent/evidence/T-020/desktop-grid-1600.png",
+    ".agent/evidence/T-020/render-static.txt",
+    ".agent/arbitrations/T-020.md",
+    ".agent/tasks/T-020.md",
+    ".agent/state/T-020.json",
+    ".agent/worklogs/T-020.md"
+  ],
+  "gate_results": [
+    { "gate": "deploy:css", "result": "pass (components.css régénéré, v174 -> v175; sur-bump parasite base.css/desktop.css corrigé)" },
+    { "gate": "check:cache", "result": "pass (bundles synchronisés)" },
+    { "gate": "check:breakpoints", "result": "pass (baseline 1024/1440 figée pour le changement arbitré)" },
+    { "gate": "check:css-guard", "result": "pass avec baseline documentée; 1 conflit préexistant hors périmètre T-018 confirmé avant/après via git stash" },
+    { "gate": "check:css-specificity-guard", "result": "pass (stable)" },
+    { "gate": "audit:ownership", "result": "pass" },
+    { "gate": "audit:gate / npm audit", "result": "pass (0 vulnérabilité high/critical)" },
+    { "gate": "gate:feature-audit", "result": "pass (0 FAIL; render-static modal-product intact)" }
+  ],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "T-020 rapatriée de la branche accidentelle agent/lane-desktop-layout vers l'unique branche durable, hunk par hunk afin de préserver les évolutions indépendantes de modal-shell.css, modal-product-lot4-hybrid.css et index.html. La grille desktop passe à trois pistes à partir de 1024px : 60px/minmax(420px,1fr)/310px puis 64px/minmax(480px,1fr)/340px à partir de 1440px. modal-product-lot4-hybrid.css reste propriétaire de grid-template-columns/gap/padding; modal-shell.css reste propriétaire du placement grid-column/grid-row des enfants. Les preuves 1024/1440/1600 et render-static sont présentes à distance. Les gates ont été réexécutés sur agent/lane-mobile-renderer et non recopiés. Un bug distinct de scripts/agent-checkpoint.mjs tronquant le premier chemin dirty a été corrigé dans un checkpoint d'outillage séparé.",
+  "next_action": "Revue humaine du diff, de l'arbitrage ownership et des captures 1024/1440/1600; décision DONE ou retour agent. T-021 peut ensuite être rapatriée sur la même branche durable."
 }
