@@ -150,9 +150,10 @@
 .k-modal-search-mic { width: 30px; height: 30px; border: none; background: transparent; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .12s, transform .12s; -webkit-tap-highlight-color: transparent; padding: 0; }
 .k-modal-search-mic svg { width: 17px; height: 17px; stroke: var(--text-muted); fill: none; stroke-width: 2; transition: stroke .15s; }
 .k-modal-search-mic:active { transform: scale(.88); }
-.k-modal-search-mic.is-listening { background: var(--hero-red); animation: k-mic-pulse 1s ease-in-out infinite; }
+/* [T-028] animation k-mic-pulse retirée : mouvement décoratif parasite.
+   L'état "écoute" reste porté par la couleur de fond (--hero-red). */
+.k-modal-search-mic.is-listening { background: var(--hero-red); }
 .k-modal-search-mic.is-listening svg { stroke: var(--white); }
-@keyframes k-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--red-pulse-35); } 50% { box-shadow: 0 0 0 8px var(--red-pulse-0); } }
 
 /* ── ACTIONS (mobile : sticky bas, flex-shrink:0) ────────────── */
 .k-modal-actions {
@@ -994,5 +995,18 @@
   .k-modal-slide:focus,    .k-modal-slide:focus-visible {
     outline: none;
     box-shadow: none;
+  }
+}
+
+/* [T-028] Reduced motion : neutralise les animations fonctionnelles
+   (ouverture modale, morph sticky topbar) sans modifier les règles
+   originales ci-dessus. Ne touche pas au focus visible (protégé). */
+@media (prefers-reduced-motion: reduce) {
+  .k-modal {
+    animation: none;
+  }
+
+  .k-modal-topbar-product {
+    transition: none;
   }
 }

@@ -5,7 +5,7 @@
   "finding_id": "T3",
   "wave": "P3",
   "parallel_lane": "LANE-FINISH",
-  "status": "READY",
+  "status": "IN_PROGRESS",
   "priority": "HIGH",
   "depends_on": [
     "T-010",
@@ -37,20 +37,21 @@
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate"
   ],
-  "agent": null,
+  "agent": "sonnet-chat",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-finish",
+  "started_at": "2026-07-19T18:30:49.749Z",
   "lease_until": null,
   "finished_at": null,
   "reviewed_at": null,
-  "base_commit": null,
+  "base_commit": "e695693c62bb7d02906762c4472d1846af33f28a",
   "last_commit": null,
   "changed_files": [],
   "gate_results": [],
-  "blocking_reason": null,
+  "blocking_reason": "Dérogation explicite utilisateur : dépendances T-010/T-011/T-012/T-021/T-023/T-026/T-027 jugées déjà satisfaites hors du suivi .agent/state — démarrage forcé malgré depsDone()=false dans scripts/agent.mjs.",
   "review_decision": null,
   "summary": null,
-  "next_action": null
+  "next_action": "Exécuter les gates puis passer en REVIEW (règle de sortie explicite T-028).",
+  "resumed_at": "2026-07-19T18:30:49.749Z"
 }

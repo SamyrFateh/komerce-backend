@@ -345,7 +345,9 @@
   cursor: pointer;
   width: 68px;
   position: relative;
-  transition: border-color .15s, box-shadow .15s, transform .12s;
+  /* [T-028] transform retiré : hover-lift décoratif parasite retiré,
+     plus aucune règle .k-sku n'anime transform. */
+  transition: border-color .15s, box-shadow .15s;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -379,8 +381,9 @@
 
 /* Hover */
 .k-sku:hover:not(.k-sku--out) {
+  /* [T-028] transform: translateY(-1px) retiré : hover-lift décoratif
+     parasite. Le feedback au survol reste porté par bordure + ombre. */
   border-color: var(--ocean);
-  transform: translateY(-1px);
   box-shadow: 0 4px 10px var(--border-ocean-18);
 }
 

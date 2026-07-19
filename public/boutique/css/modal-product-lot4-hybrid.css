@@ -221,16 +221,18 @@
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
+    /* [T-028] transform retiré : hover-lift décoratif parasite retiré,
+       plus aucune règle .k-buybox-payment-tab n'anime transform. */
     transition:
       border-color .16s var(--ease),
       background .16s var(--ease),
       color .16s var(--ease),
-      box-shadow .16s var(--ease),
-      transform .16s var(--ease);
+      box-shadow .16s var(--ease);
   }
 
   #k-modal .k-buybox-payment-tab:hover {
-    transform: translateY(-1px);
+    /* [T-028] transform: translateY(-1px) retiré : hover-lift décoratif
+       parasite. Le feedback au survol reste porté par bordure + ombre. */
     border-color: var(--ocean-light);
     box-shadow: 0 8px 18px var(--border-text-06);
   }
