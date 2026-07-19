@@ -1,12 +1,13 @@
 === Résumé — T-028 : purge des micro-interactions parasites ===
 
-6 corrections appliquées :
+7 corrections appliquées :
 1. modal-shell.css     : animation k-mic-pulse + @keyframes retirées (état couleur conservé)
 2. modal-shell.css     : bloc @media (prefers-reduced-motion: reduce) ajouté (neutralise k-slide-up + morph sticky topbar-product)
 3. modal-media.css     : easing spring + scale (hover/active/liked) + .k-pop + @keyframes k-modal-fav-pop retirés du bouton favori
 4. modal-media.css     : hover-lift (translateY) retiré sur .k-modal-recent-card
 5. modal-media.css     : keyboard hint neutralisé via display:none (toujours injecté par b-modal-core.js, hors périmètre CSS)
 6. modal-product.css + modal-product-lot4-hybrid.css : hover-lift (translateY) retiré sur .k-sku et .k-buybox-payment-tab
+7. modal-shell.css     : hover-lift (translateY) retiré sur .k-modal-thumb (miniatures desktop, repéré lors de la vérification finale)
 
 Interactions protégées (périmètre interdit T-028), non modifiées :
 - Fade variante 100+100ms
@@ -52,27 +53,29 @@ Interactions protégées (périmètre interdit T-028), non modifiées :
 408:       transforms ancestraux résiduels (Chrome Android Edge Panels). */
 442:  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px var(--overlay-dark-sm); animation: none; }
 454:  .k-modal-breadcrumb-cat { cursor: pointer; transition: color .12s; }
-494:  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
-495:  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: var(--coral-focus-45); box-shadow: 0 10px 22px var(--border-text-10); }
-508:    transition: opacity .16s var(--ease); overflow: hidden;
-522:    transition: opacity .12s var(--ease);
-582:  #k-modal .k-modal-price-unit { font-size: .44em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
-595:  .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
-604:  .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); transition: color .12s; }
-606:  .k-modal-spec-toggle-arrow { width: 18px; height: 18px; transition: transform .2s var(--ease); color: var(--text-muted); stroke: currentColor; fill: none; stroke-width: 2; }
-607:  .k-modal-spec-toggle.is-open .k-modal-spec-toggle-arrow { transform: rotate(180deg); }
-609:  .k-modal-spec-body.is-open { display: block; animation: k-spec-reveal .2s var(--ease); }
-610:  @keyframes k-spec-reveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-652:    transition: background .18s, box-shadow .18s, transform .1s;
-695:    transition: transform .18s, box-shadow .18s; cursor: pointer;
-697:  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px var(--border-text-12); }
-781:    transition: none;
-879:.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--coral); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:10; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
-880:.k-modal-back-top.show { opacity:1; pointer-events:auto; transform:translateY(0); }
-912:    transform: none;
-929:/* [T-028] Reduced motion : neutralise les animations fonctionnelles
-934:    animation: none;
-938:    transition: none;
+494:  /* [T-028] transform retiré : hover-lift décoratif parasite retiré,
+495:     plus aucune règle .k-modal-thumb n'anime transform. */
+496:  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: border-color .14s, box-shadow .14s; }
+497:  /* [T-028] transform: translateY(-1px) retiré : hover-lift décoratif
+512:    transition: opacity .16s var(--ease); overflow: hidden;
+526:    transition: opacity .12s var(--ease);
+586:  #k-modal .k-modal-price-unit { font-size: .44em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
+599:  .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
+608:  .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); transition: color .12s; }
+610:  .k-modal-spec-toggle-arrow { width: 18px; height: 18px; transition: transform .2s var(--ease); color: var(--text-muted); stroke: currentColor; fill: none; stroke-width: 2; }
+611:  .k-modal-spec-toggle.is-open .k-modal-spec-toggle-arrow { transform: rotate(180deg); }
+613:  .k-modal-spec-body.is-open { display: block; animation: k-spec-reveal .2s var(--ease); }
+614:  @keyframes k-spec-reveal { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+656:    transition: background .18s, box-shadow .18s, transform .1s;
+699:    transition: transform .18s, box-shadow .18s; cursor: pointer;
+701:  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px var(--border-text-12); }
+785:    transition: none;
+883:.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--coral); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:10; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
+884:.k-modal-back-top.show { opacity:1; pointer-events:auto; transform:translateY(0); }
+916:    transform: none;
+933:/* [T-028] Reduced motion : neutralise les animations fonctionnelles
+938:    animation: none;
+942:    transition: none;
 
 --- public/boutique/css/modal-media.css ---
 23:  animation: k-modal-shimmer 1.4s linear infinite;

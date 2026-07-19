@@ -498,6 +498,10 @@
      hover. Sélection d'image (JS) hors périmètre — CSS uniquement. ── */
   #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 60px; overflow-y: auto; scrollbar-width: none; }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
+  /* [T-028] Objectif déjà satisfait par T-021/D9 : aucune règle .k-modal-thumb
+     n'anime transform ni box-shadow au hover. Version T-021 conservée (plus
+     stricte que le checkpoint T-028 d'origine, qui réintroduisait un
+     box-shadow décoratif issu d'une base pré-T-021). */
   #k-modal .k-modal-thumb { width: 60px; height: 60px; flex: 0 0 60px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
   #k-modal .k-modal-thumb:hover { border-color: var(--text); }
   #k-modal .k-modal-thumb.is-active { border: 1.5px solid var(--text); }
