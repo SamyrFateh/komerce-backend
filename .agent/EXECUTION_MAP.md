@@ -1,54 +1,100 @@
 # EXECUTION MAP — PDP Komerce
 
-## Règle
+## Règle active du chantier
 
-Chaque lane est un sujet cohérent et possède une branche durable unique.
+Les identifiants de lane restent des classifications de sujet. Sur décision explicite de
+Samyr, l’exécution intégrée du chantier PDP se poursuit toutefois sur une seule branche
+durable :
 
 ```text
-LANE-X → agent/lane-x
+agent/lane-mobile-renderer
 ```
 
-Les tâches d’une lane sont exécutées séquentiellement sur cette branche. Elles peuvent
-modifier plusieurs fois les mêmes fichiers. Elles produisent une seule PR à la fin de
-la lane.
+Aucune nouvelle branche par tâche ou par lane ne doit être créée. `main` ne reçoit pas de
+checkpoint de travail : elle ne sera ciblée qu’au moment de l’intégration finale par PR.
 
-Deux lanes peuvent travailler en parallèle uniquement si leurs périmètres ne se
-chevauchent pas ou si une intégration explicite est prévue.
+Les tâches sont exécutées séquentiellement sur cette branche, avec de petits commits et des
+pushs réguliers. Les dépendances déclarées dans les fichiers `T-*.json` restent les dépendances
+fonctionnelles ; le présent document fixe l’ordre opérationnel.
 
-## Ordre minimal
+## État acquis
 
-1. `T-001` établit le préflight commun.
-2. Chaque lane P1 poursuit ses tâches dans l’ordre indiqué.
-3. Les tâches transverses T-026 et T-027 viennent après les corrections ciblées.
-4. Les tâches P2 puis P3 suivent leurs dépendances.
-5. `T-030` clôture le chantier.
+- `T-001` à `T-016` : `DONE`.
+- `T-023` : implémentation et gates automatisés terminés, statut `BLOCKED` uniquement pour
+  les captures desktop EMPTY/FILLED indisponibles sans Chromium.
 
-## Lanes et branches
+## Séquençage opérationnel en vigueur
 
-| Lane | Branche durable | Tâches |
-|---|---|---|
-| `LANE-0` | `agent/lane-0` | `T-001` |
-| `LANE-MOBILE-RENDERER` | `agent/lane-mobile-renderer` | `T-002 → T-003 → T-004 → T-005 → T-006` |
-| `LANE-META` | `agent/lane-meta` | `T-007 → T-017` |
-| `LANE-MOBILE-SHELL` | `agent/lane-mobile-shell` | `T-008 → T-009 → T-011 → T-012` |
-| `LANE-BUYBOX` | `agent/lane-buybox` | `T-010` |
-| `LANE-DESKTOP-TYPE` | `agent/lane-desktop-type` | `T-013 → T-014 → T-015` |
-| `LANE-DESKTOP-COMPOSITION` | `agent/lane-desktop-composition` | `T-016 → T-023` |
-| `LANE-DESKTOP-VISUAL` | `agent/lane-desktop-visual` | `T-018 → T-019` |
-| `LANE-DESKTOP-LAYOUT` | `agent/lane-desktop-layout` | `T-020 → T-021 → T-022` |
-| `LANE-FINISH` | `agent/lane-finish` | `T-024 → T-025 → T-028 → T-029` |
-| `LANE-TRANSVERSE` | `agent/lane-transverse` | `T-026 → T-027` |
-| `LANE-FINAL` | `agent/lane-final` | `T-030` |
+### Phase A — implémentation et gates automatisés
 
-## Revue
+```text
+T-017
+  → T-018
+  → T-019
+  → T-020
+  → T-021
+  → T-022
+  → T-024
+  → T-025
+  → T-026
+  → T-027
+```
 
-La revue humaine intervient à la fin de la lane, sur une PR unique. Une tâche
-intermédiaire ne bloque pas automatiquement la suivante lorsqu’elle a ses gates verts.
+Règles :
 
-## Parallélisme interdit
+1. Chaque tâche démarre sur `agent/lane-mobile-renderer` depuis le HEAD distant courant.
+2. Un seul agent travaille sur la branche à la fois.
+3. Le code, les tests et les gates automatisés doivent être terminés avant la tâche suivante.
+4. Une tâche avec un gate fonctionnel rouge bloque la séquence.
+5. Lorsque la seule preuve manquante est une capture impossible faute de navigateur, la
+   tâche passe en `BLOCKED` avec un `blocking_reason` exclusivement visuel. Ce blocage
+   n’empêche pas de poursuivre la Phase A.
+6. Aucun artefact visuel ne doit être simulé ou fabriqué.
 
-- deux agents sur la même lane ;
-- une branche distincte par tâche d’une même lane ;
-- deux lanes modifiant simultanément les mêmes owners sans intégrateur ;
-- repartir de `main` au milieu d’une lane ;
-- déplacer manuellement des fichiers entre branches.
+### Phase B — campagne visuelle groupée
+
+Dès qu’un environnement avec Chromium est disponible :
+
+1. produire d’abord les captures manquantes de `T-023` ;
+2. produire ensuite les preuves visuelles manquantes de `T-017` à `T-022`, puis `T-024` à
+   `T-027`, dans cet ordre ;
+3. vérifier chaque critère aux viewports demandés ;
+4. faire passer chaque tâche de `BLOCKED` à `REVIEW`, puis à `DONE` après revue humaine ;
+5. ne rouvrir le code fonctionnel qu’en présence d’un défaut visible réel.
+
+### Phase C — finitions dépendantes
+
+La phase suivante ne démarre qu’après clôture des dépendances visuelles requises :
+
+```text
+T-028 → T-029
+```
+
+- `T-028` exige notamment `T-023`, `T-024`, `T-026` et `T-027` clôturées.
+- `T-029` exige notamment `T-018`, `T-019`, `T-021`, `T-022`, `T-025` et `T-027` clôturées.
+
+### Phase D — validation finale
+
+```text
+T-030
+```
+
+`T-030` démarre uniquement lorsque `T-001` à `T-029` sont toutes `DONE`. Elle porte la
+campagne finale sur six viewports, six états produit et l’ensemble des gates.
+
+## Revue et livraison
+
+- Les tâches passent à `REVIEW`, jamais directement à `DONE`, sauf décision explicite du
+  reviewer déjà documentée.
+- Les blocages purement visuels sont regroupés pour une campagne Chromium dédiée.
+- Une seule PR finale sera ouverte depuis `agent/lane-mobile-renderer` vers `main` à la fin
+  du chantier.
+
+## Interdictions
+
+- créer une branche distincte pour une nouvelle tâche ;
+- pousser un checkpoint directement sur `main` ;
+- démarrer deux tâches simultanément sur la branche ;
+- contourner un gate fonctionnel rouge ;
+- fabriquer une preuve visuelle ;
+- démarrer `T-028` avant la clôture de `T-023`.
