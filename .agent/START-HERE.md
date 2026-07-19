@@ -69,12 +69,13 @@ Un state peut être en retard après une coupure. Le code, les tests, les preuve
 
 - `T-001` à `T-016` : terminées.
 - `T-017`, `T-018`, `T-019` et `T-020` : en revue ; ne pas les réimplémenter.
-- `T-021` : action courante. Rapatrier uniquement son rail miniatures, ses artefacts et ses preuves depuis `origin/agent/lane-desktop-layout` vers la branche durable, réexécuter les gates, puis passer en `REVIEW`.
-- `T-022` : prochaine implémentation, uniquement après T-021 en `REVIEW` sur `agent/lane-mobile-renderer`.
+- `T-021` : déjà validée dans la session précédente. Ne pas la refaire. Rapatrier uniquement son code, ses artefacts et ses preuves sur `agent/lane-mobile-renderer`, puis reconstruire son state `REVIEW`.
+- `T-022` : déjà réalisée dans la session précédente. Ne pas l’implémenter une seconde fois. Sauvegarder immédiatement depuis la sandbox survivante tout code, artefact et preuve encore local, puis les rapatrier sur `agent/lane-mobile-renderer` et reconstruire son state `REVIEW`.
 - `T-023` : reste bloquée uniquement sur les captures EMPTY/FILLED ; ne pas modifier son code fonctionnel sans défaut visuel réel.
 
 Ne jamais recommencer une tâche marquée `DONE` ou `REVIEW` sur la ref autoritative.
 Ne jamais recommencer non plus un travail source déjà présent dans les commits distants au seul motif que son state est encore `READY` ou `IN_PROGRESS`.
+Une déclaration utilisateur explicite qu’un travail a été réalisé impose d’abord une recherche de récupération dans la sandbox, l’historique et les refs distantes ; elle n’autorise jamais une réimplémentation automatique.
 
 ## 5. Garde-fou runtime
 
