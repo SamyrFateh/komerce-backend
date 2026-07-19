@@ -1,27 +1,13 @@
 {
   "lane": "LANE-MOBILE-RENDERER",
-  "execution_scope": "integrated-pdp-chantiers",
   "branch": "agent/lane-mobile-renderer",
-  "source_of_truth_ref": "origin/agent/lane-mobile-renderer",
   "lane_labels_are_classifications": true,
+  "operational": false,
+  "operational_source": ".agent/NOW.json",
   "tasks": [
     "T-002", "T-003", "T-004", "T-005", "T-006", "T-007", "T-008", "T-009",
     "T-010", "T-011", "T-012", "T-013", "T-014", "T-015", "T-016", "T-017",
     "T-018", "T-019", "T-020", "T-021", "T-022", "T-023", "T-024", "T-025",
     "T-026", "T-027", "T-028", "T-029", "T-030"
-  ],
-  "completed_tasks": [
-    "T-002", "T-003", "T-004", "T-005", "T-006", "T-007", "T-008", "T-009",
-    "T-010", "T-011", "T-012", "T-013", "T-014", "T-015", "T-016"
-  ],
-  "in_review_tasks": ["T-017", "T-018", "T-019", "T-020"],
-  "recovery_tasks": ["T-021", "T-022"],
-  "blocked_tasks": ["T-023"],
-  "current_task": "T-021-T-022-RECOVERY",
-  "current_action": "T-021 est déjà validée et T-022 déjà réalisée. Ne réimplémenter aucune des deux. Sauvegarder immédiatement tout travail T-022 encore présent dans la sandbox survivante, rapatrier T-021 et T-022 sur agent/lane-mobile-renderer, réexécuter seulement les gates nécessaires après intégration, puis reconstruire leurs states REVIEW.",
-  "next_implementation_task": "T-024",
-  "status": "IN_PROGRESS",
-  "review_mode": "single-final-pr",
-  "execution_map": ".agent/EXECUTION_MAP.md",
-  "next_action": "Après confirmation distante des checkpoints de travail et des states REVIEW de T-021/T-022, poursuivre T-024 sur la même branche. T-023 reste bloquée uniquement sur ses captures."
+  ]
 }
