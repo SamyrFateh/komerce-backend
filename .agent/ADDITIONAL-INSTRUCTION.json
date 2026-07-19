@@ -1,5 +1,5 @@
 {
-  "task_override": "T-027",
-  "instruction": "Traiter T-027 maintenant sur agent/lane-mobile-renderer, a la suite de T-026 (REVIEW, non encore DONE). T-027 depend formellement de T-026 dans TASK-INDEX ; l'utilisateur confirme explicitement l'enchainement immediat sans attendre la revue humaine de T-026.",
+  "task_override": null,
+  "instruction": null,
   "updated_at": "2026-07-19"
 }
