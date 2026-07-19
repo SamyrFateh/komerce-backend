@@ -714,10 +714,12 @@
     display: flex; flex-direction: column;
     grid-template-columns: unset; grid-template-rows: unset;
     min-height: unset; height: auto; border-radius: 14px; overflow: hidden;
-    background: var(--white); box-shadow: 0 4px 16px var(--border-text-07);
-    transition: transform .18s, box-shadow .18s; cursor: pointer;
+    background: var(--white); box-shadow: none;
+    border: 1px solid var(--border-text-08);
+    transition: border-color .18s; cursor: pointer;
   }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px var(--border-text-12); }
+  /* D10 — pas de transform ni de halo au hover : bordure seule. */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { border-color: var(--border-text-15); }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img { width: 100%; height: auto; aspect-ratio: 1; grid-column: unset; grid-row: unset; border-radius: 0; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: unset; grid-row: unset; padding: 8px 10px 4px; font-size: 13px; }
