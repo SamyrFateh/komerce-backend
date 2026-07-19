@@ -81,12 +81,14 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 
 Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste est une violation.
 
-**Breakpoints distincts trouvés (7)** : 140px, 380px, 400px, 899px, 900px, 1100px, 1200px
+**Breakpoints distincts trouvés (9)** : 140px, 380px, 400px, 899px, 900px, 1024px, 1100px, 1200px, 1440px
 
 | Fichier CSS | Breakpoints utilisés | Violations |
 |-------------|----------------------|:----------:|
 | hero.css | 140px, 899px, 900px | 🔴 140px, 899px |
 | layout.css | 899px, 900px, 1200px, 1100px | 🔴 899px, 1100px |
+| modal-product-lot4-hybrid.css | 900px, 1024px, 1440px | 🔴 1024px, 1440px |
+| modal-shell.css | 900px, 899px, 1200px, 1024px | 🔴 899px, 1024px |
 | cart.css | 900px, 899px | 🔴 899px |
 | categories.css | 900px, 1200px, 899px | 🔴 899px |
 | group-cart-flow.css | 900px, 1200px, 380px | 🔴 380px |
@@ -94,12 +96,10 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | modal-enriched-content.css | 900px, 899px | 🔴 899px |
 | modal-media.css | 400px, 900px | 🔴 400px |
 | modal-mobile-canonical.css | 899px | 🔴 899px |
-| modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
 | hero-cart-proxy.css | 900px | ✅ |
 | identity.css | 900px | ✅ |
-| modal-product-lot4-hybrid.css | 900px | ✅ |
 | modal-product.css | 900px | ✅ |
 | reset.css | 900px | ✅ |
 | share-cart.css | 900px | ✅ |
@@ -138,8 +138,8 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
 | Modules JS écrivant le DOM | 39 | ≤ 5 |
-| Breakpoints distincts | 7 | ≤ 2 |
-| Violations breakpoint | 13 | 0 |
+| Breakpoints distincts | 9 | ≤ 2 |
+| Violations breakpoint | 16 | 0 |
 | `!important` | 23 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*
