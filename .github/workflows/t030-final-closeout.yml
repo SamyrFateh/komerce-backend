@@ -35,58 +35,92 @@ jobs:
             '+refs/heads/agent/lane-finish:refs/remotes/origin/agent/lane-finish'
           git merge-base --is-ancestor origin/agent/lane-mobile-renderer HEAD
 
-      - name: Integrate T028 and T029 targeted ranges
+      - name: Integrate T028 and T029 targeted source patches
         shell: bash
         run: |
           set -euo pipefail
           rm -f .agent/evidence/T-030/integration-conflict.txt
-          cherry_pick_range() {
-            local base="$1" final="$2" label="$3"
-            if git merge-base --is-ancestor "$final" HEAD; then
-              echo "$label already integrated"
-              return
+
+          fail_with_report() {
+            local label="$1" base="$2" final="$3" patch="$4"
+            local status unmerged diffcheck
+            status="$(git status --short || true)"
+            unmerged="$(git diff --name-only --diff-filter=U || true)"
+            diffcheck="$(git diff --check 2>&1 || true)"
+            git reset --hard HEAD
+            mkdir -p .agent/evidence/T-030
+            {
+              echo "PATCH_INTEGRATION_CONFLICT=$label"
+              echo "BASE=$base"
+              echo "FINAL=$final"
+              echo
+              echo "STATUS"
+              printf '%s\n' "$status"
+              echo
+              echo "UNMERGED_FILES"
+              printf '%s\n' "$unmerged"
+              echo
+              echo "DIFF_CHECK"
+              printf '%s\n' "$diffcheck"
+              echo
+              echo "PATCH_FILE=$patch"
+            } > .agent/evidence/T-030/integration-conflict.txt
+            git add .agent/evidence/T-030/integration-conflict.txt
+            if ! git diff --cached --quiet; then
+              git commit -m "chore(t030): record targeted patch conflict"
+              git push origin HEAD:agent/lane-final
             fi
-            mapfile -t commits < <(git rev-list --reverse "${base}..${final}")
-            if [ "${#commits[@]}" -eq 0 ]; then
-              echo "No commits found for $label" >&2
-              exit 2
-            fi
-            for commit in "${commits[@]}"; do
-              echo "Cherry-pick $label $commit"
-              if ! git cherry-pick "$commit"; then
-                mkdir -p .agent/evidence/T-030
-                {
-                  echo "CHERRY_PICK_CONFLICT=$label:$commit"
-                  echo
-                  echo "STATUS"
-                  git status --short
-                  echo
-                  echo "UNMERGED_FILES"
-                  git diff --name-only --diff-filter=U
-                  echo
-                  echo "CONFLICT_MARKERS"
-                  git diff --check || true
-                } > .agent/evidence/T-030/integration-conflict.txt
-                git cherry-pick --abort
-                git add .agent/evidence/T-030/integration-conflict.txt
-                if ! git diff --cached --quiet; then
-                  git commit -m "chore(t030): record targeted integration conflict"
-                  git push origin HEAD:agent/lane-final
-                fi
-                exit 3
-              fi
-            done
+            exit 3
           }
 
-          cherry_pick_range \
+          apply_range() {
+            local label="$1" base="$2" final="$3"
+            shift 3
+            local patch="/tmp/${label}.patch"
+            git diff --binary "$base" "$final" -- "$@" > "$patch"
+            if [ ! -s "$patch" ]; then
+              echo "$label: no source diff"
+              return
+            fi
+            if git apply --reverse --check "$patch" >/dev/null 2>&1; then
+              echo "$label: source patch already present on final lane"
+              return
+            fi
+            if git apply --3way "$patch"; then
+              git add -- "$@"
+              echo "$label: source patch applied"
+              return
+            fi
+            fail_with_report "$label" "$base" "$final" "$patch"
+          }
+
+          apply_range T-028 \
             e695693c62bb7d02906762c4472d1846af33f28a \
             5be14dac2a62f654ae9a3b5388f431587a2a152e \
-            T-028
+            public/boutique/css/modal-shell.css \
+            public/boutique/css/modal-media.css \
+            public/boutique/css/modal-product.css \
+            public/boutique/css/modal-product-lot4-hybrid.css
 
-          cherry_pick_range \
+          apply_range T-029 \
             77478ee804d723f15834b5444927f23e1a66e162 \
             f45e8629812db25bf15ea41804e99c132fc6974a \
-            T-029
+            public/boutique/css/modal-shell.css \
+            public/boutique/css/modal-media.css \
+            public/boutique/css/modal-product.css \
+            public/boutique/css/modal-product-lot4-hybrid.css \
+            public/boutique/css/modal-mobile-canonical.css \
+            public/boutique/css/modal-enriched-content.css \
+            public/boutique/css/tokens.css
+
+          git checkout origin/agent/lane-finish -- \
+            .agent/evidence/T-028 \
+            .agent/state/T-028.json \
+            .agent/worklogs/T-028.md \
+            .agent/evidence/T-029 \
+            .agent/state/T-029.json \
+            .agent/worklogs/T-029.md \
+            .agent/decisions/ADR-029-deps-override.md
 
           test "$(node -p "require('./.agent/state/T-028.json').status")" = "REVIEW"
           test "$(node -p "require('./.agent/state/T-029.json').status")" = "DONE"
