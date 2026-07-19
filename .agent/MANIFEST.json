@@ -1,5 +1,5 @@
 {
-  "governance_version": "3.5-integrated-checkpoints",
+  "governance_version": "3.6-integrated-work-first-checkpoints",
   "project": "Komerce",
   "worksite": "PDP_MAQUETTE_PREMIUM",
   "base_branch": "main",
@@ -8,7 +8,7 @@
   "start_here": ".agent/START-HERE.md",
   "checkpoint_protocol": ".agent/CHECKPOINT-PROTOCOL.md",
   "checkpoint_command": "node scripts/agent-checkpoint.mjs",
-  "runtime": "manual-integrated-state-updates-with-remote-checkpoints",
+  "runtime": "manual-integrated-state-updates-with-work-first-remote-checkpoints",
   "legacy_runtime": "scripts/agent.mjs",
   "legacy_runtime_status": "unsafe-for-start-resume-finish-in-integrated-mode",
   "forbidden_legacy_commands": [
@@ -17,7 +17,7 @@
     "node scripts/agent.mjs finish"
   ],
   "source": "github-direct-continuous-push",
-  "delivery_protocol": "single-integrated-durable-branch-remote-confirmed-checkpoints-single-final-pr",
+  "delivery_protocol": "single-integrated-durable-branch-work-first-remote-confirmed-checkpoints-single-final-pr",
   "status": "ACTIVE",
   "current_operational_task": "T-023",
   "next_ready_task": "T-019",
@@ -29,18 +29,31 @@
   "lane_labels_are_classifications": true,
   "main_is_intentionally_stale_until_final_pr": true,
   "task_index_is_catalog_only": true,
-  "continuity_model": "integrated-branch-task-state-worklog-atomic-remote-checkpoints-single-final-pr",
+  "continuity_model": "remote-work-first-then-metadata-reconstruction-capable-single-final-pr",
   "mandatory_read_order": [
     ".agent/START-HERE.md",
     ".agent/MANIFEST.json",
     ".agent/CHECKPOINT-PROTOCOL.md",
     ".agent/EXECUTION_MAP.md",
     ".agent/lanes/LANE-MOBILE-RENDERER.json",
-    ".agent/STATUS.md"
+    ".agent/STATUS.md",
+    "remote git history and task diffs"
+  ],
+  "recovery_precedence": [
+    "remote_branch_and_git_history",
+    "remote_source_and_tests",
+    "remote_evidence_and_generated_artifacts",
+    "recorded_gate_outputs",
+    "task_state_worklog_audit_status"
   ],
   "checkpoint_policy": {
     "first_remote_checkpoint_before_substantive_work": true,
     "after_each_coherent_unit": true,
+    "recoverable_work_checkpoint_before_metadata_checkpoint": true,
+    "source_tests_artifacts_evidence_pushed_before_status_write": true,
+    "state_must_reference_existing_remote_work_sha": true,
+    "metadata_lag_after_interruption_is_recoverable": true,
+    "remote_work_must_not_be_reimplemented_because_state_is_stale": true,
     "commit_without_immediate_push_forbidden": true,
     "multiple_local_commits_before_push_forbidden": true,
     "remote_sha_confirmation_required": true,
@@ -49,6 +62,7 @@
     "maximum_minutes_without_remote_checkpoint": 5,
     "before_long_or_risky_command": true,
     "before_arbitration": true,
+    "before_metadata_exit_update": true,
     "before_final_response": true,
     "stop_on_non_fast_forward": true,
     "automatic_merge_rebase_cherry_pick_reset_stash_force_push_forbidden": true
