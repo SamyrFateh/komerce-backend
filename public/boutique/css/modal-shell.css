@@ -822,10 +822,18 @@
     overflow: hidden;
   }
 
-  /* ── Image : pleine hauteur, jamais réduite par la col droite ── */
+  /* ── Image : géométrie intrinsèque transférée à modal-media.css (D6/T-018) ──
+     Ce bloc reste propriétaire du confinement global (product-zone/details
+     ci-dessus, ci-dessous), mais height:100%/max-height:100% sur l'image
+     ont été retirés d'ici : ils forçaient une hauteur pleine dérivée du
+     confinement du shell (~842px), en conflit avec le critère ratio 4:3 /
+     360-500px. La géométrie intrinsèque du hero (aspect-ratio, bornes de
+     taille, centrage) est désormais définie dans modal-media.css — source
+     de vérité unique pour cette responsabilité (voir arbitrage
+     .agent/arbitrations/T-018.md). overflow/max-width/width restent ici :
+     ce sont des propriétés de confinement (empêchent le débordement hors
+     de la colonne), pas de géométrie intrinsèque. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    height: 100%;
-    max-height: 100%;
     overflow: hidden;
     max-width: 100%;
     width: 100%;

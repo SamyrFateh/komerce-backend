@@ -13,10 +13,11 @@
     "T-002", "T-003", "T-004", "T-005", "T-006", "T-007", "T-008", "T-009",
     "T-010", "T-011", "T-012", "T-013", "T-014", "T-015", "T-016"
   ],
+  "in_review_tasks": ["T-017", "T-018"],
   "blocked_tasks": ["T-023"],
-  "current_task": "T-017",
+  "current_task": "T-019",
   "status": "IN_PROGRESS",
   "review_mode": "single-final-pr",
   "execution_map": ".agent/EXECUTION_MAP.md",
-  "next_action": "Démarrer T-017 sur cette même branche. Ne pas recréer T-007 : son state distant est DONE et son contrat product.series est déjà implémenté."
+  "next_action": "T-017 et T-018 sont en REVIEW, en attente de review_decision humaine (T-018 a nécessité un arbitrage de périmètre, voir .agent/arbitrations/T-018.md). Gates automatisés terminés pour les deux ; la séquence peut continuer sur T-019 en parallèle de la revue, sauf décision contraire."
 }

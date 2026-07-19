@@ -14,10 +14,13 @@
       var(--white);
   }
 
+  /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
+     fond uni --hero-bg, seul le décor radial sobre est conservé,
+     le dégradé linéaire sand → sand-warm est retiré. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     background:
       radial-gradient(circle at 62% 20%, color-mix(in srgb, var(--ocean) 10%, transparent), transparent 30%),
-      linear-gradient(135deg, var(--sand) 0%, var(--sand-warm) 100%);
+      var(--hero-bg);
   }
 
   #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }

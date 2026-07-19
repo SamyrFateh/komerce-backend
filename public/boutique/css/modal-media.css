@@ -296,3 +296,37 @@
   }
   .k-modal-keyboard-hint span { margin-right: 8px; }
 }
+
+/* ── D6/T-018 — Géométrie intrinsèque du hero desktop ────────────
+   Ownership : modal-media.css devient propriétaire de la géométrie
+   intrinsèque du hero desktop (ratio, bornes de taille), tandis que
+   modal-shell.css reste propriétaire du confinement global de la
+   modal / product-zone / scroll des détails (voir arbitrage
+   .agent/arbitrations/T-018.md).
+   Ancien owner (modal-shell.css §6) posait height:100%/max-height:100%
+   sur .k-modal-img-wrap, forçant une hauteur pleine (~842px) dérivée
+   du confinement du shell — retiré, remplacé ici par une géométrie
+   intrinsèque indépendante du viewport (aspect-ratio, pas de vh/dvh),
+   robuste aux futurs ajustements de grille (T-020).
+   Le confinement du shell (product-zone height:calc(100dvh - 58px),
+   details overflow-y:auto) reste inchangé et continue d'empêcher un
+   contenu droit long d'agrandir la grille ou de déformer la colonne
+   image — cette règle ne fait que borner la taille du hero LUI-MÊME
+   à l'intérieur de cet espace déjà confiné. */
+@media (min-width: 900px) {
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    aspect-ratio: 4 / 3;
+    min-height: 360px;
+    max-height: 500px;
+    /* largeur dérivée du ratio 4:3 à hauteur max 500px, bornée par
+       la colonne (jamais plus large que son grid-track) */
+    max-width: min(100%, calc(500px * 4 / 3));
+    width: 100%;
+    height: auto;
+    /* centre le bloc dans sa colonne quand celle-ci est plus grande
+       que le hero (largeur ET hauteur, cf. align-self ci-dessous) */
+    margin: auto;
+    align-self: center;
+  }
+}
+
