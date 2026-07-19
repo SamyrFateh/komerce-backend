@@ -44,7 +44,10 @@ jobs:
           install_dependencies
 
       - name: Initialize final gate evidence
-        run: mkdir -p .agent/evidence/T-030 && : > .agent/evidence/T-030/gates-final.txt
+        shell: bash
+        run: |
+          mkdir -p .agent/evidence/T-030
+          : > .agent/evidence/T-030/gates-final.txt
 
       - name: Gate — deploy CSS
         run: npm --prefix public/boutique run deploy:css 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
