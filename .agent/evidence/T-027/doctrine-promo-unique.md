@@ -57,27 +57,21 @@ risque de diff sans bénéfice visuel ; laissé en l'état, à traiter par PDC-6
 Ces trois familles utilisent coral pour leur propre mise en avant de prix, indépendante
 de la doctrine PDP D-P3.
 
-## Point d'arbitrage — non résolu unilatéralement
+## Arbitrage tranché — `.k-modal-meta-rank`
 
-`.k-modal-meta-rank` (badge "Bestseller") apparaît dans **deux fichiers** :
-`modal-shell.css` (desktop, tokens fonctionnels `--border-coral-09` / `--coral` /
-`--border-coral-22`) et `modal-product.css` (partagé/mobile, `--coral` fonctionne mais
-`--coral-bg` / `--coral-border` sont des tokens **inexistants** — confirmé absents de
-`tokens.css`).
+`.k-modal-meta-rank` (badge "Bestseller") apparaissait dans **deux fichiers** avec un
+commentaire documentant une décision produit antérieure ("garde sa pastille coral
+pleine"), contredisant l'objectif T-027.
 
-Le commentaire en place dans `modal-shell.css` indique une décision produit antérieure
-explicite : *"Le rang Bestseller garde sa pastille coral pleine"*. Cela contredit
-directement l'objectif T-027 ("supprimer tout coral hors promo"), et rien dans
-`forbidden_files` ne protège ce sélecteur. Non modifié, laissé pour décision humaine.
+**Décision humaine (option 2 retenue) : `.k-modal-meta-rank` n'est pas une promotion.**
+Coral purgé dans les deux fichiers, remplacé par les tokens ambre existants :
 
-**Options :**
-1. Conserver coral (respecter la décision antérieure documentée) — nécessite d'ajouter
-   `k-modal-meta-rank` à `forbidden_files` du prochain lot, et de corriger au passage les
-   tokens cassés `--coral-bg`/`--coral-border` dans `modal-product.css` vers les tokens
-   réels `--border-coral-09`/`--border-coral-22`.
-2. Purger vers un badge neutre ou vers `--accent-orange`/`--orange` existant (évoqué dans
-   la spec pour un futur "badge HOT" jamais implémenté), pour appliquer strictement D-P3.
+- `modal-shell.css` (desktop) : `background: var(--amber-bg); color: var(--amber-text);
+  border: 1px solid var(--amber-border);` (remplace `--border-coral-09` / `--coral` /
+  `--border-coral-22`).
+- `modal-product.css` (partagé/mobile) : même trio ambre — corrige au passage les tokens
+  cassés `--coral-bg` / `--coral-border` qui n'existaient pas dans `tokens.css`.
 
-**Recommandation :** option 1 — c'est une décision produit déjà prise et documentée,
-pas une régression à corriger ; mais elle mérite une confirmation explicite avant d'être
-gravée dans `forbidden_files`.
+La doctrine D-P3 (coral = promo active uniquement) est désormais strictement respectée :
+aucune exception produit ne subsiste en dehors de `k-modal--has-promo`,
+`k-modal-promo-badge` et `k-topbar-price-promo`.

@@ -71,10 +71,13 @@
    injectSocialProof() laisse .k-modal-meta vide et il est display:none.
    Aucun chiffre inventé. */
 .k-modal-meta:empty { display: none; }
+/* [T-027, arbitrage humain] n'est pas une promotion — purge coral,
+   tokens ambre existants (corrige au passage --coral-bg/--coral-border,
+   inexistants dans tokens.css, dette pré-existante silencieuse). */
 #k-modal .k-modal-meta-rank {
-  background: var(--coral-bg);
-  color: var(--coral);
-  border: 1px solid var(--coral-border);
+  background: var(--amber-bg);
+  color: var(--amber-text);
+  border: 1px solid var(--amber-border);
   font-weight: 500;
 }
 .k-modal-meta-star { color: var(--star-gold); font-size: 12px; }

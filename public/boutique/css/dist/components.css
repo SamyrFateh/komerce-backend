@@ -2459,10 +2459,14 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-slide { height: 100%; padding: 16px 20px 32px 82px; object-fit: contain; object-position: 50% 50%; width: 100%; }
   #k-modal .k-modal-dots { display: none; }
   #k-modal .k-modal-counter { display: none; }
-  #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
+  /* ── Rail miniatures plat (T-021, D9) : taille fixe 60×60, aucune ombre
+     par défaut, bordure active 1.5px --text, pas de transform/ombre au
+     hover. Sélection d'image (JS) hors périmètre — CSS uniquement. ── */
+  #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 60px; overflow-y: auto; scrollbar-width: none; }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
-  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
-  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: var(--border-ocean-50); box-shadow: 0 10px 22px var(--border-text-10); }
+  #k-modal .k-modal-thumb { width: 60px; height: 60px; flex: 0 0 60px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
+  #k-modal .k-modal-thumb:hover { border-color: var(--text); }
+  #k-modal .k-modal-thumb.is-active { border: 1.5px solid var(--text); }
   #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
   .k-modal-zoom-preview {
     display: block; position: absolute;
@@ -2518,15 +2522,12 @@ html.k-mobile-premium-v1 .k-chip-label {
     color: var(--text-muted);
     border-radius: 0;
   }
-  /* Le rang Bestseller garde sa pastille coral pleine.
-     Utilise --border-coral-09 / --border-coral-22 (tokens existants).
-     L'ancien styling §1 référençait --coral-bg / --coral-border (inexistants
-     dans tokens.css → silencieusement transparents, dette pré-existante).
-     Ici on est en scope desktop spécifique, donc on shadow proprement. */
+  /* [T-027, arbitrage humain] .k-modal-meta-rank (badge Bestseller) n'est
+     pas une promotion — purge du coral, tokens ambre existants. */
   #k-modal .k-modal-meta .k-modal-meta-rank {
-    background: var(--border-coral-09);
-    color: var(--coral);
-    border: 1px solid var(--border-coral-22);
+    background: var(--amber-bg);
+    color: var(--amber-text);
+    border: 1px solid var(--amber-border);
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 11px;
@@ -2770,7 +2771,9 @@ html.k-mobile-premium-v1 .k-chip-label {
     min-height: 100dvh;
     max-height: 100dvh;
     flex: 0 0 100dvh;
-    border-radius: 0;
+    border-radius: 12px; /* [D12] Owner réel du radius desktop (gagne sur la
+       règle .k-modal { border-radius: 26px } plus bas dans ce fichier,
+       morte par spécificité — cf. bloc "Desktop : taille & ombre modale"). */
     box-shadow: none;
   }
 
@@ -2922,10 +2925,13 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal {
     /* [MDM-8 phase 2] max-width: min(1040px, …) retiré — mort par
        spécificité, toujours écrasé par #k-modal.k-modal { max-width: none }
-       (ligne ~761, contre-balance desktop-commerce-skeleton.css). La
-       largeur réelle desktop est pilotée par cette règle ID, pas ici
+       (contre-balance desktop-commerce-skeleton.css). La largeur réelle
+       desktop est pilotée par cette règle ID, pas ici
        (audit MDM8_AUDIT_PHASE1.md §1.5). */
-    border-radius: 26px;
+    /* [D12] border-radius retiré d'ici : cette règle .k-modal (classe seule)
+       était déjà morte par spécificité, toujours écrasée par
+       #k-modal.k-modal (voir bloc "Shell : ... sans carte flottante" plus
+       haut, où vit désormais le vrai radius desktop = 12px). */
     /* PALETTE-FIX-01 */
     box-shadow: 0 30px 80px var(--border-ocean-18);
   }
@@ -3363,10 +3369,13 @@ html.k-mobile-premium-v1 .k-chip-label {
    injectSocialProof() laisse .k-modal-meta vide et il est display:none.
    Aucun chiffre inventé. */
 .k-modal-meta:empty { display: none; }
+/* [T-027, arbitrage humain] n'est pas une promotion — purge coral,
+   tokens ambre existants (corrige au passage --coral-bg/--coral-border,
+   inexistants dans tokens.css, dette pré-existante silencieuse). */
 #k-modal .k-modal-meta-rank {
-  background: var(--coral-bg);
-  color: var(--coral);
-  border: 1px solid var(--coral-border);
+  background: var(--amber-bg);
+  color: var(--amber-text);
+  border: 1px solid var(--amber-border);
   font-weight: 500;
 }
 .k-modal-meta-star { color: var(--star-gold); font-size: 12px; }

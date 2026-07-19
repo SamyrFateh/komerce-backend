@@ -555,15 +555,12 @@
     color: var(--text-muted);
     border-radius: 0;
   }
-  /* Le rang Bestseller garde sa pastille coral pleine.
-     Utilise --border-coral-09 / --border-coral-22 (tokens existants).
-     L'ancien styling §1 référençait --coral-bg / --coral-border (inexistants
-     dans tokens.css → silencieusement transparents, dette pré-existante).
-     Ici on est en scope desktop spécifique, donc on shadow proprement. */
+  /* [T-027, arbitrage humain] .k-modal-meta-rank (badge Bestseller) n'est
+     pas une promotion — purge du coral, tokens ambre existants. */
   #k-modal .k-modal-meta .k-modal-meta-rank {
-    background: var(--border-coral-09);
-    color: var(--coral);
-    border: 1px solid var(--border-coral-22);
+    background: var(--amber-bg);
+    color: var(--amber-text);
+    border: 1px solid var(--amber-border);
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 11px;
