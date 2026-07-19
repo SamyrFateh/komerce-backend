@@ -21,7 +21,7 @@
 .k-modal-promo-badge {
   display: none; position: absolute; top: 8px; left: 8px;
   background: var(--coral); color: var(--white);
-  font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
   letter-spacing: .2px;
   box-shadow: 0 1px 4px var(--overlay-black-15);
 }
@@ -59,7 +59,7 @@
   letter-spacing: 0.02em;
 }
 .k-modal-sku[hidden] { display: none; }
-.k-modal-price { font-family: var(--font); font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -.015em; }
+.k-modal-price { font-family: var(--font); font-size: 22px; font-weight: 500; color: var(--text); letter-spacing: -.015em; }
 /* F1 — prix promo en coral sur mobile (classe posée par b-modal.js openModal) */
 .k-modal--has-promo .k-modal-price { color: var(--coral); font-size: clamp(20px, 5vw, 26px); font-weight: 700; }
 /* F2 — ancien prix sur même ligne, aligné baseline, jamais stacked */
@@ -75,7 +75,7 @@
   background: var(--coral-bg);
   color: var(--coral);
   border: 1px solid var(--coral-border);
-  font-weight: 700;
+  font-weight: 500;
 }
 .k-modal-meta-star { color: var(--star-gold); font-size: 12px; }
 
@@ -97,7 +97,7 @@
 .k-modal-search-clear {
   display: none; width: 26px; height: 26px; border: none;
   background: var(--sand-dark); border-radius: 50%; color: var(--text-muted);
-  font-size: 14px; font-weight: 600; line-height: 1; cursor: pointer;
+  font-size: 14px; font-weight: 500; line-height: 1; cursor: pointer;
   transition: background .12s, color .12s, transform .12s;
   flex-shrink: 0; align-items: center; justify-content: center; padding: 0;
 }
@@ -253,7 +253,7 @@
   gap: 6px;
 }
 .k-modal-reassurance-icon { font-size: 14px; flex-shrink: 0; }
-.k-modal-reassurance-label { font-weight: 600; }
+.k-modal-reassurance-label { font-weight: 500; }
 .k-modal-reassurance-delay { color: var(--text-muted); }
 .k-modal-reassurance-chevron {
   font-size: 14px;
@@ -286,7 +286,7 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -318,7 +318,7 @@
   margin-bottom: 10px;
   line-height: 1;
 }
-.k-vg-label-type { font-weight: 700; color: var(--text); }
+.k-vg-label-type { font-weight: 500; color: var(--text); }
 .k-vg-label-sep  { color: var(--text-muted); font-size: 11px; }
 .k-vg-label-val  { color: var(--text-muted); font-weight: 400; }
 
@@ -364,7 +364,7 @@
 
 .k-sku-name {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
   text-align: center;
   white-space: nowrap;
@@ -388,7 +388,7 @@
 }
 .k-sku--active .k-sku-name {
   color: var(--coral-dark);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 /* Épuisé */
@@ -450,7 +450,7 @@
   border-width: 2px;
   background: color-mix(in srgb, var(--coral) 8%, var(--white));
   color: var(--coral-dark);
-  font-weight: 700;
+  font-weight: 500;
   box-shadow: 0 0 0 1px var(--coral);
 }
 .k-vp--out {
@@ -490,7 +490,7 @@
   background: var(--white);
   font-family: var(--font);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
   cursor: pointer;
   transition: border-color .15s, box-shadow .15s;
@@ -504,7 +504,7 @@
 .k-vs-trigger-type { color: var(--text); }
 .k-vs-trigger-sep { color: var(--text-muted); font-size: 11px; }
 .k-vs-trigger-val { color: var(--text-muted); font-weight: 400; }
-.k-vs-trigger-val.is-set { color: var(--coral-dark, var(--coral)); font-weight: 700; }
+.k-vs-trigger-val.is-set { color: var(--coral-dark, var(--coral)); font-weight: 500; }
 .k-vs-trigger-chevron {
   font-size: 16px; color: var(--text-muted);
   transition: transform .2s;
@@ -560,13 +560,13 @@
 .k-vs-header-left { display: flex; align-items: baseline; gap: 8px; }
 .k-vs-header-title {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text);
 }
 .k-vs-header-guide {
   /* Inherits .k-vg-size-guide style — kept inline for simplicity */
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ocean, var(--blue-dark));
   background: none;
   border: none;
@@ -607,7 +607,7 @@
   color: var(--white);
   font-family: var(--font);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   transition: filter .12s;
   -webkit-tap-highlight-color: transparent;
@@ -630,7 +630,7 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ocean, var(--blue-dark));
   background: none;
   border: none;
@@ -708,7 +708,7 @@
 }
 .k-sg-title {
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text, var(--text));
   margin: 0;
 }
@@ -747,7 +747,7 @@
   flex-shrink: 0;
   padding: 12px 14px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted, var(--text-form-light));
   background: none;
   border: none;
@@ -800,7 +800,7 @@
   background: var(--surface, var(--gray-bg-lighter));
   color: var(--text-muted, var(--text-form-mid));
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: .5px;
   padding: 9px 12px;
@@ -819,7 +819,7 @@
   white-space: nowrap;
 }
 .k-sg-table tbody td:first-child {
-  font-weight: 700;
+  font-weight: 500;
   color: var(--coral-dark, var(--coral-text-deep));
 }
 
@@ -900,7 +900,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-eur-ref strong {
     color: var(--text);
-    font-weight: 700;
+    font-weight: 500;
   }
   .k-modal-eur-ref s {
     font-size: 12px;
@@ -911,7 +911,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* PR-D1 — badge % coral plein, blanc, plus visible (mockup) */
   .k-modal-aed-pct {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--white);
     background: var(--coral);
     border: none;
@@ -962,7 +962,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-flash-pct {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--coral);
     background: var(--border-coral-09);
     border: 1px solid var(--border-coral-13);
@@ -1009,7 +1009,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-section-title {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: .7px;
@@ -1035,7 +1035,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
   }
   .k-modal-opt-icon { font-size: 18px; flex-shrink: 0; }
@@ -1043,7 +1043,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   .k-modal-opt-free {
     margin-left: auto;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--ocean-dark);
     background: transparent;
     border: 1px solid var(--border-ocean-14);
@@ -1117,7 +1117,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   .k-modal-pay-icon { font-size: 18px; flex-shrink: 0; }
   .k-modal-pay-label {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.2;
     overflow: hidden;
@@ -1170,7 +1170,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   text-align: center;
   min-width: 0;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
   line-height: 1.2;
 }
@@ -1213,7 +1213,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 .k-buybox-payment-copy small { font-size: 11px; color: var(--text-muted); }
 .k-buybox-payment-badge {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ocean-dark);
   background: var(--ocean-bg-08);
   border-radius: 999px;
@@ -1235,7 +1235,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   color: var(--text);
   margin: 10px 0;
 }
-.k-modal-subtotal strong { font-weight: 700; }
+.k-modal-subtotal strong { font-weight: 500; }
 .k-modal-subtotal--mobile { padding: 0 16px; }
 .k-modal-subtotal:empty { display: none; }
 

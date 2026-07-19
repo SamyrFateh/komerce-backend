@@ -2013,7 +2013,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 .k-modal-back {
   display: flex; align-items: center; gap: 4px;
-  font-size: 14px; font-weight: 600; color: var(--text);
+  font-size: 14px; font-weight: 500; color: var(--text);
   background: none; border: none; padding: 6px 10px;
   border-radius: 50px; transition: opacity .15s;
   /* FIX topbar overflow : flex-shrink:1 + min-width:0 permettent au bouton
@@ -2029,13 +2029,13 @@ html.k-mobile-premium-v1 .k-chip-label {
   display: flex; align-items: center; gap: 4px;
   height: 30px; padding: 0 10px; border-radius: 20px;
   background: var(--sand); border: 1px solid var(--border);
-  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  font-size: 12px; font-weight: 500; color: var(--text-muted);
   cursor: pointer; white-space: nowrap;
   transition: background .15s, color .15s;
 }
 .k-modal-nav-btn:hover { background: var(--sand-dark); color: var(--text); }
 .k-modal-nav-btn.is-disabled { opacity: .3; pointer-events: none; }
-.k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 600; min-width: 36px; text-align: center; }
+.k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 500; min-width: 36px; text-align: center; }
 .k-modal-topbar-right { box-sizing: border-box; max-width: 100%; display: flex; align-items: center; gap: 8px; flex-shrink: 0; } /* S2.1+S2.3 — box-sizing garanti ; padding-right:10px (VIS-5) supprimé : inutile avec box-sizing correct ; gap revient à 8px nominal */
 .k-modal-cart-btn {
   position: relative; width: auto; height: auto; border-radius: 0;
@@ -2047,7 +2047,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;
   background: var(--cta-green); color: var(--white); border: 1.5px solid var(--page-bg);
-  font-size: 10px; font-weight: 700; border-radius: 99px;
+  font-size: 10px; font-weight: 500; border-radius: 99px;
   display: flex; align-items: center; justify-content: center; padding: 0 4px;
 }
 .k-modal-cart-badge:empty { display: none; }
@@ -2210,15 +2210,15 @@ html.k-mobile-premium-v1 .k-chip-label {
   -webkit-backface-visibility: visible;
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--hero-bg); border-radius: 8px; overflow: hidden; height: 44px; flex-shrink: 0; }
-.k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
+.k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 500; transition: background .15s; touch-action: manipulation; cursor: pointer; }
 .k-qty-btn:active { background: var(--sand-dark); }
-.k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 700; }
-.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 600; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 500; }
+.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
-.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
+.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
-.k-modal-subtotal strong { color: var(--coral); font-weight: 700; font-size: 13px; }
+.k-modal-subtotal strong { color: var(--coral); font-weight: 500; font-size: 13px; }
 
 /* ── PRODUIT RAPPELÉ TOPBAR AU SCROLL ───────────────────────── */
 .k-modal-topbar-product { display: none; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-left: 8px; opacity: 0; transform: translateY(-4px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
@@ -2235,10 +2235,10 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-topbar-thumb:active { transform: scale(.92); }
 .k-topbar-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
 .k-topbar-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.k-topbar-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--coral); line-height: 1.2; margin-top: 2px; }
-.k-topbar-price-val { font-size: 12px; font-weight: 800; color: var(--coral); }
-.k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
+.k-topbar-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--coral); line-height: 1.2; margin-top: 2px; }
+.k-topbar-price-val { font-size: 12px; font-weight: 500; color: var(--coral); }
+.k-topbar-price-promo { font-size: 10px; font-weight: 500; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
 .k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }
@@ -2419,7 +2419,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-breadcrumb-sep { color: var(--text-light); flex-shrink: 0; }
   .k-modal-breadcrumb-cat { cursor: pointer; transition: color .12s; }
   .k-modal-breadcrumb-cat:hover { color: var(--coral); }
-  .k-modal-breadcrumb-name { font-weight: 600; color: var(--text); }
+  .k-modal-breadcrumb-name { font-weight: 500; color: var(--text); }
 
   /* ── Scroll owner desktop ────────────────────────────────── */
   #k-modal .k-modal-scroll {
@@ -2528,7 +2528,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: .2px;
   }
   #k-modal .k-modal-meta-star { font-size: 13px; }
@@ -2561,12 +2561,12 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   /* ── Trust, Partage, Specs ───────────────────────────────── */
   .k-modal-trust { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--sand-dark); margin-top: 6px; }
-  .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: var(--text-muted); }
   .k-modal-trust-item svg { width: 16px; height: 16px; color: var(--ocean); stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
   #k-modal .k-modal-trust { gap: 10px; flex-wrap: wrap; padding: 11px 0; }
   #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
-  .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
+  .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--coral); }
   .k-modal-share-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
   .k-modal-share-btn--wa { background: var(--whatsapp); color: var(--white); border-color: var(--whatsapp); }
@@ -2575,7 +2575,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-share-btn { justify-content: center; min-height: 38px; padding: 8px 10px; }
   /* PR-M3 — B-M-10 : specs masquées si absent du produit (k-modal--has-specs posé par ModalViewModel) */
   .k-modal--has-specs .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
-  .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); transition: color .12s; }
+  .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text); transition: color .12s; }
   .k-modal-spec-toggle:hover { color: var(--coral); }
   .k-modal-spec-toggle-arrow { width: 18px; height: 18px; transition: transform .2s var(--ease); color: var(--text-muted); stroke: currentColor; fill: none; stroke-width: 2; }
   .k-modal-spec-toggle.is-open .k-modal-spec-toggle-arrow { transform: rotate(180deg); }
@@ -2585,7 +2585,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-spec-table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .k-modal-spec-table tr:nth-child(even) { background: var(--sand); }
   .k-modal-spec-table td { padding: 7px 10px; }
-  .k-modal-spec-table td:first-child { font-weight: 600; color: var(--text-muted); white-space: nowrap; width: 35%; }
+  .k-modal-spec-table td:first-child { font-weight: 500; color: var(--text-muted); white-space: nowrap; width: 35%; }
   .k-modal--has-specs #k-modal .k-modal-specs { margin-top: 8px; border-top: 1px solid var(--sand-dark); }
 
   /* ── Recherche interne ───────────────────────────────────── */
@@ -2637,7 +2637,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     flex: 1 1 0; height: 44px; border-radius: 999px;
     background: var(--cta-green); color: var(--white);
-    font-size: 15px; font-weight: 600;
+    font-size: 15px; font-weight: 500;
     box-shadow: 0 4px 14px var(--shadow-cta-22);
     transition: background .18s, box-shadow .18s, transform .1s;
   }
@@ -2911,8 +2911,8 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-back-top.show { opacity:1; pointer-events:auto; transform:translateY(0); }
 
 /* ── Topbar produit — infos compactes (ex interactions.css) ───── */
-.k-modal-topbar-product-name  { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.k-modal-topbar-product-price { font-size:12px; font-weight:700; color:var(--coral); }
+.k-modal-topbar-product-name  { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.k-modal-topbar-product-price { font-size:12px; font-weight:500; color:var(--coral); }
 .k-modal-topbar-thumb         { flex:0 0 38px; width:38px; height:38px; border-radius:8px; overflow:hidden; background:var(--sand); }
 
 /* ── Desktop : taille & ombre modale (ex desktop-commerce-skeleton.css) ── */
@@ -3013,7 +3013,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   position: absolute; bottom: 10px; right: 10px; z-index: 3;
   padding: 3px 10px; min-width: 38px; text-align: center;
   background: var(--overlay-dark-md); color: var(--white);
-  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  font-size: 11px; font-weight: 500; letter-spacing: .02em;
   border-radius: 999px; backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   pointer-events: none;
@@ -3028,7 +3028,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   display: flex; align-items: center; gap: 5px;
   padding: 4px 12px;
   background: var(--overlay-dark-md); color: var(--white);
-  font-size: 11px; font-weight: 600;
+  font-size: 11px; font-weight: 500;
   border: none; border-radius: 999px;
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
@@ -3115,7 +3115,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   position: fixed; top: calc(20px + env(safe-area-inset-top)); left: 50%;
   transform: translateX(-50%);
   padding: 4px 14px; background: var(--overlay-dark-md);
-  color: var(--white); font-size: 12px; font-weight: 600;
+  color: var(--white); font-size: 12px; font-weight: 500;
   border-radius: 999px; z-index: 2; pointer-events: none;
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
@@ -3164,7 +3164,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
   .k-modal-recent-title {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text);
     margin: 0 0 14px;
     letter-spacing: -.01em;
@@ -3219,7 +3219,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
   .k-modal-recent-price {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--coral);
     padding: 4px 8px 8px;
   }
@@ -3311,7 +3311,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-promo-badge {
   display: none; position: absolute; top: 8px; left: 8px;
   background: var(--coral); color: var(--white);
-  font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
   letter-spacing: .2px;
   box-shadow: 0 1px 4px var(--overlay-black-15);
 }
@@ -3349,7 +3349,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   letter-spacing: 0.02em;
 }
 .k-modal-sku[hidden] { display: none; }
-.k-modal-price { font-family: var(--font); font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -.015em; }
+.k-modal-price { font-family: var(--font); font-size: 22px; font-weight: 500; color: var(--text); letter-spacing: -.015em; }
 /* F1 — prix promo en coral sur mobile (classe posée par b-modal.js openModal) */
 .k-modal--has-promo .k-modal-price { color: var(--coral); font-size: clamp(20px, 5vw, 26px); font-weight: 700; }
 /* F2 — ancien prix sur même ligne, aligné baseline, jamais stacked */
@@ -3365,7 +3365,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   background: var(--coral-bg);
   color: var(--coral);
   border: 1px solid var(--coral-border);
-  font-weight: 700;
+  font-weight: 500;
 }
 .k-modal-meta-star { color: var(--star-gold); font-size: 12px; }
 
@@ -3387,7 +3387,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-search-clear {
   display: none; width: 26px; height: 26px; border: none;
   background: var(--sand-dark); border-radius: 50%; color: var(--text-muted);
-  font-size: 14px; font-weight: 600; line-height: 1; cursor: pointer;
+  font-size: 14px; font-weight: 500; line-height: 1; cursor: pointer;
   transition: background .12s, color .12s, transform .12s;
   flex-shrink: 0; align-items: center; justify-content: center; padding: 0;
 }
@@ -3543,7 +3543,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   gap: 6px;
 }
 .k-modal-reassurance-icon { font-size: 14px; flex-shrink: 0; }
-.k-modal-reassurance-label { font-weight: 600; }
+.k-modal-reassurance-label { font-weight: 500; }
 .k-modal-reassurance-delay { color: var(--text-muted); }
 .k-modal-reassurance-chevron {
   font-size: 14px;
@@ -3576,7 +3576,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -3608,7 +3608,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   margin-bottom: 10px;
   line-height: 1;
 }
-.k-vg-label-type { font-weight: 700; color: var(--text); }
+.k-vg-label-type { font-weight: 500; color: var(--text); }
 .k-vg-label-sep  { color: var(--text-muted); font-size: 11px; }
 .k-vg-label-val  { color: var(--text-muted); font-weight: 400; }
 
@@ -3654,7 +3654,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 .k-sku-name {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
   text-align: center;
   white-space: nowrap;
@@ -3678,7 +3678,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 .k-sku--active .k-sku-name {
   color: var(--coral-dark);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 /* Épuisé */
@@ -3740,7 +3740,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   border-width: 2px;
   background: color-mix(in srgb, var(--coral) 8%, var(--white));
   color: var(--coral-dark);
-  font-weight: 700;
+  font-weight: 500;
   box-shadow: 0 0 0 1px var(--coral);
 }
 .k-vp--out {
@@ -3780,7 +3780,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   background: var(--white);
   font-family: var(--font);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
   cursor: pointer;
   transition: border-color .15s, box-shadow .15s;
@@ -3794,7 +3794,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-vs-trigger-type { color: var(--text); }
 .k-vs-trigger-sep { color: var(--text-muted); font-size: 11px; }
 .k-vs-trigger-val { color: var(--text-muted); font-weight: 400; }
-.k-vs-trigger-val.is-set { color: var(--coral-dark, var(--coral)); font-weight: 700; }
+.k-vs-trigger-val.is-set { color: var(--coral-dark, var(--coral)); font-weight: 500; }
 .k-vs-trigger-chevron {
   font-size: 16px; color: var(--text-muted);
   transition: transform .2s;
@@ -3850,13 +3850,13 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-vs-header-left { display: flex; align-items: baseline; gap: 8px; }
 .k-vs-header-title {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text);
 }
 .k-vs-header-guide {
   /* Inherits .k-vg-size-guide style — kept inline for simplicity */
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ocean, var(--blue-dark));
   background: none;
   border: none;
@@ -3897,7 +3897,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   color: var(--white);
   font-family: var(--font);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   transition: filter .12s;
   -webkit-tap-highlight-color: transparent;
@@ -3920,7 +3920,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ocean, var(--blue-dark));
   background: none;
   border: none;
@@ -3998,7 +3998,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 .k-sg-title {
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text, var(--text));
   margin: 0;
 }
@@ -4037,7 +4037,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   flex-shrink: 0;
   padding: 12px 14px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted, var(--text-form-light));
   background: none;
   border: none;
@@ -4090,7 +4090,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   background: var(--surface, var(--gray-bg-lighter));
   color: var(--text-muted, var(--text-form-mid));
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: .5px;
   padding: 9px 12px;
@@ -4109,7 +4109,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   white-space: nowrap;
 }
 .k-sg-table tbody td:first-child {
-  font-weight: 700;
+  font-weight: 500;
   color: var(--coral-dark, var(--coral-text-deep));
 }
 
@@ -4190,7 +4190,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-eur-ref strong {
     color: var(--text);
-    font-weight: 700;
+    font-weight: 500;
   }
   .k-modal-eur-ref s {
     font-size: 12px;
@@ -4201,7 +4201,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* PR-D1 — badge % coral plein, blanc, plus visible (mockup) */
   .k-modal-aed-pct {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--white);
     background: var(--coral);
     border: none;
@@ -4252,7 +4252,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-flash-pct {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--coral);
     background: var(--border-coral-09);
     border: 1px solid var(--border-coral-13);
@@ -4299,7 +4299,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-section-title {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: .7px;
@@ -4325,7 +4325,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
   }
   .k-modal-opt-icon { font-size: 18px; flex-shrink: 0; }
@@ -4333,7 +4333,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   .k-modal-opt-free {
     margin-left: auto;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--ocean-dark);
     background: transparent;
     border: 1px solid var(--border-ocean-14);
@@ -4407,7 +4407,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   .k-modal-pay-icon { font-size: 18px; flex-shrink: 0; }
   .k-modal-pay-label {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.2;
     overflow: hidden;
@@ -4460,7 +4460,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   text-align: center;
   min-width: 0;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
   line-height: 1.2;
 }
@@ -4503,7 +4503,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 .k-buybox-payment-copy small { font-size: 11px; color: var(--text-muted); }
 .k-buybox-payment-badge {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ocean-dark);
   background: var(--ocean-bg-08);
   border-radius: 999px;
@@ -4525,7 +4525,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   color: var(--text);
   margin: 10px 0;
 }
-.k-modal-subtotal strong { font-weight: 700; }
+.k-modal-subtotal strong { font-weight: 500; }
 .k-modal-subtotal--mobile { padding: 0 16px; }
 .k-modal-subtotal:empty { display: none; }
 
@@ -4771,7 +4771,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-buybox-relay-title {
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.1;
   }
@@ -4784,7 +4784,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-buybox-relay-free {
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--ocean-dark);
     background: var(--ocean-bg-08);
     border: 1px solid var(--border-ocean-14);
@@ -4823,7 +4823,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 500;
     box-shadow: 0 4px 14px var(--shadow-cta-22);
   }
 
@@ -4868,7 +4868,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     justify-content: center;
     gap: 7px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
     transition:
       border-color .16s var(--ease),
@@ -4926,7 +4926,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-buybox-payment-copy strong {
     display: block;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.15;
   }
@@ -4943,7 +4943,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-buybox-payment-badge {
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 500;
     padding: 4px 9px;
     border-radius: 8px;
     color: var(--violet-dark);
@@ -4979,7 +4979,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     content: 'Partager ce produit :';
     font-size: 12px;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-share-btn,
@@ -4994,7 +4994,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     border: 1px solid var(--border-text-06);
     box-shadow: none;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-share-btn svg { width: 13px; height: 13px; }
@@ -5160,7 +5160,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-modal-price {
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.15;
     white-space: nowrap;
   }
@@ -5663,7 +5663,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   .k-mdm-spec-group-label {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: .5px;
@@ -5785,7 +5785,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   .k-modal-enriched-spec-group-label {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: .5px;

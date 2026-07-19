@@ -46,7 +46,7 @@
 }
 .k-modal-back {
   display: flex; align-items: center; gap: 4px;
-  font-size: 14px; font-weight: 600; color: var(--text);
+  font-size: 14px; font-weight: 500; color: var(--text);
   background: none; border: none; padding: 6px 10px;
   border-radius: 50px; transition: opacity .15s;
   /* FIX topbar overflow : flex-shrink:1 + min-width:0 permettent au bouton
@@ -62,13 +62,13 @@
   display: flex; align-items: center; gap: 4px;
   height: 30px; padding: 0 10px; border-radius: 20px;
   background: var(--sand); border: 1px solid var(--border);
-  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  font-size: 12px; font-weight: 500; color: var(--text-muted);
   cursor: pointer; white-space: nowrap;
   transition: background .15s, color .15s;
 }
 .k-modal-nav-btn:hover { background: var(--sand-dark); color: var(--text); }
 .k-modal-nav-btn.is-disabled { opacity: .3; pointer-events: none; }
-.k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 600; min-width: 36px; text-align: center; }
+.k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 500; min-width: 36px; text-align: center; }
 .k-modal-topbar-right { box-sizing: border-box; max-width: 100%; display: flex; align-items: center; gap: 8px; flex-shrink: 0; } /* S2.1+S2.3 — box-sizing garanti ; padding-right:10px (VIS-5) supprimé : inutile avec box-sizing correct ; gap revient à 8px nominal */
 .k-modal-cart-btn {
   position: relative; width: auto; height: auto; border-radius: 0;
@@ -80,7 +80,7 @@
   position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;
   background: var(--cta-green); color: var(--white); border: 1.5px solid var(--page-bg);
-  font-size: 10px; font-weight: 700; border-radius: 99px;
+  font-size: 10px; font-weight: 500; border-radius: 99px;
   display: flex; align-items: center; justify-content: center; padding: 0 4px;
 }
 .k-modal-cart-badge:empty { display: none; }
@@ -243,15 +243,15 @@
   -webkit-backface-visibility: visible;
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--hero-bg); border-radius: 8px; overflow: hidden; height: 44px; flex-shrink: 0; }
-.k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
+.k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 500; transition: background .15s; touch-action: manipulation; cursor: pointer; }
 .k-qty-btn:active { background: var(--sand-dark); }
-.k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 700; }
-.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 600; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 500; }
+.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
-.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
+.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
-.k-modal-subtotal strong { color: var(--coral); font-weight: 700; font-size: 13px; }
+.k-modal-subtotal strong { color: var(--coral); font-weight: 500; font-size: 13px; }
 
 /* ── PRODUIT RAPPELÉ TOPBAR AU SCROLL ───────────────────────── */
 .k-modal-topbar-product { display: none; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-left: 8px; opacity: 0; transform: translateY(-4px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
@@ -268,10 +268,10 @@
 .k-topbar-thumb:active { transform: scale(.92); }
 .k-topbar-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
 .k-topbar-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.k-topbar-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--coral); line-height: 1.2; margin-top: 2px; }
-.k-topbar-price-val { font-size: 12px; font-weight: 800; color: var(--coral); }
-.k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
+.k-topbar-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--coral); line-height: 1.2; margin-top: 2px; }
+.k-topbar-price-val { font-size: 12px; font-weight: 500; color: var(--coral); }
+.k-topbar-price-promo { font-size: 10px; font-weight: 500; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
 .k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }
@@ -452,7 +452,7 @@
   .k-modal-breadcrumb-sep { color: var(--text-light); flex-shrink: 0; }
   .k-modal-breadcrumb-cat { cursor: pointer; transition: color .12s; }
   .k-modal-breadcrumb-cat:hover { color: var(--coral); }
-  .k-modal-breadcrumb-name { font-weight: 600; color: var(--text); }
+  .k-modal-breadcrumb-name { font-weight: 500; color: var(--text); }
 
   /* ── Scroll owner desktop ────────────────────────────────── */
   #k-modal .k-modal-scroll {
@@ -561,7 +561,7 @@
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: .2px;
   }
   #k-modal .k-modal-meta-star { font-size: 13px; }
@@ -594,12 +594,12 @@
 
   /* ── Trust, Partage, Specs ───────────────────────────────── */
   .k-modal-trust { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--sand-dark); margin-top: 6px; }
-  .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: var(--text-muted); }
   .k-modal-trust-item svg { width: 16px; height: 16px; color: var(--ocean); stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
   #k-modal .k-modal-trust { gap: 10px; flex-wrap: wrap; padding: 11px 0; }
   #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
-  .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
+  .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--coral); }
   .k-modal-share-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
   .k-modal-share-btn--wa { background: var(--whatsapp); color: var(--white); border-color: var(--whatsapp); }
@@ -608,7 +608,7 @@
   #k-modal .k-modal-share-btn { justify-content: center; min-height: 38px; padding: 8px 10px; }
   /* PR-M3 — B-M-10 : specs masquées si absent du produit (k-modal--has-specs posé par ModalViewModel) */
   .k-modal--has-specs .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
-  .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); transition: color .12s; }
+  .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text); transition: color .12s; }
   .k-modal-spec-toggle:hover { color: var(--coral); }
   .k-modal-spec-toggle-arrow { width: 18px; height: 18px; transition: transform .2s var(--ease); color: var(--text-muted); stroke: currentColor; fill: none; stroke-width: 2; }
   .k-modal-spec-toggle.is-open .k-modal-spec-toggle-arrow { transform: rotate(180deg); }
@@ -618,7 +618,7 @@
   .k-modal-spec-table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .k-modal-spec-table tr:nth-child(even) { background: var(--sand); }
   .k-modal-spec-table td { padding: 7px 10px; }
-  .k-modal-spec-table td:first-child { font-weight: 600; color: var(--text-muted); white-space: nowrap; width: 35%; }
+  .k-modal-spec-table td:first-child { font-weight: 500; color: var(--text-muted); white-space: nowrap; width: 35%; }
   .k-modal--has-specs #k-modal .k-modal-specs { margin-top: 8px; border-top: 1px solid var(--sand-dark); }
 
   /* ── Recherche interne ───────────────────────────────────── */
@@ -670,7 +670,7 @@
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     flex: 1 1 0; height: 44px; border-radius: 999px;
     background: var(--cta-green); color: var(--white);
-    font-size: 15px; font-weight: 600;
+    font-size: 15px; font-weight: 500;
     box-shadow: 0 4px 14px var(--shadow-cta-22);
     transition: background .18s, box-shadow .18s, transform .1s;
   }
@@ -944,8 +944,8 @@
 .k-modal-back-top.show { opacity:1; pointer-events:auto; transform:translateY(0); }
 
 /* ── Topbar produit — infos compactes (ex interactions.css) ───── */
-.k-modal-topbar-product-name  { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.k-modal-topbar-product-price { font-size:12px; font-weight:700; color:var(--coral); }
+.k-modal-topbar-product-name  { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.k-modal-topbar-product-price { font-size:12px; font-weight:500; color:var(--coral); }
 .k-modal-topbar-thumb         { flex:0 0 38px; width:38px; height:38px; border-radius:8px; overflow:hidden; background:var(--sand); }
 
 /* ── Desktop : taille & ombre modale (ex desktop-commerce-skeleton.css) ── */

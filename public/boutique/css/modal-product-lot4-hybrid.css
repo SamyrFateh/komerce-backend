@@ -122,7 +122,7 @@
 
   #k-modal .k-buybox-relay-title {
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.1;
   }
@@ -135,7 +135,7 @@
 
   #k-modal .k-buybox-relay-free {
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--ocean-dark);
     background: var(--ocean-bg-08);
     border: 1px solid var(--border-ocean-14);
@@ -174,7 +174,7 @@
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 500;
     box-shadow: 0 4px 14px var(--shadow-cta-22);
   }
 
@@ -219,7 +219,7 @@
     justify-content: center;
     gap: 7px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
     transition:
       border-color .16s var(--ease),
@@ -277,7 +277,7 @@
   #k-modal .k-buybox-payment-copy strong {
     display: block;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.15;
   }
@@ -294,7 +294,7 @@
 
   #k-modal .k-buybox-payment-badge {
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 500;
     padding: 4px 9px;
     border-radius: 8px;
     color: var(--violet-dark);
@@ -330,7 +330,7 @@
     content: 'Partager ce produit :';
     font-size: 12px;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-share-btn,
@@ -345,7 +345,7 @@
     border: 1px solid var(--border-text-06);
     box-shadow: none;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-share-btn svg { width: 13px; height: 13px; }
