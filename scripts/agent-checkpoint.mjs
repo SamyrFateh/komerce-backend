@@ -66,8 +66,13 @@ function normalize(value) {
 }
 
 function dirtyPaths(repo) {
-  const text = output(git(repo, 'status', '--porcelain=v1', '-uall'), 'git status');
-  if (!text) return [];
+  const result = git(repo, 'status', '--porcelain=v1', '-uall');
+  if (result.status !== 0) {
+    const detail = `${result.stdout || ''}${result.stderr || ''}`.trim();
+    fail(`git status${detail ? `\n${detail}` : ''}`);
+  }
+  const text = result.stdout || '';
+  if (!text.trim()) return [];
   return text.split(/\r?\n/).filter(Boolean).map(line => {
     const raw = line.slice(3).trim();
     const target = raw.includes(' -> ') ? raw.split(' -> ').at(-1) : raw;
