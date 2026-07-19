@@ -19,9 +19,9 @@
   "source": "github-direct-continuous-push",
   "delivery_protocol": "single-integrated-durable-branch-work-first-remote-confirmed-checkpoints-single-final-pr",
   "status": "ACTIVE",
-  "current_operational_task": "T-023",
-  "next_ready_task": "T-019",
-  "in_review_tasks": ["T-017", "T-018"],
+  "current_operational_task": "T-021",
+  "next_ready_task": "T-022",
+  "in_review_tasks": ["T-017", "T-018", "T-019", "T-020"],
   "blocked_tasks": ["T-023"],
   "execution_mode": "silent_execute_push_except_arbitration",
   "branch_model": "single-integrated-durable-branch",
@@ -85,7 +85,7 @@
     "summary"
   ],
   "arbitration": {
-    "status": "AWAITING_DECISION",
+    "status": "IDLE",
     "rule": "remote_checkpoint_before_asking",
     "single_question_only": true
   }
