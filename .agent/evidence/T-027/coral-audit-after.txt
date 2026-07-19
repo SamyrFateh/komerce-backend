@@ -1,0 +1,62 @@
+# T-027 — Inventaire coral APRES (purge appliquée)
+# Généré 2026-07-19T16:06:16Z
+
+=== public/boutique/css/modal-shell.css ===
+275:   même logique que .k-modal-promo-badge, conservé coral (exception D-P3 de fait). */
+276:.k-topbar-price-promo { font-size: 10px; font-weight: 500; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
+554:  /* Le rang Bestseller garde sa pastille coral pleine.
+555:     Utilise --border-coral-09 / --border-coral-22 (tokens existants).
+556:     L'ancien styling §1 référençait --coral-bg / --coral-border (inexistants
+560:    background: var(--border-coral-09);
+561:    color: var(--coral);
+562:    border: 1px solid var(--border-coral-22);
+584:     Promo active (.k-modal--has-promo) reste autorisée en coral via D-P3
+585:     (règle séparée plus bas). Purge coral hors promo. */
+590:  #k-modal.k-modal--has-promo .k-modal-price { color: var(--coral); }
+591:  #k-modal.k-modal--has-promo .k-modal-price-unit { color: var(--coral); }
+653:  /* PR-D3 — CTA redesign desktop : Acheter vert solid, Ajouter outlined, sous-total coral */
+746:  .k-msearch-footer:hover { background: var(--sand); color: var(--coral); }
+748:  .k-msearch-group-more:hover { background: var(--sand); color: var(--coral-dark); }
+
+=== public/boutique/css/modal-media.css ===
+268:    color: var(--coral);
+
+=== public/boutique/css/modal-product.css ===
+23:  background: var(--coral); color: var(--white);
+63:/* F1 — prix promo en coral sur mobile (classe posée par b-modal.js openModal) */
+64:.k-modal--has-promo .k-modal-price { color: var(--coral); font-size: clamp(20px, 5vw, 26px); font-weight: 700; }
+75:  background: var(--coral-bg);
+76:  color: var(--coral);
+77:  border: 1px solid var(--coral-border);
+131:.k-msearch-item-price { font-size: 14px; font-weight: 700; color: var(--coral); white-space: nowrap; }
+132:.k-msearch-item-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); padding: 1px 6px; border-radius: 50px; }
+142:.k-msearch-group-more { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--coral); cursor: pointer; transition: background .12s; -webkit-tap-highlight-color: transparent; }
+145:.k-msearch-recents-clear { font-size: 11px; font-weight: 600; color: var(--coral); background: transparent; border: none; cursor: pointer; padding: 2px 6px; border-radius: 6px; transition: background .12s; text-transform: none; letter-spacing: 0; }
+192:.k-sug-chip.is-active { background: transparent; border-color: var(--coral); color: var(--text); font-weight: 700; }
+206:.k-sug-grid .k-sug-card-price { padding: 0 8px 8px; font-size: 14px; font-weight: 700; color: var(--coral); }
+214:.k-sug-card-price { font-size: 13px; font-weight: 700; color: var(--coral); flex: 1; min-width: 0; white-space: nowrap; } /* BUGFIX: white-space:nowrap empêche le prix de se couper sur 2 lignes (ex: 12300 / KMF) */
+221:.k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: var(--white); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
+911:  /* PR-D1 — badge % coral plein, blanc, plus visible (mockup) */
+916:    background: var(--coral);
+937:     Aucun token amber — uniquement sand-warm + coral du système Komerce. */
+952:    background-color: var(--coral);
+961:    color: var(--coral);
+966:    color: var(--coral);
+967:    background: var(--border-coral-09);
+968:    border: 1px solid var(--border-coral-13);
+976:    color: var(--coral);
+
+=== public/boutique/css/modal-product-lot4-hybrid.css ===
+(aucune occurrence)
+
+=== public/boutique/css/modal-mobile-canonical.css ===
+111:    color: var(--coral);
+206:     (68px, coral, wrap). Sur mobile, la maquette premium demande des
+208:     un état sélectionné neutre (bordure --text, jamais coral — le
+209:     coral reste réservé à la promo active, D-P3). Override ciblé
+266:     sélectionné coral, hérité du style carte partagé mobile/desktop. Sur
+269:     (fond/bordure --text, texte blanc — jamais coral, D-P3) et un état
+
+=== public/boutique/css/modal-enriched-content.css ===
+(aucune occurrence)
+
