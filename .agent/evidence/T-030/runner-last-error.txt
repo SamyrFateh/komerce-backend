@@ -6,7 +6,9 @@ GIT_STATUS_AT_FAILURE
  M .agent/generated/t030-final-runner.sh
 
 RUNNER_LOG
-Traceback (most recent call last):
-  File "<stdin>", line 44, in <module>
-  File "<stdin>", line 13, in block
-AssertionError: selector absent: .k-modal-keyboard-hint
+T-028 invariants missing: favorite pop removed
+[agent/lane-final 103eebd1] chore(t030): record T-028 semantic integration check
+ 1 file changed, 12 insertions(+)
+ create mode 100644 .agent/evidence/T-030/t028-integration-check.txt
+To https://github.com/SamyrFateh/komerce-backend
+   c15554ff..103eebd1  HEAD -> agent/lane-final
