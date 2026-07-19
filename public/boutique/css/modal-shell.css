@@ -492,10 +492,14 @@
   #k-modal .k-modal-slide { height: 100%; padding: 16px 20px 32px 82px; object-fit: contain; object-position: 50% 50%; width: 100%; }
   #k-modal .k-modal-dots { display: none; }
   #k-modal .k-modal-counter { display: none; }
-  #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
+  /* ── Rail miniatures plat (T-021, D9) : taille fixe 60×60, aucune ombre
+     par défaut, bordure active 1.5px --text, pas de transform/ombre au
+     hover. Sélection d'image (JS) hors périmètre — CSS uniquement. ── */
+  #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 60px; overflow-y: auto; scrollbar-width: none; }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
-  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
-  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: var(--border-ocean-50); box-shadow: 0 10px 22px var(--border-text-10); }
+  #k-modal .k-modal-thumb { width: 60px; height: 60px; flex: 0 0 60px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
+  #k-modal .k-modal-thumb:hover { border-color: var(--text); }
+  #k-modal .k-modal-thumb.is-active { border: 1.5px solid var(--text); }
   #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
   .k-modal-zoom-preview {
     display: block; position: absolute;

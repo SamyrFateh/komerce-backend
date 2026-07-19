@@ -1,0 +1,15 @@
+{
+  "note": "Validation via Playwright + chrome-headless-shell local (puppeteer cache), harnais statique reproduisant le markup réel (bouton <button class=\"k-modal-thumb\">, cf. public/boutique/js/b-modal-product.js).",
+  "thumbSize": { "width": 60, "height": 60 },
+  "transformIdenticalOnHover": true,
+  "boxShadowOnHover": "none",
+  "focusedElementClass": "k-modal-thumb is-active",
+  "focusOutline": "solid 2px rgba(42, 122, 62, 0.45)",
+  "activeThumbBorderDeclared": "1.5px solid var(--text) (modal-shell.css ligne 500)",
+  "activeThumbBorderRendered": "1px solid rgb(31, 48, 36) — arrondi sous-pixel du navigateur à 1x DPR, valeur source correcte (1.5px)",
+  "criteres_acceptation": {
+    "quatre_miniatures_visibles_1024": true,
+    "aucun_mouvement_au_hover": true,
+    "focus_visible_conforme": true
+  }
+}
