@@ -19,9 +19,15 @@
   "source": "github-direct-continuous-push",
   "delivery_protocol": "single-integrated-durable-branch-work-first-remote-confirmed-checkpoints-single-final-pr",
   "status": "ACTIVE",
-  "current_operational_task": "T-021",
-  "next_ready_task": "T-022",
+  "current_operational_task": "T-021-T-022-RECOVERY",
+  "next_ready_task": "T-024",
   "in_review_tasks": ["T-017", "T-018", "T-019", "T-020"],
+  "recovery_tasks": ["T-021", "T-022"],
+  "recovery_facts": {
+    "T-021": "validated_in_previous_session_do_not_reimplement",
+    "T-022": "implemented_in_previous_session_do_not_reimplement"
+  },
+  "current_action": "Sauvegarder puis rapatrier sur agent/lane-mobile-renderer le travail déjà réalisé pour T-021 et T-022; reconstruire ensuite uniquement leurs métadonnées REVIEW.",
   "blocked_tasks": ["T-023"],
   "execution_mode": "silent_execute_push_except_arbitration",
   "branch_model": "single-integrated-durable-branch",
@@ -40,6 +46,7 @@
     "remote git history and task diffs"
   ],
   "recovery_precedence": [
+    "surviving_sandbox_worktree_and_local_commits",
     "remote_branch_and_git_history",
     "remote_source_and_tests",
     "remote_evidence_and_generated_artifacts",
@@ -54,6 +61,7 @@
     "state_must_reference_existing_remote_work_sha": true,
     "metadata_lag_after_interruption_is_recoverable": true,
     "remote_work_must_not_be_reimplemented_because_state_is_stale": true,
+    "declared_completed_work_requires_recovery_before_reimplementation": true,
     "commit_without_immediate_push_forbidden": true,
     "multiple_local_commits_before_push_forbidden": true,
     "remote_sha_confirmation_required": true,
@@ -85,7 +93,7 @@
     "summary"
   ],
   "arbitration": {
-    "status": "IDLE",
+    "status": "AWAITING_DECISION",
     "rule": "remote_checkpoint_before_asking",
     "single_question_only": true
   }
