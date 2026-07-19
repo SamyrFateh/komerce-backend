@@ -203,19 +203,30 @@ if (!remoteRefs.includes(REMOTE_REF)) remoteRefs.push(REMOTE_REF);
 const records = loadRemoteStates(root)
   .map(entry => effectiveRecord(root, entry, remoteRefs))
   .sort((a, b) => taskNumber(a.task_id) - taskNumber(b.task_id));
-const current = chooseCurrent(records);
+let current = chooseCurrent(records);
 
 const instructionPath = join(root, '.agent', 'ADDITIONAL-INSTRUCTION.json');
 let additionalInstruction = null;
+let taskOverride = null;
 if (existsSync(instructionPath)) {
   try {
     const instruction = JSON.parse(readFileSync(instructionPath, 'utf8'));
     additionalInstruction = typeof instruction.instruction === 'string' && instruction.instruction.trim()
       ? instruction.instruction.trim()
       : null;
+    taskOverride = typeof instruction.task_override === 'string' && instruction.task_override.trim()
+      ? instruction.task_override.trim().toUpperCase()
+      : null;
   } catch (error) {
     fail(`ADDITIONAL-INSTRUCTION.json invalide: ${error.message}`);
   }
+}
+
+if (taskOverride) {
+  if (!/^T-\d+$/.test(taskOverride)) fail(`task_override invalide: ${taskOverride}`);
+  const overridden = records.find(record => record.task_id === taskOverride);
+  if (!overridden) fail(`task_override inconnu: ${taskOverride}`);
+  current = overridden;
 }
 
 const resolved = {
@@ -226,6 +237,7 @@ const resolved = {
   stored_status: current?.stored_status || null,
   current_action: actionFor(current),
   additional_instruction: additionalInstruction,
+  task_override: taskOverride,
   evidence: current ? {
     state_path: current.state_path,
     durable_work_commits: current.durable_work_commits.map(({ sha, subject }) => ({ sha, subject })),
@@ -239,6 +251,9 @@ console.log(`CURRENT_TASK=${resolved.current_task || 'NONE'}`);
 console.log(`EFFECTIVE_STATUS=${resolved.effective_status || 'NONE'}`);
 console.log(`STORED_STATUS=${resolved.stored_status || 'NONE'}`);
 console.log(`CURRENT_ACTION=${resolved.current_action}`);
+if (resolved.task_override) {
+  console.log(`TASK_OVERRIDE=${resolved.task_override}`);
+}
 if (resolved.additional_instruction) {
   console.log(`ADDITIONAL_INSTRUCTION=${resolved.additional_instruction}`);
 }
