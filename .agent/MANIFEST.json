@@ -6,7 +6,14 @@
   "execution_branch": "agent/lane-mobile-renderer",
   "source_of_truth_ref": "origin/agent/lane-mobile-renderer",
   "start_here": ".agent/START-HERE.md",
-  "runtime": "scripts/agent.mjs",
+  "runtime": "manual-integrated-state-updates",
+  "legacy_runtime": "scripts/agent.mjs",
+  "legacy_runtime_status": "unsafe-for-start-resume-finish-in-integrated-mode",
+  "forbidden_legacy_commands": [
+    "node scripts/agent.mjs start",
+    "node scripts/agent.mjs resume",
+    "node scripts/agent.mjs finish"
+  ],
   "source": "github-direct-continuous-push",
   "delivery_protocol": "single-integrated-durable-branch-single-final-pr",
   "status": "ACTIVE",
@@ -14,7 +21,6 @@
   "next_ready_task": "T-019",
   "in_review_tasks": ["T-017", "T-018"],
   "blocked_tasks": ["T-023"],
-  "legacy_runtime": "deprecated",
   "execution_mode": "silent_execute_push_except_arbitration",
   "branch_model": "single-integrated-durable-branch",
   "branch_pattern": "agent/lane-mobile-renderer",
