@@ -2657,15 +2657,16 @@ html.k-mobile-premium-v1 .k-chip-label {
     order: unset; /* annule le order mobile */
     flex: 0 0 auto; overflow: visible; min-height: unset;
     display: block; width: 100%;
-    border-top: 2px solid var(--sand-dark);
+    /* D10 — border-top dashed (au lieu de solid), aligné page-bg. */
+    border-top: 1.5px dashed var(--border);
     margin-top: 0;
   }
   /* Visuels fallback (mode modal standard, non --desktop-list) — owned : modal-shell */
-  /* Les visuels --desktop-list (background dégradé chaud, padding responsive) sont
-     owned exclusivement par modal-product-lot4-hybrid.css. */
+  /* Les visuels --desktop-list (fond, padding responsive) sont owned exclusivement
+     par modal-product-lot4-hybrid.css. D10 — aplat --page-bg, dégradé retiré. */
   #k-modal .k-modal-suggestions:not(.k-modal-suggestions--desktop-list) {
     padding: 28px 36px 48px;
-    background: linear-gradient(180deg, var(--sand) 0%, var(--sand) 100%);
+    background: var(--page-bg);
   }
   #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
     overflow: visible; height: auto; padding: 0;
@@ -5001,9 +5002,11 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      Spécificité : 1-2-0 → bat le base .k-modal-inner-search (0-1-0). Sans !important. */
   #k-modal .k-modal-details > .k-modal-inner-search { display: none; }
 
-  /* ── Suggestions desktop list ── */
+  /* ── Suggestions desktop list (D10 — spec §330) : aplat --page-bg,
+     titre 15/500, retrait ombres cards. Border-top dashed : owned
+     modal-shell.css. Grille 4 cols à 1024+, 5 sur large : ce bloc. ── */
   #k-modal-suggestions.k-modal-suggestions--desktop-list {
-    background: linear-gradient(180deg, var(--sand) 0%, var(--sand-warm) 100%);
+    background: var(--page-bg);
     padding: 34px clamp(32px, 5vw, 72px) 56px;
   }
 
@@ -5014,9 +5017,10 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title-text {
     font-family: var(--font-display, var(--font));
-    font-size: clamp(22px, 2vw, 30px);
-    line-height: 1;
-    letter-spacing: -.025em;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -.01em;
     color: var(--text);
   }
 
@@ -5025,6 +5029,27 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 18px;
+  }
+
+  /* D10 — grille stable 4 colonnes dès 1024px (remplace la densité
+     auto-fill 1200px précédente, cf. modal-shell.css). */
+  @media (min-width: 1024px) {
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* D10 — 5 colonnes sur large si la largeur le permet.
+     Seuil 1440px réutilisé (déjà baseliné T-020) — pas de nouveau
+     breakpoint hors garde-fou (900/1200) ni de régression ratchet. */
+  @media (min-width: 1440px) {
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+      grid-template-columns: repeat(5, 1fr);
+    }
   }
 }
 
