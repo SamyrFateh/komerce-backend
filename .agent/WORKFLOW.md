@@ -2,7 +2,7 @@
 
 ## Référence obligatoire
 
-Lire `.agent/START-HERE.md` en premier.
+Lire `.agent/START-HERE.md` puis `.agent/CHECKPOINT-PROTOCOL.md` en premier.
 
 Toutes les tâches restantes du chantier s’exécutent sur :
 
@@ -42,26 +42,60 @@ Une tâche `DONE` ou `REVIEW` ne doit pas être recommencée. Une tâche `BLOCKE
 condition environnementale est levée doit être reprise avant de créer une nouvelle
 implémentation lorsqu’elle est désignée comme action courante.
 
-## Petit lot
+## Petit lot et sauvegarde distante
 
-Après chaque unité cohérente :
+Un petit lot ne se termine pas au commit local. Il se termine uniquement lorsque le push
+est confirmé sur la branche distante.
+
+Pour chaque unité cohérente :
 
 ```bash
-git add <fichiers du lot>
-git commit -m "message atomique"
-git push origin agent/lane-mobile-renderer
+node scripts/agent-checkpoint.mjs \
+  --message "type(t-xxx): résultat atomique" \
+  -- chemin/du/fichier-1 chemin/du/fichier-2
 ```
 
-Les helpers runtime ne peuvent être utilisés qu’après synchronisation et seulement s’ils
-respectent explicitement `MANIFEST.execution_branch`. Aucun helper ne doit dériver une
-branche depuis `parallel_lane`.
+La commande doit afficher :
+
+```text
+CHECKPOINT_DISTANT=<sha>
+```
+
+Le lot suivant ne commence qu’après cette confirmation.
+
+Règles :
+
+- maximum recommandé de trois fichiers source par lot ;
+- un groupe d’artefacts générés par une même commande peut former un lot distinct ;
+- aucun deuxième commit local avant le push du premier ;
+- checkpoint distant avant tests longs, captures, builds risqués, arbitrage et réponse finale ;
+- aucun `--no-verify` sauf dérogation reviewer explicitement documentée.
+
+## Rejet de push ou divergence
+
+Au premier écart entre `HEAD` et `origin/agent/lane-mobile-renderer`, ou au premier rejet
+`non-fast-forward` :
+
+1. arrêter les modifications ;
+2. conserver les commits et fichiers locaux ;
+3. ne pas merge, rebase, cherry-pick, reset, stash ou force-push automatiquement ;
+4. afficher les SHA local/distant, les dix derniers commits et la divergence ;
+5. demander une réconciliation explicite.
+
+## Runtime
+
+Les commandes `start`, `resume` et `finish` de `scripts/agent.mjs` sont interdites dans le
+mode intégré. `scripts/agent-checkpoint.mjs` est la commande autorisée pour sauvegarder un
+lot.
+
+Aucun helper ne doit dériver une branche depuis `parallel_lane`.
 
 ## Fin de tâche
 
 Respecter la règle de sortie du fichier `.agent/tasks/T-XXX.md` : généralement
 `IN_PROGRESS → REVIEW`, jamais directement `DONE` sans décision reviewer documentée.
 
-Mettre à jour state, worklog, audit et STATUS dans le même checkpoint documentaire.
+Mettre à jour state, worklog, audit et STATUS dans un checkpoint documentaire distant.
 
 ## Campagne visuelle
 
@@ -71,6 +105,6 @@ de téléchargement réseau non autorisé et ne fabriquer aucune preuve.
 ## Livraison
 
 - une branche durable intégrée ;
-- petits commits et pushs réguliers ;
+- checkpoints distants petits et fréquents ;
 - aucune PR intermédiaire ;
 - une seule PR finale vers `main`.
