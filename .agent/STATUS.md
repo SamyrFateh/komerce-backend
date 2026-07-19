@@ -14,7 +14,9 @@
    travail réellement présents sur la branche durable.
 3. Démarrer ensuite `T-022` sur cette même branche, sans créer de nouvelle branche.
 
-`T-017`, `T-018`, `T-019` et `T-020` sont déjà en `REVIEW`; ne pas les réimplémenter.
+`T-017`, `T-018`, `T-019`, `T-020` et désormais `T-022` sont déjà en `REVIEW`; ne pas les
+réimplémenter. `T-022` a été traitée directement sur `agent/lane-mobile-renderer` (dépendance
+`T-001` uniquement) pendant que le rapatriement de `T-021` était géré séparément.
 `T-023` reste bloquée uniquement sur ses deux captures EMPTY/FILLED.
 
 | ID | Lane | Statut | Agent | Branche | Prochaine action |
@@ -40,7 +42,7 @@
 | T-019 | LANE-DESKTOP-VISUAL | REVIEW | claude-chat-session | agent/lane-mobile-renderer | Revue humaine du diff, de desktop-zone.png et des gates. |
 | T-020 | LANE-DESKTOP-LAYOUT | REVIEW | claude-chat-session | agent/lane-mobile-renderer | Revue humaine de la grille 3 pistes, de l’arbitrage ownership et des captures 1024/1440/1600. |
 | T-021 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Action courante : rapatrier le rail miniatures et ses preuves, réexécuter les gates, puis REVIEW. |
-| T-022 | LANE-DESKTOP-LAYOUT | READY | — | agent/lane-mobile-renderer | Après T-021 en REVIEW sur la branche durable. |
+| T-022 | LANE-DESKTOP-LAYOUT | REVIEW | claude-chat-session | agent/lane-mobile-renderer | Revue humaine du diff CSS (aplat, dashed, titre 15/500, grille 4/5 cols, retrait ombre) et des captures 1024/1600. |
 | T-023 | LANE-DESKTOP-COMPOSITION | BLOCKED | claude-chat-session | agent/lane-mobile-renderer | Générer desktop-actions-empty.png / desktop-actions-filled.png avec Chromium local, vérifier le layout, puis BLOCKED → REVIEW. |
 | T-024 | LANE-FINISH | READY | — | agent/lane-mobile-renderer | Après T-022. |
 | T-025 | LANE-FINISH | READY | — | agent/lane-mobile-renderer | Après T-024. |
