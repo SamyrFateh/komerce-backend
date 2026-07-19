@@ -213,6 +213,10 @@
   --blue-lighter-bg:  #cfe5f7;
   --blue-border:      #b5d4f4;
 
+  /* T-027 — accent focus, hors palette coral (spec CHANTIER §accent-blue).
+     Alias sur --blue-dark, pas une nouvelle couleur brute. */
+  --accent-blue:      var(--blue-dark);
+
   --amber-text:       #6b3e0e;
   --amber-text-light: #a06a1f;
   --amber-bg:         #fff8ed;

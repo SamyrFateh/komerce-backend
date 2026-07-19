@@ -2103,7 +2103,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-topbar-search-back svg { width: 20px; height: 20px; stroke: var(--text); fill: none; stroke-width: 2; }
 .k-topbar-search-back:active { background: var(--sand); }
 .k-topbar-search-input { flex: 1; height: 36px; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 10px; font-size: 14px; font-weight: 500; color: var(--text); background: var(--white); outline: none; transition: border-color .15s; -webkit-appearance: none; min-width: 0; }
-.k-topbar-search-input:focus { border-color: var(--coral); }
+.k-topbar-search-input:focus { border-color: var(--accent-blue); }
 .k-topbar-search-input::placeholder { color: var(--text-light); font-weight: 400; }
 .k-topbar-search-clear-btn { display: none; width: 28px; height: 28px; border: none; background: var(--sand-dark); border-radius: 50%; color: var(--text-muted); font-size: 15px; font-weight: 600; line-height: 1; cursor: pointer; flex-shrink: 0; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
 .k-topbar-search-clear-btn.is-visible { display: flex; }
@@ -2218,7 +2218,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
 .k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
-.k-modal-subtotal strong { color: var(--coral); font-weight: 500; font-size: 13px; }
+.k-modal-subtotal strong { color: var(--text); font-weight: 500; font-size: 13px; }
 
 /* ── PRODUIT RAPPELÉ TOPBAR AU SCROLL ───────────────────────── */
 .k-modal-topbar-product { display: none; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-left: 8px; opacity: 0; transform: translateY(-4px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
@@ -2236,8 +2236,10 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-topbar-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
 .k-topbar-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
 .k-topbar-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--coral); line-height: 1.2; margin-top: 2px; }
-.k-topbar-price-val { font-size: 12px; font-weight: 500; color: var(--coral); }
+.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.2; margin-top: 2px; }
+.k-topbar-price-val { font-size: 12px; font-weight: 500; color: var(--text); }
+/* T-027 — badge dédié, masqué (u-hidden) sauf promo_pct > 0 (b-modal-product.js) :
+   même logique que .k-modal-promo-badge, conservé coral (exception D-P3 de fait). */
 .k-topbar-price-promo { font-size: 10px; font-weight: 500; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
 .k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
@@ -2418,7 +2420,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-breadcrumb span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .k-modal-breadcrumb-sep { color: var(--text-light); flex-shrink: 0; }
   .k-modal-breadcrumb-cat { cursor: pointer; transition: color .12s; }
-  .k-modal-breadcrumb-cat:hover { color: var(--coral); }
+  .k-modal-breadcrumb-cat:hover { color: var(--ocean); }
   .k-modal-breadcrumb-name { font-weight: 500; color: var(--text); }
 
   /* ── Scroll owner desktop ────────────────────────────────── */
@@ -2460,7 +2462,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
   #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
-  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: var(--coral-focus-45); box-shadow: 0 10px 22px var(--border-text-10); }
+  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: var(--border-ocean-50); box-shadow: 0 10px 22px var(--border-text-10); }
   #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
   .k-modal-zoom-preview {
     display: block; position: absolute;
@@ -2567,7 +2569,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
-  .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--coral); }
+  .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--ocean); }
   .k-modal-share-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
   .k-modal-share-btn--wa { background: var(--whatsapp); color: var(--white); border-color: var(--whatsapp); }
   .k-modal-share-btn--wa:hover { background: var(--green-positive); border-color: var(--green-positive); }
@@ -2576,7 +2578,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* PR-M3 — B-M-10 : specs masquées si absent du produit (k-modal--has-specs posé par ModalViewModel) */
   .k-modal--has-specs .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
   .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text); transition: color .12s; }
-  .k-modal-spec-toggle:hover { color: var(--coral); }
+  .k-modal-spec-toggle:hover { color: var(--ocean); }
   .k-modal-spec-toggle-arrow { width: 18px; height: 18px; transition: transform .2s var(--ease); color: var(--text-muted); stroke: currentColor; fill: none; stroke-width: 2; }
   .k-modal-spec-toggle.is-open .k-modal-spec-toggle-arrow { transform: rotate(180deg); }
   .k-modal-spec-body { display: none; padding: 0 0 12px; }
@@ -2907,12 +2909,12 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-scroll { scroll-behavior: smooth; }
 
 /* ── Bouton retour en haut dans la modale (ex interactions.css) ── */
-.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--coral); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:10; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
+.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--text); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:10; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
 .k-modal-back-top.show { opacity:1; pointer-events:auto; transform:translateY(0); }
 
 /* ── Topbar produit — infos compactes (ex interactions.css) ───── */
 .k-modal-topbar-product-name  { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.k-modal-topbar-product-price { font-size:12px; font-weight:500; color:var(--coral); }
+.k-modal-topbar-product-price { font-size:12px; font-weight:500; color:var(--text); }
 .k-modal-topbar-thumb         { flex:0 0 38px; width:38px; height:38px; border-radius:8px; overflow:hidden; background:var(--sand); }
 
 /* ── Desktop : taille & ombre modale (ex desktop-commerce-skeleton.css) ── */
@@ -3666,18 +3668,18 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 /* Hover */
 .k-sku:hover:not(.k-sku--out) {
-  border-color: var(--coral);
+  border-color: var(--ocean);
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px var(--coral-shadow-18);
+  box-shadow: 0 4px 10px var(--border-ocean-18);
 }
 
 /* Sélectionné */
 .k-sku.k-sku--active {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 2px var(--coral);
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--text);
 }
 .k-sku--active .k-sku-name {
-  color: var(--coral-dark);
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -3732,16 +3734,16 @@ html.k-mobile-premium-v1 .k-chip-label {
   user-select: none;
 }
 .k-vp:hover:not(:disabled) {
-  border-color: var(--coral);
-  background: color-mix(in srgb, var(--coral) 5%, var(--white));
+  border-color: var(--ocean);
+  background: color-mix(in srgb, var(--ocean) 5%, var(--white));
 }
 .k-vp.k-vp--active {
-  border-color: var(--coral);
+  border-color: var(--text);
   border-width: 2px;
-  background: color-mix(in srgb, var(--coral) 8%, var(--white));
-  color: var(--coral-dark);
+  background: color-mix(in srgb, var(--text) 8%, var(--white));
+  color: var(--text);
   font-weight: 500;
-  box-shadow: 0 0 0 1px var(--coral);
+  box-shadow: 0 0 0 1px var(--text);
 }
 .k-vp--out {
   opacity: .38;
@@ -3787,14 +3789,14 @@ html.k-mobile-premium-v1 .k-chip-label {
   -webkit-tap-highlight-color: transparent;
 }
 .k-vs-trigger:active {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 15%, transparent);
+  border-color: var(--ocean);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ocean) 15%, transparent);
 }
 .k-vs-trigger-label { display: flex; align-items: baseline; gap: 6px; }
 .k-vs-trigger-type { color: var(--text); }
 .k-vs-trigger-sep { color: var(--text-muted); font-size: 11px; }
 .k-vs-trigger-val { color: var(--text-muted); font-weight: 400; }
-.k-vs-trigger-val.is-set { color: var(--coral-dark, var(--coral)); font-weight: 500; }
+.k-vs-trigger-val.is-set { color: var(--text); font-weight: 500; }
 .k-vs-trigger-chevron {
   font-size: 16px; color: var(--text-muted);
   transition: transform .2s;
@@ -4048,8 +4050,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   -webkit-tap-highlight-color: transparent;
 }
 .k-sg-tab.is-active {
-  color: var(--coral, var(--coral));
-  border-bottom-color: var(--coral, var(--coral));
+  color: var(--text);
+  border-bottom-color: var(--text);
 }
 
 /* Body scrollable */
@@ -4110,7 +4112,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 .k-sg-table tbody td:first-child {
   font-weight: 500;
-  color: var(--coral-dark, var(--coral-text-deep));
+  color: var(--text);
 }
 
 /* Footer */
@@ -4836,7 +4838,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal strong {
-    color: var(--coral);
+    color: var(--text);
     font-size: 15px;
   }
 
@@ -5404,7 +5406,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   .k-mdm-selection-msg {
     font-size: 11px;
-    color: var(--coral);
+    color: var(--text);
     margin-top: 4px;
     padding: 0;
   }

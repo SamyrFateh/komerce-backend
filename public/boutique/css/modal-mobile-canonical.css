@@ -345,7 +345,7 @@
 
   .k-mdm-selection-msg {
     font-size: 11px;
-    color: var(--coral);
+    color: var(--text);
     margin-top: 4px;
     padding: 0;
   }

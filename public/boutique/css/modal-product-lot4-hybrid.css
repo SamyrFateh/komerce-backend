@@ -187,7 +187,7 @@
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal strong {
-    color: var(--coral);
+    color: var(--text);
     font-size: 15px;
   }
 

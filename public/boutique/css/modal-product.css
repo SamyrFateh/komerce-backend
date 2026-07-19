@@ -376,18 +376,18 @@
 
 /* Hover */
 .k-sku:hover:not(.k-sku--out) {
-  border-color: var(--coral);
+  border-color: var(--ocean);
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px var(--coral-shadow-18);
+  box-shadow: 0 4px 10px var(--border-ocean-18);
 }
 
 /* Sélectionné */
 .k-sku.k-sku--active {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 2px var(--coral);
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--text);
 }
 .k-sku--active .k-sku-name {
-  color: var(--coral-dark);
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -442,16 +442,16 @@
   user-select: none;
 }
 .k-vp:hover:not(:disabled) {
-  border-color: var(--coral);
-  background: color-mix(in srgb, var(--coral) 5%, var(--white));
+  border-color: var(--ocean);
+  background: color-mix(in srgb, var(--ocean) 5%, var(--white));
 }
 .k-vp.k-vp--active {
-  border-color: var(--coral);
+  border-color: var(--text);
   border-width: 2px;
-  background: color-mix(in srgb, var(--coral) 8%, var(--white));
-  color: var(--coral-dark);
+  background: color-mix(in srgb, var(--text) 8%, var(--white));
+  color: var(--text);
   font-weight: 500;
-  box-shadow: 0 0 0 1px var(--coral);
+  box-shadow: 0 0 0 1px var(--text);
 }
 .k-vp--out {
   opacity: .38;
@@ -497,14 +497,14 @@
   -webkit-tap-highlight-color: transparent;
 }
 .k-vs-trigger:active {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 15%, transparent);
+  border-color: var(--ocean);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ocean) 15%, transparent);
 }
 .k-vs-trigger-label { display: flex; align-items: baseline; gap: 6px; }
 .k-vs-trigger-type { color: var(--text); }
 .k-vs-trigger-sep { color: var(--text-muted); font-size: 11px; }
 .k-vs-trigger-val { color: var(--text-muted); font-weight: 400; }
-.k-vs-trigger-val.is-set { color: var(--coral-dark, var(--coral)); font-weight: 500; }
+.k-vs-trigger-val.is-set { color: var(--text); font-weight: 500; }
 .k-vs-trigger-chevron {
   font-size: 16px; color: var(--text-muted);
   transition: transform .2s;
@@ -758,8 +758,8 @@
   -webkit-tap-highlight-color: transparent;
 }
 .k-sg-tab.is-active {
-  color: var(--coral, var(--coral));
-  border-bottom-color: var(--coral, var(--coral));
+  color: var(--text);
+  border-bottom-color: var(--text);
 }
 
 /* Body scrollable */
@@ -820,7 +820,7 @@
 }
 .k-sg-table tbody td:first-child {
   font-weight: 500;
-  color: var(--coral-dark, var(--coral-text-deep));
+  color: var(--text);
 }
 
 /* Footer */
