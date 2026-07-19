@@ -2,6 +2,7 @@
   "lane": "LANE-MOBILE-RENDERER",
   "execution_scope": "integrated-pdp-chantiers",
   "branch": "agent/lane-mobile-renderer",
+  "source_of_truth_ref": "origin/agent/lane-mobile-renderer",
   "lane_labels_are_classifications": true,
   "tasks": [
     "T-002", "T-003", "T-004", "T-005", "T-006", "T-007", "T-008", "T-009",
@@ -15,9 +16,11 @@
   ],
   "in_review_tasks": ["T-017", "T-018"],
   "blocked_tasks": ["T-023"],
-  "current_task": "T-019",
+  "current_task": "T-023",
+  "current_action": "Reprendre T-023 uniquement pour générer et vérifier desktop-actions-empty.png et desktop-actions-filled.png avec le Chromium/Puppeteer local déjà détecté, puis passer BLOCKED -> REVIEW sans changement fonctionnel sauf défaut visuel réel.",
+  "next_implementation_task": "T-019",
   "status": "IN_PROGRESS",
   "review_mode": "single-final-pr",
   "execution_map": ".agent/EXECUTION_MAP.md",
-  "next_action": "T-017 et T-018 sont en REVIEW, en attente de review_decision humaine (T-018 a nécessité un arbitrage de périmètre, voir .agent/arbitrations/T-018.md). Gates automatisés terminés pour les deux ; la séquence peut continuer sur T-019 en parallèle de la revue, sauf décision contraire."
+  "next_action": "Après le checkpoint visuel T-023 poussé, démarrer T-019 sur la même branche. T-017 et T-018 restent en REVIEW pour décision humaine."
 }
