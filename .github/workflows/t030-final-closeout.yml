@@ -25,54 +25,74 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Execute reproducible T030 closeout
+      - name: Prepare semantic verifier
         shell: bash
         run: |
-          python3 <<'PY'
+          mkdir -p .agent/evidence/T-030
+          rm -f .agent/evidence/T-030/workflow-patch-error.txt
+          if ! python3 <<'PY'
           from pathlib import Path
+          import traceback
 
-          path = Path('.agent/generated/t030-final-runner.sh')
-          text = path.read_text(encoding='utf-8')
-          marker = "checks = []\ndef check(name, condition):"
-          helper = """def has_transform_css(css):
-              import re
-              clean = re.sub(r'/\\*.*?\\*/', '', css, flags=re.S)
-              return bool(re.search(r'(^|[;{}])\\s*transform\\s*:', clean)) or bool(
-                  re.search(r'transition(?:-property)?\\s*:[^;]*\\btransform\\b', clean)
-              )
+          try:
+              path = Path('.agent/generated/t030-final-runner.sh')
+              text = path.read_text(encoding='utf-8')
+              marker = "checks = []\ndef check(name, condition):"
+              helper = """def has_transform_css(css):
+                  import re
+                  clean = re.sub(r'/\\*.*?\\*/', '', css, flags=re.S)
+                  return bool(re.search(r'(^|[;{}])\\s*transform\\s*:', clean)) or bool(
+                      re.search(r'transition(?:-property)?\\s*:[^;]*\\btransform\\b', clean)
+                  )
 
-          checks = []
-          def check(name, condition):"""
-          if marker not in text:
-              raise SystemExit('semantic verifier marker missing')
-          text = text.replace(marker, helper, 1)
-          replacements = {
-              "'transform' not in block(files['media'], '.k-modal-fav-btn {')": "not has_transform_css(block(files['media'], '.k-modal-fav-btn {'))",
-              "'transform' not in block(files['media'], '.k-modal-recent-card:hover')": "not has_transform_css(block(files['media'], '.k-modal-recent-card:hover'))",
-              "'transform' not in block(files['product'], '.k-sku {')": "not has_transform_css(block(files['product'], '.k-sku {'))",
-              "'transform' not in block(files['product'], '.k-sku:hover:not(.k-sku--out)')": "not has_transform_css(block(files['product'], '.k-sku:hover:not(.k-sku--out)'))",
-              "'transform' not in block(files['lot4'], '#k-modal .k-buybox-payment-tab {')": "not has_transform_css(block(files['lot4'], '#k-modal .k-buybox-payment-tab {'))",
-              "'transform' not in block(files['lot4'], '#k-modal .k-buybox-payment-tab:hover')": "not has_transform_css(block(files['lot4'], '#k-modal .k-buybox-payment-tab:hover'))",
-              "'transform' not in block(files['shell'], '#k-modal .k-modal-thumb:hover')": "not has_transform_css(block(files['shell'], '#k-modal .k-modal-thumb:hover'))",
-          }
-          for old, new in replacements.items():
-              if old not in text:
-                  raise SystemExit(f'semantic verifier expression missing: {old}')
-              text = text.replace(old, new, 1)
+              checks = []
+              def check(name, condition):"""
+              if marker not in text:
+                  raise RuntimeError('semantic verifier marker missing')
+              text = text.replace(marker, helper, 1)
+              replacements = {
+                  "'transform' not in block(files['media'], '.k-modal-fav-btn {')": "not has_transform_css(block(files['media'], '.k-modal-fav-btn {'))",
+                  "'transform' not in block(files['media'], '.k-modal-recent-card:hover')": "not has_transform_css(block(files['media'], '.k-modal-recent-card:hover'))",
+                  "'transform' not in block(files['product'], '.k-sku {')": "not has_transform_css(block(files['product'], '.k-sku {'))",
+                  "'transform' not in block(files['product'], '.k-sku:hover:not(.k-sku--out)')": "not has_transform_css(block(files['product'], '.k-sku:hover:not(.k-sku--out)'))",
+                  "'transform' not in block(files['lot4'], '#k-modal .k-buybox-payment-tab {')": "not has_transform_css(block(files['lot4'], '#k-modal .k-buybox-payment-tab {'))",
+                  "'transform' not in block(files['lot4'], '#k-modal .k-buybox-payment-tab:hover')": "not has_transform_css(block(files['lot4'], '#k-modal .k-buybox-payment-tab:hover'))",
+                  "'transform' not in block(files['shell'], '#k-modal .k-modal-thumb:hover')": "not has_transform_css(block(files['shell'], '#k-modal .k-modal-thumb:hover'))",
+              }
+              for old, new in replacements.items():
+                  if old not in text:
+                      raise RuntimeError(f'semantic verifier expression missing: {old}')
+                  text = text.replace(old, new, 1)
 
-          old_main = "  verify_t028_already_integrated\n  apply_t029_source_patch"
-          new_main = """  if ! verify_t028_already_integrated; then
-            git add .agent/evidence/T-030/t028-integration-check.txt
+              old_main = "  verify_t028_already_integrated\n  apply_t029_source_patch"
+              new_main = """  if ! verify_t028_already_integrated; then
+                git add .agent/evidence/T-030/t028-integration-check.txt
+                if ! git diff --cached --quiet; then
+                  git commit -m 'chore(t030): record T-028 semantic integration check'
+                  git push origin HEAD:agent/lane-final
+                fi
+                exit 4
+              fi
+              apply_t029_source_patch"""
+              if old_main not in text:
+                  raise RuntimeError('runner main verification block missing')
+              text = text.replace(old_main, new_main, 1)
+              path.write_text(text, encoding='utf-8')
+          except Exception:
+              Path('.agent/evidence/T-030/workflow-patch-error.txt').write_text(traceback.format_exc(), encoding='utf-8')
+              raise
+          PY
+          then
+            git config user.name 'komerce-t030-bot'
+            git config user.email 'komerce-t030-bot@users.noreply.github.com'
+            git add .agent/evidence/T-030/workflow-patch-error.txt
             if ! git diff --cached --quiet; then
-              git commit -m 'chore(t030): record T-028 semantic integration check'
+              git commit -m 'chore(t030): record workflow preparation error'
               git push origin HEAD:agent/lane-final
             fi
-            exit 4
+            exit 5
           fi
-          apply_t029_source_patch"""
-          if old_main not in text:
-              raise SystemExit('runner main verification block missing')
-          text = text.replace(old_main, new_main, 1)
-          path.write_text(text, encoding='utf-8')
-          PY
-          bash .agent/generated/t030-final-runner.sh
+
+      - name: Execute reproducible T030 closeout
+        shell: bash
+        run: bash .agent/generated/t030-final-runner.sh
