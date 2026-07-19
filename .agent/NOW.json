@@ -1,0 +1,12 @@
+{
+  "branch": "agent/lane-mobile-renderer",
+  "current_task": "T-022",
+  "mode": "finalize_existing_work",
+  "current_action": "Continuer et finaliser le travail T-022 déjà présent sur la branche durable ou dans le worktree courant. Ne pas changer de branche. Ne pas réimplémenter T-021 ni T-022. T-021 est déjà validée; ne régulariser son state qu'après avoir sécurisé le travail courant.",
+  "next_task": "T-024",
+  "do_not_reimplement": ["T-021", "T-022"],
+  "blocked": {
+    "T-023": "captures EMPTY/FILLED uniquement"
+  },
+  "updated_at": "2026-07-19T13:10:00Z"
+}
