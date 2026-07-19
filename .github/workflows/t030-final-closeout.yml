@@ -59,6 +59,21 @@ jobs:
               if old not in text:
                   raise SystemExit(f'semantic verifier expression missing: {old}')
               text = text.replace(old, new, 1)
+
+          old_main = """  verify_t028_already_integrated
+            apply_t029_source_patch"""
+          new_main = """  if ! verify_t028_already_integrated; then
+              git add .agent/evidence/T-030/t028-integration-check.txt
+              if ! git diff --cached --quiet; then
+                git commit -m 'chore(t030): record T-028 semantic integration check'
+                git push origin HEAD:agent/lane-final
+              fi
+              exit 4
+            fi
+            apply_t029_source_patch"""
+          if old_main not in text:
+              raise SystemExit('runner main verification block missing')
+          text = text.replace(old_main, new_main, 1)
           path.write_text(text, encoding='utf-8')
           PY
           bash .agent/generated/t030-final-runner.sh
