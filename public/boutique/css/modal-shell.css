@@ -462,7 +462,9 @@
     padding: 0; background: var(--white);
   }
 
-  /* ── Product-zone : grid 2 colonnes (colonnes dans §6, B-M-11) */
+  /* ── Product-zone : grid 2 colonnes 900-1023px, 3 pistes ≥1024px
+     (colonnes dans §6, B-M-11 ; placement des enfants ici, cf.
+     .agent/arbitrations/T-020.md) */
   /* background + grid-template-columns : owned par modal-product-lot4-hybrid.css
      (Approche C hybride) — ne pas redéclarer ici, source de vérité unique. */
   #k-modal .k-modal-product-zone {
@@ -884,7 +886,9 @@
 @media (min-width: 900px) and (max-width: 1120px) {
   #k-modal.k-modal                          { width: 100vw; }
   body.modal-has-cart #k-modal.k-modal      { width: 100vw; margin-right: 0; }
-  #k-modal .k-modal-product-zone            { grid-template-columns: minmax(340px, 44%) minmax(0, 56%); }
+  /* grid-template-columns retiré (T-020, arbitrage D8) : contredisait
+     l'ownership déjà documenté au profit de modal-product-lot4-hybrid.css
+     et créait une dépendance à l'ordre du bundle. Cf. .agent/arbitrations/T-020.md. */
   #k-modal .k-modal-product-zone .k-modal-details  { padding: 0 clamp(18px, 3vw, 32px); }
   #k-modal .k-modal-product-zone .k-modal-actions  {
     padding-left:  clamp(18px, 3vw, 32px);
@@ -895,6 +899,29 @@
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     grid-column: 3; grid-row: 1;
+  }
+}
+
+/* ── Composition 3 pistes ≥1024px (T-020, arbitrage D8) ────────────────
+   rail miniatures | média principal | détails.
+   grid-column/grid-row des enfants de .k-modal-product-zone : seul
+   propriétaire ce fichier (cf. .agent/arbitrations/T-020.md).
+   grid-template-columns/gap/padding de la zone elle-même restent owned
+   par modal-product-lot4-hybrid.css — ne pas les redéclarer ici.
+   .k-modal-thumbs reste absolute dans .k-modal-img-wrap (visuel : T-021),
+   d'où le wrapper média qui couvre les 2 premières pistes. ───────────── */
+@media (min-width: 1024px) {
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    grid-column: 1 / 3;
+    grid-row: 1 / 3;
+  }
+  #k-modal .k-modal-product-zone .k-modal-details {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions {
+    grid-column: 3;
+    grid-row: 2;
   }
 }
 

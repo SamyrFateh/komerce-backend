@@ -2,7 +2,8 @@
    Approche C hybride desktop — PDP Komerce
    Rapatrié de b-modal-approche-c-hybrid.js (Lot 4)
    Owner : modal-product.css
-   Scope : @media (min-width: 900px) uniquement
+   Scope : @media (min-width: 900px) — 2 colonnes 900-1023px,
+           3 pistes à partir de 1024px (T-020, arbitrage D8).
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
@@ -12,6 +13,28 @@
   #k-modal .k-modal-product-zone {
     grid-template-columns: minmax(0, 48%) minmax(0, 52%);
     background: var(--page-bg);
+  }
+
+  /* ── Composition 3 pistes ≥1024px (T-020, arbitrage D8) ──────────────
+     rail miniatures | média principal | détails.
+     grid-template-columns/gap/padding de .k-modal-product-zone : seul
+     propriétaire ce fichier. Le placement des enfants (grid-column/
+     grid-row) est owned exclusivement par modal-shell.css — ne pas le
+     redéclarer ici (cf. .agent/arbitrations/T-020.md). ─────────────── */
+  @media (min-width: 1024px) {
+    #k-modal .k-modal-product-zone {
+      grid-template-columns: 60px minmax(420px, 1fr) 310px;
+      gap: 18px;
+      padding: 18px;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    #k-modal .k-modal-product-zone {
+      grid-template-columns: 64px minmax(480px, 1fr) 340px;
+      gap: 22px;
+      padding: 22px;
+    }
   }
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
