@@ -1,7 +1,5 @@
 # STATUS — historique uniquement
 
-Ce fichier ne décide plus :
-
 - de la branche ;
 - de la tâche courante ;
 - de la prochaine action.
