@@ -25,27 +25,87 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Execute reproducible T030 closeout
+      - name: Preflight and recover final metadata
         shell: bash
         run: |
-          set -uo pipefail
+          set -euo pipefail
           test -f .agent/evidence/T-030/t029-integration-complete.txt
-          sed -i 's/^  apply_t029_source_patch$/  echo "T-029 already integrated and verified"/' .agent/generated/t030-final-runner.sh
-          bash .agent/generated/t030-final-runner.sh 2>&1 | tee /tmp/t030-run.log
-          status=${PIPESTATUS[0]}
-          if [ "$status" -ne 0 ]; then
-            git reset --hard HEAD
-            git config user.name 'komerce-t030-bot'
-            git config user.email 'komerce-t030-bot@users.noreply.github.com'
-            mkdir -p .agent/evidence/T-030
-            {
-              echo "RUNNER_EXIT=$status"
-              echo
-              echo 'LAST_240_LINES'
-              tail -n 240 /tmp/t030-run.log
-            } > .agent/evidence/T-030/runner-last-error.txt
-            git add .agent/evidence/T-030/runner-last-error.txt
-            git commit -m 'chore(t030): record closeout runner failure'
-            git push origin HEAD:agent/lane-final
-            exit "$status"
-          fi
+          source <(sed '$d' .agent/generated/t030-final-runner.sh)
+          configure_git
+          rm -f "$CONFLICT_REPORT"
+          verify_t028_already_integrated
+          recover_lane_metadata
+
+      - name: Install dependencies and Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          source <(sed '$d' .agent/generated/t030-final-runner.sh)
+          install_dependencies
+
+      - name: Initialize final gate evidence
+        run: mkdir -p .agent/evidence/T-030 && : > .agent/evidence/T-030/gates-final.txt
+
+      - name: Gate — deploy CSS
+        run: npm --prefix public/boutique run deploy:css 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — cache
+        run: npm --prefix public/boutique run check:cache 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — boutique check all
+        run: npm --prefix public/boutique run check:all 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — boutique unit tests
+        run: npm --prefix public/boutique run test:unit 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — root unit tests
+        run: npm run test:unit 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — feature registry
+        run: npm run feature:registry 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — schema
+        run: npm run gate:schema 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — touched files
+        run: npm run gate:touched-files 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — docs lint
+        run: npm run gate:docs-lint 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — feature audit
+        run: npm run gate:feature-audit 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — boutique ownership
+        run: npm run gate:boutique-ownership 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — audit features
+        run: npm run audit:features 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+      - name: Gate — map check
+        run: npm run map:check 2>&1 | tee -a .agent/evidence/T-030/gates-final.txt
+
+      - name: Capture final coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          source <(sed '$d' .agent/generated/t030-final-runner.sh)
+          capture_coverage
+
+      - name: Generate 36 real PDP captures
+        shell: bash
+        run: |
+          set -euo pipefail
+          source <(sed '$d' .agent/generated/t030-final-runner.sh)
+          generate_visual_evidence
+
+      - name: Build final report and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          source <(sed '$d' .agent/generated/t030-final-runner.sh)
+          build_report_and_package
+
+      - name: Finalize T030 state
+        shell: bash
+        run: |
+          set -euo pipefail
+          source <(sed '$d' .agent/generated/t030-final-runner.sh)
+          finalize_state
+
+      - name: Commit and push T030 closeout
+        shell: bash
+        run: |
+          set -euo pipefail
+          source <(sed '$d' .agent/generated/t030-final-runner.sh)
+          git config user.name 'komerce-t030-bot'
+          git config user.email 'komerce-t030-bot@users.noreply.github.com'
+          commit_final_result
