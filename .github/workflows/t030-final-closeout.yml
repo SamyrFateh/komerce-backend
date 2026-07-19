@@ -39,9 +39,59 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source <(sed '$d' .agent/generated/t030-final-runner.sh)
-          rm -f "$CONFLICT_REPORT"
-          verify_t028_already_integrated
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          files = {
+              'shell': Path('public/boutique/css/modal-shell.css').read_text(encoding='utf-8'),
+              'media': Path('public/boutique/css/modal-media.css').read_text(encoding='utf-8'),
+              'product': Path('public/boutique/css/modal-product.css').read_text(encoding='utf-8'),
+              'lot4': Path('public/boutique/css/modal-product-lot4-hybrid.css').read_text(encoding='utf-8'),
+          }
+
+          def strip_comments(text):
+              return re.sub(r'/\*.*?\*/', '', text, flags=re.S)
+
+          def block(text, selector):
+              text = strip_comments(text)
+              start = text.find(selector)
+              if start < 0:
+                  raise AssertionError(f'selector absent: {selector}')
+              brace = text.find('{', start)
+              depth = 0
+              for index in range(brace, len(text)):
+                  if text[index] == '{':
+                      depth += 1
+                  elif text[index] == '}':
+                      depth -= 1
+                      if depth == 0:
+                          return text[brace + 1:index]
+              raise AssertionError(f'bloc non fermé: {selector}')
+
+          clean = {key: strip_comments(value) for key, value in files.items()}
+          checks = [
+              ('mic pulse animation removed', 'animation: k-mic-pulse' not in clean['product'] and '@keyframes k-mic-pulse' not in clean['product']),
+              ('favorite pop removed', 'k-modal-fav-pop' not in clean['media']),
+              ('favorite active scale removed', '.k-modal-fav-btn:active' not in clean['media']),
+              ('favorite base transition has no transform', 'transform' not in block(files['media'], '.k-modal-fav-btn {')),
+              ('recent-card hover has no transform', 'transform' not in block(files['media'], '.k-modal-recent-card:hover')),
+              ('keyboard hint hidden', 'display: none' in block(files['shell'], '.k-modal-keyboard-hint')),
+              ('reduced motion block present', '@media (prefers-reduced-motion: reduce)' in clean['shell']),
+              ('SKU base transition has no transform', 'transform' not in block(files['product'], '.k-sku {')),
+              ('SKU hover has no transform', 'transform' not in block(files['product'], '.k-sku:hover:not(.k-sku--out)')),
+              ('payment tab base has no transform', 'transform' not in block(files['lot4'], '#k-modal .k-buybox-payment-tab {')),
+              ('payment tab hover has no transform', 'transform' not in block(files['lot4'], '#k-modal .k-buybox-payment-tab:hover')),
+              ('thumbnail hover has no transform', 'transform' not in block(files['shell'], '#k-modal .k-modal-thumb:hover')),
+          ]
+
+          out = Path('.agent/evidence/T-030/t028-integration-check.txt')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text('\n'.join(f"{'PASS' if ok else 'FAIL'} — {name}" for name, ok in checks) + '\n', encoding='utf-8')
+          failed = [name for name, ok in checks if not ok]
+          if failed:
+              raise SystemExit('T-028 invariants missing: ' + ', '.join(failed))
+          PY
 
       - name: Preflight — recover T028 and T029 metadata
         shell: bash
