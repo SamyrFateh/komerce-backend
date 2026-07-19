@@ -41,24 +41,31 @@ Après synchronisation, lis exactement :
 Les labels de lane sont des classifications. Toutes les tâches restantes s’exécutent sur
 `agent/lane-mobile-renderer`. Ne crée aucune autre branche et ne pousse rien sur `main`.
 
+## Garde-fou runtime
+
+N’utilise pas les commandes suivantes de `scripts/agent.mjs` :
+
+```text
+start
+resume
+finish
+```
+
+Elles sont legacy et peuvent encore dériver une branche depuis `parallel_lane`. Ne les
+utilise pas pour choisir, reprendre ou clôturer une tâche dans cette exécution intégrée.
+
+Les changements de state sont faits explicitement dans les fichiers autoritatifs, puis
+committés et poussés sur `agent/lane-mobile-renderer`.
+
 ## Exécution
 
 Ne raconte pas ton plan. Ne demande pas si tu dois continuer lorsqu’une action est déjà
 indiquée par la gouvernance. Exécute de petits lots, committe et pousse régulièrement.
 
-Ne lance jamais `node scripts/agent.mjs start` avant le préflight et la synchronisation.
 Ne recommence jamais une tâche `DONE` ou `REVIEW` sur la ref autoritative.
 
-Pour une tâche `BLOCKED` devenue réalisable, reprends-la explicitement. Pour une nouvelle
-tâche, démarre uniquement celle indiquée par la lane / execution map.
-
-Après chaque petit lot :
-
-```bash
-node scripts/agent.mjs save \
-  --message "résultat précis" \
-  --next-action "prochaine action exacte"
-```
+Pour une tâche `BLOCKED` devenue réalisable, reprends uniquement le point bloquant. Pour
+une nouvelle tâche, démarre uniquement celle indiquée par la lane / execution map.
 
 Interromps l’utilisateur uniquement pour un arbitrage réel couvert par
 `.agent/ARBITRATION.md`, après avoir poussé tout le travail courant.
