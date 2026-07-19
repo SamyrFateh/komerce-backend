@@ -6,12 +6,12 @@
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* ── Zone produit : layout grille hybride ── */
+  /* D7 — Zone produit en aplat (spec §327) : le gradient radial sand-warm
+     est retiré au profit d'un fond uni --page-bg, cohérent avec le fond de
+     page hors modale. */
   #k-modal .k-modal-product-zone {
     grid-template-columns: minmax(0, 48%) minmax(0, 52%);
-    background:
-      radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--sand-warm) 60%, transparent), transparent 28%),
-      var(--white);
+    background: var(--page-bg);
   }
 
   /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
@@ -25,8 +25,10 @@
 
   #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
 
+  /* D7 — Panneau détails en aplat (spec §327) : le dégradé linéaire
+     white → sand est retiré au profit d'un fond uni --page-bg. */
   #k-modal .k-modal-product-zone .k-modal-details {
-    background: linear-gradient(180deg, var(--white) 0%, color-mix(in srgb, var(--sand) 48%, var(--white)) 100%);
+    background: var(--page-bg);
     padding: 0 clamp(28px, 4.4vw, 72px);
   }
 
