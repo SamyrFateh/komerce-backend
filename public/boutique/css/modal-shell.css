@@ -690,15 +690,16 @@
     order: unset; /* annule le order mobile */
     flex: 0 0 auto; overflow: visible; min-height: unset;
     display: block; width: 100%;
-    border-top: 2px solid var(--sand-dark);
+    /* D10 — border-top dashed (au lieu de solid), aligné page-bg. */
+    border-top: 1.5px dashed var(--border);
     margin-top: 0;
   }
   /* Visuels fallback (mode modal standard, non --desktop-list) — owned : modal-shell */
-  /* Les visuels --desktop-list (background dégradé chaud, padding responsive) sont
-     owned exclusivement par modal-product-lot4-hybrid.css. */
+  /* Les visuels --desktop-list (fond, padding responsive) sont owned exclusivement
+     par modal-product-lot4-hybrid.css. D10 — aplat --page-bg, dégradé retiré. */
   #k-modal .k-modal-suggestions:not(.k-modal-suggestions--desktop-list) {
     padding: 28px 36px 48px;
-    background: linear-gradient(180deg, var(--sand) 0%, var(--sand) 100%);
+    background: var(--page-bg);
   }
   #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
     overflow: visible; height: auto; padding: 0;
