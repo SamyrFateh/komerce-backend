@@ -1,0 +1,76 @@
+# T-025 — D13 — Ombre modale gris chaud
+
+## Constat initial (même pattern de contradiction que T-024/D12)
+
+Analyse de la cascade réelle sur `#k-modal.k-modal` (`box-shadow`,
+`@media (min-width: 900px)`) :
+
+- `modal-shell.css:441` `box-shadow: 0 28px 80px var(--overlay-dark-sm)` — écrasé
+- `modal-shell.css:769` `box-shadow: none` — **gagnant réel** avant correction
+- `modal-shell.css:899` `.k-modal { box-shadow: 0 30px 80px var(--border-ocean-18) }`
+  — mort par spécificité (classe seule < id+classe), jamais appliqué
+
+L'ombre "ocean" visée par l'énoncé de la tâche n'était donc **pas rendue**
+sur desktop avant correction (rendu réel = aucune ombre). Même cause que
+D12 : commentaire/doc figé (`PALETTE-FIX-01`) décrivant une règle déjà
+morte par spécificité au moment où elle a été écrite.
+
+## Token créé
+
+`tokens.css`, à côté de `--shadow-sm/md/lg` (même base `--text`,
+convention "basées sur --text pour cohérence") :
+
+```css
+--shadow-modal-neutral-10: 0 24px 60px rgba(31,48,36,.10);
+```
+
+Reprend exactement la base RGB déjà utilisée par `--shadow-sm/md/lg` et
+`--elev-1..4` (dérivée de `--text: #1F3024`, conforme à la note du plan
+d'origine "neutre dérivé de --text-primary"). `tokens.css` n'est pas dans
+le périmètre CSS de la feature `modal-product` → pas de littéral introduit
+dans le scope compté par le gate `doctrine`.
+
+## Corrections appliquées (modal-shell.css)
+
+- Ligne ~769 (règle gagnante) : `box-shadow: none` →
+  `box-shadow: var(--shadow-modal-neutral-10)`.
+- Ligne ~899 (règle morte `.k-modal`) : teinte ocean retirée,
+  remplacée par le même token, pour cohérence si la spécificité venait
+  à changer un jour.
+- Aucun `rgba()`/`#hex` littéral introduit dans `modal-shell.css`.
+- Toute référence à `var(--border-ocean-18)` supprimée du fichier.
+
+## Gates
+
+```
+npm --prefix public/boutique run deploy:css        → PASS (bump base.css + components.css)
+npm --prefix public/boutique run check:cache        → PASS
+npm --prefix public/boutique run check:breakpoints  → PASS (3 violations connues, stable vs baseline)
+npm --prefix public/boutique run audit:ownership    → PASS
+npm --prefix public/boutique run audit:gate         → PASS (0 vulnérabilité)
+npm run gate:feature-audit                          → PASS (doctrine modal-product : 0 littéral, cliquet 0 ; 0 FAIL, 0 WARN global)
+```
+
+## Intégration sur agent/lane-mobile-renderer (récupération depuis agent/lane-finish)
+
+Le travail T-025 ci-dessus a été réalisé sur `agent/lane-finish` (commit
+`99dfe84f`) mais n'avait pas été intégré sur la branche durable
+`agent/lane-mobile-renderer`. `agent/lane-mobile-renderer` avait divergé
+entre-temps (T-024 déjà intégré avec une structure légèrement différente :
+bloc `#k-modal.k-modal` fusionné avec le border-radius D12 aux lignes
+798-811 de `modal-shell.css`, au lieu du bloc isolé sur `lane-finish`).
+
+Seul le patch spécifique à T-025 a été rapatirié à la main (token
+`--shadow-modal-neutral-10` dans `tokens.css`, remplacement de
+`box-shadow: none` par le token sur la règle gagnante `#k-modal.k-modal`,
+remplacement de la règle morte `.k-modal { box-shadow: ... var(--border-ocean-18) }`
+par le même token). Aucune réimplémentation depuis zéro, aucun autre
+changement de `agent/lane-finish` importé.
+
+Les 6 gates ont été ré-exécutés intégralement sur `agent/lane-mobile-renderer`
+après le patch (voir `.agent/evidence/T-025/agent-gates.json`, horodatage
+de cette intégration) — tous PASS. `check:breakpoints` référence 6
+violations connues (au lieu de 3 sur `lane-finish`) car `lane-mobile-renderer`
+a intégré des changements supplémentaires (T-020/T-021/T-024) qui ajoutent
+des breakpoints déjà présents avant ce patch ; stable vs baseline, aucune
+régression introduite par T-025.
