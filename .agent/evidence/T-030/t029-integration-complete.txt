@@ -1,0 +1,3 @@
+T-029 integrated on agent/lane-final.
+Conflict policy: preserve current lane decisions; retain clean T-029 hunks; manually apply only shadow/gradient intent in conflicting hunks.
+Gates: deploy:css, check:cache, check:breakpoints, audit:ownership, audit:gate, gate:feature-audit — PASS.

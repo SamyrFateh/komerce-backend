@@ -41,9 +41,7 @@
      fond uni --hero-bg, seul le décor radial sobre est conservé,
      le dégradé linéaire sand → sand-warm est retiré. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    background:
-      radial-gradient(circle at 62% 20%, color-mix(in srgb, var(--ocean) 10%, transparent), transparent 30%),
-      var(--hero-bg);
+    background: var(--hero-bg);
   }
 
   #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
@@ -105,8 +103,7 @@
     padding: 15px 16px;
     border-radius: 18px;
     border: 1px solid var(--border-ocean-14);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--ocean-bg-08) 78%, var(--white)) 0%, var(--white) 100%);
-    box-shadow: 0 12px 28px var(--border-text-06);
+    background: var(--ocean-bg-08);
   }
 
   #k-modal .k-buybox-relay-icon {
@@ -175,7 +172,6 @@
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
     font-size: 15px;
     font-weight: 500;
-    box-shadow: 0 4px 14px var(--shadow-cta-22);
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal {
@@ -232,9 +228,9 @@
 
   #k-modal .k-buybox-payment-tab:hover {
     /* [T-028] transform: translateY(-1px) retiré : hover-lift décoratif
-       parasite. Le feedback au survol reste porté par bordure + ombre. */
+       parasite. [T-029] halo décoratif retiré : la bordure seule porte
+       le feedback au survol. */
     border-color: var(--ocean-light);
-    box-shadow: 0 8px 18px var(--border-text-06);
   }
 
   #k-modal .k-buybox-payment-tab.is-active {
@@ -254,7 +250,6 @@
     border-radius: 16px;
     background: var(--white);
     border: 1px solid var(--border);
-    box-shadow: 0 8px 22px var(--border-text-06);
   }
 
   #k-modal .k-buybox-payment-check {

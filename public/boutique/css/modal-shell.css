@@ -41,7 +41,7 @@
   backdrop-filter: blur(20px) saturate(200%);
   -webkit-backdrop-filter: blur(20px) saturate(200%);
   border-bottom: 1px solid var(--overlay-black-sm);
-  box-shadow: 0 2px 12px var(--border-text-06);
+  /* [T-029] halo décoratif retiré : la bordure seule porte la séparation sticky. */
   flex-shrink: 0;
 }
 .k-modal-back {
@@ -200,7 +200,7 @@
   right: 0;
   z-index: 350; /* sous la topbar (400) mais au-dessus du contenu */
   border-radius: 0; /* pleine largeur en fixed */
-  box-shadow: 0 -2px 12px var(--overlay-black-sm);
+  box-shadow: 0 -1px 0 var(--border); /* [T-029] ombre sticky canonique — seule ombre sticky conservée */
   /* FIX transparence Android : l'animation k-slide-up (transform) sur .k-modal
      crée un stacking context qui piège position:fixed et empêche le repaint du fond.
      translateZ(0) force un layer GPU propre — le fond blanc est garanti opaque. */
@@ -265,7 +265,7 @@
 /* ── TOPBAR MODAL — source de vérité (fusionné depuis interactions.css, Lot 5) ── */
 .k-topbar-thumb { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: var(--sand);
   flex: 0 0 40px; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 3px var(--overlay-black-sm); cursor: pointer; transition: transform .15s; }
+  cursor: pointer; transition: transform .15s; } /* [T-029] halo décoratif retiré */
 .k-topbar-thumb:active { transform: scale(.92); }
 .k-topbar-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
 .k-topbar-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
@@ -275,7 +275,7 @@
 /* T-027 — badge dédié, masqué (u-hidden) sauf promo_pct > 0 (b-modal-product.js) :
    même logique que .k-modal-promo-badge, conservé coral (exception D-P3 de fait). */
 .k-topbar-price-promo { font-size: 10px; font-weight: 500; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
-.k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
+.k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }
 
@@ -441,10 +441,10 @@
   .k-modal-overlay.open { align-items: center; justify-content: center; padding: 28px; background: var(--overlay-dark-md); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
   /* ── Shell ───────────────────────────────────────────────── */
-  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px var(--overlay-dark-sm); animation: none; }
+  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; animation: none; } /* [T-029] ombre retirée : règle morte par cascade, voir #k-modal.k-modal plus bas (var(--shadow-modal-neutral-10), ombre modale canonique) */
 
   /* ── Topbar ──────────────────────────────────────────────── */
-  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); box-shadow: 0 8px 24px var(--border-text-06); flex-shrink: 0; }
+  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); flex-shrink: 0; } /* [T-029] halo décoratif retiré : la bordure seule porte la séparation sticky */
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
   #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
@@ -515,7 +515,7 @@
     border: 1px solid var(--border); border-radius: 16px;
     background-color: var(--white);
     background-repeat: no-repeat; background-size: 280% 280%;
-    box-shadow: var(--elev-4);
+    /* [T-029] halo décoratif retiré : la bordure existante suffit */
     opacity: 0; pointer-events: none; z-index: 80;
     transition: opacity .16s var(--ease); overflow: hidden;
   }
@@ -651,7 +651,7 @@
     margin: 0; padding: 12px 24px 16px;
     background: var(--surface-white-98);
     border-top: 1px solid var(--border-text-10);
-    box-shadow: 0 -12px 28px var(--border-text-06);
+    /* [T-029] halo décoratif retiré : la bordure + l'ombre sticky mobile suffisent (une seule famille sticky) */
     backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
     display: flex;
     align-items: center; gap: 10px;
@@ -679,11 +679,10 @@
     flex: 1 1 0; height: 44px; border-radius: 999px;
     background: var(--cta-green); color: var(--white);
     font-size: 15px; font-weight: 500;
-    box-shadow: 0 4px 14px var(--shadow-cta-22);
-    transition: background .18s, box-shadow .18s, transform .1s;
-  }
+    transition: background .18s, transform .1s;
+  } /* [T-029] halo décoratif retiré : le fond ocean plein suffit */
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn:hover {
-    background: var(--cta-green-dark, var(--cta-green)); box-shadow: 0 6px 20px var(--shadow-cta-30);
+    background: var(--cta-green-dark, var(--cta-green));
   }
   #k-modal .k-modal-subtotal {
     /* D4 pt.4 — masqué : seconde source transactionnelle hors panier, sous-total
@@ -747,7 +746,7 @@
   #k-modal-payment.k-modal-payment { padding-top: 0; padding-bottom: 36px; }
 
   /* ── Hover & focus ───────────────────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px var(--border-ocean-10); }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); } /* [T-029] halo décoratif retiré */
   .k-msearch-item:hover { background: var(--sand); }
   .k-msearch-footer:hover { background: var(--sand); color: var(--coral); }
   .k-modal-search-clear:hover { background: var(--border); color: var(--text); }
@@ -876,7 +875,7 @@
   /* ── Topbar : séparation nette sur fond blanc ────────────── */
   #k-modal .k-modal-topbar {
     border-bottom-color: var(--border);
-    box-shadow: var(--elev-1);
+    /* [T-029] halo décoratif retiré : la bordure seule porte la séparation */
   }
 
   /* ── FIX Bug : conteneurs flex-column qui ne s'étirent pas ──

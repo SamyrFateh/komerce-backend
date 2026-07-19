@@ -1,0 +1,45 @@
+### public/boutique/css/modal-shell.css
+203:  box-shadow: 0 -1px 0 var(--border); /* [T-029] ombre sticky canonique — seule ombre sticky conservée */
+250:.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 600; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+496:  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s, box-shadow .14s; } /* [T-029] halo décoratif retiré : la bordure seule porte la définition */
+499:  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { border-color: var(--coral-focus-45); box-shadow: 0 10px 22px var(--border-text-10); }
+523:    box-shadow: 0 0 0 9999px var(--overlay-black-18);
+537:    border-radius: 0; box-shadow: none; margin: 0;
+655:    transition: background .18s, box-shadow .18s, transform .1s;
+698:    transition: transform .18s, box-shadow .18s; cursor: pointer;
+719:  .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }
+775:    box-shadow: var(--shadow-modal-neutral-10); /* [D13] Owner réel de l'ombre
+906:    box-shadow: var(--shadow-modal-neutral-10);
+928:    box-shadow: none;
+
+### public/boutique/css/modal-media.css
+11:   background:var(--sand) retenu (interactions.css surchargeait le gradient — intentionnel). */
+18:  background: linear-gradient(90deg,
+19:    var(--sand-gradient-0) 0%,
+21:    var(--sand-gradient-0) 100%); /* [T-029] littéraux rgba remplacés par tokens — dégradé shimmer fonctionnel conservé */
+104:  box-shadow: var(--elev-1);
+109:              box-shadow .2s var(--ease);
+117:  box-shadow:
+127:  .k-modal-fav-btn:hover { box-shadow: var(--elev-2); }
+228:    transition: border-color .12s, box-shadow .12s;
+
+### public/boutique/css/modal-product.css
+345:  transition: border-color .15s, box-shadow .15s;
+388:  box-shadow: 0 0 0 2px var(--coral);
+410:  background: linear-gradient(
+441:  transition: border-color .15s, background .15s, color .15s, box-shadow .15s;
+455:  box-shadow: 0 0 0 1px var(--coral);
+497:  transition: border-color .15s, box-shadow .15s;
+
+### public/boutique/css/modal-product-lot4-hybrid.css
+133:    box-shadow: none;
+141:    box-shadow: inset 0 0 0 1px var(--border-text-06);
+204:      box-shadow .16s var(--ease);
+218:    box-shadow: inset 0 0 0 1px var(--border-ocean-14);
+321:    box-shadow: none;
+
+### public/boutique/css/modal-mobile-canonical.css
+288:    background: linear-gradient(
+
+### public/boutique/css/modal-enriched-content.css
+
