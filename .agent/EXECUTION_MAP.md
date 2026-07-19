@@ -1,36 +1,52 @@
 # EXECUTION MAP — PDP Komerce
 
-## Règle active du chantier
+## Entrée obligatoire
 
-Les identifiants de lane restent des classifications de sujet. Sur décision explicite de
-Samyr, l’exécution intégrée du chantier PDP se poursuit toutefois sur une seule branche
-durable :
+Lire `.agent/START-HERE.md` avant toute autre source. La ref autoritative est :
+
+```text
+origin/agent/lane-mobile-renderer
+```
+
+`main` est volontairement en retard jusqu’à la PR finale. Les identifiants de lane sont
+des classifications de sujet, pas des branches séparées.
+
+## Branche active
+
+Toutes les tâches restantes s’exécutent séquentiellement sur :
 
 ```text
 agent/lane-mobile-renderer
 ```
 
-Aucune nouvelle branche par tâche ou par lane ne doit être créée. `main` ne reçoit pas de
-checkpoint de travail : elle ne sera ciblée qu’au moment de l’intégration finale par PR.
-
-Les tâches sont exécutées séquentiellement sur cette branche, avec de petits commits et des
-pushs réguliers. Les dépendances déclarées dans les fichiers `T-*.json` restent les dépendances
-fonctionnelles ; le présent document fixe l’ordre opérationnel.
+Aucune nouvelle branche par tâche ou par lane ne doit être créée. Aucun checkpoint de
+travail ne doit être poussé sur `main`.
 
 ## État acquis
 
 - `T-001` à `T-016` : `DONE`.
-- `T-023` : implémentation et gates automatisés terminés, statut `BLOCKED` uniquement pour
-  les captures desktop EMPTY/FILLED indisponibles sans Chromium.
+- `T-017` : `REVIEW`, preuves série desktop et fallback présentes.
+- `T-018` : `REVIEW`, hero 4:3 borné et scénario contenu long vérifiés.
+- `T-023` : code et gates terminés ; état `BLOCKED` uniquement pour les deux captures
+  EMPTY/FILLED.
+- Chromium/Puppeteer local est désormais détecté : le blocage environnemental de T-023
+  est levable.
 
-## Séquençage opérationnel en vigueur
-
-### Phase A — implémentation et gates automatisés
+## Action courante
 
 ```text
-T-017
-  → T-018
-  → T-019
+T-023 — produire desktop-actions-empty.png et desktop-actions-filled.png
+      — vérifier absence de layout shift
+      — BLOCKED → REVIEW si conforme
+      — pousser le checkpoint
+```
+
+Ne modifier le code fonctionnel T-023 qu’en présence d’un défaut visuel réel.
+
+## Prochaine implémentation
+
+```text
+T-019
   → T-020
   → T-021
   → T-022
@@ -42,29 +58,15 @@ T-017
 
 Règles :
 
-1. Chaque tâche démarre sur `agent/lane-mobile-renderer` depuis le HEAD distant courant.
-2. Un seul agent travaille sur la branche à la fois.
-3. Le code, les tests et les gates automatisés doivent être terminés avant la tâche suivante.
-4. Une tâche avec un gate fonctionnel rouge bloque la séquence.
-5. Lorsque la seule preuve manquante est une capture impossible faute de navigateur, la
-   tâche passe en `BLOCKED` avec un `blocking_reason` exclusivement visuel. Ce blocage
-   n’empêche pas de poursuivre la Phase A.
-6. Aucun artefact visuel ne doit être simulé ou fabriqué.
+1. chaque tâche part du HEAD distant courant de `agent/lane-mobile-renderer` ;
+2. un seul agent travaille sur la branche à la fois ;
+3. petits commits et pushs réguliers ;
+4. un gate fonctionnel rouge bloque la séquence ;
+5. une preuve visuelle manquante ne peut être ni simulée ni fabriquée ;
+6. une tâche `DONE` ou `REVIEW` ne doit jamais être recréée ;
+7. `.agent/TASK-INDEX.json` ne sert jamais à sélectionner la tâche suivante.
 
-### Phase B — campagne visuelle groupée
-
-Dès qu’un environnement avec Chromium est disponible :
-
-1. produire d’abord les captures manquantes de `T-023` ;
-2. produire ensuite les preuves visuelles manquantes de `T-017` à `T-022`, puis `T-024` à
-   `T-027`, dans cet ordre ;
-3. vérifier chaque critère aux viewports demandés ;
-4. faire passer chaque tâche de `BLOCKED` à `REVIEW`, puis à `DONE` après revue humaine ;
-5. ne rouvrir le code fonctionnel qu’en présence d’un défaut visible réel.
-
-### Phase C — finitions dépendantes
-
-La phase suivante ne démarre qu’après clôture des dépendances visuelles requises :
+## Finitions dépendantes
 
 ```text
 T-028 → T-029
@@ -73,28 +75,39 @@ T-028 → T-029
 - `T-028` exige notamment `T-023`, `T-024`, `T-026` et `T-027` clôturées.
 - `T-029` exige notamment `T-018`, `T-019`, `T-021`, `T-022`, `T-025` et `T-027` clôturées.
 
-### Phase D — validation finale
+## Validation finale
 
 ```text
 T-030
 ```
 
-`T-030` démarre uniquement lorsque `T-001` à `T-029` sont toutes `DONE`. Elle porte la
-campagne finale sur six viewports, six états produit et l’ensemble des gates.
+`T-030` démarre uniquement lorsque `T-001` à `T-029` sont toutes `DONE`.
 
-## Revue et livraison
+## Statuts et revue
 
-- Les tâches passent à `REVIEW`, jamais directement à `DONE`, sauf décision explicite du
-  reviewer déjà documentée.
-- Les blocages purement visuels sont regroupés pour une campagne Chromium dédiée.
-- Une seule PR finale sera ouverte depuis `agent/lane-mobile-renderer` vers `main` à la fin
-  du chantier.
+- Les tâches passent à `REVIEW`, jamais directement à `DONE`, sauf décision reviewer
+  explicitement documentée.
+- Une seule PR finale sera ouverte depuis `agent/lane-mobile-renderer` vers `main`.
+
+## Garde-fou runtime
+
+Les commandes legacy suivantes sont interdites dans l’exécution intégrée :
+
+```text
+node scripts/agent.mjs start
+node scripts/agent.mjs resume
+node scripts/agent.mjs finish
+```
+
+Elles dérivent encore une branche depuis `parallel_lane`. Les changements de state sont
+faits explicitement sur la branche durable tant que le runtime n’est pas refactorisé.
 
 ## Interdictions
 
 - créer une branche distincte pour une nouvelle tâche ;
 - pousser un checkpoint directement sur `main` ;
-- démarrer deux tâches simultanément sur la branche ;
+- démarrer deux tâches simultanément ;
 - contourner un gate fonctionnel rouge ;
 - fabriquer une preuve visuelle ;
+- utiliser les states de `main` comme source d’avancement ;
 - démarrer `T-028` avant la clôture de `T-023`.
