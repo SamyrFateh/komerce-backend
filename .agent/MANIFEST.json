@@ -1,100 +1,18 @@
 {
-  "governance_version": "3.6-integrated-work-first-checkpoints",
+  "governance_version": "4.0-minimal-single-source",
   "project": "Komerce",
   "worksite": "PDP_MAQUETTE_PREMIUM",
-  "base_branch": "main",
   "execution_branch": "agent/lane-mobile-renderer",
-  "source_of_truth_ref": "origin/agent/lane-mobile-renderer",
-  "start_here": ".agent/START-HERE.md",
-  "checkpoint_protocol": ".agent/CHECKPOINT-PROTOCOL.md",
+  "operational_source": ".agent/NOW.json",
+  "bootstrap_command": "node scripts/agent-bootstrap.mjs",
   "checkpoint_command": "node scripts/agent-checkpoint.mjs",
-  "runtime": "manual-integrated-state-updates-with-work-first-remote-checkpoints",
-  "legacy_runtime": "scripts/agent.mjs",
-  "legacy_runtime_status": "unsafe-for-start-resume-finish-in-integrated-mode",
-  "forbidden_legacy_commands": [
+  "single_final_pr": true,
+  "main_is_intentionally_stale_until_final_pr": true,
+  "lane_labels_are_classifications": true,
+  "status_files_are_non_operational": true,
+  "legacy_runtime_forbidden": [
     "node scripts/agent.mjs start",
     "node scripts/agent.mjs resume",
     "node scripts/agent.mjs finish"
-  ],
-  "source": "github-direct-continuous-push",
-  "delivery_protocol": "single-integrated-durable-branch-work-first-remote-confirmed-checkpoints-single-final-pr",
-  "status": "ACTIVE",
-  "current_operational_task": "T-021-T-022-RECOVERY",
-  "next_ready_task": "T-024",
-  "in_review_tasks": ["T-017", "T-018", "T-019", "T-020"],
-  "recovery_tasks": ["T-021", "T-022"],
-  "recovery_facts": {
-    "T-021": "validated_in_previous_session_do_not_reimplement",
-    "T-022": "implemented_in_previous_session_do_not_reimplement"
-  },
-  "current_action": "Sauvegarder puis rapatrier sur agent/lane-mobile-renderer le travail déjà réalisé pour T-021 et T-022; reconstruire ensuite uniquement leurs métadonnées REVIEW.",
-  "blocked_tasks": ["T-023"],
-  "execution_mode": "silent_execute_push_except_arbitration",
-  "branch_model": "single-integrated-durable-branch",
-  "branch_pattern": "agent/lane-mobile-renderer",
-  "lane_labels_are_classifications": true,
-  "main_is_intentionally_stale_until_final_pr": true,
-  "task_index_is_catalog_only": true,
-  "continuity_model": "remote-work-first-then-metadata-reconstruction-capable-single-final-pr",
-  "mandatory_read_order": [
-    ".agent/START-HERE.md",
-    ".agent/MANIFEST.json",
-    ".agent/CHECKPOINT-PROTOCOL.md",
-    ".agent/EXECUTION_MAP.md",
-    ".agent/lanes/LANE-MOBILE-RENDERER.json",
-    ".agent/STATUS.md",
-    "remote git history and task diffs"
-  ],
-  "recovery_precedence": [
-    "surviving_sandbox_worktree_and_local_commits",
-    "remote_branch_and_git_history",
-    "remote_source_and_tests",
-    "remote_evidence_and_generated_artifacts",
-    "recorded_gate_outputs",
-    "task_state_worklog_audit_status"
-  ],
-  "checkpoint_policy": {
-    "first_remote_checkpoint_before_substantive_work": true,
-    "after_each_coherent_unit": true,
-    "recoverable_work_checkpoint_before_metadata_checkpoint": true,
-    "source_tests_artifacts_evidence_pushed_before_status_write": true,
-    "state_must_reference_existing_remote_work_sha": true,
-    "metadata_lag_after_interruption_is_recoverable": true,
-    "remote_work_must_not_be_reimplemented_because_state_is_stale": true,
-    "declared_completed_work_requires_recovery_before_reimplementation": true,
-    "commit_without_immediate_push_forbidden": true,
-    "multiple_local_commits_before_push_forbidden": true,
-    "remote_sha_confirmation_required": true,
-    "next_batch_requires_remote_confirmation": true,
-    "maximum_source_files_per_recommended_batch": 3,
-    "maximum_minutes_without_remote_checkpoint": 5,
-    "before_long_or_risky_command": true,
-    "before_arbitration": true,
-    "before_metadata_exit_update": true,
-    "before_final_response": true,
-    "stop_on_non_fast_forward": true,
-    "automatic_merge_rebase_cherry_pick_reset_stash_force_push_forbidden": true
-  },
-  "branch_policy": {
-    "all_remaining_tasks_same_branch": true,
-    "reuse_and_modify_existing_files": true,
-    "task_completion_without_individual_pr": true,
-    "human_review_per_task_when_declared": true,
-    "single_final_pr": true,
-    "no_checkpoint_on_main": true
-  },
-  "final_response_fields": [
-    "task",
-    "status",
-    "branch",
-    "last_commit",
-    "pull_request",
-    "gates",
-    "summary"
-  ],
-  "arbitration": {
-    "status": "AWAITING_DECISION",
-    "rule": "remote_checkpoint_before_asking",
-    "single_question_only": true
-  }
+  ]
 }
