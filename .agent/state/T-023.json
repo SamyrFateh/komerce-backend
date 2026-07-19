@@ -5,7 +5,7 @@
   "finding_id": "D11",
   "wave": "P2",
   "parallel_lane": "LANE-DESKTOP-COMPOSITION",
-  "status": "BLOCKED",
+  "status": "REVIEW",
   "priority": "HIGH",
   "depends_on": [
     "T-016"
@@ -68,8 +68,8 @@
     { "gate": "audit:arch", "result": "pass" },
     { "gate": "test:unit", "result": "pass (92 suites / 1751 tests, voir .agent/evidence/T-023/tests.txt)" }
   ],
-  "blocking_reason": "Preuves visuelles obligatoires non générables dans le sandbox : aucun navigateur Chromium disponible et téléchargement Playwright bloqué par les restrictions réseau. Les captures desktop-actions-empty.png et desktop-actions-filled.png restent requises avant passage en REVIEW.",
+  "blocking_reason": null,
   "review_decision": null,
-  "summary": "Travail fonctionnel terminé : dette CSS Guardian soldée (#k-modal-payment, ownership unique cédé à modal-product-lot4-hybrid.css) ; layout desktop AVAILABLE_EMPTY/AVAILABLE_FILLED implémenté (modal-shell.css + renderActions()) avec tests unitaires dédiés. Tous les gates automatisés sont verts (92 suites / 1751 tests, voir .agent/evidence/T-023/tests.txt). Seul le contrôle visuel (captures EMPTY/FILLED) est bloqué, pour raison d'environnement (pas de navigateur dans ce sandbox).",
-  "next_action": "Générer les deux captures depuis le commit 1f624874 sur un environnement disposant de Chromium, les déposer dans .agent/evidence/T-023/, vérifier visuellement l'absence de layout shift, puis passer BLOCKED -> REVIEW."
+  "summary": "Travail fonctionnel terminé : dette CSS Guardian soldée (#k-modal-payment, ownership unique cédé à modal-product-lot4-hybrid.css) ; layout desktop AVAILABLE_EMPTY/AVAILABLE_FILLED implémenté (modal-shell.css + renderActions()) avec tests unitaires dédiés. Tous les gates automatisés sont verts (92 suites / 1751 tests, voir .agent/evidence/T-023/tests.txt). Blocage visuel levé : Chromium/Puppeteer local détecté dans le sandbox, captures desktop-actions-empty.png et desktop-actions-filled.png générées via harnais statique (bundles CSS compilés réels + fragment DOM réel de .k-modal-actions, méthode identique T-017/T-018, voir .agent/evidence/T-023/CAPTURE-METHOD.md). Layout shift mesuré : 0px de delta de hauteur entre EMPTY et FILLED (boundingBox identique hors contenu interne).",
+  "next_action": "Revue humaine (CHARTER §11) : vérifier le diff, les deux captures, les preuves et l'absence d'effet de bord, puis décision DONE ou retour agent."
 }
