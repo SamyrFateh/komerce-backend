@@ -1,12 +1,14 @@
 {
-  "governance_version": "3.4-integrated",
+  "governance_version": "3.5-integrated-checkpoints",
   "project": "Komerce",
   "worksite": "PDP_MAQUETTE_PREMIUM",
   "base_branch": "main",
   "execution_branch": "agent/lane-mobile-renderer",
   "source_of_truth_ref": "origin/agent/lane-mobile-renderer",
   "start_here": ".agent/START-HERE.md",
-  "runtime": "manual-integrated-state-updates",
+  "checkpoint_protocol": ".agent/CHECKPOINT-PROTOCOL.md",
+  "checkpoint_command": "node scripts/agent-checkpoint.mjs",
+  "runtime": "manual-integrated-state-updates-with-remote-checkpoints",
   "legacy_runtime": "scripts/agent.mjs",
   "legacy_runtime_status": "unsafe-for-start-resume-finish-in-integrated-mode",
   "forbidden_legacy_commands": [
@@ -15,7 +17,7 @@
     "node scripts/agent.mjs finish"
   ],
   "source": "github-direct-continuous-push",
-  "delivery_protocol": "single-integrated-durable-branch-single-final-pr",
+  "delivery_protocol": "single-integrated-durable-branch-remote-confirmed-checkpoints-single-final-pr",
   "status": "ACTIVE",
   "current_operational_task": "T-023",
   "next_ready_task": "T-019",
@@ -27,21 +29,29 @@
   "lane_labels_are_classifications": true,
   "main_is_intentionally_stale_until_final_pr": true,
   "task_index_is_catalog_only": true,
-  "continuity_model": "integrated-branch-task-state-worklog-atomic-commits-single-final-pr",
+  "continuity_model": "integrated-branch-task-state-worklog-atomic-remote-checkpoints-single-final-pr",
   "mandatory_read_order": [
     ".agent/START-HERE.md",
     ".agent/MANIFEST.json",
+    ".agent/CHECKPOINT-PROTOCOL.md",
     ".agent/EXECUTION_MAP.md",
     ".agent/lanes/LANE-MOBILE-RENDERER.json",
     ".agent/STATUS.md"
   ],
   "checkpoint_policy": {
-    "first_push_before_substantive_work": true,
+    "first_remote_checkpoint_before_substantive_work": true,
     "after_each_coherent_unit": true,
+    "commit_without_immediate_push_forbidden": true,
+    "multiple_local_commits_before_push_forbidden": true,
+    "remote_sha_confirmation_required": true,
+    "next_batch_requires_remote_confirmation": true,
     "maximum_source_files_per_recommended_batch": 3,
-    "maximum_minutes_without_push": 10,
+    "maximum_minutes_without_remote_checkpoint": 5,
     "before_long_or_risky_command": true,
-    "before_final_response": true
+    "before_arbitration": true,
+    "before_final_response": true,
+    "stop_on_non_fast_forward": true,
+    "automatic_merge_rebase_cherry_pick_reset_stash_force_push_forbidden": true
   },
   "branch_policy": {
     "all_remaining_tasks_same_branch": true,
@@ -62,7 +72,7 @@
   ],
   "arbitration": {
     "status": "AWAITING_DECISION",
-    "rule": "push_before_asking",
+    "rule": "remote_checkpoint_before_asking",
     "single_question_only": true
   }
 }
