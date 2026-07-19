@@ -25,15 +25,29 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Preflight and recover final metadata
+      - name: Preflight — T029 integration marker
+        run: test -f .agent/evidence/T-030/t029-integration-complete.txt
+
+      - name: Preflight — Git refs and durable ancestry
         shell: bash
         run: |
           set -euo pipefail
-          test -f .agent/evidence/T-030/t029-integration-complete.txt
           source <(sed '$d' .agent/generated/t030-final-runner.sh)
           configure_git
+
+      - name: Preflight — verify T028 semantic invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          source <(sed '$d' .agent/generated/t030-final-runner.sh)
           rm -f "$CONFLICT_REPORT"
           verify_t028_already_integrated
+
+      - name: Preflight — recover T028 and T029 metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          source <(sed '$d' .agent/generated/t030-final-runner.sh)
           recover_lane_metadata
 
       - name: Install dependencies and Chromium
