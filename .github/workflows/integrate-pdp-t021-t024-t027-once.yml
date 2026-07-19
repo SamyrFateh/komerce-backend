@@ -1,0 +1,365 @@
+name: Integrate PDP T021 T024 T027 Once
+
+on:
+  push:
+    branches:
+      - agent/lane-mobile-renderer
+    paths:
+      - .github/workflows/integrate-pdp-t021-t024-t027-once.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: integrate-pdp-t021-t024-t027-once
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout durable branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/lane-mobile-renderer
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            public/boutique/package-lock.json
+
+      - name: Fetch evidence branches
+        run: |
+          git fetch --no-tags origin \
+            agent/lane-desktop-layout:refs/remotes/origin/agent/lane-desktop-layout \
+            agent/lane-finish:refs/remotes/origin/agent/lane-finish
+
+      - name: Recover existing evidence and states
+        run: |
+          mkdir -p .agent/evidence/T-021 .agent/evidence/T-024
+          git checkout origin/agent/lane-desktop-layout -- \
+            .agent/evidence/T-021/computed-validation.json \
+            .agent/evidence/T-021/desktop-thumbnails.png \
+            .agent/evidence/T-021/focus-thumbnail.png
+          git show origin/agent/lane-desktop-layout:.agent/state/T-021.json > .agent/state/T-021.json
+
+          git checkout origin/agent/lane-finish -- \
+            .agent/evidence/T-024/agent-gates.json \
+            .agent/evidence/T-024/desktop-radius.md
+          git show origin/agent/lane-finish:.agent/state/T-024.json > .agent/state/T-024.json
+
+      - name: Apply targeted CSS integration and T027 decision
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one exact match, found {count}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          shell = 'public/boutique/css/modal-shell.css'
+          product = 'public/boutique/css/modal-product.css'
+
+          replace_once(shell,
+          '''  #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
+          #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
+          #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
+          #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: var(--border-ocean-50); box-shadow: 0 10px 22px var(--border-text-10); }
+          ''',
+          '''  /* T-021 / D9 — rail plat : 60×60, sans mouvement ni ombre. */
+          #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 60px; overflow-y: auto; scrollbar-width: none; }
+          #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
+          #k-modal .k-modal-thumb { width: 60px; height: 60px; flex: 0 0 60px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
+          #k-modal .k-modal-thumb:hover { border-color: var(--text); }
+          #k-modal .k-modal-thumb.is-active { border: 1.5px solid var(--text); }
+          ''')
+
+          replace_once(shell,
+          '''    border-radius: 0;
+              box-shadow: none;
+          ''',
+          '''    border-radius: 12px; /* T-024 / D12 — owner réel du radius desktop. */
+              box-shadow: none;
+          ''')
+
+          replace_once(shell,
+          '''    border-radius: 26px;
+              /* PALETTE-FIX-01 */
+          ''',
+          '''    /* T-024 / D12 — déclaration morte supprimée ; #k-modal.k-modal est owner. */
+              /* PALETTE-FIX-01 */
+          ''')
+
+          replace_once(shell,
+          '''  /* Le rang Bestseller garde sa pastille coral pleine.
+             Utilise --border-coral-09 / --border-coral-22 (tokens existants).
+             L'ancien styling §1 référençait --coral-bg / --coral-border (inexistants
+             dans tokens.css → silencieusement transparents, dette pré-existante).
+             Ici on est en scope desktop spécifique, donc on shadow proprement. */
+            #k-modal .k-modal-meta .k-modal-meta-rank {
+              background: var(--border-coral-09);
+              color: var(--coral);
+              border: 1px solid var(--border-coral-22);
+              padding: 4px 10px;
+              border-radius: 999px;
+              font-size: 11px;
+              font-weight: 500;
+              letter-spacing: .2px;
+            }
+          ''',
+          '''  /* T-027 — Bestseller n'est pas une promotion : palette ambre, jamais coral. */
+            #k-modal .k-modal-meta .k-modal-meta-rank {
+              background: var(--amber-bg);
+              color: var(--amber-text);
+              border: 1px solid var(--amber-border);
+              padding: 4px 10px;
+              border-radius: 999px;
+              font-size: 11px;
+              font-weight: 500;
+              letter-spacing: .2px;
+            }
+          ''')
+
+          replace_once(product,
+          '''#k-modal .k-modal-meta-rank {
+            background: var(--coral-bg);
+            color: var(--coral);
+            border: 1px solid var(--coral-border);
+            font-weight: 500;
+          }
+          ''',
+          '''/* T-027 — Bestseller hors promotion : tokens ambre existants. */
+          #k-modal .k-modal-meta-rank {
+            background: var(--amber-bg);
+            color: var(--amber-text);
+            border: 1px solid var(--amber-border);
+            font-weight: 500;
+          }
+          ''')
+
+          # Formalise les states récupérés sans prétendre à une nouvelle implémentation.
+          t21_path = Path('.agent/state/T-021.json')
+          t21 = json.loads(t21_path.read_text(encoding='utf-8'))
+          t21.update({
+              'status': 'REVIEW',
+              'branch': 'agent/lane-mobile-renderer',
+              'finished_at': '2026-07-19T16:30:00Z',
+              'changed_files': [
+                  'public/boutique/css/modal-shell.css',
+                  '.agent/evidence/T-021/computed-validation.json',
+                  '.agent/evidence/T-021/desktop-thumbnails.png',
+                  '.agent/evidence/T-021/focus-thumbnail.png'
+              ],
+              'blocking_reason': None,
+              'summary': 'T-021 récupérée sans réimplémentation : rail miniatures desktop 60x60, hover sans transform/ombre, active border 1.5px text ; preuves existantes rapatriées.',
+              'next_action': 'Revue humaine sur la branche durable.'
+          })
+          t21_path.write_text(json.dumps(t21, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          t24_path = Path('.agent/state/T-024.json')
+          t24 = json.loads(t24_path.read_text(encoding='utf-8'))
+          t24.update({
+              'status': 'DONE',
+              'branch': 'agent/lane-mobile-renderer',
+              'changed_files': [
+                  'public/boutique/css/modal-shell.css',
+                  '.agent/evidence/T-024/agent-gates.json',
+                  '.agent/evidence/T-024/desktop-radius.md'
+              ],
+              'blocking_reason': None,
+              'next_action': 'T-024 intégrée sur la branche durable.'
+          })
+          t24_path.write_text(json.dumps(t24, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          decision = Path('.agent/evidence/T-027/meta-rank-decision.md')
+          decision.parent.mkdir(parents=True, exist_ok=True)
+          decision.write_text('''# T-027 — Décision humaine sur le badge Bestseller\n\nDécision : `.k-modal-meta-rank` n'est pas une promotion et ne conserve donc pas le coral.\nIl utilise les tokens existants `--amber-bg`, `--amber-text` et `--amber-border`.\nLe coral reste réservé à la promotion active et au badge promotionnel dédié (D-P3).\n\nCette décision clôt l'arbitrage qui maintenait T-027 en `AWAITING_DECISION`.\n''', encoding='utf-8')
+
+          doctrine = Path('.agent/evidence/T-027/doctrine-promo-unique.md')
+          doctrine_text = doctrine.read_text(encoding='utf-8')
+          marker = '## Décision finale — badge Bestseller'
+          if marker not in doctrine_text:
+              doctrine_text += '''\n\n## Décision finale — badge Bestseller\n\n`.k-modal-meta-rank` est un signal de classement, pas une promotion. Il est donc\nnormalisé vers la palette ambre (`--amber-bg`, `--amber-text`, `--amber-border`).\nAucune exception coral supplémentaire n'est créée.\n'''
+              doctrine.write_text(doctrine_text, encoding='utf-8')
+
+          override = Path('.agent/ADDITIONAL-INSTRUCTION.json')
+          override.write_text(json.dumps({
+              'task_override': None,
+              'instruction': None,
+              'updated_at': '2026-07-19'
+          }, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+          npm --prefix public/boutique ci --ignore-scripts
+
+      - name: Run required gates
+        run: |
+          npm --prefix public/boutique run deploy:css
+          npm --prefix public/boutique run check:cache
+          npm --prefix public/boutique run check:breakpoints
+          npm --prefix public/boutique run audit:ownership
+          npm --prefix public/boutique run audit:gate
+          npm run gate:feature-audit
+
+      - name: Generate real T027 screenshots
+        run: |
+          npx --prefix public/boutique playwright install --with-deps chromium
+          cat > public/boutique/.tmp-t027-harness.html <<'HTML'
+          <!doctype html>
+          <html lang="fr">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <link rel="stylesheet" href="css/tokens.css">
+            <link rel="stylesheet" href="css/modal-shell.css">
+            <link rel="stylesheet" href="css/modal-product.css">
+            <style>
+              body{margin:0;background:var(--sand);font-family:var(--font);padding:32px}
+              #k-modal{display:block;position:relative;width:min(720px,calc(100vw - 32px));height:auto;min-height:420px;margin:auto;padding:32px;background:var(--white);box-sizing:border-box;overflow:visible}
+              .k-modal-info{display:block}.k-modal-name-row{margin-top:16px}.k-modal-price-row{display:flex;gap:12px;align-items:baseline;margin-top:18px}.k-modal-meta{margin-top:18px}
+              .proof-note{margin-top:28px;color:var(--text-muted);font-size:13px}
+            </style>
+          </head>
+          <body>
+            <main id="k-modal" class="k-modal">
+              <span class="k-modal-promo-badge">PROMO</span>
+              <section class="k-modal-info">
+                <div class="k-modal-name-row"><h2>Produit premium Komerce</h2></div>
+                <div class="k-modal-meta"><span class="k-modal-meta-rank">Bestseller</span><span>4,8 ★</span></div>
+                <div class="k-modal-price-row"><span class="k-modal-price">15 700</span><span class="k-modal-price-unit">KMF</span></div>
+                <p class="proof-note">Preuve visuelle T-027 : coral réservé à la promotion ; badge Bestseller en palette ambre.</p>
+              </section>
+            </main>
+            <script>
+              const promo = new URLSearchParams(location.search).get('promo') === '1';
+              const modal = document.getElementById('k-modal');
+              modal.classList.toggle('k-modal--has-promo', promo);
+              document.querySelector('.k-modal-promo-badge').style.display = promo ? '' : 'none';
+              document.querySelector('.proof-note').textContent = promo
+                ? 'État promotion active : le prix et le badge promo peuvent utiliser coral.'
+                : 'État hors promotion : prix neutre et badge Bestseller ambre, aucun coral visible.';
+            </script>
+          </body>
+          </html>
+          HTML
+
+          cat > public/boutique/.tmp-t027-capture.mjs <<'JS'
+          import { chromium } from '@playwright/test';
+          const browser = await chromium.launch({headless:true});
+          for (const [name, promo] of [['promo-active', '1'], ['non-promo', '0']]) {
+            const page = await browser.newPage({viewport:{width:900,height:620}, deviceScaleFactor:1});
+            await page.goto(`http://127.0.0.1:4173/.tmp-t027-harness.html?promo=${promo}`, {waitUntil:'networkidle'});
+            await page.screenshot({path:`../../.agent/evidence/T-027/${name}.png`, fullPage:true});
+            await page.close();
+          }
+          await browser.close();
+          JS
+
+          npx --prefix public/boutique serve public/boutique -l 4173 >/tmp/t027-serve.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true; rm -f public/boutique/.tmp-t027-harness.html public/boutique/.tmp-t027-capture.mjs' EXIT
+          sleep 3
+          (cd public/boutique && node .tmp-t027-capture.mjs)
+          test -s .agent/evidence/T-027/promo-active.png
+          test -s .agent/evidence/T-027/non-promo.png
+          kill $SERVER_PID || true
+          rm -f public/boutique/.tmp-t027-harness.html public/boutique/.tmp-t027-capture.mjs
+          trap - EXIT
+
+      - name: Refresh T027 audit and final states
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json
+
+          files = [
+              'public/boutique/css/modal-shell.css',
+              'public/boutique/css/modal-media.css',
+              'public/boutique/css/modal-product.css',
+              'public/boutique/css/modal-product-lot4-hybrid.css',
+              'public/boutique/css/modal-mobile-canonical.css',
+              'public/boutique/css/modal-enriched-content.css',
+          ]
+          out = ['# T-027 — Inventaire coral APRÈS décision finale', '']
+          for filename in files:
+              out.append(f'=== {filename} ===')
+              for number, line in enumerate(Path(filename).read_text(encoding='utf-8').splitlines(), 1):
+                  if 'coral' in line.lower():
+                      out.append(f'{number}:{line}')
+              out.append('')
+          Path('.agent/evidence/T-027/coral-audit-after.txt').write_text('\n'.join(out) + '\n', encoding='utf-8')
+
+          shell = Path('public/boutique/css/modal-shell.css').read_text(encoding='utf-8')
+          product = Path('public/boutique/css/modal-product.css').read_text(encoding='utf-8')
+          if '.k-modal-meta-rank' not in shell or '.k-modal-meta-rank' not in product:
+              raise SystemExit('meta-rank selector missing')
+          for forbidden in ('--coral-bg', '--coral-border'):
+              if forbidden in product:
+                  raise SystemExit(f'broken legacy token remains: {forbidden}')
+
+          gates = [
+              {'gate':'deploy:css','result':'PASS'},
+              {'gate':'check:cache','result':'PASS'},
+              {'gate':'check:breakpoints','result':'PASS (stable vs baseline)'},
+              {'gate':'audit:ownership','result':'PASS'},
+              {'gate':'audit:gate','result':'PASS'},
+              {'gate':'gate:feature-audit','result':'PASS'},
+          ]
+
+          t21_path = Path('.agent/state/T-021.json')
+          t21 = json.loads(t21_path.read_text(encoding='utf-8'))
+          t21['gate_results'] = gates[:5]
+          t21_path.write_text(json.dumps(t21, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          t27_path = Path('.agent/state/T-027.json')
+          t27 = json.loads(t27_path.read_text(encoding='utf-8'))
+          t27.update({
+              'status':'REVIEW',
+              'branch':'agent/lane-mobile-renderer',
+              'finished_at':'2026-07-19T16:45:00Z',
+              'blocking_reason':None,
+              'review_decision':None,
+              'gate_results':gates,
+              'summary':(t27.get('summary') or '') + ' Arbitrage clôturé : k-modal-meta-rank utilise la palette ambre existante, sans exception coral supplémentaire. Captures promo/non-promo générées.',
+              'next_action':'Revue humaine du diff, des audits et des deux captures.',
+              'changed_files':sorted(set((t27.get('changed_files') or []) + [
+                  '.agent/evidence/T-027/meta-rank-decision.md',
+                  '.agent/evidence/T-027/promo-active.png',
+                  '.agent/evidence/T-027/non-promo.png'
+              ]))
+          })
+          t27_path.write_text(json.dumps(t27, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Validate resolver selects T028
+        run: |
+          node scripts/agent-resolve-status.mjs | tee /tmp/resolved.txt
+          grep -q '^CURRENT_TASK=T-028$' /tmp/resolved.txt
+          grep -q '^EFFECTIVE_STATUS=READY$' /tmp/resolved.txt
+
+      - name: Commit and push integration
+        run: |
+          rm -f public/boutique/.tmp-t027-harness.html public/boutique/.tmp-t027-capture.mjs
+          git config user.name "komerce-integration-bot"
+          git config user.email "komerce-integration-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No integration changes to commit."
+            exit 1
+          fi
+          git commit -m "integrate(pdp): recover T-021 T-024 and resolve T-027"
+          git push origin HEAD:agent/lane-mobile-renderer
