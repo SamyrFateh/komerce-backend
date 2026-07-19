@@ -39,6 +39,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -f .agent/evidence/T-030/integration-conflict.txt
           cherry_pick_range() {
             local base="$1" final="$2" label="$3"
             if git merge-base --is-ancestor "$final" HEAD; then
@@ -53,9 +54,25 @@ jobs:
             for commit in "${commits[@]}"; do
               echo "Cherry-pick $label $commit"
               if ! git cherry-pick "$commit"; then
-                echo "CHERRY_PICK_CONFLICT=$label:$commit" >&2
-                git status --short >&2
-                git diff --name-only --diff-filter=U >&2
+                mkdir -p .agent/evidence/T-030
+                {
+                  echo "CHERRY_PICK_CONFLICT=$label:$commit"
+                  echo
+                  echo "STATUS"
+                  git status --short
+                  echo
+                  echo "UNMERGED_FILES"
+                  git diff --name-only --diff-filter=U
+                  echo
+                  echo "CONFLICT_MARKERS"
+                  git diff --check || true
+                } > .agent/evidence/T-030/integration-conflict.txt
+                git cherry-pick --abort
+                git add .agent/evidence/T-030/integration-conflict.txt
+                if ! git diff --cached --quiet; then
+                  git commit -m "chore(t030): record targeted integration conflict"
+                  git push origin HEAD:agent/lane-final
+                fi
                 exit 3
               fi
             done
