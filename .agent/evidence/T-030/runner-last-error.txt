@@ -1,12 +1,12 @@
-RUNNER_EXIT=128
+RUNNER_EXIT=4
 
 GIT_STATUS_AT_FAILURE
  D .agent/evidence/T-030/integration-conflict.txt
+ D .agent/evidence/T-030/runner-last-error.txt
  M .agent/generated/t030-final-runner.sh
 
 RUNNER_LOG
-  File "<stdin>", line 35
-    checks = []
-               ^
-IndentationError: unindent does not match any outer indentation level
-fatal: pathspec '.agent/evidence/T-030/t028-integration-check.txt' did not match any files
+Traceback (most recent call last):
+  File "<stdin>", line 44, in <module>
+  File "<stdin>", line 13, in block
+AssertionError: selector absent: .k-modal-keyboard-hint
