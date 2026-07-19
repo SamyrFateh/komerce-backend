@@ -807,7 +807,9 @@
     min-height: 100dvh;
     max-height: 100dvh;
     flex: 0 0 100dvh;
-    border-radius: 0;
+    border-radius: 12px; /* [D12] Owner réel du radius desktop (gagne sur la
+       règle .k-modal { border-radius: 26px } plus bas dans ce fichier,
+       morte par spécificité — cf. bloc "Desktop : taille & ombre modale"). */
     box-shadow: none;
   }
 
@@ -959,10 +961,13 @@
   .k-modal {
     /* [MDM-8 phase 2] max-width: min(1040px, …) retiré — mort par
        spécificité, toujours écrasé par #k-modal.k-modal { max-width: none }
-       (ligne ~761, contre-balance desktop-commerce-skeleton.css). La
-       largeur réelle desktop est pilotée par cette règle ID, pas ici
+       (contre-balance desktop-commerce-skeleton.css). La largeur réelle
+       desktop est pilotée par cette règle ID, pas ici
        (audit MDM8_AUDIT_PHASE1.md §1.5). */
-    border-radius: 26px;
+    /* [D12] border-radius retiré d'ici : cette règle .k-modal (classe seule)
+       était déjà morte par spécificité, toujours écrasée par
+       #k-modal.k-modal (voir bloc "Shell : ... sans carte flottante" plus
+       haut, où vit désormais le vrai radius desktop = 12px). */
     /* PALETTE-FIX-01 */
     box-shadow: 0 30px 80px var(--border-ocean-18);
   }
