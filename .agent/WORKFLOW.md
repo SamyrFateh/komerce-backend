@@ -27,27 +27,32 @@ reset ou de stash automatique.
 
 Après synchronisation, lire l’ordre obligatoire indiqué dans `START-HERE.md`.
 
-## Sélection de la tâche
+## Sélection et reprise de la tâche
 
 La tâche courante vient de :
 
 1. `MANIFEST.current_operational_task` ;
 2. `lanes/LANE-MOBILE-RENDERER.json.current_task` et `next_action` ;
 3. `EXECUTION_MAP.md` ;
-4. le state correspondant.
+4. le state correspondant ;
+5. l’historique Git et les diffs distants lorsque le state semble en retard.
 
 `TASK-INDEX.json` est un catalogue statique et ne sert jamais à choisir une tâche.
 
-Une tâche `DONE` ou `REVIEW` ne doit pas être recommencée. Une tâche `BLOCKED` dont la
-condition environnementale est levée doit être reprise avant de créer une nouvelle
-implémentation lorsqu’elle est désignée comme action courante.
+Une tâche `DONE` ou `REVIEW` ne doit pas être recommencée. Du code ou des preuves déjà
+présents à distance ne doivent pas être recréés parce que le state est resté `READY` ou
+`IN_PROGRESS` après une coupure.
 
-## Petit lot et sauvegarde distante
+## Checkpoints en deux phases
 
-Un petit lot ne se termine pas au commit local. Il se termine uniquement lorsque le push
-est confirmé sur la branche distante.
+### 1. Travail récupérable
 
-Pour chaque unité cohérente :
+Pousser immédiatement chaque petite unité de :
+
+- code source ;
+- test ;
+- artefact généré ;
+- preuve réelle.
 
 ```bash
 node scripts/agent-checkpoint.mjs \
@@ -58,16 +63,27 @@ node scripts/agent-checkpoint.mjs \
 La commande doit afficher :
 
 ```text
-CHECKPOINT_DISTANT=<sha>
+CHECKPOINT_DISTANT=<sha_travail>
 ```
 
-Le lot suivant ne commence qu’après cette confirmation.
+### 2. Métadonnées
+
+Seulement après le push confirmé du travail correspondant :
+
+- mettre à jour state, worklog, audit et STATUS ;
+- référencer le SHA de travail déjà distant ;
+- créer un checkpoint documentaire séparé ;
+- vérifier son SHA distant.
+
+Un agent suivant peut reconstruire les métadonnées depuis les commits. Il ne peut pas
+récupérer un fichier resté dans la sandbox précédente.
 
 Règles :
 
 - maximum recommandé de trois fichiers source par lot ;
 - un groupe d’artefacts générés par une même commande peut former un lot distinct ;
 - aucun deuxième commit local avant le push du premier ;
+- aucun state de sortie avant le push du travail ;
 - checkpoint distant avant tests longs, captures, builds risqués, arbitrage et réponse finale ;
 - aucun `--no-verify` sauf dérogation reviewer explicitement documentée.
 
@@ -95,7 +111,8 @@ Aucun helper ne doit dériver une branche depuis `parallel_lane`.
 Respecter la règle de sortie du fichier `.agent/tasks/T-XXX.md` : généralement
 `IN_PROGRESS → REVIEW`, jamais directement `DONE` sans décision reviewer documentée.
 
-Mettre à jour state, worklog, audit et STATUS dans un checkpoint documentaire distant.
+Le code, les tests et les preuves doivent déjà être poussés. Mettre ensuite à jour state,
+worklog, audit et STATUS dans un checkpoint documentaire distant séparé.
 
 ## Campagne visuelle
 
@@ -105,6 +122,7 @@ de téléchargement réseau non autorisé et ne fabriquer aucune preuve.
 ## Livraison
 
 - une branche durable intégrée ;
+- travail récupérable poussé avant son statut ;
 - checkpoints distants petits et fréquents ;
 - aucune PR intermédiaire ;
 - une seule PR finale vers `main`.
