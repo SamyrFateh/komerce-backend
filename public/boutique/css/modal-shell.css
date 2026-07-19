@@ -807,7 +807,9 @@
     border-radius: 12px; /* [D12] Owner réel du radius desktop (gagne sur la
        règle .k-modal { border-radius: 26px } plus bas dans ce fichier,
        morte par spécificité — cf. bloc "Desktop : taille & ombre modale"). */
-    box-shadow: none;
+    box-shadow: var(--shadow-modal-neutral-10); /* [D13] Owner réel de l'ombre
+       desktop (gagne sur var(--border-ocean-18) plus bas dans ce fichier,
+       morte par spécificité). Neutre gris chaud, plus de teinte ocean. */
   }
 
   /* Side-cart : glisse par-dessus, modal reste 100vw */
@@ -965,8 +967,11 @@
        était déjà morte par spécificité, toujours écrasée par
        #k-modal.k-modal (voir bloc "Shell : ... sans carte flottante" plus
        haut, où vit désormais le vrai radius desktop = 12px). */
-    /* PALETTE-FIX-01 */
-    box-shadow: 0 30px 80px var(--border-ocean-18);
+    /* [D13] Teinte ocean retirée : cette règle .k-modal (classe seule)
+       est morte par spécificité, toujours écrasée par #k-modal.k-modal
+       (voir bloc "Shell : ... sans carte flottante" plus haut, où vit
+       désormais la vraie ombre desktop, neutre gris chaud). */
+    box-shadow: var(--shadow-modal-neutral-10);
   }
 
   .k-modal-img-wrap {
