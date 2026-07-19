@@ -1,21 +1,27 @@
-CHERRY_PICK_CONFLICT=T-028:0889a759a8683acf9cdf9a9e1e348c87bad7ac7d
+PATCH_INTEGRATION_CONFLICT=T-028
+BASE=e695693c62bb7d02906762c4472d1846af33f28a
+FINAL=5be14dac2a62f654ae9a3b5388f431587a2a152e
 
 STATUS
-UU .agent/state/T-028.json
+ D .agent/evidence/T-030/integration-conflict.txt
+UU public/boutique/css/modal-media.css
 UU public/boutique/css/modal-product.css
-?? .agent/evidence/T-030/
+UU public/boutique/css/modal-shell.css
 
 UNMERGED_FILES
-.agent/state/T-028.json
+public/boutique/css/modal-media.css
 public/boutique/css/modal-product.css
+public/boutique/css/modal-shell.css
 
-CONFLICT_MARKERS
-.agent/state/T-028.json:8: leftover conflict marker
-.agent/state/T-028.json:10: leftover conflict marker
-.agent/state/T-028.json:12: leftover conflict marker
-.agent/state/T-028.json:54: leftover conflict marker
-.agent/state/T-028.json:101: leftover conflict marker
-.agent/state/T-028.json:108: leftover conflict marker
+DIFF_CHECK
+public/boutique/css/modal-media.css:278: leftover conflict marker
+public/boutique/css/modal-media.css:312: leftover conflict marker
+public/boutique/css/modal-media.css:313: leftover conflict marker
 public/boutique/css/modal-product.css:386: leftover conflict marker
 public/boutique/css/modal-product.css:389: leftover conflict marker
 public/boutique/css/modal-product.css:392: leftover conflict marker
+public/boutique/css/modal-shell.css:501: leftover conflict marker
+public/boutique/css/modal-shell.css:509: leftover conflict marker
+public/boutique/css/modal-shell.css:516: leftover conflict marker
+
+PATCH_FILE=/tmp/T-028.patch
