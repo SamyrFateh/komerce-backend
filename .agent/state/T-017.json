@@ -5,7 +5,7 @@
   "finding_id": "D5",
   "wave": "P2",
   "parallel_lane": "LANE-META",
-  "status": "BLOCKED",
+  "status": "REVIEW",
   "priority": "MEDIUM",
   "depends_on": [
     "T-007"
@@ -32,12 +32,19 @@
   "branch": "agent/lane-mobile-renderer",
   "started_at": "2026-07-19T00:19:26Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-19T06:43:00Z",
   "reviewed_at": null,
   "base_commit": "6c805613e8ffdc6868fd96dec6b42aa849fe9aa0",
   "last_commit": null,
   "changed_files": [
     ".agent/evidence/T-017/tests.txt",
+    ".agent/evidence/T-017/harness.html",
+    ".agent/evidence/T-017/capture.js",
+    ".agent/evidence/T-017/CAPTURE-METHOD.md",
+    ".agent/evidence/T-017/desktop-series-1024.png",
+    ".agent/evidence/T-017/desktop-series-1440.png",
+    ".agent/evidence/T-017/desktop-series-1024-fallback.png",
+    ".agent/evidence/T-017/desktop-series-1440-fallback.png",
     ".agent/worklogs/T-017.md",
     ".agent/state/T-017.json"
   ],
@@ -63,8 +70,8 @@
       "result": "PASS — 92 suites, 1751 tests, dont 2/2 sur la suite série desktop (M6, contrat v1 product.series)"
     }
   ],
-  "blocking_reason": "Preuves visuelles desktop-series-1024.png et desktop-series-1440.png non générables : aucun binaire Chromium/Playwright installé dans ce sandbox et réseau restreint aux registres npm/pip/GitHub (pas d'accès au CDN de téléchargement des navigateurs Playwright). Même blocage que T-023. Code, fallback silencieux et tests unitaires entièrement conformes et vérifiés.",
+  "blocking_reason": null,
   "review_decision": null,
-  "summary": "Aucun code desktop manquant : l'implémentation product.series (T-007) est déjà présente et correcte dans b-modal-desktop-product.js, avec fallback silencieux identique au pattern mobile. Aucune duplication ajoutée par T-017. Gates et tests unitaires entièrement verts. Seule la capture visuelle 1024/1440 manque, faute de navigateur disponible.",
-  "next_action": "Débloquer dès qu'un Chromium/Playwright est disponible dans l'environnement d'exécution : générer desktop-series-1024.png et desktop-series-1440.png, puis passer BLOCKED → REVIEW."
+  "summary": "Aucun code desktop manquant : l'implémentation product.series (T-007) était déjà présente et correcte dans b-modal-desktop-product.js, fallback silencieux identique au pattern mobile, aucune duplication ajoutée. Gates et tests unitaires 5/5 verts. Preuves visuelles générées via harnais statique + bundles CSS réels + Chromium local (binaire pré-installé hors cache Playwright standard, résolu via executablePath) : série correcte à 1024 et 1440, fallback silencieux vérifié sans ligne vide.",
+  "next_action": "Revue humaine des captures et du diff (.agent/evidence/T-017/**) avant passage REVIEW → DONE."
 }
