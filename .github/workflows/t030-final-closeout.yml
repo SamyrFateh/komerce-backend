@@ -1,13 +1,199 @@
-name: T030 Final PDP Closeout
+name: T030 Integrate T029 Deterministically
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
 
 permissions:
   contents: write
 
+concurrency:
+  group: t030-integrate-t029-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
-  paused:
+  integrate:
+    if: github.event.pull_request.head.ref == 'agent/lane-final'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - run: echo 'T030 closeout paused while deterministic T029 merge is published.'
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lane-final
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply T029 source intent on current final lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          marker=.agent/evidence/T-030/t029-integration-complete.txt
+          if [ -f "$marker" ]; then
+            echo 'T-029 already integrated.'
+            exit 0
+          fi
+
+          git config user.name 'komerce-t030-bot'
+          git config user.email 'komerce-t030-bot@users.noreply.github.com'
+          git fetch --no-tags origin '+refs/heads/agent/lane-finish:refs/remotes/origin/agent/lane-finish'
+
+          base=77478ee804d723f15834b5444927f23e1a66e162
+          final=f45e8629812db25bf15ea41804e99c132fc6974a
+          files=(
+            public/boutique/css/modal-shell.css
+            public/boutique/css/modal-media.css
+            public/boutique/css/modal-product.css
+            public/boutique/css/modal-product-lot4-hybrid.css
+            public/boutique/css/modal-mobile-canonical.css
+            public/boutique/css/modal-enriched-content.css
+            public/boutique/css/tokens.css
+          )
+          git diff --binary "$base" "$final" -- "${files[@]}" > /tmp/T-029.patch
+          set +e
+          git apply --3way /tmp/T-029.patch
+          apply_status=$?
+          set -e
+
+          if [ "$apply_status" -ne 0 ]; then
+            python3 <<'PY'
+          from pathlib import Path
+
+          paths = [
+              Path('public/boutique/css/modal-shell.css'),
+              Path('public/boutique/css/modal-product.css'),
+              Path('public/boutique/css/modal-product-lot4-hybrid.css'),
+          ]
+
+          def choose_ours(text):
+              output = []
+              lines = text.splitlines(keepends=True)
+              i = 0
+              while i < len(lines):
+                  if not lines[i].startswith('<<<<<<<'):
+                      output.append(lines[i]); i += 1; continue
+                  i += 1
+                  ours = []
+                  while i < len(lines) and not lines[i].startswith('======='):
+                      ours.append(lines[i]); i += 1
+                  if i >= len(lines): raise SystemExit('malformed conflict: separator missing')
+                  i += 1
+                  while i < len(lines) and not lines[i].startswith('>>>>>>>'):
+                      i += 1
+                  if i >= len(lines): raise SystemExit('malformed conflict: end missing')
+                  i += 1
+                  output.extend(ours)
+              return ''.join(output)
+
+          for path in paths:
+              text = path.read_text(encoding='utf-8')
+              if '<<<<<<<' in text:
+                  path.write_text(choose_ours(text), encoding='utf-8')
+          PY
+          fi
+
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          def locate_block(text, selector):
+              start = text.find(selector)
+              if start < 0: raise SystemExit(f'selector absent: {selector}')
+              brace = text.find('{', start)
+              depth = 0
+              for i in range(brace, len(text)):
+                  if text[i] == '{': depth += 1
+                  elif text[i] == '}':
+                      depth -= 1
+                      if depth == 0: return start, brace, i
+              raise SystemExit(f'bloc non fermé: {selector}')
+
+          def edit_block(path, selector, editor):
+              p = Path(path); text = p.read_text(encoding='utf-8')
+              start, brace, end = locate_block(text, selector)
+              body = text[brace + 1:end]
+              body = editor(body)
+              p.write_text(text[:brace + 1] + body + text[end:], encoding='utf-8')
+
+          def remove_shadow(body):
+              body = re.sub(r'\s*box-shadow\s*:[^;{}]+;', '', body)
+              body = re.sub(r'(transition\s*:[^;]*?)\s*,?\s*box-shadow\s+[^,;]+', r'\1', body)
+              body = re.sub(r'box-shadow\s+[^,;]+\s*,\s*', '', body)
+              return body
+
+          shell = 'public/boutique/css/modal-shell.css'
+          product = 'public/boutique/css/modal-product.css'
+          lot4 = 'public/boutique/css/modal-product-lot4-hybrid.css'
+
+          for selector in [
+              '.k-topbar-thumb',
+              '.k-modal-back-top',
+              '.k-modal-zoom-preview',
+              '#k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {',
+              '#k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn:hover',
+              '#k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover',
+          ]:
+              edit_block(shell, selector, remove_shadow)
+
+          for selector in [
+              '.k-sku:hover:not(.k-sku--out)',
+              '.k-vs-trigger:active',
+          ]:
+              edit_block(product, selector, remove_shadow)
+
+          for selector in [
+              '#k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn',
+              '#k-modal .k-buybox-payment-tab:hover',
+          ]:
+              edit_block(lot4, selector, remove_shadow)
+
+          def flatten_hero(body):
+              return re.sub(r'\s*background\s*:[^;]+;', '\n    background: var(--hero-bg);', body, count=1, flags=re.S)
+          edit_block(lot4, '#k-modal .k-modal-product-zone .k-modal-img-wrap', flatten_hero)
+          PY
+
+          git add -- "${files[@]}"
+          git diff --cached --check
+
+          git checkout origin/agent/lane-finish -- \
+            .agent/evidence/T-028 \
+            .agent/state/T-028.json \
+            .agent/worklogs/T-028.md \
+            .agent/evidence/T-029 \
+            .agent/state/T-029.json \
+            .agent/worklogs/T-029.md \
+            .agent/decisions/ADR-029-deps-override.md
+
+          node <<'JS'
+          const fs = require('fs');
+          for (const id of ['T-028', 'T-029']) {
+            const path = `.agent/state/${id}.json`;
+            const state = JSON.parse(fs.readFileSync(path, 'utf8'));
+            state.branch = 'agent/lane-final';
+            state.next_action = id === 'T-028'
+              ? 'Revue humaine finale avec les preuves T-030.'
+              : 'T-029 intégrée à la lane finale; poursuivre T-030.';
+            fs.writeFileSync(path, JSON.stringify(state, null, 2) + '\n');
+          }
+          JS
+
+          npm ci --ignore-scripts
+          npm --prefix public/boutique ci --ignore-scripts
+          npm --prefix public/boutique run deploy:css
+          npm --prefix public/boutique run check:cache
+          npm --prefix public/boutique run check:breakpoints
+          npm --prefix public/boutique run audit:ownership
+          npm --prefix public/boutique run audit:gate
+          npm run gate:feature-audit
+
+          mkdir -p .agent/evidence/T-030
+          {
+            echo 'T-029 integrated on agent/lane-final.'
+            echo 'Conflict policy: preserve current lane decisions; retain clean T-029 hunks; manually apply only shadow/gradient intent in conflicting hunks.'
+            echo 'Gates: deploy:css, check:cache, check:breakpoints, audit:ownership, audit:gate, gate:feature-audit — PASS.'
+          } > "$marker"
+          rm -f .agent/evidence/T-030/integration-conflict.txt .agent/evidence/T-030/runner-last-error.txt
+
+          git add -A
+          git commit -m 'integrate(t-029): preserve final lane and normalize shadows'
+          git push origin HEAD:agent/lane-final
