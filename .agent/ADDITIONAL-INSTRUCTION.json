@@ -1,5 +1,5 @@
 {
-  "task_override": null,
-  "instruction": null,
-  "updated_at": null
+  "task_override": "T-026",
+  "instruction": "Traiter T-026 maintenant sur agent/lane-mobile-renderer. Les dépendances déclarées sont satisfaites. Cette instruction remplace uniquement l'ordre automatique de sélection.",
+  "updated_at": "2026-07-19"
 }
