@@ -39,12 +39,20 @@ jobs:
               text = path.read_text(encoding='utf-8')
               marker = "checks = []\ndef check(name, condition):"
               helper = (
+                  "def strip_css_comments(css):\n"
+                  "    import re\n"
+                  "    return re.sub(r'/\\*.*?\\*/', '', css, flags=re.S)\n"
+                  "\n"
                   "def has_transform_css(css):\n"
                   "    import re\n"
-                  "    clean = re.sub(r'/\\*.*?\\*/', '', css, flags=re.S)\n"
+                  "    clean = strip_css_comments(css)\n"
                   "    return bool(re.search(r'(^|[;{}])\\s*transform\\s*:', clean)) or bool(\n"
                   "        re.search(r'transition(?:-property)?\\s*:[^;]*\\btransform\\b', clean)\n"
                   "    )\n"
+                  "\n"
+                  "def has_fav_pop_css(css):\n"
+                  "    clean = strip_css_comments(css)\n"
+                  "    return '.k-modal-fav-btn.k-pop' in clean or '@keyframes k-modal-fav-pop' in clean\n"
                   "\n"
                   "checks = []\n"
                   "def check(name, condition):"
@@ -53,6 +61,7 @@ jobs:
                   raise RuntimeError('semantic verifier marker missing')
               text = text.replace(marker, helper, 1)
               replacements = {
+                  "'k-modal-fav-pop' not in files['media']": "not has_fav_pop_css(files['media'])",
                   "'transform' not in block(files['media'], '.k-modal-fav-btn {')": "not has_transform_css(block(files['media'], '.k-modal-fav-btn {'))",
                   "'transform' not in block(files['media'], '.k-modal-recent-card:hover')": "not has_transform_css(block(files['media'], '.k-modal-recent-card:hover'))",
                   "'display: none' in block(files['shell'], '.k-modal-keyboard-hint')": "'.k-modal-keyboard-hint' not in files['shell'] or 'display: none' in block(files['shell'], '.k-modal-keyboard-hint')",
