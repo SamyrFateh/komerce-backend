@@ -1,0 +1,175 @@
+T030_CAPTURE_FAILURE=1
+
+CAPTURE_LOG_LAST_240
+curl: (7) Failed to connect to 127.0.0.1 port 4173 after 0 ms: Couldn't connect to server
+locator.waitFor: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator('#k-grid .k-promo-card, #k-grid .k-card').first() to be visible
+
+    at openPdp (/home/runner/work/komerce-backend/komerce-backend/public/boutique/.tmp-t030-capture.cjs:92:14)
+    at async /home/runner/work/komerce-backend/komerce-backend/public/boutique/.tmp-t030-capture.cjs:126:9 {
+  log: [
+    "  - waiting for locator('#k-grid .k-promo-card, #k-grid .k-card').first() to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+SERVER_LOG_LAST_120
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-home-premium-v1.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-product-detail-bootstrap.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-greeting.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 4 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 0 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-catalog-desktop-enhancers.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-cart-core.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-catalog.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 0 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-subcat.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 0 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-cart.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 0 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-checkout.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-nav.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-favs.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-tracking.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 3 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-pager.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 0 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-share-cart.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-group-banner.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-cart-stepper-guard.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/view-models/modal-selection-model.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-mobile-product.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-desktop-product.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/controllers/home-controller.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/shop-schema.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/render/render-product-card.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/render/render-home-sections.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/product-store.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-core.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-product.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-suggestions.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-nav.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-wallet.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-group-view.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 0 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-paypal.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-identity.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-checkout-render.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-phone.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-image-ux.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 3 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-buybox-shared.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/view-models/product-content-model.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/group/group-api.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/view-models/product-card-view-model.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/render/render-categories.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-social-proof.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-modal-cart.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 6 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/group/group-state.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/group/group-helpers.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/group/group-render-creator.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 0 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-friendly-group-redirect.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 0 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/js/b-desktop-global-cart-access.js
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 0 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/enfant.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/sport.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/sur-mesure.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 404 in 3 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 404 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 404 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/all.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/soldes.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/mode.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/tech.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/maison.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/enfant.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 200 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 404 in 2 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/sport.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 GET /boutique/categories/sur-mesure.jpg
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 404 in 1 ms
+ HTTP  7/19/2026 10:45:46 PM 127.0.0.1 Returned 404 in 1 ms
+
+PARTIAL_FILES
+.agent/evidence/T-030/captures/360-available_empty.png
+.agent/evidence/T-030/captures/360-available_filled.png
+.agent/evidence/T-030/captures/360-error.png
+.agent/evidence/T-030/captures/360-loading.png
+.agent/evidence/T-030/captures/360-out_of_stock.png
+.agent/evidence/T-030/captures/360-selection_required.png
+.agent/evidence/T-030/captures/390-available_empty.png
+.agent/evidence/T-030/captures/390-available_filled.png
+.agent/evidence/T-030/captures/390-error.png
+.agent/evidence/T-030/captures/390-loading.png
+.agent/evidence/T-030/captures/390-out_of_stock.png
+.agent/evidence/T-030/captures/390-selection_required.png
+.agent/evidence/T-030/captures/430-available_empty.png
+.agent/evidence/T-030/captures/430-available_filled.png
+.agent/evidence/T-030/captures/430-error.png
+.agent/evidence/T-030/captures/430-loading.png
+.agent/evidence/T-030/captures/430-out_of_stock.png
+.agent/evidence/T-030/captures/430-selection_required.png
+.agent/evidence/T-030/states/360-available_empty.json
+.agent/evidence/T-030/states/360-available_filled.json
+.agent/evidence/T-030/states/360-error.json
+.agent/evidence/T-030/states/360-loading.json
+.agent/evidence/T-030/states/360-out_of_stock.json
+.agent/evidence/T-030/states/360-selection_required.json
+.agent/evidence/T-030/states/390-available_empty.json
+.agent/evidence/T-030/states/390-available_filled.json
+.agent/evidence/T-030/states/390-error.json
+.agent/evidence/T-030/states/390-loading.json
+.agent/evidence/T-030/states/390-out_of_stock.json
+.agent/evidence/T-030/states/390-selection_required.json
+.agent/evidence/T-030/states/430-available_empty.json
+.agent/evidence/T-030/states/430-available_filled.json
+.agent/evidence/T-030/states/430-error.json
+.agent/evidence/T-030/states/430-loading.json
+.agent/evidence/T-030/states/430-out_of_stock.json
+.agent/evidence/T-030/states/430-selection_required.json
