@@ -38,15 +38,17 @@ jobs:
               path = Path('.agent/generated/t030-final-runner.sh')
               text = path.read_text(encoding='utf-8')
               marker = "checks = []\ndef check(name, condition):"
-              helper = """def has_transform_css(css):
-                  import re
-                  clean = re.sub(r'/\\*.*?\\*/', '', css, flags=re.S)
-                  return bool(re.search(r'(^|[;{}])\\s*transform\\s*:', clean)) or bool(
-                      re.search(r'transition(?:-property)?\\s*:[^;]*\\btransform\\b', clean)
-                  )
-
-              checks = []
-              def check(name, condition):"""
+              helper = (
+                  "def has_transform_css(css):\n"
+                  "    import re\n"
+                  "    clean = re.sub(r'/\\*.*?\\*/', '', css, flags=re.S)\n"
+                  "    return bool(re.search(r'(^|[;{}])\\s*transform\\s*:', clean)) or bool(\n"
+                  "        re.search(r'transition(?:-property)?\\s*:[^;]*\\btransform\\b', clean)\n"
+                  "    )\n"
+                  "\n"
+                  "checks = []\n"
+                  "def check(name, condition):"
+              )
               if marker not in text:
                   raise RuntimeError('semantic verifier marker missing')
               text = text.replace(marker, helper, 1)
@@ -66,14 +68,16 @@ jobs:
 
               old_main = "  verify_t028_already_integrated\n  apply_t029_source_patch"
               new_main = """  if ! verify_t028_already_integrated; then
-                git add .agent/evidence/T-030/t028-integration-check.txt
-                if ! git diff --cached --quiet; then
-                  git commit -m 'chore(t030): record T-028 semantic integration check'
-                  git push origin HEAD:agent/lane-final
-                fi
-                exit 4
+            if [ -f .agent/evidence/T-030/t028-integration-check.txt ]; then
+              git add .agent/evidence/T-030/t028-integration-check.txt
+              if ! git diff --cached --quiet; then
+                git commit -m 'chore(t030): record T-028 semantic integration check'
+                git push origin HEAD:agent/lane-final
               fi
-              apply_t029_source_patch"""
+            fi
+            exit 4
+          fi
+          apply_t029_source_patch"""
               if old_main not in text:
                   raise RuntimeError('runner main verification block missing')
               text = text.replace(old_main, new_main, 1)
@@ -96,6 +100,7 @@ jobs:
       - name: Execute reproducible T030 closeout
         shell: bash
         run: |
+          rm -f .agent/evidence/T-030/runner-last-error.txt
           set +e
           bash .agent/generated/t030-final-runner.sh 2>&1 | tee /tmp/t030-runner.log
           status=${PIPESTATUS[0]}
