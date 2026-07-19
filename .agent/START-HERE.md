@@ -70,11 +70,19 @@ Après synchronisation sur la branche durable, lire dans cet ordre :
 
 Ne jamais recommencer une tâche marquée `DONE` ou `REVIEW` sur la ref autoritative.
 
-## 5. Commandes runtime
+## 5. Garde-fou runtime
 
-Ne jamais lancer `node scripts/agent.mjs start` depuis `main` ou avant le préflight ci-dessus.
+Les commandes suivantes de `scripts/agent.mjs` sont temporairement interdites dans cette exécution intégrée :
 
-Pour une tâche déjà `BLOCKED` ou `IN_PROGRESS`, utiliser une reprise explicite sur la branche durable après synchronisation. Pour une nouvelle tâche, vérifier d’abord la lane et le state distant, puis démarrer uniquement la tâche indiquée par `current_task` / `next_action`.
+```text
+start
+resume
+finish
+```
+
+Ce runtime legacy sélectionne encore une branche depuis `parallel_lane` et peut relire les states de `main`. Il ne doit pas être utilisé pour choisir, reprendre ou clôturer une tâche tant qu’il n’a pas été refactorisé pour respecter `MANIFEST.execution_branch`.
+
+Après le préflight, les changements de state sont faits explicitement dans les fichiers autoritatifs, puis committés et poussés sur la branche durable. Les commandes de diagnostic sans mutation peuvent être utilisées seulement après vérification de leur sortie.
 
 ## 6. Livraison
 
