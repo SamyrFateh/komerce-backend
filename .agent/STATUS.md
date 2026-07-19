@@ -12,10 +12,6 @@ La commande de démarrage unique est :
 node scripts/agent-bootstrap.mjs
 ```
 
-La source opérationnelle unique est :
+Le statut opérationnel est calculé à chaque démarrage par `scripts/agent-resolve-status.mjs` depuis les states, l’historique et les refs distantes.
 
-```text
-.agent/NOW.json
-```
-
-Pour l'historique détaillé, consulter les states, worklogs, audits et preuves de chaque tâche.
+Pour l’historique détaillé, consulter les states, worklogs, audits et preuves de chaque tâche.
