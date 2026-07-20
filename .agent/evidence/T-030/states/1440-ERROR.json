@@ -1,0 +1,18 @@
+{
+  "viewport": "1440",
+  "state": "ERROR",
+  "timestamp": "2026-07-20T10:32:47.899Z",
+  "cardsInGrid": 4,
+  "modalOpen": true,
+  "addCartBtn": {
+    "disabled": true,
+    "inCart": false,
+    "text": "Ajouter au panier"
+  },
+  "selectedOptions": [],
+  "stockText": null,
+  "selectionMessage": null,
+  "skeletonVisible": false,
+  "skeletonHeight": 0,
+  "errorVisible": true
+}

@@ -5,7 +5,7 @@
   "finding_id": "FINAL",
   "wave": "FINAL",
   "parallel_lane": "LANE-FINAL",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001",
@@ -64,20 +64,92 @@
     "npm run audit:features",
     "npm run map:check"
   ],
-  "agent": null,
+  "agent": "gpt-5.6-thinking",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-final",
+  "started_at": "2026-07-20T10:32:53.597Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-20T10:32:53.597Z",
   "reviewed_at": null,
   "base_commit": null,
   "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "changed_files": [
+    "RAPPORT_CHANTIER_PDP_MAQUETTE_PREMIUM.md",
+    ".agent/MANIFEST.json",
+    ".agent/generated/T-030-final.zip",
+    ".agent/evidence/T-030/**",
+    ".agent/state/T-030.json"
+  ],
+  "gate_results": [
+    {
+      "command": "npm --prefix public/boutique run deploy:css",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm --prefix public/boutique run check:cache",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm --prefix public/boutique run check:all",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm --prefix public/boutique run test:unit",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run test:unit",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run feature:registry",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run gate:schema",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run gate:touched-files",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run gate:docs-lint",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run gate:feature-audit",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run gate:boutique-ownership",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run audit:features",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run map:check",
+      "result": "PASS",
+      "exit_code": 0
+    }
+  ],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "Validation finale: 36 captures (6 viewports x 6 états), 13 gates PASS, couverture enregistrée, matrice 28 écarts, rapport et ZIP SHA-256 produits.",
+  "next_action": "Revue humaine indépendante du diff et des preuves; validation Opus externe recommandée avant passage à DONE."
 }

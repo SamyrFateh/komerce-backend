@@ -1,0 +1,12 @@
+{
+  "total": 36,
+  "ok": 36,
+  "failed": 0,
+  "generatedAt": "2026-07-20T10:32:53.225Z",
+  "baseUrl": "http://127.0.0.1:4173/boutique/",
+  "physicalCounts": {
+    "png": 36,
+    "json": 36
+  },
+  "fixApplied": "Golden + 3 fillers, clics Playwright natifs, LOADING bloqué puis libéré explicitement, validation réelle de chaque état"
+}

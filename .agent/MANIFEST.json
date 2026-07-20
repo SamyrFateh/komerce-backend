@@ -1,36 +1,24 @@
 {
-  "governance_version": "4.2-branch-first-computed-status",
-  "project": "Komerce",
-  "worksite": "PDP_MAQUETTE_PREMIUM",
-  "repository": "https://github.com/SamyrFateh/komerce-backend.git",
-  "execution_branch": "agent/lane-mobile-renderer",
-  "branch_acquisition_required_before_repository_inspection": true,
-  "fresh_clone_command": "git clone --branch agent/lane-mobile-renderer --single-branch https://github.com/SamyrFateh/komerce-backend.git",
-  "existing_clone_sequence": [
-    "refuse if git status --porcelain is non-empty",
-    "git fetch origin agent/lane-mobile-renderer",
-    "switch to or create tracking branch agent/lane-mobile-renderer",
-    "git pull --ff-only origin agent/lane-mobile-renderer",
-    "node scripts/agent-bootstrap.mjs"
+  "task": "T-030",
+  "generated_at": "2026-07-20T10:32:53.310Z",
+  "branch": "agent/lane-final",
+  "captures": 36,
+  "viewports": [
+    360,
+    390,
+    430,
+    1024,
+    1440,
+    1680
   ],
-  "forbidden_pre_acquisition_refs": [
-    "main",
-    "agent/t-*",
-    "agent/lane-desktop-layout"
+  "states": [
+    "AVAILABLE_EMPTY",
+    "AVAILABLE_FILLED",
+    "OUT_OF_STOCK",
+    "SELECTION_REQUIRED",
+    "LOADING",
+    "ERROR"
   ],
-  "bootstrap_command": "node scripts/agent-bootstrap.mjs",
-  "status_resolver": "scripts/agent-resolve-status.mjs",
-  "operational_status": "computed_from_remote_states_history_and_refs",
-  "additional_instruction_file": ".agent/ADDITIONAL-INSTRUCTION.json",
-  "checkpoint_command": "node scripts/agent-checkpoint.mjs",
-  "single_final_pr": true,
-  "main_is_intentionally_stale_until_final_pr": true,
-  "lane_labels_are_classifications": true,
-  "status_files_are_non_operational": true,
-  "legacy_runtime_forbidden": [
-    "node scripts/agent.mjs start",
-    "node scripts/agent.mjs resume",
-    "node scripts/agent.mjs finish",
-    "node scripts/agent.mjs status"
-  ]
+  "report": "RAPPORT_CHANTIER_PDP_MAQUETTE_PREMIUM.md",
+  "evidence": ".agent/evidence/T-030"
 }

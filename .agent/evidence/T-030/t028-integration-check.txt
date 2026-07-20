@@ -1,5 +1,5 @@
 PASS — mic pulse animation removed
-FAIL — favorite pop removed
+PASS — favorite pop removed
 PASS — favorite active scale removed
 PASS — favorite base transition has no transform
 PASS — recent-card hover has no transform
