@@ -30,6 +30,7 @@ function skuProduct(overrides = {}) {
     description: 'Robe fluide',
     category: 'vetements',
     subcategory: 'robes',
+    series: null,
     price_kmf: 12500,
     promo_pct: 10,
     image_url: 'https://cdn.example.com/main.jpg',
@@ -166,6 +167,7 @@ describe('catalog product detail contract v1', () => {
       description: 'Robe fluide',
       category: 'vetements',
       subcategory: 'robes',
+      series: null,
     });
     expect(detail.pricing).toEqual({
       price_kmf: 12500,
@@ -212,6 +214,20 @@ describe('catalog product detail contract v1', () => {
 
     // Beige existe comme valeur d'axe, mais aucune unité Beige n'est fabriquée.
     expect(detail.sellable_units.some((unit) => unit.option_values.Couleur === 'Beige')).toBe(false);
+  });
+
+  test('expose une série produit non nulle dans le contrat public', async () => {
+    const product = skuProduct({ series: 'Golden Performance Series' });
+    const detail = await getProductDetail(dbFor({ product }), PRODUCT_ID);
+
+    expect(detail.product.series).toBe('Golden Performance Series');
+  });
+
+  test('reste compatible quand aucune série produit n’est renseignée', async () => {
+    const product = skuProduct({ series: null });
+    const detail = await getProductDetail(dbFor({ product }), PRODUCT_ID);
+
+    expect(detail.product).toHaveProperty('series', null);
   });
 
   test('associe les médias d’une valeur d’option aux SKU compatibles, sans heuristique de fichier', async () => {
@@ -344,6 +360,7 @@ describe('GET /api/products/:id/detail', () => {
 
     expect(response.body.contract_version).toBe('1');
     expect(response.body.product.id).toBe(PRODUCT_ID);
+    expect(response.body.product.series).toBeNull();
     expect(response.body.sellable_units).toHaveLength(2);
   });
 

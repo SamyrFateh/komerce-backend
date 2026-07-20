@@ -5,7 +5,7 @@
   "finding_id": "D1",
   "wave": "P1",
   "parallel_lane": "LANE-DESKTOP-TYPE",
-  "status": "READY",
+  "status": "DONE",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -27,20 +27,39 @@
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate"
   ],
-  "agent": null,
-  "reviewer": null,
+  "agent": "claude-sonnet-session-3",
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:21:50Z",
   "lease_until": null,
-  "finished_at": null,
-  "reviewed_at": null,
+  "finished_at": "2026-07-18T20:21:50Z",
+  "reviewed_at": "2026-07-18T22:32:00Z",
   "base_commit": null,
   "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "changed_files": [
+    "public/boutique/css/modal-shell.css",
+    "public/boutique/css/modal-product-lot4-hybrid.css",
+    ".agent/evidence/T-013/css-specificity.txt",
+    ".agent/evidence/T-013/desktop-price-1024.png",
+    ".agent/evidence/T-013/desktop-price-1440.png"
+  ],
+  "gate_results": [
+    {
+      "gate": "reviewer source verification",
+      "result": "PASS — valeur finale conforme dans modal-shell.css / modal-product-lot4-hybrid.css"
+    },
+    {
+      "gate": "consolidated boutique gates",
+      "result": "PASS — deploy:css, check:cache, check:breakpoints, audit:ownership, audit:gate; feature-audit 0 FAIL / 0 WARN"
+    },
+    {
+      "gate": "consolidated unit suite",
+      "result": "PASS — 92/92 suites, 1748/1748 tests"
+    }
+  ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "review_decision": "APPROVE",
+  "summary": "D1 approuvé : prix desktop final 28px/500/text, unité 13px/500/muted; coral limité à la promo active; aucun calcul de prix modifié.",
+  "next_action": "T-013 clôturée."
 }

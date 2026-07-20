@@ -1,0 +1,74 @@
+css/modal-shell.css:275:   même logique que .k-modal-promo-badge, conservé coral (exception D-P3 de fait). */
+css/modal-shell.css:276:.k-topbar-price-promo { font-size: 10px; font-weight: 500; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
+css/modal-shell.css:559:     pas une promotion — purge du coral, tokens ambre existants. */
+css/modal-shell.css:585:     Promo active (.k-modal--has-promo) reste autorisée en coral via D-P3
+css/modal-shell.css:586:     (règle séparée plus bas). Purge coral hors promo. */
+css/modal-shell.css:591:  #k-modal.k-modal--has-promo .k-modal-price { color: var(--coral); }
+css/modal-shell.css:592:  #k-modal.k-modal--has-promo .k-modal-price-unit { color: var(--coral); }
+css/modal-shell.css:654:  /* PR-D3 — CTA redesign desktop : Acheter vert solid, Ajouter outlined, sous-total coral */
+css/modal-shell.css:747:  .k-msearch-footer:hover { background: var(--sand); color: var(--coral); }
+css/modal-shell.css:749:  .k-msearch-group-more:hover { background: var(--sand); color: var(--coral-dark); }
+css/modal-product.css:23:  background: var(--coral); color: var(--white);
+css/modal-product.css:63:/* F1 — prix promo en coral sur mobile (classe posée par b-modal.js openModal) */
+css/modal-product.css:64:.k-modal--has-promo .k-modal-price { color: var(--coral); font-size: clamp(20px, 5vw, 26px); font-weight: 700; }
+css/modal-product.css:74:/* [T-027, arbitrage humain] n'est pas une promotion — purge coral,
+css/modal-product.css:75:   tokens ambre existants (corrige au passage --coral-bg/--coral-border,
+css/modal-product.css:134:.k-msearch-item-price { font-size: 14px; font-weight: 700; color: var(--coral); white-space: nowrap; }
+css/modal-product.css:135:.k-msearch-item-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); padding: 1px 6px; border-radius: 50px; }
+css/modal-product.css:145:.k-msearch-group-more { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--coral); cursor: pointer; transition: background .12s; -webkit-tap-highlight-color: transparent; }
+css/modal-product.css:148:.k-msearch-recents-clear { font-size: 11px; font-weight: 600; color: var(--coral); background: transparent; border: none; cursor: pointer; padding: 2px 6px; border-radius: 6px; transition: background .12s; text-transform: none; letter-spacing: 0; }
+css/modal-product.css:195:.k-sug-chip.is-active { background: transparent; border-color: var(--coral); color: var(--text); font-weight: 700; }
+css/modal-product.css:209:.k-sug-grid .k-sug-card-price { padding: 0 8px 8px; font-size: 14px; font-weight: 700; color: var(--coral); }
+css/modal-product.css:217:.k-sug-card-price { font-size: 13px; font-weight: 700; color: var(--coral); flex: 1; min-width: 0; white-space: nowrap; } /* BUGFIX: white-space:nowrap empêche le prix de se couper sur 2 lignes (ex: 12300 / KMF) */
+css/modal-product.css:224:.k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: var(--white); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
+css/modal-product.css:914:  /* PR-D1 — badge % coral plein, blanc, plus visible (mockup) */
+css/modal-product.css:919:    background: var(--coral);
+css/modal-product.css:940:     Aucun token amber — uniquement sand-warm + coral du système Komerce. */
+css/modal-product.css:955:    background-color: var(--coral);
+css/modal-product.css:964:    color: var(--coral);
+css/modal-product.css:969:    color: var(--coral);
+css/modal-product.css:970:    background: var(--border-coral-09);
+css/modal-product.css:971:    border: 1px solid var(--border-coral-13);
+css/modal-product.css:979:    color: var(--coral);
+css/modal-mobile-canonical.css:111:    color: var(--coral);
+css/modal-mobile-canonical.css:206:     (68px, coral, wrap). Sur mobile, la maquette premium demande des
+css/modal-mobile-canonical.css:208:     un état sélectionné neutre (bordure --text, jamais coral — le
+css/modal-mobile-canonical.css:209:     coral reste réservé à la promo active, D-P3). Override ciblé
+css/modal-mobile-canonical.css:266:     sélectionné coral, hérité du style carte partagé mobile/desktop. Sur
+css/modal-mobile-canonical.css:269:     (fond/bordure --text, texte blanc — jamais coral, D-P3) et un état
+css/modal-media.css:268:    color: var(--coral);
+css/tokens.css:20:  /* ── Sauge — palette checkout (remplace ocean/coral trop saturés dans le flow commande) ──
+css/tokens.css:22:     Terracotta : chaleur douce, remplace coral sans l'orange criard.
+css/tokens.css:36:  /* ── Checkout — crème + vert clair + coral
+css/tokens.css:43:  --checkout-border-mid:    var(--coral);              /* bordure hover / focus — coral     */
+css/tokens.css:56:  --checkout-link:          var(--coral);              /* "Changer", liens inline           */
+css/tokens.css:70:  --checkout-sel-bg:        #FFF0E8;                   /* fond état sélectionné (coral pâle)*/
+css/tokens.css:107:  --coral:        #C85C2D;
+css/tokens.css:108:  --coral-dark:   #A84820;
+css/tokens.css:180:  --shadow-coral-22:   rgba(200,92,45,.22);   /* ombre bouton checkout */
+css/tokens.css:182:  /* ── Bordures coral alpha ───────────────────────────────── */
+css/tokens.css:183:  --border-coral-09:   rgba(200,92,45,.09);
+css/tokens.css:184:  --border-coral-13:   rgba(200,92,45,.13);
+css/tokens.css:185:  --border-coral-22:   rgba(200,92,45,.22);
+css/tokens.css:211:  /* T-027 — accent focus, hors palette coral (spec CHANTIER §accent-blue).
+css/tokens.css:229:  --cream-peach:      #fff4ed;  /* fond pay helper coral */
+css/tokens.css:356:  --coral-text:             #9a4e2d   ;  /* Coral texte foncé sur fond clair */
+css/tokens.css:357:  --coral-text-deep:        #a0461e   ;  /* Coral texte très foncé */
+css/tokens.css:376:  --coral-light:      #FAECE7;             /* fond badge coral, phase settlement   */
+css/tokens.css:377:  --coral-bg-09:      rgba(239,125,95,.09); /* identity-note fond */
+css/tokens.css:378:  --coral-bg-12:      rgba(239,125,95,.12); /* cart-tab is-active fond */
+css/tokens.css:379:  --coral-bg-18:      rgba(239,125,95,.18); /* cart-tab is-active shadow */
+css/tokens.css:380:  --coral-bg-38:      rgba(239,125,95,.38); /* cart-tab is-active border */
+css/tokens.css:419:  --coral-focus-08:        rgba(200,92,45,.08);
+css/tokens.css:420:  --coral-focus-10:        rgba(200,92,45,.1);
+css/tokens.css:421:  --coral-focus-12:        rgba(200,92,45,.12);
+css/tokens.css:422:  --coral-shadow-25:       rgba(200,92,45,.25);
+css/tokens.css:425:  --coral-chip-07:         rgba(255,107,53,.07);
+css/tokens.css:426:  --coral-chip-10:         rgba(255,107,53,.10);
+css/tokens.css:427:  --coral-chip-16:         rgba(255,107,53,.16);
+css/tokens.css:428:  --coral-chip-18:         rgba(255,107,53,.18);
+css/tokens.css:431:  --coral-light-28:        rgba(255,163,122,.28);
+css/tokens.css:458:  --coral-sett-22:         rgba(239,125,95,.22);
+css/tokens.css:482:  --coral-focus-40:        rgba(200,92,45,.4);
+css/tokens.css:483:  --coral-focus-45:        rgba(200,92,45,.45);
+css/tokens.css:484:  --coral-shadow-18:       rgba(200,92,45,.18);

@@ -1,0 +1,90 @@
+T-026 — Audit font-weight >500 dans le périmètre PDP (AVANT)
+
+Méthode : parsing postcss (pas de regex fragile) sur les 6 fichiers du
+périmètre autorisé. Classification IN/OUT par ownership réel (JS propriétaire,
+en-têtes @owner, structure DOM) :
+  OUT = recherche interne modale (.k-msearch-*, .k-topbar-search-*,
+        #k-modal-search-dropdown — propriété b-modal-core.js) et
+        suggestions/curation (.k-sug-*, #k-modal-suggestions, .k-pdp-curation-*
+        — propriété b-modal-suggestions.js / b-pdp-curation-suggestions.js).
+  IN  = tout le reste : contenu et contrôles propres à la PDP (titre, prix,
+        specs, guide des tailles, variantes, boutons/compteurs/badges de la
+        modale produit elle-même).
+
+Total occurrences >500 dans le périmètre : 90
+  IN (scope PDP)         : 70
+  OUT (recherche/suggest): 20 (dont le badge #k-modal-suggestions.k-pdp-curation
+                            .k-pdp-curation-badge, propriété b-modal-suggestions.js)
+
+Détail des 70 occurrences IN (fichier:ligne  sélecteur  valeur) :
+
+  modal-shell.css:49    .k-modal-back                                              600
+  modal-shell.css:65    .k-modal-nav-btn                                           600
+  modal-shell.css:71    .k-modal-nav-counter                                       600
+  modal-shell.css:83    .k-modal-cart-badge                                        700
+  modal-shell.css:246   .k-qty-btn                                                 700
+  modal-shell.css:248   .k-qty-val                                                 700
+  modal-shell.css:249   .k-add-cart-btn                                            600
+  modal-shell.css:252   .k-modal-actions .k-buy-now-btn                            600
+  modal-shell.css:254   .k-modal-subtotal strong                                   700
+  modal-shell.css:271   .k-topbar-name                                             700
+  modal-shell.css:272   .k-topbar-price                                            700
+  modal-shell.css:273   .k-topbar-price-val                                        800
+  modal-shell.css:274   .k-topbar-price-promo                                      700
+  modal-shell.css:455   [min-width:900px] .k-modal-breadcrumb-name                 600
+  modal-shell.css:564   [min-width:900px] #k-modal .k-modal-meta .k-modal-meta-rank 700
+  modal-shell.css:597   [min-width:900px] .k-modal-trust-item                      600
+  modal-shell.css:602   [min-width:900px] .k-modal-share-btn                       600
+  modal-shell.css:611   [min-width:900px] .k-modal-spec-toggle                     700
+  modal-shell.css:621   [min-width:900px] .k-modal-spec-table td:first-child       600
+  modal-shell.css:673   [min-width:900px] #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn 600
+  modal-shell.css:947   .k-modal-topbar-product-name                               600
+  modal-shell.css:948   .k-modal-topbar-product-price                              700
+  modal-media.css:61    .k-modal-counter                                           600
+  modal-media.css:76    .k-modal-view-full                                         600
+  modal-media.css:163   .k-modal-fullscreen-counter                                600
+  modal-media.css:212   [min-width:900px] .k-modal-recent-title                    700
+  modal-media.css:267   [min-width:900px] .k-modal-recent-price                    700
+  modal-product.css:24  .k-modal-promo-badge                                       700
+  modal-product.css:62  .k-modal-price                                             600
+  modal-product.css:64  .k-modal--has-promo .k-modal-price                         700  ← EXCEPTION D-P3
+  modal-product.css:78  #k-modal .k-modal-meta-rank                                700
+  modal-product.css:100 .k-modal-search-clear                                      600
+  modal-product.css:256 .k-modal-reassurance-label                                 600
+  modal-product.css:289 .k-modal-reassurance-item                                  600
+  modal-product.css:321 .k-vg-label-type                                           700
+  modal-product.css:367 .k-sku-name                                                600
+  modal-product.css:391 .k-sku--active .k-sku-name                                 700
+  modal-product.css:453 .k-vp.k-vp--active                                         700
+  modal-product.css:493 .k-vs-trigger                                              600
+  modal-product.css:507 .k-vs-trigger-val.is-set                                   700
+  modal-product.css:563 .k-vs-header-title                                         700
+  modal-product.css:569 .k-vs-header-guide                                         600
+  modal-product.css:610 .k-vs-confirm                                              700
+  modal-product.css:633 .k-vg-size-guide                                           600
+  modal-product.css:711 .k-sg-title                                                700
+  modal-product.css:750 .k-sg-tab                                                  600
+  modal-product.css:803 .k-sg-table thead th                                       700
+  modal-product.css:822 .k-sg-table tbody td:first-child                           700
+  modal-product.css:903  [min-width:900px] .k-modal-eur-ref strong                 700
+  modal-product.css:914  [min-width:900px] .k-modal-aed-pct                        700
+  modal-product.css:965  [min-width:900px] .k-modal-flash-pct                      700
+  modal-product.css:1012 [min-width:900px] .k-modal-section-title                  700
+  modal-product.css:1038 [min-width:900px] .k-modal-opt-row1                       600
+  modal-product.css:1046 [min-width:900px] .k-modal-opt-free                       600
+  modal-product.css:1120 [min-width:900px] .k-modal-pay-label                      600
+  modal-product.css:1173 .k-buybox-payment-tab                                     600
+  modal-product.css:1216 .k-buybox-payment-badge                                   600
+  modal-product.css:1238 .k-modal-subtotal strong                                  700
+  modal-product-lot4-hybrid.css:125 [min-width:900px] #k-modal .k-buybox-relay-title 800
+  modal-product-lot4-hybrid.css:138 [min-width:900px] #k-modal .k-buybox-relay-free  800
+  modal-product-lot4-hybrid.css:177 [min-width:900px] #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn 600
+  modal-product-lot4-hybrid.css:222 [min-width:900px] #k-modal .k-buybox-payment-tab 700
+  modal-product-lot4-hybrid.css:280 [min-width:900px] #k-modal .k-buybox-payment-copy strong 800
+  modal-product-lot4-hybrid.css:297 [min-width:900px] #k-modal .k-buybox-payment-badge 800
+  modal-product-lot4-hybrid.css:333 [min-width:900px] #k-modal .k-modal-share-row::before 600
+  modal-product-lot4-hybrid.css:348 [min-width:900px] #k-modal .k-modal-share-btn.k-modal-share-btn--wa 700
+  modal-mobile-canonical.css:104 [max-width:899px] #k-modal .k-modal-price          600
+  modal-mobile-canonical.css:112 [max-width:899px] #k-modal.k-modal--has-promo .k-modal-price 700 ← EXCEPTION D-P3
+  modal-enriched-content.css:72  [max-width:899px] .k-mdm-spec-group-label          700
+  modal-enriched-content.css:194 [min-width:900px] .k-modal-enriched-spec-group-label 700

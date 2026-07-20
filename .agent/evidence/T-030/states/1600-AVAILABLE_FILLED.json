@@ -1,0 +1,21 @@
+{
+  "viewport": "1600",
+  "state": "AVAILABLE_FILLED",
+  "timestamp": "2026-07-20T10:32:49.850Z",
+  "cardsInGrid": 4,
+  "modalOpen": true,
+  "addCartBtn": {
+    "disabled": false,
+    "inCart": true,
+    "text": "🧺 Dans le panier (1)"
+  },
+  "selectedOptions": [
+    "Bleu",
+    "42"
+  ],
+  "stockText": null,
+  "selectionMessage": "",
+  "skeletonVisible": false,
+  "skeletonHeight": 0,
+  "errorVisible": false
+}

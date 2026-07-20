@@ -1,0 +1,20 @@
+{
+  "viewport": "1600",
+  "state": "OUT_OF_STOCK",
+  "timestamp": "2026-07-20T10:32:50.789Z",
+  "cardsInGrid": 4,
+  "modalOpen": true,
+  "addCartBtn": {
+    "disabled": true,
+    "inCart": false,
+    "text": "Ajouter au panier"
+  },
+  "selectedOptions": [
+    "Bleu"
+  ],
+  "stockText": null,
+  "selectionMessage": "43 indisponible pour Bleu — rupture de stock",
+  "skeletonVisible": false,
+  "skeletonHeight": 0,
+  "errorVisible": false
+}

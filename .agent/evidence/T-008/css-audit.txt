@@ -1,0 +1,29 @@
+T-008 — Audit CSS badge panier
+Agent : claude-sonnet
+
+=== Delta appliqué (modal-shell.css L79-86) ===
+AVANT : background: var(--coral)
+APRÈS : background: var(--cta-green); border: 1.5px solid var(--page-bg)
+
+=== Computed styles Playwright (390px) ===
+background:  rgb(42,122,62) = var(--cta-green) #2a7a3e  ✓
+color:       rgb(255,255,255) blanc                       ✓
+border:      rgb(253,250,245) = var(--page-bg) #FDF A F5  ✓
+fontSize:    10px                                         ✓
+fontWeight:  700                                          ✓
+
+=== Contraste WCAG ===
+blanc sur --cta-green : 5.31:1 > 4.5:1 (AA ✓)
+blanc sur --green-success (#3d9e55) : 3.38:1 < 4.5:1 (échoue AA — écarté)
+
+=== Périmètre strict respecté ===
+Seul .k-modal-cart-badge modifié.
+Autres occurrences coral dans modal-shell.css (prix desktop L579, topbar prix L272-274,
+subtotal L254, breadcrumb hover L454, thumb active L494) → appartiennent à D1/T2,
+hors périmètre T-008. Non touchées.
+
+=== Gates ===
+deploy:css (--force) : PASS — v161/v55
+audit:ownership       : PASS — 0 nouvelles dettes
+audit:gate            : PASS — Stable vs baseline
+check:breakpoints     : PASS

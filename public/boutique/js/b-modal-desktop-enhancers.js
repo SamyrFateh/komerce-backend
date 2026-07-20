@@ -5,15 +5,15 @@
  * @layer         ui-enhancer
  * @criticality   medium
  * @inputs        modal_state, desktop_viewport, bus_events
- * @outputs       desktop_navigation_and_editorial_enhancements
- * @depends       b-bus.js, b-catalog.js, b-modal.js, b-scroll-owner.js
- * @used-by       b-desktop-upgrade.js
+ * @outputs       none
+ * @depends       b-bus.js
+ * @used-by       main.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
- * @impact-areas  modal-desktop, product-discovery, responsive-layout
- * @version       2026-07
+ * @impact-areas  modal-desktop, responsive-layout
+ * @version       2026-07 — D-P1 (T-016)
  */
 
 'use strict';
@@ -29,228 +29,29 @@
  *   - paiement produit.
  *
  * Ces vérités appartiennent au Product Detail Contract, au reducer SKU et au
- * renderer `b-modal-desktop-product.js`. L'enhancer conserve seulement le
- * contexte de navigation et les enrichissements éditoriaux desktop.
+ * renderer `b-modal-desktop-product.js`.
  *
- * PDC-6 : setupModalContractClasses() et sa dépendance au ViewModel modal
- * legacy (dernière intelligence produit concurrente, classes CSS legacy) ont
- * été supprimés. main.js n'appelle plus que setupModalDesktopEnhancers ainsi
- * que le bootstrap Product Detail canonique.
+ * D-P1 (T-016) : le panneau commercial desktop de la PDP n'affiche plus
+ * aucun enrichissement éditorial (fil d'Ariane, réassurance, partage,
+ * vu récemment). Ce module ne conserve donc plus que les abonnements bus,
+ * gardés idempotents (cf. MDP-3) au cas où un enrichissement reviendrait
+ * sur un périmètre distinct du panneau commercial PDP.
  */
 
-import { bus }                  from './b-bus.js';
-import { state, modalZone }     from './b-store.js';
-import { fmtPrice }             from './b-utils.js';
-import { showToast }            from './b-cart-core.js';
-import { openModal }            from './b-modal.js';
-import { setActiveCat }         from './b-catalog.js';
-import { normalizeCategoryKey } from './shop-schema.js';
-import { isDesktop }            from './b-scroll-owner.js';
+import { bus } from './b-bus.js';
 
 let _enhancersInstalled = false;
 
-function currentDisplayProduct() {
-  const detail = state.modalProductDetail;
-  if (detail?.product) {
-    return {
-      id: detail.product.id,
-      name: detail.product.name,
-      category: detail.product.category,
-      price_kmf: detail.pricing?.price_kmf ?? null,
-    };
-  }
-  return state.modalProduct || null;
-}
-
-function injectBreadcrumb() {
-  if (!isDesktop()) return;
-  const topbar = modalZone('.k-modal-topbar');
-  const product = currentDisplayProduct();
-  if (!topbar || !product) return;
-
-  topbar.querySelector('.k-modal-breadcrumb')?.remove();
-
-  const cat = product.category || '';
-  const name = product.name || '';
-  const breadcrumb = document.createElement('div');
-  breadcrumb.className = 'k-modal-breadcrumb';
-
-  const shop = document.createElement('span');
-  shop.className = 'k-modal-breadcrumb-cat';
-  shop.dataset.cat = cat;
-  shop.textContent = 'Boutique';
-
-  const sep1 = document.createElement('span');
-  sep1.className = 'k-modal-breadcrumb-sep';
-  sep1.textContent = '›';
-
-  const category = document.createElement('span');
-  category.className = 'k-modal-breadcrumb-cat';
-  category.dataset.cat = cat;
-  category.textContent = cat;
-
-  const sep2 = document.createElement('span');
-  sep2.className = 'k-modal-breadcrumb-sep';
-  sep2.textContent = '›';
-
-  const productName = document.createElement('span');
-  productName.className = 'k-modal-breadcrumb-name';
-  productName.textContent = name;
-
-  breadcrumb.append(shop, sep1, category, sep2, productName);
-
-  const backBtn = topbar.querySelector('.k-modal-back');
-  if (backBtn?.nextSibling) topbar.insertBefore(breadcrumb, backBtn.nextSibling);
-  else topbar.appendChild(breadcrumb);
-
-  breadcrumb.querySelectorAll('.k-modal-breadcrumb-cat').forEach((el) => {
-    el.addEventListener('click', () => {
-      const value = el.dataset.cat;
-      if (!value) return;
-      bus.emit('modal:close');
-      setActiveCat(normalizeCategoryKey(value) || value);
-    });
-  });
-}
-
-function injectShareRow() {
-  if (!isDesktop()) return;
-  const info = modalZone('.k-modal-info');
-  const product = currentDisplayProduct();
-  if (!info || !product) return;
-
-  info.querySelector('.k-modal-share-row')?.remove();
-
-  const url = `${window.location.origin}/?p=${product.id}`;
-  const price = product.price_kmf != null ? ` — ${fmtPrice(product.price_kmf)}` : '';
-  const text = encodeURIComponent(
-    `👀 Regarde ce que j'ai trouvé sur Komerce !\n${product.name || ''}${price}\n${url}`
-  );
-
-  const row = document.createElement('div');
-  row.className = 'k-modal-share-row';
-
-  const whatsapp = document.createElement('button');
-  whatsapp.type = 'button';
-  whatsapp.className = 'k-modal-share-btn k-modal-share-btn--wa';
-  whatsapp.dataset.href = `https://wa.me/?text=${text}`;
-  whatsapp.textContent = 'Partager via WhatsApp';
-
-  const copy = document.createElement('button');
-  copy.type = 'button';
-  copy.className = 'k-modal-share-btn';
-  copy.dataset.action = 'copy';
-  copy.textContent = 'Copier le lien';
-
-  row.append(whatsapp, copy);
-  info.appendChild(row);
-
-  whatsapp.addEventListener('click', () => {
-    window.open(whatsapp.dataset.href, '_blank');
-  });
-  copy.addEventListener('click', () => {
-    navigator.clipboard.writeText(url).then(() => {
-      showToast('🔗 Lien copié !');
-    });
-  });
-}
-
-function injectTrustBadges() {
-  if (!isDesktop()) return;
-  const info = modalZone('.k-modal-info');
-  if (!info) return;
-
-  info.querySelector('.k-modal-trust')?.remove();
-
-  const trust = document.createElement('div');
-  trust.className = 'k-modal-trust';
-  [
-    ['🔒', 'Paiement sécurisé'],
-    ['💬', 'Support Komerce'],
-  ].forEach(([icon, label]) => {
-    const item = document.createElement('span');
-    item.className = 'k-modal-trust-item';
-    item.textContent = `${icon} ${label}`;
-    trust.appendChild(item);
-  });
-  info.appendChild(trust);
-}
-
-function injectRecentlyViewed() {
-  if (!isDesktop()) return;
-  const scrollEl = modalZone('.k-modal-scroll');
-  const product = currentDisplayProduct();
-  if (!scrollEl || !product) return;
-
-  scrollEl.querySelector('.k-modal-recent')?.remove();
-
-  const recentIds = (state.viewedHistory || [])
-    .filter((id) => String(id) !== String(product.id))
-    .reverse();
-  const recents = recentIds
-    .map((id) => state.products.find((item) => String(item.id) === String(id)))
-    .filter(Boolean)
-    .slice(0, 8);
-  if (!recents.length) return;
-
-  const section = document.createElement('section');
-  section.className = 'k-modal-recent';
-  const title = document.createElement('h3');
-  title.className = 'k-modal-recent-title';
-  title.textContent = 'Vu récemment';
-  const grid = document.createElement('div');
-  grid.className = 'k-modal-recent-grid';
-
-  recents.forEach((item) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'k-modal-recent-card';
-    card.dataset.pid = item.id;
-
-    const imageWrap = document.createElement('div');
-    imageWrap.className = 'k-modal-recent-img';
-    const image = document.createElement('img');
-    image.src = item.image_url || '';
-    image.alt = '';
-    image.loading = 'lazy';
-    imageWrap.appendChild(image);
-
-    const name = document.createElement('div');
-    name.className = 'k-modal-recent-name';
-    name.textContent = item.name || '';
-    const price = document.createElement('div');
-    price.className = 'k-modal-recent-price';
-    price.textContent = fmtPrice(item.price_kmf);
-
-    card.append(imageWrap, name, price);
-    card.addEventListener('click', () => {
-      if (card.dataset.pid) openModal(card.dataset.pid, true);
-    });
-    grid.appendChild(card);
-  });
-
-  section.append(title, grid);
-  scrollEl.appendChild(section);
-}
-
-function onModalOpened() {
-  if (!isDesktop()) return;
-  requestAnimationFrame(() => {
-    injectBreadcrumb();
-    injectTrustBadges();
-    injectShareRow();
-    injectRecentlyViewed();
-  });
-}
+function onModalOpened() {}
 
 export function setupModalDesktopEnhancers() {
   if (_enhancersInstalled) return;
   _enhancersInstalled = true;
   bus.on('modal:opened', onModalOpened);
   // MDP-3 : réconciliation resize. Un modal ouvert en mobile puis basculé en
-  // desktop ne rejoue jamais modal:opened — sans cet abonnement, breadcrumb/
-  // trust/partage/vu-récemment restaient absents jusqu'à une fermeture/
-  // réouverture. onModalOpened() s'auto-garde déjà sur isDesktop(), donc cet
-  // abonnement est sans effet tant que le viewport reste mobile.
+  // desktop ne rejoue jamais modal:opened. onModalOpened() est un no-op
+  // volontaire depuis D-P1 ; cet abonnement est conservé pour que
+  // setupModalDesktopEnhancers reste l'unique point d'entrée attendu par
+  // main.js si un enrichissement de composition distinct devait revenir.
   bus.on('modal:composition-synced', onModalOpened);
 }

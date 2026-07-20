@@ -5,7 +5,7 @@
   "finding_id": "D9",
   "wave": "P2",
   "parallel_lane": "LANE-DESKTOP-LAYOUT",
-  "status": "READY",
+  "status": "REVIEW",
   "priority": "HIGH",
   "depends_on": [
     "T-001"
@@ -25,20 +25,31 @@
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate"
   ],
-  "agent": null,
+  "agent": "claude",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-19T17:42:00Z",
   "lease_until": null,
-  "finished_at": null,
+  "finished_at": "2026-07-19T17:43:00Z",
   "reviewed_at": null,
-  "base_commit": null,
-  "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "base_commit": "8d955383",
+  "last_commit": "6b85dc75",
+  "changed_files": [
+    "public/boutique/css/modal-shell.css",
+    ".agent/evidence/T-021/computed-validation.json",
+    ".agent/evidence/T-021/desktop-thumbnails.png",
+    ".agent/evidence/T-021/focus-thumbnail.png"
+  ],
+  "gate_results": [
+    { "gate": "deploy:css", "result": "PASS" },
+    { "gate": "check:cache", "result": "PASS (stable après build)" },
+    { "gate": "check:breakpoints", "result": "PASS (6 violations, stable vs baseline)" },
+    { "gate": "audit:ownership", "result": "PASS" },
+    { "gate": "audit:gate", "result": "PASS (0 vuln high/critical)" }
+  ],
   "blocking_reason": null,
   "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "summary": "Travail utile récupéré depuis agent/lane-desktop-layout (commits fa8ae760 CSS + ee653a84 preuves), sans merge ni cherry-pick de la branche entière. Rail miniatures normalisé : 60×60 fixe, aucune ombre par défaut, bordure active 1.5px var(--text), hover sans transform/ombre (border-color seul). Le token de recolor coral->ocean posé par T-027 (commit 5d2a9b55, déjà sur lane-mobile-renderer) sur cette même ligne a été volontairement remplacé par var(--text), la normalisation D9 étant la source de vérité spécifique pour ce bloc, documenté dans le commit 6b85dc75.",
+  "next_action": "Revue humaine du diff + des captures desktop-thumbnails.png / focus-thumbnail.png."
 }

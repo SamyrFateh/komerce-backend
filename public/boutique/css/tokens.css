@@ -123,6 +123,9 @@
   --shadow-sm: 0 1px 3px rgba(31,48,36,.07);
   --shadow-md: 0 4px 12px rgba(31,48,36,.09);
   --shadow-lg: 0 8px 30px rgba(31,48,36,.12);
+  /* [D13] Ombre modale neutre gris chaud (remplace l'ancienne teinte
+     ocean var(--border-ocean-18)) — même base --text que shadow-sm/md/lg. */
+  --shadow-modal-neutral-10: 0 24px 60px rgba(31,48,36,.10);
 
   /* ── Typographie ─────────────────────────────────────────── */
   --font:         'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
@@ -207,6 +210,10 @@
   --blue-light-bg:    #e6f1fb;
   --blue-lighter-bg:  #cfe5f7;
   --blue-border:      #b5d4f4;
+
+  /* T-027 — accent focus, hors palette coral (spec CHANTIER §accent-blue).
+     Alias sur --blue-dark, pas une nouvelle couleur brute. */
+  --accent-blue:      var(--blue-dark);
 
   --amber-text:       #6b3e0e;
   --amber-text-light: #a06a1f;

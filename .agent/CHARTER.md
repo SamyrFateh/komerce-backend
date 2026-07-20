@@ -1,108 +1,189 @@
-# CHARTER — GitHub Lane Branch
+# CHARTER — Chantier PDP intégré
 
-Version : 3.3  
-Statut : norme permanente du chantier.
+Version : 3.6 intégrée — travail distant avant métadonnées  
+Statut : norme active du chantier.
 
-## 1. Runtime unique
+## 1. Première lecture
 
-Le seul runtime actif est :
+`.agent/START-HERE.md` est la première source obligatoire. Aucun state local ne doit être
+interprété avant synchronisation sur la ref autoritative.
 
-```bash
-node scripts/agent.mjs
-```
+`.agent/CHECKPOINT-PROTOCOL.md` est la norme obligatoire de sauvegarde, de récupération et
+de concurrence.
 
-Les scripts PowerShell historiques sont interdits comme fallback.
+## 2. Source de vérité
 
-## 2. Exécuter sans narrer
-
-L’agent lit les règles, exécute et sauvegarde. Le chat n’est ni un journal de travail
-ni une source de vérité.
-
-## 3. Authentification avant travail
-
-L’accès GitHub provient des credentials Git, de `GH_TOKEN` ou de `GITHUB_TOKEN`.
-Le secret ne doit jamais être affiché, versionné, journalisé ou placé dans une URL
-enregistrée.
-
-Le premier push doit réussir avant tout travail substantiel.
-
-## 4. Une branche par sujet
-
-La lane est l’unité de sujet et possède une branche durable :
+La branche durable unique est :
 
 ```text
-LANE-MOBILE-RENDERER → agent/lane-mobile-renderer
+agent/lane-mobile-renderer
 ```
 
-Toutes les tâches de la lane utilisent cette même branche. Une tâche ne crée jamais
-sa propre branche.
+La ref distante autoritative est `origin/agent/lane-mobile-renderer`.
 
-Un nouveau sujet ou une autre lane peut utiliser une autre branche. Le simple passage
-à la tâche suivante ne justifie jamais un changement de branche.
+`main` reste volontairement en retard jusqu’à la PR finale. Les labels de lane restent
+des classifications de sujet et ne déterminent plus une branche distincte.
 
-## 5. Réutilisation des fichiers
+## 3. Lecture avant action
 
-L’agent peut et doit revenir sur les mêmes fichiers pendant toute la vie du sujet :
-tests, couverture, correction découverte tardivement, refactorisation locale ou
-ajustement d’un comportement déjà traité.
+L’agent doit :
 
-La branche conserve l’ensemble du contexte. Les commits atomiques conservent
-l’historique. Il est interdit de fragmenter ce contexte entre plusieurs branches.
+1. fetcher `origin` ;
+2. vérifier le worktree ;
+3. synchroniser la branche durable ;
+4. lire MANIFEST, CHECKPOINT-PROTOCOL, EXECUTION_MAP, lane state et STATUS ;
+5. lire le state de la tâche courante ;
+6. inspecter l’historique Git, les diffs, les tests et les preuves distants avant de conclure
+   qu’un travail est absent.
 
-## 6. Petits lots et push continu
+`TASK-INDEX.json` est un catalogue statique, jamais une preuve de statut ou de prochaine
+tâche.
 
-Après chaque unité cohérente, l’agent exécute `save`.
+Un state peut être en retard après une interruption. Il décrit le travail ; il ne remplace
+pas la preuve du travail réellement poussé.
 
-Une unité cohérente est un constat, une preuve, une correction atomique ou un petit
-groupe indissociable de fichiers. L’agent pousse aussi avant une commande longue,
-une opération risquée et toute réponse finale.
+## 4. Authentification et sécurité Git
 
-## 7. Enchaînement des tâches
+Le secret ne doit jamais être affiché, versionné, journalisé ou placé dans une URL.
+En présence de modifications locales inconnues, aucun reset, stash automatique,
+suppression ou changement de branche n’est autorisé.
 
-Quand les gates d’une tâche passent :
+## 5. Branche et continuité
 
-1. la tâche passe à `DONE` dans la branche de lane ;
-2. aucun PR individuel n’est créé ;
-3. la prochaine tâche `READY` de la même lane est démarrée automatiquement ;
-4. le travail continue sur les fichiers déjà présents dans la branche.
+Toutes les tâches restantes, leurs corrections, tests, preuves et arbitrages restent sur
+la branche durable unique. Une tâche, un label de lane ou un changement de vague ne crée
+jamais une nouvelle branche.
 
-Une revue humaine intermédiaire n’est requise que si la tâche déclare explicitement
-un arrêt obligatoire ou si un arbitrage réel est nécessaire.
+Il est permis et attendu de modifier plusieurs fois les mêmes fichiers. L’historique utile
+est protégé par des checkpoints distants atomiques.
 
-## 8. Fin de lane
+## 6. Doctrine de récupération
 
-Quand aucune autre tâche exécutable ne reste dans la lane :
+Ce qu’un agent suivant ne peut pas reconstruire doit être poussé en premier :
 
-1. un handoff global de lane est produit ;
-2. la lane passe à `REVIEW` ;
-3. une seule PR couvre tout le sujet ;
-4. la revue porte sur l’historique et le diff complet ;
-5. après validation, la branche est mergée dans `main`.
+1. code source ;
+2. tests ;
+3. artefacts générés ;
+4. preuves réelles.
 
-## 9. Continuité après coupure
+Les métadonnées viennent ensuite :
 
-La reprise se fait depuis la branche de lane, jamais depuis `main`.
+1. state ;
+2. worklog ;
+3. audit ;
+4. STATUS et lane state.
 
-L’agent lit les états des tâches, les worklogs, les commits et le handoff de lane,
-puis reprend l’action exacte enregistrée.
+Un agent suivant peut relire un diff et reconstruire un state manquant. Il ne peut pas
+récupérer du code resté uniquement dans la sandbox précédente.
 
-## 10. Périmètre
+L’ordre de preuve en cas de contradiction est :
 
-La branche peut contenir l’union des périmètres autorisés des tâches de la lane.
-À un instant donné, l’agent respecte le périmètre de la tâche active.
+1. branche distante et historique Git ;
+2. source et tests distants ;
+3. preuves et artefacts distants ;
+4. résultats de gates ;
+5. state et tableaux de pilotage.
 
-Un bug découvert dans un fichier déjà autorisé par le sujet est corrigé sur la même
-branche et documenté par un commit. Une extension réelle hors sujet exige un arbitrage.
+## 7. Checkpoint distant obligatoire
 
-## 11. Arbitrage
+Après chaque unité cohérente, l’agent utilise :
 
-L’agent demande une décision uniquement pour une contradiction de spécifications,
-un changement produit, API, données, architecture, sécurité, périmètre ou action
-irréversible.
+```bash
+node scripts/agent-checkpoint.mjs \
+  --message "type(t-xxx): résultat atomique" \
+  -- chemin/du/fichier-1 chemin/du/fichier-2
+```
 
-Avant la question, tout le travail courant doit être committé et poussé.
+Un checkpoint est valide uniquement lorsque la commande affiche :
 
-## 12. Réponse finale
+```text
+CHECKPOINT_DISTANT=<sha>
+```
+
+Le travail se livre en deux checkpoints distincts :
+
+```text
+travail récupérable poussé et confirmé
+→ puis seulement métadonnées référant ce SHA
+```
+
+Un commit local seul n’est pas une sauvegarde. Il est interdit :
+
+- d’accumuler plusieurs commits locaux avant un push ;
+- de commencer le lot suivant avant confirmation du SHA distant ;
+- d’écrire le state de sortie avant le push du travail correspondant ;
+- de laisser plus de cinq minutes de travail cohérent sans checkpoint distant ;
+- de répondre à l’utilisateur avec du travail local non poussé.
+
+L’agent crée également un checkpoint distant avant une commande longue, une capture, une
+opération risquée, un arbitrage, une pause ou une réponse finale.
+
+Maximum recommandé : trois fichiers source par lot. Les artefacts générés par une même
+commande peuvent former un groupe indivisible distinct.
+
+Aucun checkpoint de travail n’est poussé sur `main`.
+
+## 8. Concurrence Git
+
+Au premier écart local/distant ou rejet `non-fast-forward`, l’agent s’arrête. Il conserve
+tout le travail local et n’effectue automatiquement aucun merge, rebase, cherry-pick,
+reset, stash ou force-push.
+
+La réconciliation doit être explicitement décidée après affichage des SHA, des commits
+locaux et de la divergence.
+
+## 9. Séquençage
+
+L’ordre opérationnel est défini dans `.agent/EXECUTION_MAP.md` et reflété dans
+`.agent/lanes/LANE-MOBILE-RENDERER.json`.
+
+Une tâche fonctionnellement rouge bloque la séquence. Une tâche bloquée uniquement par
+une preuve visuelle peut laisser avancer les implémentations indépendantes selon la carte
+d’exécution, mais elle doit être reprise dès que l’environnement requis devient
+disponible.
+
+## 10. Statuts et revue
+
+La règle de sortie propre à chaque tâche fait foi. Sauf décision reviewer explicitement
+documentée, une tâche terminée par l’agent passe à `REVIEW`, jamais directement à `DONE`.
+
+Une tâche `DONE` ou `REVIEW` sur la ref autoritative ne doit jamais être recommencée.
+Du travail déjà présent à distance ne doit pas être recréé parce que son state est resté en
+retard ; seul le checkpoint documentaire manquant doit être terminé.
+
+## 11. Runtime
+
+Les commandes `start`, `resume` et `finish` de `scripts/agent.mjs` sont interdites dans le
+mode intégré tant qu’elles ne respectent pas `MANIFEST.execution_branch`.
+
+`scripts/agent-checkpoint.mjs` est la commande autorisée pour sauvegarder et pousser un
+lot. Il est interdit de dériver une branche depuis `parallel_lane` ou de sélectionner une
+tâche depuis un checkout de `main`.
+
+## 12. Périmètre
+
+À un instant donné, l’agent respecte le périmètre de la tâche active. Une extension hors
+périmètre exige un arbitrage documenté. Les bundles générés sont modifiés uniquement via
+les commandes officielles.
+
+## 13. Preuves
+
+Aucune preuve ne peut être inventée. Avant de déclarer un navigateur indisponible,
+l’agent vérifie les binaires locaux et caches Puppeteer/Playwright autorisés. Un échec
+environnemental doit être documenté précisément.
+
+## 14. Arbitrage
+
+L’agent demande une décision uniquement pour une contradiction de spécifications, un
+changement produit, API, données, architecture, sécurité, périmètre ou action
+irréversible. Tout travail courant doit être confirmé à distance avant la question.
+
+## 15. Livraison
+
+Une seule PR finale est ouverte depuis `agent/lane-mobile-renderer` vers `main` lorsque le
+chantier est entièrement prêt.
+
+## 16. Réponse finale
 
 La réponse contient uniquement :
 

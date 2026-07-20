@@ -1,0 +1,188 @@
+
+> komerce-backend@10.6.1 gate:feature-audit
+> node scripts/feature-audit.js --strict
+
+
+╔════════════════════════════════════════════════════════════════╗
+║  AUDIT FEATURE-PAR-FEATURE — contrats positifs par périmètre   ║
+╚════════════════════════════════════════════════════════════════╝
+racine: /home/claude/komerce-backend  ·  34 feature(s)
+
+auth-identity (auth-identity · couches: services, routes, boutique, tests)
+    ✔ files-exist    11 fichiers présents
+    ✔ interface      20 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 20 route(s) réelle(s) toutes déclarées
+
+auth (auth · couches: middleware, services, routes, migrations, boutique, tests)
+    ✔ files-exist    16 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+catalog (catalog · couches: utils, services, schemas, migrations, docs, routes, boutique, dash, tests)
+    ✔ files-exist    128 fichiers présents
+    ✔ interface      31 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 31 route(s) réelle(s) toutes déclarées
+
+customs (customs · couches: services, routes, migrations, dash, tests)
+    ✔ files-exist    20 fichiers présents
+    ✔ interface      20 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 20 route(s) réelle(s) toutes déclarées
+
+dashboard (dashboard · couches: services, routes, migrations, dash, tests)
+    ✔ files-exist    142 fichiers présents
+    ✔ interface      70 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 70 route(s) réelle(s) toutes déclarées
+
+documents (documents · couches: services, routes, migrations, utils, tests)
+    ✔ files-exist    26 fichiers présents
+    ✔ interface      3 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 3 route(s) réelle(s) toutes déclarées
+
+economic-engine (economic-engine · couches: utils, services, routes, migrations, dash, tests)
+    ✔ files-exist    107 fichiers présents
+    ✔ interface      73 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 73 route(s) réelle(s) toutes déclarées
+
+incident-management (incident-management · couches: services, tests)
+    ✔ files-exist    2 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+infrastructure (infrastructure · couches: middleware, utils, validators, bootstrap, migrations, scripts, docs, ci, assets, db, config, tests)
+    ✔ files-exist    382 fichiers présents
+    ✔ interface      5 endpoint(s) confirmé(s) dans le registre
+    – interface-inverse aucune route possédée
+
+inventory (inventory · couches: services, routes, dash, tests)
+    ✔ files-exist    6 fichiers présents
+    ✔ interface      8 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 8 route(s) réelle(s) toutes déclarées
+
+logistics (logistics · couches: middleware, migrations, docs, utils, services, routes, boutique, dash, tests)
+    ✔ files-exist    77 fichiers présents
+    ✔ interface      69 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 70 route(s) réelle(s) toutes déclarées
+
+loyalty (loyalty · couches: services, routes, migrations, tests)
+    ✔ files-exist    5 fichiers présents
+    ✔ interface      7 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 7 route(s) réelle(s) toutes déclarées
+
+notifications (notification · couches: tests, migrations, utils, services, routes)
+    ✔ files-exist    36 fichiers présents
+    ✔ interface      4 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 4 route(s) réelle(s) toutes déclarées
+
+orders (orders · couches: utils, services, routes, tests)
+    ✔ files-exist    49 fichiers présents
+    ✔ interface      34 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 35 route(s) réelle(s) toutes déclarées
+
+payments (payment · couches: services, routes, migrations, boutique, tests)
+    ✔ files-exist    37 fichiers présents
+    ✔ interface      18 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 18 route(s) réelle(s) toutes déclarées
+
+platform-ops (operations · couches: services, routes, boutique, tests)
+    ✔ files-exist    38 fichiers présents
+    ✔ interface      33 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 33 route(s) réelle(s) toutes déclarées
+
+purchasing (purchasing · couches: services, routes, migrations, tests)
+    ✔ files-exist    15 fichiers présents
+    ✔ interface      10 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 10 route(s) réelle(s) toutes déclarées
+
+recommendations (recommendations · couches: services, routes, tests)
+    ✔ files-exist    4 fichiers présents
+    ✔ interface      1 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 1 route(s) réelle(s) toutes déclarées
+
+refunds (refunds · couches: utils, services, routes, tests)
+    ✔ files-exist    5 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+shared-cart (shared-cart · couches: services, routes, migrations, tests, boutique, dash)
+    ✔ files-exist    106 fichiers présents
+    ✔ interface      33 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 33 route(s) réelle(s) toutes déclarées
+
+sourcing (sourcing · couches: migrations, routes, tests)
+    ✔ files-exist    6 fichiers présents
+    ✔ interface      11 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 11 route(s) réelle(s) toutes déclarées
+
+unsold-resolution (unsold-resolution · couches: routes, dash, tests)
+    ✔ files-exist    3 fichiers présents
+    ✔ interface      7 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 7 route(s) réelle(s) toutes déclarées
+
+wallet-loyalty (wallet-loyalty · couches: —)
+    – files-exist    aucun fichier déclaré
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+wallet (wallet · couches: services, routes, migrations, boutique, tests)
+    ✔ files-exist    10 fichiers présents
+    ✔ interface      9 endpoint(s) confirmé(s) dans le registre
+    ✔ interface-inverse 9 route(s) réelle(s) toutes déclarées
+
+auth (auth · couches: js, tests)
+    ✔ files-exist    4 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+boutique (boutique · couches: js, css, scripts, tests)
+    ✔ files-exist    58 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+catalog (catalog · couches: js, css, tests)
+    ✔ files-exist    16 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+checkout (checkout · couches: js, tests)
+    ✔ files-exist    3 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+modal-product (catalog · couches: boutique, dist, tests)
+    ✔ files-exist    24 fichiers présents
+    ✔ render-static  product-zone desktop = grid; mobile image overlays anchored to image wrap; mobile product image cannot collapse in modal flex scroll; suggestions lifecycle emits curation-ready event; modal suggestions keep discovery level when API is narrow; PDP curation waits for rendered suggestions
+    ✔ doctrine       0 littéral(aux) couleur (cliquet 0)
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+payment (payment · couches: js, tests)
+    ✔ files-exist    2 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+recommendations (recommendations · couches: js)
+    ✔ files-exist    2 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+shared-cart (shared-cart · couches: js, tests)
+    ✔ files-exist    8 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+tracking (tracking · couches: js, tests)
+    ✔ files-exist    2 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+wallet (wallet · couches: js, tests)
+    ✔ files-exist    2 fichiers présents
+    – interface      aucun endpoint exposé déclaré
+    – interface-inverse aucune route possédée
+
+Transverse — multipropriété de fichiers
+    ✔ aucun fichier possédé par 2 features
+Transverse — endpoints réels revendiqués par 2 features (DUPLICATE_ROUTE_OWNER)
+    ✔ aucun endpoint réel revendiqué par 2 features
+
+Résultat : 0 FAIL, 0 WARN

@@ -1,0 +1,577 @@
+=== T-023 — gates run 2026-07-19T08:09:22Z — reprise visuelle ===
+
+--- check:cache ---
+
+> boutique@1.0.0 check:cache
+> node scripts/deploy-css.js --dry
+
+
+[1m[36m━━━ deploy-css — Komerce ━━━[0m
+[33mMode : --dry (aucun fichier modifié)[0m
+
+[1m1. Compilation des bundles[0m
+  [32m✓[0m  base.css           2745 lignes  [2m← tokens + reset + layout + hero[0m
+  [32m✓[0m  components.css     10970 lignes [2m← categories + products + modal-shell + modal-media + modal-product + modal-product-lot4-hybrid + modal-mobile-canonical + modal-enriched-content + cart + interactions + hero-cart-proxy + group-cart-flow + share-cart + shared-followup + identity + paypal + wallet[0m
+  [32m✓[0m  desktop.css        1273 lignes  [2m← boutique-desktop[0m
+
+[1m2. Détection des changements[0m
+  base.css           [2m8189f571ab9d[0m  [32m= identique[0m
+  components.css     [2md77eae56d230[0m  [32m= identique[0m
+  desktop.css        [2m3f95016e95d2[0m  [32m= identique[0m
+
+[32m[1m✔ Aucun changement — index.html inchangé.[0m
+
+
+--- check:breakpoints ---
+
+> boutique@1.0.0 check:breakpoints
+> node scripts/check-breakpoints.js --strict
+
+
+Breakpoints garde-fou V1 - Autorises : 900px, 1200px
+
+   >> group-cart-flow.css                max:380px
+   >> layout.css                         min:1100px
+   >> modal-shell.css                    max:1120px
+
+   Total : 3 violations dans 3 fichiers.
+
+Stable vs baseline (3). Pas de régression.
+
+
+--- audit:ownership ---
+
+> boutique@1.0.0 audit:ownership
+> node scripts/gen-ownership.js
+
+✅ Carte de propriété générée → docs/BOUTIQUE_OWNERSHIP_LIVE.md
+
+--- audit:gate ---
+
+> boutique@1.0.0 audit:gate
+> node scripts/audit-gate.js --strict
+
+
+╔══════════════════════════════════════════════════════════╗
+║  KOMERCE BOUTIQUE — Audit Gate (N1 — dépendances)        ║
+╚══════════════════════════════════════════════════════════╝
+
+  Vulnérabilités high/critical : 0
+  Dette connue (baseline)      : 0
+  Nouvelles (non acceptées)    : 0
+
+  ✅ Audit N1 — CONFORME (0 vulnérabilité high/critical).
+
+
+--- check:imports ---
+
+> boutique@1.0.0 check:imports
+> node scripts/check-js-imports.js
+
+
+[1m[36m━━━ check-js-imports v2 — Komerce Boutique ━━━[0m
+[2mAnalyse de 72 module(s)…[0m
+
+[33m[1m── Cycles documentés (non bloquants) ──────────────────────[0m
+  [33m⚠[0m Cycle connu [acceptable] : b-cart.js ↔ b-catalog.js
+    [2m↳ scrollToCategorySection — couplage scroll/catalogue, cycle isolé à 1 fonction[0m
+  [33m⚠[0m Cycle connu [acceptable] : b-catalog.js ↔ b-subcat.js
+    [2m↳ _renderCard/renderGrid — refactoring Phase 4 en cours, à supprimer une fois découplé[0m
+  [33m⚠[0m Cycle connu [acceptable] : b-catalog.js ↔ home-controller.js
+    [2m↳ syncRailActiveState/renderSubcatRail — couplage bidirectionnel connu controllers/[0m
+
+[2m── Exports non consommés [I-4] (informatif) ────────────────[0m
+  [33m⚠[0m [2mjs/b-boutique-wow-style.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupBoutiqueWowStyle'[0m
+  [33m⚠[0m [2mjs/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'guardStepperControlClick'[0m
+    [2m↳ 'installCartStepperGuard'[0m
+  [33m⚠[0m [2mjs/b-cart.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'openCartWithHighlight'[0m
+    [2m↳ 'removeFromCart'[0m
+  [33m⚠[0m [2mjs/b-catalog.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'initCats'[0m
+    [2m↳ 'initSearch'[0m
+  [33m⚠[0m [2mjs/b-checkout-render.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'renderRelaisForIle'[0m
+  [33m⚠[0m [2mjs/b-checkout.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'getDefaultPhoneCodeForZone'[0m
+  [33m⚠[0m [2mjs/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupDesktopGlobalCartAccess'[0m
+  [33m⚠[0m [2mjs/b-desktop-sidebar.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'setupDesktopSidebar'[0m
+    [2m↳ 'syncDesktopSidebar'[0m
+  [33m⚠[0m [2mjs/b-friendly-group-redirect.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupFriendlyGroupRedirect'[0m
+  [33m⚠[0m [2mjs/b-group-cart-flow.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupGroupCartFlow'[0m
+  [33m⚠[0m [2mjs/b-mini-cart.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupMiniCart'[0m
+  [33m⚠[0m [2mjs/b-mobile-modal-v1.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupMobileModalV1'[0m
+  [33m⚠[0m [2mjs/b-mobile-premium-v1.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'setupMobilePremiumV1'[0m
+  [33m⚠[0m [2mjs/b-modal-approche-c-hybrid.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'setupApprocheCHybridPdp'[0m
+    [2m↳ '_hybridPdpTestApi'[0m
+  [33m⚠[0m [2mjs/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :[0m
+    [2m↳ 'computeSubtotal'[0m
+    [2m↳ 'PAYMENT_MODES'[0m
+    [2m↳ '_buyboxSharedTestApi'[0m
+  [33m⚠[0m [2mjs/b-modal-desktop-product.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'refreshDesktopProductSubtotal'[0m
+  [33m⚠[0m [2mjs/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ '_productDetailBootstrapTestApi'[0m
+  [33m⚠[0m [2mjs/b-modal.js — 7 export(s) non consommé(s) :[0m
+    [2m↳ 'buildCarouselSlides'[0m
+    [2m↳ 'goToSlide'[0m
+    [2m↳ 'renderSuggestions'[0m
+    [2m↳ 'setupImageZoneTouch'[0m
+    [2m↳ … et 3 autre(s)[0m
+  [33m⚠[0m [2mjs/b-pager.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ '_setupPagerDots'[0m
+  [33m⚠[0m [2mjs/b-paypal.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'ensurePayPalSDK'[0m
+  [33m⚠[0m [2mjs/b-phone.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'initEventPhoneBlock'[0m
+    [2m↳ 'readEventPhone'[0m
+  [33m⚠[0m [2mjs/b-product-open-contract.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'openProductFromCart'[0m
+  [33m⚠[0m [2mjs/b-scroll-owner.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ 'DESKTOP_BREAKPOINT'[0m
+    [2m↳ 'getMobileScrollContainer'[0m
+  [33m⚠[0m [2mjs/b-share-cart.js — 3 export(s) non consommé(s) :[0m
+    [2m↳ 'clearShareState'[0m
+    [2m↳ 'restoreSharedCartFromBackend'[0m
+    [2m↳ 'refreshSharedBadges'[0m
+  [33m⚠[0m [2mjs/b-store.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'CLOUD_BASE'[0m
+  [33m⚠[0m [2mjs/b-subcat.js — 2 export(s) non consommé(s) :[0m
+    [2m↳ '_scrollFlatPagerToSub'[0m
+    [2m↳ '_syncFlatActiveTab'[0m
+  [33m⚠[0m [2mjs/b-utils.js — 1 export(s) non consommé(s) :[0m
+    [2m↳ 'getAPI'[0m
+
+
+[1m[36m━━━ Résultat ━━━[0m
+[32m[1m✔ Aucun import fantôme ni cycle inconnu ni module manquant.[0m
+[2m  72 modules analysés — 72 cartes d'exports construites.[0m
+[33m  45 export(s) non consommés [I-4] (informatif uniquement).[0m
+
+
+--- audit:arch ---
+
+> boutique@1.0.0 audit:arch
+> node scripts/audit-boutique-arch.js
+
+
+  🔍  Audit architecture Komerce – invariants boutique/docs/BOUTIQUE_ARCHITECTURE.md
+
+  ✅  Aucune violation. Architecture conforme.
+
+
+--- test:unit ---
+
+> boutique@1.0.0 test:unit
+> jest tests/unit --runInBand
+
+PASS tests/unit/komerce-api.test.js (17.082 s)
+PASS tests/unit/b-checkout.test.js
+PASS tests/unit/b-identity.test.js
+PASS tests/unit/b-mini-cart.test.js
+PASS tests/unit/b-modal-mobile-product-pdc6-coverage.test.js
+PASS tests/unit/komerce-api-timeout.test.js
+PASS tests/unit/b-modal-product.test.js
+PASS tests/unit/b-cart-active-flows.test.js
+PASS tests/unit/b-group-view.test.js
+  ● Console
+
+    console.warn
+      [group] renderGroupView: Error: network
+          at Object.<anonymous> (/home/claude/komerce-backend/public/boutique/tests/unit/b-group-view.test.js:349:58)
+          at Promise.finally.completed (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1561:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1501:10)
+          at _callCircusTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1011:40)
+          at _runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:951:3)
+          at /home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:853:7
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:866:11)
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:861:11)
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:861:11)
+          at run (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:765:3)
+          at runAndTransformResultsToJestFormat (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1993:21)
+          at jestAdapter (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/runner.js:111:19)
+          at runTestInternal (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:276:16)
+          at runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:344:7)
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/b-group-view.js:928:13)
+      at Object.<anonymous> (tests/unit/b-group-view.test.js:351:7)
+
+PASS tests/unit/b-cart.test.js
+PASS tests/unit/b-modal-desktop-product.test.js
+PASS tests/unit/product-card-view-model.test.js
+PASS tests/unit/b-share-cart-active-flows.test.js
+PASS tests/unit/b-desktop-global-cart-access.test.js
+PASS tests/unit/b-modal-mobile-product.test.js
+PASS tests/unit/b-modal-product-detail-bootstrap.test.js
+PASS tests/unit/b-modal-suggestions.test.js
+PASS tests/unit/b-modal-core-desktop-click.test.js
+PASS tests/unit/b-subcat-active-flows.test.js
+PASS tests/unit/b-modal-image-ux.test.js
+PASS tests/unit/b-checkout-render.test.js
+PASS tests/unit/b-modal-core.test.js
+PASS tests/unit/b-product-open-contract.test.js
+PASS tests/unit/b-catalog.test.js
+PASS tests/unit/b-cart-pill.test.js
+PASS tests/unit/b-nav.test.js
+PASS tests/unit/group-api.test.js
+PASS tests/unit/b-tracking.test.js
+PASS tests/unit/group-api-timeout.test.js
+PASS tests/unit/b-modal-approche-c-hybrid.test.js
+PASS tests/unit/b-wallet-loading-states.test.js
+PASS tests/unit/b-pager.test.js
+PASS tests/unit/b-phone.test.js
+PASS tests/unit/group-helpers.test.js
+PASS tests/unit/b-wallet.test.js
+  ● Console
+
+    console.warn
+      [wallet] transactions: Error: tx down
+          at /home/claude/komerce-backend/public/boutique/tests/unit/b-wallet.test.js:314:26
+          at /home/claude/komerce-backend/public/boutique/node_modules/jest-mock/build/index.js:305:39
+          at /home/claude/komerce-backend/public/boutique/node_modules/jest-mock/build/index.js:312:13
+          at mockConstructor (/home/claude/komerce-backend/public/boutique/node_modules/jest-mock/build/index.js:102:19)
+          at /home/claude/komerce-backend/public/boutique/js/b-wallet.js:104:13
+          at renderWalletView (/home/claude/komerce-backend/public/boutique/js/b-wallet.js:153:4)
+          at Object.renderWalletView (/home/claude/komerce-backend/public/boutique/tests/unit/b-wallet.test.js:316:5)
+          at Promise.finally.completed (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1561:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1501:10)
+          at _callCircusTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1011:40)
+          at _runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:951:3)
+          at /home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:853:7
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:866:11)
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:861:11)
+          at run (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:765:3)
+          at runAndTransformResultsToJestFormat (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1993:21)
+          at jestAdapter (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/runner.js:111:19)
+          at runTestInternal (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:276:16)
+          at runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:344:7)
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/b-wallet.js:136:45)
+
+PASS tests/unit/b-desktop-sidebar.test.js
+PASS tests/unit/b-pdp-curation-suggestions.test.js
+PASS tests/unit/b-subcat.test.js
+PASS tests/unit/group-render-creator.test.js
+PASS tests/unit/home-controller.test.js
+PASS tests/unit/boutique-core.unit.test.js
+PASS tests/unit/group-state.test.js
+PASS tests/unit/b-modal-nav.test.js
+PASS tests/unit/product-card-model.test.js
+PASS tests/unit/b-catalog-desktop-enhancers-coverage.test.js
+PASS tests/unit/b-modal-core-active-flows.test.js
+PASS tests/unit/card-config.test.js
+  ● Console
+
+    console.warn
+      [card-config] Config invalide, fallback par défaut : Source non autorisée : product.secret_field
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/card-config.js:166:13)
+      at validateCardConfig (tests/unit/card-config.test.js:149:14)
+
+    console.warn
+      [card-config] Config invalide, fallback par défaut : Source non autorisée : product.secret_field
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/card-config.js:166:13)
+      at validateCardConfig (tests/unit/card-config.test.js:149:14)
+
+    console.warn
+      [card-config] Config invalide, fallback par défaut : Source non autorisée : product.secret_field
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/card-config.js:166:13)
+      at validateCardConfig (tests/unit/card-config.test.js:149:14)
+
+    console.warn
+      [card-config] Config invalide, fallback par défaut : Source non autorisée : product.secret_field
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/card-config.js:166:13)
+      at validateCardConfig (tests/unit/card-config.test.js:149:14)
+
+    console.warn
+      [card-config] Config invalide, fallback par défaut : Source non autorisée : product.secret_field
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/card-config.js:166:13)
+      at validateCardConfig (tests/unit/card-config.test.js:149:14)
+
+    console.warn
+      [card-config] Config invalide, fallback par défaut : Source non autorisée : product.secret_field
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/card-config.js:166:13)
+      at Object.validateCardConfig (tests/unit/card-config.test.js:159:12)
+
+    console.warn
+      [card-config] Config invalide, fallback par défaut : Condition non autorisée : mystere
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/card-config.js:166:13)
+      at Object.validateCardConfig (tests/unit/card-config.test.js:170:12)
+
+PASS tests/unit/b-mobile-modal-v1.test.js
+PASS tests/unit/boutique-bootstrap.test.js
+PASS tests/unit/b-paypal.test.js
+PASS tests/unit/b-scroll-owner.test.js
+PASS tests/unit/b-modal-core-pdc6-baseline.test.js
+PASS tests/unit/b-catalog-desktop-enhancers.test.js
+PASS tests/unit/b-checkout-relay-status.test.js
+PASS tests/unit/b-home-premium-v1.test.js
+PASS tests/unit/b-greeting.test.js
+PASS tests/unit/b-favs.test.js
+PASS tests/unit/b-tracking-loading-states.test.js
+PASS tests/unit/modal-mobile-desktop-parity.test.js
+PASS tests/unit/b-modal-cart.test.js
+PASS tests/unit/b-modal-product-mdm9.test.js
+PASS tests/unit/product-store-active-flows.test.js
+PASS tests/unit/b-group-view-loading-states.test.js
+  ● Console
+
+    console.warn
+      [group] renderGroupView: Error [TimeoutError]: Délai dépassé (timeout 10000ms) — /api/shared-carts/public/tok
+          at timeoutError (/home/claude/komerce-backend/public/boutique/tests/unit/b-group-view-loading-states.test.js:57:13)
+          at Object.timeoutError (/home/claude/komerce-backend/public/boutique/tests/unit/b-group-view-loading-states.test.js:75:56)
+          at Promise.finally.completed (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1561:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1501:10)
+          at _callCircusTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1011:40)
+          at _runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:951:3)
+          at /home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:853:7
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:866:11)
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:861:11)
+          at run (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:765:3)
+          at runAndTransformResultsToJestFormat (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1993:21)
+          at jestAdapter (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/runner.js:111:19)
+          at runTestInternal (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:276:16)
+          at runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:344:7) {
+        isTimeout: true
+      }
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/b-group-view.js:928:13)
+      at Object.<anonymous> (tests/unit/b-group-view-loading-states.test.js:76:5)
+
+    console.warn
+      [group] renderGroupView: Error [TimeoutError]: Délai dépassé (timeout 10000ms) — /api/shared-carts/public/tok
+          at timeoutError (/home/claude/komerce-backend/public/boutique/tests/unit/b-group-view-loading-states.test.js:57:13)
+          at Object.timeoutError (/home/claude/komerce-backend/public/boutique/tests/unit/b-group-view-loading-states.test.js:88:30)
+          at Promise.finally.completed (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1561:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1501:10)
+          at _callCircusTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1011:40)
+          at _runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:951:3)
+          at /home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:853:7
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:866:11)
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:861:11)
+          at run (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:765:3)
+          at runAndTransformResultsToJestFormat (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1993:21)
+          at jestAdapter (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/runner.js:111:19)
+          at runTestInternal (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:276:16)
+          at runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:344:7) {
+        isTimeout: true
+      }
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/b-group-view.js:928:13)
+      at Object.<anonymous> (tests/unit/b-group-view-loading-states.test.js:90:5)
+
+    console.warn
+      [group] renderGroupView: Error [TimeoutError]: Délai dépassé (timeout 10000ms) — /api/shared-carts/mine
+          at timeoutError (/home/claude/komerce-backend/public/boutique/tests/unit/b-group-view-loading-states.test.js:57:13)
+          at Object.timeoutError (/home/claude/komerce-backend/public/boutique/tests/unit/b-group-view-loading-states.test.js:102:56)
+          at Promise.finally.completed (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1561:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1501:10)
+          at _callCircusTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1011:40)
+          at _runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:951:3)
+          at /home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:853:7
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:866:11)
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:861:11)
+          at run (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:765:3)
+          at runAndTransformResultsToJestFormat (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1993:21)
+          at jestAdapter (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/runner.js:111:19)
+          at runTestInternal (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:276:16)
+          at runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:344:7) {
+        isTimeout: true
+      }
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/b-group-view.js:928:13)
+      at Object.<anonymous> (tests/unit/b-group-view-loading-states.test.js:103:5)
+
+    console.warn
+      [group] renderGroupView: Error: HTTP 503
+          at Object.<anonymous> (/home/claude/komerce-backend/public/boutique/tests/unit/b-group-view-loading-states.test.js:112:56)
+          at Promise.finally.completed (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1561:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1501:10)
+          at _callCircusTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1011:40)
+          at _runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:951:3)
+          at /home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:853:7
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:866:11)
+          at _runTestsForDescribeBlock (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:861:11)
+          at run (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:765:3)
+          at runAndTransformResultsToJestFormat (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/jestAdapterInit.js:1993:21)
+          at jestAdapter (/home/claude/komerce-backend/public/boutique/node_modules/jest-circus/build/runner.js:111:19)
+          at runTestInternal (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:276:16)
+          at runTest (/home/claude/komerce-backend/public/boutique/node_modules/jest-runner/build/index.js:344:7)
+
+      40 | const _origInfo = console.info;
+      41 |
+    > 42 | console.warn  = function() { if (!isMuted(arguments)) _origWarn.apply(console, arguments); };
+         |                                                                 ^
+      43 | console.error = function() { if (!isMuted(arguments)) _origError.apply(console, arguments); };
+      44 | console.info  = function() { if (!isMuted(arguments)) _origInfo.apply(console, arguments); };
+      45 |
+
+      at console.apply [as warn] (tests/unit/setup.js:42:65)
+      at warn (js/b-group-view.js:928:13)
+      at Object.<anonymous> (tests/unit/b-group-view-loading-states.test.js:113:5)
+
+PASS tests/unit/b-mobile-premium-v1.test.js
+PASS tests/unit/render-home-sections.test.js
+PASS tests/unit/b-cart-core.test.js
+PASS tests/unit/product-content-model.test.js
+PASS tests/unit/modal-product-price-normalization.test.js
+PASS tests/unit/r5-prod-guard.test.js
+PASS tests/unit/b-share-cart.test.js
+PASS tests/unit/modal-selection-model.test.js
+PASS tests/unit/b-modal-social-proof.test.js
+PASS tests/unit/render-product-card.test.js
+PASS tests/unit/b-share-phone-guard.test.js
+PASS tests/unit/b-modal-core-pdc6-coverage.test.js
+PASS tests/unit/b-desktop-upgrade.test.js
+PASS tests/unit/b-cart-product-open-style.test.js
+PASS tests/unit/shop-schema-active-flows.test.js
+PASS tests/unit/b-group-banner.test.js
+PASS tests/unit/b-modal-buybox-shared.test.js
+PASS tests/unit/b-group-cart-flow.test.js
+PASS tests/unit/b-friendly-group-redirect.test.js
+PASS tests/unit/b-modal-desktop-enhancers.test.js
+PASS tests/unit/b-group-banner-coverage.test.js
+PASS tests/unit/golden-product-selection-gpm3.test.js
+PASS tests/unit/render-categories.test.js
+PASS tests/unit/b-modal-product-detail-bootstrap-pdc6-coverage.test.js
+PASS tests/unit/b-cart-stepper-guard.test.js
+PASS tests/unit/b-boutique-wow-style.test.js
+PASS tests/unit/b-store.test.js
+PASS tests/unit/main.test.js
+PASS tests/unit/modal-mobile-canonical.test.js
+
+Test Suites: 92 passed, 92 total
+Tests:       1751 passed, 1751 total
+Snapshots:   0 total
+Time:        46.635 s, estimated 59 s
+Ran all test suites matching tests/unit.

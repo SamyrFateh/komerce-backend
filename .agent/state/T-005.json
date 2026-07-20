@@ -5,7 +5,7 @@
   "finding_id": "M4",
   "wave": "P1",
   "parallel_lane": "LANE-MOBILE-RENDERER",
-  "status": "READY",
+  "status": "DONE",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -33,20 +33,74 @@
     "npm --prefix public/boutique run audit:gate",
     "npm --prefix public/boutique run test:unit"
   ],
-  "agent": null,
-  "reviewer": null,
+  "agent": "claude-sonnet-session-2",
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T17:00:00Z",
   "lease_until": null,
-  "finished_at": null,
-  "reviewed_at": null,
-  "base_commit": null,
-  "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "finished_at": "2026-07-18T19:47:35Z",
+  "reviewed_at": "2026-07-18T22:32:00Z",
+  "base_commit": "ceef1df5947334e1f1d039a232d976a799e624e2",
+  "last_commit": "61606c64aa73f9c07d8fcd0f17d358b5c4be5ef3",
+  "changed_files": [
+    "public/boutique/css/modal-mobile-canonical.css",
+    "public/boutique/css/dist/components.css",
+    "public/boutique/.cache-buster-state.json",
+    "public/boutique/index.html",
+    "public/boutique/tests/unit/b-modal-mobile-product.test.js",
+    ".agent/evidence/T-005/mobile-360-suggestions.png",
+    ".agent/evidence/T-005/mobile-390-suggestions.png",
+    ".agent/evidence/T-005/tests.txt"
+  ],
+  "gate_results": [
+    {
+      "gate": "deploy:css (--force)",
+      "result": "PASS — 3 bundles rebuilt, v159/v53"
+    },
+    {
+      "gate": "check:cache",
+      "result": "PASS — hash identique post-rebuild"
+    },
+    {
+      "gate": "check:breakpoints",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:ownership",
+      "result": "PASS — 0 nouvelles dettes"
+    },
+    {
+      "gate": "audit:gate",
+      "result": "PASS — Stable vs baseline"
+    },
+    {
+      "gate": "check:imports",
+      "result": "PASS — 0 fantôme"
+    },
+    {
+      "gate": "audit:arch",
+      "result": "PASS — 0 violation"
+    },
+    {
+      "gate": "gate:touched-files",
+      "result": "PASS"
+    },
+    {
+      "gate": "gate:boutique-ownership",
+      "result": "PASS"
+    },
+    {
+      "gate": "test:unit (b-modal-mobile-product)",
+      "result": "PASS — 23/23"
+    },
+    {
+      "gate": "reviewer regression validation",
+      "result": "PASS — code toujours présent; suite consolidée boutique 92/92 suites, 1748/1748 tests; feature-audit 0 FAIL / 0 WARN"
+    }
+  ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "review_decision": "APPROVE",
+  "summary": "M4 approuvé : carrousel suggestions mobile scoped #k-modal, CSS-only, ownership b-modal-suggestions.js conservé. Mesures 360/390 et tests unitaires fournis; modification toujours présente après consolidation.",
+  "next_action": "T-005 clôturée."
 }

@@ -30,7 +30,8 @@ module.exports = {
     "name": "Chaussure de football Elite Pro",
     "description": "Chaussure de football haute performance pour terrain synthétique, tige textile renforcée, semelle multi-crampons et maintien ajusté.",
     "category": "sport",
-    "subcategory": "chaussures-football"
+    "subcategory": "chaussures-football",
+    "series": "Golden Performance Series"
   },
   "pricing": {
     "price_kmf": 42000,

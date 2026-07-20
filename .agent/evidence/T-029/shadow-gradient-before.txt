@@ -1,0 +1,242 @@
+### public/boutique/css/modal-shell.css
+44:  box-shadow: 0 2px 12px var(--border-text-06);
+203:  box-shadow: 0 -2px 12px var(--overlay-black-sm);
+250:.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 600; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+253:.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-dark) 100%); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
+268:  box-shadow: 0 1px 3px var(--overlay-black-sm); cursor: pointer; transition: transform .15s; }
+276:.k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
+442:  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px var(--overlay-dark-sm); animation: none; }
+445:  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); box-shadow: 0 8px 24px var(--border-text-06); flex-shrink: 0; }
+496:  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: border-color .14s, box-shadow .14s; }
+499:  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { border-color: var(--coral-focus-45); box-shadow: 0 10px 22px var(--border-text-10); }
+510:    box-shadow: var(--elev-4);
+523:    box-shadow: 0 0 0 9999px var(--overlay-black-18);
+537:    border-radius: 0; box-shadow: none; margin: 0;
+635:    box-shadow: 0 -12px 28px var(--border-text-06);
+655:    box-shadow: 0 4px 14px var(--shadow-ocean-10);
+656:    transition: background .18s, box-shadow .18s, transform .1s;
+659:    background: var(--ocean-dark); box-shadow: 0 6px 20px var(--shadow-ocean-10);
+683:    background: linear-gradient(180deg, var(--sand) 0%, var(--sand) 100%);
+698:    background: var(--white); box-shadow: 0 4px 16px var(--border-text-07);
+699:    transition: transform .18s, box-shadow .18s; cursor: pointer;
+701:  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px var(--border-text-12); }
+711:  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px var(--border-ocean-10); }
+720:  .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }
+776:    box-shadow: var(--shadow-modal-neutral-10); /* [D13] Owner réel de l'ombre
+832:    box-shadow: var(--elev-1);
+883:.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--coral); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:10; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
+907:    box-shadow: var(--shadow-modal-neutral-10);
+929:    box-shadow: none;
+
+### public/boutique/css/modal-media.css
+11:   background:var(--sand) retenu (interactions.css surchargeait le gradient — intentionnel). */
+18:  background: linear-gradient(90deg,
+19:    rgba(244,241,236,0) 0%,
+20:    rgba(255,255,255,.55) 50%,
+21:    rgba(244,241,236,0) 100%);
+104:  box-shadow: var(--elev-1);
+109:              box-shadow .2s var(--ease);
+117:  box-shadow:
+119:    0 0 0 4px rgba(233,30,99,.35),
+120:    0 2px 10px rgba(233,30,99,.30);
+127:  .k-modal-fav-btn:hover { box-shadow: var(--elev-2); }
+151:  z-index: 2; cursor: pointer; box-shadow: 0 2px 12px var(--overlay-black-lg);
+228:    transition: border-color .12s, box-shadow .12s;
+236:    border-color: rgba(200,92,45,.4);
+237:    box-shadow: 0 6px 16px var(--border-text-08);
+241:    background: linear-gradient(135deg, var(--sand), var(--sand-dark));
+
+### public/boutique/css/modal-product.css
+19:  box-shadow: 0 -4px 20px var(--border-text-06);
+26:  box-shadow: 0 1px 4px var(--overlay-black-15);
+88:  transition: border-color .2s, background .2s, box-shadow .2s;
+90:.k-modal-inner-search:focus-within { border-color: var(--ocean); background: var(--white); box-shadow: 0 0 0 3px var(--border-ocean-10); }
+112:  box-shadow: var(--elev-3); max-height: 340px;
+165:  background: linear-gradient(135deg, var(--border-ocean-10), var(--border-ocean-04));
+178:  background: linear-gradient(135deg, var(--border-ocean-20), var(--border-ocean-08));
+203:.k-sug-grid .k-sug-card-img { aspect-ratio: 1; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--sand) 0%, var(--sand) 100%); border-radius: 10px 10px 0 0; }
+347:  transition: border-color .15s, box-shadow .15s;
+384:  box-shadow: 0 4px 10px var(--coral-shadow-18);
+390:  box-shadow: 0 0 0 2px var(--coral);
+412:  background: linear-gradient(
+443:  transition: border-color .15s, background .15s, color .15s, box-shadow .15s;
+457:  box-shadow: 0 0 0 1px var(--coral);
+499:  transition: border-color .15s, box-shadow .15s;
+504:  box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 15%, transparent);
+551:  box-shadow: 0 -4px 32px var(--overlay-black-md);
+689:  box-shadow: 0 -4px 32px var(--overlay-black-md);
+1272:      radial-gradient(circle at 14% 0%, color-mix(in srgb, var(--ocean-bg-08) 60%, transparent), transparent 26%),
+1273:      linear-gradient(180deg, var(--sand) 0%, var(--sand-warm) 100%);
+1301:    box-shadow: 0 10px 24px var(--border-text-06);
+1323:    box-shadow: 0 18px 46px var(--border-text-06);
+1352:    box-shadow: 0 8px 18px var(--border-text-12);
+
+### public/boutique/css/modal-product-lot4-hybrid.css
+13:      radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--sand-warm) 60%, transparent), transparent 28%),
+19:      radial-gradient(circle at 62% 20%, color-mix(in srgb, var(--ocean) 10%, transparent), transparent 30%),
+20:      linear-gradient(135deg, var(--sand) 0%, var(--sand-warm) 100%);
+26:    background: linear-gradient(180deg, var(--white) 0%, color-mix(in srgb, var(--sand) 48%, var(--white)) 100%);
+88:    background: linear-gradient(135deg, color-mix(in srgb, var(--ocean-bg-08) 78%, var(--white)) 0%, var(--white) 100%);
+89:    box-shadow: 0 12px 28px var(--border-text-06);
+138:    box-shadow: none;
+146:    box-shadow: inset 0 0 0 1px var(--border-text-06);
+158:    box-shadow: 0 14px 30px color-mix(in srgb, var(--ocean) 24%, transparent);
+210:      box-shadow .16s var(--ease);
+217:    box-shadow: 0 8px 18px var(--border-text-06);
+224:    box-shadow: inset 0 0 0 1px var(--border-ocean-14);
+237:    box-shadow: 0 8px 22px var(--border-text-06);
+328:    box-shadow: none;
+342:    background: linear-gradient(180deg, var(--sand) 0%, var(--sand-warm) 100%);
+
+### public/boutique/css/modal-mobile-canonical.css
+288:    background: linear-gradient(
+
+### public/boutique/css/modal-enriched-content.css
+
+### public/boutique/css/tokens.css
+14:  --violet-light: rgba(108,63,197,.08);
+15:  --violet-mid:   rgba(108,63,197,.18);   /* utilisé par les pages /event/* */
+17:  --ocean-dark-deep:  #2e6b28;  /* gradient stop profond — kpill background, group-cart-flow funded */
+30:  --border-sage-14:    rgba(122,158,126,.14);
+31:  --border-sage-22:    rgba(122,158,126,.22);
+32:  --border-sage-35:    rgba(122,158,126,.35);
+33:  --shadow-sage-10:    0 4px 16px rgba(122,158,126,.10);
+34:  --shadow-sage-18:    0 6px 20px rgba(122,158,126,.18);
+51:  --checkout-accent-deep:   #2A6B3C;                   /* stop sombre du gradient header    */
+52:  --checkout-accent-mid:    #3A8A52;                   /* gradient stop milieu              */
+53:  --checkout-accent-bright: #4DA668;                   /* alias compat — gradient stop clair */
+81:  --border-terra-14:   rgba(196,122,90,.14);
+82:  --border-terra-22:   rgba(196,122,90,.22);
+113:  --whatsapp-dk:  #1db954;   /* WhatsApp variant foncé, gradient + pages /event/* */
+123:  --shadow-sm: 0 1px 3px rgba(31,48,36,.07);
+124:  --shadow-md: 0 4px 12px rgba(31,48,36,.09);
+125:  --shadow-lg: 0 8px 30px rgba(31,48,36,.12);
+128:  --shadow-modal-neutral-10: 0 24px 60px rgba(31,48,36,.10);
+151:  /* ── Élévations (remplacent les box-shadow inline) ──────── */
+152:  --elev-1: 0 1px 3px rgba(31,48,36,.06), 0 1px 2px rgba(31,48,36,.04);
+153:  --elev-2: 0 4px 12px rgba(31,48,36,.08), 0 2px 4px rgba(31,48,36,.04);
+154:  --elev-3: 0 8px 24px rgba(31,48,36,.10), 0 4px 8px rgba(31,48,36,.06);
+155:  --elev-4: 0 16px 40px rgba(31,48,36,.12), 0 8px 16px rgba(31,48,36,.08);
+158:  --overlay-dark:      rgba(0,0,0,.5);
+159:  --overlay-dark-md:   rgba(0,0,0,.55);
+160:  --overlay-dark-sm:   rgba(0,0,0,.4);
+161:  --overlay-black-xs:  rgba(0,0,0,.06);
+162:  --overlay-black-sm:  rgba(0,0,0,.08);
+163:  --overlay-black-15:  rgba(0,0,0,.15);  /* promo badge shadow — modal-product */
+164:  --overlay-black-md:  rgba(0,0,0,.12);
+165:  --overlay-black-lg:  rgba(0,0,0,.3);
+167:  --surface-white-96:  rgba(255,255,255,.96);
+168:  --surface-white-92:  rgba(255,255,255,.92);
+169:  --surface-white-88:  rgba(255,255,255,.88);
+170:  --surface-white-64:  rgba(255,255,255,.64);
+172:  --surface-sand-97:   rgba(253,250,245,.97);
+173:  --surface-sand-96:   rgba(253,250,245,.96);
+174:  --surface-sand-94:   rgba(253,250,245,.94);
+175:  --surface-sand-91:   rgba(253,250,245,.91);  /* carte verre hero desktop */
+177:  --border-ocean-14:   rgba(100,175,90,.14);
+178:  --border-ocean-10:   rgba(100,175,90,.10);
+179:  --border-ocean-08:   rgba(100,175,90,.08);
+180:  --ocean-label:       rgba(100,175,90,.80);  /* label sous-total side cart */
+181:  --ocean-bg-08:       rgba(100,175,90,.08);  /* fond livraison gratuite */
+182:  --shadow-ocean-10:   0 12px 30px rgba(100,175,90,.10);
+183:  --shadow-coral-22:   rgba(200,92,45,.22);   /* ombre bouton checkout */
+186:  --border-coral-09:   rgba(200,92,45,.09);
+187:  --border-coral-13:   rgba(200,92,45,.13);
+188:  --border-coral-22:   rgba(200,92,45,.22);
+191:  --border-text-04:  rgba(31,48,36,.04);
+192:  --border-text-06:  rgba(31,48,36,.06);
+193:  --border-text-07:  rgba(31,48,36,.07);
+194:  --border-text-08:  rgba(31,48,36,.08);
+195:  --border-text-10:  rgba(31,48,36,.10);
+196:  --border-text-12:  rgba(31,48,36,.12);
+197:  --border-text-15:  rgba(31,48,36,.15);
+202:  --orange-shadow:    rgba(255,105,0,.30);
+205:  --pink-light:       rgba(233,30,99,.10);
+206:  --pink-shadow:      rgba(233,30,99,.35);
+225:  --cream-warm:       #fff8e7;  /* gradient haut — état actif rail desktop */
+226:  --cream-pearl:      #fffdf7;  /* gradient bas — état actif rail desktop */
+287:  --surface-sand-90:   rgba(255,252,244,.90);
+288:  --surface-sand-92:   rgba(253,250,245,.92);
+289:  --overlay-white-50:  rgba(255,255,255,.50);
+290:  --overlay-white-78:  rgba(255,255,255,.78);
+291:  --overlay-white-80:  rgba(255,255,255,.80);
+292:  --overlay-white-72:  rgba(255,255,255,.72);
+293:  --text-alpha-82:     rgba(32,51,37,.82);
+361:  --whatsapp-deep:          #128c7e   ;  /* WhatsApp deep (gradient) */
+367:  --green-alpha-06:   rgba(31,122,84,.06);  /* mini-guide fond */
+368:  --green-alpha-09:   rgba(31,122,84,.09);  /* locked-amount, funded-callout fond */
+369:  --green-alpha-12:   rgba(31,122,84,.12);  /* badge phase ouverte fond */
+370:  --green-alpha-14:   rgba(31,122,84,.14);  /* mini-guide border */
+371:  --green-alpha-20:   rgba(31,122,84,.20);  /* locked-amount border */
+372:  --green-alpha-24:   rgba(31,122,84,.24);  /* saved-commitment border */
+373:  --green-alpha-28:   rgba(31,122,84,.28);  /* funded-callout border */
+376:  --coral-bg-09:      rgba(239,125,95,.09); /* identity-note fond */
+377:  --coral-bg-12:      rgba(239,125,95,.12); /* cart-tab is-active fond */
+378:  --coral-bg-18:      rgba(239,125,95,.18); /* cart-tab is-active shadow */
+379:  --coral-bg-38:      rgba(239,125,95,.38); /* cart-tab is-active border */
+380:  --amber-bg-08:      rgba(230,130,0,.08);  /* funded-callout gap fond */
+381:  --amber-bg-12:      rgba(230,130,0,.12);  /* badge settlement fond */
+382:  --amber-border-28:  rgba(230,130,0,.28);  /* funded-callout gap border */
+396:  --overlay-black-10:      rgba(0,0,0,.10);
+397:  --overlay-black-22:      rgba(0,0,0,.22);
+398:  --overlay-black-45:      rgba(0,0,0,.45);
+401:  --surface-white-10:      rgba(255,255,255,.10);
+404:  --overlay-group-dark:    rgba(31,48,36,.52);
+407:  --shadow-cta-22:         rgba(42,122,62,.22);
+408:  --shadow-cta-30:         rgba(42,122,62,.3);
+409:  --shadow-cta-40:         rgba(42,122,62,.4);
+412:  --shadow-wa-24:          rgba(37,211,102,.24);
+413:  --shadow-wa-25:          rgba(37,211,102,.25);
+414:  --shadow-wa-28:          rgba(37,211,102,.28);
+415:  --shadow-wa-38:          rgba(37,211,102,.38);
+418:  --coral-focus-08:        rgba(200,92,45,.08);
+419:  --coral-focus-10:        rgba(200,92,45,.1);
+420:  --coral-focus-12:        rgba(200,92,45,.12);
+421:  --coral-shadow-25:       rgba(200,92,45,.25);
+424:  --coral-chip-07:         rgba(255,107,53,.07);
+425:  --coral-chip-10:         rgba(255,107,53,.10);
+426:  --coral-chip-16:         rgba(255,107,53,.16);
+427:  --coral-chip-18:         rgba(255,107,53,.18);
+430:  --coral-light-28:        rgba(255,163,122,.28);
+433:  --border-ocean-16:       rgba(100,175,90,.16);
+434:  --border-ocean-18:       rgba(100,175,90,.18);
+437:  --sand-border-25:        rgba(103,77,45,.25);
+440:  --shadow-forest-07:      rgba(49,81,30,.07);
+443:  --green-pay-06:          rgba(67,160,71,.06);
+446:  --ring-pulse-50:         rgba(255,90,70,.5);
+447:  --ring-pulse-0:          rgba(255,90,70,0);
+450:  --shadow-card-04:        rgba(30,40,25,.04);
+451:  --shadow-card-05:        rgba(30,40,25,.05);
+454:  --violet-shadow-30:      rgba(108,63,197,.3);
+457:  --coral-sett-22:         rgba(239,125,95,.22);
+460:  --green-alpha-08:        rgba(31,122,84,.08);
+465:  --border-ocean-04:       rgba(100,175,90,.04);
+466:  --border-ocean-06:       rgba(100,175,90,.06);
+467:  --border-ocean-12:       rgba(100,175,90,.12);
+468:  --border-ocean-20:       rgba(100,175,90,.20);
+469:  --border-ocean-50:       rgba(100,175,90,.50);
+472:  --gold-border-12:        rgba(198,168,93,.12);
+473:  --gold-border-16:        rgba(198,168,93,.16);
+474:  --gold-border-28:        rgba(198,168,93,.28);
+475:  --gold-border-36:        rgba(198,168,93,.36);
+476:  --gold-border-50:        rgba(198,168,93,.5);
+477:  --gold-border-62:        rgba(198,168,93,.62);
+478:  --gold-border-74:        rgba(198,168,93,.74);
+481:  --coral-focus-40:        rgba(200,92,45,.4);
+482:  --coral-focus-45:        rgba(200,92,45,.45);
+483:  --coral-shadow-18:       rgba(200,92,45,.18);
+486:  --surface-sand-desktop:  rgba(248,246,241,0.82);
+489:  --surface-white-18:      rgba(255,255,255,.18);
+490:  --surface-white-55:      rgba(255,255,255,.55);
+491:  --surface-white-62:      rgba(255,255,255,.62);
+492:  --surface-white-80:      rgba(255,255,255,.8);
+493:  --surface-white-85:      rgba(255,255,255,.85);
+494:  --surface-white-98:      rgba(255,255,255,.98);
+497:  --shadow-wa-30:          rgba(37,211,102,.30);
+500:  --focus-cta-45:          rgba(42,122,62,.45);
+503:  --pink-shadow-30:        rgba(233,30,99,.30);
+506:  --red-pulse-35:          rgba(220,38,38,.35);
+507:  --red-pulse-0:           rgba(220,38,38,0);
+510:  --overlay-black-18:      rgba(0,0,0,.18);
+513:  --sand-gradient-0:       rgba(244,241,236,0);
+

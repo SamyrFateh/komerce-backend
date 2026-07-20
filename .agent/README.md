@@ -1,75 +1,105 @@
-# Gouvernance agents — GitHub Lane Branch V3.3
+# Gouvernance agents — Chantier PDP intégré
 
 ## Instruction unique
 
-> Lis `.agent/`, prends la prochaine tâche de la lane active, exécute-la et pousse
-> chaque petit lot cohérent sur la branche durable de cette lane.
+> Lire d’abord `.agent/START-HERE.md`, synchroniser le worktree sur
+> `origin/agent/lane-mobile-renderer`, puis exécuter uniquement l’action courante indiquée
+> par la lane et les states de cette ref.
 
-## Modèle de branche
+## Source de vérité
 
-Une **lane représente un sujet cohérent**. Toutes ses tâches, corrections, tests et
-retours sur des fichiers déjà modifiés restent sur la même branche.
-
-Exemple :
+La branche durable unique du chantier est :
 
 ```text
-LANE-MOBILE-RENDERER
-→ agent/lane-mobile-renderer
-→ T-002
-→ T-003
-→ T-004
-→ T-005
-→ T-006
-→ une seule revue
-→ une seule PR
-→ merge dans main
+agent/lane-mobile-renderer
 ```
 
-Il est normal de modifier plusieurs fois le même fichier au fil du sujet. Les petits
-commits permettent de revenir en arrière sans fragmenter le travail entre des branches.
+`main` reste volontairement en retard jusqu’à la PR finale. Les labels de lane sont des
+classifications de sujet, pas des branches séparées dans cette exécution.
+
+Ne jamais déterminer l’avancement depuis :
+
+- les states de `main` ;
+- un worktree non synchronisé ;
+- les compteurs de `.agent/TASK-INDEX.json` ;
+- l’ordre numérique des tâches sans consulter `.agent/EXECUTION_MAP.md`.
 
 ## Parcours obligatoire
 
 ```text
-accès GitHub vérifié
-→ branche de lane créée ou reprise
-→ tâche active poussée
-→ petit lot
-→ commit + push
-→ petit lot suivant
-→ commit + push
-→ gates de la tâche
-→ tâche DONE dans la lane
-→ tâche suivante automatiquement sur la même branche
-→ fin de lane
-→ REVIEW + PR unique
+START-HERE
+→ fetch origin
+→ vérification du worktree
+→ switch/pull agent/lane-mobile-renderer
+→ MANIFEST
+→ CHECKPOINT-PROTOCOL
+→ EXECUTION_MAP
+→ lane state
+→ STATUS
+→ state de la tâche courante
+→ tâche / worklog / arbitrage / preuves
+→ petit lot cohérent
+→ commit + push immédiat
+→ vérification du SHA distant
+→ lot suivant uniquement après CHECKPOINT_DISTANT
 ```
+
+## Checkpoints anti-perte
+
+La norme complète est `.agent/CHECKPOINT-PROTOCOL.md`.
+
+Un checkpoint signifie obligatoirement :
+
+```text
+commit atomique + push immédiat + SHA distant confirmé
+```
+
+Utiliser :
+
+```bash
+node scripts/agent-checkpoint.mjs \
+  --message "type(t-xxx): résultat atomique" \
+  -- chemin/du/fichier-1 chemin/du/fichier-2
+```
+
+Un commit local seul n’est pas une sauvegarde. Il est interdit d’accumuler plusieurs
+commits locaux avant un push groupé ou de commencer un second lot avant l’affichage de
+`CHECKPOINT_DISTANT=<sha>`.
+
+Créer un checkpoint distant avant toute commande longue, génération de captures,
+opération risquée, arbitrage, pause ou réponse finale.
+
+Au premier `non-fast-forward`, arrêter sans merge, rebase, cherry-pick, reset, stash ou
+force-push automatique.
+
+## État opérationnel
+
+La lane intégrée indique la tâche à reprendre et la prochaine nouvelle implémentation.
+Une tâche `DONE` ou `REVIEW` sur la ref autoritative ne doit jamais être recréée.
+Une tâche `BLOCKED` pour preuve visuelle doit être reprise dès qu’un navigateur compatible
+est disponible, sans rouvrir le code fonctionnel sauf défaut réel.
 
 ## Runtime
 
-```bash
-node scripts/agent.mjs start --agent "sonnet"
-node scripts/agent.mjs save --message "résultat précis" --next-action "action suivante"
-node scripts/agent.mjs finish --summary "résumé court"
-```
+Les commandes `start`, `resume` et `finish` de `scripts/agent.mjs` restent interdites dans
+le mode intégré. Les changements de state sont explicites et chaque lot est sauvegardé avec
+`scripts/agent-checkpoint.mjs`.
 
-Après une coupure :
-
-```bash
-node scripts/agent.mjs resume --task T-003 --agent "sonnet-2"
-```
+Les commandes de diagnostic sans mutation peuvent être utilisées uniquement après le
+préflight et après vérification de leur sortie.
 
 ## Interdictions
 
-- une branche par micro-tâche ;
-- une PR par micro-tâche ;
-- repartir de `main` entre deux tâches d’une même lane ;
-- recopier manuellement les fichiers d’une branche vers une autre ;
-- attendre une estimation de fin de session avant de pousser ;
-- raconter le plan dans le chat.
+- pousser un checkpoint sur `main` ;
+- créer une branche par tâche ou par label de lane ;
+- recommencer une tâche déjà terminée ;
+- accumuler des commits locaux non poussés ;
+- commencer un lot avec un checkpoint précédent non confirmé à distance ;
+- reset ou suppression en présence de modifications locales inconnues ;
+- fabriquer une capture ou une preuve ;
+- utiliser `TASK-INDEX.json` comme tableau d’avancement.
 
-## Arbitrage
+## Livraison
 
-L’agent interrompt le mode silencieux uniquement pour un arbitrage réel. Il pousse
-d’abord tout le travail courant, puis pose une seule question avec options et
-recommandation.
+Checkpoints distants petits et fréquents, une seule PR finale depuis
+`agent/lane-mobile-renderer` vers `main`.

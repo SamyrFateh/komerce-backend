@@ -1,0 +1,50 @@
+
+> komerce-backend@10.6.1 pretest
+> npm run backend:audit
+
+
+> komerce-backend@10.6.1 backend:audit
+> node scripts/audit-backend-arch.js
+
+
+  🔍  Audit architecture Komerce backend
+
+  ⚠️   9 avertissement(s) (violations connues — lots prévus) :
+
+  ── Taille des fichiers ── (4)
+     ⚠  routes/shared-cart.js — 990 lignes (seuil warning : 800)
+       À surveiller — découper avant extension
+     ⚠  services/product-admin-service.js — 979 lignes (seuil warning : 800)
+       À surveiller — découper avant extension
+     ⚠  services/radar-queries.js — 858 lignes (seuil warning : 800)
+       À surveiller — découper avant extension
+     … et 1 autres.
+
+  ── Engines dans routes/ ── (1)
+     ⚠  routes/sourcing-scanner.js — engine en routes/ (nom de fichier seulement, façade déjà mince)
+       Acceptée en l'état (STATUS.md §B1/B2) — pas de migration prévue, dette purement nominale
+
+  ── Collisions numéros migrations ── (4)
+     ⚠  Collision migration documentée (préfixe 014) : 014_parcels_final_cleanup.sql, 014_transaction_documents.sql
+       Dette connue listée dans migrations/GAPS.md — à nettoyer dès que possible, ne bloque pas
+     ⚠  Collision migration documentée (préfixe 072) : 072_boutique_category_images.sql, 072_jwt_revocation.sql
+       Dette connue listée dans migrations/GAPS.md — à nettoyer dès que possible, ne bloque pas
+     ⚠  Collision migration documentée (préfixe 073) : 073_pickup_verify_attempts.sql, 073_shared_cart_cash_contributions.sql
+       Dette connue listée dans migrations/GAPS.md — à nettoyer dès que possible, ne bloque pas
+     … et 1 autres.
+
+  ✅  Aucune violation. Architecture conforme.
+
+
+> komerce-backend@10.6.1 test
+> jest --runInBand --forceExit --detectOpenHandles tests/unit/catalog-product-detail.test.js tests/unit/golden-product-gpm1.test.js
+
+PASS tests/unit/golden-product-gpm1.test.js
+PASS tests/unit/catalog-product-detail.test.js
+
+Test Suites: 2 passed, 2 total
+Tests:       29 passed, 29 total
+Snapshots:   0 total
+Time:        2.236 s
+Ran all test suites matching /tests\/unit\/catalog-product-detail.test.js|tests\/unit\/golden-product-gpm1.test.js/i.
+EXIT_CODE=0

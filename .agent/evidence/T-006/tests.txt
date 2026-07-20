@@ -1,0 +1,20 @@
+T-006 — Preuves de test
+Agent : claude-sonnet
+
+=== Tests unitaires (b-modal-mobile-product.test.js) ===
+25/25 PASS
+
+  b-modal-mobile-product — référence produit sous le titre (M5, spec §5.3)
+    ✓ référence présente dans le contrat : affichée avec préfixe Réf.
+    ✓ référence absente du contrat : nœud masqué, aucun placeholder vide
+
+=== Computed styles Playwright (390px) ===
+  fontSize:   11px   ✓ (spec §5.3)
+  fontWeight: 400    ✓ (spec §5.3)
+  color:      rgb(107,123,99) = var(--text-muted) #6B7B63  ✓ (spec §5.3, corrigé depuis --text-light)
+  marginTop:  1px    ✓
+
+=== Delta CSS appliqué ===
+modal-mobile-canonical.css : color var(--text-light) → var(--text-muted) + font-weight: 400 ajouté
+Aucune modification JS (renderer déjà correct)
+DOM #k-modal-sku déjà en place dans index.html

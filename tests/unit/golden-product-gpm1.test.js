@@ -80,6 +80,7 @@ describe('GPM-1 — Golden Product "Chaussure de football Elite Pro" — Product
       description: expect.stringContaining('terrain synthétique'),
       category: 'sport',
       subcategory: 'chaussures-football',
+      series: null,
     });
   });
 

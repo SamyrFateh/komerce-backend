@@ -61,6 +61,12 @@ function installDom() {
   document.body.innerHTML =
     '<div id="k-modal">' +
       '<div id="k-modal-variants"></div>' +
+      '<span class="k-modal-sku" id="k-modal-sku"></span>' +
+      '<span id="k-modal-cat"></span>' +
+      '<div class="k-modal-price-row">' +
+        '<span id="k-modal-price"></span>' +
+        '<span id="k-modal-old-price"></span>' +
+      '</div>' +
       '<button id="k-add-cart-btn"></button>' +
       '<button id="k-buy-now-btn"></button>' +
       '<button id="k-qty-minus"></button>' +
@@ -76,9 +82,10 @@ function installDom() {
   dom.modalDesc = document.createElement('div');
   dom.modalCat = document.createElement('div');
   dom.modalPromoBadge = document.createElement('div');
-  dom.modalPrice = document.createElement('div');
-  dom.modalOldPrice = document.createElement('div');
-  dom.modalSku = document.createElement('div');
+  dom.modalPrice = document.getElementById('k-modal-price');
+  dom.modalOldPrice = document.getElementById('k-modal-old-price');
+  dom.modalSku = document.getElementById('k-modal-sku');
+  dom.modalCat = document.getElementById('k-modal-cat');
   dom.modalStock = document.createElement('div');
 }
 
@@ -321,5 +328,378 @@ describe('b-modal-mobile-product — contenu enrichi below-fold (Lot Content)', 
     expect(document.querySelector('.k-mdm-section-heading').textContent).toBe('Guide des tailles');
     expect(document.querySelector('.k-mdm-content-section--specs dt').textContent).toBe('40');
     expect(document.querySelector('.k-mdm-content-section--specs dd').textContent).toBe('EU 40 / UK 6.5');
+  });
+});
+
+describe('b-modal-mobile-product — renderStockPill (M1, spec §5.5)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  function unit(overrides) {
+    return Object.assign({
+      sku_id: 'sku-1',
+      sku: 'GOLD-BLU-42',
+      option_values: {},
+      stock_status: 'AVAILABLE',
+      available_quantity: 8,
+      price_kmf: 5000,
+      media_ids: [],
+    }, overrides);
+  }
+
+  function pill() {
+    return document.querySelector('#k-modal-stock-pill');
+  }
+
+  test('stock > 5 : pill "En stock", variant ok', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [unit({ available_quantity: 8 })] });
+    const selection = baseSelection({ selection_supported: true, selected_sku_id: 'sku-1' });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(pill().hidden).toBe(false);
+    expect(pill().className).toBe('k-mdm-stock-pill k-mdm-stock-pill--ok');
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('En stock');
+  });
+
+  test('1 ≤ stock ≤ 5 : pill "Plus que N", variant low', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [unit({ available_quantity: 3 })] });
+    const selection = baseSelection({ selection_supported: true, selected_sku_id: 'sku-1' });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(pill().className).toBe('k-mdm-stock-pill k-mdm-stock-pill--low');
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('Plus que 3');
+  });
+
+  test('stock = 0 : pill "Épuisé", variant out', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [unit({ available_quantity: 0, stock_status: 'OUT_OF_STOCK' })] });
+    const selection = baseSelection({ selection_supported: true, selected_sku_id: 'sku-1' });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(pill().className).toBe('k-mdm-stock-pill k-mdm-stock-pill--out');
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('Épuisé');
+  });
+
+  test('aucune unité résolue (sélection incomplète) : pill absent/masqué, aucune donnée inventée', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [unit({ available_quantity: 8 })] });
+    const selection = baseSelection({ selection_supported: true, selected_sku_id: null });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(pill()).toBeNull();
+  });
+
+  test('changement de sélection : le pill se met à jour sans dupliquer le noeud', () => {
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      sellable_units: [unit({ sku_id: 'sku-1', available_quantity: 8 }), unit({ sku_id: 'sku-2', available_quantity: 2 })],
+    });
+
+    renderMobileProductDetail(detail, baseSelection({ selection_supported: true, selected_sku_id: 'sku-1' }));
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('En stock');
+
+    renderMobileProductDetail(detail, baseSelection({ selection_supported: true, selected_sku_id: 'sku-2' }));
+    expect(document.querySelectorAll('#k-modal-stock-pill').length).toBe(1);
+    expect(pill().querySelector('.k-mdm-stock-pill-label').textContent).toBe('Plus que 2');
+  });
+});
+
+describe('b-modal-mobile-product — sélecteur Couleur (M2, spec §5.4)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  function colorAxis(overrides) {
+    return Object.assign({
+      key: 'couleur',
+      display_name: 'Couleur',
+      values: [
+        { value: 'Bleu', thumbnail_url: 'https://cdn/bleu.png' },
+        { value: 'Rouge', thumbnail_url: 'https://cdn/rouge.png' },
+      ],
+    }, overrides);
+  }
+
+  function skuUnit(overrides) {
+    return Object.assign({
+      sku_id: 'sku-1',
+      sku: 'GOLD-BLU-42',
+      option_values: { couleur: 'Bleu' },
+      stock_status: 'AVAILABLE',
+      available_quantity: 8,
+      price_kmf: 5000,
+      media_ids: [],
+    }, overrides);
+  }
+
+  test('SKU avec axe Couleur : la rangée de vignettes est rendue avec une seule source de sélection', () => {
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      option_axes: [colorAxis()],
+      sellable_units: [skuUnit()],
+    });
+    const selection = baseSelection({
+      selection_supported: true,
+      selected_options: { couleur: 'Bleu' },
+      selected_sku_id: 'sku-1',
+      option_states: {
+        couleur: [
+          { value: 'Bleu', state: 'AVAILABLE' },
+          { value: 'Rouge', state: 'AVAILABLE' },
+        ],
+      },
+    });
+
+    renderMobileProductDetail(detail, selection);
+
+    const group = document.querySelector('.k-vg[data-axis-key="couleur"]');
+    expect(group).not.toBeNull();
+
+    const skus = group.querySelectorAll('.k-vg-skus .k-sku');
+    expect(skus.length).toBe(2);
+    // Une seule vignette active à la fois — une seule source de sélection.
+    const active = group.querySelectorAll('.k-sku.k-sku--active');
+    expect(active.length).toBe(1);
+    expect(active[0].querySelector('.k-sku-name').textContent).toBe('Bleu');
+    expect(group.querySelector('.k-vg-label-val').textContent).toBe('Bleu');
+  });
+
+  test('LEGACY (selection_supported=false) : aucun sélecteur Couleur, même si option_axes est fourni', () => {
+    const detail = baseDetail({
+      inventory_model: 'LEGACY_VARIANTS',
+      option_axes: [colorAxis()],
+      sellable_units: [],
+    });
+    const selection = baseSelection({ selection_supported: false });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(document.querySelector('.k-vg')).toBeNull();
+    expect(document.querySelector('.k-vg-skus')).toBeNull();
+  });
+});
+
+describe('b-modal-mobile-product — sélecteur Taille (M3, spec §5.6)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installDom();
+  });
+
+  function sizeAxis(overrides) {
+    return Object.assign({
+      key: 'taille',
+      display_name: 'Taille',
+      values: [
+        { value: 'S' },
+        { value: 'M' },
+        { value: 'L' },
+        { value: 'XL' },
+      ],
+    }, overrides);
+  }
+
+  function skuUnit(overrides) {
+    return Object.assign({
+      sku_id: 'sku-m',
+      sku: 'GOLD-M',
+      option_values: { taille: 'M' },
+      stock_status: 'AVAILABLE',
+      available_quantity: 8,
+      price_kmf: 5000,
+      media_ids: [],
+    }, overrides);
+  }
+
+  test('SKU avec axe Taille : au moins quatre chips rendus, une seule source de sélection', () => {
+    const detail = baseDetail({
+      inventory_model: 'SKU',
+      option_axes: [sizeAxis()],
+      sellable_units: [skuUnit()],
+    });
+    const selection = baseSelection({
+      selection_supported: true,
+      selected_options: { taille: 'M' },
+      selected_sku_id: 'sku-m',
+      option_states: {
+        taille: [
+          { value: 'S', state: 'AVAILABLE' },
+          { value: 'M', state: 'AVAILABLE' },
+          { value: 'L', state: 'OUT_OF_STOCK' },
+          { value: 'XL', state: 'AVAILABLE' },
+        ],
+      },
+    });
+
+    renderMobileProductDetail(detail, selection);
+
+    const group = document.querySelector('.k-vg[data-axis-key="taille"]');
+    expect(group).not.toBeNull();
+
+    const chips = group.querySelectorAll('.k-vg-sizes .k-vp');
+    expect(chips.length).toBeGreaterThanOrEqual(4);
+
+    // État sélectionné et indisponible distincts, une seule vignette active.
+    const active = group.querySelectorAll('.k-vp.k-vp--active');
+    expect(active.length).toBe(1);
+    expect(active[0].textContent).toBe('M');
+
+    const unavailable = group.querySelectorAll('.k-vp--out');
+    expect(unavailable.length).toBe(1);
+    expect(unavailable[0].textContent).toBe('L');
+    expect(unavailable[0].className).not.toContain('k-vp--active');
+
+    expect(group.querySelector('.k-vg-label-val').textContent).toBe('M');
+  });
+
+  test('LEGACY (selection_supported=false) : aucun sélecteur Taille, même si option_axes est fourni', () => {
+    const detail = baseDetail({
+      inventory_model: 'LEGACY_VARIANTS',
+      option_axes: [sizeAxis()],
+      sellable_units: [],
+    });
+    const selection = baseSelection({ selection_supported: false });
+
+    renderMobileProductDetail(detail, selection);
+
+    expect(document.querySelector('.k-vg')).toBeNull();
+    expect(document.querySelector('.k-vg-sizes')).toBeNull();
+  });
+});
+
+describe('b-modal-mobile-product — carrousel suggestions mobile (M4, spec §5.7)', () => {
+  // M4 est un override CSS-only dans modal-mobile-canonical.css :
+  // b-modal-suggestions.js produit les nœuds .k-sug-grid / .k-sug-card
+  // sans modification, l'event modal:suggestions-rendered est conservé.
+  // Ces tests vérifient (1) que b-modal-mobile-product.js ne produit PAS
+  // de .k-sug-grid lui-même (ownership clair → b-modal-suggestions.js) et
+  // (2) que le conteneur #k-modal-suggestions est bien présent dans le DOM
+  // après renderMobileProductDetail pour que b-modal-suggestions.js
+  // puisse l'alimenter (non-régression de la composition).
+
+  beforeEach(() => {
+    installDom();
+    // Ajouter le conteneur suggestions que le shell fournit
+    const sugContainer = document.createElement('div');
+    sugContainer.className = 'k-modal-suggestions';
+    sugContainer.id = 'k-modal-suggestions';
+    document.getElementById('k-modal').appendChild(sugContainer);
+    state.detail = null;
+  });
+
+  test('renderMobileProductDetail ne produit aucun .k-sug-grid (ownership b-modal-suggestions.js)', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [] });
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    // b-modal-mobile-product.js ne doit pas injecter de grille de suggestions
+    expect(document.querySelector('.k-sug-grid')).toBeNull();
+  });
+
+  test('le conteneur #k-modal-suggestions reste intact après renderMobileProductDetail', () => {
+    const detail = baseDetail({ inventory_model: 'SKU', sellable_units: [] });
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    // b-modal-suggestions.js a besoin de ce nœud pour injecter le rail
+    const sugContainer = document.getElementById('k-modal-suggestions');
+    expect(sugContainer).not.toBeNull();
+    expect(sugContainer.id).toBe('k-modal-suggestions');
+  });
+});
+
+describe('b-modal-mobile-product — référence produit sous le titre (M5, spec §5.3)', () => {
+  // La référence est rendue dans dom.modalSku (#k-modal-sku) par renderIdentity.
+  // Spec §5.3 : 11px / 400 / muted, fallback silencieux si propriété absente.
+  // CSS vérifié dans modal-mobile-canonical.css (override mobile-only).
+
+  beforeEach(() => {
+    installDom();
+    state.detail = null;
+  });
+
+  test('référence présente dans le contrat : affichée avec préfixe Réf.', () => {
+    const detail = baseDetail({
+      product: { id: 'p1', name: 'Chaussure Elite Pro', description: '', category: '', reference: 'GOLD-BLU-44' },
+      inventory_model: 'SKU',
+      sellable_units: [],
+    });
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    const sku = document.getElementById('k-modal-sku');
+    expect(sku.textContent).toBe('Réf. GOLD-BLU-44');
+    expect(sku.hidden).toBe(false);
+  });
+
+  test('référence absente du contrat : nœud masqué, aucun placeholder vide', () => {
+    const detail = baseDetail({
+      product: { id: 'p1', name: 'Chaussure Elite Pro', description: '', category: '' },
+      inventory_model: 'SKU',
+      sellable_units: [],
+    });
+    const selection = baseSelection();
+
+    renderMobileProductDetail(detail, selection);
+
+    const sku = document.getElementById('k-modal-sku');
+    expect(sku.hidden).toBe(true);
+    expect(sku.textContent.trim()).toBe('');
+  });
+});
+
+describe('b-modal-mobile-product — série produit meta hero (M6, spec §5.2, contrat v1 product.series)', () => {
+  // product.series est un nouveau champ nullable du contrat Product Detail v1
+  // (migration 112, Option D). Sur mobile, il remplace la catégorie brute dans
+  // dom.modalCat. Fallback silencieux : nœud masqué si series absent.
+
+  beforeEach(() => {
+    installDom();
+    state.detail = null;
+  });
+
+  test('product.series présent : affiché dans dom.modalCat, nœud visible', () => {
+    const detail = baseDetail({
+      product: {
+        id: 'p1', name: 'Chaussure Elite Pro', description: '',
+        category: 'sport', series: 'Golden Performance Series',
+      },
+    });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const cat = document.getElementById('k-modal-cat');
+    expect(cat.textContent).toBe('Golden Performance Series');
+    expect(cat.hidden).toBe(false);
+  });
+
+  test('product.series absent (null) : nœud masqué, catégorie brute non affichée', () => {
+    const detail = baseDetail({
+      product: {
+        id: 'p1', name: 'Chaussure Elite Pro', description: '',
+        category: 'sport', series: null,
+      },
+    });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const cat = document.getElementById('k-modal-cat');
+    expect(cat.hidden).toBe(true);
+    expect(cat.textContent.trim()).toBe('');
+  });
+
+  test('product.series absent (champ manquant) : même comportement que null', () => {
+    const detail = baseDetail({
+      product: { id: 'p1', name: 'Robe', description: '', category: 'mode' },
+    });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const cat = document.getElementById('k-modal-cat');
+    expect(cat.hidden).toBe(true);
   });
 });

@@ -79,7 +79,13 @@ function renderIdentity(detail) {
     dom.modalDesc.textContent = detail.product.description || '';
     dom.modalDesc.classList.remove('is-expanded');
   }
-  if (dom.modalCat) dom.modalCat.textContent = detail.product.category || '';
+  // Series — ligne 2 meta hero desktop (spec M6, contrat v1 product.series)
+  // Fallback silencieux : si series absent, on n'affiche pas la catégorie brute.
+  if (dom.modalCat) {
+    const series = detail.product.series || null;
+    dom.modalCat.textContent = series || '';
+    dom.modalCat.hidden = !series;
+  }
 
   const promo = Number(detail.pricing.promo_pct || 0);
   if (dom.modalPromoBadge) {
@@ -157,6 +163,20 @@ function renderActions(detail, selection) {
     if (!control) return;
     control.disabled = isSku;
   });
+
+  // T-023/D11 : layout AVAILABLE_EMPTY (Ajouter + Acheter côte à côte) vs
+  // AVAILABLE_FILLED (stepper + Acheter) — porté par modal-shell.css via
+  // .k-modal-actions--filled. État dérivé de la présence du produit dans
+  // le panier (state.cart, clé product.id), pas de la sélection SKU.
+  const actionsEl = modalZone('.k-modal-actions');
+  if (actionsEl) {
+    const productId = detail.product?.id;
+    const inCart = Boolean(
+      productId != null
+      && (state.cart || []).some((item) => String(item.product?.id) === String(productId) && (item.qty || 0) > 0)
+    );
+    actionsEl.classList.toggle('k-modal-actions--filled', inCart);
+  }
 }
 
 function optionReason(optionState) {

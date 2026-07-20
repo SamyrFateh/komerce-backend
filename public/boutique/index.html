@@ -73,9 +73,9 @@ if('serviceWorker' in navigator){
 <script>/* Anti-FOUC premium desktop — doit s'exécuter AVANT tout CSS rendu */
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=118">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=154">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=52">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=129">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=184">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=61">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
@@ -401,7 +401,8 @@ if('serviceWorker' in navigator){
       </div>
     </div>
     <div class="k-modal-scroll">
-      <!-- Zone produit : 2 colonnes image | détails (desktop) -->
+      <!-- Zone produit : 2 colonnes image | détails 900-1023px,
+           3 pistes rail miniatures | média | détails ≥1024px (desktop) -->
       <div class="k-modal-product-zone">
         <div class="k-modal-img-wrap">
           <div class="k-modal-carousel" id="k-modal-carousel">
@@ -416,7 +417,6 @@ if('serviceWorker' in navigator){
           <div class="k-modal-info">
             <div class="k-modal-name-row">
               <h2 id="k-modal-name"></h2>
-              <button class="k-modal-fav-btn" id="k-modal-fav-btn" aria-label="Ajouter aux favoris">🤍</button>
             </div>
             <span class="k-modal-sku" id="k-modal-sku"></span>
             <div class="k-modal-price-row">
@@ -426,7 +426,6 @@ if('serviceWorker' in navigator){
             <!-- ── Zones desktop enrichies — peuplées par b-modal-desktop-enhancers.js ── -->
             <!-- Masquées mobile (display:none par défaut) · révélées ≥900px via modal.css -->
             <div id="k-modal-aed-price" class="k-modal-aed-price"></div>
-            <div id="k-modal-flash-bar" class="k-modal-flash-bar"></div>
             <div id="k-modal-stock-bar" class="k-modal-stock-bar"></div>
             <!-- Variant picker (Taille / Couleur / Pointure) — juste après le prix -->
             <div id="k-modal-variants" class="k-modal-variants"></div>
@@ -435,10 +434,8 @@ if('serviceWorker' in navigator){
               <span id="k-modal-cat"></span>
               <span id="k-modal-stock"></span>
             </div>
-            <!-- ── Livraison + Paiement — injectés par b-modal-desktop-enhancers.js ── -->
-            <div id="k-modal-delivery" class="k-modal-delivery"></div>
-            <div id="k-modal-payment" class="k-modal-payment"></div>
           </div><!-- end .k-modal-info -->
+        </div><!-- end .k-modal-details — FIX T-030 desktop nesting -->
         <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
         <!-- Sur mobile : display:contents rend product-zone transparent → ordre naturel -->
         <div class="k-modal-actions">
@@ -449,9 +446,9 @@ if('serviceWorker' in navigator){
           </div>
           <button class="k-add-cart-btn" id="k-add-cart-btn">
             <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" aria-hidden="true">
-            Ajouter
+            Ajouter au panier
           </button>
-          <button class="k-buy-now-btn" id="k-buy-now-btn">⚡ Acheter</button>
+          <button class="k-buy-now-btn" id="k-buy-now-btn"><span aria-hidden="true">⚡</span> Acheter maintenant</button>
         </div>
       </div><!-- end .k-modal-product-zone -->
       <!-- Contenu enrichi (Lot Content) — sous la zone transactionnelle, peuplé
@@ -464,10 +461,16 @@ if('serviceWorker' in navigator){
         <h3>Vous aimerez aussi</h3>
         <div class="k-sug-rail" id="k-sug-rail"></div>
       </div>
+      <!-- D4 (T-016) : Livraison + Paiement déplacés sous les suggestions —
+           panneau commercial allégé conformément à D-P1. Rendus par
+           renderDeliveryOptions() / renderPaymentSection() dans
+           b-modal-desktop-product.js (getElementById, insensible à la
+           position DOM). -->
+      <div id="k-modal-delivery" class="k-modal-delivery"></div>
+      <div id="k-modal-payment" class="k-modal-payment"></div>
     </div>
   </div>
-</div>
-</div><!-- /#k-modal-overlay — FIX HTML 2026-05-19 v3.1 : il manquait DEUX </div> au total pour fermer k-modal-overlay (v3 n'en avait ajouté qu'une). Le parser strict (avec gestion commentaires) montre que sans cette balise, k-modal-overlay reste ouvert et capture k-cart-overlay, k-cart-drawer, k-order-modal comme enfants. -->
+</div><!-- /#k-modal-overlay — FIX T-030 desktop modal nesting -->
 
 <!-- ═══ CART DRAWER ═══ -->
 <div id="k-cart-overlay" class="k-cart-overlay"></div>

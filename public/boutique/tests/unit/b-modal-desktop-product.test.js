@@ -224,6 +224,30 @@ describe('desktop product detail renderer', () => {
     stepperControls().forEach((control) => expect(control.disabled).toBe(true));
   });
 
+  test('T-023/D11 — produit absent du panier : AVAILABLE_EMPTY (pas de modificateur --filled)', () => {
+    const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
+    state.cart = [];
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.modal.querySelector('.k-modal-actions').classList.contains('k-modal-actions--filled')).toBe(false);
+  });
+
+  test('T-023/D11 — produit dans le panier (qty > 0) : AVAILABLE_FILLED (.k-modal-actions--filled posé)', () => {
+    const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
+    state.cart = [{ product: { id: PRODUCT_ID }, qty: 2 }];
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.modal.querySelector('.k-modal-actions').classList.contains('k-modal-actions--filled')).toBe(true);
+  });
+
+  test('T-023/D11 — entrée panier avec qty 0 : reste AVAILABLE_EMPTY', () => {
+    const product = detail({ inventory_model: 'LEGACY_VARIANTS' });
+    state.cart = [{ product: { id: PRODUCT_ID }, qty: 0 }];
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    expect(dom.modal.querySelector('.k-modal-actions').classList.contains('k-modal-actions--filled')).toBe(false);
+  });
+
   test('compose galerie gauche / Buy Box depuis le contrat sans vérité legacy', () => {
     const product = detail();
     renderDesktopProductDetail(product, createModalSelection(product), { forceMedia: true });
@@ -495,5 +519,29 @@ describe('desktop product detail renderer — contenu enrichi (Lot Content)', ()
 
     const items = [...document.querySelectorAll('.k-modal-enriched-block--editorial li')].map((li) => li.textContent);
     expect(items).toEqual(['Éviter le sable humide']);
+  });
+});
+
+describe('b-modal-desktop-product — série produit meta hero (M6, spec §9.1, contrat v1 product.series)', () => {
+  beforeEach(() => {
+    installDom();
+  });
+
+  test('product.series présent : affiché dans #k-modal-cat, nœud visible', () => {
+    const product = detail({ product: { id: PRODUCT_ID, reference: 'ROB-001', name: 'Robe Dubaï', description: 'Robe fluide', category: 'vetements', subcategory: 'robes', series: 'Golden Performance Series' } });
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const cat = document.getElementById('k-modal-cat');
+    expect(cat.textContent).toBe('Golden Performance Series');
+    expect(cat.hidden).toBe(false);
+  });
+
+  test('product.series absent (null) : #k-modal-cat masqué, catégorie brute non affichée', () => {
+    const product = detail({ product: { id: PRODUCT_ID, reference: 'ROB-001', name: 'Robe Dubaï', description: 'Robe fluide', category: 'vetements', subcategory: 'robes', series: null } });
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const cat = document.getElementById('k-modal-cat');
+    expect(cat.hidden).toBe(true);
+    expect(cat.textContent.trim()).toBe('');
   });
 });

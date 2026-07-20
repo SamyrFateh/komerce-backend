@@ -1,0 +1,32 @@
+[
+  {
+    "command": "npm --prefix public/boutique run deploy:css",
+    "result": "PASS",
+    "exit_code": 0,
+    "output": "> boutique@1.0.0 deploy:css\n> node scripts/deploy-css.js\n\n\n\u001b[1m\u001b[36m━━━ deploy-css — Komerce ━━━\u001b[0m\n\n\u001b[1m1. Compilation des bundles\u001b[0m\n  \u001b[32m✓\u001b[0m  base.css           2748 lignes  \u001b[2m← tokens + reset + layout + hero\u001b[0m\n  \u001b[32m✓\u001b[0m  components.css     10718 lignes \u001b[2m← categories + products + modal-shell + modal-media + modal-product + modal-product-lot4-hybrid + modal-mobile-canonical + modal-enriched-content + cart + interactions + hero-cart-proxy + group-cart-flow + share-cart + shared-followup + identity + paypal + wallet\u001b[0m\n  \u001b[32m✓\u001b[0m  desktop.css        1273 lignes  \u001b[2m← boutique-desktop\u001b[0m\n\n\u001b[1m2. Détection des changements\u001b[0m\n  base.css           \u001b[2m20be93755d25\u001b[0m  \u001b[32m= identique\u001b[0m\n  components.css     \u001b[2m983564263c64\u001b[0m  \u001b[32m= identique\u001b[0m\n  desktop.css        \u001b[2m3f95016e95d2\u001b[0m  \u001b[32m= identique\u001b[0m\n\n\u001b[32m\u001b[1m✔ Aucun changement — index.html inchangé.\u001b[0m"
+  },
+  {
+    "command": "npm --prefix public/boutique run check:cache",
+    "result": "PASS",
+    "exit_code": 0,
+    "output": "> boutique@1.0.0 check:cache\n> node scripts/deploy-css.js --dry\n\n\n\u001b[1m\u001b[36m━━━ deploy-css — Komerce ━━━\u001b[0m\n\u001b[33mMode : --dry (aucun fichier modifié)\u001b[0m\n\n\u001b[1m1. Compilation des bundles\u001b[0m\n  \u001b[32m✓\u001b[0m  base.css           2748 lignes  \u001b[2m← tokens + reset + layout + hero\u001b[0m\n  \u001b[32m✓\u001b[0m  components.css     10718 lignes \u001b[2m← categories + products + modal-shell + modal-media + modal-product + modal-product-lot4-hybrid + modal-mobile-canonical + modal-enriched-content + cart + interactions + hero-cart-proxy + group-cart-flow + share-cart + shared-followup + identity + paypal + wallet\u001b[0m\n  \u001b[32m✓\u001b[0m  desktop.css        1273 lignes  \u001b[2m← boutique-desktop\u001b[0m\n\n\u001b[1m2. Détection des changements\u001b[0m\n  base.css           \u001b[2m20be93755d25\u001b[0m  \u001b[32m= identique\u001b[0m\n  components.css     \u001b[2m983564263c64\u001b[0m  \u001b[32m= identique\u001b[0m\n  desktop.css        \u001b[2m3f95016e95d2\u001b[0m  \u001b[32m= identique\u001b[0m\n\n\u001b[32m\u001b[1m✔ Aucun changement — index.html inchangé.\u001b[0m"
+  },
+  {
+    "command": "npm --prefix public/boutique run check:breakpoints",
+    "result": "PASS",
+    "exit_code": 0,
+    "output": "> boutique@1.0.0 check:breakpoints\n> node scripts/check-breakpoints.js --strict\n\n\nBreakpoints garde-fou V1 - Autorises : 900px, 1200px\n\n   >> group-cart-flow.css                max:380px\n   >> layout.css                         min:1100px\n   >> modal-shell.css                    max:1120px\n\n   Total : 3 violations dans 3 fichiers.\n\nStable vs baseline (3). Pas de régression."
+  },
+  {
+    "command": "npm --prefix public/boutique run audit:ownership",
+    "result": "PASS",
+    "exit_code": 0,
+    "output": "> boutique@1.0.0 audit:ownership\n> node scripts/gen-ownership.js\n\n✅ Carte de propriété générée → docs/BOUTIQUE_OWNERSHIP_LIVE.md"
+  },
+  {
+    "command": "npm --prefix public/boutique run audit:gate",
+    "result": "PASS",
+    "exit_code": 0,
+    "output": "> boutique@1.0.0 audit:gate\n> node scripts/audit-gate.js --strict\n\n\n╔══════════════════════════════════════════════════════════╗\n║  KOMERCE BOUTIQUE — Audit Gate (N1 — dépendances)        ║\n╚══════════════════════════════════════════════════════════╝\n\n  Vulnérabilités high/critical : 0\n  Dette connue (baseline)      : 0\n  Nouvelles (non acceptées)    : 0\n\n  ✅ Audit N1 — CONFORME (0 vulnérabilité high/critical)."
+  }
+]

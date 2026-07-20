@@ -2,28 +2,54 @@
    Approche C hybride desktop — PDP Komerce
    Rapatrié de b-modal-approche-c-hybrid.js (Lot 4)
    Owner : modal-product.css
-   Scope : @media (min-width: 900px) uniquement
+   Scope : @media (min-width: 900px) — 2 colonnes 900-1023px,
+           3 pistes à partir de 1024px (T-020, arbitrage D8).
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* ── Zone produit : layout grille hybride ── */
+  /* D7 — Zone produit en aplat (spec §327) : le gradient radial sand-warm
+     est retiré au profit d'un fond uni --page-bg, cohérent avec le fond de
+     page hors modale. */
   #k-modal .k-modal-product-zone {
     grid-template-columns: minmax(0, 48%) minmax(0, 52%);
-    background:
-      radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--sand-warm) 60%, transparent), transparent 28%),
-      var(--white);
+    background: var(--page-bg);
   }
 
+  /* ── Composition 3 pistes ≥1024px (T-020, arbitrage D8) ──────────────
+     rail miniatures | média principal | détails.
+     grid-template-columns/gap/padding de .k-modal-product-zone : seul
+     propriétaire ce fichier. Le placement des enfants (grid-column/
+     grid-row) est owned exclusivement par modal-shell.css — ne pas le
+     redéclarer ici (cf. .agent/arbitrations/T-020.md). ─────────────── */
+  @media (min-width: 1024px) {
+    #k-modal .k-modal-product-zone {
+      grid-template-columns: 60px minmax(420px, 1fr) 310px;
+      gap: 18px;
+      padding: 18px;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    #k-modal .k-modal-product-zone {
+      grid-template-columns: 64px minmax(480px, 1fr) 340px;
+      gap: 22px;
+      padding: 22px;
+    }
+  }
+
+  /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
+     fond uni --hero-bg, seul le décor radial sobre est conservé,
+     le dégradé linéaire sand → sand-warm est retiré. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    background:
-      radial-gradient(circle at 62% 20%, color-mix(in srgb, var(--ocean) 10%, transparent), transparent 30%),
-      linear-gradient(135deg, var(--sand) 0%, var(--sand-warm) 100%);
+    background: var(--hero-bg);
   }
 
   #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
 
+  /* D7 — Panneau détails en aplat (spec §327) : le dégradé linéaire
+     white → sand est retiré au profit d'un fond uni --page-bg. */
   #k-modal .k-modal-product-zone .k-modal-details {
-    background: linear-gradient(180deg, var(--white) 0%, color-mix(in srgb, var(--sand) 48%, var(--white)) 100%);
+    background: var(--page-bg);
     padding: 0 clamp(28px, 4.4vw, 72px);
   }
 
@@ -33,23 +59,15 @@
     padding-bottom: 14px;
   }
 
-  /* ── Typographie titre + prix ── */
-  #k-modal .k-modal-info h2 {
-    font-family: var(--font-display, var(--font));
-    font-size: clamp(30px, 3vw, 46px);
-    line-height: .98;
-    font-weight: 700;
-    letter-spacing: -.035em;
-    color: var(--text);
-    max-width: 760px;
-  }
-
+  /* ── Typographie titre ── */
+  /* D2 : titre desktop géré par modal-shell.css §D2 (18px/500/1.2) —
+     règle supprimée ici pour éviter tout conflit de spécificité. */
   #k-modal .k-modal-name-row { margin-top: 10px; align-items: flex-start; }
   #k-modal .k-modal-fav-btn  { margin-top: 2px; }
 
+  /* D1 : prix desktop géré par modal-shell.css §D1 — règles supprimées ici
+     pour éviter tout conflit de spécificité et garantir une source unique. */
   #k-modal .k-modal-price-row  { margin-top: 18px; gap: 12px; }
-  #k-modal .k-modal-price      { font-size: clamp(34px, 4vw, 56px); letter-spacing: -.04em; color: var(--coral); }
-  #k-modal .k-modal-price-unit { font-size: .34em; letter-spacing: .06em; }
   #k-modal .k-modal-old-price  { font-size: 16px; opacity: .72; }
   #k-modal .k-modal-aed-price  { margin-top: 8px; margin-bottom: 10px; }
 
@@ -85,8 +103,7 @@
     padding: 15px 16px;
     border-radius: 18px;
     border: 1px solid var(--border-ocean-14);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--ocean-bg-08) 78%, var(--white)) 0%, var(--white) 100%);
-    box-shadow: 0 12px 28px var(--border-text-06);
+    background: var(--ocean-bg-08);
   }
 
   #k-modal .k-buybox-relay-icon {
@@ -102,7 +119,7 @@
 
   #k-modal .k-buybox-relay-title {
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.1;
   }
@@ -115,7 +132,7 @@
 
   #k-modal .k-buybox-relay-free {
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--ocean-dark);
     background: var(--ocean-bg-08);
     border: 1px solid var(--border-ocean-14);
@@ -149,13 +166,12 @@
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn {
     background: var(--white);
     font-size: 14px;
-    font-weight: 850;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
     font-size: 15px;
-    font-weight: 900;
-    box-shadow: 0 14px 30px color-mix(in srgb, var(--ocean) 24%, transparent);
+    font-weight: 500;
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal {
@@ -167,7 +183,7 @@
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal strong {
-    color: var(--coral);
+    color: var(--text);
     font-size: 15px;
   }
 
@@ -199,20 +215,22 @@
     justify-content: center;
     gap: 7px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
+    /* [T-028] transform retiré : hover-lift décoratif parasite retiré,
+       plus aucune règle .k-buybox-payment-tab n'anime transform. */
     transition:
       border-color .16s var(--ease),
       background .16s var(--ease),
       color .16s var(--ease),
-      box-shadow .16s var(--ease),
-      transform .16s var(--ease);
+      box-shadow .16s var(--ease);
   }
 
   #k-modal .k-buybox-payment-tab:hover {
-    transform: translateY(-1px);
+    /* [T-028] transform: translateY(-1px) retiré : hover-lift décoratif
+       parasite. [T-029] halo décoratif retiré : la bordure seule porte
+       le feedback au survol. */
     border-color: var(--ocean-light);
-    box-shadow: 0 8px 18px var(--border-text-06);
   }
 
   #k-modal .k-buybox-payment-tab.is-active {
@@ -232,7 +250,6 @@
     border-radius: 16px;
     background: var(--white);
     border: 1px solid var(--border);
-    box-shadow: 0 8px 22px var(--border-text-06);
   }
 
   #k-modal .k-buybox-payment-check {
@@ -257,7 +274,7 @@
   #k-modal .k-buybox-payment-copy strong {
     display: block;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.15;
   }
@@ -274,7 +291,7 @@
 
   #k-modal .k-buybox-payment-badge {
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 500;
     padding: 4px 9px;
     border-radius: 8px;
     color: var(--violet-dark);
@@ -310,7 +327,7 @@
     content: 'Partager ce produit :';
     font-size: 12px;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-share-btn,
@@ -325,7 +342,7 @@
     border: 1px solid var(--border-text-06);
     box-shadow: none;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-share-btn svg { width: 13px; height: 13px; }
@@ -335,9 +352,11 @@
      Spécificité : 1-2-0 → bat le base .k-modal-inner-search (0-1-0). Sans !important. */
   #k-modal .k-modal-details > .k-modal-inner-search { display: none; }
 
-  /* ── Suggestions desktop list ── */
+  /* ── Suggestions desktop list (D10 — spec §330) : aplat --page-bg,
+     titre 15/500, retrait ombres cards. Border-top dashed : owned
+     modal-shell.css. Grille 4 cols à 1024+, 5 sur large : ce bloc. ── */
   #k-modal-suggestions.k-modal-suggestions--desktop-list {
-    background: linear-gradient(180deg, var(--sand) 0%, var(--sand-warm) 100%);
+    background: var(--page-bg);
     padding: 34px clamp(32px, 5vw, 72px) 56px;
   }
 
@@ -348,9 +367,10 @@
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title-text {
     font-family: var(--font-display, var(--font));
-    font-size: clamp(22px, 2vw, 30px);
-    line-height: 1;
-    letter-spacing: -.025em;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -.01em;
     color: var(--text);
   }
 
@@ -360,4 +380,66 @@
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 18px;
   }
+
+  /* D10 — grille stable 4 colonnes dès 1024px (remplace la densité
+     auto-fill 1200px précédente, cf. modal-shell.css). */
+  @media (min-width: 1024px) {
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* D10 — 5 colonnes sur large si la largeur le permet.
+     Seuil 1440px réutilisé (déjà baseliné T-020) — pas de nouveau
+     breakpoint hors garde-fou (900/1200) ni de régression ratchet. */
+  @media (min-width: 1440px) {
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
+}
+
+/* T-030 — skeleton détail visible sur desktop pendant /detail en vol. */
+@media (min-width: 900px) {
+  #k-modal .k-mdm-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 2px;
+  }
+
+  #k-modal .k-mdm-skeleton-row {
+    height: 14px;
+    border-radius: 7px;
+    background: linear-gradient(
+      90deg,
+      var(--sand) 25%,
+      var(--sand-dark) 37%,
+      var(--sand) 63%
+    );
+    background-size: 400% 100%;
+    animation: k-mdm-skeleton-shimmer-desktop 1.4s ease-in-out infinite;
+  }
+
+  #k-modal .k-mdm-skeleton-row--chip {
+    width: 46%;
+    height: 32px;
+    border-radius: 999px;
+  }
+
+  #k-modal .k-mdm-skeleton-row--full { width: 100%; }
+  #k-modal .k-mdm-skeleton-row--short { width: 62%; }
+}
+
+@keyframes k-mdm-skeleton-shimmer-desktop {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+  #k-modal .k-mdm-skeleton-row { animation: none; }
 }

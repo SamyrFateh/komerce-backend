@@ -5,7 +5,7 @@
   "finding_id": "M8",
   "wave": "P1",
   "parallel_lane": "LANE-MOBILE-SHELL",
-  "status": "READY",
+  "status": "DONE",
   "priority": "HIGH",
   "depends_on": [
     "T-001"
@@ -27,20 +27,36 @@
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate"
   ],
-  "agent": null,
-  "reviewer": null,
+  "agent": "claude-sonnet-session-2",
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:03:30Z",
   "lease_until": null,
-  "finished_at": null,
-  "reviewed_at": null,
+  "finished_at": "2026-07-18T20:03:30Z",
+  "reviewed_at": "2026-07-18T22:32:00Z",
   "base_commit": null,
   "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "changed_files": [
+    "public/boutique/css/modal-mobile-canonical.css",
+    "public/boutique/css/dist/components.css",
+    "public/boutique/.cache-buster-state.json",
+    "public/boutique/index.html",
+    ".agent/evidence/T-009/mobile-scroll-long.png",
+    ".agent/evidence/T-009/mobile-scroll-short.png"
+  ],
+  "gate_results": [
+    {
+      "gate": "reviewer source verification",
+      "result": "PASS — override mobile final #k-modal et .k-modal-scroll vers var(--page-bg); footer .k-modal-actions reste var(--white)"
+    },
+    {
+      "gate": "consolidated boutique gates",
+      "result": "PASS — deploy/cache/breakpoints/ownership/audit; feature-audit 0 FAIL / 0 WARN"
+    }
+  ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "review_decision": "APPROVE",
+  "summary": "M8 approuvé : fond cream continu appliqué uniquement au shell et au scroll mobile; footer blanc préservé.",
+  "next_action": "T-009 clôturée."
 }

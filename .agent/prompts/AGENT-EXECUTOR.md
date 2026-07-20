@@ -1,61 +1,77 @@
-Tu exécutes le chantier directement dans GitHub.
+Tu travailles directement dans le dépôt Komerce.
 
-Ne raconte pas ton plan. Ne demande pas si tu dois continuer. Exécute et pousse.
+## Entrée obligatoire — avant toute inspection
 
-## Modèle de branche obligatoire
-
-Une lane est un sujet cohérent et possède une seule branche durable.
-
-Toutes les tâches d’une même lane utilisent la même branche, même lorsqu’elles
-modifient plusieurs fois les mêmes fichiers. Ne crée jamais une branche par tâche.
-
-Exemple :
+La branche de travail unique est :
 
 ```text
-LANE-MOBILE-RENDERER → agent/lane-mobile-renderer
+agent/lane-mobile-renderer
 ```
 
-Commence par :
+Tu dois l’acquérir avant de lire le dépôt, de chercher un script ou de calculer un statut.
+
+### Si le dépôt n’est pas encore cloné
+
+Exécute exactement :
 
 ```bash
-node scripts/agent.mjs start --agent "{{AGENT_NAME}}"
+git clone --branch agent/lane-mobile-renderer --single-branch https://github.com/SamyrFateh/komerce-backend.git
+cd komerce-backend
+node scripts/agent-bootstrap.mjs
 ```
 
-Après chaque petit lot :
+### Si le dépôt est déjà cloné
+
+Exécute exactement :
 
 ```bash
-node scripts/agent.mjs save \
-  --message "résultat précis" \
-  --next-action "prochaine action exacte"
+if [ -n "$(git status --porcelain)" ]; then
+  echo "WORKTREE_DIRTY=1 — préserver le travail local et arrêter" >&2
+  exit 2
+fi
+
+git fetch origin agent/lane-mobile-renderer
+
+if git show-ref --verify --quiet refs/heads/agent/lane-mobile-renderer; then
+  git switch agent/lane-mobile-renderer
+else
+  git switch --track -c agent/lane-mobile-renderer origin/agent/lane-mobile-renderer
+fi
+
+git pull --ff-only origin agent/lane-mobile-renderer
+node scripts/agent-bootstrap.mjs
 ```
 
-Quand la tâche active est terminée :
+N’inspecte jamais `main`, `agent/t-*` ou une ancienne branche avant cette bascule. La présence ou l’absence d’un fichier sur `main` n’est pas une information opérationnelle.
 
-```bash
-node scripts/agent.mjs finish --summary "résumé court"
+Après le bootstrap :
+
+- si `WORKTREE_DIRTY=1`, préserve le travail local et arrête-toi sans switch, reset, stash ou suppression ;
+- si `STATUS_RESOLVED=1` et `BOOTSTRAP_OK=1`, utilise exclusivement `CURRENT_TASK`, `EFFECTIVE_STATUS` et `CURRENT_ACTION` imprimés ;
+- ne choisis jamais une tâche depuis `STATUS.md`, une lane, `TASK-INDEX.json`, le manifest, `main` ou le nom d’une branche ;
+- ne demande pas à l’utilisateur quelle tâche reprendre lorsque le résolveur a produit une action.
+
+Lis ensuite seulement la fiche, le state, les preuves, les fichiers concernés et l’historique de `CURRENT_TASK`.
+
+Une éventuelle `ADDITIONAL_INSTRUCTION` complète l’action calculée. En son absence, aucune consigne humaine n’est nécessaire.
+
+Règles d’exécution :
+
+- une seule branche : `agent/lane-mobile-renderer` ;
+- ne réimplémente jamais du travail distant détecté ;
+- pousse le travail récupérable avant les métadonnées ;
+- utilise `node scripts/agent-checkpoint.mjs` pour chaque petit lot ;
+- attends `CHECKPOINT_DISTANT=<sha>` avant le lot suivant ;
+- aucun `--no-verify` ;
+- aucune création de branche ou PR intermédiaire.
+
+N’utilise jamais :
+
+```text
+node scripts/agent.mjs start
+node scripts/agent.mjs resume
+node scripts/agent.mjs finish
+node scripts/agent.mjs status
 ```
 
-La CLI doit alors rester sur la branche de lane et démarrer automatiquement la tâche
-suivante compatible. Elle n’ouvre une PR qu’à la fin de la lane.
-
-Tu peux revenir sur un fichier déjà modifié, enrichir un test, ajouter de la couverture
-ou corriger un bug découvert plus tard : tout reste sur la même branche de sujet.
-
-Après une coupure :
-
-```bash
-node scripts/agent.mjs resume --task {{TASK_ID}} --agent "{{AGENT_NAME}}"
-```
-
-Interromps l’utilisateur uniquement pour un arbitrage réel couvert par
-`.agent/ARBITRATION.md`, après avoir poussé tout le travail courant.
-
-Réponse finale uniquement :
-
-Tâche:
-Statut:
-Branche:
-Dernier commit:
-PR:
-Gates:
-Résumé:
+Réponse finale : tâche, statut, branche, SHA distant du travail, gates réellement exécutés et résumé.

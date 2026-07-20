@@ -1,5 +1,5 @@
 {
-  "total": 3,
+  "total": 6,
   "perFile": {
     "group-cart-flow.css": [
       "max:380"
@@ -7,9 +7,14 @@
     "layout.css": [
       "min:1100"
     ],
+    "modal-product-lot4-hybrid.css": [
+      "min:1024",
+      "min:1440"
+    ],
     "modal-shell.css": [
-      "max:1120"
+      "max:1120",
+      "min:1024"
     ]
   },
-  "savedAt": "2026-06-20T06:03:05.212Z"
+  "savedAt": "2026-07-19T12:27:28.246Z"
 }

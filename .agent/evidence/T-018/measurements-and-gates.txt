@@ -1,0 +1,117 @@
+=== Mesures géométrie hero (harness.html) ===
+viewport=1024 wrap: w=491.5 h=368.6 ratio=1.333 (4:3=1.333)
+viewport=1440 wrap: w=666.7 h=500.0 ratio=1.333 (4:3=1.333)
+
+=== Scénario contenu droit long (harness-long-content.html) ===
+
+--- viewport=1024 (long content) ---
+viewport height          : 900
+product-zone height      : 842.0  (doit être <= viewport, fixe)
+img-wrap  w=491.5 h=368.6 ratio=1.333 (doit rester ~1.333, ne pas s'étirer)
+details clientHeight     : 842
+details scrollHeight     : 1291  (doit être > clientHeight → contenu scrollable en interne)
+details overflow-y       : auto (doit être 'auto')
+zone dépasse le viewport ? NON (OK)
+
+--- viewport=1440 (long content) ---
+viewport height          : 900
+product-zone height      : 842.0  (doit être <= viewport, fixe)
+img-wrap  w=666.7 h=500.0 ratio=1.333 (doit rester ~1.333, ne pas s'étirer)
+details clientHeight     : 842
+details scrollHeight     : 1135  (doit être > clientHeight → contenu scrollable en interne)
+details overflow-y       : auto (doit être 'auto')
+zone dépasse le viewport ? NON (OK)
+
+=== npm run deploy:css ===
+
+> boutique@1.0.0 deploy:css
+> node scripts/deploy-css.js
+
+
+[1m[36m━━━ deploy-css — Komerce ━━━[0m
+
+[1m1. Compilation des bundles[0m
+  [32m✓[0m  base.css           2745 lignes  [2m← tokens + reset + layout + hero[0m
+  [32m✓[0m  components.css     10970 lignes [2m← categories + products + modal-shell + modal-media + modal-product + modal-product-lot4-hybrid + modal-mobile-canonical + modal-enriched-content + cart + interactions + hero-cart-proxy + group-cart-flow + share-cart + shared-followup + identity + paypal + wallet[0m
+  [32m✓[0m  desktop.css        1273 lignes  [2m← boutique-desktop[0m
+
+[1m2. Détection des changements[0m
+  base.css           [2m8189f571ab9d[0m  [32m= identique[0m
+  components.css     [2md77eae56d230[0m  [32m= identique[0m
+  desktop.css        [2m3f95016e95d2[0m  [32m= identique[0m
+
+[32m[1m✔ Aucun changement — index.html inchangé.[0m
+
+
+=== npm run check:cache ===
+
+> boutique@1.0.0 check:cache
+> node scripts/deploy-css.js --dry
+
+
+[1m[36m━━━ deploy-css — Komerce ━━━[0m
+[33mMode : --dry (aucun fichier modifié)[0m
+
+[1m1. Compilation des bundles[0m
+  [32m✓[0m  base.css           2745 lignes  [2m← tokens + reset + layout + hero[0m
+  [32m✓[0m  components.css     10970 lignes [2m← categories + products + modal-shell + modal-media + modal-product + modal-product-lot4-hybrid + modal-mobile-canonical + modal-enriched-content + cart + interactions + hero-cart-proxy + group-cart-flow + share-cart + shared-followup + identity + paypal + wallet[0m
+  [32m✓[0m  desktop.css        1273 lignes  [2m← boutique-desktop[0m
+
+[1m2. Détection des changements[0m
+  base.css           [2m8189f571ab9d[0m  [32m= identique[0m
+  components.css     [2md77eae56d230[0m  [32m= identique[0m
+  desktop.css        [2m3f95016e95d2[0m  [32m= identique[0m
+
+[32m[1m✔ Aucun changement — index.html inchangé.[0m
+
+
+=== npm run check:breakpoints ===
+
+> boutique@1.0.0 check:breakpoints
+> node scripts/check-breakpoints.js --strict
+
+
+Breakpoints garde-fou V1 - Autorises : 900px, 1200px
+
+   >> group-cart-flow.css                max:380px
+   >> layout.css                         min:1100px
+   >> modal-shell.css                    max:1120px
+
+   Total : 3 violations dans 3 fichiers.
+
+Stable vs baseline (3). Pas de régression.
+
+
+=== npm run audit:ownership ===
+
+> boutique@1.0.0 audit:ownership
+> node scripts/gen-ownership.js
+
+✅ Carte de propriété générée → docs/BOUTIQUE_OWNERSHIP_LIVE.md
+
+=== npm run audit:gate ===
+
+> boutique@1.0.0 audit:gate
+> node scripts/audit-gate.js --strict
+
+
+╔══════════════════════════════════════════════════════════╗
+║  KOMERCE BOUTIQUE — Audit Gate (N1 — dépendances)        ║
+╚══════════════════════════════════════════════════════════╝
+
+  Vulnérabilités high/critical : 0
+  Dette connue (baseline)      : 0
+  Nouvelles (non acceptées)    : 0
+
+  ✅ Audit N1 — CONFORME (0 vulnérabilité high/critical).
+
+
+=== npm run test:unit (précaution, hors gates déclarées) ===
+PASS tests/unit/b-store.test.js
+PASS tests/unit/b-group-cart-flow.test.js
+
+Test Suites: 92 passed, 92 total
+Tests:       1751 passed, 1751 total
+Snapshots:   0 total
+Time:        34.131 s
+Ran all test suites matching tests/unit.

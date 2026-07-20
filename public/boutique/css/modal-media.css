@@ -16,9 +16,9 @@
 .k-modal-img-wrap::before {
   content: ''; position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(90deg,
-    rgba(244,241,236,0) 0%,
-    rgba(255,255,255,.55) 50%,
-    rgba(244,241,236,0) 100%);
+    var(--sand-gradient-0) 0%,
+    var(--surface-white-55) 50%,
+    var(--sand-gradient-0) 100%); /* [T-029] littéraux rgba remplacés par tokens — dégradé shimmer fonctionnel conservé */
   background-size: 200% 100%;
   animation: k-modal-shimmer 1.4s linear infinite;
   pointer-events: none;
@@ -58,7 +58,7 @@
   position: absolute; bottom: 10px; right: 10px; z-index: 3;
   padding: 3px 10px; min-width: 38px; text-align: center;
   background: var(--overlay-dark-md); color: var(--white);
-  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  font-size: 11px; font-weight: 500; letter-spacing: .02em;
   border-radius: 999px; backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   pointer-events: none;
@@ -73,7 +73,7 @@
   display: flex; align-items: center; gap: 5px;
   padding: 4px 12px;
   background: var(--overlay-dark-md); color: var(--white);
-  font-size: 11px; font-weight: 600;
+  font-size: 11px; font-weight: 500;
   border: none; border-radius: 999px;
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
@@ -103,32 +103,28 @@
   font-size: 20px; line-height: 1;
   box-shadow: var(--elev-1);
   cursor: pointer; z-index: 4;
-  transition: transform .2s cubic-bezier(.34,1.56,.64,1),
-              background .2s var(--ease),
+  /* [T-028] transform + easing spring retirés : plus aucune règle
+     .k-modal-fav-btn n'anime transform, l'easing spring devenait mort. */
+  transition: background .2s var(--ease),
               box-shadow .2s var(--ease);
   touch-action: manipulation;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
-.k-modal-fav-btn:active { transform: scale(1.12); }
 .k-modal-fav-btn.liked {
   background: var(--pink);
   box-shadow:
     0 0 0 2px var(--white),
-    0 0 0 4px rgba(233,30,99,.35),
-    0 2px 10px rgba(233,30,99,.30);
-  transform: scale(1.05);
+    0 0 0 4px var(--pink-shadow),
+    0 2px 10px var(--pink-shadow-30); /* [T-029] littéraux rgba remplacés par tokens — anneau d'état actif conservé */
 }
-.k-modal-fav-btn.k-pop { animation: k-modal-fav-pop .3s var(--ease, ease); }
-@keyframes k-modal-fav-pop {
-  0%   { transform: scale(1.05); }
-  40%  { transform: scale(1.25); }
-  100% { transform: scale(1.05); }
-}
+/* [T-028] .k-modal-fav-btn.k-pop + @keyframes k-modal-fav-pop retirées :
+   scale décoratif au "like". Le JS (b-cart.js, hors périmètre CSS) continue
+   de basculer la classe .k-pop sur #k-modal-fav-btn, mais sans animation
+   associée cela n'a plus d'effet visuel. */
 @media (hover: hover) and (pointer: fine) {
-  .k-modal-fav-btn:hover { transform: scale(1.08); box-shadow: var(--elev-2); }
-  .k-modal-fav-btn.liked:hover { transform: scale(1.10); }
+  .k-modal-fav-btn:hover { box-shadow: var(--elev-2); }
 }
 @media (min-width: 900px) {
   .k-modal-fav-btn { width: 46px; height: 46px; font-size: 22px; }
@@ -152,15 +148,15 @@
   width: 38px; height: 38px; border-radius: 50%;
   background: var(--surface-white-92); color: var(--text);
   border: none; display: flex; align-items: center; justify-content: center;
-  z-index: 2; cursor: pointer; box-shadow: 0 2px 12px var(--overlay-black-lg);
-  -webkit-tap-highlight-color: transparent;
+  z-index: 2; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; /* [T-029] halo décoratif retiré : le fond opaque suffit */
 }
 .k-modal-fullscreen-close svg { width: 18px; height: 18px; }
 .k-modal-fullscreen-counter {
   position: fixed; top: calc(20px + env(safe-area-inset-top)); left: 50%;
   transform: translateX(-50%);
   padding: 4px 14px; background: var(--overlay-dark-md);
-  color: var(--white); font-size: 12px; font-weight: 600;
+  color: var(--white); font-size: 12px; font-weight: 500;
   border-radius: 999px; z-index: 2; pointer-events: none;
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
@@ -209,7 +205,7 @@
   }
   .k-modal-recent-title {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text);
     margin: 0 0 14px;
     letter-spacing: -.01em;
@@ -227,19 +223,21 @@
     border-radius: 10px;
     overflow: hidden;
     cursor: pointer;
-    transition: transform .12s, border-color .12s, box-shadow .12s;
+    /* [T-028] transform retiré : hover-lift décoratif parasite retiré,
+       plus aucune règle .k-modal-recent-card n'anime transform. */
+    transition: border-color .12s, box-shadow .12s;
     padding: 0;
     text-align: left;
     min-width: 0;
   }
   .k-modal-recent-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(200,92,45,.4);
-    box-shadow: 0 6px 16px var(--border-text-08);
+    /* [T-028] transform: translateY(-2px) retiré : hover-lift décoratif
+       parasite. Le feedback au survol reste porté par bordure + ombre. */
+    border-color: var(--coral-focus-40); /* [T-029] littéral rgba remplacé par token, halo décoratif retiré */
   }
   .k-modal-recent-img {
     aspect-ratio: 1;
-    background: linear-gradient(135deg, var(--sand), var(--sand-dark));
+    background: var(--sand); /* [T-029] dégradé décoratif aplati en couleur solide */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -264,35 +262,51 @@
   }
   .k-modal-recent-price {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--coral);
     padding: 4px 8px 8px;
   }
 }
 
-/* ── Desktop : Keyboard hint navigation clavier (ex boutique-desktop.css) ── */
+/* [T-028] Keyboard hint neutralisé : élément toujours injecté par
+   b-modal-core.js (hors périmètre CSS de T-028), désormais masqué plutôt
+   que stylé — c'était un hint décoratif sans réelle valeur d'usage. */
 @media (min-width: 900px) {
   .k-modal-keyboard-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: var(--muted, var(--text-form-light));
-    opacity: .7;
-    pointer-events: none;
-    white-space: nowrap;
+    display: none;
   }
-  .k-modal-keyboard-hint kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1px 5px;
-    background: var(--surface-alt, var(--surface-warm-cool));
-    border: 1px solid var(--border, var(--border-light));
-    border-radius: 3px;
-    font-size: 11px;
-    font-family: inherit;
-    line-height: 1.4;
-  }
-  .k-modal-keyboard-hint span { margin-right: 8px; }
 }
+
+/* ── D6/T-018 — Géométrie intrinsèque du hero desktop ────────────
+   Ownership : modal-media.css devient propriétaire de la géométrie
+   intrinsèque du hero desktop (ratio, bornes de taille), tandis que
+   modal-shell.css reste propriétaire du confinement global de la
+   modal / product-zone / scroll des détails (voir arbitrage
+   .agent/arbitrations/T-018.md).
+   Ancien owner (modal-shell.css §6) posait height:100%/max-height:100%
+   sur .k-modal-img-wrap, forçant une hauteur pleine (~842px) dérivée
+   du confinement du shell — retiré, remplacé ici par une géométrie
+   intrinsèque indépendante du viewport (aspect-ratio, pas de vh/dvh),
+   robuste aux futurs ajustements de grille (T-020).
+   Le confinement du shell (product-zone height:calc(100dvh - 58px),
+   details overflow-y:auto) reste inchangé et continue d'empêcher un
+   contenu droit long d'agrandir la grille ou de déformer la colonne
+   image — cette règle ne fait que borner la taille du hero LUI-MÊME
+   à l'intérieur de cet espace déjà confiné. */
+@media (min-width: 900px) {
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    aspect-ratio: 4 / 3;
+    min-height: 360px;
+    max-height: 500px;
+    /* largeur dérivée du ratio 4:3 à hauteur max 500px, bornée par
+       la colonne (jamais plus large que son grid-track) */
+    max-width: min(100%, calc(500px * 4 / 3));
+    width: 100%;
+    height: auto;
+    /* centre le bloc dans sa colonne quand celle-ci est plus grande
+       que le hero (largeur ET hauteur, cf. align-self ci-dessous) */
+    margin: auto;
+    align-self: center;
+  }
+}
+

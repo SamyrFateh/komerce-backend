@@ -5,7 +5,7 @@
   "finding_id": "M11",
   "wave": "P1",
   "parallel_lane": "LANE-MOBILE-SHELL",
-  "status": "READY",
+  "status": "DONE",
   "priority": "CRITICAL",
   "depends_on": [
     "T-001"
@@ -25,20 +25,20 @@
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate"
   ],
-  "agent": null,
+  "agent": "claude-sonnet-session-3",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:14:49Z",
   "lease_until": null,
-  "finished_at": null,
-  "reviewed_at": null,
+  "finished_at": "2026-07-18T20:14:49Z",
+  "reviewed_at": "2026-07-18T20:14:49Z",
   "base_commit": null,
   "last_commit": null,
   "changed_files": [],
   "gate_results": [],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "review_decision": "APPROVE",
+  "summary": "Bouton « Me prévenir » non implémenté dans le renderer PDC — aucune bordure coral à purger. État OUT_OF_STOCK = CTA disabled (fail-closed doc). Fermée sans modification. Voir .agent/evidence/T-012/out-of-stock-note.md.",
+  "next_action": "Néant. Si bouton notify souhaité : nouvelle tâche LANE-NOTIFY."
 }

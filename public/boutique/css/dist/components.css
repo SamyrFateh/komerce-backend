@@ -2008,12 +2008,12 @@ html.k-mobile-premium-v1 .k-chip-label {
   backdrop-filter: blur(20px) saturate(200%);
   -webkit-backdrop-filter: blur(20px) saturate(200%);
   border-bottom: 1px solid var(--overlay-black-sm);
-  box-shadow: 0 2px 12px var(--border-text-06);
+  /* [T-029] halo décoratif retiré : la bordure seule porte la séparation sticky. */
   flex-shrink: 0;
 }
 .k-modal-back {
   display: flex; align-items: center; gap: 4px;
-  font-size: 14px; font-weight: 600; color: var(--text);
+  font-size: 14px; font-weight: 500; color: var(--text);
   background: none; border: none; padding: 6px 10px;
   border-radius: 50px; transition: opacity .15s;
   /* FIX topbar overflow : flex-shrink:1 + min-width:0 permettent au bouton
@@ -2029,13 +2029,13 @@ html.k-mobile-premium-v1 .k-chip-label {
   display: flex; align-items: center; gap: 4px;
   height: 30px; padding: 0 10px; border-radius: 20px;
   background: var(--sand); border: 1px solid var(--border);
-  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  font-size: 12px; font-weight: 500; color: var(--text-muted);
   cursor: pointer; white-space: nowrap;
   transition: background .15s, color .15s;
 }
 .k-modal-nav-btn:hover { background: var(--sand-dark); color: var(--text); }
 .k-modal-nav-btn.is-disabled { opacity: .3; pointer-events: none; }
-.k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 600; min-width: 36px; text-align: center; }
+.k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 500; min-width: 36px; text-align: center; }
 .k-modal-topbar-right { box-sizing: border-box; max-width: 100%; display: flex; align-items: center; gap: 8px; flex-shrink: 0; } /* S2.1+S2.3 — box-sizing garanti ; padding-right:10px (VIS-5) supprimé : inutile avec box-sizing correct ; gap revient à 8px nominal */
 .k-modal-cart-btn {
   position: relative; width: auto; height: auto; border-radius: 0;
@@ -2046,8 +2046,8 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-cart-badge {
   position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;
-  background: var(--coral); color: var(--white);
-  font-size: 10px; font-weight: 700; border-radius: 99px;
+  background: var(--cta-green); color: var(--white); border: 1.5px solid var(--page-bg);
+  font-size: 10px; font-weight: 500; border-radius: 99px;
   display: flex; align-items: center; justify-content: center; padding: 0 4px;
 }
 .k-modal-cart-badge:empty { display: none; }
@@ -2103,7 +2103,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-topbar-search-back svg { width: 20px; height: 20px; stroke: var(--text); fill: none; stroke-width: 2; }
 .k-topbar-search-back:active { background: var(--sand); }
 .k-topbar-search-input { flex: 1; height: 36px; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 10px; font-size: 14px; font-weight: 500; color: var(--text); background: var(--white); outline: none; transition: border-color .15s; -webkit-appearance: none; min-width: 0; }
-.k-topbar-search-input:focus { border-color: var(--coral); }
+.k-topbar-search-input:focus { border-color: var(--accent-blue); }
 .k-topbar-search-input::placeholder { color: var(--text-light); font-weight: 400; }
 .k-topbar-search-clear-btn { display: none; width: 28px; height: 28px; border: none; background: var(--sand-dark); border-radius: 50%; color: var(--text-muted); font-size: 15px; font-weight: 600; line-height: 1; cursor: pointer; flex-shrink: 0; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
 .k-topbar-search-clear-btn.is-visible { display: flex; }
@@ -2117,9 +2117,10 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-search-mic { width: 30px; height: 30px; border: none; background: transparent; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .12s, transform .12s; -webkit-tap-highlight-color: transparent; padding: 0; }
 .k-modal-search-mic svg { width: 17px; height: 17px; stroke: var(--text-muted); fill: none; stroke-width: 2; transition: stroke .15s; }
 .k-modal-search-mic:active { transform: scale(.88); }
-.k-modal-search-mic.is-listening { background: var(--hero-red); animation: k-mic-pulse 1s ease-in-out infinite; }
+/* [T-028] animation k-mic-pulse retirée : mouvement décoratif parasite.
+   L'état "écoute" reste porté par la couleur de fond (--hero-red). */
+.k-modal-search-mic.is-listening { background: var(--hero-red); }
 .k-modal-search-mic.is-listening svg { stroke: var(--white); }
-@keyframes k-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--red-pulse-35); } 50% { box-shadow: 0 0 0 8px var(--red-pulse-0); } }
 
 /* ── ACTIONS (mobile : sticky bas, flex-shrink:0) ────────────── */
 .k-modal-actions {
@@ -2166,7 +2167,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   right: 0;
   z-index: 350; /* sous la topbar (400) mais au-dessus du contenu */
   border-radius: 0; /* pleine largeur en fixed */
-  box-shadow: 0 -2px 12px var(--overlay-black-sm);
+  box-shadow: 0 -1px 0 var(--border); /* [T-029] ombre sticky canonique — seule ombre sticky conservée */
   /* FIX transparence Android : l'animation k-slide-up (transform) sur .k-modal
      crée un stacking context qui piège position:fixed et empêche le repaint du fond.
      translateZ(0) force un layer GPU propre — le fond blanc est garanti opaque. */
@@ -2209,16 +2210,16 @@ html.k-mobile-premium-v1 .k-chip-label {
   backface-visibility: visible;
   -webkit-backface-visibility: visible;
 }
-.k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
-.k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
+.k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--hero-bg); border-radius: 8px; overflow: hidden; height: 44px; flex-shrink: 0; }
+.k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 500; transition: background .15s; touch-action: manipulation; cursor: pointer; }
 .k-qty-btn:active { background: var(--sand-dark); }
-.k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 700; }
-.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 600; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 500; }
+.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
-.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-dark) 100%); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
+.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
-.k-modal-subtotal strong { color: var(--coral); font-weight: 700; font-size: 13px; }
+.k-modal-subtotal strong { color: var(--text); font-weight: 500; font-size: 13px; }
 
 /* ── PRODUIT RAPPELÉ TOPBAR AU SCROLL ───────────────────────── */
 .k-modal-topbar-product { display: none; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-left: 8px; opacity: 0; transform: translateY(-4px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
@@ -2231,15 +2232,17 @@ html.k-mobile-premium-v1 .k-chip-label {
 /* ── TOPBAR MODAL — source de vérité (fusionné depuis interactions.css, Lot 5) ── */
 .k-topbar-thumb { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: var(--sand);
   flex: 0 0 40px; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 3px var(--overlay-black-sm); cursor: pointer; transition: transform .15s; }
+  cursor: pointer; transition: transform .15s; } /* [T-029] halo décoratif retiré */
 .k-topbar-thumb:active { transform: scale(.92); }
 .k-topbar-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
 .k-topbar-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.k-topbar-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--coral); line-height: 1.2; margin-top: 2px; }
-.k-topbar-price-val { font-size: 12px; font-weight: 800; color: var(--coral); }
-.k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
-.k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
+.k-topbar-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.2; margin-top: 2px; }
+.k-topbar-price-val { font-size: 12px; font-weight: 500; color: var(--text); }
+/* T-027 — badge dédié, masqué (u-hidden) sauf promo_pct > 0 (b-modal-product.js) :
+   même logique que .k-modal-promo-badge, conservé coral (exception D-P3 de fait). */
+.k-topbar-price-promo { font-size: 10px; font-weight: 500; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
+.k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }
 
@@ -2405,10 +2408,10 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-overlay.open { align-items: center; justify-content: center; padding: 28px; background: var(--overlay-dark-md); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
   /* ── Shell ───────────────────────────────────────────────── */
-  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px var(--overlay-dark-sm); animation: none; }
+  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; animation: none; } /* [T-029] ombre retirée : règle morte par cascade, voir #k-modal.k-modal plus bas (var(--shadow-modal-neutral-10), ombre modale canonique) */
 
   /* ── Topbar ──────────────────────────────────────────────── */
-  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); box-shadow: 0 8px 24px var(--border-text-06); flex-shrink: 0; }
+  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); flex-shrink: 0; } /* [T-029] halo décoratif retiré : la bordure seule porte la séparation sticky */
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
   #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
@@ -2418,8 +2421,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-breadcrumb span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .k-modal-breadcrumb-sep { color: var(--text-light); flex-shrink: 0; }
   .k-modal-breadcrumb-cat { cursor: pointer; transition: color .12s; }
-  .k-modal-breadcrumb-cat:hover { color: var(--coral); }
-  .k-modal-breadcrumb-name { font-weight: 600; color: var(--text); }
+  .k-modal-breadcrumb-cat:hover { color: var(--ocean); }
+  .k-modal-breadcrumb-name { font-weight: 500; color: var(--text); }
 
   /* ── Scroll owner desktop ────────────────────────────────── */
   #k-modal .k-modal-scroll {
@@ -2429,7 +2432,9 @@ html.k-mobile-premium-v1 .k-chip-label {
     padding: 0; background: var(--white);
   }
 
-  /* ── Product-zone : grid 2 colonnes (colonnes dans §6, B-M-11) */
+  /* ── Product-zone : grid 2 colonnes 900-1023px, 3 pistes ≥1024px
+     (colonnes dans §6, B-M-11 ; placement des enfants ici, cf.
+     .agent/arbitrations/T-020.md) */
   /* background + grid-template-columns : owned par modal-product-lot4-hybrid.css
      (Approche C hybride) — ne pas redéclarer ici, source de vérité unique. */
   #k-modal .k-modal-product-zone {
@@ -2455,10 +2460,18 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-slide { height: 100%; padding: 16px 20px 32px 82px; object-fit: contain; object-position: 50% 50%; width: 100%; }
   #k-modal .k-modal-dots { display: none; }
   #k-modal .k-modal-counter { display: none; }
-  #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
+  /* ── Rail miniatures plat (T-021, D9) : taille fixe 60×60, aucune ombre
+     par défaut, bordure active 1.5px --text, pas de transform/ombre au
+     hover. Sélection d'image (JS) hors périmètre — CSS uniquement. ── */
+  #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 60px; overflow-y: auto; scrollbar-width: none; }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
-  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
-  #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: var(--coral-focus-45); box-shadow: 0 10px 22px var(--border-text-10); }
+  /* [T-028] Objectif déjà satisfait par T-021/D9 : aucune règle .k-modal-thumb
+     n'anime transform ni box-shadow au hover. Version T-021 conservée (plus
+     stricte que le checkpoint T-028 d'origine, qui réintroduisait un
+     box-shadow décoratif issu d'une base pré-T-021). */
+  #k-modal .k-modal-thumb { width: 60px; height: 60px; flex: 0 0 60px; border-radius: 12px; border: 1px solid var(--border-text-10); background: var(--overlay-white-78); overflow: hidden; cursor: pointer; transition: border-color .14s; }
+  #k-modal .k-modal-thumb:hover { border-color: var(--text); }
+  #k-modal .k-modal-thumb.is-active { border: 1.5px solid var(--text); }
   #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
   .k-modal-zoom-preview {
     display: block; position: absolute;
@@ -2469,7 +2482,7 @@ html.k-mobile-premium-v1 .k-chip-label {
     border: 1px solid var(--border); border-radius: 16px;
     background-color: var(--white);
     background-repeat: no-repeat; background-size: 280% 280%;
-    box-shadow: var(--elev-4);
+    /* [T-029] halo décoratif retiré : la bordure existante suffit */
     opacity: 0; pointer-events: none; z-index: 80;
     transition: opacity .16s var(--ease); overflow: hidden;
   }
@@ -2514,26 +2527,25 @@ html.k-mobile-premium-v1 .k-chip-label {
     color: var(--text-muted);
     border-radius: 0;
   }
-  /* Le rang Bestseller garde sa pastille coral pleine.
-     Utilise --border-coral-09 / --border-coral-22 (tokens existants).
-     L'ancien styling §1 référençait --coral-bg / --coral-border (inexistants
-     dans tokens.css → silencieusement transparents, dette pré-existante).
-     Ici on est en scope desktop spécifique, donc on shadow proprement. */
+  /* [T-027, arbitrage humain] .k-modal-meta-rank (badge Bestseller) n'est
+     pas une promotion — purge du coral, tokens ambre existants. */
   #k-modal .k-modal-meta .k-modal-meta-rank {
-    background: var(--border-coral-09);
-    color: var(--coral);
-    border: 1px solid var(--border-coral-22);
+    background: var(--amber-bg);
+    color: var(--amber-text);
+    border: 1px solid var(--amber-border);
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: .2px;
   }
   #k-modal .k-modal-meta-star { font-size: 13px; }
 
   /* ── Titre produit ───────────────────────────────────────── */
   #k-modal .k-modal-name-row { margin-top: 14px; }
-  #k-modal .k-modal-info h2 { font-size: clamp(21px, 1.65vw, 28px); line-height: 1.18; font-weight: 600; letter-spacing: -.02em; }
+  /* D2 — Titre desktop : 18px/500/1.2 — source unique (spec §9.1)
+     Purge font-display, clamp trop grand et weight>500. */
+  #k-modal .k-modal-info h2 { font-family: inherit; font-size: 18px; line-height: 1.2; font-weight: 500; letter-spacing: 0; color: var(--text); max-width: none; }
 
   #k-modal .k-modal-desc { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--text-muted); overflow: visible; }
 
@@ -2541,11 +2553,15 @@ html.k-mobile-premium-v1 .k-chip-label {
      formatPriceMarkup() (b-modal.js) split la valeur et l'unité en deux spans
      avec un espace HTML entre. Sur mobile : pas de règle dédiée, rendu naturel
      "15 700 KMF". Sur desktop (ci-dessous) : styling fin distinct. */
-  /* PR-D1 — Prix massif mockup : clamp élevé, old-price barré plus lisible */
+  /* D1 — Prix desktop : 28px/500/text, unité 13px/500/muted — source unique (spec §9.3)
+     Promo active (.k-modal--has-promo) reste autorisée en coral via D-P3
+     (règle séparée plus bas). Purge coral hors promo. */
   #k-modal .k-modal-price-row { margin-top: 12px; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-  #k-modal .k-modal-price { font-size: clamp(28px, 2.2vw, 36px); font-weight: 850; color: var(--coral); line-height: 1; display: inline-flex; align-items: baseline; gap: 6px; }
+  #k-modal .k-modal-price { font-size: 28px; font-weight: 500; color: var(--text); line-height: 1.15; letter-spacing: -.015em; display: inline-flex; align-items: baseline; gap: 4px; }
   #k-modal .k-modal-price-val { font-size: inherit; font-weight: inherit; color: inherit; }
-  #k-modal .k-modal-price-unit { font-size: .44em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
+  #k-modal .k-modal-price-unit { font-size: 13px; font-weight: 500; color: var(--text-muted); letter-spacing: 0; text-transform: none; }
+  #k-modal.k-modal--has-promo .k-modal-price { color: var(--coral); }
+  #k-modal.k-modal--has-promo .k-modal-price-unit { color: var(--coral); }
   #k-modal .k-modal-old-price { font-size: 16px; color: var(--text-light); text-decoration: line-through; }
   #k-modal .k-modal-old-price .k-modal-price-val,
   #k-modal .k-modal-old-price .k-modal-price-unit { color: inherit; font-weight: 400; text-decoration: inherit; }
@@ -2553,13 +2569,13 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   /* ── Trust, Partage, Specs ───────────────────────────────── */
   .k-modal-trust { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--sand-dark); margin-top: 6px; }
-  .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: var(--text-muted); }
   .k-modal-trust-item svg { width: 16px; height: 16px; color: var(--ocean); stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
   #k-modal .k-modal-trust { gap: 10px; flex-wrap: wrap; padding: 11px 0; }
   #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
-  .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
-  .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--coral); }
+  .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
+  .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--ocean); }
   .k-modal-share-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
   .k-modal-share-btn--wa { background: var(--whatsapp); color: var(--white); border-color: var(--whatsapp); }
   .k-modal-share-btn--wa:hover { background: var(--green-positive); border-color: var(--green-positive); }
@@ -2567,8 +2583,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-share-btn { justify-content: center; min-height: 38px; padding: 8px 10px; }
   /* PR-M3 — B-M-10 : specs masquées si absent du produit (k-modal--has-specs posé par ModalViewModel) */
   .k-modal--has-specs .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
-  .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); transition: color .12s; }
-  .k-modal-spec-toggle:hover { color: var(--coral); }
+  .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text); transition: color .12s; }
+  .k-modal-spec-toggle:hover { color: var(--ocean); }
   .k-modal-spec-toggle-arrow { width: 18px; height: 18px; transition: transform .2s var(--ease); color: var(--text-muted); stroke: currentColor; fill: none; stroke-width: 2; }
   .k-modal-spec-toggle.is-open .k-modal-spec-toggle-arrow { transform: rotate(180deg); }
   .k-modal-spec-body { display: none; padding: 0 0 12px; }
@@ -2577,7 +2593,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-spec-table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .k-modal-spec-table tr:nth-child(even) { background: var(--sand); }
   .k-modal-spec-table td { padding: 7px 10px; }
-  .k-modal-spec-table td:first-child { font-weight: 600; color: var(--text-muted); white-space: nowrap; width: 35%; }
+  .k-modal-spec-table td:first-child { font-weight: 500; color: var(--text-muted); white-space: nowrap; width: 35%; }
   .k-modal--has-specs #k-modal .k-modal-specs { margin-top: 8px; border-top: 1px solid var(--sand-dark); }
 
   /* ── Recherche interne ───────────────────────────────────── */
@@ -2586,7 +2602,15 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
   #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
 
-  /* ── Actions : col droite, row 2, sticky bas ─────────────── */
+  /* ── Actions : col droite, row 2, sticky bas ─────────────────────
+     T-023/D11 : grille 3 colonnes remplacée par un flex simple. Deux
+     variantes selon l'état posé par renderActions() (b-modal-desktop-
+     product.js) :
+       - AVAILABLE_EMPTY  (par défaut, pas de modificateur) : Ajouter +
+         Acheter, deux CTA flex:1 côte à côte, stepper masqué.
+       - AVAILABLE_FILLED (.k-modal-actions--filled) : stepper largeur
+         auto + Acheter flex:1, Ajouter masqué.
+     Spec : .agent/sources/CHANTIER_PDP_MAQUETTE_PREMIUM_ORIGINAL.md §13. */
   #k-modal .k-modal-product-zone .k-modal-actions {
     order: unset; /* annule le order mobile */
     grid-column: 2; grid-row: 2;
@@ -2594,38 +2618,44 @@ html.k-mobile-premium-v1 .k-chip-label {
     margin: 0; padding: 12px 24px 16px;
     background: var(--surface-white-98);
     border-top: 1px solid var(--border-text-10);
-    box-shadow: 0 -12px 28px var(--border-text-06);
+    /* [T-029] halo décoratif retiré : la bordure + l'ombre sticky mobile suffisent (une seule famille sticky) */
     backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    display: grid;
-    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
-    grid-template-rows: auto;
+    display: flex;
     align-items: center; gap: 10px;
   }
   /* PR-D3 — CTA redesign desktop : Acheter vert solid, Ajouter outlined, sous-total coral */
-  #k-modal .k-modal-product-zone .k-modal-actions .k-qty { grid-column: 1; grid-row: 1; height: 44px; }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-qty {
+    display: none;
+    flex: 0 0 auto;
+    height: 44px;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-qty {
+    display: flex;
+  }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
-    grid-column: 2; grid-row: 1; height: 44px; border-radius: 999px;
+    flex: 1 1 0; height: 44px; border-radius: 999px;
     background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark);
   }
+  #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-add-cart-btn {
+    display: none;
+  }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover {
-    border-color: var(--ocean); background: var(--ocean-bg-08);
+    border-color: var(--sand-dark); background: var(--sand);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
-    grid-column: 3; grid-row: 1; height: 44px; border-radius: 999px;
-    background: var(--ocean); color: var(--white);
-    font-size: 15px; font-weight: 700;
-    box-shadow: 0 4px 14px var(--shadow-ocean-10);
-    transition: background .18s, box-shadow .18s, transform .1s;
-  }
+    flex: 1 1 0; height: 44px; border-radius: 999px;
+    background: var(--cta-green); color: var(--white);
+    font-size: 15px; font-weight: 500;
+    transition: background .18s, transform .1s;
+  } /* [T-029] halo décoratif retiré : le fond ocean plein suffit */
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn:hover {
-    background: var(--ocean-dark); box-shadow: 0 6px 20px var(--shadow-ocean-10);
+    background: var(--cta-green-dark, var(--cta-green));
   }
   #k-modal .k-modal-subtotal {
-    grid-column: 1 / -1; grid-row: 2;
-    text-align: right; padding: 2px 2px 0;
-    font-size: 12px; color: var(--text-muted);
+    /* D4 pt.4 — masqué : seconde source transactionnelle hors panier, sous-total
+       sticky supprimé du panneau commercial desktop conformément à D-P1. */
+    display: none;
   }
-  #k-modal .k-modal-subtotal strong { color: var(--coral); font-size: 14px; font-weight: 700; }
 
   /* ── Suggestions : pleine largeur SOUS product-zone ─────── */
   /* Layout commun — owned : modal-shell */
@@ -2634,15 +2664,16 @@ html.k-mobile-premium-v1 .k-chip-label {
     order: unset; /* annule le order mobile */
     flex: 0 0 auto; overflow: visible; min-height: unset;
     display: block; width: 100%;
-    border-top: 2px solid var(--sand-dark);
+    /* D10 — border-top dashed (au lieu de solid), aligné page-bg. */
+    border-top: 1.5px dashed var(--border);
     margin-top: 0;
   }
   /* Visuels fallback (mode modal standard, non --desktop-list) — owned : modal-shell */
-  /* Les visuels --desktop-list (background dégradé chaud, padding responsive) sont
-     owned exclusivement par modal-product-lot4-hybrid.css. */
+  /* Les visuels --desktop-list (fond, padding responsive) sont owned exclusivement
+     par modal-product-lot4-hybrid.css. D10 — aplat --page-bg, dégradé retiré. */
   #k-modal .k-modal-suggestions:not(.k-modal-suggestions--desktop-list) {
     padding: 28px 36px 48px;
-    background: linear-gradient(180deg, var(--sand) 0%, var(--sand) 100%);
+    background: var(--page-bg);
   }
   #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
     overflow: visible; height: auto; padding: 0;
@@ -2657,10 +2688,12 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex; flex-direction: column;
     grid-template-columns: unset; grid-template-rows: unset;
     min-height: unset; height: auto; border-radius: 14px; overflow: hidden;
-    background: var(--white); box-shadow: 0 4px 16px var(--border-text-07);
-    transition: transform .18s, box-shadow .18s; cursor: pointer;
+    background: var(--white); box-shadow: none;
+    border: 1px solid var(--border-text-08);
+    transition: border-color .18s; cursor: pointer;
   }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px var(--border-text-12); }
+  /* D10 — pas de transform ni de halo au hover : bordure seule. */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { border-color: var(--border-text-15); }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img { width: 100%; height: auto; aspect-ratio: 1; grid-column: unset; grid-row: unset; border-radius: 0; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: unset; grid-row: unset; padding: 8px 10px 4px; font-size: 13px; }
@@ -2669,8 +2702,18 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: static; background: none; padding: 0 0 16px; margin-bottom: 0; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section { margin-top: 32px; }
 
+  /* ── Livraison + Paiement : pleine largeur SOUS suggestions (D4 pt.3) ──── */
+  /* Position/layout owned : modal-shell. Contenu interne (options, badges…) reste owned modal-product.css. */
+  #k-modal-delivery.k-modal-delivery,
+  #k-modal-payment.k-modal-payment {
+    display: block; width: 100%;
+    margin-top: 0; padding: 28px 36px 0;
+    border-top: none;
+  }
+  #k-modal-payment.k-modal-payment { padding-top: 0; padding-bottom: 36px; }
+
   /* ── Hover & focus ───────────────────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px var(--border-ocean-10); }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); } /* [T-029] halo décoratif retiré */
   .k-msearch-item:hover { background: var(--sand); }
   .k-msearch-footer:hover { background: var(--sand); color: var(--coral); }
   .k-modal-search-clear:hover { background: var(--border); color: var(--text); }
@@ -2732,8 +2775,12 @@ html.k-mobile-premium-v1 .k-chip-label {
     min-height: 100dvh;
     max-height: 100dvh;
     flex: 0 0 100dvh;
-    border-radius: 0;
-    box-shadow: none;
+    border-radius: 12px; /* [D12] Owner réel du radius desktop (gagne sur la
+       règle .k-modal { border-radius: 26px } plus bas dans ce fichier,
+       morte par spécificité — cf. bloc "Desktop : taille & ombre modale"). */
+    box-shadow: var(--shadow-modal-neutral-10); /* [D13] Owner réel de l'ombre
+       desktop (gagne sur var(--border-ocean-18) plus bas dans ce fichier,
+       morte par spécificité). Neutre gris chaud, plus de teinte ocean. */
   }
 
   /* Side-cart : glisse par-dessus, modal reste 100vw */
@@ -2758,10 +2805,18 @@ html.k-mobile-premium-v1 .k-chip-label {
     overflow: hidden;
   }
 
-  /* ── Image : pleine hauteur, jamais réduite par la col droite ── */
+  /* ── Image : géométrie intrinsèque transférée à modal-media.css (D6/T-018) ──
+     Ce bloc reste propriétaire du confinement global (product-zone/details
+     ci-dessus, ci-dessous), mais height:100%/max-height:100% sur l'image
+     ont été retirés d'ici : ils forçaient une hauteur pleine dérivée du
+     confinement du shell (~842px), en conflit avec le critère ratio 4:3 /
+     360-500px. La géométrie intrinsèque du hero (aspect-ratio, bornes de
+     taille, centrage) est désormais définie dans modal-media.css — source
+     de vérité unique pour cette responsabilité (voir arbitrage
+     .agent/arbitrations/T-018.md). overflow/max-width/width restent ici :
+     ce sont des propriétés de confinement (empêchent le débordement hors
+     de la colonne), pas de géométrie intrinsèque. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    height: 100%;
-    max-height: 100%;
     overflow: hidden;
     max-width: 100%;
     width: 100%;
@@ -2787,7 +2842,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* ── Topbar : séparation nette sur fond blanc ────────────── */
   #k-modal .k-modal-topbar {
     border-bottom-color: var(--border);
-    box-shadow: var(--elev-1);
+    /* [T-029] halo décoratif retiré : la bordure seule porte la séparation */
   }
 
   /* ── FIX Bug : conteneurs flex-column qui ne s'étirent pas ──
@@ -2812,7 +2867,9 @@ html.k-mobile-premium-v1 .k-chip-label {
 @media (min-width: 900px) and (max-width: 1120px) {
   #k-modal.k-modal                          { width: 100vw; }
   body.modal-has-cart #k-modal.k-modal      { width: 100vw; margin-right: 0; }
-  #k-modal .k-modal-product-zone            { grid-template-columns: minmax(340px, 44%) minmax(0, 56%); }
+  /* grid-template-columns retiré (T-020, arbitrage D8) : contredisait
+     l'ownership déjà documenté au profit de modal-product-lot4-hybrid.css
+     et créait une dépendance à l'ordre du bundle. Cf. .agent/arbitrations/T-020.md. */
   #k-modal .k-modal-product-zone .k-modal-details  { padding: 0 clamp(18px, 3vw, 32px); }
   #k-modal .k-modal-product-zone .k-modal-actions  {
     padding-left:  clamp(18px, 3vw, 32px);
@@ -2823,6 +2880,29 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     grid-column: 3; grid-row: 1;
+  }
+}
+
+/* ── Composition 3 pistes ≥1024px (T-020, arbitrage D8) ────────────────
+   rail miniatures | média principal | détails.
+   grid-column/grid-row des enfants de .k-modal-product-zone : seul
+   propriétaire ce fichier (cf. .agent/arbitrations/T-020.md).
+   grid-template-columns/gap/padding de la zone elle-même restent owned
+   par modal-product-lot4-hybrid.css — ne pas les redéclarer ici.
+   .k-modal-thumbs reste absolute dans .k-modal-img-wrap (visuel : T-021),
+   d'où le wrapper média qui couvre les 2 premières pistes. ───────────── */
+@media (min-width: 1024px) {
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    grid-column: 1 / 3;
+    grid-row: 1 / 3;
+  }
+  #k-modal .k-modal-product-zone .k-modal-details {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions {
+    grid-column: 3;
+    grid-row: 2;
   }
 }
 
@@ -2838,12 +2918,12 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-scroll { scroll-behavior: smooth; }
 
 /* ── Bouton retour en haut dans la modale (ex interactions.css) ── */
-.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--coral); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:10; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
+.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--text); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:10; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
 .k-modal-back-top.show { opacity:1; pointer-events:auto; transform:translateY(0); }
 
 /* ── Topbar produit — infos compactes (ex interactions.css) ───── */
-.k-modal-topbar-product-name  { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.k-modal-topbar-product-price { font-size:12px; font-weight:700; color:var(--coral); }
+.k-modal-topbar-product-name  { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.k-modal-topbar-product-price { font-size:12px; font-weight:500; color:var(--text); }
 .k-modal-topbar-thumb         { flex:0 0 38px; width:38px; height:38px; border-radius:8px; overflow:hidden; background:var(--sand); }
 
 /* ── Desktop : taille & ombre modale (ex desktop-commerce-skeleton.css) ── */
@@ -2851,12 +2931,18 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal {
     /* [MDM-8 phase 2] max-width: min(1040px, …) retiré — mort par
        spécificité, toujours écrasé par #k-modal.k-modal { max-width: none }
-       (ligne ~761, contre-balance desktop-commerce-skeleton.css). La
-       largeur réelle desktop est pilotée par cette règle ID, pas ici
+       (contre-balance desktop-commerce-skeleton.css). La largeur réelle
+       desktop est pilotée par cette règle ID, pas ici
        (audit MDM8_AUDIT_PHASE1.md §1.5). */
-    border-radius: 26px;
-    /* PALETTE-FIX-01 */
-    box-shadow: 0 30px 80px var(--border-ocean-18);
+    /* [D12] border-radius retiré d'ici : cette règle .k-modal (classe seule)
+       était déjà morte par spécificité, toujours écrasée par
+       #k-modal.k-modal (voir bloc "Shell : ... sans carte flottante" plus
+       haut, où vit désormais le vrai radius desktop = 12px). */
+    /* [D13] Teinte ocean retirée : cette règle .k-modal (classe seule)
+       est morte par spécificité, toujours écrasée par #k-modal.k-modal
+       (voir bloc "Shell : ... sans carte flottante" plus haut, où vit
+       désormais la vraie ombre desktop, neutre gris chaud). */
+    box-shadow: var(--shadow-modal-neutral-10);
   }
 
   .k-modal-img-wrap {
@@ -2882,6 +2968,19 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 }
 
+/* [T-028] Reduced motion : neutralise les animations fonctionnelles
+   (ouverture modale, morph sticky topbar) sans modifier les règles
+   originales ci-dessus. Ne touche pas au focus visible (protégé). */
+@media (prefers-reduced-motion: reduce) {
+  .k-modal {
+    animation: none;
+  }
+
+  .k-modal-topbar-product {
+    transition: none;
+  }
+}
+
 
 /* ── modal-media.css ─────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
@@ -2902,9 +3001,9 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-img-wrap::before {
   content: ''; position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(90deg,
-    rgba(244,241,236,0) 0%,
-    rgba(255,255,255,.55) 50%,
-    rgba(244,241,236,0) 100%);
+    var(--sand-gradient-0) 0%,
+    var(--surface-white-55) 50%,
+    var(--sand-gradient-0) 100%); /* [T-029] littéraux rgba remplacés par tokens — dégradé shimmer fonctionnel conservé */
   background-size: 200% 100%;
   animation: k-modal-shimmer 1.4s linear infinite;
   pointer-events: none;
@@ -2944,7 +3043,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   position: absolute; bottom: 10px; right: 10px; z-index: 3;
   padding: 3px 10px; min-width: 38px; text-align: center;
   background: var(--overlay-dark-md); color: var(--white);
-  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  font-size: 11px; font-weight: 500; letter-spacing: .02em;
   border-radius: 999px; backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   pointer-events: none;
@@ -2959,7 +3058,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   display: flex; align-items: center; gap: 5px;
   padding: 4px 12px;
   background: var(--overlay-dark-md); color: var(--white);
-  font-size: 11px; font-weight: 600;
+  font-size: 11px; font-weight: 500;
   border: none; border-radius: 999px;
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
@@ -2989,32 +3088,28 @@ html.k-mobile-premium-v1 .k-chip-label {
   font-size: 20px; line-height: 1;
   box-shadow: var(--elev-1);
   cursor: pointer; z-index: 4;
-  transition: transform .2s cubic-bezier(.34,1.56,.64,1),
-              background .2s var(--ease),
+  /* [T-028] transform + easing spring retirés : plus aucune règle
+     .k-modal-fav-btn n'anime transform, l'easing spring devenait mort. */
+  transition: background .2s var(--ease),
               box-shadow .2s var(--ease);
   touch-action: manipulation;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
-.k-modal-fav-btn:active { transform: scale(1.12); }
 .k-modal-fav-btn.liked {
   background: var(--pink);
   box-shadow:
     0 0 0 2px var(--white),
-    0 0 0 4px rgba(233,30,99,.35),
-    0 2px 10px rgba(233,30,99,.30);
-  transform: scale(1.05);
+    0 0 0 4px var(--pink-shadow),
+    0 2px 10px var(--pink-shadow-30); /* [T-029] littéraux rgba remplacés par tokens — anneau d'état actif conservé */
 }
-.k-modal-fav-btn.k-pop { animation: k-modal-fav-pop .3s var(--ease, ease); }
-@keyframes k-modal-fav-pop {
-  0%   { transform: scale(1.05); }
-  40%  { transform: scale(1.25); }
-  100% { transform: scale(1.05); }
-}
+/* [T-028] .k-modal-fav-btn.k-pop + @keyframes k-modal-fav-pop retirées :
+   scale décoratif au "like". Le JS (b-cart.js, hors périmètre CSS) continue
+   de basculer la classe .k-pop sur #k-modal-fav-btn, mais sans animation
+   associée cela n'a plus d'effet visuel. */
 @media (hover: hover) and (pointer: fine) {
-  .k-modal-fav-btn:hover { transform: scale(1.08); box-shadow: var(--elev-2); }
-  .k-modal-fav-btn.liked:hover { transform: scale(1.10); }
+  .k-modal-fav-btn:hover { box-shadow: var(--elev-2); }
 }
 @media (min-width: 900px) {
   .k-modal-fav-btn { width: 46px; height: 46px; font-size: 22px; }
@@ -3038,15 +3133,15 @@ html.k-mobile-premium-v1 .k-chip-label {
   width: 38px; height: 38px; border-radius: 50%;
   background: var(--surface-white-92); color: var(--text);
   border: none; display: flex; align-items: center; justify-content: center;
-  z-index: 2; cursor: pointer; box-shadow: 0 2px 12px var(--overlay-black-lg);
-  -webkit-tap-highlight-color: transparent;
+  z-index: 2; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; /* [T-029] halo décoratif retiré : le fond opaque suffit */
 }
 .k-modal-fullscreen-close svg { width: 18px; height: 18px; }
 .k-modal-fullscreen-counter {
   position: fixed; top: calc(20px + env(safe-area-inset-top)); left: 50%;
   transform: translateX(-50%);
   padding: 4px 14px; background: var(--overlay-dark-md);
-  color: var(--white); font-size: 12px; font-weight: 600;
+  color: var(--white); font-size: 12px; font-weight: 500;
   border-radius: 999px; z-index: 2; pointer-events: none;
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
@@ -3095,7 +3190,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
   .k-modal-recent-title {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text);
     margin: 0 0 14px;
     letter-spacing: -.01em;
@@ -3113,19 +3208,21 @@ html.k-mobile-premium-v1 .k-chip-label {
     border-radius: 10px;
     overflow: hidden;
     cursor: pointer;
-    transition: transform .12s, border-color .12s, box-shadow .12s;
+    /* [T-028] transform retiré : hover-lift décoratif parasite retiré,
+       plus aucune règle .k-modal-recent-card n'anime transform. */
+    transition: border-color .12s, box-shadow .12s;
     padding: 0;
     text-align: left;
     min-width: 0;
   }
   .k-modal-recent-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(200,92,45,.4);
-    box-shadow: 0 6px 16px var(--border-text-08);
+    /* [T-028] transform: translateY(-2px) retiré : hover-lift décoratif
+       parasite. Le feedback au survol reste porté par bordure + ombre. */
+    border-color: var(--coral-focus-40); /* [T-029] littéral rgba remplacé par token, halo décoratif retiré */
   }
   .k-modal-recent-img {
     aspect-ratio: 1;
-    background: linear-gradient(135deg, var(--sand), var(--sand-dark));
+    background: var(--sand); /* [T-029] dégradé décoratif aplati en couleur solide */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3150,38 +3247,54 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
   .k-modal-recent-price {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--coral);
     padding: 4px 8px 8px;
   }
 }
 
-/* ── Desktop : Keyboard hint navigation clavier (ex boutique-desktop.css) ── */
+/* [T-028] Keyboard hint neutralisé : élément toujours injecté par
+   b-modal-core.js (hors périmètre CSS de T-028), désormais masqué plutôt
+   que stylé — c'était un hint décoratif sans réelle valeur d'usage. */
 @media (min-width: 900px) {
   .k-modal-keyboard-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: var(--muted, var(--text-form-light));
-    opacity: .7;
-    pointer-events: none;
-    white-space: nowrap;
+    display: none;
   }
-  .k-modal-keyboard-hint kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1px 5px;
-    background: var(--surface-alt, var(--surface-warm-cool));
-    border: 1px solid var(--border, var(--border-light));
-    border-radius: 3px;
-    font-size: 11px;
-    font-family: inherit;
-    line-height: 1.4;
-  }
-  .k-modal-keyboard-hint span { margin-right: 8px; }
 }
+
+/* ── D6/T-018 — Géométrie intrinsèque du hero desktop ────────────
+   Ownership : modal-media.css devient propriétaire de la géométrie
+   intrinsèque du hero desktop (ratio, bornes de taille), tandis que
+   modal-shell.css reste propriétaire du confinement global de la
+   modal / product-zone / scroll des détails (voir arbitrage
+   .agent/arbitrations/T-018.md).
+   Ancien owner (modal-shell.css §6) posait height:100%/max-height:100%
+   sur .k-modal-img-wrap, forçant une hauteur pleine (~842px) dérivée
+   du confinement du shell — retiré, remplacé ici par une géométrie
+   intrinsèque indépendante du viewport (aspect-ratio, pas de vh/dvh),
+   robuste aux futurs ajustements de grille (T-020).
+   Le confinement du shell (product-zone height:calc(100dvh - 58px),
+   details overflow-y:auto) reste inchangé et continue d'empêcher un
+   contenu droit long d'agrandir la grille ou de déformer la colonne
+   image — cette règle ne fait que borner la taille du hero LUI-MÊME
+   à l'intérieur de cet espace déjà confiné. */
+@media (min-width: 900px) {
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    aspect-ratio: 4 / 3;
+    min-height: 360px;
+    max-height: 500px;
+    /* largeur dérivée du ratio 4:3 à hauteur max 500px, bornée par
+       la colonne (jamais plus large que son grid-track) */
+    max-width: min(100%, calc(500px * 4 / 3));
+    width: 100%;
+    height: auto;
+    /* centre le bloc dans sa colonne quand celle-ci est plus grande
+       que le hero (largeur ET hauteur, cf. align-self ci-dessous) */
+    margin: auto;
+    align-self: center;
+  }
+}
+
 
 
 /* ── modal-product.css ───────────────────────────────────── */
@@ -3203,14 +3316,12 @@ html.k-mobile-premium-v1 .k-chip-label {
   flex: 0 0 auto; overflow: visible; min-height: 0;
   background: var(--white); border-radius: 20px 20px 0 0;
   margin-top: 0; position: relative; z-index: 2;
-  box-shadow: 0 -4px 20px var(--border-text-06);
 }
 .k-modal-promo-badge {
   display: none; position: absolute; top: 8px; left: 8px;
   background: var(--coral); color: var(--white);
-  font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
   letter-spacing: .2px;
-  box-shadow: 0 1px 4px var(--overlay-black-15);
 }
 .k-modal-promo-badge.show { display: inline-block; }
 /* PR-D1 — Desktop : badge ancré sur l'image (pas sur le thumb strip).
@@ -3246,7 +3357,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   letter-spacing: 0.02em;
 }
 .k-modal-sku[hidden] { display: none; }
-.k-modal-price { font-family: var(--font); font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -.015em; }
+.k-modal-price { font-family: var(--font); font-size: 22px; font-weight: 500; color: var(--text); letter-spacing: -.015em; }
 /* F1 — prix promo en coral sur mobile (classe posée par b-modal.js openModal) */
 .k-modal--has-promo .k-modal-price { color: var(--coral); font-size: clamp(20px, 5vw, 26px); font-weight: 700; }
 /* F2 — ancien prix sur même ligne, aligné baseline, jamais stacked */
@@ -3258,11 +3369,14 @@ html.k-mobile-premium-v1 .k-chip-label {
    injectSocialProof() laisse .k-modal-meta vide et il est display:none.
    Aucun chiffre inventé. */
 .k-modal-meta:empty { display: none; }
+/* [T-027, arbitrage humain] n'est pas une promotion — purge coral,
+   tokens ambre existants (corrige au passage --coral-bg/--coral-border,
+   inexistants dans tokens.css, dette pré-existante silencieuse). */
 #k-modal .k-modal-meta-rank {
-  background: var(--coral-bg);
-  color: var(--coral);
-  border: 1px solid var(--coral-border);
-  font-weight: 700;
+  background: var(--amber-bg);
+  color: var(--amber-text);
+  border: 1px solid var(--amber-border);
+  font-weight: 500;
 }
 .k-modal-meta-star { color: var(--star-gold); font-size: 12px; }
 
@@ -3272,9 +3386,9 @@ html.k-mobile-premium-v1 .k-chip-label {
   margin: 8px 12px 4px; padding: 9px 14px;
   background: var(--sand); border-radius: 12px;
   border: 1.5px solid transparent;
-  transition: border-color .2s, background .2s, box-shadow .2s;
+  transition: border-color .2s, background .2s;
 }
-.k-modal-inner-search:focus-within { border-color: var(--ocean); background: var(--white); box-shadow: 0 0 0 3px var(--border-ocean-10); }
+.k-modal-inner-search:focus-within { border-color: var(--ocean); background: var(--white); }
 .k-modal-inner-search-icon { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
 .k-modal-inner-search-input { flex: 1; border: none; background: transparent; font-size: 13px; font-family: var(--font); color: var(--text); outline: none; min-width: 0; }
 .k-modal-inner-search-input::placeholder { color: var(--text-muted); }
@@ -3284,7 +3398,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-search-clear {
   display: none; width: 26px; height: 26px; border: none;
   background: var(--sand-dark); border-radius: 50%; color: var(--text-muted);
-  font-size: 14px; font-weight: 600; line-height: 1; cursor: pointer;
+  font-size: 14px; font-weight: 500; line-height: 1; cursor: pointer;
   transition: background .12s, color .12s, transform .12s;
   flex-shrink: 0; align-items: center; justify-content: center; padding: 0;
 }
@@ -3296,7 +3410,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-search-dropdown {
   display: none; margin: 0 12px 8px;
   background: var(--white); border: 1px solid var(--border); border-radius: 12px;
-  box-shadow: var(--elev-3); max-height: 340px;
+  max-height: 340px;
   overflow-y: auto; overflow-x: hidden; z-index: 20; position: relative;
   scrollbar-width: thin; -webkit-overflow-scrolling: touch;
   animation: k-msearch-drop-in .18s var(--ease);
@@ -3349,7 +3463,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   gap: 10px;
   margin-bottom: 14px;
   padding: 10px 14px;
-  background: linear-gradient(135deg, var(--border-ocean-10), var(--border-ocean-04));
+  background: var(--border-ocean-08);
   border-left: 3px solid var(--ocean, var(--ocean));
   border-radius: 0 10px 10px 0;
 }
@@ -3362,7 +3476,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--border-ocean-20), var(--border-ocean-08));
+  background: var(--border-ocean-14);
   flex-shrink: 0;
 }
 .k-sug-title-text {
@@ -3387,7 +3501,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-sug-card.subcat-hidden { display: none; }
 .k-sug-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 2px; }
 .k-sug-grid .k-sug-card { display: flex; flex-direction: column; height: auto; overflow: visible; width: 100%; }
-.k-sug-grid .k-sug-card-img { aspect-ratio: 1; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--sand) 0%, var(--sand) 100%); border-radius: 10px 10px 0 0; }
+.k-sug-grid .k-sug-card-img { aspect-ratio: 1; position: relative; overflow: hidden; background: var(--sand); border-radius: 10px 10px 0 0; }
 .k-sug-grid .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; padding: 6px; display: block; }
 .k-sug-grid .k-sug-card-name { font-size: 13px; line-height: 1.3; padding: 6px 8px 2px; color: var(--text); font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 34px; }
 .k-sug-grid .k-sug-card-price { padding: 0 8px 8px; font-size: 14px; font-weight: 700; color: var(--coral); }
@@ -3440,7 +3554,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   gap: 6px;
 }
 .k-modal-reassurance-icon { font-size: 14px; flex-shrink: 0; }
-.k-modal-reassurance-label { font-weight: 600; }
+.k-modal-reassurance-label { font-weight: 500; }
 .k-modal-reassurance-delay { color: var(--text-muted); }
 .k-modal-reassurance-chevron {
   font-size: 14px;
@@ -3473,7 +3587,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -3505,7 +3619,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   margin-bottom: 10px;
   line-height: 1;
 }
-.k-vg-label-type { font-weight: 700; color: var(--text); }
+.k-vg-label-type { font-weight: 500; color: var(--text); }
 .k-vg-label-sep  { color: var(--text-muted); font-size: 11px; }
 .k-vg-label-val  { color: var(--text-muted); font-weight: 400; }
 
@@ -3529,7 +3643,9 @@ html.k-mobile-premium-v1 .k-chip-label {
   cursor: pointer;
   width: 68px;
   position: relative;
-  transition: border-color .15s, box-shadow .15s, transform .12s;
+  /* [T-028] transform retiré : hover-lift décoratif parasite retiré,
+     plus aucune règle .k-sku n'anime transform. */
+  transition: border-color .15s, box-shadow .15s;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -3551,7 +3667,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 .k-sku-name {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
   text-align: center;
   white-space: nowrap;
@@ -3563,19 +3679,19 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 /* Hover */
 .k-sku:hover:not(.k-sku--out) {
-  border-color: var(--coral);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px var(--coral-shadow-18);
+  /* [T-028] transform: translateY(-1px) retiré : hover-lift décoratif
+     parasite. Le feedback au survol reste porté par bordure + ombre. */
+  border-color: var(--ocean);
 }
 
 /* Sélectionné */
 .k-sku.k-sku--active {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 2px var(--coral);
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--text);
 }
 .k-sku--active .k-sku-name {
-  color: var(--coral-dark);
-  font-weight: 700;
+  color: var(--text);
+  font-weight: 500;
 }
 
 /* Épuisé */
@@ -3629,16 +3745,16 @@ html.k-mobile-premium-v1 .k-chip-label {
   user-select: none;
 }
 .k-vp:hover:not(:disabled) {
-  border-color: var(--coral);
-  background: color-mix(in srgb, var(--coral) 5%, var(--white));
+  border-color: var(--ocean);
+  background: color-mix(in srgb, var(--ocean) 5%, var(--white));
 }
 .k-vp.k-vp--active {
-  border-color: var(--coral);
+  border-color: var(--text);
   border-width: 2px;
-  background: color-mix(in srgb, var(--coral) 8%, var(--white));
-  color: var(--coral-dark);
-  font-weight: 700;
-  box-shadow: 0 0 0 1px var(--coral);
+  background: color-mix(in srgb, var(--text) 8%, var(--white));
+  color: var(--text);
+  font-weight: 500;
+  box-shadow: 0 0 0 1px var(--text);
 }
 .k-vp--out {
   opacity: .38;
@@ -3677,21 +3793,20 @@ html.k-mobile-premium-v1 .k-chip-label {
   background: var(--white);
   font-family: var(--font);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
   cursor: pointer;
   transition: border-color .15s, box-shadow .15s;
   -webkit-tap-highlight-color: transparent;
 }
 .k-vs-trigger:active {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 15%, transparent);
+  border-color: var(--ocean);
 }
 .k-vs-trigger-label { display: flex; align-items: baseline; gap: 6px; }
 .k-vs-trigger-type { color: var(--text); }
 .k-vs-trigger-sep { color: var(--text-muted); font-size: 11px; }
 .k-vs-trigger-val { color: var(--text-muted); font-weight: 400; }
-.k-vs-trigger-val.is-set { color: var(--coral-dark, var(--coral)); font-weight: 700; }
+.k-vs-trigger-val.is-set { color: var(--text); font-weight: 500; }
 .k-vs-trigger-chevron {
   font-size: 16px; color: var(--text-muted);
   transition: transform .2s;
@@ -3732,7 +3847,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   overflow: hidden;
   transform: translateY(32px);
   transition: transform .25s cubic-bezier(.22,1,.36,1);
-  box-shadow: 0 -4px 32px var(--overlay-black-md);
 }
 .k-vs-overlay.is-open .k-vs-panel { transform: translateY(0); }
 
@@ -3747,13 +3861,13 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-vs-header-left { display: flex; align-items: baseline; gap: 8px; }
 .k-vs-header-title {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text);
 }
 .k-vs-header-guide {
   /* Inherits .k-vg-size-guide style — kept inline for simplicity */
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ocean, var(--blue-dark));
   background: none;
   border: none;
@@ -3794,7 +3908,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   color: var(--white);
   font-family: var(--font);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   transition: filter .12s;
   -webkit-tap-highlight-color: transparent;
@@ -3817,7 +3931,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ocean, var(--blue-dark));
   background: none;
   border: none;
@@ -3870,7 +3984,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   overflow: hidden;
   transform: translateY(32px);
   transition: transform .25s cubic-bezier(.22,1,.36,1);
-  box-shadow: 0 -4px 32px var(--overlay-black-md);
 }
 .k-sg-overlay.is-open .k-sg-panel { transform: translateY(0); }
 /* INTENTIONNEL @768px — .k-sg-panel (guide des tailles) : panneau centré avec scale-in,
@@ -3895,7 +4008,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 .k-sg-title {
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text, var(--text));
   margin: 0;
 }
@@ -3934,7 +4047,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   flex-shrink: 0;
   padding: 12px 14px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted, var(--text-form-light));
   background: none;
   border: none;
@@ -3945,8 +4058,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   -webkit-tap-highlight-color: transparent;
 }
 .k-sg-tab.is-active {
-  color: var(--coral, var(--coral));
-  border-bottom-color: var(--coral, var(--coral));
+  color: var(--text);
+  border-bottom-color: var(--text);
 }
 
 /* Body scrollable */
@@ -3987,7 +4100,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   background: var(--surface, var(--gray-bg-lighter));
   color: var(--text-muted, var(--text-form-mid));
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: .5px;
   padding: 9px 12px;
@@ -4006,8 +4119,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   white-space: nowrap;
 }
 .k-sg-table tbody td:first-child {
-  font-weight: 700;
-  color: var(--coral-dark, var(--coral-text-deep));
+  font-weight: 500;
+  color: var(--text);
 }
 
 /* Footer */
@@ -4087,7 +4200,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-eur-ref strong {
     color: var(--text);
-    font-weight: 700;
+    font-weight: 500;
   }
   .k-modal-eur-ref s {
     font-size: 12px;
@@ -4098,7 +4211,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* PR-D1 — badge % coral plein, blanc, plus visible (mockup) */
   .k-modal-aed-pct {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--white);
     background: var(--coral);
     border: none;
@@ -4149,7 +4262,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-flash-pct {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--coral);
     background: var(--border-coral-09);
     border: 1px solid var(--border-coral-13);
@@ -4196,7 +4309,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-section-title {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: .7px;
@@ -4222,7 +4335,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
   }
   .k-modal-opt-icon { font-size: 18px; flex-shrink: 0; }
@@ -4230,7 +4343,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   .k-modal-opt-free {
     margin-left: auto;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--ocean-dark);
     background: transparent;
     border: 1px solid var(--border-ocean-14);
@@ -4304,7 +4417,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   .k-modal-pay-icon { font-size: 18px; flex-shrink: 0; }
   .k-modal-pay-label {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.2;
     overflow: hidden;
@@ -4357,7 +4470,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   text-align: center;
   min-width: 0;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
   line-height: 1.2;
 }
@@ -4400,7 +4513,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 .k-buybox-payment-copy small { font-size: 11px; color: var(--text-muted); }
 .k-buybox-payment-badge {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ocean-dark);
   background: var(--ocean-bg-08);
   border-radius: 999px;
@@ -4409,12 +4522,9 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   white-space: nowrap;
 }
 @media (min-width: 900px) {
-  #k-modal-payment.k-modal-payment {
-    display: block;
-    border-top: 1px solid var(--sand-dark);
-    margin-top: 14px;
-    padding-top: 14px;
-  }
+  /* T-023 : layout desktop (display/border-top/margin-top) de #k-modal-payment
+     retiré ici — ownership cédé à modal-product-lot4-hybrid.css (bloc
+     "Livraison + paiement", ligne ~71). Voir .agent/arbitrations/T-023.md. */
   #k-modal-payment .k-modal-section-title { margin-bottom: 10px; }
 }
 
@@ -4425,7 +4535,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   color: var(--text);
   margin: 10px 0;
 }
-.k-modal-subtotal strong { font-weight: 700; }
+.k-modal-subtotal strong { font-weight: 500; }
 .k-modal-subtotal--mobile { padding: 0 16px; }
 .k-modal-subtotal:empty { display: none; }
 
@@ -4452,9 +4562,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
 @media (min-width: 900px) {
   #k-modal-suggestions.k-pdp-curation {
-    background:
-      radial-gradient(circle at 14% 0%, color-mix(in srgb, var(--ocean-bg-08) 60%, transparent), transparent 26%),
-      linear-gradient(180deg, var(--sand) 0%, var(--sand-warm) 100%);
+    background: var(--sand);
     border-top: 1px solid var(--border-text-06);
   }
 
@@ -4482,7 +4590,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     place-items: center;
     border-radius: 999px;
     background: var(--white);
-    box-shadow: 0 10px 24px var(--border-text-06);
   }
 
   #k-modal-suggestions.k-pdp-curation .k-sug-title-text {
@@ -4504,7 +4611,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     border-radius: 26px;
     background: color-mix(in srgb, var(--white) 72%, transparent);
     border: 1px solid var(--border-text-06);
-    box-shadow: 0 18px 46px var(--border-text-06);
   }
 
   #k-modal-suggestions.k-pdp-curation .k-pdp-curation-section--complements .k-sug-grid {
@@ -4533,7 +4639,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     color: var(--white);
     font-size: 11px;
     font-weight: 850;
-    box-shadow: 0 8px 18px var(--border-text-12);
   }
 
   /* Si la carte porte déjà un badge promo, masquer le badge curation —
@@ -4551,28 +4656,54 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
    Approche C hybride desktop — PDP Komerce
    Rapatrié de b-modal-approche-c-hybrid.js (Lot 4)
    Owner : modal-product.css
-   Scope : @media (min-width: 900px) uniquement
+   Scope : @media (min-width: 900px) — 2 colonnes 900-1023px,
+           3 pistes à partir de 1024px (T-020, arbitrage D8).
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* ── Zone produit : layout grille hybride ── */
+  /* D7 — Zone produit en aplat (spec §327) : le gradient radial sand-warm
+     est retiré au profit d'un fond uni --page-bg, cohérent avec le fond de
+     page hors modale. */
   #k-modal .k-modal-product-zone {
     grid-template-columns: minmax(0, 48%) minmax(0, 52%);
-    background:
-      radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--sand-warm) 60%, transparent), transparent 28%),
-      var(--white);
+    background: var(--page-bg);
   }
 
+  /* ── Composition 3 pistes ≥1024px (T-020, arbitrage D8) ──────────────
+     rail miniatures | média principal | détails.
+     grid-template-columns/gap/padding de .k-modal-product-zone : seul
+     propriétaire ce fichier. Le placement des enfants (grid-column/
+     grid-row) est owned exclusivement par modal-shell.css — ne pas le
+     redéclarer ici (cf. .agent/arbitrations/T-020.md). ─────────────── */
+  @media (min-width: 1024px) {
+    #k-modal .k-modal-product-zone {
+      grid-template-columns: 60px minmax(420px, 1fr) 310px;
+      gap: 18px;
+      padding: 18px;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    #k-modal .k-modal-product-zone {
+      grid-template-columns: 64px minmax(480px, 1fr) 340px;
+      gap: 22px;
+      padding: 22px;
+    }
+  }
+
+  /* D6 — Hero desktop en aplat (spec, réf. mockup fourni) :
+     fond uni --hero-bg, seul le décor radial sobre est conservé,
+     le dégradé linéaire sand → sand-warm est retiré. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    background:
-      radial-gradient(circle at 62% 20%, color-mix(in srgb, var(--ocean) 10%, transparent), transparent 30%),
-      linear-gradient(135deg, var(--sand) 0%, var(--sand-warm) 100%);
+    background: var(--hero-bg);
   }
 
   #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
 
+  /* D7 — Panneau détails en aplat (spec §327) : le dégradé linéaire
+     white → sand est retiré au profit d'un fond uni --page-bg. */
   #k-modal .k-modal-product-zone .k-modal-details {
-    background: linear-gradient(180deg, var(--white) 0%, color-mix(in srgb, var(--sand) 48%, var(--white)) 100%);
+    background: var(--page-bg);
     padding: 0 clamp(28px, 4.4vw, 72px);
   }
 
@@ -4582,23 +4713,15 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     padding-bottom: 14px;
   }
 
-  /* ── Typographie titre + prix ── */
-  #k-modal .k-modal-info h2 {
-    font-family: var(--font-display, var(--font));
-    font-size: clamp(30px, 3vw, 46px);
-    line-height: .98;
-    font-weight: 700;
-    letter-spacing: -.035em;
-    color: var(--text);
-    max-width: 760px;
-  }
-
+  /* ── Typographie titre ── */
+  /* D2 : titre desktop géré par modal-shell.css §D2 (18px/500/1.2) —
+     règle supprimée ici pour éviter tout conflit de spécificité. */
   #k-modal .k-modal-name-row { margin-top: 10px; align-items: flex-start; }
   #k-modal .k-modal-fav-btn  { margin-top: 2px; }
 
+  /* D1 : prix desktop géré par modal-shell.css §D1 — règles supprimées ici
+     pour éviter tout conflit de spécificité et garantir une source unique. */
   #k-modal .k-modal-price-row  { margin-top: 18px; gap: 12px; }
-  #k-modal .k-modal-price      { font-size: clamp(34px, 4vw, 56px); letter-spacing: -.04em; color: var(--coral); }
-  #k-modal .k-modal-price-unit { font-size: .34em; letter-spacing: .06em; }
   #k-modal .k-modal-old-price  { font-size: 16px; opacity: .72; }
   #k-modal .k-modal-aed-price  { margin-top: 8px; margin-bottom: 10px; }
 
@@ -4634,8 +4757,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     padding: 15px 16px;
     border-radius: 18px;
     border: 1px solid var(--border-ocean-14);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--ocean-bg-08) 78%, var(--white)) 0%, var(--white) 100%);
-    box-shadow: 0 12px 28px var(--border-text-06);
+    background: var(--ocean-bg-08);
   }
 
   #k-modal .k-buybox-relay-icon {
@@ -4651,7 +4773,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-buybox-relay-title {
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.1;
   }
@@ -4664,7 +4786,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-buybox-relay-free {
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--ocean-dark);
     background: var(--ocean-bg-08);
     border: 1px solid var(--border-ocean-14);
@@ -4698,13 +4820,12 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn {
     background: var(--white);
     font-size: 14px;
-    font-weight: 850;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
     font-size: 15px;
-    font-weight: 900;
-    box-shadow: 0 14px 30px color-mix(in srgb, var(--ocean) 24%, transparent);
+    font-weight: 500;
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal {
@@ -4716,7 +4837,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 
   #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal strong {
-    color: var(--coral);
+    color: var(--text);
     font-size: 15px;
   }
 
@@ -4748,20 +4869,22 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     justify-content: center;
     gap: 7px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
+    /* [T-028] transform retiré : hover-lift décoratif parasite retiré,
+       plus aucune règle .k-buybox-payment-tab n'anime transform. */
     transition:
       border-color .16s var(--ease),
       background .16s var(--ease),
       color .16s var(--ease),
-      box-shadow .16s var(--ease),
-      transform .16s var(--ease);
+      box-shadow .16s var(--ease);
   }
 
   #k-modal .k-buybox-payment-tab:hover {
-    transform: translateY(-1px);
+    /* [T-028] transform: translateY(-1px) retiré : hover-lift décoratif
+       parasite. [T-029] halo décoratif retiré : la bordure seule porte
+       le feedback au survol. */
     border-color: var(--ocean-light);
-    box-shadow: 0 8px 18px var(--border-text-06);
   }
 
   #k-modal .k-buybox-payment-tab.is-active {
@@ -4781,7 +4904,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     border-radius: 16px;
     background: var(--white);
     border: 1px solid var(--border);
-    box-shadow: 0 8px 22px var(--border-text-06);
   }
 
   #k-modal .k-buybox-payment-check {
@@ -4806,7 +4928,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-buybox-payment-copy strong {
     display: block;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--text);
     line-height: 1.15;
   }
@@ -4823,7 +4945,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-buybox-payment-badge {
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 500;
     padding: 4px 9px;
     border-radius: 8px;
     color: var(--violet-dark);
@@ -4859,7 +4981,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     content: 'Partager ce produit :';
     font-size: 12px;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-share-btn,
@@ -4874,7 +4996,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     border: 1px solid var(--border-text-06);
     box-shadow: none;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   #k-modal .k-modal-share-btn svg { width: 13px; height: 13px; }
@@ -4884,9 +5006,11 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      Spécificité : 1-2-0 → bat le base .k-modal-inner-search (0-1-0). Sans !important. */
   #k-modal .k-modal-details > .k-modal-inner-search { display: none; }
 
-  /* ── Suggestions desktop list ── */
+  /* ── Suggestions desktop list (D10 — spec §330) : aplat --page-bg,
+     titre 15/500, retrait ombres cards. Border-top dashed : owned
+     modal-shell.css. Grille 4 cols à 1024+, 5 sur large : ce bloc. ── */
   #k-modal-suggestions.k-modal-suggestions--desktop-list {
-    background: linear-gradient(180deg, var(--sand) 0%, var(--sand-warm) 100%);
+    background: var(--page-bg);
     padding: 34px clamp(32px, 5vw, 72px) 56px;
   }
 
@@ -4897,9 +5021,10 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title-text {
     font-family: var(--font-display, var(--font));
-    font-size: clamp(22px, 2vw, 30px);
-    line-height: 1;
-    letter-spacing: -.025em;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -.01em;
     color: var(--text);
   }
 
@@ -4909,6 +5034,68 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 18px;
   }
+
+  /* D10 — grille stable 4 colonnes dès 1024px (remplace la densité
+     auto-fill 1200px précédente, cf. modal-shell.css). */
+  @media (min-width: 1024px) {
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* D10 — 5 colonnes sur large si la largeur le permet.
+     Seuil 1440px réutilisé (déjà baseliné T-020) — pas de nouveau
+     breakpoint hors garde-fou (900/1200) ni de régression ratchet. */
+  @media (min-width: 1440px) {
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
+}
+
+/* T-030 — skeleton détail visible sur desktop pendant /detail en vol. */
+@media (min-width: 900px) {
+  #k-modal .k-mdm-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 2px;
+  }
+
+  #k-modal .k-mdm-skeleton-row {
+    height: 14px;
+    border-radius: 7px;
+    background: linear-gradient(
+      90deg,
+      var(--sand) 25%,
+      var(--sand-dark) 37%,
+      var(--sand) 63%
+    );
+    background-size: 400% 100%;
+    animation: k-mdm-skeleton-shimmer-desktop 1.4s ease-in-out infinite;
+  }
+
+  #k-modal .k-mdm-skeleton-row--chip {
+    width: 46%;
+    height: 32px;
+    border-radius: 999px;
+  }
+
+  #k-modal .k-mdm-skeleton-row--full { width: 100%; }
+  #k-modal .k-mdm-skeleton-row--short { width: 62%; }
+}
+
+@keyframes k-mdm-skeleton-shimmer-desktop {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+  #k-modal .k-mdm-skeleton-row { animation: none; }
 }
 
 
@@ -4955,10 +5142,11 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     overflow: hidden;
   }
 
-  /* Reference: compact */
+  /* Reference: compact — spec §5.3 : 11px / 400 / muted, fallback silencieux si absente */
   #k-modal .k-modal-sku {
     font-size: 11px;
-    color: var(--text-light);
+    font-weight: 400;
+    color: var(--text-muted);
     margin-top: 1px;
   }
 
@@ -4969,11 +5157,53 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     gap: 8px;
     margin-top: 6px;
     align-items: baseline;
+    justify-content: space-between;
   }
+
+  /* ── M1 : Pill stock, à droite du prix (spec §5.5) ──────────── */
+  .k-mdm-stock-pill {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .k-mdm-stock-pill[hidden] { display: none; }
+
+  .k-mdm-stock-pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .k-mdm-stock-pill--ok {
+    background: var(--green-bg-pale);
+    color: var(--green-dark-text);
+  }
+  .k-mdm-stock-pill--ok .k-mdm-stock-pill-dot { background: var(--green-success); }
+
+  .k-mdm-stock-pill--low {
+    background: var(--amber-bg-pale);
+    color: var(--amber-text-mid);
+  }
+  .k-mdm-stock-pill--low .k-mdm-stock-pill-dot { background: var(--amber-cta); }
+
+  .k-mdm-stock-pill--out {
+    background: var(--border-text-06);
+    color: var(--text-muted);
+  }
+  .k-mdm-stock-pill--out .k-mdm-stock-pill-dot { background: var(--text-muted); }
 
   #k-modal .k-modal-price {
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.15;
     white-space: nowrap;
   }
@@ -5073,11 +5303,151 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     margin-bottom: 5px;
   }
 
+  /* ── M2 : Sélecteur Couleur mobile — conforme spec §5.4 ──────
+     modal-product.css porte un style carte partagé mobile/desktop
+     (68px, coral, wrap). Sur mobile, la maquette premium demande des
+     vignettes compactes 44x44, fond --hero-bg, scroll horizontal et
+     un état sélectionné neutre (bordure --text, jamais coral — le
+     coral reste réservé à la promo active, D-P3). Override ciblé
+     ici, aucune modification de modal-product.css (partagé desktop,
+     hors périmètre T-003). */
+  #k-modal .k-vg-skus {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    scrollbar-width: none;
+  }
+
+  #k-modal .k-vg-skus::-webkit-scrollbar {
+    display: none;
+  }
+
+  #k-modal .k-sku {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    padding: 4px;
+    gap: 0;
+    border-radius: 6px;
+    border: 0.5px solid var(--border);
+    background: var(--hero-bg);
+  }
+
+  #k-modal .k-sku img {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Spec §5.4 : la vignette ne porte que l'image, pas de libellé sous elle
+     (le libellé de la couleur sélectionnée vit déjà dans .k-vg-label). */
+  #k-modal .k-sku-name {
+    display: none;
+  }
+
+  #k-modal .k-sku:hover:not(.k-sku--out) {
+    border-color: var(--border);
+    transform: none;
+    box-shadow: none;
+  }
+
+  #k-modal .k-sku.k-sku--active {
+    border-color: var(--text);
+    border-width: 1.5px;
+    box-shadow: none;
+  }
+
+  #k-modal .k-sku-slash {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── M3 : Sélecteur Taille mobile — conforme spec §5.6 ───────
+     modal-product.css porte une grille avec wrap (auto-fill) et un état
+     sélectionné coral, hérité du style carte partagé mobile/desktop. Sur
+     mobile la maquette premium demande une rangée scrollable (comme les
+     vignettes Couleur, cohérence M2/M3), un état sélectionné neutre
+     (fond/bordure --text, texte blanc — jamais coral, D-P3) et un état
+     indisponible avec fond --border explicite plutôt qu'une simple
+     opacité. Override ciblé ici, aucune modification de modal-product.css
+     (partagé desktop, hors périmètre T-004). */
+  #k-modal .k-vg-sizes {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    scrollbar-width: none;
+  }
+
+  #k-modal .k-vg-sizes::-webkit-scrollbar {
+    display: none;
+  }
+
+  #k-modal .k-vp {
+    flex: 0 0 auto;
+    height: 40px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 0.5px solid var(--border);
+    background: var(--white);
+    color: var(--text-muted);
+  }
+
+  #k-modal .k-vp:hover:not(:disabled) {
+    border-color: var(--border);
+    background: var(--white);
+  }
+
+  #k-modal .k-vp.k-vp--active {
+    border-color: var(--text);
+    border-width: 1.5px;
+    background: var(--text);
+    color: var(--white);
+    box-shadow: none;
+  }
+
+  #k-modal .k-vp--out {
+    opacity: 1;
+    background: var(--border);
+    border-color: var(--border);
+    color: var(--text-muted);
+  }
+
+  /* ── M4 : Carrousel suggestions mobile ───────────────────────
+     .k-sug-grid / .k-sug-card sont produits par b-modal-suggestions.js
+     (event modal:suggestions-rendered conservé, non touché ici) et sont
+     partagés avec d'autres contextes (catalogue, desktop) — leur style
+     de base (grid 2 colonnes) reste dans modal-product.css/modal-shell.css,
+     hors périmètre T-005. Sur mobile, seul le contexte PDP (#k-modal) est
+     réécrit en rail scroll-x teasé, sans scrollbar visible. La coupure
+     derrière le sticky CTA est déjà gérée par la variable unique
+     --k-modal-cta-h sur .k-modal-scroll (modal-shell.css) — rien à
+     dupliquer ici. */
+  #k-modal .k-sug-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 10px;
+    padding: 2px 2px 4px;
+    scrollbar-width: none;
+  }
+
+  #k-modal .k-sug-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  #k-modal .k-sug-grid .k-sug-card {
+    flex: 0 0 110px;
+    width: 110px;
+    max-width: 110px;
+  }
+
   /* ── MDM-4 : Selection message ─────────────────────────────── */
 
   .k-mdm-selection-msg {
     font-size: 11px;
-    color: var(--coral);
+    color: var(--text);
     margin-top: 4px;
     padding: 0;
   }
@@ -5243,6 +5613,24 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     content: '⚠';
     flex: 0 0 auto;
   }
+
+  /* ── M8 : Fond cream continu sur mobile (spec §4) ────────────
+     .k-modal a background:var(--white) en base (modal-shell.css).
+     Sur mobile, on le remplace par --page-bg (cream) sur la modale
+     ET sur la zone scroll, pour supprimer la bande blanche qui apparaît
+     après le hero.
+     Le sticky footer .k-modal-actions reste blanc (#k-modal .k-modal-actions
+     est déjà forcé à var(--white) + backdrop:none dans modal-shell.css L182 :
+     cette règle a spécificité #k-modal .k-modal-actions — notre override
+     ci-dessous est sur #k-modal seul (spécificité inférieure), donc le footer
+     n'est pas affecté). */
+  #k-modal {
+    background: var(--page-bg);
+  }
+
+  #k-modal .k-modal-scroll {
+    background: var(--page-bg);
+  }
 }
 
 
@@ -5318,7 +5706,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   .k-mdm-spec-group-label {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: .5px;
@@ -5440,7 +5828,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   .k-modal-enriched-spec-group-label {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: .5px;

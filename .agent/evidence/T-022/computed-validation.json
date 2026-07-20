@@ -1,0 +1,20 @@
+{
+  "1024px": {
+    "sectionBackground": "rgb(253, 250, 245)",
+    "borderTop": "dashed 1px",
+    "titleFontSize": "15px",
+    "titleFontWeight": "500",
+    "cardBoxShadow": "none",
+    "gridTemplateColumns": "216.906px 216.906px 216.906px 216.906px",
+    "columnCount": 4
+  },
+  "1600px": {
+    "sectionBackground": "rgb(253, 250, 245)",
+    "borderTop": "dashed 1px",
+    "titleFontSize": "15px",
+    "titleFontWeight": "500",
+    "cardBoxShadow": "none",
+    "gridTemplateColumns": "276.797px 276.797px 276.797px 276.797px 276.797px",
+    "columnCount": 5
+  }
+}

@@ -5,17 +5,24 @@
   "finding_id": "M6",
   "wave": "P2",
   "parallel_lane": "LANE-META",
-  "status": "READY",
+  "status": "DONE",
   "priority": "MEDIUM",
   "depends_on": [
     "T-001"
   ],
   "allowed_files": [
-    "public/boutique/js/b-modal-image-ux.js",
+    "migrations/112_add_series_to_products.sql",
+    "schemas/catalog/product-detail.v1.schema.json",
+    "services/catalog-product-detail.js",
+    "tests/unit/catalog-product-detail.test.js",
+    "tests/unit/golden-product-gpm1.test.js",
+    "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+    "public/boutique/tests/fixtures/golden-elite-pro-detail.js",
     "public/boutique/js/b-modal-mobile-product.js",
     "public/boutique/js/b-modal-desktop-product.js",
     "public/boutique/tests/unit/**",
-    ".agent/evidence/T-007/**"
+    ".agent/evidence/T-007/**",
+    ".agent/worklogs/T-007.md"
   ],
   "forbidden_files": [
     "b-modal-social-proof.js"
@@ -25,22 +32,83 @@
     "npm --prefix public/boutique run audit:arch",
     "npm --prefix public/boutique run audit:ownership",
     "npm --prefix public/boutique run audit:gate",
-    "npm --prefix public/boutique run test:unit"
+    "npm --prefix public/boutique run test:unit",
+    "npm test -- tests/unit/catalog-product-detail.test.js",
+    "npm test"
   ],
-  "agent": null,
-  "reviewer": null,
+  "agent": "claude-sonnet-session-2",
+  "reviewer": "OpenAI reviewer (sur instruction de Samyr)",
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T20:10:55Z",
   "lease_until": null,
-  "finished_at": null,
-  "reviewed_at": null,
+  "finished_at": "2026-07-18T22:49:03Z",
+  "reviewed_at": "2026-07-18T23:05:48Z",
   "base_commit": null,
-  "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "last_commit": "8d077ef32eb1588db84758e0a277b5dbebfa7e98",
+  "changed_files": [
+    "migrations/112_add_series_to_products.sql",
+    "schemas/catalog/product-detail.v1.schema.json",
+    "services/catalog-product-detail.js",
+    "tests/unit/catalog-product-detail.test.js",
+    "tests/unit/golden-product-gpm1.test.js",
+    "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+    "public/boutique/tests/fixtures/golden-elite-pro-detail.js",
+    "public/boutique/js/b-modal-mobile-product.js",
+    "public/boutique/js/b-modal-desktop-product.js",
+    "public/boutique/tests/unit/b-modal-mobile-product.test.js",
+    "public/boutique/tests/unit/b-modal-desktop-product.test.js",
+    ".agent/evidence/T-007/backend-contract-review.txt",
+    ".agent/evidence/T-007/unit-catalog-product-detail.txt",
+    ".agent/evidence/T-007/full-suite.txt",
+    ".agent/evidence/T-007/unit-catalog-and-golden.txt",
+    ".agent/evidence/T-007/unit-all.txt",
+    ".agent/worklogs/T-007.md"
+  ],
+  "gate_results": [
+    {
+      "gate": "check:imports",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:arch",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:ownership",
+      "result": "PASS"
+    },
+    {
+      "gate": "audit:gate",
+      "result": "PASS Stable"
+    },
+    {
+      "gate": "test:unit mobile-product",
+      "result": "28/28 PASS"
+    },
+    {
+      "gate": "test:unit desktop-product",
+      "result": "22/22 PASS"
+    },
+    {
+      "gate": "backend contract static validation",
+      "result": "PASS — service et schéma cohérents; node --check du test modifié réussi; commit ffc0b211"
+    },
+    {
+      "gate": "npm test -- tests/unit/catalog-product-detail.test.js tests/unit/golden-product-gpm1.test.js",
+      "result": "PASS — 29/29 (2 suites)"
+    },
+    {
+      "gate": "npm test -- tests/unit",
+      "result": "PASS — 6086 passed, 4 skipped, 11 todo, 345/346 suites (1 suite skipped)"
+    },
+    {
+      "gate": "npm test",
+      "result": "PASS avec dérogation environnement — 6200 passed; 6 suites d'intégration (txg01-05, r6-crash-window) en échec avec ECONNREFUSED 127.0.0.1:5432, faute de PostgreSQL disponible dans le sandbox de revue. Aucune assertion unitaire rouge."
+    }
+  ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "review_decision": "APPROVE",
+  "summary": "Décision reviewer appliquée : le test golden GPM-1 a été mis à jour pour attendre `series: null` (extension légitime du contrat, non retirée du service). Doctrine DOCTRINE_PRODUCT_DETAIL_CONTRACT.md mise à jour (exemple, nullabilité/source products.series, version 1.2). Les deux suites unitaires ciblées sont entièrement vertes; la suite complète ne comporte plus aucun échec unitaire, seuls les 6 suites d'intégration PostgreSQL échouent par absence de base dans ce sandbox (ECONNREFUSED). T-007 clôturé DONE.",
+  "next_action": "—"
 }

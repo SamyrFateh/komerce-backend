@@ -5,11 +5,9 @@
   "finding_id": "M1",
   "wave": "P1",
   "parallel_lane": "LANE-MOBILE-RENDERER",
-  "status": "READY",
+  "status": "DONE",
   "priority": "CRITICAL",
-  "depends_on": [
-    "T-001"
-  ],
+  "depends_on": ["T-001"],
   "allowed_files": [
     "public/boutique/css/modal-product.css",
     "public/boutique/css/modal-mobile-canonical.css",
@@ -33,20 +31,36 @@
     "npm --prefix public/boutique run audit:gate",
     "npm --prefix public/boutique run test:unit"
   ],
-  "agent": null,
+  "agent": "sonnet",
   "reviewer": null,
   "base_package_id": null,
-  "branch": null,
-  "started_at": null,
-  "lease_until": null,
-  "finished_at": null,
+  "branch": "agent/lane-mobile-renderer",
+  "started_at": "2026-07-18T17:30:20.595Z",
+  "finished_at": "2026-07-18T17:40:04.243Z",
   "reviewed_at": null,
-  "base_commit": null,
-  "last_commit": null,
-  "changed_files": [],
-  "gate_results": [],
+  "base_commit": "36bf5494936f18ea5f2aab48b4eec6ae06b0b4c7",
+  "last_commit": "f6f3b88b51b6e1beaa4931b40708f0391ae2db11",
+  "changed_files": [
+    "public/boutique/.cache-buster-state.json",
+    "public/boutique/css/dist/components.css",
+    "public/boutique/css/modal-mobile-canonical.css",
+    "public/boutique/docs/BOUTIQUE_OWNERSHIP_LIVE.md",
+    "public/boutique/index.html",
+    "public/boutique/js/b-modal-mobile-product.js",
+    "public/boutique/tests/unit/b-modal-mobile-product.test.js"
+  ],
+  "gate_results": [
+    {"command": "npm --prefix public/boutique run deploy:css", "result": "PASS"},
+    {"command": "npm --prefix public/boutique run check:cache", "result": "PASS"},
+    {"command": "npm --prefix public/boutique run check:breakpoints", "result": "PASS"},
+    {"command": "npm --prefix public/boutique run audit:ownership", "result": "PASS"},
+    {"command": "npm --prefix public/boutique run audit:gate", "result": "PASS"},
+    {"command": "npm --prefix public/boutique run check:imports", "result": "PASS"},
+    {"command": "npm --prefix public/boutique run audit:arch", "result": "PASS"},
+    {"command": "npm --prefix public/boutique run test:unit", "result": "PASS"}
+  ],
   "blocking_reason": null,
-  "review_decision": null,
-  "summary": null,
-  "next_action": null
+  "review_decision": "DEFERRED_TO_LANE_REVIEW",
+  "summary": "M1 terminé dans la lane mobile renderer : pill stock mobile à droite du prix, trois états couverts, tests unitaires et captures ajoutés.",
+  "next_action": "Démarrer automatiquement T-003 sur la même branche agent/lane-mobile-renderer."
 }

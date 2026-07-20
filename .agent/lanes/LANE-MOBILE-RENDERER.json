@@ -1,7 +1,13 @@
 {
   "lane": "LANE-MOBILE-RENDERER",
   "branch": "agent/lane-mobile-renderer",
-  "tasks": ["T-002", "T-003", "T-004", "T-005", "T-006"],
-  "status": "IN_PROGRESS",
-  "review_mode": "single-pr-at-lane-end"
+  "lane_labels_are_classifications": true,
+  "operational": false,
+  "operational_status": "computed_by_scripts/agent-resolve-status.mjs",
+  "tasks": [
+    "T-002", "T-003", "T-004", "T-005", "T-006", "T-007", "T-008", "T-009",
+    "T-010", "T-011", "T-012", "T-013", "T-014", "T-015", "T-016", "T-017",
+    "T-018", "T-019", "T-020", "T-021", "T-022", "T-023", "T-024", "T-025",
+    "T-026", "T-027", "T-028", "T-029", "T-030"
+  ]
 }
