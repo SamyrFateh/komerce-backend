@@ -155,7 +155,7 @@
     height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
   }
 
-  /* ── MDM-9 : Mode galerie — wrapper compact en single SANS réduire le
+  /* MDM-9 : Mode galerie — wrapper compact en single SANS réduire le
      sujet visuellement (§1/§2 du correctif).
      multiple : inchangé, 48vh (confirmé explicitement, non-régression §8).
      single   : wrapper réduit à 36vh (marge de sécurité sous le seuil de
@@ -172,6 +172,23 @@
     height: 48vh;
     height: 48dvh;
     height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+  }
+
+  /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
+     Quand le produit a 2 axes (Couleur + Taille), le hero à 48vh consomme
+     trop d'espace vertical → les chips Taille passent sous le fold.
+     k-modal--has-variants est posé par renderMobileProductDetail().
+     Placé APRÈS gallery-mode="multiple" pour primer dans la cascade
+     (même spécificité, ordre gagne). */
+  #k-modal.k-modal--has-variants .k-modal-img-wrap,
+  #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
+    height: 38vh;
+    height: 38dvh;
+    height: calc(var(--k-modal-vvh, 100dvh) * 0.38);
+    max-height: 38vh;
+    max-height: 38dvh;
+    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.38);
+    min-height: 130px;
   }
 
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {

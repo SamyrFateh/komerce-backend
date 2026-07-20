@@ -598,6 +598,13 @@ export function renderMobileProductDetail(
   // MDM-8: Remove any legacy hardcoded reassurance injected by core
   dom.modal?.querySelector('[data-mobile-reassurance]')?.remove();
 
+  // P3-fix : classe CSS pour réduire le hero quand le produit a des variantes
+  // (couleur + taille doivent tenir au-dessus du fold — le hero à 48vh consomme
+  // trop d'espace vertical quand on a 2 axes + info-strip + chips livraison).
+  if (dom.modal) {
+    dom.modal.classList.toggle('k-modal--has-variants', Boolean(selection.selection_supported));
+  }
+
   // Clear and rebuild the variants container
   container.innerHTML = '';
   const root = document.createElement('div');
