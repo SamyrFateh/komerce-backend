@@ -2509,6 +2509,11 @@ html.k-mobile-premium-v1 .k-chip-label {
     grid-column: 2; grid-row: 1;
     display: flex; flex-direction: column;
     min-height: 0;
+    /* FIX espace vide bas panneau : align-self:stretch + height:100% garantissent
+       que le panneau droit occupe toute la row 1 du grid dès 900px, pas seulement
+       à >=1200px. Sans ça, flex:column shrink-to-content laisse un vide en bas. */
+    align-self: stretch;
+    height: 100%;
     border-radius: 0; box-shadow: none; margin: 0;
   }
   #k-modal .k-modal-product-zone .k-modal-info { flex: 0 0 auto; overflow: visible; max-height: none; padding: 18px 0 12px; }
@@ -2573,6 +2578,9 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-trust-item svg { width: 16px; height: 16px; color: var(--ocean); stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
   #k-modal .k-modal-trust { gap: 10px; flex-wrap: wrap; padding: 11px 0; }
   #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); }
+  /* FIX produit simple — espace vide : la description occupe l'espace restant
+     et pousse réassurance + partage vers le bas du panneau. */
+  #k-modal .k-modal-product-zone .k-modal-desc { flex-grow: 1; }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--ocean); }
