@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-18T15:42:42.509Z",
+  "generatedAt": "2026-07-20T13:07:43.759Z",
   "summary": {
     "modules": 71,
     "withHeader": 71,
@@ -933,30 +933,18 @@
         "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
       ],
       "depends": [
-        "b-bus.js",
-        "b-catalog.js",
-        "b-modal.js",
-        "b-scroll-owner.js"
+        "b-bus.js"
       ],
       "usedBy": [
-        "b-desktop-upgrade.js"
+        "main.js"
       ],
-      "emits": [
-        "modal:close"
-      ],
+      "emits": [],
       "listens": [
         "modal:opened",
         "modal:composition-synced"
       ],
       "imports": [
-        "b-bus",
-        "b-store",
-        "b-utils",
-        "b-cart-core",
-        "b-modal",
-        "b-catalog",
-        "shop-schema",
-        "b-scroll-owner"
+        "b-bus"
       ],
       "bodyClasses": []
     },
@@ -1922,7 +1910,6 @@
         "b-scroll-owner",
         "b-product-open-contract",
         "b-cart-product-open-style",
-        "b-modal-approche-c-hybrid",
         "b-pdp-curation-suggestions",
         "b-home-premium-v1",
         "b-modal-product-detail-bootstrap",
@@ -2169,8 +2156,7 @@
     "modal:close": {
       "emitters": [
         "b-cart",
-        "b-checkout",
-        "b-modal-desktop-enhancers"
+        "b-checkout"
       ],
       "listeners": [
         "b-modal-core"
