@@ -74,7 +74,7 @@ if('serviceWorker' in navigator){
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=129">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=183">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=184">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=61">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
@@ -435,6 +435,7 @@ if('serviceWorker' in navigator){
               <span id="k-modal-stock"></span>
             </div>
           </div><!-- end .k-modal-info -->
+        </div><!-- end .k-modal-details — FIX T-030 desktop nesting -->
         <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
         <!-- Sur mobile : display:contents rend product-zone transparent → ordre naturel -->
         <div class="k-modal-actions">
@@ -469,8 +470,7 @@ if('serviceWorker' in navigator){
       <div id="k-modal-payment" class="k-modal-payment"></div>
     </div>
   </div>
-</div>
-</div><!-- /#k-modal-overlay — FIX HTML 2026-05-19 v3.1 : il manquait DEUX </div> au total pour fermer k-modal-overlay (v3 n'en avait ajouté qu'une). Le parser strict (avec gestion commentaires) montre que sans cette balise, k-modal-overlay reste ouvert et capture k-cart-overlay, k-cart-drawer, k-order-modal comme enfants. -->
+</div><!-- /#k-modal-overlay — FIX T-030 desktop modal nesting -->
 
 <!-- ═══ CART DRAWER ═══ -->
 <div id="k-cart-overlay" class="k-cart-overlay"></div>

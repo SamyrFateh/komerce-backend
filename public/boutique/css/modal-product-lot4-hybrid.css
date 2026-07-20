@@ -402,3 +402,44 @@
     }
   }
 }
+
+/* T-030 — skeleton détail visible sur desktop pendant /detail en vol. */
+@media (min-width: 900px) {
+  #k-modal .k-mdm-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 2px;
+  }
+
+  #k-modal .k-mdm-skeleton-row {
+    height: 14px;
+    border-radius: 7px;
+    background: linear-gradient(
+      90deg,
+      var(--sand) 25%,
+      var(--sand-dark) 37%,
+      var(--sand) 63%
+    );
+    background-size: 400% 100%;
+    animation: k-mdm-skeleton-shimmer-desktop 1.4s ease-in-out infinite;
+  }
+
+  #k-modal .k-mdm-skeleton-row--chip {
+    width: 46%;
+    height: 32px;
+    border-radius: 999px;
+  }
+
+  #k-modal .k-mdm-skeleton-row--full { width: 100%; }
+  #k-modal .k-mdm-skeleton-row--short { width: 62%; }
+}
+
+@keyframes k-mdm-skeleton-shimmer-desktop {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+  #k-modal .k-mdm-skeleton-row { animation: none; }
+}
