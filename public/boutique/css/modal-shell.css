@@ -33,7 +33,7 @@
 
 /* ── TOP BAR ─────────────────────────────────────────────────── */
 .k-modal-topbar {
-  box-sizing: border-box; max-width: 100%; /* S2.1 — garantit que padding ne déborde jamais du viewport */
+  box-sizing: border-box; max-width: 100%; /* S2.1 */
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 400;
   padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
@@ -41,8 +41,9 @@
   backdrop-filter: blur(20px) saturate(200%);
   -webkit-backdrop-filter: blur(20px) saturate(200%);
   border-bottom: 1px solid var(--overlay-black-sm);
-  /* [T-029] halo décoratif retiré : la bordure seule porte la séparation sticky. */
   flex-shrink: 0;
+  /* OPT : cachée sur mobile — boutons repositionnés en overlay sur le hero */
+  display: none;
 }
 .k-modal-back {
   display: flex; align-items: center; gap: 4px;
@@ -54,7 +55,7 @@
   flex-shrink: 1; min-width: 0;
 }
 .k-modal-back svg { width: 18px; height: 18px; flex-shrink: 0; }
-#k-modal-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#k-modal-back-label { display: none; /* OPT : label texte masqué, flèche seule suffit */ }
 .k-modal-back:active { opacity: .7; }
 #k-modal-nav { display: flex; align-items: center; gap: 6px; }
 /* PR-D3 — nav-btn pill texte sobre (← produit précédent / → produit suivant) */
@@ -444,7 +445,7 @@
   #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; animation: none; } /* [T-029] ombre retirée : règle morte par cascade, voir #k-modal.k-modal plus bas (var(--shadow-modal-neutral-10), ombre modale canonique) */
 
   /* ── Topbar ──────────────────────────────────────────────── */
-  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); flex-shrink: 0; } /* [T-029] halo décoratif retiré : la bordure seule porte la séparation sticky */
+  #k-modal .k-modal-topbar { display: flex; /* restauré : masqué sur mobile uniquement */ position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); flex-shrink: 0; } /* [T-029] halo retiré */
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
   #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }

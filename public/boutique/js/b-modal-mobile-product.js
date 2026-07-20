@@ -599,11 +599,12 @@ export function renderMobileProductDetail(
   dom.modal?.querySelector('[data-mobile-reassurance]')?.remove();
 
   // P3-fix : classe CSS pour réduire le hero quand le produit a des variantes
-  // (couleur + taille doivent tenir au-dessus du fold — le hero à 48vh consomme
-  // trop d'espace vertical quand on a 2 axes + info-strip + chips livraison).
   if (dom.modal) {
     dom.modal.classList.toggle('k-modal--has-variants', Boolean(selection.selection_supported));
   }
+
+  // OPT : injecter les boutons overlay sur le hero (topbar masquée sur mobile)
+  _ensureHeroOverlay();
 
   // Clear and rebuild the variants container
   container.innerHTML = '';
@@ -637,6 +638,68 @@ export function renderMobileProductDetail(
   // MDM-2: Media into shell carousel
   renderMedia(detail, selection, forceMedia);
 }
+
+/**
+ * OPT — Boutons overlay sur le hero mobile (topbar supprimée).
+ * Injecte ←, avatar panier et ✕ en position absolue sur .k-modal-img-wrap.
+ * Idempotent : ne recrée pas si déjà présents.
+ */
+function _ensureHeroOverlay() {
+  const imgWrap = dom.modal?.querySelector('.k-modal-img-wrap');
+  if (!imgWrap || imgWrap.querySelector('.k-modal-topbar-overlay')) return;
+
+  // Conteneur overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'k-modal-topbar-overlay';
+
+  // ← back
+  const backBtn = document.createElement('button');
+  backBtn.type = 'button';
+  backBtn.className = 'k-modal-back-overlay';
+  backBtn.setAttribute('aria-label', 'Retour');
+  backBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>';
+  backBtn.addEventListener('click', () => {
+    // Réutilise le handler du bouton back original
+    dom.modalBack?.click();
+  });
+
+  // Groupe droit : panier + ✕
+  const right = document.createElement('div');
+  right.className = 'k-modal-topbar-overlay-right';
+
+  // Avatar panier
+  const cartBtn = document.createElement('button');
+  cartBtn.type = 'button';
+  cartBtn.className = 'k-modal-cart-overlay';
+  cartBtn.setAttribute('aria-label', 'Panier');
+  cartBtn.innerHTML = '<img src="/images/avatar_seule.png" alt="" aria-hidden="true"><span class="k-modal-cart-badge-overlay" id="k-modal-cart-badge-overlay"></span>';
+  cartBtn.addEventListener('click', () => dom.modalCartBtn?.click());
+
+  // ✕ fermer
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'k-modal-close-overlay';
+  closeBtn.setAttribute('aria-label', 'Fermer');
+  closeBtn.textContent = '✕';
+  closeBtn.addEventListener('click', () => dom.modalClose?.click());
+
+  right.append(cartBtn, closeBtn);
+  overlay.append(backBtn, right);
+  imgWrap.appendChild(overlay);
+
+  // Sync badge panier avec le badge original
+  const syncBadge = () => {
+    const src = document.getElementById('k-modal-cart-badge');
+    const dst = document.getElementById('k-modal-cart-badge-overlay');
+    if (src && dst) dst.textContent = src.textContent;
+  };
+  syncBadge();
+  const badgeSrc = document.getElementById('k-modal-cart-badge');
+  if (badgeSrc) {
+    new MutationObserver(syncBadge).observe(badgeSrc, { childList: true, characterData: true, subtree: true });
+  }
+}
+
 
 export function clearMobileProductDetailState() {
   state.modalProductDetail = null;

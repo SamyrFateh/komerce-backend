@@ -129,7 +129,7 @@
   /* ── MDM-3 : Info section (padding tightened) ──────────────── */
 
   #k-modal .k-modal-info {
-    padding: 10px 14px 8px;
+    padding: 8px 14px 6px; /* Opt : 10/8 → 8/6px */
   }
 
   /* ── MDM-2 : Media height ──────────────────────────────────── */
@@ -182,13 +182,14 @@
      (même spécificité, ordre gagne). */
   #k-modal.k-modal--has-variants .k-modal-img-wrap,
   #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    height: 38vh;
-    height: 38dvh;
-    height: calc(var(--k-modal-vvh, 100dvh) * 0.38);
-    max-height: 38vh;
-    max-height: 38dvh;
-    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.38);
-    min-height: 130px;
+    /* OPT final : 44vh → 48vh grâce aux 50px de topbar supprimée sur mobile */
+    height: 48vh;
+    height: 48dvh;
+    height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+    max-height: 48vh;
+    max-height: 48dvh;
+    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+    min-height: 160px;
   }
 
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
@@ -210,15 +211,14 @@
   /* ── MDM-4 : Variant groups (tighter spacing) ──────────────── */
 
   #k-modal .k-vg {
-    /* P3-fix : margin-top réduit (8→4) pour gagner de la hauteur et faire
-       tenir couleur + taille ensemble au-dessus du fold à 390px */
-    margin-top: 4px;
+    /* Opt final : margin-top 4→2px */
+    margin-top: 2px;
   }
 
   #k-modal .k-vg-label {
     font-size: 12px;
-    /* P3-fix : margin-bottom réduit (5→3) */
-    margin-bottom: 3px;
+    /* Opt final : margin-bottom 3→2px */
+    margin-bottom: 2px;
   }
 
   /* ── M2 : Sélecteur Couleur mobile — conforme spec §5.4 ──────
@@ -242,9 +242,9 @@
 
   #k-modal .k-sku {
     flex: 0 0 auto;
-    width: 44px;
-    height: 44px;
-    padding: 4px;
+    width: 40px; /* Opt : 44→40px */
+    height: 40px; /* Opt : 44→40px */
+    padding: 3px; /* Opt : 4→3px */
     gap: 0;
     border-radius: 6px;
     border: 0.5px solid var(--border);
@@ -304,8 +304,8 @@
 
   #k-modal .k-vp {
     flex: 0 0 auto;
-    height: 40px;
-    padding: 8px 12px;
+    height: 36px; /* Opt : 40→36px */
+    padding: 6px 12px; /* Opt : 8→6px */
     border-radius: 6px;
     border: 0.5px solid var(--border);
     background: var(--white);
@@ -378,9 +378,10 @@
 
   .k-mdm-info-strip {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 10px;
+    flex-wrap: nowrap; /* Opt : 1 ligne max, économise ~22px vs 2 lignes */
+    overflow: hidden;
+    gap: 4px;
+    margin-top: 6px; /* Opt : 10→6px */
     padding: 0;
   }
 
@@ -388,7 +389,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 5px 8px;
+    padding: 3px 8px; /* Opt : 5→3px vertical, chip 22px au lieu de 28px */
     background: var(--sand);
     border-radius: 6px;
     font-size: 11px;
@@ -396,6 +397,7 @@
     color: var(--text);
     border: 0.5px solid var(--border);
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .k-mdm-chip--ok {
@@ -550,3 +552,86 @@
     background: var(--page-bg);
   }
 }
+
+  /* ── OPT : Boutons overlay sur le hero (topbar supprimée mobile) ─────────
+     Le .k-modal-img-wrap est position:relative (thumbs absolus le confirment).
+     On repositionne ←, ✕ et avatar panier en overlay absolu sur l'image,
+     style pill semi-transparent (même ADN que .k-modal-view-full). ────── */
+
+  /* Conteneur invisible qui aligne les 3 boutons en haut de l'image */
+  #k-modal .k-modal-topbar-overlay {
+    position: absolute;
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    z-index: 10;
+    pointer-events: none; /* les enfants restent cliquables */
+  }
+
+  #k-modal .k-modal-topbar-overlay > * {
+    pointer-events: auto;
+  }
+
+  /* ← back : pill gauche */
+  #k-modal .k-modal-back-overlay {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px;
+    background: var(--overlay-dark-md);
+    border: none; border-radius: 50%;
+    color: var(--white);
+    cursor: pointer;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity .15s;
+  }
+  #k-modal .k-modal-back-overlay:active { opacity: .7; }
+  #k-modal .k-modal-back-overlay svg { width: 18px; height: 18px; }
+
+  /* Groupe droit : avatar panier + ✕ */
+  #k-modal .k-modal-topbar-overlay-right {
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Avatar panier overlay */
+  #k-modal .k-modal-cart-overlay {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px;
+    background: var(--overlay-dark-md);
+    border: none; border-radius: 50%;
+    cursor: pointer;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  #k-modal .k-modal-cart-overlay img {
+    width: 22px; height: 22px;
+    mix-blend-mode: normal; /* fond sombre, pas besoin de multiply */
+    filter: brightness(0) invert(1); /* rend l'avatar blanc sur fond sombre */
+  }
+  #k-modal .k-modal-cart-overlay .k-modal-cart-badge-overlay {
+    position: absolute; top: -3px; right: -3px;
+    background: var(--coral); color: var(--white);
+    font-size: 9px; font-weight: 700; line-height: 1;
+    min-width: 16px; height: 16px;
+    border-radius: 999px; padding: 0 3px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--overlay-dark-md);
+  }
+  #k-modal .k-modal-cart-overlay .k-modal-cart-badge-overlay:empty { display: none; }
+
+  /* ✕ fermer overlay */
+  #k-modal .k-modal-close-overlay {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px;
+    background: var(--overlay-dark-md);
+    border: none; border-radius: 50%;
+    color: var(--white); font-size: 16px;
+    cursor: pointer;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity .15s;
+  }
+  #k-modal .k-modal-close-overlay:active { opacity: .7; }
