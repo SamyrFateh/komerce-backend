@@ -151,8 +151,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source <(sed '$d' .agent/generated/t030-final-runner.sh)
-          generate_visual_evidence 2>&1 | tee /tmp/t030-capture.log
+          ./public/boutique/node_modules/.bin/serve public -l 4173 > /tmp/t030-serve.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" >/dev/null 2>&1 || true' EXIT
+          ready=0
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/boutique/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+          NODE_PATH="$PWD/public/boutique/node_modules" \
+            T030_BASE_URL='http://127.0.0.1:4173/boutique/' \
+            node .agent/generated/t030-capture.cjs 2>&1 | tee /tmp/t030-capture.log
+          test "$(find .agent/evidence/T-030/captures -type f -name '*.png' | wc -l)" -eq 36
+          test "$(find .agent/evidence/T-030/states -type f -name '*.json' | wc -l)" -eq 36
 
       - name: Persist capture failure diagnostics
         if: failure()
