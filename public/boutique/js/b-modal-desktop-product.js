@@ -133,9 +133,28 @@ function renderStock(selection) {
   }
 
   dom.modalStock.hidden = false;
+
   if (selection.selected_sku_id) {
-    dom.modalStock.textContent = '✓ Disponible';
-    dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
+    // P2-fix : badge numérique ● N en stock / Plus que N / Épuisé
+    // Même logique que renderStockPill() dans b-modal-mobile-product.js
+    // (contrat product_detail_v1, sellable_units[].available_quantity)
+    const unit = (state.modalProductDetail?.sellable_units || [])
+      .find((u) => u.sku_id === selection.selected_sku_id);
+    const qty = unit?.available_quantity;
+
+    if (qty == null || Number.isNaN(qty)) {
+      dom.modalStock.textContent = '● En stock';
+      dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
+    } else if (qty === 0) {
+      dom.modalStock.textContent = '● Épuisé';
+      dom.modalStock.className = 'k-modal-stock k-modal-stock--out';
+    } else if (qty <= 5) {
+      dom.modalStock.textContent = `● Plus que ${qty}`;
+      dom.modalStock.className = 'k-modal-stock k-modal-stock--low';
+    } else {
+      dom.modalStock.textContent = `● ${qty} en stock`;
+      dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
+    }
     return;
   }
 

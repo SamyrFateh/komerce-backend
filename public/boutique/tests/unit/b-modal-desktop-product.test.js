@@ -299,7 +299,9 @@ describe('desktop product detail renderer', () => {
     expect(state.modalVariantCombo).toEqual({ Couleur: 'Marron', Taille: 'M' });
     expect(dom.modalSku.textContent).toBe('Réf. ROB-MAR-M');
     expect(dom.modalPrice.textContent).toBe('12500 KMF');
-    expect(dom.modalStock.textContent).toBe('✓ Disponible');
+    /* P2-fix : renderStock affiche désormais le badge numérique depuis
+       sellable_unit.available_quantity (qty=4 → '● Plus que 4'). */
+    expect(dom.modalStock.textContent).toBe('● Plus que 4');
     expect(buildCarouselSlides).toHaveBeenLastCalledWith(expect.objectContaining({ images: ['/brown.jpg'] }));
     expect(goToSlide).toHaveBeenCalledWith(0);
     expect(setupImageUX).toHaveBeenCalled();

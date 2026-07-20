@@ -247,10 +247,10 @@
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 500; transition: background .15s; touch-action: manipulation; cursor: pointer; }
 .k-qty-btn:active { background: var(--sand-dark); }
 .k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 500; }
-.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; /* P0-fix : overflow:hidden + text-overflow:ellipsis retirés — la troncature "Ajouter au pa…" venait de ce bloc + flex:1 1 0 desktop. Le conteneur .k-modal-actions gère l'overflow. */ }
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
-.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
+.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; /* P0-fix : overflow:hidden retiré */ }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
 .k-modal-subtotal strong { color: var(--text); font-weight: 500; font-size: 13px; }
 
@@ -364,7 +364,7 @@
 #k-modal .k-modal-actions { margin-left: 0; margin-right: 0; }
 #k-modal .k-add-cart-btn, #k-modal .k-modal-actions .k-buy-now-btn,
 #k-modal .k-qty { min-width: 0; max-width: 100%; }
-#k-modal .k-add-cart-btn { overflow: hidden; text-overflow: ellipsis; }
+/* P0-fix : règle redondante overflow:hidden retirée — voir .k-add-cart-btn base ci-dessus */ 
 #k-modal .k-topbar-search-expanded { width: 100%; max-width: 100%; overflow-x: hidden; }
 
 
@@ -1005,6 +1005,60 @@
   .k-modal-slide:focus,    .k-modal-slide:focus-visible {
     outline: none;
     box-shadow: none;
+  }
+}
+
+/* ── P2-fix : badge stock numérique desktop (#k-modal-stock) ──────────────────
+   Calqué sur .k-mdm-stock-pill mobile (modal-mobile-canonical.css:62-100).    */
+#k-modal-stock {
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+#k-modal-stock.k-modal-stock--ok  { color: var(--green-success); }
+#k-modal-stock.k-modal-stock--low { color: var(--amber-cta); }
+#k-modal-stock.k-modal-stock--out { color: var(--text-muted); }
+
+/* ── P1-fix : vignettes couleur desktop (k-sku) — règles absentes du desktop ──
+   La règle de base k-sku vit dans modal-mobile-canonical sous max-width:899px.
+   Desktop : on la redéfinit compacte (52×52) pour que les couleurs tiennent
+   sur une ligne dans la colonne droite.                                     */
+@media (min-width: 900px) {
+  #k-modal .k-vg-skus {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  #k-modal .k-sku {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--hero-bg);
+    cursor: pointer;
+    transition: border-color .14s;
+  }
+
+  #k-modal .k-sku img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  #k-modal .k-sku-name {
+    display: none; /* libellé dans .k-vg-label-val suffit */
+  }
+
+  #k-modal .k-sku:hover:not(.k-vp--out):not(.k-sku--out) {
+    border-color: var(--text);
+  }
+
+  #k-modal .k-sku.k-sku--active {
+    border: 1.5px solid var(--text);
   }
 }
 

@@ -23,7 +23,8 @@
      redéclarer ici (cf. .agent/arbitrations/T-020.md). ─────────────── */
   @media (min-width: 1024px) {
     #k-modal .k-modal-product-zone {
-      grid-template-columns: 60px minmax(420px, 1fr) 310px;
+      /* P1-fix : 310px → 380px — colonne droite trop étroite tronquait les chips taille et les CTA */
+      grid-template-columns: 60px minmax(360px, 1fr) 380px;
       gap: 18px;
       padding: 18px;
     }
@@ -31,7 +32,8 @@
 
   @media (min-width: 1440px) {
     #k-modal .k-modal-product-zone {
-      grid-template-columns: 64px minmax(480px, 1fr) 340px;
+      /* P1-fix : 340px → 420px */
+      grid-template-columns: 64px minmax(480px, 1fr) 420px;
       gap: 22px;
       padding: 22px;
     }

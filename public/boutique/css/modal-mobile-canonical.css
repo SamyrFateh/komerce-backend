@@ -193,12 +193,15 @@
   /* ── MDM-4 : Variant groups (tighter spacing) ──────────────── */
 
   #k-modal .k-vg {
-    margin-top: 8px;
+    /* P3-fix : margin-top réduit (8→4) pour gagner de la hauteur et faire
+       tenir couleur + taille ensemble au-dessus du fold à 390px */
+    margin-top: 4px;
   }
 
   #k-modal .k-vg-label {
     font-size: 12px;
-    margin-bottom: 5px;
+    /* P3-fix : margin-bottom réduit (5→3) */
+    margin-bottom: 3px;
   }
 
   /* ── M2 : Sélecteur Couleur mobile — conforme spec §5.4 ──────
