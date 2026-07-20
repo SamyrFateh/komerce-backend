@@ -28,6 +28,7 @@ import {
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { getCurrentPrice, renderSubtotalInto, renderPaymentModes, startGroupCartFlow } from './b-modal-buybox-shared.js';
+import { showToast } from './b-cart-core.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -177,6 +178,58 @@ function renderActions(detail, selection) {
     );
     actionsEl.classList.toggle('k-modal-actions--filled', inCart);
   }
+}
+
+/**
+ * Bandeau de garanties transactionnelles — pas de l'enrichissement éditorial,
+ * donc toujours affiché, produit simple ou enrichi. Contenu statique : rendu
+ * une seule fois par ouverture de modal, pas rebuild à chaque changement de
+ * sélection (variantes).
+ */
+function renderTrust() {
+  const el = document.getElementById('k-modal-trust');
+  if (!el || el.childElementCount) return;
+  el.innerHTML = `
+    <span class="k-modal-trust-item"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Paiement sécurisé</span>
+    <span class="k-modal-trust-item"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8l4 2v6l-4 2"/></svg>Retrait en relais</span>
+    <span class="k-modal-trust-item"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Stock garanti</span>
+  `;
+}
+
+/**
+ * Partage produit (WhatsApp + copier le lien) — dépend de l'id produit,
+ * donc rerendu uniquement quand le produit affiché change.
+ */
+function renderShare(detail) {
+  const el = document.getElementById('k-modal-share-row');
+  if (!el) return;
+  const productId = detail?.product?.id;
+  if (productId == null) {
+    el.innerHTML = '';
+    el.dataset.pid = '';
+    return;
+  }
+  if (el.dataset.pid === String(productId)) return;
+  el.dataset.pid = String(productId);
+
+  const url = `${window.location.origin}/?p=${productId}`;
+  const message = encodeURIComponent(`👀 Regarde ce que j'ai trouvé sur Komerce !\n${url}`);
+  el.innerHTML = `
+    <button class="k-modal-share-btn k-modal-share-btn--wa" type="button" data-href="https://wa.me/?text=${message}">
+      <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+      Partager via WhatsApp
+    </button>
+    <button class="k-modal-share-btn" type="button" data-action="copy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      Copier le lien
+    </button>
+  `;
+  el.querySelector('.k-modal-share-btn--wa')?.addEventListener('click', (event) => {
+    window.open(event.currentTarget.dataset.href, '_blank');
+  });
+  el.querySelector('[data-action="copy"]')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(url).then(() => showToast('🔗 Lien copié !'));
+  });
 }
 
 function optionReason(optionState) {
@@ -551,6 +604,8 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
   renderPriceAndReference(detail, selection);
   renderStock(selection);
   renderActions(detail, selection);
+  renderTrust();
+  renderShare(detail);
   renderDeliveryOptions(detail);
   renderSubtotal(detail, selection);
   renderPaymentSection(detail, selection);

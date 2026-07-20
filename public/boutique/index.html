@@ -74,7 +74,7 @@ if('serviceWorker' in navigator){
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=129">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=185">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=186">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=61">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
@@ -434,6 +434,13 @@ if('serviceWorker' in navigator){
               <span id="k-modal-cat"></span>
               <span id="k-modal-stock"></span>
             </div>
+            <!-- Réassurance + partage — toujours affichés (produit simple ET enrichi),
+                 peuplés par renderDesktopProductDetail() dans b-modal-desktop-product.js.
+                 Contrairement au contenu enrichi (#k-modal-enriched-content), ce ne sont
+                 pas des données éditoriales conditionnelles : ce sont des garanties
+                 transactionnelles factuelles, valables pour tout produit. -->
+            <div id="k-modal-trust" class="k-modal-trust"></div>
+            <div id="k-modal-share-row" class="k-modal-share-row"></div>
           </div><!-- end .k-modal-info -->
         </div><!-- end .k-modal-details — FIX T-030 desktop nesting -->
         <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->

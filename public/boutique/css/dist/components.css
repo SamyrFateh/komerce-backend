@@ -2635,11 +2635,10 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
     flex: 1 1 0; height: 44px; border-radius: 999px;
     background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark);
-    /* P0 fix (DIFF-pdp-desktop-simple-vs-enrichi) : .k-add-cart-btn hérite de
-       la règle mobile (ligne ~250) overflow:hidden + text-overflow:ellipsis.
-       Avec overflow != visible, le flex-item retombe à min-width:0 au lieu
-       du min-content → il peut être écrasé sous la largeur du texte et
-       "Ajouter au panier" se coupe. On neutralise ici, desktop uniquement. */
+    /* P0 fix (DIFF-pdp-desktop-simple-vs-enrichi) : overflow:hidden hérité de la
+       règle de base fait retomber le min-width automatique du flex-item à 0 au
+       lieu de la largeur du texte → troncature ("Ajouter au pa…"). On neutralise
+       ici, desktop uniquement. */
     overflow: visible; text-overflow: clip; min-width: max-content;
   }
   #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-add-cart-btn {
@@ -2653,10 +2652,8 @@ html.k-mobile-premium-v1 .k-chip-label {
     background: var(--cta-green); color: var(--white);
     font-size: 15px; font-weight: 500;
     transition: background .18s, transform .1s;
-    /* P0 fix : même cause que k-add-cart-btn ci-dessus (overflow:hidden
-       hérité de la règle mobile ligne ~253) — "Acheter maintenant" se
-       coupait pour la même raison. */
-    overflow: visible; min-width: max-content;
+    /* P0 fix — voir .k-add-cart-btn ci-dessus, même cause. */
+    overflow: visible; text-overflow: clip; min-width: max-content;
   } /* [T-029] halo décoratif retiré : le fond ocean plein suffit */
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn:hover {
     background: var(--cta-green-dark, var(--cta-green));
