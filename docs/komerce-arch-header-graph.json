@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 377,
-    "filesWithFullHeaders": 350,
+    "scannedCodeFiles": 378,
+    "filesWithFullHeaders": 351,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 377,
+    "filesWithAnyHeaders": 378,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 773,
-    "edges": 4353,
+    "graphNodes": 775,
+    "edges": 4359,
     "dbTables": 116,
     "doctrines": 154,
-    "impactAreas": 126,
-    "unresolvedCodeEdges": 418,
+    "impactAreas": 127,
+    "unresolvedCodeEdges": 419,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 67
   },
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 52,
+    "catalog": 53,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 4,
@@ -67,7 +67,7 @@
     "middleware": 11,
     "ui-component": 38,
     "ui-enhancer": 3,
-    "ui-renderer": 8,
+    "ui-renderer": 9,
     "ui-page": 4,
     "ui-service": 1,
     "ui-experiment": 1,
@@ -94,7 +94,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 104,
-    "high": 163,
+    "high": 164,
     "low": 34
   },
   "nodes": [
@@ -2394,6 +2394,43 @@
         "desktop",
         "product-detail",
         "sku-selection"
+      ],
+      "version": "2026-07"
+    },
+    {
+      "id": "public/boutique/js/b-modal-product-fields.js",
+      "file": "public/boutique/js/b-modal-product-fields.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "modal-product-scalar-fields-owner",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_list_item (paint provisoire pré-fetch)"
+      ],
+      "outputs": [
+        "scalar_fields_paint"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "b-modal-core.js (openModal)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "single-ownership"
       ],
       "version": "2026-07"
     },
@@ -19373,6 +19410,11 @@
       "area": "product-content"
     },
     {
+      "id": "impact:single-ownership",
+      "type": "impact-area",
+      "area": "single-ownership"
+    },
+    {
       "id": "impact:participant-verification",
       "type": "impact-area",
       "area": "participant-verification"
@@ -23191,6 +23233,42 @@
       "to": "impact:sku-selection",
       "type": "impact",
       "label": "sku-selection"
+    },
+    {
+      "from": "public/boutique/js/b-modal-product-fields.js",
+      "to": "public/boutique/js/b-store.js",
+      "type": "depends",
+      "label": "b-store.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-product-fields.js",
+      "to": "public/boutique/js/b-utils.js",
+      "type": "depends",
+      "label": "b-utils.js"
+    },
+    {
+      "from": "b-modal-core.js (openModal)",
+      "to": "public/boutique/js/b-modal-product-fields.js",
+      "type": "uses",
+      "label": "b-modal-core.js (openModal)"
+    },
+    {
+      "from": "public/boutique/js/b-modal-product-fields.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
+      "from": "public/boutique/js/b-modal-product-fields.js",
+      "to": "impact:product-modal",
+      "type": "impact",
+      "label": "product-modal"
+    },
+    {
+      "from": "public/boutique/js/b-modal-product-fields.js",
+      "to": "impact:single-ownership",
+      "type": "impact",
+      "label": "single-ownership"
     },
     {
       "from": "public/boutique/js/b-modal-product.js",
@@ -48369,6 +48447,39 @@
         "routes/catalog-product-detail.js"
       ]
     },
+    "public/boutique/js/b-modal-product-fields.js": {
+      "role": "modal-product-scalar-fields-owner",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-store.js",
+        "public/boutique/js/b-utils.js"
+      ],
+      "directUsedBy": [
+        "b-modal-core.js (openModal)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "single-ownership"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "impact:product-modal",
+        "impact:single-ownership",
+        "public/boutique/js/b-store.js",
+        "public/boutique/js/b-utils.js"
+      ]
+    },
     "public/boutique/js/b-modal-product.js": {
       "role": "product-modal-content-renderer",
       "domain": "boutique",
@@ -48935,6 +49046,7 @@
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
+        "public/boutique/js/b-modal-product-fields.js",
         "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
@@ -49101,6 +49213,7 @@
         "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/b-modal-mobile-product.js",
+        "public/boutique/js/b-modal-product-fields.js",
         "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
@@ -64043,6 +64156,12 @@
       "to": "public/boutique/js/b-mini-cart.js",
       "type": "uses",
       "label": "cart-surfaces"
+    },
+    {
+      "from": "b-modal-core.js (openModal)",
+      "to": "public/boutique/js/b-modal-product-fields.js",
+      "type": "uses",
+      "label": "b-modal-core.js (openModal)"
     },
     {
       "from": "public/boutique/js/b-scroll-owner.js",

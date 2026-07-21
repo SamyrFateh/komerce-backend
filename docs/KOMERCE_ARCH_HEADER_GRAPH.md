@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 377
-- Files with full headers: 350
+- Scanned code files: 378
+- Files with full headers: 351
 - Files with lite headers: 27
-- Files with any headers: 377
+- Files with any headers: 378
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 773
-- Edges: 4353
+- Graph nodes: 775
+- Edges: 4359
 - DB tables: 116
 - Doctrines: 154
-- Impact areas: 126
-- Unresolved code edges: 418
+- Impact areas: 127
+- Unresolved code edges: 419
 - Tables multi-écrivains directs (>=2): 67
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 4
 - bootstrap: 1
 - boutique: 36
-- catalog: 52
+- catalog: 53
 - checkout: 2
 - customs: 6
 - dashboard: 28
@@ -78,7 +78,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-experiment: 1
 - ui-infrastructure: 1
 - ui-page: 4
-- ui-renderer: 8
+- ui-renderer: 9
 - ui-service: 1
 - ui-state: 1
 - util: 24
@@ -179,6 +179,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-modal-desktop-product.js — desktop-product-modal-renderer (catalog, high, full)
 - public/boutique/js/b-modal-mobile-product.js — mobile-product-modal-renderer (catalog, high, full)
 - public/boutique/js/b-modal-product-detail-bootstrap.js — product-detail-modal-orchestrator (catalog, high, full)
+- public/boutique/js/b-modal-product-fields.js — modal-product-scalar-fields-owner (catalog, high, full)
 - public/boutique/js/b-modal-product.js — product-modal-content-renderer (boutique, high, full)
 - public/boutique/js/b-modal-suggestions.js — product-modal-suggestions (recommendations, high, full)
 - public/boutique/js/b-nav.js — boutique-nav (boutique, high, full)
@@ -595,6 +596,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
 - depends: bootstrap/api-routes.js -> routes/economic-engine.js (routes/economic-engine.js)
 - depends: bootstrap/startup-migrations.js -> scripts/migration-037-fix-products.js (scripts/migration-037-fix-products.js)
 - depends: bootstrap/startup-migrations.js -> scripts/migration-038-replace-products.js (scripts/migration-038-replace-products.js)
@@ -708,7 +710,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/categories.js -> services/* (services/*)
 - depends: routes/client-auth.js -> db.js (db.js)
 - depends: routes/client-auth.js -> services/* (services/*)
-- depends: routes/client-tracking.js -> db.js (db.js)
 
 ## Files Still Without Headers Or Aggregation
 

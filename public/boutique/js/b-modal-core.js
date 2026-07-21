@@ -55,7 +55,7 @@ import {
   showToast, updateCartBadge, saveCart, cartQty,
 }                         from './b-cart-core.js';
 import {
-  addToCart, quickAdd, quickRemove, toggleFav, setQty,
+  quickAdd, quickRemove, toggleFav, setQty,
   openCart, closeCart, markAllCartButtons,
 }                         from './b-cart.js';
 import {
@@ -64,6 +64,7 @@ import {
 import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { setupImageUX }     from './b-modal-image-ux.js';
 import { setupSocialProof } from './b-modal-social-proof.js';
+import { paintProvisionalFields } from './b-modal-product-fields.js';
 import {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
   _syncScrollPadding,
@@ -71,7 +72,7 @@ import {
 }                           from './b-modal-product.js';
 import { renderSuggestions }                 from './b-modal-suggestions.js';
 import { updateModalNavArrows, navigateModal } from './b-modal-nav.js';
-import { _syncModalQtyUI, setupModalCart }   from './b-modal-cart.js';
+import { _syncModalQtyUI, setupModalCart, resetAddCartButtonState }   from './b-modal-cart.js';
 
 'use strict';
 
@@ -224,12 +225,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     const _cartItem = state.cart.find(i => String(i.product?.id ?? i.id) === String(product.id));
     state.modalQty = _cartItem ? _cartItem.qty : 1; /* BUGFIX: défaut 1 → cohérent avec _syncModalQtyUI */
 
-    // Reset "Ajouter" button state
-    if (dom.addCartBtn) {
-      dom.addCartBtn.disabled = false;
-      dom.addCartBtn.onclick = null;
-      dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
-    }
+    // MDP-PROP1 : reset état bouton "Ajouter" — owner b-modal-cart.js
+    resetAddCartButtonState();
     // Sync stepper display with cart qty
     _syncModalQtyUI();
 
@@ -240,42 +237,22 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // Product Detail Contract (b-modal-product-detail-bootstrap.js) via
     // state.modalSelection. #k-modal-variants reste nettoyé à l'ouverture par
     // hygiène générique (ancien conteneur DOM), sans lien avec ce fetch.
-    let _variantContainer = dom.modalVariants || document.getElementById('k-modal-variants');
-    if (_variantContainer) _variantContainer.innerHTML = '';
+    // MDP-PROP1 : le clear de #k-modal-variants est déjà fait par les renderers PDC
+    // (b-modal-desktop-product.js / b-modal-mobile-product.js) — ne plus le dupliquer ici.
     state.modalVariantCombo = {}; // Lot 2 — reset à chaque ouverture (couture de transport, cf. étape 7)
 
-    dom.modalName.textContent = product.name;
-    if (dom.modalSku) {
-      if (product.sku) {
-        dom.modalSku.textContent = 'Réf. ' + product.sku;
-        dom.modalSku.hidden = false;
-      } else {
-        dom.modalSku.textContent = '';
-        dom.modalSku.hidden = true;
-      }
-    }
-    dom.modalDesc.textContent = product.description || '';
-    dom.modalDesc.classList.remove('is-expanded'); // reset truncation on each open
-    dom.modalDesc.onclick = function() { dom.modalDesc.classList.toggle('is-expanded'); };
-    dom.modalPrice.textContent = fmtPrice(product.price_kmf);
-    dom.modalQtyVal.textContent = state.modalQty;  // FIX: show cart qty, not hardcoded 1
+    // MDP-PROP1 : contenu produit scalaire délégué à l'owner unique
+    // (b-modal-product-fields.js). Voir gate scripts/audit-modal-ownership.js.
+    paintProvisionalFields(product);
+    // MDP-PROP1 : #k-modal-qty-val — écriture conservée ICI (pas seulement dans
+    // _syncModalQtyUI). Tenté en suppression pure (redondance apparente avec
+    // _syncModalQtyUI, appelée juste au-dessus) : casse tests/unit/b-modal-core.test.js
+    // (2 tests), qui mocke intégralement b-modal-cart.js — _syncModalQtyUI y est un
+    // no-op, donc cette ligne est la seule à renseigner #k-modal-qty-val dans ce test.
+    // Redondant en prod, nécessaire en isolation testée : on garde les deux écritures.
+    if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
 
-    // PDC-6 : oldPrice n'est plus reconstruit depuis promo_pct ici. Le prix
-    // barré vient exclusivement du contrat détail (pricing.old_price_kmf),
-    // rendu par b-modal-mobile-product.js / b-modal-desktop-product.js après
-    // le fetch /detail. Le paint immédiat le laisse donc toujours masqué.
-    dom.modalOldPrice.classList.add('u-hidden');
-    if (product.promo_pct) {
-      dom.modalPromoBadge.textContent = `-${product.promo_pct}%`;
-      dom.modalPromoBadge.classList.add('show');
-      // F1 — prix coral sur mobile (classe lue par modal.css §1)
-      dom.modal && dom.modal.classList.add('k-modal--has-promo');
-    } else {
-      dom.modalPromoBadge.classList.remove('show');
-      dom.modal && dom.modal.classList.remove('k-modal--has-promo');
-    }
-
-    // FIX #1 — Bouton favori dans la modal
+    // FIX #1 — Bouton favori dans la modal (concern favoris, hors contenu produit)
     const modalFavBtn = document.getElementById('k-modal-fav-btn');
     if (modalFavBtn) {
       const favState = state.favs.includes(product.id);
@@ -283,16 +260,6 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       modalFavBtn.innerHTML = favState ? '❤️' : '🤍';
     }
 
-    dom.modalCat.textContent = `${product.emoji || ''} ${product.category || ''}`;
-    // PDC-6 : plus aucune interprétation du champ stock du produit liste ici. La disponibilité
-    // vient exclusivement du contrat détail (state.modalSelection), rendu par
-    // le renderer PDC (renderStock dans b-modal-mobile-product.js /
-    // b-modal-desktop-product.js). On vide juste l'affichage précédent par
-    // hygiène, sans réinterpréter aucune donnée produit liste.
-    if (dom.modalStock) {
-      dom.modalStock.textContent = '';
-      dom.modalStock.className = 'k-modal-stock';
-    }
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
     updateCartBadge();
 
@@ -588,35 +555,10 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       }, { passive: false });
     }
 
-    // ── Bouton "⚡ Acheter" — ajout + transition douce vers le panier
-    const buyNowBtn = document.getElementById('k-buy-now-btn');
-    if (buyNowBtn) {
-      buyNowBtn.addEventListener('click', () => {
-        if (!state.modalProduct) return;
-
-        // 1. Feedback visuel immédiat : bouton se transforme en "✓ Ajouté !"
-        const originalContent = buyNowBtn.innerHTML;
-        buyNowBtn.innerHTML = '<span style="display:flex;align-items:center;gap:8px;justify-content:center"><span>✓</span><span>Ajouté au panier !</span></span>';
-        buyNowBtn.disabled = true;
-        buyNowBtn.classList.add('buy-confirmed');
-
-        // 2. Ajout au panier (déclenche l'animation coucou de la dame)
-        addToCart(state.modalProduct, state.modalQty, buyNowBtn);
-
-        // 3. Transition ÉTENDUE : 1200ms pour voir le feedback + coucou dame
-        //    puis fermeture douce et ouverture panier avec 400ms entre les 2
-        //    (le user a le temps de voir le confirm vert + la dame coucou)
-        setTimeout(() => {
-          // Restaurer le bouton pour la prochaine ouverture
-          buyNowBtn.innerHTML = originalContent;
-          buyNowBtn.disabled = false;
-          buyNowBtn.classList.remove('buy-confirmed');
-          // Fermer la modale et ouvrir le panier avec fluidité
-          closeModal();
-          setTimeout(openCart, 400);  // augmenté de 250 → 400ms
-        }, 1200);  // augmenté de 800 → 1200ms
-      });
-    }
+    // MDP-PROP1 : le câblage du bouton "⚡ Acheter" (#k-buy-now-btn) est
+    // désormais dans b-modal-buybox-shared.js (`wireBuyNowButton`, appelé
+    // depuis `renderActions()` des deux renderers PDC) — core ne gère plus
+    // que le cycle de vie de la modale.
 
 
     // ── Barre de recherche interne — Sprint 1 : dropdown résultats live ──

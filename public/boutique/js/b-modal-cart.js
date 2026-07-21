@@ -38,6 +38,21 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
 
 'use strict';
 
+  /* ── MDP-PROP1 : reset état bouton "Ajouter" à chaque ouverture de produit ──
+   * Owner unique de #k-add-cart-btn (avec b-modal-desktop-product.js /
+   * b-modal-mobile-product.js en `allow` pour l'état disabled post-fetch).
+   * Sans ce reset, un ajout confirmé sur le produit A (classe `confirmed` +
+   * onclick custom posés par b-cart.js) fuyait sur l'ouverture du produit B :
+   * le clic sur B fermait la modale au lieu d'ajouter B. `_syncModalQtyUI`
+   * ne resynchronise que la classe `in-cart` — jamais `confirmed`/`onclick`,
+   * d'où cette fonction dédiée, appelée avant elle depuis `openModal`. */
+  function resetAddCartButtonState() {
+    if (!dom.addCartBtn) return;
+    dom.addCartBtn.disabled = false;
+    dom.addCartBtn.onclick = null;
+    dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
+  }
+
   /* ── FIX: Sync qty stepper display with real cart contents ── */
   function _syncModalQtyUI() {
     if (!state.modalProduct) return;
@@ -86,4 +101,4 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
   }
 
 
-export { _syncModalQtyUI, setupModalCart };
+export { _syncModalQtyUI, setupModalCart, resetAddCartButtonState };

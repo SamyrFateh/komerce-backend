@@ -1,0 +1,187 @@
+{
+  "$comment": [
+    "SOURCE DE VÉRITÉ UNIQUE de la propriété des zones DOM de la modale produit.",
+    "Chaque zone a exactement UN owner. 'allow' liste les co-écrivains tolérés,",
+    "TOUJOURS avec une raison (viewport-exclusif, état pré-fetch, etc.). Toute",
+    "autre écriture fait échouer `npm run audit:modal-ownership`.",
+    "Objectif : rendre la responsabilité unique EXÉCUTABLE et non-récidivante.",
+    "",
+    "État cible : b-modal-core.js n'a plus AUCUNE zone de contenu produit — son",
+    "unique responsabilité est le cycle de vie (ouverture/fermeture/historique/",
+    "scroll/carrousel). Le contenu produit appartient aux renderers PDC ; le",
+    "transactionnel au buybox ; les suggestions à leur module."
+  ],
+  "lifecycleOwner": "b-modal-core.js",
+  "deadModulesToDelete": [
+    "b-mobile-modal-v1.js",
+    "b-modal-approche-c-hybrid.js"
+  ],
+  "zones": [
+    {
+      "id": "k-modal-name",
+      "owner": "b-modal-product-fields.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
+      ],
+      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+    },
+    {
+      "id": "k-modal-sku",
+      "owner": "b-modal-product-fields.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
+      ],
+      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+    },
+    {
+      "id": "k-modal-desc",
+      "owner": "b-modal-product-fields.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
+      ],
+      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+    },
+    {
+      "id": "k-modal-price",
+      "owner": "b-modal-product-fields.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
+      ],
+      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+    },
+    {
+      "id": "k-modal-old-price",
+      "owner": "b-modal-product-fields.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
+      ],
+      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+    },
+    {
+      "id": "k-modal-cat",
+      "owner": "b-modal-product-fields.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
+      ],
+      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+    },
+    {
+      "id": "k-modal-stock",
+      "owner": "b-modal-product-fields.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
+      ],
+      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+    },
+    {
+      "id": "k-modal-promo-badge",
+      "owner": "b-modal-product-fields.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
+      ],
+      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+    },
+    {
+      "id": "k-modal-variants",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [
+        "b-modal-mobile-product.js",
+        "b-modal-product-detail-bootstrap.js"
+      ],
+      "reason": "renderers PDC + skeleton pré-fetch du bootstrap"
+    },
+    {
+      "id": "k-modal-aed-price",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [],
+      "reason": "zone enrichie desktop, contrat détail uniquement"
+    },
+    {
+      "id": "k-modal-stock-bar",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [],
+      "reason": "zone enrichie desktop"
+    },
+    {
+      "id": "k-modal-flash-bar",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [],
+      "reason": "zone enrichie desktop"
+    },
+    {
+      "id": "k-modal-trust",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [],
+      "reason": "réassurance transactionnelle, renderer PDC"
+    },
+    {
+      "id": "k-modal-share-row",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [],
+      "reason": "partage, renderer PDC"
+    },
+    {
+      "id": "k-modal-enriched-content",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [],
+      "reason": "contenu éditorial conditionnel, renderer PDC"
+    },
+    {
+      "id": "k-modal-delivery",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [],
+      "reason": "livraison, renderer PDC"
+    },
+    {
+      "id": "k-modal-payment",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [],
+      "reason": "paiement produit, renderer PDC"
+    },
+    {
+      "id": "k-sug-rail",
+      "owner": "b-modal-suggestions.js",
+      "allow": [
+        "b-pdp-curation-suggestions.js",
+        "b-modal-core.js"
+      ],
+      "reason": "rail suggestions + curation PDP ; b-modal-core.js : filtrage recherche interne modale (search-hidden), distinct du peuplement"
+    },
+    {
+      "id": "k-add-cart-btn",
+      "owner": "b-modal-desktop-product.js",
+      "allow": [
+        "b-modal-mobile-product.js",
+        "b-modal-cart.js"
+      ],
+      "reason": "renderActions PDC (état initial) + transitions panier"
+    },
+    {
+      "id": "k-buy-now-btn",
+      "owner": "b-modal-buybox-shared.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
+      ],
+      "reason": "câblage click unique (wireBuyNowButton) ; renderers PDC gèrent l'état disabled pré-fetch"
+    },
+    {
+      "id": "k-qty-val",
+      "owner": "b-modal-cart.js",
+      "allow": [
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js",
+        "b-modal-core.js"
+      ],
+      "reason": "quantité = état panier ; renderers lisent/initialisent ; b-modal-core.js réécrit la même valeur à l'ouverture (nécessaire quand b-modal-cart.js est mocké en test, cf. tests/unit/b-modal-core.test.js)"
+    }
+  ]
+}

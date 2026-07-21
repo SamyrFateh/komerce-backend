@@ -62,6 +62,7 @@ module.exports = {
       '../js/b-modal-mobile-product.js',
       '../js/b-modal-desktop-product.js',
       '../js/b-modal-buybox-shared.js',
+      '../js/b-modal-product-fields.js',
       '../js/b-modal-desktop-enhancers.js',
       '../js/b-modal-approche-c-hybrid.js',
       '../css/modal-shell.css',

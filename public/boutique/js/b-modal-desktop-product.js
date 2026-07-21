@@ -27,7 +27,7 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { getCurrentPrice, renderSubtotalInto, renderPaymentModes, startGroupCartFlow } from './b-modal-buybox-shared.js';
+import { getCurrentPrice, renderSubtotalInto, renderPaymentModes, startGroupCartFlow, wireBuyNowButton } from './b-modal-buybox-shared.js';
 import { showToast } from './b-cart-core.js';
 import {
   buildProductContentViewModel,
@@ -183,6 +183,8 @@ function renderActions(detail, selection) {
     if (!control) return;
     control.disabled = isSku;
   });
+
+  wireBuyNowButton(document.getElementById('k-buy-now-btn'));
 
   // T-023/D11 : layout AVAILABLE_EMPTY (Ajouter + Acheter côte à côte) vs
   // AVAILABLE_FILLED (stepper + Acheter) — porté par modal-shell.css via

@@ -35,8 +35,46 @@
 
 import { fmtPrice } from './b-utils.js';
 import { closeModal } from './b-modal.js';
-import { addToCart } from './b-cart.js';
+import { addToCart, openCart } from './b-cart.js';
 import { startShareFlow } from './b-share-cart.js';
+import { state } from './b-store.js';
+
+/**
+ * MDP-PROP1 — câblage du bouton "⚡ Acheter maintenant". Owner unique de
+ * #k-buy-now-btn (déplacé depuis b-modal-core.js, qui ne gère plus que le
+ * cycle de vie de la modale — ouverture/fermeture/historique/scroll/carrousel).
+ *
+ * Idempotent par construction (`.onclick =`, pas `addEventListener`) : cette
+ * fonction est appelée depuis `renderActions()` à chaque rendu (y compris les
+ * re-rendus déclenchés par un changement de sélection variante) — un
+ * `addEventListener` empilerait les handlers et déclencherait plusieurs ajouts
+ * au panier pour un seul clic.
+ */
+export function wireBuyNowButton(buyNowBtn) {
+  if (!buyNowBtn) return;
+  buyNowBtn.onclick = () => {
+    if (!state.modalProduct) return;
+
+    // 1. Feedback visuel immédiat : bouton se transforme en "✓ Ajouté !"
+    const originalContent = buyNowBtn.innerHTML;
+    buyNowBtn.innerHTML = '<span style="display:flex;align-items:center;gap:8px;justify-content:center"><span>✓</span><span>Ajouté au panier !</span></span>';
+    buyNowBtn.disabled = true;
+    buyNowBtn.classList.add('buy-confirmed');
+
+    // 2. Ajout au panier (déclenche l'animation coucou de la dame)
+    addToCart(state.modalProduct, state.modalQty, buyNowBtn);
+
+    // 3. Transition ÉTENDUE : 1200ms pour voir le feedback + coucou dame
+    //    puis fermeture douce et ouverture panier avec 400ms entre les 2
+    setTimeout(() => {
+      buyNowBtn.innerHTML = originalContent;
+      buyNowBtn.disabled = false;
+      buyNowBtn.classList.remove('buy-confirmed');
+      closeModal();
+      setTimeout(openCart, 400);
+    }, 1200);
+  };
+}
 
 /**
  * Prix courant : celui de l'unité SKU sélectionnée si elle existe, sinon le

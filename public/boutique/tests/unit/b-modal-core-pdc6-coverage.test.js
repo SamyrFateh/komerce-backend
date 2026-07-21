@@ -73,6 +73,7 @@ jest.mock('../../js/b-modal-nav.js', () => ({
 jest.mock('../../js/b-modal-cart.js', () => ({
   _syncModalQtyUI: jest.fn(),
   setupModalCart: jest.fn(),
+  resetAddCartButtonState: jest.fn(),
 }));
 
 const { state, dom } = require('../../js/b-store.js');

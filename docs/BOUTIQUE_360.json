@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-20T21:25:29.648Z",
+  "generatedAt": "2026-07-21T11:10:02.089Z",
   "summary": {
-    "modules": 71,
-    "withHeader": 71,
+    "modules": 72,
+    "withHeader": 72,
     "events": 18,
     "declaredActive": 12,
     "declaredDead": 5,
@@ -838,7 +838,8 @@
         "b-utils",
         "b-modal",
         "b-cart",
-        "b-share-cart"
+        "b-share-cart",
+        "b-store"
       ],
       "bodyClasses": []
     },
@@ -910,6 +911,7 @@
         "b-scroll-owner",
         "b-modal-image-ux",
         "b-modal-social-proof",
+        "b-modal-product-fields",
         "b-modal-product",
         "b-modal-suggestions",
         "b-modal-nav",
@@ -1107,6 +1109,32 @@
         "modal-selection-model",
         "b-modal-mobile-product",
         "b-modal-desktop-product"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-product-fields.js",
+      "id": "b-modal-product-fields",
+      "hasHeader": true,
+      "role": "modal-product-scalar-fields-owner",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": "high",
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "b-modal-core.js (openModal)"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-utils"
       ],
       "bodyClasses": []
     },

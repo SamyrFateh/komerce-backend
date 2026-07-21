@@ -50,7 +50,7 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { getCurrentPrice } from './b-modal-buybox-shared.js';
+import { getCurrentPrice, wireBuyNowButton } from './b-modal-buybox-shared.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -384,6 +384,8 @@ function renderActions(detail, selection) {
     if (!control) return;
     control.disabled = isSku;
   });
+
+  wireBuyNowButton(document.getElementById('k-buy-now-btn'));
 }
 
 /* ── MDM-7 : Below-fold enriched content ─────────────────────── */

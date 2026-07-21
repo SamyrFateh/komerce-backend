@@ -80,6 +80,7 @@ jest.mock('../../js/b-modal-nav.js', () => ({
 jest.mock('../../js/b-modal-cart.js', () => ({
   _syncModalQtyUI: mockSyncModalQtyUI,
   setupModalCart: mockSetupModalCart,
+  resetAddCartButtonState: jest.fn(),
 }));
 
 const { state, dom } = require('../../js/b-store.js');
@@ -277,16 +278,11 @@ test('openModal charge les suggestions sans fetch legacy /api/products/:id puis 
   expect(dom.grid.style.scrollSnapType).toBe('');
 });
 
-test('Acheter ajoute la quantité puis ouvre le panier', () => {
-  state.modalProduct = state.products[0];
-  state.modalQty = 3;
-  const buyNow = document.getElementById('k-buy-now-btn');
-  buyNow.click();
-  expect(mockAddToCart).toHaveBeenCalledWith(state.products[0], 3, buyNow);
-  expect(buyNow.disabled).toBe(true);
-  jest.advanceTimersByTime(1600);
-  expect(mockOpenCart).toHaveBeenCalled();
-});
+// MDP-PROP1 (2.5) : le test "Acheter ajoute la quantité puis ouvre le panier" a été
+// retiré d'ici — le câblage du clic #k-buy-now-btn n'est plus fait par openModal()
+// (b-modal-core.js) mais par wireBuyNowButton() dans b-modal-buybox-shared.js, appelé
+// depuis renderActions() des renderers PDC. Couverture équivalente désormais dans
+// tests/unit/b-modal-buybox-shared.test.js.
 
 test('la recherche interne groupe les résultats et gère les recherches récentes', () => {
   const input = document.querySelector('.k-modal-inner-search-input');
