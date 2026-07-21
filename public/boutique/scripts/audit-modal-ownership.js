@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 /**
  * @komerce-arch
  * @role          modal-ownership-gate
@@ -10,7 +11,7 @@
  *                C'est le mécanisme anti-récidive : une modale ne peut plus
  *                redevenir multi-propriétaire sans faire échouer ce gate.
  * @used-by       npm run audit:modal-ownership  (+ CI)
- * @version       2026-07
+ * @version       2026-07 — extension : forEach-tableau + fonctions relais
  *
  * INVARIANT VÉRIFIÉ :
  *   Pour chaque zone déclarée dans OWNERSHIP, exactement UN fichier a le droit
@@ -20,8 +21,23 @@
  * Le contrat vit dans scripts/modal-ownership.contract.json (source de vérité
  * unique, lisible par un humain ET par un agent). Ce script ne fait que le
  * confronter à la réalité du code. Aucune heuristique cachée.
+ *
+ * DEUX FORMES D'ÉCRITURE INITIALEMENT INVISIBLES (trouvées lors du Chantier
+ * Déduplication §3, corrigées ensemble — sans ça, un vrai futur écrivain
+ * illégal via ces patterns serait passé inaperçu) :
+ *   1. `[a, b].forEach((btn) => { btn.disabled = ...; })` — la cible est un
+ *      élément de tableau littéral, mutée via le paramètre du callback,
+ *      jamais assignée à une variable nommée capturable par le pattern
+ *      "const x = getElementById(...)".
+ *   2. `function f(param) { param.onclick = ...; }` appelée ailleurs par
+ *      `f(document.getElementById('id'))` — la mutation vit dans le FICHIER
+ *      QUI DÉFINIT f (c'est le vrai écrivain), mais l'id n'y apparaît
+ *      textuellement que côté appelant.
+ * Ce sont des extensions de l'heuristique, pas un changement de doctrine :
+ * on reste conservateur (zéro heuristique cachée), on couvre juste deux
+ * formes de mutation réelles qui existaient déjà dans le code avant d'être
+ * détectées.
  */
-'use strict';
 
 const fs = require('fs');
 const path = require('path');
@@ -83,6 +99,19 @@ function reachableFromMain() {
   return seen;
 }
 
+/** Motifs regex ciblant l'élément d'une zone : id direct ou alias dom.*. */
+function zoneTargetPatterns(zone) {
+  const id = zone.id;
+  const aliases = Object.entries(DOM_ALIASES)
+    .filter(([, v]) => v === id)
+    .map(([k]) => `dom\\.${k}`);
+  return [
+    `getElementById\\(['"]${id}['"]\\)`,
+    `querySelector\\(['"]#${id}['"]\\)`,
+    ...aliases,
+  ];
+}
+
 /**
  * Un fichier "écrit" dans une zone s'il contient une expression qui cible
  * l'élément (par id direct OU par alias dom.*) suivie d'une op d'écriture.
@@ -91,17 +120,7 @@ function reachableFromMain() {
  * légitimes (lecture, listeners neutres).
  */
 function writesZone(src, zone) {
-  const id = zone.id;
-  const aliases = Object.entries(DOM_ALIASES)
-    .filter(([, v]) => v === id)
-    .map(([k]) => `dom\\.${k}`);
-
-  // Cibles possibles de l'élément dans une même expression
-  const targets = [
-    `getElementById\\(['"]${id}['"]\\)`,
-    `querySelector\\(['"]#${id}['"]\\)`,
-    ...aliases,
-  ];
+  const targets = zoneTargetPatterns(zone);
   const targetRe = new RegExp(`(${targets.join('|')})`);
 
   // On scanne ligne par ligne : une ligne qui référence la cible ET une op
@@ -126,7 +145,145 @@ function writesZone(src, zone) {
     const varWriteAssign = new RegExp(`\\b${varName}\\b\\.(innerHTML|textContent|hidden|disabled|value|className|onclick)\\s*=`);
     if (varWrite.test(src) || varWriteAssign.test(src)) return true;
   }
+
+  // 3) tableau littéral détruit par .forEach : [a, getElementById('id')].forEach((x) => { x.prop = …; })
+  if (writesZoneViaForEach(src, targets)) return true;
+
   return false;
+}
+
+/** Extrait le corps d'un bloc `{ … }` à partir de l'index de son `{` ouvrant. */
+function extractBalancedBody(src, openBraceIdx) {
+  if (src[openBraceIdx] !== '{') return null;
+  let depth = 0;
+  for (let i = openBraceIdx; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') {
+      depth--;
+      if (depth === 0) return src.slice(openBraceIdx + 1, i);
+    }
+  }
+  return null; // accolades déséquilibrées : on n'affirme rien plutôt que de se tromper
+}
+
+/**
+ * Même principe qu'extractBalancedBody mais pour des parenthèses. Nécessaire
+ * pour lire les arguments d'un appel de fonction relais quand l'argument
+ * lui-même contient un appel imbriqué — exactement le cas motivant
+ * `wireBuyNowButton(document.getElementById('k-buy-now-btn'))` : une capture
+ * naïve `[^)]*` s'arrête à la PREMIÈRE parenthèse fermante rencontrée (celle
+ * de getElementById), tronque l'argument, et le fait échouer au test de
+ * cible — trouvé en écrivant le self-test de ce gate (2026-07).
+ */
+function extractBalancedArgs(src, openParenIdx) {
+  if (src[openParenIdx] !== '(') return null;
+  let depth = 0;
+  for (let i = openParenIdx; i < src.length; i++) {
+    if (src[i] === '(') depth++;
+    else if (src[i] === ')') {
+      depth--;
+      if (depth === 0) return src.slice(openParenIdx + 1, i);
+    }
+  }
+  return null; // parenthèses déséquilibrées : on n'affirme rien plutôt que de se tromper
+}
+
+/**
+ * `[a, b].forEach((param) => { param.prop = …; })` — la cible figure dans le
+ * tableau littéral, la mutation porte sur le paramètre du callback. Repéré
+ * séparément du cas §2 (capture par variable) car aucune variable nommée
+ * ne référence directement la cible ici.
+ */
+function writesZoneViaForEach(src, targets) {
+  const targetRe = new RegExp(targets.join('|'));
+  const forEachRe = /\[([^\]]*)\]\s*\.\s*forEach\s*\(\s*(?:\(\s*)?([A-Za-z_$][\w$]*)\s*\)?\s*=>\s*\{/g;
+  let m;
+  while ((m = forEachRe.exec(src))) {
+    if (!targetRe.test(m[1])) continue;
+    const paramName = m[2];
+    const braceIdx = m.index + m[0].length - 1;
+    const body = extractBalancedBody(src, braceIdx);
+    if (body == null) continue;
+    const writeRe = new RegExp(`\\b${paramName}\\b\\s*\\.\\s*(${WRITE_OPS.join('|')})`);
+    if (writeRe.test(body)) return true;
+  }
+  return false;
+}
+
+/**
+ * Fonctions "relais" à un seul paramètre : `function f(param) { … param.prop
+ * = …; }` où c'est l'APPELANT qui passe la cible d'une zone en argument
+ * (`f(document.getElementById('k-buy-now-btn'))`). La mutation vit dans le
+ * fichier qui DÉFINIT f — c'est lui l'écrivain réel — même si l'id de la
+ * zone n'y apparaît textuellement jamais. Repérage borné à un seul
+ * paramètre : suffisant pour les cas réels rencontrés à ce jour ; une
+ * fonction multi-paramètres qui muterait un paramètre non ciblé resterait
+ * invisible (cas non rencontré, pas couvert pour éviter de complexifier
+ * l'heuristique sans preuve de besoin).
+ */
+function forwardingFunctions(sources, reachable) {
+  const result = [];
+  const fnRe = /function\s+([A-Za-z_$][\w$]*)\s*\(\s*([A-Za-z_$][\w$]*)\s*\)\s*\{/g;
+  for (const [file, src] of sources) {
+    if (!reachable.has(file)) continue;
+    let m;
+    while ((m = fnRe.exec(src))) {
+      const fnName = m[1];
+      const paramName = m[2];
+      const braceIdx = m.index + m[0].length - 1;
+      const body = extractBalancedBody(src, braceIdx);
+      if (body == null) continue;
+      const writeRe = new RegExp(`\\b${paramName}\\b\\s*\\.\\s*(${WRITE_OPS.join('|')})`);
+      if (writeRe.test(body)) result.push({ file, fnName });
+    }
+  }
+  return result;
+}
+
+/**
+ * Pour une zone donnée, fichiers qui l'écrivent indirectement via un appel à
+ * une fonction relais (cf. forwardingFunctions) avec la cible de la zone en
+ * argument. Le résultat attribue l'écriture au fichier qui DÉFINIT la
+ * fonction relais, pas au fichier appelant.
+ */
+function writersViaForwarding(sources, zone, forwarders, reachable) {
+  const targets = zoneTargetPatterns(zone);
+  const targetRe = new RegExp(targets.join('|'));
+  const writers = new Set();
+  for (const [file, src] of sources) {
+    if (!reachable.has(file)) continue;
+    for (const fwd of forwarders) {
+      const callRe = new RegExp(`\\b${fwd.fnName}\\s*\\(`, 'g');
+      let cm;
+      while ((cm = callRe.exec(src))) {
+        const openParenIdx = cm.index + cm[0].length - 1;
+        const args = extractBalancedArgs(src, openParenIdx);
+        if (args != null && targetRe.test(args)) writers.add(fwd.file);
+      }
+    }
+  }
+  return writers;
+}
+
+/**
+ * Écrivains réels d'une zone : union des écritures directes/forEach
+ * (writesZone) et des écritures via fonction relais (writersViaForwarding).
+ * Extrait de main() pour être testable isolément (self-test du gate) et
+ * pour garantir que les DEUX formes ajoutées lors du Chantier Déduplication
+ * §3 sont bien exercées — pas seulement définies. C'est le trou trouvé le
+ * 2026-07 : forwardingFunctions/writersViaForwarding existaient mais
+ * n'étaient appelées nulle part depuis main().
+ */
+function zoneWriters(sources, zone, reachable, forwarders) {
+  const writers = new Set();
+  for (const [f, src] of sources) {
+    if (!reachable.has(f)) continue;
+    if (writesZone(src, zone)) writers.add(f);
+  }
+  for (const w of writersViaForwarding(sources, zone, forwarders, reachable)) {
+    writers.add(w);
+  }
+  return [...writers];
 }
 
 function main() {
@@ -135,6 +292,7 @@ function main() {
   const reachable = reachableFromMain();
   const sources = new Map();
   for (const f of files) sources.set(f, fs.readFileSync(path.join(JS_DIR, f), 'utf8'));
+  const forwarders = forwardingFunctions(sources, reachable);
 
   const violations = [];
   const orphans = [];
@@ -152,12 +310,7 @@ function main() {
   }
 
   for (const zone of contract.zones) {
-    const writers = [];
-    for (const [f, src] of sources) {
-      // Seuls les modules VIVANTS peuvent violer à l'exécution.
-      if (!reachable.has(f)) continue;
-      if (writesZone(src, zone)) writers.push(f);
-    }
+    const writers = zoneWriters(sources, zone, reachable, forwarders);
     const allowed = new Set([zone.owner, ...(zone.allow || [])]);
     const illegal = writers.filter((w) => !allowed.has(w));
     matrix.push({ zone: zone.id, owner: zone.owner, writers, illegal });
@@ -216,4 +369,17 @@ function main() {
   process.exit(0);
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+// Exports réservés au self-test du gate (tests/unit/audit-modal-ownership-selftest.test.js).
+// N'affecte pas l'exécution CLI (`node scripts/audit-modal-ownership.js`) ci-dessus.
+module.exports = {
+  writesZone,
+  writesZoneViaForEach,
+  forwardingFunctions,
+  writersViaForwarding,
+  zoneWriters,
+  zoneTargetPatterns,
+};

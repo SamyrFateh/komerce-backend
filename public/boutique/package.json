@@ -40,6 +40,7 @@
     "audit:responsive": "node scripts/audit-responsive.js",
     "audit:cockpit": "node scripts/harness-creator-cockpit.js",
     "audit:tabs-scroll": "node scripts/diag-tabs-scroll.js",
+    "gate:smoke": "node scripts/gate-smoke-boutique.cjs",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",

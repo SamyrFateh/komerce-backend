@@ -9,13 +9,19 @@
     "État cible : b-modal-core.js n'a plus AUCUNE zone de contenu produit — son",
     "unique responsabilité est le cycle de vie (ouverture/fermeture/historique/",
     "scroll/carrousel). Le contenu produit appartient aux renderers PDC ; le",
-    "transactionnel au buybox ; les suggestions à leur module."
+    "transactionnel au buybox ; les suggestions à leur module.",
+    "",
+    "2026-07 — chantier §5 (dead code) : b-mobile-modal-v1.js et",
+    "b-modal-approche-c-hybrid.js, déclarés morts ci-dessus depuis le",
+    "Chantier Déduplication, ont été SUPPRIMÉS du disque (plus seulement",
+    "injoignables). Vérifié avant suppression : zéro import réel (seuls des",
+    "commentaires @used-by périmés les citaient encore), et la garde qty<1 de",
+    "b-mobile-modal-v1.js est supplantée par quickRemove() dans b-cart.js.",
+    "deadModulesToDelete est donc vide ; le garde anti-réveil (deadWakeups)",
+    "reste actif pour toute future déclaration."
   ],
   "lifecycleOwner": "b-modal-core.js",
-  "deadModulesToDelete": [
-    "b-mobile-modal-v1.js",
-    "b-modal-approche-c-hybrid.js"
-  ],
+  "deadModulesToDelete": [],
   "zones": [
     {
       "id": "k-modal-name",
