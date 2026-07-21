@@ -50,7 +50,8 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { getCurrentPrice, wireBuyNowButton } from './b-modal-buybox-shared.js';
+import { wireBuyNowButton } from './b-modal-buybox-shared.js';
+import { paintDetailFields } from './b-modal-product-fields.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -151,64 +152,25 @@ function renderStockPill(unit) {
   pill.querySelector('.k-mdm-stock-pill-label').textContent = label;
 }
 
+// Chantier déduplication (§3) : name/sku/price/old-price/cat/promo-badge
+// sont peints par paintDetailFields() (owner unique, b-modal-product-fields.js
+// — même code que desktop, vérifié ligne à ligne avant convergence). Ne
+// reste ici que ce qui diverge réellement du desktop : le pill de stock
+// (DOM différent de renderStock desktop) et l'effacement de la description
+// (déplacée sous le fold, MDM-7 — le desktop l'affiche, le mobile la vide).
 function renderIdentity(detail, selection) {
-  // Name — single line, overflow handled by CSS clamp
-  if (dom.modalName) dom.modalName.textContent = detail.product.name;
-
-  // Reference — compact inline
-  const unit = activeUnit(detail, selection);
-  if (dom.modalSku) {
-    const reference = unit?.sku || detail.product.reference;
-    dom.modalSku.textContent = reference ? `Réf. ${reference}` : '';
-    dom.modalSku.hidden = !reference;
-  }
-
-  // Price
-  const price = getCurrentPrice(detail, selection);
-  if (dom.modalPrice) dom.modalPrice.textContent = fmtPrice(price);
-
-  // Old price — only if contract provides it, never reconstructed
-  if (dom.modalOldPrice) {
-    if (detail.pricing.old_price_kmf != null) {
-      dom.modalOldPrice.textContent = fmtPrice(detail.pricing.old_price_kmf);
-      dom.modalOldPrice.classList.remove('u-hidden');
-    } else {
-      dom.modalOldPrice.textContent = '';
-      dom.modalOldPrice.classList.add('u-hidden');
-    }
-  }
+  paintDetailFields(detail, selection);
 
   // Stock pill — right of price (M1, spec §5.5). Reuses available_quantity
-  // from the active SKU unit already resolved above ; never reconstructed.
+  // from the active SKU unit ; never reconstructed.
+  const unit = activeUnit(detail, selection);
   renderStockPill(unit);
-
-  // Promo badge on media
-  const promo = Number(detail.pricing.promo_pct || 0);
-  if (dom.modalPromoBadge) {
-    if (promo > 0) {
-      dom.modalPromoBadge.textContent = `-${promo}%`;
-      dom.modalPromoBadge.classList.add('show');
-      dom.modal?.classList.add('k-modal--has-promo');
-    } else {
-      dom.modalPromoBadge.textContent = '';
-      dom.modalPromoBadge.classList.remove('show');
-      dom.modal?.classList.remove('k-modal--has-promo');
-    }
-  }
 
   // Description — moved below fold (MDM-7). Clear the legacy inline desc
   // so it doesn't compete with the transactional core.
   if (dom.modalDesc) {
     dom.modalDesc.textContent = '';
     dom.modalDesc.classList.add('u-hidden');
-  }
-
-  // Series — ligne 2 meta hero mobile (spec M6, contrat v1 product.series)
-  // Fallback silencieux si absent : nœud vidé et masqué.
-  if (dom.modalCat) {
-    const series = detail.product.series || null;
-    dom.modalCat.textContent = series || '';
-    dom.modalCat.hidden = !series;
   }
 }
 

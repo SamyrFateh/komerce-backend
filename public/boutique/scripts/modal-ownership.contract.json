@@ -20,20 +20,14 @@
     {
       "id": "k-modal-name",
       "owner": "b-modal-product-fields.js",
-      "allow": [
-        "b-modal-desktop-product.js",
-        "b-modal-mobile-product.js"
-      ],
-      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+      "allow": [],
+      "reason": "owner strictement unique depuis §3 (paintDetailFields) — plus aucun renderer n'écrit ce nœud directement"
     },
     {
       "id": "k-modal-sku",
       "owner": "b-modal-product-fields.js",
-      "allow": [
-        "b-modal-desktop-product.js",
-        "b-modal-mobile-product.js"
-      ],
-      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+      "allow": [],
+      "reason": "owner strictement unique depuis §3 (paintDetailFields) — plus aucun renderer n'écrit ce nœud directement"
     },
     {
       "id": "k-modal-desc",
@@ -42,52 +36,41 @@
         "b-modal-desktop-product.js",
         "b-modal-mobile-product.js"
       ],
-      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+      "reason": "divergence réelle desktop/mobile (§3) : desktop affiche la description, mobile l'efface (déplacée sous le fold, MDM-7) — non convergé volontairement"
     },
     {
       "id": "k-modal-price",
       "owner": "b-modal-product-fields.js",
       "allow": [
-        "b-modal-desktop-product.js",
         "b-modal-mobile-product.js"
       ],
-      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+      "reason": "owner unique du paint (§3, paintDetailFields) ; b-modal-mobile-product.js toléré à cause d'un faux positif du gate (renderStockPill capture `row` via dom.modalPrice?.closest(...) puis fait row.appendChild(pill) pour le pill de stock — ce n'est pas une écriture du prix, mais une limite de l'heuristique statique)"
     },
     {
       "id": "k-modal-old-price",
       "owner": "b-modal-product-fields.js",
-      "allow": [
-        "b-modal-desktop-product.js",
-        "b-modal-mobile-product.js"
-      ],
-      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+      "allow": [],
+      "reason": "owner strictement unique depuis §3 (paintDetailFields) — plus aucun renderer n'écrit ce nœud directement"
     },
     {
       "id": "k-modal-cat",
       "owner": "b-modal-product-fields.js",
-      "allow": [
-        "b-modal-desktop-product.js",
-        "b-modal-mobile-product.js"
-      ],
-      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+      "allow": [],
+      "reason": "owner strictement unique depuis §3 (paintDetailFields) — plus aucun renderer n'écrit ce nœud directement"
     },
     {
       "id": "k-modal-stock",
       "owner": "b-modal-product-fields.js",
       "allow": [
-        "b-modal-desktop-product.js",
-        "b-modal-mobile-product.js"
+        "b-modal-desktop-product.js"
       ],
-      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+      "reason": "stock volontairement NON convergé (§3) : desktop rend un texte (renderStock), mobile un pill séparé (renderStockPill, zone k-modal-stock-pill, hors contrat) — DOM légitimement différent"
     },
     {
       "id": "k-modal-promo-badge",
       "owner": "b-modal-product-fields.js",
-      "allow": [
-        "b-modal-desktop-product.js",
-        "b-modal-mobile-product.js"
-      ],
-      "reason": "owner unique du paint scalaire ; renderers tolérés pendant la migration (paint final)"
+      "allow": [],
+      "reason": "owner strictement unique depuis §3 (paintDetailFields) — plus aucun renderer n'écrit ce nœud directement"
     },
     {
       "id": "k-modal-variants",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-21T11:10:02.089Z",
+  "generatedAt": "2026-07-21T11:36:53.065Z",
   "summary": {
     "modules": 72,
     "withHeader": 72,
@@ -985,6 +985,7 @@
         "b-modal-image-ux",
         "b-modal-buybox-shared",
         "b-cart-core",
+        "b-modal-product-fields",
         "product-content-model"
       ],
       "bodyClasses": []
@@ -1049,6 +1050,7 @@
         "b-modal-product",
         "b-modal-image-ux",
         "b-modal-buybox-shared",
+        "b-modal-product-fields",
         "product-content-model"
       ],
       "bodyClasses": []
@@ -1125,16 +1127,20 @@
       ],
       "depends": [
         "b-store.js",
-        "b-utils.js"
+        "b-utils.js",
+        "b-modal-buybox-shared.js"
       ],
       "usedBy": [
-        "b-modal-core.js (openModal)"
+        "b-modal-core.js (openModal)",
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
       ],
       "emits": [],
       "listens": [],
       "imports": [
         "b-store",
-        "b-utils"
+        "b-utils",
+        "b-modal-buybox-shared"
       ],
       "bodyClasses": []
     },

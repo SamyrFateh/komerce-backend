@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 775,
-    "edges": 4359,
+    "edges": 4362,
     "dbTables": 116,
     "doctrines": 154,
     "impactAreas": 127,
@@ -2409,17 +2409,21 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "product_list_item (paint provisoire pré-fetch)"
+        "product_list_item (paint provisoire pré-fetch)",
+        "product_detail_v1 + modal_selection_state (paint final)"
       ],
       "outputs": [
         "scalar_fields_paint"
       ],
       "depends": [
         "b-store.js",
-        "b-utils.js"
+        "b-utils.js",
+        "b-modal-buybox-shared.js"
       ],
       "usedBy": [
-        "b-modal-core.js (openModal)"
+        "b-modal-core.js (openModal)",
+        "b-modal-desktop-product.js",
+        "b-modal-mobile-product.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -2432,7 +2436,7 @@
         "product-modal",
         "single-ownership"
       ],
-      "version": "2026-07"
+      "version": "2026-07 — Chantier déduplication (§3) : paintDetailFields"
     },
     {
       "id": "public/boutique/js/b-modal-product.js",
@@ -23247,10 +23251,28 @@
       "label": "b-utils.js"
     },
     {
+      "from": "public/boutique/js/b-modal-product-fields.js",
+      "to": "public/boutique/js/b-modal-buybox-shared.js",
+      "type": "depends",
+      "label": "b-modal-buybox-shared.js"
+    },
+    {
       "from": "b-modal-core.js (openModal)",
       "to": "public/boutique/js/b-modal-product-fields.js",
       "type": "uses",
       "label": "b-modal-core.js (openModal)"
+    },
+    {
+      "from": "public/boutique/js/b-modal-desktop-product.js",
+      "to": "public/boutique/js/b-modal-product-fields.js",
+      "type": "uses",
+      "label": "b-modal-desktop-product.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-mobile-product.js",
+      "to": "public/boutique/js/b-modal-product-fields.js",
+      "type": "uses",
+      "label": "b-modal-mobile-product.js"
     },
     {
       "from": "public/boutique/js/b-modal-product-fields.js",
@@ -48092,6 +48114,7 @@
         "public/boutique/js/b-modal-approche-c-hybrid.js",
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/b-modal-mobile-product.js",
+        "public/boutique/js/b-modal-product-fields.js",
         "public/boutique/js/b-modal.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-utils.js"
@@ -48277,6 +48300,7 @@
         "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
+        "public/boutique/js/b-modal-product-fields.js",
         "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
@@ -48368,6 +48392,7 @@
         "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
+        "public/boutique/js/b-modal-product-fields.js",
         "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
@@ -48456,10 +48481,13 @@
       "purpose": null,
       "directDependsOn": [
         "public/boutique/js/b-store.js",
-        "public/boutique/js/b-utils.js"
+        "public/boutique/js/b-utils.js",
+        "public/boutique/js/b-modal-buybox-shared.js"
       ],
       "directUsedBy": [
-        "b-modal-core.js (openModal)"
+        "b-modal-core.js (openModal)",
+        "public/boutique/js/b-modal-desktop-product.js",
+        "public/boutique/js/b-modal-mobile-product.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -48476,6 +48504,9 @@
         "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
         "impact:product-modal",
         "impact:single-ownership",
+        "public/boutique/js/b-modal-buybox-shared.js",
+        "public/boutique/js/b-modal-desktop-product.js",
+        "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js"
       ]

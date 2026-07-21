@@ -27,8 +27,9 @@ import {
 } from './view-models/modal-selection-model.js';
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
-import { getCurrentPrice, renderSubtotalInto, renderPaymentModes, startGroupCartFlow, wireBuyNowButton } from './b-modal-buybox-shared.js';
+import { renderSubtotalInto, renderPaymentModes, startGroupCartFlow, wireBuyNowButton } from './b-modal-buybox-shared.js';
 import { showToast } from './b-cart-core.js';
+import { paintDetailFields } from './b-modal-product-fields.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -40,16 +41,6 @@ let _qtyObservedEl = null;
 
 function isPhotoAxis(axis) {
   return /couleur|color|coloris|teinte/i.test(axis.key || axis.display_name || '');
-}
-
-function activeUnit(detail, selection) {
-  return (detail.sellable_units || []).find((unit) => unit.sku_id === selection.selected_sku_id) || null;
-}
-
-// MDP-1 : le prix courant n'est plus calculé localement — il vient de
-// b-modal-buybox-shared.js, la même fonction que celle utilisée en mobile.
-function currentPrice(detail, selection) {
-  return getCurrentPrice(detail, selection);
 }
 
 function mediaSignature(selection) {
@@ -74,26 +65,16 @@ function renderMedia(detail, selection, force = false) {
   setupImageUX();
 }
 
+// Chantier déduplication (§3) : name/sku/price/old-price/cat/promo-badge
+// sont peints par paintDetailFields() (owner unique, b-modal-product-fields.js).
+// Ne restent ici que les zones réellement propres au desktop : desc (le
+// mobile l'efface, MDM-7) et la neutralisation des anciennes zones legacy
+// (aed/flash/stock-bar), qui n'existent pas côté mobile.
 function renderIdentity(detail) {
-  if (dom.modalName) dom.modalName.textContent = detail.product.name;
   if (dom.modalDesc) {
     dom.modalDesc.textContent = detail.product.description || '';
     dom.modalDesc.classList.remove('is-expanded');
   }
-  // Series — ligne 2 meta hero desktop (spec M6, contrat v1 product.series)
-  // Fallback silencieux : si series absent, on n'affiche pas la catégorie brute.
-  if (dom.modalCat) {
-    const series = detail.product.series || null;
-    dom.modalCat.textContent = series || '';
-    dom.modalCat.hidden = !series;
-  }
-
-  const promo = Number(detail.pricing.promo_pct || 0);
-  if (dom.modalPromoBadge) {
-    dom.modalPromoBadge.textContent = promo > 0 ? `-${promo}%` : '';
-    dom.modalPromoBadge.classList.toggle('show', promo > 0);
-  }
-  dom.modal?.classList.toggle('k-modal--has-promo', promo > 0);
 
   // Les anciennes zones reconstruisaient prix EUR, économie et faux stock depuis
   // le produit brut. PDC-5 les neutralise ; PDC-6 supprimera leur code legacy.
@@ -103,24 +84,6 @@ function renderIdentity(detail) {
   if (aed) aed.innerHTML = '';
   if (flash) flash.innerHTML = '';
   if (stockBar) stockBar.innerHTML = '';
-}
-
-function renderPriceAndReference(detail, selection) {
-  const unit = activeUnit(detail, selection);
-  const price = currentPrice(detail, selection);
-  if (dom.modalPrice) dom.modalPrice.textContent = price != null ? fmtPrice(price) : '';
-
-  if (dom.modalOldPrice) {
-    const oldPrice = detail.pricing.old_price_kmf;
-    dom.modalOldPrice.textContent = oldPrice != null ? fmtPrice(oldPrice) : '';
-    dom.modalOldPrice.classList.toggle('u-hidden', oldPrice == null);
-  }
-
-  if (dom.modalSku) {
-    const reference = unit?.sku || detail.product.reference;
-    dom.modalSku.textContent = reference ? `Réf. ${reference}` : '';
-    dom.modalSku.hidden = !reference;
-  }
 }
 
 function renderStock(selection) {
@@ -621,8 +584,8 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
   }
   renderSelectionMessage(root, selection);
 
+  paintDetailFields(detail, selection);
   renderIdentity(detail);
-  renderPriceAndReference(detail, selection);
   renderStock(selection);
   renderActions(detail, selection);
   renderTrust();
