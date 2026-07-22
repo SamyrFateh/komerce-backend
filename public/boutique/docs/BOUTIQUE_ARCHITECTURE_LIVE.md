@@ -26,7 +26,7 @@
 | `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 313 | 🔴 **ORPHELIN** |
-| `modal-mobile-canonical.css` | 714 | 🔴 **ORPHELIN** |
+| `modal-mobile-canonical.css` | 718 | 🔴 **ORPHELIN** |
 | `modal-mobile-suggestion-actions.css` | 66 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 448 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1430 | 🔴 **ORPHELIN** |
@@ -45,7 +45,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=136
- 2. /boutique/css/dist/components.css?v=210
+ 2. /boutique/css/dist/components.css?v=211
  3. /boutique/css/dist/desktop.css?v=68
  4. /boutique/css/dist/event.css?v=32
 ```
