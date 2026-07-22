@@ -19,6 +19,8 @@ import { state, dom } from './b-store.js';
 import { addToCart, quickAdd, quickRemove } from './b-cart.js';
 import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
 
+let _selectionReconcileInstalled = false;
+
 function normalizedCombo(combo) {
   if (!combo || typeof combo !== 'object') return '';
   return Object.keys(combo)
@@ -110,7 +112,27 @@ function _syncModalQtyUI() {
   }
 }
 
+/**
+ * Les renderers PDC rerendent directement leur composition lors d'un clic sur
+ * une option et ne repassent pas par le bootstrap. Cette délégation document
+ * réconcilie l'owner panier juste après le handler du renderer, y compris quand
+ * le bouton cliqué a été remplacé par le rerender.
+ */
+function installSelectionReconcile() {
+  if (_selectionReconcileInstalled || typeof document === 'undefined') return;
+  _selectionReconcileInstalled = true;
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    const option = target?.closest?.('[data-option-value]');
+    if (!option || !option.closest('#k-modal')) return;
+    Promise.resolve().then(_syncModalQtyUI);
+  });
+}
+
 function setupModalCart() {
+  installSelectionReconcile();
+
   dom.qtyMinus.addEventListener('click', () => {
     if (!state.modalProduct) return;
     const pid = String(state.modalProduct.id);
