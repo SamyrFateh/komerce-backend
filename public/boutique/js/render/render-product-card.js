@@ -6,7 +6,7 @@
  * @owner         public/boutique/js/b-catalog.js
  * @purpose       supports public/boutique/js/b-catalog.js
  * @impact-areas  catalog, product-discovery
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
@@ -40,7 +40,7 @@ function renderAddControl(productId, qty, variant) {
     if (qty > 0) {
       return `<button class="k-sug-step k-sug-minus" data-pid="${productId}">−</button><span class="k-sug-qty">${qty}</span><button class="k-sug-step k-sug-plus" data-pid="${productId}">+</button>`;
     }
-    return `<button class="k-sug-add" data-add="${productId}"><img src="/images/panier_tresse_vert.png" width="28" height="28" alt="+" style="pointer-events:none"></button>`;
+    return `<button class="k-catalog-sug-add" data-add="${productId}"><img src="/images/panier_tresse_vert.png" width="28" height="28" alt="+" style="pointer-events:none"></button>`;
   }
 
   if (qty > 0) {
