@@ -3713,14 +3713,19 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 /* ── ÉTAT D — mobile non-enrichi : pas de suggestions, pas de recherche
-   interne (chips). Toggle posé par b-modal-mobile-product.js sur #k-modal
-   via .k-modal--suggestions-hidden, dérivé de hasEnrichedContent (donnée
-   réelle, jamais une heuristique). #k-modal-suggestions reste peuplé
-   normalement par b-modal-suggestions.js (owner inchangé) — on masque
-   seulement l'affichage, en mobile uniquement : desktop non-enrichi (état B)
-   garde ses suggestions. ── */
+   interne (chips + barre de recherche). Toggle posé par
+   b-modal-mobile-product.js sur #k-modal via .k-modal--suggestions-hidden,
+   dérivé de hasEnrichedContent (donnée réelle, jamais une heuristique).
+   #k-modal-suggestions reste peuplé normalement par b-modal-suggestions.js
+   (owner inchangé) ; on masque seulement l'affichage, en mobile uniquement :
+   desktop non-enrichi (état B) garde ses suggestions.
+   FIX (2026-07) : .k-modal-inner-search est un FRÈRE de #k-modal-suggestions
+   (injecté par b-modal-core.js dans .k-modal-details, pas dans la section
+   suggestions elle-même) — doit être masqué séparément, sinon la barre de
+   recherche persiste sur l'état D alors que #k-modal-suggestions disparaît. ── */
 @media (max-width: 899px) {
-  .k-modal--suggestions-hidden #k-modal-suggestions { display: none; }
+  .k-modal--suggestions-hidden #k-modal-suggestions,
+  .k-modal--suggestions-hidden .k-modal-inner-search { display: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -59,6 +59,7 @@ import { setupImageUX } from './b-modal-image-ux.js';
 import { wireBuyNowButton } from './b-modal-buybox-shared.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
 import { renderTrust } from './b-modal-desktop-product.js';
+import { updateCartBadge } from './b-cart-core.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -656,12 +657,17 @@ function _ensureHeroOverlay() {
   const right = document.createElement('div');
   right.className = 'k-modal-topbar-overlay-right';
 
-  // Avatar panier
+  // Avatar panier — .k-cart-avatar + .k-modal-cart-overlay sont maintenant
+  // couverts par updateCartBadge() (b-cart-core.js), source de vérité unique
+  // pour la synchro seule/panier ↔ avatar_seule.png/avatar_panier.png. Avant
+  // ce fix, cette image restait figée sur avatar_seule.png quel que soit
+  // l'état réel du panier (bug constaté en prod : badge "12" correct, icône
+  // toujours "seule"), faute de cette classe et de ce sélecteur.
   const cartBtn = document.createElement('button');
   cartBtn.type = 'button';
   cartBtn.className = 'k-modal-cart-overlay';
   cartBtn.setAttribute('aria-label', 'Panier');
-  cartBtn.innerHTML = '<img src="/images/avatar_seule.png" alt="" aria-hidden="true"><span class="k-modal-cart-badge-overlay" id="k-modal-cart-badge-overlay"></span>';
+  cartBtn.innerHTML = '<img src="/images/avatar_seule.png" class="k-cart-avatar" alt="" aria-hidden="true"><span class="k-modal-cart-badge-overlay" id="k-modal-cart-badge-overlay"></span>';
   cartBtn.addEventListener('click', () => dom.modalCartBtn?.click());
 
   // ✕ fermer
@@ -675,6 +681,11 @@ function _ensureHeroOverlay() {
   right.append(cartBtn, closeBtn);
   overlay.append(backBtn, right);
   imgWrap.appendChild(overlay);
+
+  // Sync immédiat — sans ça l'avatar reste sur avatar_seule.png (état
+  // initial codé en dur ci-dessus) jusqu'au prochain ajout/retrait panier,
+  // même si le panier contient déjà des articles à l'ouverture de la modale.
+  updateCartBadge();
 
   // Sync badge panier avec le badge original
   const syncBadge = () => {

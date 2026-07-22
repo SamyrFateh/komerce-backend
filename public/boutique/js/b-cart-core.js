@@ -92,7 +92,7 @@ export function updateCartBadge() {
   const hasItems = count > 0;
   const avatarSrc = hasItems ? '/images/avatar_panier.png' : '/images/avatar_seule.png';
 
-  document.querySelectorAll('.k-cart-btn, #k-modal-cart-btn').forEach(btn => {
+  document.querySelectorAll('.k-cart-btn, #k-modal-cart-btn, .k-modal-cart-overlay').forEach(btn => {
     btn.classList.toggle('has-items', hasItems);
     btn.classList.toggle('is-empty', !hasItems);
     const img = btn.querySelector('.k-cart-avatar');

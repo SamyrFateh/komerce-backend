@@ -96,11 +96,11 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | modal-enriched-content.css | 900px, 899px | 🔴 899px |
 | modal-media.css | 400px, 900px | 🔴 400px |
 | modal-mobile-canonical.css | 899px | 🔴 899px |
+| modal-product.css | 900px, 899px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
 | hero-cart-proxy.css | 900px | ✅ |
 | identity.css | 900px | ✅ |
-| modal-product.css | 900px | ✅ |
 | reset.css | 900px | ✅ |
 | share-cart.css | 900px | ✅ |
 | shared-followup.css | 900px, 1200px | ✅ |
@@ -139,7 +139,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Composants en multipropriété CSS | 8 | 0 |
 | Modules JS écrivant le DOM | 39 | ≤ 5 |
 | Breakpoints distincts | 9 | ≤ 2 |
-| Violations breakpoint | 16 | 0 |
+| Violations breakpoint | 17 | 0 |
 | `!important` | 23 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*
