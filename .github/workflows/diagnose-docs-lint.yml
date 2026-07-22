@@ -1,0 +1,21 @@
+name: Diagnose docs history lint
+
+on:
+  pull_request:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Capture docs history report
+        run: node scripts/docs-history-lint.js --strict > docs-history-report.txt 2>&1 || true
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-history-report
+          path: docs-history-report.txt
+          if-no-files-found: error
