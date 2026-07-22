@@ -77,6 +77,7 @@ describe('b-modal-cart', () => {
     test('legacy résout product.id, puis item.id, et ignore les autres produits', () => {
       state.modalProduct = { id: 42 };
       state.cart = [
+        {},
         { product: { id: 7 }, qty: 9 },
         { id: '42', qty: 2 },
         { product: { id: 42 }, qty: 3 },
@@ -160,7 +161,8 @@ describe('b-modal-cart', () => {
       expect(state.modalQty).toBe(1);
       expect(dom.modalQtyVal.textContent).toBe('1');
       expect(dom.addCartBtn.classList.contains('in-cart')).toBe(false);
-      expect(dom.addCartBtn.innerHTML).toContain('Ajouter');
+      expect(dom.addCartBtn.textContent).toContain('Ajouter');
+      expect(dom.addCartBtn.querySelector('img').src).toContain('/images/panier_tresse_vert.png');
       expect(actions.dataset.inventoryModel).toBe('LEGACY');
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
       expect(dom.qtyMinus.disabled).toBe(false);
@@ -173,7 +175,7 @@ describe('b-modal-cart', () => {
       _syncModalQtyUI();
 
       expect(state.modalQty).toBe(3);
-      expect(dom.addCartBtn.innerHTML).toContain('Dans le panier (3)');
+      expect(dom.addCartBtn.textContent).toContain('Dans le panier (3)');
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(true);
     });
 
@@ -188,7 +190,7 @@ describe('b-modal-cart', () => {
 
       expect(state.modalQty).toBe(1);
       expect(dom.modalQtyVal.textContent).toBe('1');
-      expect(dom.addCartBtn.innerHTML).toContain('Dans le panier (2)');
+      expect(dom.addCartBtn.textContent).toContain('Dans le panier (2)');
       expect(actions.dataset.inventoryModel).toBe('SKU');
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
       expect(dom.qtyMinus.disabled).toBe(true);
@@ -204,7 +206,7 @@ describe('b-modal-cart', () => {
 
       expect(state.modalQty).toBe(1);
       expect(dom.addCartBtn.classList.contains('in-cart')).toBe(false);
-      expect(dom.addCartBtn.innerHTML).toContain('Ajouter');
+      expect(dom.addCartBtn.textContent).toContain('Ajouter');
     });
 
     test('fonctionne sans compteur, actions, bouton Ajouter ou un des contrôles', () => {
@@ -221,7 +223,7 @@ describe('b-modal-cart', () => {
       state.modalProduct = { id: 1 };
       dom.addCartBtn.remove();
       _syncModalQtyUI();
-      expect(dom.addCartBtn.innerHTML).toContain('Ajouter');
+      expect(dom.addCartBtn.textContent).toContain('Ajouter');
     });
   });
 
@@ -263,7 +265,7 @@ describe('b-modal-cart', () => {
         { product: { id: 42, sku_id: 'sku-red' }, variant_combo: { color: 'Rouge' }, qty: 2 },
       ];
       _syncModalQtyUI();
-      expect(dom.addCartBtn.innerHTML).toContain('Dans le panier (5)');
+      expect(dom.addCartBtn.textContent).toContain('Dans le panier (5)');
 
       const option = document.createElement('button');
       option.dataset.optionValue = 'Rouge';
@@ -277,7 +279,7 @@ describe('b-modal-cart', () => {
       option.click();
       await Promise.resolve();
 
-      expect(dom.addCartBtn.innerHTML).toContain('Dans le panier (2)');
+      expect(dom.addCartBtn.textContent).toContain('Dans le panier (2)');
       expect(state.modalQty).toBe(1);
     });
 
@@ -285,7 +287,7 @@ describe('b-modal-cart', () => {
       setupModalCart();
       setSkuSelection();
       state.cart = [{ product: { id: 42, sku_id: 'sku-red' }, qty: 2 }];
-      dom.addCartBtn.innerHTML = 'sentinel';
+      dom.addCartBtn.textContent = 'sentinel';
 
       document.body.click();
       const outside = document.createElement('button');
@@ -295,7 +297,7 @@ describe('b-modal-cart', () => {
       document.dispatchEvent(new Event('click', { bubbles: true }));
       await Promise.resolve();
 
-      expect(dom.addCartBtn.innerHTML).toBe('sentinel');
+      expect(dom.addCartBtn.textContent).toBe('sentinel');
     });
 
     test('Ajouter legacy transmet le produit original', () => {
