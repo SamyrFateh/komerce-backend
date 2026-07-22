@@ -14,10 +14,6 @@ jest.mock('../../js/b-store.js', () => ({
   dom: {},
 }));
 
-jest.mock('../../js/b-modal-cart.js', () => ({
-  _syncModalQtyUI: jest.fn(),
-}));
-
 jest.mock('../../js/view-models/modal-selection-model.js', () => ({
   createModalSelection: jest.fn((detail) => ({
     inventory_model: detail.inventory_model,
@@ -42,7 +38,6 @@ jest.mock('../../js/b-modal-desktop-product.js', () => ({
 
 const { bus } = require('../../js/b-bus.js');
 const { state, dom } = require('../../js/b-store.js');
-const { _syncModalQtyUI } = require('../../js/b-modal-cart.js');
 const { createModalSelection } = require('../../js/view-models/modal-selection-model.js');
 const {
   clearMobileProductDetailState,
@@ -135,7 +130,7 @@ describe('product detail modal bootstrap', () => {
     delete global.fetch;
   });
 
-  test('mobile : rend PDC puis réconcilie l état panier', async () => {
+  test('mobile : rend PDC puis publie modal:detail-ready', async () => {
     const payload = detail();
     fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
 
@@ -153,10 +148,10 @@ describe('product detail modal bootstrap', () => {
       { forceMedia: true }
     );
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
-    expect(_syncModalQtyUI).toHaveBeenCalledTimes(1);
+    expect(bus.emit).toHaveBeenCalledWith('modal:detail-ready');
   });
 
-  test('desktop : rend PDC puis réconcilie l état panier', async () => {
+  test('desktop : rend PDC puis publie modal:detail-ready', async () => {
     window.matchMedia.mockReturnValue({ matches: false });
     const payload = detail();
     fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
@@ -171,7 +166,7 @@ describe('product detail modal bootstrap', () => {
       { forceMedia: true }
     );
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
-    expect(_syncModalQtyUI).toHaveBeenCalledTimes(1);
+    expect(bus.emit).toHaveBeenCalledWith('modal:detail-ready');
   });
 
   test('passage mobile vers desktop réutilise contrat et sélection sans refetch', async () => {
@@ -185,7 +180,7 @@ describe('product detail modal bootstrap', () => {
     const sharedSelection = state.modalSelection;
     renderMobileProductDetail.mockClear();
     renderDesktopProductDetail.mockClear();
-    _syncModalQtyUI.mockClear();
+    bus.emit.mockClear();
     window.matchMedia.mockReturnValue({ matches: false });
 
     _productDetailBootstrapTestApi.syncResponsiveComposition();
@@ -198,7 +193,7 @@ describe('product detail modal bootstrap', () => {
       sharedSelection,
       { forceMedia: false }
     );
-    expect(_syncModalQtyUI).toHaveBeenCalledTimes(1);
+    expect(bus.emit).toHaveBeenCalledWith('modal:detail-ready');
     expect(bus.emit).toHaveBeenCalledWith('modal:composition-synced');
   });
 
@@ -209,13 +204,13 @@ describe('product detail modal bootstrap', () => {
     await flush();
     renderMobileProductDetail.mockClear();
     renderDesktopProductDetail.mockClear();
-    _syncModalQtyUI.mockClear();
+    bus.emit.mockClear();
 
     _productDetailBootstrapTestApi.syncResponsiveComposition();
 
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
-    expect(_syncModalQtyUI).not.toHaveBeenCalled();
+    expect(bus.emit).not.toHaveBeenCalledWith('modal:detail-ready');
   });
 
   test('ignore une réponse arrivée après navigation vers un autre produit', async () => {
@@ -233,7 +228,7 @@ describe('product detail modal bootstrap', () => {
 
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
-    expect(_syncModalQtyUI).not.toHaveBeenCalled();
+    expect(bus.emit).not.toHaveBeenCalledWith('modal:detail-ready');
   });
 
   test('verrouille CTA et stepper avant la résolution du fetch', () => {
@@ -255,7 +250,7 @@ describe('product detail modal bootstrap', () => {
     expect(dom.modalVariants.querySelector('[data-mdm-detail-error]')).not.toBeNull();
     transactionalControls().forEach((control) => expect(control.disabled).toBe(true));
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
-    expect(_syncModalQtyUI).not.toHaveBeenCalled();
+    expect(bus.emit).not.toHaveBeenCalledWith('modal:detail-ready');
     warn.mockRestore();
   });
 
@@ -268,11 +263,11 @@ describe('product detail modal bootstrap', () => {
     await flush();
 
     transactionalControls().forEach((control) => expect(control.disabled).toBe(true));
-    expect(_syncModalQtyUI).not.toHaveBeenCalled();
+    expect(bus.emit).not.toHaveBeenCalledWith('modal:detail-ready');
     warn.mockRestore();
   });
 
-  test('le module ne réintroduit aucun guard MutationObserver legacy', () => {
+  test('le module ne réintroduit aucun guard legacy ni dépendance directe panier', () => {
     const fs = require('fs');
     const path = require('path');
     const source = fs.readFileSync(
@@ -284,6 +279,8 @@ describe('product detail modal bootstrap', () => {
     expect(source).not.toMatch(/installVariantGuard/);
     expect(source).not.toMatch(/disconnectVariantGuard/);
     expect(source).not.toMatch(/expectedRootSelector/);
+    expect(source).not.toMatch(/b-modal-cart/);
+    expect(source).toMatch(/bus\.emit\('modal:detail-ready'\)/);
   });
 
   test('modal:closed invalide les requêtes et nettoie les deux compositions', () => {

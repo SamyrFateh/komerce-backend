@@ -6,6 +6,7 @@ jest.mock('../../js/b-cart.js', () => ({
   quickRemove: jest.fn(),
 }));
 
+const { bus } = require('../../js/b-bus.js');
 const { state, dom } = require('../../js/b-store.js');
 const { addToCart, quickAdd, quickRemove } = require('../../js/b-cart.js');
 const {
@@ -152,8 +153,23 @@ describe('b-modal-cart', () => {
       expect(dom.modalQtyVal.textContent).toBe('');
     });
 
-    test('legacy absent : qty 1, bouton Ajouter, stepper actif', () => {
+    test('avant chargement du détail : bouton visible, jamais de stepper principal', () => {
       state.modalProduct = { id: 42 };
+      state.cart = [{ product: { id: 42 }, qty: 3 }];
+
+      _syncModalQtyUI();
+
+      expect(state.modalQty).toBe(3);
+      expect(actions.dataset.inventoryModel).toBe('UNKNOWN');
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
+      expect(dom.addCartBtn.textContent).toContain('Dans le panier (3)');
+      expect(dom.qtyMinus.disabled).toBe(true);
+      expect(dom.qtyPlus.disabled).toBe(true);
+    });
+
+    test('legacy absent : qty 1, bouton Ajouter, stepper autorisé', () => {
+      state.modalProduct = { id: 42 };
+      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS' };
       dom.qtyMinus.disabled = true;
       dom.qtyPlus.disabled = true;
       _syncModalQtyUI();
@@ -163,7 +179,7 @@ describe('b-modal-cart', () => {
       expect(dom.addCartBtn.classList.contains('in-cart')).toBe(false);
       expect(dom.addCartBtn.textContent).toContain('Ajouter');
       expect(dom.addCartBtn.querySelector('img').src).toContain('/images/panier_tresse_vert.png');
-      expect(actions.dataset.inventoryModel).toBe('LEGACY');
+      expect(actions.dataset.inventoryModel).toBe('LEGACY_VARIANTS');
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
       expect(dom.qtyMinus.disabled).toBe(false);
       expect(dom.qtyPlus.disabled).toBe(false);
@@ -171,6 +187,7 @@ describe('b-modal-cart', () => {
 
     test('legacy présent : reflète qty et active le stepper filled', () => {
       state.modalProduct = { id: 42 };
+      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS' };
       state.cart = [{ product: { id: 42 }, qty: 3 }];
       _syncModalQtyUI();
 
@@ -211,6 +228,7 @@ describe('b-modal-cart', () => {
 
     test('fonctionne sans compteur, actions, bouton Ajouter ou un des contrôles', () => {
       state.modalProduct = { id: 1 };
+      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS' };
       dom.modalQtyVal = null;
       dom.addCartBtn.remove();
       dom.addCartBtn = null;
@@ -228,9 +246,22 @@ describe('b-modal-cart', () => {
   });
 
   describe('setupModalCart et délégation sélection', () => {
-    test('câble les listeners sans throw et reste idempotent pour la délégation document', () => {
+    test('câble les listeners sans throw et reste idempotent pour les délégations', () => {
       expect(() => setupModalCart()).not.toThrow();
       expect(() => setupModalCart()).not.toThrow();
+    });
+
+    test('modal:detail-ready rejoue la synchronisation', () => {
+      setupModalCart();
+      state.modalProduct = { id: 42 };
+      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS' };
+      state.cart = [{ product: { id: 42 }, qty: 2 }];
+      dom.addCartBtn.textContent = 'sentinel';
+
+      bus.emit('modal:detail-ready');
+
+      expect(dom.addCartBtn.textContent).toContain('Dans le panier (2)');
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(true);
     });
 
     test('qtyPlus appelle quickAdd puis resynchronise', () => {

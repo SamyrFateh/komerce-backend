@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-22T16:23:59.726Z",
+  "generatedAt": "2026-07-22T22:22:25.237Z",
   "summary": {
-    "modules": 73,
-    "withHeader": 73,
-    "events": 18,
-    "declaredActive": 12,
+    "modules": 74,
+    "withHeader": 74,
+    "events": 19,
+    "declaredActive": 13,
     "declaredDead": 5,
     "cssBundles": 3,
     "endpoints": 52,
@@ -825,12 +825,12 @@
         "b-utils.js",
         "b-modal.js",
         "b-cart.js",
-        "b-share-cart.js"
+        "b-share-cart.js",
+        "view-models/modal-cart-product-model.js"
       ],
       "usedBy": [
         "b-modal-mobile-product.js",
-        "b-modal-desktop-product.js",
-        "b-modal-approche-c-hybrid.js"
+        "b-modal-desktop-product.js"
       ],
       "emits": [],
       "listens": [],
@@ -839,7 +839,8 @@
         "b-modal",
         "b-cart",
         "b-share-cart",
-        "b-store"
+        "b-store",
+        "modal-cart-product-model"
       ],
       "bodyClasses": []
     },
@@ -855,10 +856,14 @@
       "depends": [],
       "usedBy": [],
       "emits": [],
-      "listens": [],
+      "listens": [
+        "modal:detail-ready"
+      ],
       "imports": [
+        "b-bus",
         "b-store",
-        "b-cart"
+        "b-cart",
+        "modal-cart-product-model"
       ],
       "bodyClasses": []
     },
@@ -1102,6 +1107,7 @@
         "main.js"
       ],
       "emits": [
+        "modal:detail-ready",
         "modal:composition-synced"
       ],
       "listens": [
@@ -2107,6 +2113,29 @@
       "bodyClasses": []
     },
     {
+      "file": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "id": "modal-cart-product-model",
+      "hasHeader": true,
+      "role": "modal-cart-product-snapshot-model",
+      "domain": "catalog",
+      "layer": "view-model",
+      "criticality": "high",
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "b-modal-cart.js",
+        "b-modal-buybox-shared.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
       "file": "public/boutique/js/view-models/modal-selection-model.js",
       "id": "modal-selection-model",
       "hasHeader": true,
@@ -2327,6 +2356,14 @@
         "b-pager"
       ]
     },
+    "modal:detail-ready": {
+      "emitters": [
+        "b-modal-product-detail-bootstrap"
+      ],
+      "listeners": [
+        "b-modal-cart"
+      ]
+    },
     "carousel:changed": {
       "emitters": [
         "b-modal-product"
@@ -2379,8 +2416,10 @@
         "modal-product-lot4-hybrid",
         "modal-mobile-canonical",
         "modal-enriched-content",
+        "modal-cart-sku-guard",
         "cart",
         "interactions",
+        "modal-mobile-suggestion-actions",
         "hero-cart-proxy",
         "group-cart-flow",
         "share-cart",
@@ -2965,6 +3004,7 @@
       "chip:center",
       "catalog:cat-changed",
       "modal:suggestions-rendered",
+      "modal:detail-ready",
       "nav:goto-track"
     ],
     "dead": [

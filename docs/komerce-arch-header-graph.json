@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 777,
-    "edges": 4376,
+    "edges": 4375,
     "dbTables": 116,
     "doctrines": 154,
     "impactAreas": 127,
@@ -2373,7 +2373,6 @@
       "depends": [
         "b-bus.js",
         "b-store.js",
-        "b-modal-cart.js",
         "b-modal-mobile-product.js",
         "b-modal-desktop-product.js",
         "view-models/modal-selection-model.js"
@@ -2553,7 +2552,7 @@
         "personalization",
         "catalog-navigation"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-modal.js",
@@ -3692,7 +3691,7 @@
         "catalog",
         "product-discovery"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/shop-schema.js",
@@ -23247,12 +23246,6 @@
       "to": "public/boutique/js/b-store.js",
       "type": "depends",
       "label": "b-store.js"
-    },
-    {
-      "from": "public/boutique/js/b-modal-product-detail-bootstrap.js",
-      "to": "public/boutique/js/b-modal-cart.js",
-      "type": "depends",
-      "label": "b-modal-cart.js"
     },
     {
       "from": "public/boutique/js/b-modal-product-detail-bootstrap.js",
@@ -48299,7 +48292,6 @@
       "mustCheck": [
         "impact:boutique",
         "public/boutique/js/b-modal-core.js",
-        "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "public/boutique/js/view-models/modal-cart-product-model.js"
       ]
     },
@@ -48595,7 +48587,6 @@
       "directDependsOn": [
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-store.js",
-        "public/boutique/js/b-modal-cart.js",
         "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/view-models/modal-selection-model.js"
@@ -48627,7 +48618,6 @@
         "impact:product-modal",
         "impact:sku-selection",
         "public/boutique/js/b-bus.js",
-        "public/boutique/js/b-modal-cart.js",
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-store.js",

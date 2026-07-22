@@ -35,6 +35,7 @@
  *   chip:center      { chip }           — centrer chip active dans le pager [b-pager → b-catalog]
  *   catalog:cat-changed { cat }         — catégorie active changée [b-catalog → b-desktop-upgrade]
  *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
+ *   modal:detail-ready —                  — Product Detail Contract résolu ; réconcilier l'état panier modal
  *   nav:goto-track   —                  — ouvrir l'onglet Suivi depuis la confirmation de commande [b-checkout.js → b-nav.js, FIX 2026-07-11]
  *
  * Événements retirés du JSDoc (déclarés mais jamais émis ni consommés) :
