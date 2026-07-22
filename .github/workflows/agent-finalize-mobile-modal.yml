@@ -35,11 +35,16 @@ jobs:
           npm ci
           npm ci --prefix public/boutique
 
-      - name: Align historical assertions
+      - name: Align catalog selector and historical assertions
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
+
+          interactions = Path('public/boutique/css/interactions.css')
+          text = interactions.read_text(encoding='utf-8')
+          text = text.replace('.k-sug-add', '.k-catalog-sug-add')
+          interactions.write_text(text, encoding='utf-8')
 
           render_test = Path('public/boutique/tests/unit/render-product-card.test.js')
           text = render_test.read_text(encoding='utf-8')
@@ -80,6 +85,8 @@ jobs:
           ! grep -F "b-modal-cart.js" public/boutique/js/b-modal-product-detail-bootstrap.js
           grep -F "classList.toggle('is-filled', qty > 0)" public/boutique/js/b-modal-suggestions.js
           grep -F "k-catalog-sug-add" public/boutique/js/render/render-product-card.js
+          grep -F ".k-catalog-sug-add" public/boutique/css/interactions.css
+          ! grep -F ".k-sug-add" public/boutique/css/interactions.css
 
       - name: Targeted unit tests
         working-directory: public/boutique
@@ -105,7 +112,8 @@ jobs:
         run: |
           grep -n "components.css?v=" public/boutique/index.html
           test -s public/boutique/css/dist/components.css
-          grep -F "modal-mobile-suggestion-actions.css" public/boutique/css/dist/components.css
+          grep -F ".k-catalog-sug-add" public/boutique/css/dist/components.css
+          grep -F "#k-modal .k-sug-card-actions.is-filled" public/boutique/css/dist/components.css
           git diff --check
 
       - name: Commit validated integration
@@ -117,6 +125,7 @@ jobs:
           git rm -f --ignore-unmatch .github/workflows/agent-mobile-modal-integration-pr.yml
           git rm -f --ignore-unmatch .github/workflows/agent-finalize-mobile-modal.yml
           git rm -f --ignore-unmatch .agent/evidence/mobile-modal-integration-scope.md
+          git add public/boutique/css/interactions.css
           git add public/boutique/css/dist/components.css
           git add public/boutique/index.html
           git add public/boutique/tests/unit/b-modal-suggestions.test.js
