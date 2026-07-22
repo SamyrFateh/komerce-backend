@@ -57,9 +57,23 @@ function waitForServer(url, timeoutMs) {
   });
 }
 
+function resolveServeScript() {
+  const pkgPath = require.resolve('serve/package.json');
+  const pkg = require(pkgPath);
+  const binRel = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin.serve;
+  return path.join(path.dirname(pkgPath), binRel);
+}
+
 async function startServer() {
   if (process.env.GATE_SMOKE_NO_SERVER) return null; // réutilise un serveur déjà lancé (dev local)
-  const child = spawn('npx', ['serve', SERVE_ROOT, '-l', String(PORT), '--no-clipboard'], {
+  // On lance `node <serve/build/main.js> ...` directement (process.execPath),
+  // au lieu de `npx serve`. npx passe par un .cmd sous Windows, ce qui force
+  // shell:true — et spawn(shell:true) plante par intermittence avec EINVAL
+  // sur certaines installations Windows/Node (bug connu côté Node, pas côté
+  // ce script). En invoquant le binaire node directement, on n'a plus besoin
+  // de shell du tout, sur aucun OS.
+  const serveScript = resolveServeScript();
+  const child = spawn(process.execPath, [serveScript, SERVE_ROOT, '-l', String(PORT), '--no-clipboard'], {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   child.stdout.on('data', () => {});
@@ -143,6 +157,7 @@ async function runParcours2(browser, log) {
         const loadingControl = state === 'LOADING' ? driver.createLoadingControl() : null;
         await driver.installApi(page, state, pageLog, loadingControl);
         const openPromise = driver.openPdp(page, state);
+        openPromise.catch(() => {}); // évite un unhandled rejection si le garde LOADING rejette avant que openPromise soit awaited
         if (loadingControl) {
           await driver.withTimeout(loadingControl.requested.promise, 10_000, 'requête /detail LOADING absente');
         }

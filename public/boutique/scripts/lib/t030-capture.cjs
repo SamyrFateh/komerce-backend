@@ -289,6 +289,7 @@ async function run() {
         const loadingControl = state === 'LOADING' ? createLoadingControl() : null;
         await installApi(page, state, log, loadingControl);
         const openPromise = openPdp(page, state);
+        openPromise.catch(() => {}); // évite un unhandled rejection si le garde LOADING rejette avant que openPromise soit awaited
         if (loadingControl) {
           await withTimeout(loadingControl.requested.promise, 10_000, 'requête /detail LOADING absente');
         }

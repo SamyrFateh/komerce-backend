@@ -1,0 +1,42 @@
+[parcours1] catalogue-360 → ÉCHEC {"cardCount":0,"realCardCount":0}
+[parcours1] catalogue-390 → ÉCHEC {"cardCount":0,"realCardCount":0}
+[parcours1] catalogue-430 → ÉCHEC {"cardCount":0,"realCardCount":0}
+[parcours1] catalogue-1024 → ÉCHEC {"cardCount":0,"realCardCount":0}
+[parcours1] catalogue-1440 → ÉCHEC {"cardCount":0,"realCardCount":0}
+[parcours1] catalogue-1600 → ÉCHEC {"cardCount":0,"realCardCount":0}
+[parcours2] pdp-360-AVAILABLE_EMPTY → ÉCHEC
+[parcours2] pdp-360-AVAILABLE_FILLED → ÉCHEC
+[parcours2] pdp-360-OUT_OF_STOCK → ÉCHEC
+[parcours2] pdp-360-SELECTION_REQUIRED → ÉCHEC
+[parcours2] pdp-360-LOADING → ÉCHEC
+[parcours2] pdp-360-ERROR → ÉCHEC
+[parcours2] pdp-390-AVAILABLE_EMPTY → ÉCHEC
+[parcours2] pdp-390-AVAILABLE_FILLED → ÉCHEC
+[parcours2] pdp-390-OUT_OF_STOCK → ÉCHEC
+[parcours2] pdp-390-SELECTION_REQUIRED → ÉCHEC
+[parcours2] pdp-390-LOADING → ÉCHEC
+[parcours2] pdp-390-ERROR → ÉCHEC
+[parcours2] pdp-430-AVAILABLE_EMPTY → ÉCHEC
+[parcours2] pdp-430-AVAILABLE_FILLED → ÉCHEC
+[parcours2] pdp-430-OUT_OF_STOCK → ÉCHEC
+[parcours2] pdp-430-SELECTION_REQUIRED → ÉCHEC
+[parcours2] pdp-430-LOADING → ÉCHEC
+[parcours2] pdp-430-ERROR → ÉCHEC
+[parcours2] pdp-1024-AVAILABLE_EMPTY → ÉCHEC
+[parcours2] pdp-1024-AVAILABLE_FILLED → ÉCHEC
+[parcours2] pdp-1024-OUT_OF_STOCK → ÉCHEC
+[parcours2] pdp-1024-SELECTION_REQUIRED → ÉCHEC
+[parcours2] pdp-1024-LOADING → ÉCHEC
+[parcours2] pdp-1024-ERROR → ÉCHEC
+[parcours2] pdp-1440-AVAILABLE_EMPTY → ÉCHEC
+[parcours2] pdp-1440-AVAILABLE_FILLED → ÉCHEC
+[parcours2] pdp-1440-OUT_OF_STOCK → ÉCHEC
+[parcours2] pdp-1440-SELECTION_REQUIRED → ÉCHEC
+[parcours2] pdp-1440-LOADING → ÉCHEC
+[parcours2] pdp-1440-ERROR → ÉCHEC
+[parcours2] pdp-1600-AVAILABLE_EMPTY → ÉCHEC
+[parcours2] pdp-1600-AVAILABLE_FILLED → ÉCHEC
+[parcours2] pdp-1600-OUT_OF_STOCK → ÉCHEC
+[parcours2] pdp-1600-SELECTION_REQUIRED → ÉCHEC
+[parcours2] pdp-1600-LOADING → ÉCHEC
+[parcours2] pdp-1600-ERROR → ÉCHEC

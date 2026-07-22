@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#F2ECE1">
+<title>Modale — un modèle, toute densité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F2ECE1;--cream-2:#EAE1CF;--panel:#FFF;--ink:#1E2E24;--ink-2:#33413A;
+    --muted:#8A8478;--faint:#ABA491;--line:#ECE7DC;--line-2:#E1DACB;
+    --green:#2E9E4A;--green-2:#23823B;--green-bg:#E7F3E9;--green-tx:#2E7D32;
+    --gold:#C39A3E;--coral:#C4574A;
+    --serif:'Fraunces',Georgia,serif;--sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#DED6C6;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+  svg{display:block}
+  .page{max-width:1120px;margin:0 auto;padding:40px 24px 80px}
+  .doc-h{margin:0 0 4px;font-family:var(--serif);font-weight:500;font-size:30px;color:#2a2620}
+  .doc-sub{margin:0 0 28px;color:#6b665c;font-size:15px;max-width:760px;line-height:1.6}
+  .icn{display:inline-flex;align-items:center;justify-content:center;line-height:0}
+  .icn svg{width:1em;height:1em}
+  .rules{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 34px}
+  .rule{background:var(--panel);border:.5px solid var(--line);border-radius:12px;padding:16px 18px}
+  .rule .n{font-family:var(--serif);font-size:22px;color:var(--green-2);font-weight:600;line-height:1}
+  .rule h4{margin:8px 0 4px;font-size:14px;font-weight:500}
+  .rule p{margin:0;font-size:12.5px;color:#6b665c;line-height:1.5}
+  .rule code{font-family:var(--mono,monospace);font-size:11.5px;background:var(--cream);padding:1px 4px;border-radius:4px}
+  .cmp-h{font-family:var(--serif);font-size:20px;font-weight:500;margin:0 0 4px;color:#2a2620}
+  .cmp-sub{margin:0 0 20px;font-size:14px;color:#6b665c;max-width:760px;line-height:1.55}
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:start}
+  .col-h{text-align:center;margin:0 0 12px}
+  .col-h .t{font-size:14px;font-weight:500;color:#3a352c}
+  .col-h .s{font-size:12.5px;color:#8a8272;margin-top:2px}
+  .phone{width:320px;margin:0 auto;background:#111014;border-radius:38px;padding:9px 8px}
+  .screen{border-radius:30px;overflow:hidden;background:var(--panel);position:relative;height:632px;display:flex;flex-direction:column}
+  .sbar{height:24px;background:var(--cream);display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:11px;color:#5c584f;flex:0 0 auto}
+  .sbar .r{display:flex;align-items:center;gap:5px}
+  .sbar .r .icn{font-size:14px}
+  .scroll{flex:1;overflow:hidden;position:relative}
+  .fade{position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.92));pointer-events:none;z-index:4;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px}
+  .fade .icn{font-size:16px;color:var(--muted)}
+  .hero{position:relative;height:33%;min-height:170px;max-height:210px;background:var(--cream-2);flex:0 0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .hero .fh{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;z-index:3}
+  .fh .ic{width:32px;height:32px;border-radius:50%;background:rgba(40,38,32,.42);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .fh .social{position:relative}
+  .fh .social .b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--coral);color:#fff;font-size:9.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid var(--cream-2)}
+  .hero .eyebrow{position:absolute;top:50px;left:18px;font-size:10.5px;letter-spacing:2px;color:#8f8973;font-weight:600;z-index:2}
+  .hero .eyebrow span{display:block;font-size:8px;letter-spacing:1.2px;color:#b3ac97;margin-top:2px}
+  .hero .blob{position:absolute;border-radius:50%;background:#E1D7C1;opacity:.5}
+  .hero .pager{position:absolute;right:12px;bottom:12px;background:rgba(40,38,32,.6);color:#fff;font-size:10.5px;padding:3px 8px;border-radius:20px;z-index:2}
+  .body{background:#fff;border-radius:16px 16px 0 0;margin-top:-14px;position:relative;z-index:2;padding:15px 17px 20px}
+  .title{margin:0;font-family:var(--serif);font-weight:500;font-size:19px;line-height:1.18;color:var(--ink)}
+  .ref{margin:4px 0 0;font-size:11.5px;color:var(--faint)}
+  .rating{margin:6px 0 0;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
+  .rating .icn{font-size:13px;color:var(--gold)}
+  .price{margin:11px 0 0;font-family:var(--serif);font-weight:600;font-size:23px;color:var(--ink);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .price .u{font-size:13px;font-weight:500;color:var(--muted);font-family:var(--sans)}
+  .pill-stock{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--green-tx);background:var(--green-bg);padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px}
+  .pill-stock .dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+  .deliv{margin:10px 0 0}
+  .pill{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px}
+  .pill .icn{font-size:13px}
+  .pill-air{color:#0C447C;background:#E6F1FB}
+  .pill-sea{color:#5F5E5A;background:#F1EFE8}
+  .opt{margin:15px 0 0}
+  .opt-lab{font-size:12px;color:var(--muted);margin:0 0 8px}
+  .opt-lab b{color:var(--ink);font-weight:500}
+  .opt-lab .cnt{color:var(--faint);font-weight:400}
+  .sw-thumbs{display:flex;gap:8px;flex-wrap:wrap}
+  .sw{width:50px;height:40px;border-radius:9px;border:.5px solid var(--line-2);background:var(--cream-2);overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative}
+  .sw.on{border:1.5px solid var(--ink)}
+  .sw svg{width:44px}
+  .dots{display:flex;gap:9px;flex-wrap:wrap}
+  .dot-sw{width:38px;height:38px;border-radius:50%;border:.5px solid var(--line-2);position:relative;background-clip:padding-box}
+  .dot-sw.on{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--ink)}
+  .dot-sw .hot{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--coral);color:#fff;font-size:7.5px;font-weight:600;letter-spacing:.4px;padding:1px 5px;border-radius:4px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{min-width:44px;height:38px;padding:0 12px;border-radius:9px;border:.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-size:13.5px;color:var(--ink-2);background:#fff}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sugg{margin-top:15px;padding-top:13px;border-top:.5px solid var(--line)}
+  .sugg-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+  .sugg-h b{font-size:14px;font-weight:500}
+  .sugg-h a{font-size:12px;color:var(--muted)}
+  .sugg-row{display:flex;gap:9px}
+  .sugg-card{flex:0 0 30.5%}
+  .sugg-card .im{height:84px;background:var(--cream-2);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .sugg-card span{display:block;margin-top:5px;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cta{flex:0 0 auto;background:#fff;border-top:.5px solid var(--line);padding:9px 14px 12px;display:flex;gap:9px}
+  .cta .add{flex:1.5;height:47px;border-radius:12px;border:none;background:var(--green);color:#fff;font-weight:500;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--sans)}
+  .cta .add .icn{font-size:16px}
+  .cta .buy{flex:1;height:47px;border-radius:12px;border:.5px solid var(--line-2);background:#fff;color:var(--ink);font-weight:500;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans)}
+  .cta .buy .bolt{color:var(--green-2);font-size:15px}
+  .cap{margin:14px 4px 0;font-size:12.5px;color:#6b665c;line-height:1.55}
+  .cap b{color:#2a2620;font-weight:500}
+  .shared{margin:26px 0 0;padding:16px 18px;background:var(--panel);border:.5px solid var(--line);border-radius:12px;font-size:13px;color:#4a453c;line-height:1.6}
+  .shared b{color:#2a2620;font-weight:500}
+  @media(max-width:820px){.cmp,.rules{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="doc-h">Modale produit — un seul modèle, toute densité</h1>
+  <p class="doc-sub">Le même template rendu à deux extrêmes : un produit à <b>3 variantes</b> et un à <b>~20</b>. Aucune branche de code entre les deux, aucune hauteur calculée. Ce qui « affleure » sous le fold change tout seul selon ce qui remplit l'écran — c'est ça qui empêche d'avoir à « casser pour passer sur Temu ».</p>
+
+  <div class="rules">
+    <div class="rule"><div class="n">1</div><h4>Un seul conteneur qui scrolle</h4><p>Hero en hauteur relative, le reste flue, le conteneur défile. Zéro <code>height</code> en dur, zéro « rétrécir pour reloger ».</p></div>
+    <div class="rule"><div class="n">2</div><h4>CTA sticky indépendant</h4><p>Collé en bas, toujours atteignable — que la fiche fasse 600px ou 3000px. Il ne dépend jamais du contenu au-dessus.</p></div>
+    <div class="rule"><div class="n">3</div><h4>Les variantes gèrent leur débordement</h4><p>Swatches en <code>flex-wrap</code> : peu → 1 ligne, beaucoup → plusieurs lignes qui participent au scroll. Jamais de cadre à hauteur fixe qui tronque.</p></div>
+  </div>
+
+  <h2 class="cmp-h">Même code, deux densités</h2>
+  <p class="cmp-sub">À gauche, peu de variantes : couleur + taille tiennent en haut, et ce sont les <b>suggestions</b> qui affleurent (teasing cross-sell). À droite, beaucoup de variantes : le <b>bloc couleur déborde</b> et affleure (on scrolle dans les couleurs, façon SHEIN) ; les suggestions viennent plus bas, naturellement.</p>
+
+  <div class="cmp">
+    <div>
+      <div class="col-h"><div class="t">Faible densité · 3 couleurs, 4 tailles</div><div class="s">Chaussure Elite Pro</div></div>
+      <div class="phone"><div class="screen">
+        <div class="sbar"><span>6:40</span><span class="r"><span class="icn" data-ic="battery"></span> 68</span></div>
+        <div class="scroll">
+          <div class="hero">
+            <div class="fh"><span class="ic"><span class="icn" data-ic="arrow-left"></span></span><span class="social ic"><span class="icn" data-ic="user"></span><span class="b">10</span></span></div>
+            <div class="eyebrow">ELITE PRO<span>GOLDEN PERFORMANCE SERIES</span></div>
+            <div class="blob" style="width:120px;height:120px;top:30px;right:16px"></div>
+            <div data-boot="mid"></div>
+            <div class="pager">1 / 5</div>
+          </div>
+          <div class="body">
+            <h3 class="title">Chaussure de football Elite Pro</h3>
+            <div class="ref">Réf. GOLD-BLU-44</div>
+            <div class="price">45 000 <span class="u">KMF</span> <span class="pill-stock"><span class="dot"></span>En stock</span></div>
+            <div class="deliv"><span class="pill pill-air"><span class="icn" data-ic="send"></span>Express · avion · 3–5 jours</span></div>
+            <div class="opt">
+              <div class="opt-lab">Couleur · <b>Bleu</b></div>
+              <div class="sw-thumbs">
+                <div class="sw on" data-swatch="#3B6EA5"></div>
+                <div class="sw" data-swatch="#201F1C"></div>
+                <div class="sw" data-swatch="#B89B6A"></div>
+              </div>
+            </div>
+            <div class="opt">
+              <div class="opt-lab">Taille · <b>44</b></div>
+              <div class="chips"><div class="chip">42</div><div class="chip">43</div><div class="chip on">44</div><div class="chip">45</div></div>
+            </div>
+            <div class="sugg">
+              <div class="sugg-h"><b>Nos suggestions</b><a>Voir tout ›</a></div>
+              <div class="sugg-row">
+                <div class="sugg-card"><div class="im" data-boot="sugg"></div><span>Street Runner</span></div>
+                <div class="sugg-card"><div class="im" data-boot="sugg"></div><span>Court Legend</span></div>
+                <div class="sugg-card"><div class="im" data-boot="sugg"></div><span>Trail Master</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="fade"><span class="icn" data-ic="chevron-down"></span></div>
+        </div>
+        <div class="cta">
+          <button class="add"><span class="icn" data-ic="plus"></span> Ajouter au panier</button>
+          <button class="buy"><span class="icn bolt" data-ic="bolt"></span> Acheter</button>
+        </div>
+      </div></div>
+      <p class="cap"><b>Ce qui affleure :</b> les suggestions. Le contenu produit est court, donc le teasing cross-sell prend le relais sous le fold. Immédiateté <b>+</b> tapis roulant.</p>
+    </div>
+
+    <div>
+      <div class="col-h"><div class="t">Forte densité · ~20 couleurs, 6 tailles</div><div class="s">Swim Vcay 2026 · 3 pièces</div></div>
+      <div class="phone"><div class="screen">
+        <div class="sbar"><span>6:40</span><span class="r"><span class="icn" data-ic="battery"></span> 68</span></div>
+        <div class="scroll">
+          <div class="hero">
+            <div class="fh"><span class="ic"><span class="icn" data-ic="arrow-left"></span></span><span class="social ic"><span class="icn" data-ic="user"></span><span class="b">31</span></span></div>
+            <div class="blob" style="width:130px;height:130px;top:24px;right:20px"></div>
+            <div class="blob" style="width:90px;height:90px;left:18px;bottom:24px;background:#DFE7DA"></div>
+            <div data-swim="1"></div>
+            <div class="pager">1 / 4</div>
+          </div>
+          <div class="body">
+            <h3 class="title">Swim Vcay 2026 · femme 3 pièces</h3>
+            <div class="ref">Réf. SWM-GRN-38</div>
+            <div class="rating"><span class="icn" data-ic="star"></span>4.83 <span style="color:var(--faint)">(500+)</span></div>
+            <div class="price">8 500 <span class="u">KMF</span> <span class="pill-stock"><span class="dot"></span>En stock</span></div>
+            <div class="deliv"><span class="pill pill-sea"><span class="icn" data-ic="ship"></span>Maritime · 3–5 semaines</span></div>
+            <div class="opt">
+              <div class="opt-lab">Couleur · <b>Green</b> <span class="cnt">· 22 coloris</span></div>
+              <div class="dots" id="swim-dots"></div>
+            </div>
+            <div class="opt">
+              <div class="opt-lab">Taille · <b>M</b></div>
+              <div class="chips"><div class="chip">XS</div><div class="chip">S</div><div class="chip on">M</div><div class="chip">L</div><div class="chip">XL</div><div class="chip">XXL</div></div>
+            </div>
+            <div class="sugg">
+              <div class="sugg-h"><b>Nos suggestions</b><a>Voir tout ›</a></div>
+              <div class="sugg-row">
+                <div class="sugg-card"><div class="im" data-dot="#D8A7B0"></div><span>Beach Set</span></div>
+                <div class="sugg-card"><div class="im" data-dot="#9FB8C9"></div><span>Cover Up</span></div>
+                <div class="sugg-card"><div class="im" data-dot="#C9B79F"></div><span>Sun Hat</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="fade"><span class="icn" data-ic="chevron-down"></span></div>
+        </div>
+        <div class="cta">
+          <button class="add"><span class="icn" data-ic="plus"></span> Ajouter au panier</button>
+          <button class="buy"><span class="icn bolt" data-ic="bolt"></span> Acheter</button>
+        </div>
+      </div></div>
+      <p class="cap"><b>Ce qui affleure :</b> le bloc couleur. 22 coloris ne tiennent pas au-dessus du fold — donc ils ne l'essaient pas : la grille déborde et affleure, on scrolle dans les couleurs. <b>Même conteneur, aucune ligne de code en plus.</b></p>
+    </div>
+  </div>
+
+  <div class="shared">
+    <b>Pourquoi ça ne casse jamais :</b> le layout ne connaît pas le nombre de variantes. Il empile image → prix → livraison → couleur → taille → suggestions dans un conteneur qui scrolle, CTA sticky en bas. À 3 variantes, les suggestions affleurent ; à 22, c'est la grille couleur — <b>le même code, la densité décide</b>. Le petit luxe que tu t'offres vs SHEIN : l'ordre (couleur + taille juste sous le prix) pour que, quand il y a peu de variantes, le choix soit immédiat. Un produit dense pousse juste les tailles plus bas — rien ne se brise.
+  </div>
+</div>
+
+<script>
+const ICONS={
+  'arrow-left':'<path d="M15 5l-7 7 7 7"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  bolt:'<path d="M13 2L5 13h5l-1 9 8-11h-5z" fill="currentColor" stroke="none"/>',
+  user:'<circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>',
+  battery:'<rect x="3" y="8" width="16" height="9" rx="2"/><rect x="20" y="10.5" width="2" height="4" rx="1" fill="currentColor" stroke="none"/><rect x="5" y="10" width="9" height="5" rx="1" fill="currentColor" stroke="none"/>',
+  send:'<path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.55 .55 0 0 1-1 0l-3.5-7l-7-3.5a.55 .55 0 0 1 0-1z"/>',
+  ship:'<path d="M2 20a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2-1a2.4 2.4 0 0 1 2-1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2-1a2.4 2.4 0 0 1 2-1a2.4 2.4 0 0 1 2 1"/><path d="M4 18l-1.5-5h18l-2 4"/><path d="M5 13V7h8l4 6"/>',
+  star:'<path d="M12 3l2.6 5.3 5.9 .9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8-4.2-4.1 5.9-.9z" fill="currentColor" stroke="none"/>',
+  'chevron-down':'<path d="M6 9l6 6 6-6"/>'
+};
+document.querySelectorAll('[data-ic]').forEach(el=>{const n=el.getAttribute('data-ic');if(ICONS[n])el.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ICONS[n]+'</svg>';});
+function boot(w,mono){
+  const body=mono?'#EDE7DA':'#FBF9F3',ol=mono?'#B9B09A':'#22201c',sole=mono?'#B9B09A':'#161514',gold=mono?'#CBB98F':'#C39A3E';
+  return `<svg viewBox="0 0 260 150" width="${w}"><path d="M14 96 C 12 80, 34 74, 66 71 C 104 68, 128 60, 162 52 C 190 46, 214 50, 226 66 C 233 76, 233 88, 226 95 Z" fill="${body}" stroke="${ol}" stroke-width="3.4" stroke-linejoin="round"/><path d="M60 60 l14 26 M78 55 l14 27 M96 51 l14 28 M114 47 l13 28" stroke="${ol}" stroke-width="2.4" stroke-linecap="round"/><path d="M150 56 C 176 60, 200 70, 222 82" stroke="${gold}" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M16 96 L 226 96 C 232 105, 224 112, 210 112 L 40 112 C 24 112, 12 106, 16 96 Z" fill="${sole}"/><ellipse cx="52" cy="118" rx="9" ry="6" fill="${sole}"/><ellipse cx="92" cy="121" rx="9" ry="6" fill="${sole}"/><ellipse cx="132" cy="122" rx="9" ry="6" fill="${sole}"/><ellipse cx="172" cy="120" rx="9" ry="6" fill="${sole}"/><ellipse cx="206" cy="116" rx="8" ry="5.5" fill="${sole}"/></svg>`;
+}
+function bootThumb(body){const ol=body==='#201F1C'?'#514c40':'#26241f';return `<svg viewBox="0 0 260 150"><path d="M14 96 C 12 80, 34 74, 66 71 C 104 68, 128 60, 162 52 C 190 46, 214 50, 226 66 C 233 76, 233 88, 226 95 Z" fill="${body}" stroke="${ol}" stroke-width="3.4"/><path d="M60 60 l14 26 M96 51 l14 28" stroke="${ol}" stroke-width="2.2" opacity=".8"/><path d="M150 56 C 176 60, 200 70, 222 82" stroke="#C39A3E" stroke-width="6" fill="none"/><path d="M16 96 L 226 96 C 232 105, 224 112, 210 112 L 40 112 C 24 112, 12 106, 16 96 Z" fill="#1b1a18"/><ellipse cx="70" cy="118" rx="8" ry="5" fill="#1b1a18"/><ellipse cx="150" cy="120" rx="8" ry="5" fill="#1b1a18"/></svg>`;}
+function swim(w){
+  return `<svg viewBox="0 0 200 150" width="${w}"><path d="M50 46 h100 l-8 20 h-84 z" fill="#4E7A5E" stroke="#2f5340" stroke-width="2.5"/><path d="M62 66 c 6 24, 6 40, 4 50 l-16 0 c 4 -18, 6 -34, 6 -50 z" fill="#4E7A5E" stroke="#2f5340" stroke-width="2.5"/><path d="M138 66 c -6 24, -6 40, -4 50 l16 0 c -4 -18, -6 -34, -6 -50 z" fill="#4E7A5E" stroke="#2f5340" stroke-width="2.5"/><circle cx="100" cy="48" r="9" fill="#EDE7DA" stroke="#2f5340" stroke-width="2.5"/><path d="M66 58 h68" stroke="#3a5f49" stroke-width="2" opacity=".5"/></svg>`;
+}
+document.querySelectorAll('[data-boot]').forEach(el=>{const k=el.getAttribute('data-boot');el.innerHTML=boot(k==='sugg'?70:220,k==='sugg');});
+document.querySelectorAll('[data-swatch]').forEach(el=>{el.innerHTML=bootThumb(el.getAttribute('data-swatch'));});
+document.querySelectorAll('[data-swim]').forEach(el=>{el.innerHTML=swim(150);});
+document.querySelectorAll('[data-dot]').forEach(el=>{el.style.background=el.getAttribute('data-dot');el.style.height='84px';});
+const PALETTE=['#4E7A5E','#201F1C','#8FA6B8','#2E5AA8','#3B6EA5','#5B3B2E','#C9B79F','#7A6A55','#2f6b57','#D95A34','#6E8B3D','#B0A48A','#E7C9C0','#8A2E4A','#C4574A','#D8C7A0','#5B7FA8','#9FB8C9','#B98A6A','#4A5B7A','#D8A7B0','#8AA07A'];
+const HOT=new Set([5,6]);
+const wrap=document.getElementById('swim-dots');
+if(wrap){PALETTE.forEach((c,i)=>{const d=document.createElement('div');d.className='dot-sw'+(i===0?' on':'');d.style.background=c;if(HOT.has(i)){const h=document.createElement('span');h.className='hot';h.textContent='HOT';d.appendChild(h);}wrap.appendChild(d);});}
+</script>
+</body>
+</html>

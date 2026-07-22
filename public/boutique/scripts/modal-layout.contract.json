@@ -1,0 +1,25 @@
+{
+  "$comment": [
+    "Invariant DENSITÉ-ROBUSTE de la modale produit, rendu exécutable.",
+    "La modale est UN conteneur qui scrolle + CTA sticky. Ses zones de FLUX ne",
+    "portent aucune hauteur fixe en px (relatif/flex/vh + min/max px bornés = OK).",
+    "But : empêcher le retour du 'fold-fitting' (hauteurs calculées pour faire",
+    "tenir couleur+taille au-dessus du fold). À 3 variantes comme à 22, même code.",
+    "Réf. visuelle : docs/reference/reference-modale-architecture.html"
+  ],
+  "cssGlobs": ["css/modal-*.css"],
+  "jsGlobs": ["js/b-modal-*.js"],
+  "flowZones": [
+    ".k-modal-scroll",
+    ".k-modal-info",
+    ".k-modal-img-wrap",
+    ".k-modal-carousel",
+    ".k-modal-carousel-track",
+    ".k-modal-slide",
+    ".k-modal-variants",
+    "#k-modal-variants",
+    ".k-mdm-root",
+    ".k-mdm-fold",
+    ".k-modal-opt-body"
+  ]
+}
