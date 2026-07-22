@@ -411,6 +411,12 @@
     background: var(--sand);
   }
 
+  .k-mdm-chip--air {
+    color: var(--blue-dark);
+    background: var(--blue-light-bg);
+    border-color: var(--blue-border);
+  }
+
   .k-mdm-chip-meta {
     font-weight: 400;
     color: var(--text-muted);

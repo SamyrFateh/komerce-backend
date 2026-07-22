@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-22T08:04:34.946Z",
+  "generatedAt": "2026-07-22T08:53:47.131Z",
   "summary": {
-    "modules": 72,
-    "withHeader": 72,
+    "modules": 73,
+    "withHeader": 73,
     "events": 18,
     "declaredActive": 12,
     "declaredDead": 5,
@@ -984,6 +984,7 @@
         "b-modal-product",
         "b-modal-image-ux",
         "b-modal-buybox-shared",
+        "delivery-mode-model",
         "b-cart-core",
         "b-modal-product-fields",
         "product-content-model"
@@ -2074,6 +2075,29 @@
         "b-cart.js",
         "b-desktop-sidebar.js",
         "renderers"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/view-models/delivery-mode-model.js",
+      "id": "delivery-mode-model",
+      "hasHeader": true,
+      "role": "product-delivery-mode-model",
+      "domain": "catalog",
+      "layer": "view-model",
+      "criticality": "medium",
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "b-modal-desktop-product.js"
       ],
       "emits": [],
       "listens": [],

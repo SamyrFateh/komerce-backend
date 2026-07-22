@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 378,
-    "filesWithFullHeaders": 351,
+    "scannedCodeFiles": 379,
+    "filesWithFullHeaders": 352,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 378,
+    "filesWithAnyHeaders": 379,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 775,
-    "edges": 4362,
+    "graphNodes": 776,
+    "edges": 4368,
     "dbTables": 116,
     "doctrines": 154,
     "impactAreas": 127,
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 53,
+    "catalog": 54,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 4,
@@ -71,7 +71,7 @@
     "ui-page": 4,
     "ui-service": 1,
     "ui-experiment": 1,
-    "view-model": 5,
+    "view-model": 6,
     "ui-controller": 1,
     "ui-state": 1,
     "util-ui": 2,
@@ -93,7 +93,7 @@
   },
   "byCriticality": {
     "critical": 76,
-    "medium": 104,
+    "medium": 105,
     "high": 164,
     "low": 34
   },
@@ -3764,6 +3764,42 @@
         "catalog"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/view-models/delivery-mode-model.js",
+      "file": "public/boutique/js/view-models/delivery-mode-model.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "product-delivery-mode-model",
+      "domain": "catalog",
+      "layer": "view-model",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "public_product_detail_v1.delivery_options"
+      ],
+      "outputs": [
+        "delivery_mode_view_model"
+      ],
+      "depends": [],
+      "usedBy": [
+        "b-modal-desktop-product.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "desktop",
+        "delivery-options"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/view-models/modal-selection-model.js",
@@ -25091,6 +25127,42 @@
       "to": "impact:catalog",
       "type": "impact",
       "label": "catalog"
+    },
+    {
+      "from": "public/boutique/js/b-modal-desktop-product.js",
+      "to": "public/boutique/js/view-models/delivery-mode-model.js",
+      "type": "uses",
+      "label": "b-modal-desktop-product.js"
+    },
+    {
+      "from": "public/boutique/js/view-models/delivery-mode-model.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
+      "from": "public/boutique/js/view-models/delivery-mode-model.js",
+      "to": "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
+      "type": "doctrine",
+      "label": "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+    },
+    {
+      "from": "public/boutique/js/view-models/delivery-mode-model.js",
+      "to": "impact:product-modal",
+      "type": "impact",
+      "label": "product-modal"
+    },
+    {
+      "from": "public/boutique/js/view-models/delivery-mode-model.js",
+      "to": "impact:desktop",
+      "type": "impact",
+      "label": "desktop"
+    },
+    {
+      "from": "public/boutique/js/view-models/delivery-mode-model.js",
+      "to": "impact:delivery-options",
+      "type": "impact",
+      "label": "delivery-options"
     },
     {
       "from": "future b-modal-core.js",
@@ -48305,6 +48377,7 @@
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
+        "public/boutique/js/view-models/delivery-mode-model.js",
         "public/boutique/js/view-models/modal-selection-model.js",
         "public/boutique/js/view-models/product-content-model.js"
       ]
@@ -49864,6 +49937,39 @@
       "mustCheck": [
         "impact:catalog",
         "public/boutique/js/b-catalog.js"
+      ]
+    },
+    "public/boutique/js/view-models/delivery-mode-model.js": {
+      "role": "product-delivery-mode-model",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "public/boutique/js/b-modal-desktop-product.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "desktop",
+        "delivery-options"
+      ],
+      "mustCheck": [
+        "doctrine:docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "impact:delivery-options",
+        "impact:desktop",
+        "impact:product-modal",
+        "public/boutique/js/b-modal-desktop-product.js"
       ]
     },
     "public/boutique/js/view-models/modal-selection-model.js": {

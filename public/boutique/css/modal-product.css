@@ -1015,6 +1015,29 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     letter-spacing: .7px;
     margin-bottom: 10px;
   }
+  /* Pill résumé livraison (Option B) : glanceable, la liste détaillée
+     prix/délai reste en dessous (.k-modal-delivery-opt, inchangé). */
+  .k-modal-delivery-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .k-modal-delivery-pill-icon { font-size: 12px; line-height: 1; }
+  .k-modal-delivery-pill--air {
+    color: var(--blue-dark);
+    background: var(--blue-light-bg);
+    border: 1px solid var(--blue-border);
+  }
+  .k-modal-delivery-pill--sea {
+    color: var(--text-muted);
+    background: var(--sand);
+    border: 1px solid var(--sand-dark);
+  }
   /* Encart delivery : fond sable, bordure neutre */
   .k-modal-delivery-opt {
     display: flex;

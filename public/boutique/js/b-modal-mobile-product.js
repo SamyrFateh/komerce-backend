@@ -296,8 +296,9 @@ function renderInfoStrip(detail, selection, root) {
   const options = detail?.delivery_options || [];
   options.forEach((option) => {
     const chip = document.createElement('span');
-    chip.className = 'k-mdm-chip k-mdm-chip--delivery';
-    const icon = /express|air|aérien/i.test(option.label) ? '✈️' : '📦';
+    const isAir = typeof option.code === 'string' && option.code.startsWith('AIR_');
+    chip.className = `k-mdm-chip k-mdm-chip--delivery${isAir ? ' k-mdm-chip--air' : ''}`;
+    const icon = isAir ? '✈️' : '📦';
     chip.textContent = `${icon} ${option.label}`;
 
     // Append meta (price, ETA) if provided by contract
@@ -577,6 +578,11 @@ export function renderMobileProductDetail(
   root.className = 'k-mdm-root';
   container.appendChild(root);
 
+  // MDM-5: Info strip (availability chip + delivery chips) — juste sous le
+  // prix, AVANT couleur/taille (réf. docs/reference/reference-modale-
+  // architecture.html : prix → pill livraison → couleur → taille → suggestions).
+  renderInfoStrip(detail, selection, root);
+
   // MDM-4: Option axes
   if (selection.selection_supported) {
     detail.option_axes.forEach((axis) => {
@@ -586,9 +592,6 @@ export function renderMobileProductDetail(
 
   // Selection message (e.g. "L indisponible — rupture")
   renderSelectionMessage(root, selection);
-
-  // MDM-5: Info strip (availability chip + delivery chips)
-  renderInfoStrip(detail, selection, root);
 
   // MDM-7: Description below fold
   renderBelowFold(detail, root);

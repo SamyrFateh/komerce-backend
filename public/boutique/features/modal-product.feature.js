@@ -58,6 +58,7 @@ module.exports = {
     boutique: [
       '../js/view-models/modal-selection-model.js',
       '../js/view-models/product-content-model.js',
+      '../js/view-models/delivery-mode-model.js',
       '../js/b-modal-product-detail-bootstrap.js',
       '../js/b-modal-mobile-product.js',
       '../js/b-modal-desktop-product.js',

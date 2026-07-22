@@ -28,6 +28,7 @@ import {
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { renderSubtotalInto, renderPaymentModes, startGroupCartFlow, wireBuyNowButton } from './b-modal-buybox-shared.js';
+import { deriveDeliveryMode } from './view-models/delivery-mode-model.js';
 import { showToast } from './b-cart-core.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
 import {
@@ -305,6 +306,25 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
   return group;
 }
 
+function renderDeliveryModePill(container, detail) {
+  const { mode, label, lead_time_label } = deriveDeliveryMode(detail?.delivery_options);
+  const pill = document.createElement('div');
+  pill.className = `k-modal-delivery-pill k-modal-delivery-pill--${mode}`;
+  pill.dataset.deliveryMode = mode;
+
+  const icon = document.createElement('span');
+  icon.className = 'k-modal-delivery-pill-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = mode === 'air' ? '✈️' : '🚢';
+  pill.appendChild(icon);
+
+  const text = document.createElement('span');
+  text.textContent = lead_time_label ? `${label} · ${lead_time_label}` : label;
+  pill.appendChild(text);
+
+  container.appendChild(pill);
+}
+
 function deliveryMeta(option) {
   const parts = [];
   if (option.price_kmf != null) parts.push(fmtPrice(option.price_kmf));
@@ -317,6 +337,8 @@ function renderDeliveryOptions(detail) {
   const el = document.getElementById('k-modal-delivery');
   if (!el) return;
   el.innerHTML = '';
+
+  renderDeliveryModePill(el, detail);
 
   const title = document.createElement('div');
   title.className = 'k-modal-section-title';
