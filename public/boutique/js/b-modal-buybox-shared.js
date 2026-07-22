@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        product_detail_v1, modal_selection_state, modal_qty, modal_payment_mode
  * @outputs       buybox_price_projection, buybox_payment_dom
- * @depends       b-utils.js, b-modal.js, b-cart.js, b-share-cart.js
- * @used-by       b-modal-mobile-product.js, b-modal-desktop-product.js, b-modal-approche-c-hybrid.js
+ * @depends       b-utils.js, b-modal.js, b-cart.js, b-share-cart.js, view-models/modal-cart-product-model.js
+ * @used-by       b-modal-mobile-product.js, b-modal-desktop-product.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -18,54 +18,34 @@
 
 'use strict';
 
-/**
- * MDP-1 / MDP-2 — Logique Buy Box partagée entre les deux compositions.
- *
- * Ce module ne rend rien de lui-même dans une zone fixe : il expose des
- * fonctions pures (prix, sous-total) et un rendu de sélecteur de paiement
- * paramétré par l'élément cible, pour que mobile et desktop appellent
- * exactement le même calcul et la même logique de bascule de mode, chacun
- * avec son propre placement DOM.
- *
- * UNE VÉRITÉ (prix SKU du Product Detail Contract, modes de paiement,
- * handler "panier partagé") + PLUSIEURS PROJECTIONS UI (mobile / desktop).
- * Aucun état de sélection ou de prix n'est dupliqué ici : tout est dérivé de
- * `detail`/`selection` reçus en paramètre, jamais lu depuis un state legacy.
- */
-
 import { fmtPrice } from './b-utils.js';
 import { closeModal } from './b-modal.js';
 import { addToCart, openCart } from './b-cart.js';
 import { startShareFlow } from './b-share-cart.js';
 import { state } from './b-store.js';
+import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
 
-/**
- * MDP-PROP1 — câblage du bouton "⚡ Acheter maintenant". Owner unique de
- * #k-buy-now-btn (déplacé depuis b-modal-core.js, qui ne gère plus que le
- * cycle de vie de la modale — ouverture/fermeture/historique/scroll/carrousel).
- *
- * Idempotent par construction (`.onclick =`, pas `addEventListener`) : cette
- * fonction est appelée depuis `renderActions()` à chaque rendu (y compris les
- * re-rendus déclenchés par un changement de sélection variante) — un
- * `addEventListener` empilerait les handlers et déclencherait plusieurs ajouts
- * au panier pour un seul clic.
- */
+function currentCartProduct(product = state.modalProduct) {
+  return buildModalCartProduct(
+    product,
+    state.modalProductDetail,
+    state.modalSelection
+  );
+}
+
+/** Câblage idempotent du bouton Acheter maintenant. */
 export function wireBuyNowButton(buyNowBtn) {
   if (!buyNowBtn) return;
   buyNowBtn.onclick = () => {
     if (!state.modalProduct) return;
 
-    // 1. Feedback visuel immédiat : bouton se transforme en "✓ Ajouté !"
     const originalContent = buyNowBtn.innerHTML;
     buyNowBtn.innerHTML = '<span style="display:flex;align-items:center;gap:8px;justify-content:center"><span>✓</span><span>Ajouté au panier !</span></span>';
     buyNowBtn.disabled = true;
     buyNowBtn.classList.add('buy-confirmed');
 
-    // 2. Ajout au panier (déclenche l'animation coucou de la dame)
-    addToCart(state.modalProduct, state.modalQty, buyNowBtn);
+    addToCart(currentCartProduct(), state.modalQty, buyNowBtn);
 
-    // 3. Transition ÉTENDUE : 1200ms pour voir le feedback + coucou dame
-    //    puis fermeture douce et ouverture panier avec 400ms entre les 2
     setTimeout(() => {
       buyNowBtn.innerHTML = originalContent;
       buyNowBtn.disabled = false;
@@ -76,22 +56,13 @@ export function wireBuyNowButton(buyNowBtn) {
   };
 }
 
-/**
- * Prix courant : celui de l'unité SKU sélectionnée si elle existe, sinon le
- * prix produit du contrat. Jamais de fallback vers un champ produit legacy
- * (ex. state.modalProduct.price_kmf).
- */
+/** Prix courant issu du SKU sélectionné, sinon du prix produit du contrat. */
 export function getCurrentPrice(detail, selection) {
   const unit = (detail?.sellable_units || [])
     .find((candidate) => candidate.sku_id === selection?.selected_sku_id) || null;
   return unit?.price_kmf ?? detail?.pricing?.price_kmf ?? null;
 }
 
-/**
- * Sous-total = prix courant × quantité (bornée à 1 minimum). Retourne null
- * si aucun prix n'est disponible (contrat incomplet) : c'est à l'appelant de
- * décider comment refléter cette absence (ex. vider le texte).
- */
 export function computeSubtotal(detail, selection, qty) {
   const price = getCurrentPrice(detail, selection);
   if (price == null) return null;
@@ -99,11 +70,6 @@ export function computeSubtotal(detail, selection, qty) {
   return price * safeQty;
 }
 
-/**
- * Rend le sous-total texte dans `el` (élément déjà positionné par la
- * composition appelante). Ne crée ni ne déplace `el` : c'est le rôle du
- * renderer viewport.
- */
 export function renderSubtotalInto(el, detail, selection, qty) {
   if (!el) return;
   const total = computeSubtotal(detail, selection, qty);
@@ -155,31 +121,14 @@ function buildPaymentDetail(key) {
   return detail;
 }
 
-/**
- * Démarre le parcours "panier partagé" : ajoute le produit courant au
- * panier, ferme la modal, puis ouvre le flux de partage. Logique unique,
- * appelable depuis n'importe quelle composition (mobile ou desktop) sans la
- * réécrire.
- */
+/** Démarre le parcours panier partagé avec le snapshot SKU courant. */
 export function startGroupCartFlow(product, qty, sourceEl) {
   if (!product) return;
-  addToCart(product, qty || 1, sourceEl);
+  addToCart(currentCartProduct(product), qty || 1, sourceEl);
   closeModal();
   setTimeout(() => startShareFlow(), 250);
 }
 
-/**
- * Rend le sélecteur de mode de paiement (tabs + détail du mode actif) dans
- * `el`. `el` est fourni par la composition appelante (mobile ou desktop) ;
- * ce module ne décide jamais de son emplacement dans le DOM ni de son style
- * — seulement de sa structure et de son comportement.
- *
- * @param {HTMLElement} el
- * @param {Object}   opts
- * @param {string}   [opts.activeMode]   mode actif ('stripe' par défaut)
- * @param {Function} [opts.onModeChange] (key) => void, appelé quand l'utilisateur change de mode (hors "group")
- * @param {Function} [opts.onGroupSelect] (tabEl) => void, appelé quand "Panier partagé" est choisi ; si absent, startGroupCartFlow n'est PAS déclenché automatiquement
- */
 export function renderPaymentModes(el, { activeMode, onModeChange, onGroupSelect } = {}) {
   if (!el) return;
   const active = (activeMode && PAYMENT_MODES[activeMode]) ? activeMode : 'stripe';
@@ -239,4 +188,5 @@ export function renderPaymentModes(el, { activeMode, onModeChange, onGroupSelect
 
 export const _buyboxSharedTestApi = Object.freeze({
   buildPaymentDetail,
+  currentCartProduct,
 });
