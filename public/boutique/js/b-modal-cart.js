@@ -119,7 +119,7 @@ function _syncModalQtyUI() {
  * le bouton cliqué a été remplacé par le rerender.
  */
 function installSelectionReconcile() {
-  if (_selectionReconcileInstalled || typeof document === 'undefined') return;
+  if (_selectionReconcileInstalled) return;
   _selectionReconcileInstalled = true;
 
   document.addEventListener('click', (event) => {
