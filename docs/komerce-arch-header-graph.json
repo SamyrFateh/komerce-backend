@@ -2044,12 +2044,12 @@
         "b-utils.js",
         "b-modal.js",
         "b-cart.js",
-        "b-share-cart.js"
+        "b-share-cart.js",
+        "view-models/modal-cart-product-model.js"
       ],
       "usedBy": [
         "b-modal-mobile-product.js",
-        "b-modal-desktop-product.js",
-        "b-modal-approche-c-hybrid.js"
+        "b-modal-desktop-product.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -22768,6 +22768,12 @@
       "label": "b-share-cart.js"
     },
     {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "type": "depends",
+      "label": "view-models/modal-cart-product-model.js"
+    },
+    {
       "from": "public/boutique/js/b-modal-mobile-product.js",
       "to": "public/boutique/js/b-modal-buybox-shared.js",
       "type": "uses",
@@ -22778,12 +22784,6 @@
       "to": "public/boutique/js/b-modal-buybox-shared.js",
       "type": "uses",
       "label": "b-modal-desktop-product.js"
-    },
-    {
-      "from": "public/boutique/js/b-modal-approche-c-hybrid.js",
-      "to": "public/boutique/js/b-modal-buybox-shared.js",
-      "type": "uses",
-      "label": "b-modal-approche-c-hybrid.js"
     },
     {
       "from": "public/boutique/js/b-modal-buybox-shared.js",
@@ -48216,7 +48216,6 @@
         "impact:shared-cart-creation",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/main.js"
@@ -48233,12 +48232,12 @@
         "public/boutique/js/b-utils.js",
         "public/boutique/js/b-modal.js",
         "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-share-cart.js"
+        "public/boutique/js/b-share-cart.js",
+        "public/boutique/js/view-models/modal-cart-product-model.js"
       ],
       "directUsedBy": [
         "public/boutique/js/b-modal-mobile-product.js",
-        "public/boutique/js/b-modal-desktop-product.js",
-        "public/boutique/js/b-modal-approche-c-hybrid.js"
+        "public/boutique/js/b-modal-desktop-product.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -48264,7 +48263,6 @@
         "impact:product-modal",
         "impact:sku-selection",
         "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-modal-approche-c-hybrid.js",
         "public/boutique/js/b-modal-desktop-product.js",
         "public/boutique/js/b-modal-mobile-product.js",
         "public/boutique/js/b-modal-product-fields.js",
