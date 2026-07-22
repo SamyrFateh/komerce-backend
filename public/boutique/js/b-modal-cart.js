@@ -40,6 +40,21 @@ function itemSkuId(item) {
     ?? null;
 }
 
+function paintInCartButton(button, qty) {
+  button.replaceChildren(document.createTextNode(`🧺 Dans le panier (${qty})`));
+}
+
+function paintAddButton(button) {
+  const image = document.createElement('img');
+  image.src = '/images/panier_tresse_vert.png';
+  image.width = 20;
+  image.height = 20;
+  image.alt = '';
+  image.style.pointerEvents = 'none';
+  image.style.flexShrink = '0';
+  button.replaceChildren(image, document.createTextNode(' Ajouter'));
+}
+
 /**
  * Retourne uniquement la ligne correspondant à la sélection courante. Un produit
  * SKU ne doit jamais réutiliser la première ligne du même product.id : deux
@@ -105,10 +120,10 @@ function _syncModalQtyUI() {
   if (!dom.addCartBtn) return;
   if (item) {
     dom.addCartBtn.classList.add('in-cart');
-    dom.addCartBtn.innerHTML = '🧺 Dans le panier (' + item.qty + ')';
+    paintInCartButton(dom.addCartBtn, item.qty);
   } else {
     dom.addCartBtn.classList.remove('in-cart');
-    dom.addCartBtn.innerHTML = '<img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" style="pointer-events:none;flex-shrink:0"> Ajouter';
+    paintAddButton(dom.addCartBtn);
   }
 }
 
@@ -168,4 +183,6 @@ export {
 export const _modalCartTestApi = Object.freeze({
   currentModalCartItem,
   normalizedCombo,
+  paintInCartButton,
+  paintAddButton,
 });
