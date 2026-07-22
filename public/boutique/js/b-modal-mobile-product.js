@@ -34,7 +34,13 @@
  * Removed from mobile composition (MDM-8):
  * - renderSubtotal() → price + qty suffice on product sheet
  * - renderPaymentSection() → belongs to purchase flow, not product sheet
- * - hardcoded reassurance blocks
+ * - hardcoded reassurance blocks (a duplicated, locally-owned mobile block)
+ *
+ * Réintroduit (2026-07, fidélité 4 états, état C+D) : réassurance compacte
+ * mobile — PAS un nouveau bloc hardcodé, mais un appel à renderTrust(),
+ * l'owner unique déjà utilisé par le desktop (b-modal-desktop-product.js).
+ * Toujours affichée (produit simple ET enrichi) car garantie transactionnelle
+ * factuelle, jamais du contenu éditorial conditionnel. Voir renderTrust().
  *
  * The modal selects and renders. It never reconstructs stock, invents a SKU
  * combination, hardcodes delivery labels, or becomes a mini-checkout.
@@ -52,6 +58,7 @@ import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { wireBuyNowButton } from './b-modal-buybox-shared.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
+import { renderTrust } from './b-modal-desktop-product.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -493,12 +500,10 @@ function appendEditorialSections(root, sections) {
  * aucune coquille vide, aucun titre orphelin (règle MDM-9 : produit simple →
  * seule la description s'affiche).
  */
-function renderBelowFold(detail, root) {
+function renderBelowFold(detail, root, vm) {
   const fold = document.createElement('hr');
   fold.className = 'k-mdm-fold';
   root.appendChild(fold);
-
-  const vm = buildProductContentViewModel(detail.content);
 
   // Description longue — priorité au texte produit historique ; le chapeau
   // éditorial (content.short_description), quand distinct, l'introduit sans
@@ -563,10 +568,27 @@ export function renderMobileProductDetail(
   // MDM-8: Remove any legacy hardcoded reassurance injected by core
   dom.modal?.querySelector('[data-mobile-reassurance]')?.remove();
 
+  // Fidélité 4 états (2026-07) : calculé une fois, réutilisé pour le
+  // below-fold ET pour le masquage des suggestions (état D). Rien d'inventé
+  // ici — `hasEnrichedContent` reflète strictement la présence de données
+  // éditoriales réelles (content.*), jamais une heuristique produit.
+  const contentVm = buildProductContentViewModel(detail.content);
+
   // P3-fix : classe CSS pour réduire le hero quand le produit a des variantes
   if (dom.modal) {
     dom.modal.classList.toggle('k-modal--has-variants', Boolean(selection.selection_supported));
+    // État D (mobile non-enrichi) : ni suggestions, ni recherche interne —
+    // seule la réassurance compacte + livraison restent visibles. La zone
+    // #k-modal-suggestions reste peuplée par b-modal-suggestions.js (owner
+    // inchangé) ; on masque ici en CSS via cette classe, uniquement en
+    // largeur mobile (voir css/modal-product.css). État C (mobile enrichi)
+    // et desktop A/B ne sont jamais concernés par cette classe.
+    dom.modal.classList.toggle('k-modal--suggestions-hidden', !contentVm.hasEnrichedContent);
   }
+
+  // Réassurance transactionnelle — toujours affichée (produit simple ET
+  // enrichi), même owner unique que le desktop (voir renderTrust()).
+  renderTrust();
 
   // OPT : injecter les boutons overlay sur le hero (topbar masquée sur mobile)
   _ensureHeroOverlay();
@@ -594,7 +616,7 @@ export function renderMobileProductDetail(
   renderSelectionMessage(root, selection);
 
   // MDM-7: Description below fold
-  renderBelowFold(detail, root);
+  renderBelowFold(detail, root, contentVm);
 
   // MDM-3: Identity into shell DOM
   renderIdentity(detail, selection);

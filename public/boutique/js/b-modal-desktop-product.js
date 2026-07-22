@@ -170,8 +170,16 @@ function renderActions(detail, selection) {
  * donc toujours affiché, produit simple ou enrichi. Contenu statique : rendu
  * une seule fois par ouverture de modal, pas rebuild à chaque changement de
  * sélection (variantes).
+ *
+ * Exporté (2026-07, États 4-modale/état C+D) : owner unique reste ce fichier
+ * (seul writer de #k-modal-trust, cf. scripts/modal-ownership.contract.json),
+ * mais b-modal-mobile-product.js importe et appelle cette même fonction pour
+ * peupler la réassurance compacte mobile — pas de duplication de contenu, pas
+ * de second writer, juste un second appelant du même owner. L'idempotence
+ * (childElementCount) protège contre le double-appel desktop+mobile au même
+ * cycle de rendu.
  */
-function renderTrust() {
+export function renderTrust() {
   const el = document.getElementById('k-modal-trust');
   if (!el || el.childElementCount) return;
   el.innerHTML = `

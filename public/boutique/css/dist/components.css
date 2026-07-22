@@ -3672,6 +3672,57 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-delivery-mobile { display: none; }
 .k-modal-trust-mobile { display: none; }
 
+/* ── RÉASSURANCE COMPACTE MOBILE (2026-07, fidélité 4 états, état C+D) ──
+   Réutilise le contenu de #k-modal-trust (owner b-modal-desktop-product.js,
+   renderTrust() — voir b-modal-mobile-product.js qui l'appelle aussi).
+   Pas de pill ici (contrairement au style desktop L618-619 de
+   modal-shell.css) : icône + libellé nus, alignés sur reference-modale-
+   4-etats.html (état D — "Même sobriété, réassurance conservée"). Remplace
+   .k-modal-trust { display:none } de la base hors-#k-modal (modal-shell.css
+   L293) — spécificité #k-modal l'emporte, quel que soit l'ordre source. ── */
+@media (max-width: 899px) {
+  #k-modal .k-modal-trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    padding: 10px 0 2px;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 4px;
+  }
+  #k-modal .k-modal-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+  }
+  #k-modal .k-modal-trust-item svg {
+    width: 15px;
+    height: 15px;
+    color: var(--ocean);
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    flex-shrink: 0;
+  }
+}
+
+/* ── ÉTAT D — mobile non-enrichi : pas de suggestions, pas de recherche
+   interne (chips). Toggle posé par b-modal-mobile-product.js sur #k-modal
+   via .k-modal--suggestions-hidden, dérivé de hasEnrichedContent (donnée
+   réelle, jamais une heuristique). #k-modal-suggestions reste peuplé
+   normalement par b-modal-suggestions.js (owner inchangé) — on masque
+   seulement l'affichage, en mobile uniquement : desktop non-enrichi (état B)
+   garde ses suggestions. ── */
+@media (max-width: 899px) {
+  .k-modal--suggestions-hidden #k-modal-suggestions { display: none; }
+}
+
 /* ══════════════════════════════════════════════════════════════
    4. VARIANTES — SKUs couleur + grille tailles / pointures
    Classes couleur : .k-vg / .k-vg-skus / .k-sku
