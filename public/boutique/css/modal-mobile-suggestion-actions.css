@@ -4,38 +4,10 @@
  * @domain        boutique
  * @layer         ui-style
  * @owner         public/boutique/js/b-modal-suggestions.js
- * @purpose       Isoler les actions catalogue et compacter les suggestions de la modale mobile.
- * @impact-areas  mobile, product-modal, product-suggestions, catalog
+ * @purpose       Compacter les actions des suggestions de la modale mobile.
+ * @impact-areas  mobile, product-modal, product-suggestions
  * @version       2026-07
  */
-
-/* Variante catalogue renommée : la classe .k-sug-add reste réservée à la modale. */
-.k-catalog-sug-add {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  background: var(--white);
-  border: 1.5px solid var(--sand-dark);
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--elev-1);
-  cursor: pointer;
-  transition: transform .15s var(--ease), box-shadow .2s var(--ease), border-color .2s;
-  flex-shrink: 0;
-}
-
-.k-catalog-sug-add:active { transform: scale(.92); }
-.k-catalog-sug-add:hover { border-color: var(--ocean); box-shadow: var(--elev-2); }
-.k-catalog-sug-add img {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  display: block;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-}
 
 /* MDM-9 — finition strictement mobile, aucun changement visuel desktop. */
 @media (max-width: 899px) {
