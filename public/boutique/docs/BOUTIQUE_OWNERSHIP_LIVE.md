@@ -68,7 +68,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-catalog-desktop-enhancers.js` | 0 | 3 | 1/0 | Header, Chips catégories |
 | `b-greeting.js` | 2 | 0 | 0/0 | — |
 | `b-modal-approche-c-hybrid.js` | 2 | 0 | 3/0 | Modal produit |
-| `b-modal-cart.js` | 2 | 0 | 0/0 | — |
+| `b-modal-cart.js` | 2 | 0 | 0/0 | Modal produit |
 | `b-utils.js` | 2 | 0 | 0/0 | Carte produit |
 | `b-cart-core.js` | 1 | 0 | 1/2 | Modal produit, Panier, Bottom-nav mobile |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |

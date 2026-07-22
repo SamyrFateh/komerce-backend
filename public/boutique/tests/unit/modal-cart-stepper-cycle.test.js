@@ -10,7 +10,7 @@
  * b-cart.js pour vérifier le comportement bout en bout demandé par la
  * règle F : qté 1 → clic sur "−" → quickRemove → removeFromCart réellement
  * exécuté (state.cart vidé) → _syncModalQtyUI fait réapparaître le bouton
- * "Ajouter au panier" (classe in-cart retirée). Un seul contrôle visible
+ * "Ajouter" (classe in-cart retirée). Un seul contrôle visible
  * à la fois — jamais stepper ET bouton en même temps.
  */
 
@@ -99,9 +99,9 @@ describe('Cycle bouton panier ↔ stepper — bout en bout (règle F, oracle §6
     expect(state.cart).toHaveLength(0);
 
     // _syncModalQtyUI (appelé après quickRemove dans le listener) fait
-    // réapparaître le bouton "Ajouter au panier" — un seul contrôle affiché.
+    // réapparaître le bouton "Ajouter" — un seul contrôle affiché.
     expect(dom.addCartBtn.classList.contains('in-cart')).toBe(false);
-    expect(dom.addCartBtn.innerHTML).toContain('Ajouter au panier');
+    expect(dom.addCartBtn.innerHTML).toContain('Ajouter');
     expect(dom.modalQtyVal.textContent).toBe('1'); // qty par défaut hors panier, jamais 0 fantôme
   });
 

@@ -43,14 +43,14 @@ describe('b-modal-cart', () => {
       expect(dom.modalQtyVal.textContent).toBe('');
     });
 
-    it('produit ouvert, absent du panier → qty par défaut = 1, bouton "Ajouter au panier"', () => {
+    it('produit ouvert, absent du panier → qty par défaut = 1, bouton "Ajouter"', () => {
       state.modalProduct = { id: 42 };
       state.cart = [];
       _syncModalQtyUI();
       expect(state.modalQty).toBe(1);
       expect(dom.modalQtyVal.textContent).toBe('1');
       expect(dom.addCartBtn.classList.contains('in-cart')).toBe(false);
-      expect(dom.addCartBtn.innerHTML).toContain('Ajouter au panier');
+      expect(dom.addCartBtn.innerHTML).toContain('Ajouter');
       expect(dom.addCartBtn.innerHTML).toContain('panier_tresse_vert.png');
     });
 

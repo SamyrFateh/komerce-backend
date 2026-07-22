@@ -76,7 +76,7 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
       } else {
         dom.addCartBtn.classList.remove('in-cart');
         /* FIX Bug 3: utiliser l'image panier_tresse_vert au lieu du SVG générique */
-        dom.addCartBtn.innerHTML = '<img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" style="pointer-events:none;flex-shrink:0"> Ajouter au panier';
+        dom.addCartBtn.innerHTML = '<img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" style="pointer-events:none;flex-shrink:0"> Ajouter';
       }
     }
   }
