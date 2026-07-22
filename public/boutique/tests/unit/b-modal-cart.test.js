@@ -73,7 +73,7 @@ describe('b-modal-cart', () => {
       expect(dom.qtyPlus.disabled).toBe(false);
     });
 
-    it('SKU : cible uniquement la variante sélectionnée et interdit le stepper', () => {
+    it('SKU : cible uniquement la variante sélectionnée, garde une intention à 1 et interdit le stepper', () => {
       state.modalProduct = { id: 42 };
       state.modalProductDetail = { inventory_model: 'SKU' };
       state.modalSelection = {
@@ -87,7 +87,8 @@ describe('b-modal-cart', () => {
 
       _syncModalQtyUI();
 
-      expect(state.modalQty).toBe(2);
+      expect(state.modalQty).toBe(1);
+      expect(dom.modalQtyVal.textContent).toBe('1');
       expect(dom.addCartBtn.innerHTML).toContain('Dans le panier (2)');
       expect(actions.dataset.inventoryModel).toBe('SKU');
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
