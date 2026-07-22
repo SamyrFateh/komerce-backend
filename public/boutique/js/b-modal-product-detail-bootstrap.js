@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        modal_lifecycle, product_id, product_detail_v1, responsive_breakpoint
  * @outputs       shared_modal_selection_state, responsive_product_modal_render
- * @depends       b-bus.js, b-store.js, b-modal-cart.js, b-modal-mobile-product.js, b-modal-desktop-product.js, view-models/modal-selection-model.js
+ * @depends       b-bus.js, b-store.js, b-modal-mobile-product.js, b-modal-desktop-product.js, view-models/modal-selection-model.js
  * @used-by       main.js
  * @db-read       none
  * @db-write      none
@@ -20,7 +20,6 @@
 
 import { bus } from './b-bus.js';
 import { state, dom } from './b-store.js';
-import { _syncModalQtyUI } from './b-modal-cart.js';
 import { createModalSelection } from './view-models/modal-selection-model.js';
 import {
   clearMobileProductDetailState,
@@ -114,10 +113,9 @@ function renderResponsiveProductDetail(detail, selection, forceMedia) {
     renderDesktopProductDetail(detail, selection, { forceMedia });
   }
 
-  // Le renderer PDC décide de la disponibilité des CTA. L'owner panier
-  // réconcilie ensuite la ligne SKU courante et la projection bouton/stepper,
-  // afin qu'un renderer ne puisse pas laisser un état --filled incompatible.
-  _syncModalQtyUI();
+  // Le renderer termine son paint avant de publier la disponibilité du contrat.
+  // Le module panier reste propriétaire de sa projection UI et écoute ce signal.
+  bus.emit('modal:detail-ready');
 }
 
 function syncResponsiveComposition() {
