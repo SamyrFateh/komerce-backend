@@ -22,7 +22,7 @@ describe('contrat actions suggestions mobile', () => {
     expect(renderer).toContain('class="k-catalog-sug-add"');
     expect(renderer).not.toContain('class="k-sug-add"');
     expect(interactions).toContain('.k-catalog-sug-add');
-    expect(interactions).not.toContain('.k-sug-add');
+    expect(interactions).not.toMatch(/(^|\n)\s*\.k-sug-add(?:[:\s,{])/m);
   });
 
   test('les règles visuelles de la modale sont limitées au mobile', () => {

@@ -257,7 +257,8 @@ describe('renderProductCard — renderAddControl', () => {
   it('variant suggestion, qty=0 → bouton ajout suggestion', () => {
     state.cart = [];
     const html = renderProductCard({ id: 1 }, { variant: 'suggestion' });
-    expect(html).toContain('k-sug-add');
+    expect(html).toContain('k-catalog-sug-add');
+    expect(html).not.toContain('class="k-sug-add"');
   });
 
   it('variant suggestion, qty>0 → stepper suggestion avec quantité', () => {

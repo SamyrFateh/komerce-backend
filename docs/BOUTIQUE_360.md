@@ -1,12 +1,12 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-22T16:23:59.726Z.
+> Régénéré le 2026-07-22T22:22:25.237Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **73** (73 headés) · Événements bus : **18** · Bundles CSS : **3**
+- Modules JS : **74** (74 headés) · Événements bus : **19** · Bundles CSS : **3**
 - Endpoints appelés : **52** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
 
@@ -80,6 +80,7 @@
 | `modal:close` | b-cart, b-checkout | b-modal-core | 🟢 sain |
 | `modal:closed` | b-modal-core | b-modal-approche-c-hybrid, b-modal-product-detail-bootstrap, b-pager | 🟡 non déclaré |
 | `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-approche-c-hybrid, b-modal-core, b-modal-desktop-enhancers | 🟡 non déclaré |
+| `modal:detail-ready` | b-modal-product-detail-bootstrap | b-modal-cart | 🟢 sain |
 | `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-modal-suggestions, b-product-open-contract | 🟢 sain |
 | `modal:opened` | b-modal-core | b-mobile-modal-v1, b-mobile-premium-v1, b-modal-approche-c-hybrid, b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟡 non déclaré |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
@@ -132,6 +133,7 @@ graph LR
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_approche_c_hybrid["b-modal-approche-c-hybrid"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_pager["b-pager"]
+  b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:detail-ready| b_modal_cart["b-modal-cart"]
   b_modal_product["b-modal-product"] -->|carousel:changed| b_modal_image_ux["b-modal-image-ux"]
   b_modal_suggestions["b-modal-suggestions"] -->|modal:suggestions-rendered| b_pdp_curation_suggestions["b-pdp-curation-suggestions"]
 ```
@@ -141,7 +143,7 @@ graph LR
 | Bundle | Sources |
 |---|---|
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
-| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `cart`, `interactions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal`, `wallet` |
+| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal`, `wallet` |
 | `css/dist/desktop.css` | `boutique-desktop` |
 
 ---

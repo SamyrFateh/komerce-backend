@@ -5844,42 +5844,9 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-scroll {
     background: var(--page-bg);
   }
-
-  /* ── M4-fix : Panier suggestion — cohérence visuelle + suppression halo blanc ─
-     interactions.css pose .k-sug-add à 40×40 fond blanc, cercle, bordure, ombre
-     et arrive après modal-product.css dans le bundle → gagne partout. Le sélecteur
-     #k-modal ajoute un ID (spécificité 1-1-0 > 0-1-0) et gagne quelle que soit
-     la position de compilation. Style calqué sur .k-sug-step (bouton ± du stepper)
-     pour une cohérence visuelle immédiate : même taille, même fond sand, même
-     border-radius 50% — quand le produit passe au panier le − / N / + émerge
-     sans rupture graphique. */
-  #k-modal .k-sug-add {
-    width: 28px;
-    height: 28px;
-    background: var(--sand);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    padding: 0;
-    box-shadow: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background .15s;
-  }
-  #k-modal .k-sug-add:active {
-    background: var(--sand-dark);
-    transform: scale(.9);
-  }
-  #k-modal .k-sug-add img {
-    width: 18px;
-    height: 18px;
-    display: block;
-    mix-blend-mode: multiply;
-    pointer-events: none;
-  }
+  /* Panier suggestion :
+     les styles visuels du bouton et du stepper sont désormais délégués à
+     modal-mobile-suggestion-actions.css, owner mobile unique. */
 
   /* FIX layout carte suggestion : le stepper en-panier (− N +, ~85px) laisse
      < 10px au prix sur une carte 110px → ellipsis tronquait "42 000" en "4".
@@ -6229,6 +6196,26 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     color: var(--text);
     font-weight: 500;
   }
+}
+
+
+/* ── modal-cart-sku-guard.css ────────────────────────────── */
+/**
+ * Garde transactionnelle SKU.
+ *
+ * Le renderer desktop legacy peut encore poser temporairement
+ * .k-modal-actions--filled depuis la présence du product.id dans le panier.
+ * Pour un inventaire SKU, le stepper product-id-first n'est jamais une voie de
+ * mutation valide : le bouton Ajouter doit rester la projection visible.
+ * data-inventory-model est posé par b-modal-cart.js, owner de l'état panier.
+ */
+
+#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-qty {
+  display: none;
+}
+
+#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-add-cart-btn {
+  display: flex;
 }
 
 
@@ -8634,14 +8621,12 @@ body.cart-open  #k-section-index { display:none; }
 /* Suggestions complémentaires */
 /* CONTEXTE : bouton "ajouter une suggestion" dans le rail catalogue (hors modale).
    40×40px, rond, fond blanc avec bordure.
-   NE PAS CONFONDRE avec .k-sug-add dans modal.css (Phase 8) :
-   - modal.css = bouton ± quantité dans la modale produit (32×32, transparent, sans bordure)
-   - Ces deux définitions couvrent des contextes DOM disjoints — pas de conflit.
-   Source de vérité catalogue → ici. Source de vérité modale → modal.css L560. */
+   La variante catalogue utilise .k-catalog-sug-add ; .k-sug-add est réservée à la modale.
+   Source de vérité catalogue → ici. Source de vérité modale → modal-mobile-suggestion-actions.css. */
 .k-sug-wrap          { display:block; }
 .k-sug-rail          { display:flex; gap:10px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:4px 2px; }
 .k-sug-rail::-webkit-scrollbar { display:none; }
-.k-sug-add {
+.k-catalog-sug-add {
   width: 40px;
   height: 40px;
   padding: 0;
@@ -8656,9 +8641,9 @@ body.cart-open  #k-section-index { display:none; }
   transition: transform .15s var(--ease), box-shadow .2s var(--ease), border-color .2s;
   flex-shrink: 0;
 }
-.k-sug-add:active { transform: scale(.92); }
-.k-sug-add:hover { border-color: var(--ocean); box-shadow: var(--elev-2); }
-.k-sug-add img { width: 24px; height: 24px; object-fit: contain; display: block; pointer-events: none; mix-blend-mode: multiply; }
+.k-catalog-sug-add:active { transform: scale(.92); }
+.k-catalog-sug-add:hover { border-color: var(--ocean); box-shadow: var(--elev-2); }
+.k-catalog-sug-add img { width: 24px; height: 24px; object-fit: contain; display: block; pointer-events: none; mix-blend-mode: multiply; }
 .k-sug-arrow         { display:none; }
 .k-sug-card-actions  { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 8px; }
 .k-sug-card-bottom   { padding:4px 8px 8px; }
@@ -8789,6 +8774,74 @@ body.cart-open  #k-section-index { display:none; }
   opacity: 0;
   transform: translateX(40px);
   transition: opacity .25s ease, transform .25s ease;
+}
+
+
+/* ── modal-mobile-suggestion-actions.css ─────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          mobile-modal-suggestion-actions
+ * @domain        boutique
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-modal-suggestions.js
+ * @purpose       Compacter les actions des suggestions de la modale mobile.
+ * @impact-areas  mobile, product-modal, product-suggestions
+ * @version       2026-07
+ */
+
+/* MDM-9 — finition strictement mobile, aucun changement visuel desktop. */
+@media (max-width: 899px) {
+  #k-modal .k-sug-add {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  #k-modal .k-sug-add:active {
+    background: transparent;
+    transform: none;
+  }
+
+  #k-modal .k-sug-add img {
+    width: 23px;
+    height: 23px;
+    display: block;
+    mix-blend-mode: normal;
+    pointer-events: none;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled {
+    display: grid;
+    grid-template-columns: 24px 22px 24px;
+    align-items: center;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled .k-sug-step {
+    width: 24px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled .k-sug-qty {
+    min-width: 22px;
+    text-align: center;
+  }
 }
 
 
