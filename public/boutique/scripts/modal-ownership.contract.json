@@ -42,7 +42,7 @@
         "b-modal-desktop-product.js",
         "b-modal-mobile-product.js"
       ],
-      "reason": "divergence réelle desktop/mobile (§3) : desktop affiche la description, mobile l'efface (déplacée sous le fold, MDM-7) — non convergé volontairement"
+      "reason": "description : divergence per-surface LEGITIME — desktop affiche inline (renderIdentity), mobile masque au profit du rendu below-fold. Pas un doublon."
     },
     {
       "id": "k-modal-price",
@@ -50,7 +50,7 @@
       "allow": [
         "b-modal-mobile-product.js"
       ],
-      "reason": "owner unique du paint (§3, paintDetailFields) ; b-modal-mobile-product.js toléré à cause d'un faux positif du gate (renderStockPill capture `row` via dom.modalPrice?.closest(...) puis fait row.appendChild(pill) pour le pill de stock — ce n'est pas une écriture du prix, mais une limite de l'heuristique statique)"
+      "reason": "prix scalaire, owner unique paintDetailFields. b-modal-mobile-product.js : FAUX POSITIF du gate (renderStockPill lit dom.modalPrice.closest(.k-modal-price-row) pour y insérer le pill, n ecrit jamais #k-modal-price)."
     },
     {
       "id": "k-modal-old-price",
@@ -66,11 +66,11 @@
     },
     {
       "id": "k-modal-stock",
-      "owner": "b-modal-product-fields.js",
+      "owner": "b-modal-desktop-product.js",
       "allow": [
-        "b-modal-desktop-product.js"
+        "b-modal-product-fields.js"
       ],
-      "reason": "stock volontairement NON convergé (§3) : desktop rend un texte (renderStock), mobile un pill séparé (renderStockPill, zone k-modal-stock-pill, hors contrat) — DOM légitimement différent"
+      "reason": "stock texte #k-modal-stock = desktop uniquement (mobile utilise #k-modal-stock-pill, autre noeud). b-modal-product-fields.js : clear provisoire à l ouverture."
     },
     {
       "id": "k-modal-promo-badge",
