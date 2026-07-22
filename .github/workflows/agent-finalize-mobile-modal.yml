@@ -35,20 +35,51 @@ jobs:
           npm ci
           npm ci --prefix public/boutique
 
-      - name: Extract and apply requested integration
+      - name: Align historical assertions
         shell: bash
         run: |
-          if grep -q "Boolean(inventoryModel) && !isSku" public/boutique/js/b-modal-cart.js; then
-            echo "Integration already applied; validating current tree."
-          else
-            awk '
-              /python3 <<'"'"'PY'"'"'/ { capture=1; next }
-              capture && /^          PY$/ { capture=0; exit }
-              capture { sub(/^          /, ""); print }
-            ' .github/workflows/agent-mobile-modal-integration.yml > /tmp/mobile-modal-patch.py
-            test -s /tmp/mobile-modal-patch.py
-            python3 /tmp/mobile-modal-patch.py
-          fi
+          python3 <<'PY'
+          from pathlib import Path
+
+          render_test = Path('public/boutique/tests/unit/render-product-card.test.js')
+          text = render_test.read_text(encoding='utf-8')
+          old = "    expect(html).toContain('k-sug-add');"
+          new = "    expect(html).toContain('k-catalog-sug-add');\n    expect(html).not.toContain('class=\"k-sug-add\"');"
+          if old in text:
+              text = text.replace(old, new, 1)
+              render_test.write_text(text, encoding='utf-8')
+
+          suggestions_test = Path('public/boutique/tests/unit/b-modal-suggestions.test.js')
+          text = suggestions_test.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  "      renderSuggestions([product({ id: 7, name: 'Basket' })], [], 'Chaussures');\n\n      const addBtn = dom.sugRail.querySelector('.k-sug-add[data-add=\"7\"]');",
+                  "      renderSuggestions([product({ id: 7, name: 'Basket' })], [], 'Chaussures');\n\n      const initialActions = dom.sugRail.querySelector('.k-sug-card[data-id=\"7\"] .k-sug-card-actions');\n      expect(initialActions.classList.contains('is-filled')).toBe(false);\n      expect(initialActions.querySelector('.k-sug-add')).not.toBeNull();\n      const addBtn = dom.sugRail.querySelector('.k-sug-add[data-add=\"7\"]');"
+              ),
+              (
+                  "      expect(card.querySelector('.k-sug-qty').textContent).toBe('1');\n      expect(card.querySelector('.k-sug-add')).toBeNull();",
+                  "      expect(card.querySelector('.k-sug-qty').textContent).toBe('1');\n      expect(card.querySelector('.k-sug-minus')).not.toBeNull();\n      expect(card.querySelector('.k-sug-plus')).not.toBeNull();\n      expect(card.querySelector('.k-sug-card-actions').classList.contains('is-filled')).toBe(true);\n      expect(card.querySelector('.k-sug-add')).toBeNull();"
+              ),
+              (
+                  "      expect(card.querySelector('.k-sug-add')).not.toBeNull();\n      expect(card.querySelector('.k-sug-qty')).toBeNull();",
+                  "      expect(card.querySelector('.k-sug-card-actions').classList.contains('is-filled')).toBe(false);\n      expect(card.querySelector('.k-sug-add')).not.toBeNull();\n      expect(card.querySelector('.k-sug-qty')).toBeNull();"
+              ),
+          ]
+          for old, new in replacements:
+              if old in text:
+                  text = text.replace(old, new, 1)
+          suggestions_test.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Verify source markers
+        shell: bash
+        run: |
+          grep -F "Boolean(inventoryModel) && !isSku" public/boutique/js/b-modal-cart.js
+          grep -F "bus.on('modal:detail-ready', _syncModalQtyUI)" public/boutique/js/b-modal-cart.js
+          grep -F "bus.emit('modal:detail-ready')" public/boutique/js/b-modal-product-detail-bootstrap.js
+          ! grep -F "b-modal-cart.js" public/boutique/js/b-modal-product-detail-bootstrap.js
+          grep -F "classList.toggle('is-filled', qty > 0)" public/boutique/js/b-modal-suggestions.js
+          grep -F "k-catalog-sug-add" public/boutique/js/render/render-product-card.js
 
       - name: Targeted unit tests
         working-directory: public/boutique
@@ -59,6 +90,7 @@ jobs:
           tests/unit/b-modal-product-detail-bootstrap.test.js
           tests/unit/render-product-card.test.js
           tests/unit/modal-cart-sku-guard.test.js
+          tests/unit/modal-mobile-suggestion-actions.test.js
           --runInBand
 
       - name: Existing responsive mobile harness
@@ -73,6 +105,7 @@ jobs:
         run: |
           grep -n "components.css?v=" public/boutique/index.html
           test -s public/boutique/css/dist/components.css
+          grep -F "modal-mobile-suggestion-actions.css" public/boutique/css/dist/components.css
           git diff --check
 
       - name: Commit validated integration
@@ -80,20 +113,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm -f .github/workflows/agent-mobile-modal-integration.yml
-          git rm -f .github/workflows/agent-mobile-modal-integration-pr.yml
-          git rm -f .github/workflows/agent-finalize-mobile-modal.yml
-          git add public/boutique/js/b-modal-suggestions.js
-          git add public/boutique/js/b-modal-cart.js
-          git add public/boutique/js/b-modal-product-detail-bootstrap.js
-          git add public/boutique/js/render/render-product-card.js
-          git add public/boutique/css/interactions.css
-          git add public/boutique/css/modal-mobile-canonical.css
+          git rm -f --ignore-unmatch .github/workflows/agent-mobile-modal-integration.yml
+          git rm -f --ignore-unmatch .github/workflows/agent-mobile-modal-integration-pr.yml
+          git rm -f --ignore-unmatch .github/workflows/agent-finalize-mobile-modal.yml
+          git rm -f --ignore-unmatch .agent/evidence/mobile-modal-integration-scope.md
           git add public/boutique/css/dist/components.css
           git add public/boutique/index.html
           git add public/boutique/tests/unit/b-modal-suggestions.test.js
-          git add public/boutique/tests/unit/b-modal-cart.test.js
-          git add public/boutique/tests/unit/b-modal-product-detail-bootstrap.test.js
           git add public/boutique/tests/unit/render-product-card.test.js
           git diff --cached --check
           git commit -m "fix(modal): finalize mobile suggestion actions"
