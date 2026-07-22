@@ -1169,10 +1169,21 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
    * Reste discret (cursor change, pas de bouton visible) pour ne pas casser
    * le zoom-on-hover existant.
    */
+  function _isImageZoneInteractiveTarget(target) {
+    return Boolean(
+      target &&
+      typeof target.closest === 'function' &&
+      target.closest(
+        '.k-modal-topbar-overlay, .k-modal-view-full, button, a, input, select, textarea, [role="button"]'
+      )
+    );
+  }
+
   function setupImageZoneDesktopClick() {
     let imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
     if (!imgWrap) return;
     imgWrap.addEventListener('click', function(e) {
+      if (_isImageZoneInteractiveTarget(e.target)) return;
       if (window.innerWidth < 900) return;
       if (state.carouselCount <= 1) return;
       // Évite de tirer si le click est sur une miniature ou sur le zoom preview
@@ -1201,6 +1212,11 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     let startX, startY, isDragging, direction; // 'h' | 'v' | null
 
     imgWrap.addEventListener('touchstart', function(e) {
+      if (_isImageZoneInteractiveTarget(e.target)) {
+        isDragging = false;
+        direction = null;
+        return;
+      }
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       isDragging = true;
@@ -1233,6 +1249,11 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     }, { passive: false });
 
     imgWrap.addEventListener('touchend', function(e) {
+      if (_isImageZoneInteractiveTarget(e.target)) {
+        isDragging = false;
+        direction = null;
+        return;
+      }
       if (!isDragging) return;
       isDragging = false;
       let dx = e.changedTouches[0].clientX - startX;

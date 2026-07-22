@@ -496,6 +496,26 @@ describe('b-modal-core', () => {
       expect(document.getElementById('k-modal-fullscreen')).not.toBeNull();
     });
 
+    it.each([
+      'k-modal-back-overlay',
+      'k-modal-cart-overlay',
+      'k-modal-close-overlay',
+    ])('un tap sur %s ne déclenche pas le fullscreen image', (className) => {
+      state.modalProduct = makeProduct({ images: ['a.jpg', 'b.jpg'] });
+
+      const control = document.createElement('button');
+      control.className = className;
+      control.innerHTML = '<svg><path></path></svg>';
+      imgWrap.appendChild(control);
+
+      const nestedTarget = control.querySelector('path');
+      nestedTarget.dispatchEvent(touchEvent('touchstart', 100, 100));
+      nestedTarget.dispatchEvent(touchEvent('touchend', 100, 100));
+
+      expect(document.getElementById('k-modal-fullscreen')).toBeNull();
+      expect(goToSlide).not.toHaveBeenCalled();
+    });
+
     it('touchend sans touchstart préalable (isDragging=false) → ne fait rien, ne throw pas', () => {
       expect(() => imgWrap.dispatchEvent(touchEvent('touchend', 100, 100))).not.toThrow();
       expect(goToSlide).not.toHaveBeenCalled();
