@@ -2091,7 +2091,7 @@
       "impactAreas": [
         "boutique"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-modal-core.js",
