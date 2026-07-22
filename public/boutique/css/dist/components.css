@@ -5674,6 +5674,28 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     font-size: 10px;
   }
 
+  /* ── T-030+ : Teaser suggestions — évite le rail "invisible" en fin de
+     scroll. Sibling de #k-modal-trust dans le shell (index.html), peuplé/
+     masqué par renderSuggestions() (b-modal-suggestions.js) en miroir exact
+     de la visibilité de #k-modal-suggestions (jamais un texte "creux" sans
+     données réelles derrière). Cf. docs/reference/reference-modale-4-etats.html
+     (.sugg-peek) — même contrat visuel, implémenté ici pour de vrai. ──── */
+  .k-modal-sugg-peek {
+    margin: 14px 0 2px;
+    padding-top: 12px;
+    border-top: 0.5px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .k-modal-sugg-peek[hidden] {
+    display: none;
+  }
+
+  .k-modal-sugg-peek-hint {
+    color: var(--text);
+  }
+
   /* ── MDM-7 : Below-fold separator ──────────────────────────── */
 
   .k-mdm-fold {
@@ -5864,9 +5886,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     position: relative;
   }
   #k-modal .k-modal-cart-overlay img {
-    width: 22px; height: 22px;
-    mix-blend-mode: normal; /* fond sombre, pas besoin de multiply */
-    filter: brightness(0) invert(1); /* rend l'avatar blanc sur fond sombre */
+    /* FIX avatar overlay (régression) : le filter brightness(0) invert(1) écrasait
+       l'illustration en silhouette blanche générique, et 22×22 sans object-fit
+       écrasait l'image portrait (512×942) en la déformant. On reprend le pattern
+       correct du header (.k-cart-avatar, layout.css) : object-fit: contain,
+       pas de filter destructeur, mix-blend-mode: normal pour garder les couleurs. */
+    width: 26px; height: 26px;
+    object-fit: contain;
+    mix-blend-mode: normal;
   }
   #k-modal .k-modal-cart-overlay .k-modal-cart-badge-overlay {
     position: absolute; top: -3px; right: -3px;

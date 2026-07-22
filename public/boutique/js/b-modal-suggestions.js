@@ -194,12 +194,15 @@ function _bindCardActions(card) {
 
     const sugSection = document.getElementById('k-modal-suggestions');
     if (!sugSection) return;
+    const sugPeek = document.getElementById('k-modal-sugg-peek');
 
     if (sameCat.length === 0 && otherCat.length === 0) {
       sugSection.classList.add('u-hidden');
+      if (sugPeek) sugPeek.hidden = true;
       return;
     }
     sugSection.classList.remove('u-hidden');
+    if (sugPeek) sugPeek.hidden = false;
     sugSection.classList.remove('k-pdp-curation');
     delete sugSection.dataset.curationProductId;
     if (categoryName) sugSection.dataset.cat = categoryName;
