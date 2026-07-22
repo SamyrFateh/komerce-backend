@@ -72,7 +72,9 @@ describe('b-modal-buybox-shared — achat immédiat', () => {
     installSkuState();
     state.modalQty = 1;
     const button = document.createElement('button');
-    button.innerHTML = '<span>Acheter</span>';
+    const initialLabel = document.createElement('span');
+    initialLabel.textContent = 'Acheter';
+    button.appendChild(initialLabel);
 
     wireBuyNowButton(button);
     button.click();
@@ -154,7 +156,9 @@ describe('b-modal-buybox-shared — modes de paiement', () => {
   });
 
   test('rend les quatre modes avec Carte actif par défaut et remplace un contenu existant', () => {
-    el.innerHTML = '<span>ancien</span>';
+    const previous = document.createElement('span');
+    previous.textContent = 'ancien';
+    el.appendChild(previous);
     renderPaymentModes(el);
     expect(el.textContent).not.toContain('ancien');
     expect(el.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(Object.keys(PAYMENT_MODES).length);
