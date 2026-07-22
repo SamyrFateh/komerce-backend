@@ -1,0 +1,297 @@
+name: Integrate mobile modal finish
+
+on:
+  push:
+    branches:
+      - agent/fix-modal-sku-actions
+
+permissions:
+  contents: write
+
+jobs:
+  integrate-mobile-modal:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/fix-modal-sku-actions
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            public/boutique/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix public/boutique
+
+      - name: Apply mobile-only integration
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              Path(path).write_text(text, encoding='utf-8')
+
+          def replace_once(path, old, new):
+              text = read(path)
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one match, found {count}: {old[:80]!r}')
+              write(path, text.replace(old, new, 1))
+
+          # 1. Suggestions: reserve .k-sug-add for the product modal and expose
+          # a compact filled state on the action container.
+          suggestions = 'public/boutique/js/b-modal-suggestions.js'
+          replace_once(
+              suggestions,
+              "  const actionsEl = card.querySelector('.k-sug-card-actions');\n  if (!actionsEl) return;\n  if (qty > 0) {",
+              "  const actionsEl = card.querySelector('.k-sug-card-actions');\n  if (!actionsEl) return;\n  actionsEl.classList.toggle('is-filled', qty > 0);\n  if (qty > 0) {"
+          )
+          replace_once(
+              suggestions,
+              '          <div class="k-sug-card-actions">',
+              '          <div class="k-sug-card-actions${qty > 0 ? \' is-filled\' : \'\'}">'
+          )
+
+          # Catalogue renderer gets its own class. The modal keeps .k-sug-add.
+          for path in [
+              'public/boutique/js/render/render-product-card.js',
+              'public/boutique/tests/unit/render-product-card.test.js',
+              'public/boutique/css/interactions.css',
+          ]:
+              text = read(path)
+              if '.k-sug-add' not in text and 'k-sug-add' not in text:
+                  raise SystemExit(f'{path}: expected k-sug-add usage')
+              write(path, text.replace('.k-sug-add', '.k-catalog-sug-add').replace('k-sug-add', 'k-catalog-sug-add'))
+
+          # 2. Mobile-only visual finish: no desktop selector is changed.
+          mobile_css = 'public/boutique/css/modal-mobile-canonical.css'
+          marker = '/* MDM-9 — suggestions actions compactes, mobile uniquement */'
+          css = read(mobile_css)
+          if marker not in css:
+              css += '''\n\n/* MDM-9 — suggestions actions compactes, mobile uniquement */\n@media (max-width: 899px) {\n  #k-modal .k-sug-add {\n    width: 28px;\n    height: 28px;\n    padding: 0;\n    background: transparent;\n    border: 0;\n    border-radius: 0;\n    box-shadow: none;\n    display: grid;\n    place-items: center;\n    flex-shrink: 0;\n  }\n\n  #k-modal .k-sug-add img {\n    width: 23px;\n    height: 23px;\n    display: block;\n    mix-blend-mode: normal;\n    pointer-events: none;\n  }\n\n  #k-modal .k-sug-card-actions.is-filled {\n    display: grid;\n    grid-template-columns: 24px 22px 24px;\n    align-items: center;\n    border: 1px solid var(--border);\n    border-radius: 999px;\n    background: transparent;\n    overflow: hidden;\n  }\n\n  #k-modal .k-sug-card-actions.is-filled .k-sug-step {\n    width: 24px;\n    height: 26px;\n    padding: 0;\n    border: 0;\n    border-radius: 0;\n    background: transparent;\n    box-shadow: none;\n  }\n\n  #k-modal .k-sug-card-actions.is-filled .k-sug-qty {\n    min-width: 22px;\n    text-align: center;\n  }\n}\n'''
+              write(mobile_css, css)
+
+          # 3. Main modal stepper: fail closed until inventory_model is known,
+          # and reconcile through the event bus instead of a bootstrap import.
+          modal_cart = 'public/boutique/js/b-modal-cart.js'
+          replace_once(
+              modal_cart,
+              "import { state, dom } from './b-store.js';\nimport { addToCart, quickAdd, quickRemove } from './b-cart.js';",
+              "import { bus } from './b-bus.js';\nimport { state, dom } from './b-store.js';\nimport { addToCart, quickAdd, quickRemove } from './b-cart.js';"
+          )
+          replace_once(
+              modal_cart,
+              'let _selectionReconcileInstalled = false;',
+              'let _selectionReconcileInstalled = false;\nlet _detailReadyReconcileInstalled = false;'
+          )
+          replace_once(
+              modal_cart,
+              "  const item = currentModalCartItem();\n  const isSku = state.modalProductDetail?.inventory_model === 'SKU';\n\n  // Pour un SKU, le stepper est interdit : l'intention d'un clic CTA reste donc\n  // toujours une unité. La quantité déjà au panier n'est qu'une information de\n  // libellé et ne doit jamais devenir implicitement la prochaine quantité ajoutée.\n  state.modalQty = isSku ? 1 : (item ? item.qty : 1);\n  if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;\n\n  const actions = dom.addCartBtn?.closest('.k-modal-actions') || null;\n  if (actions) {\n    actions.dataset.inventoryModel = isSku ? 'SKU' : 'LEGACY';\n    actions.classList.toggle('k-modal-actions--filled', Boolean(item) && !isSku);\n  }\n\n  [dom.qtyMinus, dom.qtyPlus].forEach((control) => {\n    if (control) control.disabled = isSku;\n  });",
+              "  const item = currentModalCartItem();\n  const inventoryModel = state.modalProductDetail?.inventory_model;\n  const isSku = inventoryModel === 'SKU';\n  const canUseProductStepper = Boolean(inventoryModel) && !isSku;\n\n  // Pour un SKU, le stepper est interdit : l'intention d'un clic CTA reste donc\n  // toujours une unité. Avant résolution du contrat, le chemin reste fail-closed.\n  state.modalQty = isSku ? 1 : (item ? item.qty : 1);\n  if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;\n\n  const actions = dom.addCartBtn?.closest('.k-modal-actions') || null;\n  if (actions) {\n    actions.dataset.inventoryModel = inventoryModel || 'UNKNOWN';\n    actions.classList.toggle(\n      'k-modal-actions--filled',\n      Boolean(item) && canUseProductStepper\n    );\n  }\n\n  [dom.qtyMinus, dom.qtyPlus].forEach((control) => {\n    if (control) control.disabled = !canUseProductStepper;\n  });"
+          )
+          replace_once(
+              modal_cart,
+              "function setupModalCart() {\n  installSelectionReconcile();",
+              "function installDetailReadyReconcile() {\n  if (_detailReadyReconcileInstalled) return;\n  _detailReadyReconcileInstalled = true;\n  bus.on('modal:detail-ready', _syncModalQtyUI);\n}\n\nfunction setupModalCart() {\n  installSelectionReconcile();\n  installDetailReadyReconcile();"
+          )
+
+          bootstrap = 'public/boutique/js/b-modal-product-detail-bootstrap.js'
+          text = read(bootstrap)
+          text = text.replace(', b-modal-cart.js,', ',')
+          text = text.replace("import { _syncModalQtyUI } from './b-modal-cart.js';\n", '')
+          old = "\n  // Le renderer PDC décide de la disponibilité des CTA. L'owner panier\n  // réconcilie ensuite la ligne SKU courante et la projection bouton/stepper,\n  // afin qu'un renderer ne puisse pas laisser un état --filled incompatible.\n  _syncModalQtyUI();\n"
+          if old not in text:
+              raise SystemExit('bootstrap: direct reconciliation block not found')
+          text = text.replace(
+              old,
+              "\n  // Le renderer termine son paint avant de publier la disponibilité du contrat.\n  // Le module panier, propriétaire de sa projection UI, se réconcilie via le bus.\n  bus.emit('modal:detail-ready');\n",
+              1
+          )
+          write(bootstrap, text)
+
+          # Tests suggestions: qty 0, qty > 0, and return to zero.
+          sug_test = 'public/boutique/tests/unit/b-modal-suggestions.test.js'
+          replace_once(
+              sug_test,
+              "      renderSuggestions([product({ id: 7, name: 'Basket' })], [], 'Chaussures');\n\n      const addBtn = dom.sugRail.querySelector('.k-sug-add[data-add=\"7\"]');",
+              "      renderSuggestions([product({ id: 7, name: 'Basket' })], [], 'Chaussures');\n\n      const initialActions = dom.sugRail.querySelector('.k-sug-card[data-id=\"7\"] .k-sug-card-actions');\n      expect(initialActions.classList.contains('is-filled')).toBe(false);\n      expect(initialActions.querySelector('.k-sug-add')).not.toBeNull();\n      const addBtn = dom.sugRail.querySelector('.k-sug-add[data-add=\"7\"]');"
+          )
+          replace_once(
+              sug_test,
+              "      expect(card.querySelector('.k-sug-qty').textContent).toBe('1');\n      expect(card.querySelector('.k-sug-add')).toBeNull();",
+              "      expect(card.querySelector('.k-sug-qty').textContent).toBe('1');\n      expect(card.querySelector('.k-sug-minus')).not.toBeNull();\n      expect(card.querySelector('.k-sug-plus')).not.toBeNull();\n      expect(card.querySelector('.k-sug-card-actions').classList.contains('is-filled')).toBe(true);\n      expect(card.querySelector('.k-sug-add')).toBeNull();"
+          )
+          replace_once(
+              sug_test,
+              "      const card = dom.sugRail.querySelector('.k-sug-card[data-id=\"7\"]');\n      expect(card.querySelector('.k-sug-qty').textContent).toBe('3');\n    });\n\n    it('clic sur \"+\"",
+              "      const card = dom.sugRail.querySelector('.k-sug-card[data-id=\"7\"]');\n      expect(card.querySelector('.k-sug-card-actions').classList.contains('is-filled')).toBe(true);\n      expect(card.querySelector('.k-sug-minus')).not.toBeNull();\n      expect(card.querySelector('.k-sug-qty').textContent).toBe('3');\n      expect(card.querySelector('.k-sug-plus')).not.toBeNull();\n    });\n\n    it('clic sur \"+\""
+          )
+          replace_once(
+              sug_test,
+              "      expect(card.querySelector('.k-sug-add')).not.toBeNull();\n      expect(card.querySelector('.k-sug-qty')).toBeNull();",
+              "      expect(card.querySelector('.k-sug-card-actions').classList.contains('is-filled')).toBe(false);\n      expect(card.querySelector('.k-sug-add')).not.toBeNull();\n      expect(card.querySelector('.k-sug-qty')).toBeNull();"
+          )
+          insert_before = "  describe('chips de filtre sous-catégorie', () => {"
+          css_test = r'''  test('contrat CSS mobile : panier nu, pilule compacte et classe catalogue séparée', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const mobileCss = fs.readFileSync(path.join(__dirname, '../../css/modal-mobile-canonical.css'), 'utf8');
+    const interactionsCss = fs.readFileSync(path.join(__dirname, '../../css/interactions.css'), 'utf8');
+    const renderer = fs.readFileSync(path.join(__dirname, '../../js/render/render-product-card.js'), 'utf8');
+
+    expect(mobileCss).toMatch(/@media \(max-width: 899px\)[\s\S]*#k-modal \.k-sug-add[\s\S]*background:\s*transparent/);
+    expect(mobileCss).toMatch(/#k-modal \.k-sug-card-actions\.is-filled[\s\S]*grid-template-columns:\s*24px 22px 24px/);
+    expect(mobileCss).not.toMatch(/MDM-9[\s\S]*!important/);
+    expect(interactionsCss).toContain('.k-catalog-sug-add');
+    expect(renderer).toContain('class="k-catalog-sug-add"');
+  });
+
+'''
+          text = read(sug_test)
+          if css_test not in text:
+              if insert_before not in text:
+                  raise SystemExit('suggestions test insertion point missing')
+              text = text.replace(insert_before, css_test + insert_before, 1)
+              write(sug_test, text)
+
+          # Tests main modal: unknown detail fails closed, known legacy enables,
+          # and modal:detail-ready replays reconciliation.
+          cart_test = 'public/boutique/tests/unit/b-modal-cart.test.js'
+          replace_once(
+              cart_test,
+              "const { state, dom } = require('../../js/b-store.js');",
+              "const { bus } = require('../../js/b-bus.js');\nconst { state, dom } = require('../../js/b-store.js');"
+          )
+          replace_once(
+              cart_test,
+              "    test('legacy absent : qty 1, bouton Ajouter, stepper actif', () => {\n      state.modalProduct = { id: 42 };",
+              "    test('avant chargement du détail : bouton visible, jamais de stepper principal', () => {\n      state.modalProduct = { id: 42 };\n      state.cart = [{ product: { id: 42 }, qty: 3 }];\n      _syncModalQtyUI();\n\n      expect(actions.dataset.inventoryModel).toBe('UNKNOWN');\n      expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);\n      expect(dom.addCartBtn.textContent).toContain('Dans le panier (3)');\n      expect(dom.qtyMinus.disabled).toBe(true);\n      expect(dom.qtyPlus.disabled).toBe(true);\n    });\n\n    test('legacy absent : qty 1, bouton Ajouter, stepper actif', () => {\n      state.modalProduct = { id: 42 };\n      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS' };"
+          )
+          replace_once(
+              cart_test,
+              "      expect(actions.dataset.inventoryModel).toBe('LEGACY');",
+              "      expect(actions.dataset.inventoryModel).toBe('LEGACY_VARIANTS');"
+          )
+          replace_once(
+              cart_test,
+              "    test('legacy présent : reflète qty et active le stepper filled', () => {\n      state.modalProduct = { id: 42 };",
+              "    test('legacy présent : reflète qty et active le stepper filled', () => {\n      state.modalProduct = { id: 42 };\n      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS' };"
+          )
+          insert_before = "    test('qtyPlus appelle quickAdd puis resynchronise', () => {"
+          event_test = r'''    test('modal:detail-ready rejoue la synchronisation une seule fois', () => {
+      setupModalCart();
+      setupModalCart();
+      state.modalProduct = { id: 42 };
+      state.cart = [{ product: { id: 42 }, qty: 2 }];
+      state.modalProductDetail = { inventory_model: 'LEGACY_VARIANTS' };
+      dom.addCartBtn.textContent = 'sentinel';
+
+      bus.emit('modal:detail-ready');
+
+      expect(dom.addCartBtn.textContent).toContain('Dans le panier (2)');
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(true);
+    });
+
+'''
+          text = read(cart_test)
+          if event_test not in text:
+              if insert_before not in text:
+                  raise SystemExit('cart test insertion point missing')
+              text = text.replace(insert_before, event_test + insert_before, 1)
+              write(cart_test, text)
+
+          # Bootstrap tests now assert the event boundary and absence of direct import.
+          bootstrap_test = 'public/boutique/tests/unit/b-modal-product-detail-bootstrap.test.js'
+          text = read(bootstrap_test)
+          text = text.replace("\njest.mock('../../js/b-modal-cart.js', () => ({\n  _syncModalQtyUI: jest.fn(),\n}));\n", '\n')
+          text = text.replace("const { _syncModalQtyUI } = require('../../js/b-modal-cart.js');\n", '')
+          text = text.replace('_syncModalQtyUI.mockClear();', 'bus.emit.mockClear();')
+          text = text.replace("expect(_syncModalQtyUI).toHaveBeenCalledTimes(1);", "expect(bus.emit).toHaveBeenCalledWith('modal:detail-ready');")
+          text = text.replace("expect(_syncModalQtyUI).not.toHaveBeenCalled();", "expect(bus.emit).not.toHaveBeenCalledWith('modal:detail-ready');")
+          source_assert = "    expect(source).not.toMatch(/expectedRootSelector/);"
+          source_new = "    expect(source).not.toMatch(/expectedRootSelector/);\n    expect(source).not.toMatch(/b-modal-cart/);\n    expect(source).toMatch(/bus\\.emit\\('modal:detail-ready'\\)/);"
+          if source_assert not in text:
+              raise SystemExit('bootstrap source assertion missing')
+          text = text.replace(source_assert, source_new, 1)
+          write(bootstrap_test, text)
+
+          # Sanity checks for all discriminating markers.
+          checks = {
+              suggestions: ["classList.toggle('is-filled', qty > 0)", "k-sug-card-actions${qty > 0 ? ' is-filled' : ''}"],
+              modal_cart: ["bus.on('modal:detail-ready', _syncModalQtyUI)", "Boolean(inventoryModel) && !isSku"],
+              bootstrap: ["bus.emit('modal:detail-ready')"],
+              'public/boutique/js/render/render-product-card.js': ['k-catalog-sug-add'],
+              'public/boutique/css/interactions.css': ['.k-catalog-sug-add'],
+              mobile_css: [marker, 'grid-template-columns: 24px 22px 24px'],
+          }
+          for path, needles in checks.items():
+              body = read(path)
+              for needle in needles:
+                  if needle not in body:
+                      raise SystemExit(f'{path}: missing {needle}')
+          if "b-modal-cart.js" in read(bootstrap):
+              raise SystemExit('bootstrap still depends directly on b-modal-cart.js')
+          PY
+
+      - name: Targeted unit tests
+        working-directory: public/boutique
+        run: >-
+          npx jest
+          tests/unit/b-modal-suggestions.test.js
+          tests/unit/b-modal-cart.test.js
+          tests/unit/b-modal-product-detail-bootstrap.test.js
+          tests/unit/render-product-card.test.js
+          tests/unit/modal-cart-sku-guard.test.js
+          --runInBand
+
+      - name: Existing responsive mobile harness
+        working-directory: public/boutique
+        run: npm run audit:responsive
+
+      - name: Official CSS build and guards
+        run: npm run build
+
+      - name: Verify generated bundle and cache buster
+        shell: bash
+        run: |
+          grep -n "components.css?v=" public/boutique/index.html
+          test -s public/boutique/css/dist/components.css
+          git diff --check
+
+      - name: Commit integrated result and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/agent-mobile-modal-integration.yml
+          git add public/boutique/js/b-modal-suggestions.js
+          git add public/boutique/js/b-modal-cart.js
+          git add public/boutique/js/b-modal-product-detail-bootstrap.js
+          git add public/boutique/js/render/render-product-card.js
+          git add public/boutique/css/interactions.css
+          git add public/boutique/css/modal-mobile-canonical.css
+          git add public/boutique/css/dist/components.css
+          git add public/boutique/index.html
+          git add public/boutique/tests/unit/b-modal-suggestions.test.js
+          git add public/boutique/tests/unit/b-modal-cart.test.js
+          git add public/boutique/tests/unit/b-modal-product-detail-bootstrap.test.js
+          git add public/boutique/tests/unit/render-product-card.test.js
+          git diff --cached --check
+          git commit -m "fix(modal): finalize mobile suggestion actions"
+          git push origin HEAD:agent/fix-modal-sku-actions
