@@ -49,7 +49,7 @@ export function saveCart() {
   try {
     localStorage.setItem('kmrc_cart', JSON.stringify(state.cart));
     localStorage.setItem('kmrc_cart_v', String(CART_VERSION));
-  } catch (error) {
+  } catch {
     // localStorage peut être indisponible (navigation privée/quota) : le panier
     // reste utilisable en mémoire pour la session courante.
   }
