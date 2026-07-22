@@ -39,6 +39,7 @@ module.exports = {
       'dépendance ordonnée des axes : changer un axe efface les choix aval',
       'états AVAILABLE / OUT_OF_STOCK / INCOMPATIBLE dérivés des sellable_units réelles',
       'sélection transactionnelle par sku_id',
+      'snapshot panier de la sellable_unit sélectionnée : sku_id, référence, prix et média',
       'médias courants dérivés des associations option_values / media_ids explicites',
       'composition mobile PDC-4 : vignettes photo, tailles combo-aware, message contextuel, livraison contractuelle et galerie liée à la sélection',
       'composition desktop PDC-5 : galerie à gauche, Buy Box à droite, mêmes SKU, mêmes médias, mêmes disponibilités et mêmes options de livraison',
@@ -57,6 +58,7 @@ module.exports = {
   files: {
     boutique: [
       '../js/view-models/modal-selection-model.js',
+      '../js/view-models/modal-cart-product-model.js',
       '../js/view-models/product-content-model.js',
       '../js/view-models/delivery-mode-model.js',
       '../js/b-modal-product-detail-bootstrap.js',
@@ -71,12 +73,14 @@ module.exports = {
       '../css/modal-product-lot4-hybrid.css',
       '../css/modal-mobile-canonical.css',
       '../css/modal-enriched-content.css',
+      '../css/modal-cart-sku-guard.css',
     ],
     dist: [
       '../css/dist/components.css',
     ],
     tests: [
       '../tests/unit/modal-selection-model.test.js',
+      '../tests/unit/modal-cart-product-model.test.js',
       '../tests/unit/product-content-model.test.js',
       '../tests/unit/b-modal-mobile-product.test.js',
       '../tests/unit/b-modal-desktop-product.test.js',
@@ -108,6 +112,7 @@ module.exports = {
     internalApi: [
       'modal-selection-model.js / createModalSelection(productDetail)',
       'modal-selection-model.js / selectModalOption(productDetail, state, axisKey, value)',
+      'modal-cart-product-model.js / buildModalCartProduct(product, detail, selection)',
       'b-modal-product-detail-bootstrap.js / setupProductDetailModal()',
       'b-modal-mobile-product.js / renderMobileProductDetail(productDetail, selection)',
       'b-modal-desktop-product.js / renderDesktopProductDetail(productDetail, selection)',
@@ -127,7 +132,7 @@ module.exports = {
     ],
   },
 
-  authority: 'boutique — modal-selection-model.js possède seul l état de sélection SKU ; b-modal-product-detail-bootstrap.js possède seul le fetch du contrat détail ; les renderers responsive rendent cet état sans recalcul métier.',
+  authority: 'boutique — modal-selection-model.js possède seul l état de sélection SKU ; b-modal-product-detail-bootstrap.js possède seul le fetch du contrat détail ; modal-cart-product-model.js possède la projection de la sellable_unit sélectionnée vers le snapshot panier ; les renderers responsive rendent cet état sans recalcul métier.',
 
   invariants: [
     'un seul Product Detail Contract est chargé par ouverture produit puis partagé par mobile et desktop',
@@ -138,6 +143,8 @@ module.exports = {
     'selected_sku_id n est posé que pour une unité vendable AVAILABLE résolue',
     'un produit LEGACY_VARIANTS est explicitement selection_supported=false : aucun faux SKU n est fabriqué',
     'sur mobile et desktop, Ajouter et Acheter restent désactivés pour un produit SKU tant que selected_sku_id est null',
+    'un ajout SKU persiste le prix, la référence et le média de la sellable_unit sélectionnée, jamais seulement les champs catalogue du produit',
+    'le stepper product-level reste interdit pour un inventaire SKU ; chaque clic CTA SKU porte une intention de 1 unité',
     'les vignettes photo viennent de option_axes.values.thumbnail_url ; aucune couleur ou image n est déduite par heuristique',
     'les carousels responsive suivent selected_media et le fullscreen relit les slides après chaque reconstruction',
     'mobile et desktop rendent delivery_options ; aucune liste Standard/Express ni délai universel n est codé dans un renderer',
