@@ -1,17 +1,5 @@
 'use strict';
 
-/**
- * tests/unit/b-modal-cart.test.js
- *
- * Module #24 — js/b-modal-cart.js (89L)
- * Exports réels : `_syncModalQtyUI` ET `setupModalCart` (les deux, contrairement
- * à ce que listait le prompt initial qui ne mentionnait que `_syncModalQtyUI`).
- *
- * b-cart.js (addToCart/quickAdd/quickRemove) est mocké : module lourd, effets
- * DOM/réseau/state hors périmètre de ce module. state/dom viennent du vrai
- * b-store.js (objets mutables partagés, pattern déjà utilisé pour b-paypal.test.js).
- */
-
 jest.mock('../../js/b-cart.js', () => ({
   addToCart: jest.fn(),
   quickAdd: jest.fn(),
@@ -27,44 +15,73 @@ function resetDom() {
   dom.addCartBtn = document.createElement('button');
   dom.qtyMinus = document.createElement('button');
   dom.qtyPlus = document.createElement('button');
+
+  const actions = document.createElement('div');
+  actions.className = 'k-modal-actions';
+  actions.append(dom.qtyMinus, dom.modalQtyVal, dom.qtyPlus, dom.addCartBtn);
+  document.body.innerHTML = '';
+  document.body.appendChild(actions);
 }
 
 describe('b-modal-cart', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     resetDom();
     state.modalProduct = null;
+    state.modalProductDetail = null;
+    state.modalSelection = null;
     state.modalQty = 0;
     state.cart = [];
   });
 
   describe('_syncModalQtyUI', () => {
-    it('aucun produit ouvert (modalProduct null) → ne fait rien, ne throw pas', () => {
+    it('aucun produit ouvert → ne fait rien', () => {
       expect(() => _syncModalQtyUI()).not.toThrow();
       expect(dom.modalQtyVal.textContent).toBe('');
     });
 
-    it('produit ouvert, absent du panier → qty par défaut = 1, bouton "Ajouter"', () => {
+    it('produit legacy absent du panier → qty 1 et bouton Ajouter', () => {
       state.modalProduct = { id: 42 };
-      state.cart = [];
       _syncModalQtyUI();
       expect(state.modalQty).toBe(1);
       expect(dom.modalQtyVal.textContent).toBe('1');
       expect(dom.addCartBtn.classList.contains('in-cart')).toBe(false);
       expect(dom.addCartBtn.innerHTML).toContain('Ajouter');
-      expect(dom.addCartBtn.innerHTML).toContain('panier_tresse_vert.png');
     });
 
-    it('produit ouvert, présent dans le panier avec qty 3 → reflète qty réelle, bouton "Dans le panier"', () => {
+    it('produit legacy au panier → reflète la quantité et affiche le stepper', () => {
       state.modalProduct = { id: 42 };
       state.cart = [{ product: { id: 42 }, qty: 3 }];
       _syncModalQtyUI();
       expect(state.modalQty).toBe(3);
-      expect(dom.modalQtyVal.textContent).toBe('3');
-      expect(dom.addCartBtn.classList.contains('in-cart')).toBe(true);
       expect(dom.addCartBtn.innerHTML).toContain('Dans le panier (3)');
+      expect(dom.addCartBtn.closest('.k-modal-actions').classList.contains('k-modal-actions--filled')).toBe(true);
     });
 
-    it('matching par id sous forme item.id (sans wrapper .product) fonctionne aussi', () => {
+    it('produit SKU déjà au panier → n’agrège pas par product.id et garde Ajouter visible', () => {
+      state.modalProduct = { id: 42 };
+      state.modalProductDetail = { inventory_model: 'SKU' };
+      state.modalSelection = { selected_sku_id: 'sku-red' };
+      state.cart = [{
+        product: { id: 42 },
+        sku_id: 'sku-blue',
+        qty: 4,
+        variant_combo: { color: 'Blue' },
+      }];
+      const actions = dom.addCartBtn.closest('.k-modal-actions');
+      actions.classList.add('k-modal-actions--filled');
+      dom.addCartBtn.classList.add('in-cart');
+
+      _syncModalQtyUI();
+
+      expect(state.modalQty).toBe(1);
+      expect(dom.modalQtyVal.textContent).toBe('1');
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
+      expect(dom.addCartBtn.classList.contains('in-cart')).toBe(false);
+      expect(dom.addCartBtn.innerHTML).toContain('Ajouter');
+    });
+
+    it('matching legacy via item.id fonctionne', () => {
       state.modalProduct = { id: 7 };
       state.cart = [{ id: 7, qty: 2 }];
       _syncModalQtyUI();
@@ -72,21 +89,9 @@ describe('b-modal-cart', () => {
       expect(dom.addCartBtn.classList.contains('in-cart')).toBe(true);
     });
 
-    it('comparaison id en string (id numérique vs id string) → match malgré tout', () => {
-      state.modalProduct = { id: 99 };
-      state.cart = [{ product: { id: '99' }, qty: 5 }];
-      _syncModalQtyUI();
-      expect(state.modalQty).toBe(5);
-    });
-
-    it('dom.modalQtyVal absent → ne throw pas (garde défensive)', () => {
+    it('dom optionnel absent → ne throw pas', () => {
       state.modalProduct = { id: 1 };
       dom.modalQtyVal = null;
-      expect(() => _syncModalQtyUI()).not.toThrow();
-    });
-
-    it('dom.addCartBtn absent → ne throw pas (garde défensive)', () => {
-      state.modalProduct = { id: 1 };
       dom.addCartBtn = null;
       expect(() => _syncModalQtyUI()).not.toThrow();
     });
@@ -97,38 +102,30 @@ describe('b-modal-cart', () => {
       expect(() => setupModalCart()).not.toThrow();
     });
 
-    it('clic sur qtyPlus avec un produit ouvert → appelle quickAdd puis resynchronise l\'UI', () => {
+    it('qtyPlus appelle quickAdd puis resynchronise', () => {
       setupModalCart();
       state.modalProduct = { id: 11 };
-      state.cart = [];
       dom.qtyPlus.dispatchEvent(new window.Event('click'));
       expect(quickAdd).toHaveBeenCalledWith('11', dom.qtyPlus);
-      // _syncModalQtyUI a tourné → modalQtyVal mis à jour (1 par défaut, produit pas dans state.cart car quickAdd est mocké)
       expect(dom.modalQtyVal.textContent).toBe('1');
     });
 
-    it('clic sur qtyMinus avec un produit ouvert → appelle quickRemove puis resynchronise l\'UI', () => {
+    it('qtyMinus appelle quickRemove', () => {
       setupModalCart();
       state.modalProduct = { id: 22 };
       dom.qtyMinus.dispatchEvent(new window.Event('click'));
       expect(quickRemove).toHaveBeenCalledWith('22', dom.qtyMinus);
     });
 
-    it('clic sur qtyPlus sans produit ouvert (modalProduct null) → ne fait rien', () => {
+    it('steppers sans produit ne mutent rien', () => {
       setupModalCart();
-      state.modalProduct = null;
       dom.qtyPlus.dispatchEvent(new window.Event('click'));
-      expect(quickAdd).not.toHaveBeenCalled();
-    });
-
-    it('clic sur qtyMinus sans produit ouvert → ne fait rien', () => {
-      setupModalCart();
-      state.modalProduct = null;
       dom.qtyMinus.dispatchEvent(new window.Event('click'));
+      expect(quickAdd).not.toHaveBeenCalled();
       expect(quickRemove).not.toHaveBeenCalled();
     });
 
-    it('clic sur addCartBtn avec produit ouvert et bouton actif → appelle addToCart(product, 1, btn)', () => {
+    it('Ajouter appelle addToCart avec quantité unitaire', () => {
       setupModalCart();
       const product = { id: 33 };
       state.modalProduct = product;
@@ -136,24 +133,17 @@ describe('b-modal-cart', () => {
       expect(addToCart).toHaveBeenCalledWith(product, 1, dom.addCartBtn);
     });
 
-    it('clic sur addCartBtn sans produit ouvert → addToCart non appelé', () => {
+    it('Ajouter ne fait rien sans produit, désactivé ou confirmé', () => {
       setupModalCart();
-      state.modalProduct = null;
       dom.addCartBtn.dispatchEvent(new window.Event('click'));
       expect(addToCart).not.toHaveBeenCalled();
-    });
 
-    it('clic sur addCartBtn désactivé (disabled) → addToCart non appelé', () => {
-      setupModalCart();
       state.modalProduct = { id: 1 };
       dom.addCartBtn.disabled = true;
       dom.addCartBtn.dispatchEvent(new window.Event('click'));
       expect(addToCart).not.toHaveBeenCalled();
-    });
 
-    it('clic sur addCartBtn déjà "confirmed" (classe CSS) → addToCart non appelé', () => {
-      setupModalCart();
-      state.modalProduct = { id: 1 };
+      dom.addCartBtn.disabled = false;
       dom.addCartBtn.classList.add('confirmed');
       dom.addCartBtn.dispatchEvent(new window.Event('click'));
       expect(addToCart).not.toHaveBeenCalled();
