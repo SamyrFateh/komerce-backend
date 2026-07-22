@@ -1,0 +1,40 @@
+name: Diagnose touched-tests
+
+on:
+  pull_request:
+
+concurrency:
+  group: diagnose-touched-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies quietly
+        run: |
+          npm ci --silent
+          npm --prefix public/boutique ci --silent
+
+      - name: Capture touched-tests report
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict --report > touched-tests-report.txt 2>&1 || true
+
+      - name: Upload diagnostic report
+        uses: actions/upload-artifact@v4
+        with:
+          name: touched-tests-report
+          path: touched-tests-report.txt
+          if-no-files-found: error
