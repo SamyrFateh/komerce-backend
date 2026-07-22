@@ -275,6 +275,39 @@ function renderSelectionMessage(root, selection) {
   root.appendChild(message);
 }
 
+/* ── Icône livraison (SVG uniquement — doctrine "un seul langage graphique") ──
+ * Dupliquée volontairement côté desktop (b-modal-desktop-product.js) : les deux
+ * surfaces ont des rendus DOM distincts par architecture (cf. reference-modale-
+ * architecture.html), ce n'est pas un état partagé qui justifierait un import. */
+function _deliveryIconSvg(isAir) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '14');
+  svg.setAttribute('height', '14');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('aria-hidden', 'true');
+  if (isAir) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', '22'); line.setAttribute('y1', '2');
+    line.setAttribute('x2', '11'); line.setAttribute('y2', '13');
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', '22 2 15 22 11 13 2 9 22 2');
+    svg.append(line, poly);
+  } else {
+    const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path1.setAttribute('d', 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z');
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    poly.setAttribute('points', '3.27 6.96 12 12.01 20.73 6.96');
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', '12'); line.setAttribute('y1', '22.08');
+    line.setAttribute('x2', '12'); line.setAttribute('y2', '12');
+    svg.append(path1, poly, line);
+  }
+  return svg;
+}
+
 /* ── MDM-5 : Info strip (dispo + delivery chips) ──────────────── */
 
 function renderInfoStrip(detail, selection, root) {
@@ -306,8 +339,10 @@ function renderInfoStrip(detail, selection, root) {
     const chip = document.createElement('span');
     const isAir = typeof option.code === 'string' && option.code.startsWith('AIR_');
     chip.className = `k-mdm-chip k-mdm-chip--delivery${isAir ? ' k-mdm-chip--air' : ''}`;
-    const icon = isAir ? '✈️' : '📦';
-    chip.textContent = `${icon} ${option.label}`;
+    const iconWrap = document.createElement('span');
+    iconWrap.className = 'k-mdm-chip-icon';
+    iconWrap.appendChild(_deliveryIconSvg(isAir));
+    chip.append(iconWrap, document.createTextNode(` ${option.label}`));
 
     // Append meta (price, ETA) if provided by contract
     const meta = [];
@@ -327,7 +362,10 @@ function renderInfoStrip(detail, selection, root) {
   if (options.length === 0) {
     const fallback = document.createElement('span');
     fallback.className = 'k-mdm-chip k-mdm-chip--delivery';
-    fallback.textContent = '📦 Livraison communiquée à la commande';
+    const fallbackIcon = document.createElement('span');
+    fallbackIcon.className = 'k-mdm-chip-icon';
+    fallbackIcon.appendChild(_deliveryIconSvg(false));
+    fallback.append(fallbackIcon, document.createTextNode(' Livraison communiquée à la commande'));
     strip.appendChild(fallback);
   }
 
