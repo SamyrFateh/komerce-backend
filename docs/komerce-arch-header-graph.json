@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 379,
-    "filesWithFullHeaders": 352,
+    "scannedCodeFiles": 380,
+    "filesWithFullHeaders": 353,
     "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 379,
+    "filesWithAnyHeaders": 380,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 776,
-    "edges": 4368,
+    "graphNodes": 777,
+    "edges": 4375,
     "dbTables": 116,
     "doctrines": 154,
     "impactAreas": 127,
@@ -35,7 +35,7 @@
     "auth": 8,
     "logistics": 35,
     "boutique": 36,
-    "catalog": 54,
+    "catalog": 55,
     "checkout": 2,
     "shared-cart": 42,
     "recommendations": 4,
@@ -71,7 +71,7 @@
     "ui-page": 4,
     "ui-service": 1,
     "ui-experiment": 1,
-    "view-model": 6,
+    "view-model": 7,
     "ui-controller": 1,
     "ui-state": 1,
     "util-ui": 2,
@@ -94,7 +94,7 @@
   "byCriticality": {
     "critical": 76,
     "medium": 105,
-    "high": 164,
+    "high": 165,
     "low": 34
   },
   "nodes": [
@@ -3798,6 +3798,45 @@
         "product-modal",
         "desktop",
         "delivery-options"
+      ],
+      "version": "2026-07"
+    },
+    {
+      "id": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "file": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "modal-cart-product-snapshot-model",
+      "domain": "catalog",
+      "layer": "view-model",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "catalog_product",
+        "product_detail_v1",
+        "modal_selection_state"
+      ],
+      "outputs": [
+        "cart_product_snapshot"
+      ],
+      "depends": [],
+      "usedBy": [
+        "b-modal-cart.js",
+        "b-modal-buybox-shared.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "cart",
+        "sku-selection",
+        "pricing"
       ],
       "version": "2026-07"
     },
@@ -19610,6 +19649,11 @@
       "area": "admin-category-config"
     },
     {
+      "id": "impact:pricing",
+      "type": "impact-area",
+      "area": "pricing"
+    },
+    {
       "id": "impact:product-selection",
       "type": "impact-area",
       "area": "product-selection"
@@ -19658,11 +19702,6 @@
       "id": "impact:operations",
       "type": "impact-area",
       "area": "operations"
-    },
-    {
-      "id": "impact:pricing",
-      "type": "impact-area",
-      "area": "pricing"
     },
     {
       "id": "impact:margin",
@@ -25163,6 +25202,48 @@
       "to": "impact:delivery-options",
       "type": "impact",
       "label": "delivery-options"
+    },
+    {
+      "from": "public/boutique/js/b-modal-cart.js",
+      "to": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "type": "uses",
+      "label": "b-modal-cart.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-buybox-shared.js",
+      "to": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "type": "uses",
+      "label": "b-modal-buybox-shared.js"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "to": "impact:product-modal",
+      "type": "impact",
+      "label": "product-modal"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "to": "impact:cart",
+      "type": "impact",
+      "label": "cart"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "to": "impact:sku-selection",
+      "type": "impact",
+      "label": "sku-selection"
+    },
+    {
+      "from": "public/boutique/js/view-models/modal-cart-product-model.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
     },
     {
       "from": "future b-modal-core.js",
@@ -48189,7 +48270,8 @@
         "public/boutique/js/b-modal-product-fields.js",
         "public/boutique/js/b-modal.js",
         "public/boutique/js/b-share-cart.js",
-        "public/boutique/js/b-utils.js"
+        "public/boutique/js/b-utils.js",
+        "public/boutique/js/view-models/modal-cart-product-model.js"
       ]
     },
     "public/boutique/js/b-modal-cart.js": {
@@ -48211,7 +48293,8 @@
       ],
       "mustCheck": [
         "impact:boutique",
-        "public/boutique/js/b-modal-core.js"
+        "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/view-models/modal-cart-product-model.js"
       ]
     },
     "public/boutique/js/b-modal-core.js": {
@@ -49970,6 +50053,41 @@
         "impact:desktop",
         "impact:product-modal",
         "public/boutique/js/b-modal-desktop-product.js"
+      ]
+    },
+    "public/boutique/js/view-models/modal-cart-product-model.js": {
+      "role": "modal-cart-product-snapshot-model",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "public/boutique/js/b-modal-cart.js",
+        "public/boutique/js/b-modal-buybox-shared.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md"
+      ],
+      "impactAreas": [
+        "product-modal",
+        "cart",
+        "sku-selection",
+        "pricing"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
+        "impact:cart",
+        "impact:pricing",
+        "impact:product-modal",
+        "impact:sku-selection",
+        "public/boutique/js/b-modal-buybox-shared.js",
+        "public/boutique/js/b-modal-cart.js"
       ]
     },
     "public/boutique/js/view-models/modal-selection-model.js": {
