@@ -58,5 +58,17 @@
     "category": "xss",
     "contains": "innerHTML",
     "reason": "Fixture DOM Jest statique : aucune donnée utilisateur ni exécution en production"
+  },
+  {
+    "file": "public/boutique/tests/unit/audit-modal-ownership-selftest.test.js",
+    "category": "xss",
+    "contains": "innerHTML",
+    "reason": "Self-test du gate ownership : fixtures DOM Jest litterales (el.innerHTML='<span>x</span>') servant a verifier la detection XSS elle-meme. Aucune donnee utilisateur, jamais servi."
+  },
+  {
+    "file": "public/boutique/scripts/gate-smoke-boutique.cjs",
+    "category": "dangerousOps",
+    "contains": "child_process",
+    "reason": "Script d'outillage local (smoke test du gate) : spawn d'un process en CI/dev, jamais expose a une requete utilisateur."
   }
 ]
