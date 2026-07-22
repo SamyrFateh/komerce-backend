@@ -60,6 +60,11 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
     const item = state.cart.find(i => String(i.product?.id ?? i.id) === pid);
     state.modalQty = item ? item.qty : 1; /* BUGFIX: défaut 1 (pas 0) — produit pas encore au panier → qty initiale = 1 pour ajouter directement */
     if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
+    /* Cycle bouton↔stepper : le conteneur porte is-in-cart quand le produit est
+       réellement au panier → CSS affiche le stepper − N + et masque « Ajouter ».
+       Retour à 0 (quickRemove) → item disparaît → classe retirée → bouton revient. */
+    const _actions = dom.addCartBtn && dom.addCartBtn.closest('.k-modal-actions');
+    if (_actions) _actions.classList.toggle('k-modal-actions--filled', !!item);
     // Update "Ajouter" button label
     if (dom.addCartBtn) {
       // FIX: tester item (produit réellement dans le panier), pas modalQty > 0
