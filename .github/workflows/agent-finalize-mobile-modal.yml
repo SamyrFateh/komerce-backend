@@ -35,7 +35,7 @@ jobs:
           npm ci
           npm ci --prefix public/boutique
 
-      - name: Align catalog selector and historical assertions
+      - name: Align feature coverage and historical assertions
         shell: bash
         run: |
           python3 <<'PY'
@@ -45,6 +45,28 @@ jobs:
           text = interactions.read_text(encoding='utf-8')
           text = text.replace('.k-sug-add', '.k-catalog-sug-add')
           interactions.write_text(text, encoding='utf-8')
+
+          feature = Path('public/boutique/features/modal-product.feature.js')
+          text = feature.read_text(encoding='utf-8')
+          css_anchor = "      '../css/modal-cart-sku-guard.css',"
+          css_entry = "      '../css/modal-mobile-suggestion-actions.css',"
+          if css_entry not in text:
+              if css_anchor not in text:
+                  raise SystemExit('modal-product feature CSS anchor missing')
+              text = text.replace(css_anchor, css_anchor + '\n' + css_entry, 1)
+          test_anchor = "      '../tests/unit/modal-product-price-normalization.test.js',"
+          test_entry = "      '../tests/unit/modal-mobile-suggestion-actions.test.js',"
+          if test_entry not in text:
+              if test_anchor not in text:
+                  raise SystemExit('modal-product feature test anchor missing')
+              text = text.replace(test_anchor, test_anchor + '\n' + test_entry, 1)
+          invariant_anchor = "    'le stepper product-level reste interdit pour un inventaire SKU ; chaque clic CTA SKU porte une intention de 1 unité',"
+          invariant_entry = "    'les actions des suggestions utilisent une classe catalogue distincte et une composition compacte limitée au viewport mobile',"
+          if invariant_entry not in text:
+              if invariant_anchor not in text:
+                  raise SystemExit('modal-product invariant anchor missing')
+              text = text.replace(invariant_anchor, invariant_anchor + '\n' + invariant_entry, 1)
+          feature.write_text(text, encoding='utf-8')
 
           render_test = Path('public/boutique/tests/unit/render-product-card.test.js')
           text = render_test.read_text(encoding='utf-8')
@@ -87,6 +109,7 @@ jobs:
           grep -F "k-catalog-sug-add" public/boutique/js/render/render-product-card.js
           grep -F ".k-catalog-sug-add" public/boutique/css/interactions.css
           ! grep -F ".k-sug-add" public/boutique/css/interactions.css
+          grep -F "modal-mobile-suggestion-actions.css" public/boutique/features/modal-product.feature.js
 
       - name: Targeted unit tests
         working-directory: public/boutique
@@ -106,6 +129,9 @@ jobs:
 
       - name: Official CSS build and guards
         run: npm run build
+
+      - name: Regenerate architecture graph
+        run: npm run arch:gen
 
       - name: Verify generated bundle and cache buster
         shell: bash
@@ -128,8 +154,11 @@ jobs:
           git add public/boutique/css/interactions.css
           git add public/boutique/css/dist/components.css
           git add public/boutique/index.html
+          git add public/boutique/features/modal-product.feature.js
           git add public/boutique/tests/unit/b-modal-suggestions.test.js
           git add public/boutique/tests/unit/render-product-card.test.js
+          git add docs/KOMERCE_ARCH_HEADER_GRAPH.md
+          git add docs/komerce-arch-header-graph.json
           git diff --cached --check
           git commit -m "fix(modal): finalize mobile suggestion actions"
           git push origin HEAD:agent/finalize-mobile-modal
