@@ -1,0 +1,103 @@
+name: Integrate mobile modal finish (PR)
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  integrate-mobile-modal:
+    if: github.event.pull_request.head.ref == 'agent/fix-modal-sku-actions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/fix-modal-sku-actions
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            public/boutique/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix public/boutique
+
+      - name: Extract and apply integration patch
+        shell: bash
+        run: |
+          if grep -q "Boolean(inventoryModel) && !isSku" public/boutique/js/b-modal-cart.js; then
+            echo "Mobile integration already applied; continuing with validation."
+          else
+            awk '
+              /python3 <<'"'"'PY'"'"'/ { capture=1; next }
+              capture && /^          PY$/ { capture=0; exit }
+              capture { sub(/^          /, ""); print }
+            ' .github/workflows/agent-mobile-modal-integration.yml > /tmp/mobile-modal-patch.py
+            test -s /tmp/mobile-modal-patch.py
+            python3 /tmp/mobile-modal-patch.py
+          fi
+
+      - name: Targeted unit tests
+        working-directory: public/boutique
+        run: >-
+          npx jest
+          tests/unit/b-modal-suggestions.test.js
+          tests/unit/b-modal-cart.test.js
+          tests/unit/b-modal-product-detail-bootstrap.test.js
+          tests/unit/render-product-card.test.js
+          tests/unit/modal-cart-sku-guard.test.js
+          --runInBand
+
+      - name: Existing responsive mobile harness
+        working-directory: public/boutique
+        run: npm run audit:responsive
+
+      - name: Official CSS build and guards
+        run: npm run build
+
+      - name: Verify generated assets
+        shell: bash
+        run: |
+          grep -n "components.css?v=" public/boutique/index.html
+          test -s public/boutique/css/dist/components.css
+          git diff --check
+
+      - name: Commit final integration
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/agent-mobile-modal-integration.yml
+          git rm -f .github/workflows/agent-mobile-modal-integration-pr.yml
+          git add public/boutique/js/b-modal-suggestions.js
+          git add public/boutique/js/b-modal-cart.js
+          git add public/boutique/js/b-modal-product-detail-bootstrap.js
+          git add public/boutique/js/render/render-product-card.js
+          git add public/boutique/css/interactions.css
+          git add public/boutique/css/modal-mobile-canonical.css
+          git add public/boutique/css/dist/components.css
+          git add public/boutique/index.html
+          git add public/boutique/tests/unit/b-modal-suggestions.test.js
+          git add public/boutique/tests/unit/b-modal-cart.test.js
+          git add public/boutique/tests/unit/b-modal-product-detail-bootstrap.test.js
+          git add public/boutique/tests/unit/render-product-card.test.js
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git commit -m "fix(modal): finalize mobile suggestion actions"
+          git push origin HEAD:agent/fix-modal-sku-actions
