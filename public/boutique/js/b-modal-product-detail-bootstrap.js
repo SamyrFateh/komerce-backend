@@ -112,6 +112,10 @@ function renderResponsiveProductDetail(detail, selection, forceMedia) {
   } else {
     renderDesktopProductDetail(detail, selection, { forceMedia });
   }
+
+  // Le renderer termine son paint avant de publier la disponibilité du contrat.
+  // Le module panier reste propriétaire de sa projection UI et écoute ce signal.
+  bus.emit('modal:detail-ready');
 }
 
 function syncResponsiveComposition() {

@@ -10,7 +10,7 @@
 
 ## 1. Inventaire CSS
 
-22 fichier(s) sur disque, 22 orphelin(s).
+24 fichier(s) sur disque, 24 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
@@ -21,11 +21,13 @@
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 971 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
-| `interactions.css` | 436 | 🔴 **ORPHELIN** |
+| `interactions.css` | 434 | 🔴 **ORPHELIN** |
 | `layout.css` | 1168 | 🔴 **ORPHELIN** |
+| `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 313 | 🔴 **ORPHELIN** |
-| `modal-mobile-canonical.css` | 735 | 🔴 **ORPHELIN** |
+| `modal-mobile-canonical.css` | 714 | 🔴 **ORPHELIN** |
+| `modal-mobile-suggestion-actions.css` | 66 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 448 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1430 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 1095 | 🔴 **ORPHELIN** |
@@ -43,7 +45,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=136
- 2. /boutique/css/dist/components.css?v=207
+ 2. /boutique/css/dist/components.css?v=210
  3. /boutique/css/dist/desktop.css?v=68
  4. /boutique/css/dist/event.css?v=32
 ```
@@ -109,7 +111,7 @@ Aucun. ✅
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 22 (cible : 0)
+- **CSS orphelins** : 24 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 25 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)

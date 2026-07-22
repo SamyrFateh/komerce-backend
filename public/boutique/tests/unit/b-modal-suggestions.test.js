@@ -365,3 +365,24 @@ describe('b-modal-suggestions', () => {
     });
   });
 });
+
+
+describe('b-modal-suggestions — contrat stepper compact is-filled', () => {
+  test('le DOM suit explicitement le passage quantité vide/remplie', () => {
+    const fs = require('fs');
+    const path = require('path');
+
+    const source = fs.readFileSync(
+      path.join(__dirname, '../../js/b-modal-suggestions.js'),
+      'utf8'
+    );
+
+    expect(source).toMatch(
+      /classList\.toggle\('is-filled',\s*qty\s*>\s*0\)/
+    );
+
+    expect(source).toMatch(
+      /k-sug-card-actions\$\{qty\s*>\s*0\s*\?\s*' is-filled'\s*:\s*''\}/
+    );
+  });
+});

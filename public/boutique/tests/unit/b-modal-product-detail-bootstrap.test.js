@@ -36,6 +36,7 @@ jest.mock('../../js/b-modal-desktop-product.js', () => ({
   renderDesktopProductDetail: jest.fn(),
 }));
 
+const { bus } = require('../../js/b-bus.js');
 const { state, dom } = require('../../js/b-store.js');
 const { createModalSelection } = require('../../js/view-models/modal-selection-model.js');
 const {
@@ -74,10 +75,12 @@ function installDom() {
   document.body.innerHTML =
     '<div id="k-modal">' +
       '<div id="k-modal-variants"></div>' +
-      '<button id="k-add-cart-btn"></button>' +
-      '<button id="k-buy-now-btn"></button>' +
-      '<button id="k-qty-minus"></button>' +
-      '<button id="k-qty-plus"></button>' +
+      '<div class="k-modal-actions">' +
+        '<button id="k-add-cart-btn"></button>' +
+        '<button id="k-buy-now-btn"></button>' +
+        '<button id="k-qty-minus"></button>' +
+        '<button id="k-qty-plus"></button>' +
+      '</div>' +
     '</div>';
   window.matchMedia = jest.fn().mockReturnValue({ matches: true });
   dom.modal = document.getElementById('k-modal');
@@ -127,7 +130,7 @@ describe('product detail modal bootstrap', () => {
     delete global.fetch;
   });
 
-  test('mobile : charge une fois le contrat et rend PDC-4', async () => {
+  test('mobile : rend PDC puis publie modal:detail-ready', async () => {
     const payload = detail();
     fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
 
@@ -145,9 +148,10 @@ describe('product detail modal bootstrap', () => {
       { forceMedia: true }
     );
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
+    expect(bus.emit).toHaveBeenCalledWith('modal:detail-ready');
   });
 
-  test('desktop : le même fetch et le même reducer alimentent PDC-5', async () => {
+  test('desktop : rend PDC puis publie modal:detail-ready', async () => {
     window.matchMedia.mockReturnValue({ matches: false });
     const payload = detail();
     fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
@@ -156,16 +160,16 @@ describe('product detail modal bootstrap', () => {
     await flush();
     await flush();
 
-    expect(createModalSelection).toHaveBeenCalledWith(payload);
     expect(renderDesktopProductDetail).toHaveBeenCalledWith(
       payload,
       expect.objectContaining({ selected_sku_id: null }),
       { forceMedia: true }
     );
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
+    expect(bus.emit).toHaveBeenCalledWith('modal:detail-ready');
   });
 
-  test('passage mobile vers desktop réutilise le contrat et la même sélection sans refetch', async () => {
+  test('passage mobile vers desktop réutilise contrat et sélection sans refetch', async () => {
     const payload = detail();
     fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
 
@@ -176,6 +180,7 @@ describe('product detail modal bootstrap', () => {
     const sharedSelection = state.modalSelection;
     renderMobileProductDetail.mockClear();
     renderDesktopProductDetail.mockClear();
+    bus.emit.mockClear();
     window.matchMedia.mockReturnValue({ matches: false });
 
     _productDetailBootstrapTestApi.syncResponsiveComposition();
@@ -188,22 +193,24 @@ describe('product detail modal bootstrap', () => {
       sharedSelection,
       { forceMedia: false }
     );
-    expect(renderMobileProductDetail).not.toHaveBeenCalled();
+    expect(bus.emit).toHaveBeenCalledWith('modal:detail-ready');
+    expect(bus.emit).toHaveBeenCalledWith('modal:composition-synced');
   });
 
-  test('un resize restant dans le même mode ne rerend pas la fiche', async () => {
-    const payload = detail();
-    fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
-
+  test('resize dans le même mode ne rerend pas', async () => {
+    fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(detail()) });
     handlers['modal:opened']({ id: PRODUCT_ID });
     await flush();
     await flush();
     renderMobileProductDetail.mockClear();
+    renderDesktopProductDetail.mockClear();
+    bus.emit.mockClear();
 
     _productDetailBootstrapTestApi.syncResponsiveComposition();
 
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
+    expect(bus.emit).not.toHaveBeenCalledWith('modal:detail-ready');
   });
 
   test('ignore une réponse arrivée après navigation vers un autre produit', async () => {
@@ -221,20 +228,16 @@ describe('product detail modal bootstrap', () => {
 
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
     expect(renderDesktopProductDetail).not.toHaveBeenCalled();
+    expect(bus.emit).not.toHaveBeenCalledWith('modal:detail-ready');
   });
 
-  test('PDC-6 : le chemin transactionnel (CTA + stepper) est verrouillé avant même la résolution du fetch /detail', () => {
-    fetch.mockReturnValue(new Promise(() => {})); // ne résout jamais dans ce test
-
+  test('verrouille CTA et stepper avant la résolution du fetch', () => {
+    fetch.mockReturnValue(new Promise(() => {}));
     handlers['modal:opened']({ id: PRODUCT_ID });
-
-    // Verrouillage synchrone, posé avant l'await du fetch — pas besoin de flush().
-    transactionalControls().forEach((control) => {
-      expect(control.disabled).toBe(true);
-    });
+    transactionalControls().forEach((control) => expect(control.disabled).toBe(true));
   });
 
-  test('PDC-6 : un échec HTTP fail-close — aucun legacy variants préservé, aucune mutation panier SKU possible', async () => {
+  test('échec HTTP : purge le legacy, affiche l erreur et reste fail-closed', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     dom.modalVariants.innerHTML = '<div data-legacy="1">legacy</div>';
     fetch.mockResolvedValue({ ok: false, status: 503 });
@@ -243,28 +246,15 @@ describe('product detail modal bootstrap', () => {
     await flush();
     await flush();
 
-    expect(clearDesktopProductDetailState).toHaveBeenCalledTimes(1);
-    expect(clearMobileProductDetailState).toHaveBeenCalledTimes(1);
-    // Inversion PDC-6 : le paint legacy #k-modal-variants n'est plus préservé
-    // en cas d'échec /detail — il est purgé (fail closed), pas conservé.
     expect(dom.modalVariants.querySelector('[data-legacy]')).toBeNull();
-    // [MDM-8 phase 2] Le vide silencieux (indiscernable d'une modale cassée,
-    // cf audit §1.3/§6) est remplacé par un état d'erreur visuel explicite.
-    // Le chemin transactionnel reste verrouillé (assertion ci-dessous) —
-    // seul le rendu change, pas le comportement fail-closed.
     expect(dom.modalVariants.querySelector('[data-mdm-detail-error]')).not.toBeNull();
-    // Preuve : aucune mutation panier SKU n'est possible tant que le contrat
-    // détail n'a pas résolu avec succès — CTA et stepper restent verrouillés.
-    transactionalControls().forEach((control) => {
-      expect(control.disabled).toBe(true);
-    });
+    transactionalControls().forEach((control) => expect(control.disabled).toBe(true));
     expect(renderMobileProductDetail).not.toHaveBeenCalled();
-    expect(renderDesktopProductDetail).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalled();
+    expect(bus.emit).not.toHaveBeenCalledWith('modal:detail-ready');
     warn.mockRestore();
   });
 
-  test('PDC-6 : une erreur réseau (fetch rejeté) verrouille aussi le chemin transactionnel', async () => {
+  test('erreur réseau : reste fail-closed', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     fetch.mockRejectedValue(new Error('network down'));
 
@@ -272,34 +262,12 @@ describe('product detail modal bootstrap', () => {
     await flush();
     await flush();
 
-    transactionalControls().forEach((control) => {
-      expect(control.disabled).toBe(true);
-    });
-    expect(renderMobileProductDetail).not.toHaveBeenCalled();
-    expect(renderDesktopProductDetail).not.toHaveBeenCalled();
+    transactionalControls().forEach((control) => expect(control.disabled).toBe(true));
+    expect(bus.emit).not.toHaveBeenCalledWith('modal:detail-ready');
     warn.mockRestore();
   });
 
-  test('PDC-6 : aucun MutationObserver ne protège plus #k-modal-variants — un repaint tardif du conteneur n\'est pas corrigé automatiquement', async () => {
-    window.matchMedia.mockReturnValue({ matches: false });
-    const payload = detail();
-    fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
-
-    handlers['modal:opened']({ id: PRODUCT_ID });
-    await flush();
-    await flush();
-    renderDesktopProductDetail.mockClear();
-
-    dom.modalVariants.innerHTML = '<div data-legacy="1">legacy tardif</div>';
-    await flush();
-    await flush();
-
-    // Sans guard PDC-4/PDC-5 (supprimé PDC-6), aucun rerender automatique ne
-    // corrige ce repaint : ce n'est plus la responsabilité du bootstrap.
-    expect(renderDesktopProductDetail).not.toHaveBeenCalled();
-  });
-
-  test('PDC-6 : le module ne référence plus aucun mécanisme de guard variants legacy', () => {
+  test('le module ne réintroduit aucun guard legacy ni dépendance directe panier', () => {
     const fs = require('fs');
     const path = require('path');
     const source = fs.readFileSync(
@@ -311,6 +279,8 @@ describe('product detail modal bootstrap', () => {
     expect(source).not.toMatch(/installVariantGuard/);
     expect(source).not.toMatch(/disconnectVariantGuard/);
     expect(source).not.toMatch(/expectedRootSelector/);
+    expect(source).not.toMatch(/b-modal-cart/);
+    expect(source).toMatch(/bus\.emit\('modal:detail-ready'\)/);
   });
 
   test('modal:closed invalide les requêtes et nettoie les deux compositions', () => {

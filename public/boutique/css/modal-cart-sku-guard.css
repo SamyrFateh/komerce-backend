@@ -1,0 +1,17 @@
+/**
+ * Garde transactionnelle SKU.
+ *
+ * Le renderer desktop legacy peut encore poser temporairement
+ * .k-modal-actions--filled depuis la présence du product.id dans le panier.
+ * Pour un inventaire SKU, le stepper product-id-first n'est jamais une voie de
+ * mutation valide : le bouton Ajouter doit rester la projection visible.
+ * data-inventory-model est posé par b-modal-cart.js, owner de l'état panier.
+ */
+
+#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-qty {
+  display: none;
+}
+
+#k-modal .k-modal-actions[data-inventory-model="SKU"] .k-add-cart-btn {
+  display: flex;
+}

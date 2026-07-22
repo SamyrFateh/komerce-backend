@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 379
-- Files with full headers: 352
+- Scanned code files: 380
+- Files with full headers: 353
 - Files with lite headers: 27
-- Files with any headers: 379
+- Files with any headers: 380
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 776
-- Edges: 4368
+- Graph nodes: 777
+- Edges: 4375
 - DB tables: 116
 - Doctrines: 154
 - Impact areas: 127
@@ -28,7 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth-identity: 4
 - bootstrap: 1
 - boutique: 36
-- catalog: 54
+- catalog: 55
 - checkout: 2
 - customs: 6
 - dashboard: 28
@@ -84,7 +84,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - util: 24
 - util-ui: 2
 - validators: 1
-- view-model: 6
+- view-model: 7
 
 ## Critical And High Files
 
@@ -195,6 +195,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/komerce-api.js — boutique-api-client (boutique, high, full)
 - public/boutique/js/product-store.js — boutique-product-store (catalog, high, full)
 - public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
+- public/boutique/js/view-models/modal-cart-product-model.js — modal-cart-product-snapshot-model (catalog, high, full)
 - public/boutique/js/view-models/modal-selection-model.js — product-modal-selection-model (catalog, high, full)
 - routes/admin-boutique-categories.js — boutique-taxonomy-admin-api (catalog, high, full)
 - routes/admin-cost-components.js — economic-engine-admin-cost-components (economic-engine, high, full)

@@ -6,115 +6,196 @@
  * @owner         public/boutique/js/b-modal-core.js
  * @purpose       supports public/boutique/js/b-modal-core.js
  * @impact-areas  boutique
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
 /**
  * @module b-modal-cart
- * @brief Interactions panier de la fiche produit — extrait de b-modal.js (ARCH-2, PR4).
- *
- * Périmètre (responsabilité « Stepper quantité, bouton ajout panier, sync panier ») :
- *   - _syncModalQtyUI() : synchronise l'affichage du stepper + le libellé du bouton
- *     « Ajouter » avec le contenu réel du panier.
- *   - setupModalCart() : câble le stepper −/+ (ajout/retrait direct) et le bouton
- *     « Ajouter au panier ». Appelé une fois par setupModal().
- *
- * Hors périmètre (restent dans le core avec closeModal) : le bouton « ⚡ Acheter »
- *   (buyNowBtn) et le bouton d'accès panier (modalCartBtn) ferment la modal en direct
- *   — ce sont des actions de fermeture/navigation, pas du stepper/ajout/sync.
- *
- * Découplage : ce module n'appelle ni openModal ni closeModal → il n'importe RIEN de
- *   b-modal.js (aucun cycle, garde-fou check:imports I-2). Corps repris à l'identique.
- *
- * Consommateurs : b-modal.js (openModal appelle _syncModalQtyUI ; setupModal appelle
- *   setupModalCart). Aucun consommateur externe (fonctions internes, non ré-exportées).
- *
- * Dépendances : b-store.js, b-cart.js
+ * @brief Interactions panier de la fiche produit : stepper, ajout et sync UI.
  */
 
-import { state, dom }                    from './b-store.js';
+import { bus } from './b-bus.js';
+import { state, dom } from './b-store.js';
 import { addToCart, quickAdd, quickRemove } from './b-cart.js';
+import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
 
-'use strict';
+let _selectionReconcileInstalled = false;
+let _detailReadyReconcileInstalled = false;
 
-  /* ── MDP-PROP1 : reset état bouton "Ajouter" à chaque ouverture de produit ──
-   * Owner unique de #k-add-cart-btn (avec b-modal-desktop-product.js /
-   * b-modal-mobile-product.js en `allow` pour l'état disabled post-fetch).
-   * Sans ce reset, un ajout confirmé sur le produit A (classe `confirmed` +
-   * onclick custom posés par b-cart.js) fuyait sur l'ouverture du produit B :
-   * le clic sur B fermait la modale au lieu d'ajouter B. `_syncModalQtyUI`
-   * ne resynchronise que la classe `in-cart` — jamais `confirmed`/`onclick`,
-   * d'où cette fonction dédiée, appelée avant elle depuis `openModal`. */
-  function resetAddCartButtonState() {
-    if (!dom.addCartBtn) return;
-    dom.addCartBtn.disabled = false;
-    dom.addCartBtn.onclick = null;
-    dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
+function normalizedCombo(combo) {
+  if (!combo || typeof combo !== 'object') return '';
+  return Object.keys(combo)
+    .sort()
+    .map((key) => `${key}:${String(combo[key])}`)
+    .join('|');
+}
+
+function itemProductId(item) {
+  return item?.product?.id ?? item?.id ?? null;
+}
+
+function itemSkuId(item) {
+  return item?.sku_id
+    ?? item?.product?.sku_id
+    ?? item?.product?.selected_sku_id
+    ?? null;
+}
+
+function paintInCartButton(button, qty) {
+  button.replaceChildren(document.createTextNode(`🧺 Dans le panier (${qty})`));
+}
+
+function paintAddButton(button) {
+  const image = document.createElement('img');
+  image.src = '/images/panier_tresse_vert.png';
+  image.width = 20;
+  image.height = 20;
+  image.alt = '';
+  image.style.pointerEvents = 'none';
+  image.style.flexShrink = '0';
+  button.replaceChildren(image, document.createTextNode(' Ajouter'));
+}
+
+/**
+ * Retourne uniquement la ligne correspondant à la sélection courante. Un produit
+ * SKU ne doit jamais réutiliser la première ligne du même product.id : deux
+ * couleurs/tailles du même produit sont deux intentions panier distinctes.
+ */
+function currentModalCartItem() {
+  if (!state.modalProduct) return null;
+  const pid = String(state.modalProduct.id);
+  const candidates = (state.cart || []).filter(
+    (item) => String(itemProductId(item)) === pid
+  );
+
+  const isSku = state.modalProductDetail?.inventory_model === 'SKU';
+  if (!isSku) return candidates[0] || null;
+
+  const selectedSkuId = state.modalSelection?.selected_sku_id;
+  if (!selectedSkuId) return null;
+
+  const bySku = candidates.find((item) => {
+    const skuId = itemSkuId(item);
+    return skuId != null && String(skuId) === String(selectedSkuId);
+  });
+  if (bySku) return bySku;
+
+  const selectedCombo = normalizedCombo(state.modalSelection?.selected_options);
+  if (!selectedCombo) return null;
+  return candidates.find(
+    (item) => normalizedCombo(item.variant_combo) === selectedCombo
+  ) || null;
+}
+
+/* Reset de l'état transitoire du bouton Ajouter à chaque ouverture produit. */
+function resetAddCartButtonState() {
+  if (!dom.addCartBtn) return;
+  dom.addCartBtn.disabled = false;
+  dom.addCartBtn.onclick = null;
+  dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
+}
+
+/** Synchronise quantité, état SKU et représentation bouton/stepper. */
+function _syncModalQtyUI() {
+  if (!state.modalProduct) return;
+
+  const item = currentModalCartItem();
+  const inventoryModel = state.modalProductDetail?.inventory_model;
+  const isSku = inventoryModel === 'SKU';
+  const canUseProductStepper = Boolean(inventoryModel) && !isSku;
+
+  // Pour un SKU, le stepper est interdit : l'intention d'un clic CTA reste donc
+  // toujours une unité. Avant résolution du contrat, le chemin reste fail-closed.
+  state.modalQty = isSku ? 1 : (item ? item.qty : 1);
+  if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
+
+  const actions = dom.addCartBtn?.closest('.k-modal-actions') || null;
+  if (actions) {
+    actions.dataset.inventoryModel = inventoryModel || 'UNKNOWN';
+    actions.classList.toggle(
+      'k-modal-actions--filled',
+      Boolean(item) && canUseProductStepper
+    );
   }
 
-  /* ── FIX: Sync qty stepper display with real cart contents ── */
-  function _syncModalQtyUI() {
+  [dom.qtyMinus, dom.qtyPlus].forEach((control) => {
+    if (control) control.disabled = !canUseProductStepper;
+  });
+
+  if (!dom.addCartBtn) return;
+  if (item) {
+    dom.addCartBtn.classList.add('in-cart');
+    paintInCartButton(dom.addCartBtn, item.qty);
+  } else {
+    dom.addCartBtn.classList.remove('in-cart');
+    paintAddButton(dom.addCartBtn);
+  }
+}
+
+/**
+ * Les renderers PDC rerendent directement leur composition lors d'un clic sur
+ * une option et ne repassent pas par le bootstrap. Cette délégation document
+ * réconcilie l'owner panier juste après le handler du renderer, y compris quand
+ * le bouton cliqué a été remplacé par le rerender.
+ */
+function installSelectionReconcile() {
+  if (_selectionReconcileInstalled) return;
+  _selectionReconcileInstalled = true;
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    const option = target?.closest?.('[data-option-value]');
+    if (!option || !option.closest('#k-modal')) return;
+    Promise.resolve().then(_syncModalQtyUI);
+  });
+}
+
+function installDetailReadyReconcile() {
+  if (_detailReadyReconcileInstalled) return;
+  _detailReadyReconcileInstalled = true;
+  bus.on('modal:detail-ready', _syncModalQtyUI);
+}
+
+function setupModalCart() {
+  installSelectionReconcile();
+  installDetailReadyReconcile();
+
+  dom.qtyMinus.addEventListener('click', () => {
     if (!state.modalProduct) return;
     const pid = String(state.modalProduct.id);
-    const item = state.cart.find(i => String(i.product?.id ?? i.id) === pid);
-    state.modalQty = item ? item.qty : 1; /* BUGFIX: défaut 1 (pas 0) — produit pas encore au panier → qty initiale = 1 pour ajouter directement */
-    if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
-    /* PDC-6 : le stepper mute le panier "product-id first" (quickAdd/quickRemove
-       résolvent par product.id, jamais par selected_sku_id) — voie de mutation
-       invalide pour un produit SKU, même une fois au panier. Avant ce guard,
-       --filled était posé sur la seule présence panier : un produit SKU déjà
-       au panier affichait le stepper avec ses boutons −/+ désactivés (UI morte,
-       aucun retour visuel), pendant qu'un produit non-SKU gardait un stepper
-       pleinement fonctionnel — d'où le désalignement enrichi/non-enrichi. */
-    const isSku = state.modalProductDetail?.inventory_model === 'SKU';
-    /* Cycle bouton↔stepper : le conteneur porte is-in-cart quand le produit est
-       réellement au panier ET que le stepper est une mutation valide (non-SKU)
-       → CSS affiche le stepper − N + et masque « Ajouter ». Pour un produit SKU,
-       le bouton « Dans le panier (N) » (branche else ci-dessous) reste la seule
-       représentation — jamais le stepper.
-       Retour à 0 (quickRemove) → item disparaît → classe retirée → bouton revient. */
-    const _actions = dom.addCartBtn && dom.addCartBtn.closest('.k-modal-actions');
-    if (_actions) _actions.classList.toggle('k-modal-actions--filled', !!item && !isSku);
-    // Update "Ajouter" button label
-    if (dom.addCartBtn) {
-      // FIX: tester item (produit réellement dans le panier), pas modalQty > 0
-      // modalQty vaut toujours 1 par défaut même hors panier → bouton montrait
-      // "Dans le panier" sur tout produit ouvert même vierge de tout ajout.
-      if (item) {
-        dom.addCartBtn.classList.add('in-cart');
-        dom.addCartBtn.innerHTML = '🧺 Dans le panier (' + state.modalQty + ')';
-      } else {
-        dom.addCartBtn.classList.remove('in-cart');
-        /* FIX Bug 3: utiliser l'image panier_tresse_vert au lieu du SVG générique */
-        dom.addCartBtn.innerHTML = '<img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" style="pointer-events:none;flex-shrink:0"> Ajouter';
-      }
-    }
-  }
+    quickRemove(pid, dom.qtyMinus);
+    _syncModalQtyUI();
+  });
 
-  /* ── Stepper −/+ + bouton « Ajouter au panier » (câblage) ── */
-  function setupModalCart() {
-    // FIX: Stepper +/− = ajout/retrait direct du panier (comme cartes suggestions)
-    dom.qtyMinus.addEventListener('click', () => {
-      if (!state.modalProduct) return;
-      const pid = String(state.modalProduct.id);
-      quickRemove(pid, dom.qtyMinus);
-      _syncModalQtyUI();
-    });
-    dom.qtyPlus.addEventListener('click', () => {
-      if (!state.modalProduct) return;
-      const pid = String(state.modalProduct.id);
-      quickAdd(pid, dom.qtyPlus);
-      _syncModalQtyUI();
-    });
+  dom.qtyPlus.addEventListener('click', () => {
+    if (!state.modalProduct) return;
+    const pid = String(state.modalProduct.id);
+    quickAdd(pid, dom.qtyPlus);
+    _syncModalQtyUI();
+  });
 
-    dom.addCartBtn.addEventListener('click', () => {
-      if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
-      // Si pas encore dans le panier, ajouter 1
-      addToCart(state.modalProduct, 1, dom.addCartBtn);
-      _syncModalQtyUI();
-    });
-  }
+  dom.addCartBtn.addEventListener('click', () => {
+    if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
+    const cartProduct = buildModalCartProduct(
+      state.modalProduct,
+      state.modalProductDetail,
+      state.modalSelection
+    );
+    addToCart(cartProduct, 1, dom.addCartBtn);
+    _syncModalQtyUI();
+  });
+}
 
+export {
+  _syncModalQtyUI,
+  setupModalCart,
+  resetAddCartButtonState,
+};
 
-export { _syncModalQtyUI, setupModalCart, resetAddCartButtonState };
+export const _modalCartTestApi = Object.freeze({
+  currentModalCartItem,
+  normalizedCombo,
+  paintInCartButton,
+  paintAddButton,
+});

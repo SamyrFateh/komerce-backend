@@ -277,14 +277,12 @@ body.cart-open  #k-section-index { display:none; }
 /* Suggestions complémentaires */
 /* CONTEXTE : bouton "ajouter une suggestion" dans le rail catalogue (hors modale).
    40×40px, rond, fond blanc avec bordure.
-   NE PAS CONFONDRE avec .k-sug-add dans modal.css (Phase 8) :
-   - modal.css = bouton ± quantité dans la modale produit (32×32, transparent, sans bordure)
-   - Ces deux définitions couvrent des contextes DOM disjoints — pas de conflit.
-   Source de vérité catalogue → ici. Source de vérité modale → modal.css L560. */
+   La variante catalogue utilise .k-catalog-sug-add ; .k-sug-add est réservée à la modale.
+   Source de vérité catalogue → ici. Source de vérité modale → modal-mobile-suggestion-actions.css. */
 .k-sug-wrap          { display:block; }
 .k-sug-rail          { display:flex; gap:10px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:4px 2px; }
 .k-sug-rail::-webkit-scrollbar { display:none; }
-.k-sug-add {
+.k-catalog-sug-add {
   width: 40px;
   height: 40px;
   padding: 0;
@@ -299,9 +297,9 @@ body.cart-open  #k-section-index { display:none; }
   transition: transform .15s var(--ease), box-shadow .2s var(--ease), border-color .2s;
   flex-shrink: 0;
 }
-.k-sug-add:active { transform: scale(.92); }
-.k-sug-add:hover { border-color: var(--ocean); box-shadow: var(--elev-2); }
-.k-sug-add img { width: 24px; height: 24px; object-fit: contain; display: block; pointer-events: none; mix-blend-mode: multiply; }
+.k-catalog-sug-add:active { transform: scale(.92); }
+.k-catalog-sug-add:hover { border-color: var(--ocean); box-shadow: var(--elev-2); }
+.k-catalog-sug-add img { width: 24px; height: 24px; object-fit: contain; display: block; pointer-events: none; mix-blend-mode: multiply; }
 .k-sug-arrow         { display:none; }
 .k-sug-card-actions  { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 8px; }
 .k-sug-card-bottom   { padding:4px 8px 8px; }

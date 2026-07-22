@@ -583,42 +583,9 @@
   #k-modal .k-modal-scroll {
     background: var(--page-bg);
   }
-
-  /* ── M4-fix : Panier suggestion — cohérence visuelle + suppression halo blanc ─
-     interactions.css pose .k-sug-add à 40×40 fond blanc, cercle, bordure, ombre
-     et arrive après modal-product.css dans le bundle → gagne partout. Le sélecteur
-     #k-modal ajoute un ID (spécificité 1-1-0 > 0-1-0) et gagne quelle que soit
-     la position de compilation. Style calqué sur .k-sug-step (bouton ± du stepper)
-     pour une cohérence visuelle immédiate : même taille, même fond sand, même
-     border-radius 50% — quand le produit passe au panier le − / N / + émerge
-     sans rupture graphique. */
-  #k-modal .k-sug-add {
-    width: 28px;
-    height: 28px;
-    background: var(--sand);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    padding: 0;
-    box-shadow: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background .15s;
-  }
-  #k-modal .k-sug-add:active {
-    background: var(--sand-dark);
-    transform: scale(.9);
-  }
-  #k-modal .k-sug-add img {
-    width: 18px;
-    height: 18px;
-    display: block;
-    mix-blend-mode: multiply;
-    pointer-events: none;
-  }
+  /* Panier suggestion :
+     les styles visuels du bouton et du stepper sont désormais délégués à
+     modal-mobile-suggestion-actions.css, owner mobile unique. */
 
   /* FIX layout carte suggestion : le stepper en-panier (− N +, ~85px) laisse
      < 10px au prix sur une carte 110px → ellipsis tronquait "42 000" en "4".

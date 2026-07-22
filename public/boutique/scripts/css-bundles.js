@@ -7,7 +7,7 @@
  * @purpose       Source unique de vérité pour la composition des bundles CSS.
  *                Consommé par deploy-css.js (bundler) et audit-boutique-arch.js (gate).
  * @impact-areas  css-pipeline, audit
- * @version       2026-06
+ * @version       2026-07
  */
 
 'use strict';
@@ -28,8 +28,8 @@ const BUNDLES = [
   {
     out: 'components.css',
     files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
-            'modal-mobile-canonical', 'modal-enriched-content',
-            'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'share-cart', 'shared-followup', 'identity', 'paypal', 'wallet'],
+            'modal-mobile-canonical', 'modal-enriched-content', 'modal-cart-sku-guard',
+            'cart', 'interactions', 'modal-mobile-suggestion-actions', 'hero-cart-proxy', 'group-cart-flow', 'share-cart', 'shared-followup', 'identity', 'paypal', 'wallet'],
   },
   {
     out: 'desktop.css',

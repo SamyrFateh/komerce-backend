@@ -53,7 +53,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
 | `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
 | `boutique.js` | 0 | 11 | 3/0 | Modal produit, Grille produits, Chips catégories |
-| `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/1 | Modal produit |
+| `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/2 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
 | `b-modal-suggestions.js` | 6 | 0 | 2/4 | Modal produit |
@@ -66,9 +66,9 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-scroll-owner.js` | 0 | 4 | 0/0 | Modal produit, Side-cart desktop, Panier, Grille produits |
 | `komerce-api.js` | 4 | 0 | 0/0 | — |
 | `b-catalog-desktop-enhancers.js` | 0 | 3 | 1/0 | Header, Chips catégories |
+| `b-modal-cart.js` | 1 | 2 | 1/0 | Modal produit |
 | `b-greeting.js` | 2 | 0 | 0/0 | — |
 | `b-modal-approche-c-hybrid.js` | 2 | 0 | 3/0 | Modal produit |
-| `b-modal-cart.js` | 2 | 0 | 0/0 | Modal produit |
 | `b-utils.js` | 2 | 0 | 0/0 | Carte produit |
 | `b-cart-core.js` | 1 | 0 | 1/2 | Modal produit, Panier, Bottom-nav mobile |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
@@ -96,6 +96,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | modal-enriched-content.css | 900px, 899px | 🔴 899px |
 | modal-media.css | 400px, 900px | 🔴 400px |
 | modal-mobile-canonical.css | 899px | 🔴 899px |
+| modal-mobile-suggestion-actions.css | 899px | 🔴 899px |
 | modal-product.css | 900px, 899px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
@@ -139,7 +140,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Composants en multipropriété CSS | 8 | 0 |
 | Modules JS écrivant le DOM | 39 | ≤ 5 |
 | Breakpoints distincts | 9 | ≤ 2 |
-| Violations breakpoint | 17 | 0 |
+| Violations breakpoint | 18 | 0 |
 | `!important` | 23 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

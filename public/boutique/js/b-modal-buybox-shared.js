@@ -6,8 +6,8 @@
  * @criticality   high
  * @inputs        product_detail_v1, modal_selection_state, modal_qty, modal_payment_mode
  * @outputs       buybox_price_projection, buybox_payment_dom
- * @depends       b-utils.js, b-modal.js, b-cart.js, b-share-cart.js
- * @used-by       b-modal-mobile-product.js, b-modal-desktop-product.js, b-modal-approche-c-hybrid.js
+ * @depends       b-utils.js, b-modal.js, b-cart.js, b-share-cart.js, view-models/modal-cart-product-model.js
+ * @used-by       b-modal-mobile-product.js, b-modal-desktop-product.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -38,6 +38,15 @@ import { closeModal } from './b-modal.js';
 import { addToCart, openCart } from './b-cart.js';
 import { startShareFlow } from './b-share-cart.js';
 import { state } from './b-store.js';
+import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
+
+function currentCartProduct(product = state.modalProduct) {
+  return buildModalCartProduct(
+    product,
+    state.modalProductDetail,
+    state.modalSelection
+  );
+}
 
 /**
  * MDP-PROP1 — câblage du bouton "⚡ Acheter maintenant". Owner unique de
@@ -61,8 +70,8 @@ export function wireBuyNowButton(buyNowBtn) {
     buyNowBtn.disabled = true;
     buyNowBtn.classList.add('buy-confirmed');
 
-    // 2. Ajout au panier (déclenche l'animation coucou de la dame)
-    addToCart(state.modalProduct, state.modalQty, buyNowBtn);
+    // 2. Ajout au panier avec snapshot du SKU sélectionné.
+    addToCart(currentCartProduct(), state.modalQty, buyNowBtn);
 
     // 3. Transition ÉTENDUE : 1200ms pour voir le feedback + coucou dame
     //    puis fermeture douce et ouverture panier avec 400ms entre les 2
@@ -163,7 +172,7 @@ function buildPaymentDetail(key) {
  */
 export function startGroupCartFlow(product, qty, sourceEl) {
   if (!product) return;
-  addToCart(product, qty || 1, sourceEl);
+  addToCart(currentCartProduct(product), qty || 1, sourceEl);
   closeModal();
   setTimeout(() => startShareFlow(), 250);
 }
@@ -239,4 +248,5 @@ export function renderPaymentModes(el, { activeMode, onModeChange, onGroupSelect
 
 export const _buyboxSharedTestApi = Object.freeze({
   buildPaymentDetail,
+  currentCartProduct,
 });

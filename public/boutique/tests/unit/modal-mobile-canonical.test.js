@@ -3,38 +3,27 @@
 const fs = require('fs');
 const path = require('path');
 
-const CSS_PATH = path.join(__dirname, '../../css/modal-mobile-canonical.css');
+describe('modal-mobile-canonical.css — responsabilités suggestions', () => {
+  const css = fs.readFileSync(
+    path.join(__dirname, '../../css/modal-mobile-canonical.css'),
+    'utf8'
+  );
 
-describe('modal-mobile-canonical — MDM-9 gallery modes', () => {
-  const css = fs.readFileSync(CSS_PATH, 'utf8');
-
-  test('single mode uses a compact visual-viewport height', () => {
-    expect(css).toMatch(/data-gallery-mode=["']single["']/);
-    expect(css).toMatch(/--k-modal-vvh[^;]*\*\s*0\.36/);
-    expect(css).toMatch(/min-height:\s*150px/);
+  test('ne possède plus les styles visuels du bouton suggestion', () => {
+    expect(css).not.toMatch(/(^|\n)\s*#k-modal\s+\.k-sug-add(?:[:\s,{])/m);
   });
 
-  test('multiple mode preserves the canonical 48 percent gallery', () => {
-    expect(css).toMatch(/data-gallery-mode=["']multiple["']/);
-    expect(css).toMatch(/--k-modal-vvh[^;]*\*\s*0\.48/);
-    expect(css).toMatch(/min-height:\s*180px/);
-  });
+  test('conserve le layout vertical prix puis actions', () => {
+    expect(css).toMatch(
+      /#k-modal\s+\.k-sug-card-bottom\s*\{[^}]*flex-direction:\s*column[^}]*align-items:\s*flex-start/s
+    );
 
-  test('subject scale applies only to the single-image slide', () => {
-    expect(css).toMatch(/data-gallery-mode=["']single["'][^}]*\.k-modal-slide\s*\{/s);
-    expect(css).toMatch(/scale\(var\(--k-modal-subject-scale,\s*1\)\)/);
-    expect(css).not.toMatch(/data-gallery-mode=["']multiple["'][^}]*--k-modal-subject-scale/s);
-  });
+    expect(css).toMatch(
+      /#k-modal\s+\.k-sug-card-price\s*\{[^}]*white-space:\s*nowrap/s
+    );
 
-  test('keeps the Samsung visual viewport owner as the height source', () => {
-    expect(css).toMatch(/calc\(var\(--k-modal-vvh,\s*100dvh\)\s*\*\s*0\.36\)/);
-    expect(css).toMatch(/calc\(var\(--k-modal-vvh,\s*100dvh\)\s*\*\s*0\.48\)/);
-  });
-
-  test('keeps the adaptive gallery rules inside the mobile breakpoint', () => {
-    const mobileBlock = css.match(/@media\s*\(max-width:\s*899px\)\s*\{([\s\S]*)\}\s*$/);
-    expect(mobileBlock).not.toBeNull();
-    expect(mobileBlock[1]).toMatch(/data-gallery-mode=["']single["']/);
-    expect(mobileBlock[1]).toMatch(/data-gallery-mode=["']multiple["']/);
+    expect(css).toMatch(
+      /#k-modal\s+\.k-sug-card-actions\s*\{[^}]*justify-content:\s*flex-start/s
+    );
   });
 });

@@ -100,6 +100,7 @@ module.exports = {
       '../tests/e2e/resilience.spec.js',
       '../tests/e2e/render-integrity.spec.js',
       '../tests/contracts.spec.js',
+      '../tests/unit/b-bus.test.js',
       '../tests/unit/b-friendly-group-redirect.test.js',
       '../tests/unit/b-mobile-modal-v1.test.js',
       '../tests/unit/b-modal-cart.test.js',

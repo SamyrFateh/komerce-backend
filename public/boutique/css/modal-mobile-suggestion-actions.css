@@ -1,0 +1,65 @@
+/**
+ * @komerce-arch-lite
+ * @role          mobile-modal-suggestion-actions
+ * @domain        boutique
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-modal-suggestions.js
+ * @purpose       Compacter les actions des suggestions de la modale mobile.
+ * @impact-areas  mobile, product-modal, product-suggestions
+ * @version       2026-07
+ */
+
+/* MDM-9 — finition strictement mobile, aucun changement visuel desktop. */
+@media (max-width: 899px) {
+  #k-modal .k-sug-add {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  #k-modal .k-sug-add:active {
+    background: transparent;
+    transform: none;
+  }
+
+  #k-modal .k-sug-add img {
+    width: 23px;
+    height: 23px;
+    display: block;
+    mix-blend-mode: normal;
+    pointer-events: none;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled {
+    display: grid;
+    grid-template-columns: 24px 22px 24px;
+    align-items: center;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled .k-sug-step {
+    width: 24px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #k-modal .k-sug-card-actions.is-filled .k-sug-qty {
+    min-width: 22px;
+    text-align: center;
+  }
+}

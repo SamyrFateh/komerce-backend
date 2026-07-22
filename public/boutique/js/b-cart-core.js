@@ -63,11 +63,14 @@ export function cartQty() {
 }
 
 /**
- * Calcule le total du panier (prix promo si dispo).
+ * Calcule le total du panier (prix de ligne SKU si disponible, fallback produit).
  * @returns {number} Total en KMF
  */
 export function cartTotal() {
-  return state.cart.reduce((s, i) => s + (i.product.price_kmf || 0) * i.qty, 0);
+  return state.cart.reduce((s, i) => {
+    const unitPrice = i.price ?? i.product?.price_kmf ?? i.product?.price ?? 0;
+    return s + Number(unitPrice || 0) * Number(i.qty || 0);
+  }, 0);
 }
 
 /**
