@@ -337,21 +337,14 @@
   }
 }
 
-/* ── ÉTAT D — mobile non-enrichi : pas de suggestions, pas de recherche
-   interne (chips + barre de recherche). Toggle posé par
-   b-modal-mobile-product.js sur #k-modal via .k-modal--suggestions-hidden,
-   dérivé de hasEnrichedContent (donnée réelle, jamais une heuristique).
-   #k-modal-suggestions reste peuplé normalement par b-modal-suggestions.js
-   (owner inchangé) ; on masque seulement l'affichage, en mobile uniquement :
-   desktop non-enrichi (état B) garde ses suggestions.
-   FIX (2026-07) : .k-modal-inner-search est un FRÈRE de #k-modal-suggestions
-   (injecté par b-modal-core.js dans .k-modal-details, pas dans la section
-   suggestions elle-même) — doit être masqué séparément, sinon la barre de
-   recherche persiste sur l'état D alors que #k-modal-suggestions disparaît. ── */
-@media (max-width: 899px) {
-  .k-modal--suggestions-hidden #k-modal-suggestions,
-  .k-modal--suggestions-hidden .k-modal-inner-search { display: none; }
-}
+/* ── ÉTAT D (mobile non-enrichi) — RETIRÉ (2026-07, doctrine confirmée) :
+   les suggestions et la recherche interne NE SONT PLUS jamais masquées par
+   enrichissement. Réassurance, partage et suggestions sont toujours montés,
+   sur toutes les surfaces (règle D du HANDOFF, déjà en vigueur pour le
+   desktop non-enrichi — état B — et désormais alignée sur mobile aussi).
+   La classe .k-modal--suggestions-hidden n'est plus posée par le JS ; cette
+   règle est conservée en commentaire pour mémoire d'incident, pas pour
+   réintroduction. ── */
 
 /* ══════════════════════════════════════════════════════════════
    4. VARIANTES — SKUs couleur + grille tailles / pointures

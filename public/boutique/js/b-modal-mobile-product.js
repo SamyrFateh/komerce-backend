@@ -570,21 +570,21 @@ export function renderMobileProductDetail(
   dom.modal?.querySelector('[data-mobile-reassurance]')?.remove();
 
   // Fidélité 4 états (2026-07) : calculé une fois, réutilisé pour le
-  // below-fold ET pour le masquage des suggestions (état D). Rien d'inventé
-  // ici — `hasEnrichedContent` reflète strictement la présence de données
-  // éditoriales réelles (content.*), jamais une heuristique produit.
+  // below-fold éditorial uniquement. Rien d'inventé ici — `hasEnrichedContent`
+  // reflète strictement la présence de données éditoriales réelles
+  // (content.*), jamais une heuristique produit.
   const contentVm = buildProductContentViewModel(detail.content);
 
   // P3-fix : classe CSS pour réduire le hero quand le produit a des variantes
   if (dom.modal) {
     dom.modal.classList.toggle('k-modal--has-variants', Boolean(selection.selection_supported));
-    // État D (mobile non-enrichi) : ni suggestions, ni recherche interne —
-    // seule la réassurance compacte + livraison restent visibles. La zone
-    // #k-modal-suggestions reste peuplée par b-modal-suggestions.js (owner
-    // inchangé) ; on masque ici en CSS via cette classe, uniquement en
-    // largeur mobile (voir css/modal-product.css). État C (mobile enrichi)
-    // et desktop A/B ne sont jamais concernés par cette classe.
-    dom.modal.classList.toggle('k-modal--suggestions-hidden', !contentVm.hasEnrichedContent);
+    // DOCTRINE (confirmée 2026-07, cf. HANDOFF §6 règle D) : réassurance,
+    // partage ET suggestions sont TOUJOURS montés — jamais conditionnés à
+    // hasEnrichedContent, sur aucune surface. Les suggestions non-enrichies
+    // sont du cross-sell légitime (d'autres produits), pas du faux contenu
+    // enrichi sur l'article courant. On ne masque donc plus jamais
+    // #k-modal-suggestions / .k-modal-inner-search via cette classe — la
+    // classe .k-modal--suggestions-hidden et sa règle CSS sont retirées.
   }
 
   // Réassurance transactionnelle — toujours affichée (produit simple ET
