@@ -53,6 +53,11 @@ function clearProductDetailState() {
   clearMobileProductDetailState();
 }
 
+// PDC-6 : le chemin transactionnel (ajout panier, achat direct, stepper) ne
+// doit jamais rester actif sur la seule foi du paint legacy produit liste.
+// Il est donc verrouillé avant même de tenter le fetch /detail, et seul le
+// renderer PDC (renderActions, sur la base du contrat reçu) est habilité à
+// le déverrouiller en cas de succès.
 function transactionalControls() {
   const buyNow = document.getElementById('k-buy-now-btn');
   return [dom.addCartBtn, buyNow, dom.qtyMinus, dom.qtyPlus].filter(Boolean);
@@ -67,6 +72,11 @@ function clearLegacyVariantsPaint() {
   if (container) container.innerHTML = '';
 }
 
+// MDM-8 phase 2 : entre le paint legacy (openModal) et la résolution du
+// fetch /detail, #k-modal-variants restait vide — indiscernable d'une
+// modale cassée à l'œil (audit MDM8_AUDIT_PHASE1.md §1.3). Un skeleton
+// comble cette fenêtre ; renderResponsiveProductDetail() l'efface déjà
+// via son propre container.innerHTML = '' en cas de succès.
 function renderDetailSkeleton() {
   const container = dom.modalVariants || document.getElementById('k-modal-variants');
   if (!container) return;
@@ -82,6 +92,9 @@ function renderDetailSkeleton() {
   container.appendChild(el);
 }
 
+// Échec du fetch /detail (réseau lent/coupure) : le chemin transactionnel
+// reste verrouillé (fail-closed volontaire, PDC-6, non modifié ici) mais
+// l'utilisateur voit désormais un état explicite plutôt qu'un vide silencieux.
 function renderDetailUnavailable() {
   const container = dom.modalVariants || document.getElementById('k-modal-variants');
   if (!container) return;
@@ -101,10 +114,9 @@ function renderResponsiveProductDetail(detail, selection, forceMedia) {
     renderDesktopProductDetail(detail, selection, { forceMedia });
   }
 
-  // Le renderer PDC decide de la disponibilité. La représentation panier
-  // (ligne SKU courante, bouton vs stepper) est ensuite réconciliée par son
-  // owner transactionnel unique afin qu'un renderer ne puisse pas laisser un
-  // état --filled incompatible avec un produit SKU.
+  // Le renderer PDC décide de la disponibilité des CTA. L'owner panier
+  // réconcilie ensuite la ligne SKU courante et la projection bouton/stepper,
+  // afin qu'un renderer ne puisse pas laisser un état --filled incompatible.
   _syncModalQtyUI();
 }
 
@@ -119,6 +131,13 @@ function syncResponsiveComposition() {
     false
   );
 
+  // MDP-3 : le cœur PDC vient d'être re-rendu pour le nouveau viewport, mais
+  // les enrichissements périphériques (placement des actions desktop, entrée
+  // paiement) ont leur propre cycle de vie (b-modal-approche-c-hybrid.js,
+  // b-modal-desktop-enhancers.js) qui n'écoute que modal:opened/modal:closed.
+  // Sans ce signal, un resize en cours de session laissait ces enrichissements
+  // non réconciliés (D3). Émis une seule fois par transition de viewport —
+  // jamais en boucle — donc idempotent pour des resizes successifs.
   bus.emit('modal:composition-synced');
 }
 
@@ -135,6 +154,8 @@ async function loadProductDetail(product) {
   clearProductDetailState();
   _viewportMode = null;
 
+  // Verrouillage AVANT le fetch : tant que le contrat détail n'a pas résolu
+  // avec succès, aucune mutation panier SKU n'est permise.
   lockTransactionalPath();
   renderDetailSkeleton();
 
@@ -154,8 +175,14 @@ async function loadProductDetail(product) {
     const selection = createModalSelection(detail);
     state.modalProductDetail = detail;
     state.modalSelection = selection;
+    // Succès : c'est désormais le renderer PDC (renderActions, à partir du
+    // contrat détail) qui décide de l'état des CTA — jamais le paint legacy.
     renderResponsiveProductDetail(detail, selection, true);
   } catch (error) {
+    // Échec : fail closed. Le contrat détail n'a pas pu être vérifié, donc
+    // aucune mutation panier SKU ne doit rester possible : on purge le paint
+    // legacy (#k-modal-variants) au lieu de le laisser en place, et le
+    // chemin transactionnel reste verrouillé (jamais déverrouillé ici).
     if (generation === _generation && state.modalOpen && currentProductId() === productId) {
       clearLegacyVariantsPaint();
       renderDetailUnavailable();
@@ -173,6 +200,12 @@ export function setupProductDetailModal() {
     loadProductDetail(product);
   });
 
+  /* Garde late-install : si la modale est déjà ouverte au moment où ce module
+     se charge (race condition en chargement lazy — les 50+ modules JS + images
+     d'un produit SKU saturent le serveur de dev mono-thread ; modal:opened a
+     déjà ete emis avant que ce handler soit enregistre), on rejoue loadProductDetail
+     sur le produit courant. En production (CDN, modules en cache) ce chemin n'est
+     jamais emprunte — les modules chargent en < 200ms, bien avant tout clic humain. */
   if (state.modalOpen && state.modalProduct && !state.modalProductDetail) {
     loadProductDetail(state.modalProduct);
   }
