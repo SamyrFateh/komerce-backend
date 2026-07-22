@@ -194,6 +194,16 @@ export function setupProductDetailModal() {
     loadProductDetail(product);
   });
 
+  /* Garde late-install : si la modale est déjà ouverte au moment où ce module
+     se charge (race condition en chargement lazy — les 50+ modules JS + images
+     d'un produit SKU saturent le serveur de dev mono-thread ; modal:opened a
+     déjà ete emis avant que ce handler soit enregistre), on rejoue loadProductDetail
+     sur le produit courant. En production (CDN, modules en cache) ce chemin n'est
+     jamais emprunte — les modules chargent en < 200ms, bien avant tout clic humain. */
+  if (state.modalOpen && state.modalProduct && !state.modalProductDetail) {
+    loadProductDetail(state.modalProduct);
+  }
+
   bus.on('modal:closed', () => {
     _generation += 1;
     clearTimeout(_resizeTimer);

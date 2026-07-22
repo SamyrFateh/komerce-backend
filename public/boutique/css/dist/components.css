@@ -3685,10 +3685,14 @@ html.k-mobile-premium-v1 .k-chip-label {
    .k-modal-trust { display:none } de la base hors-#k-modal (modal-shell.css
    L293) — spécificité #k-modal l'emporte, quel que soit l'ordre source. ── */
 @media (max-width: 899px) {
+  /* FIX trustRows=1 : nowrap + taille réduite pour tenir sur une seule ligne
+     à 390px (3 pills : Paiement sécurisé / Retrait en relais / Stock garanti).
+     flex-wrap:wrap était la cause du verdict FAIL trustRows=2 dans le harnais. */
   #k-modal .k-modal-trust {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px 18px;
+    flex-wrap: nowrap;
+    gap: 5px;
+    overflow: hidden;
     padding: 10px 0 2px;
     border-top: 1px solid var(--sand-dark);
     margin-top: 4px;
@@ -3696,18 +3700,20 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-trust-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    gap: 4px;
+    font-size: 10px;
     font-weight: 500;
     color: var(--text-muted);
     background: none;
     border: none;
     padding: 0;
     border-radius: 0;
+    white-space: nowrap;
+    flex-shrink: 1;
   }
   #k-modal .k-modal-trust-item svg {
-    width: 15px;
-    height: 15px;
+    width: 13px;
+    height: 13px;
     color: var(--ocean);
     stroke: currentColor;
     fill: none;
@@ -5837,6 +5843,50 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-modal-scroll {
     background: var(--page-bg);
+  }
+
+  /* ── M4-fix : Panier suggestion — cohérence visuelle + suppression halo blanc ─
+     interactions.css pose .k-sug-add à 40×40 fond blanc, cercle, bordure, ombre
+     et arrive après modal-product.css dans le bundle → gagne partout. Le sélecteur
+     #k-modal ajoute un ID (spécificité 1-1-0 > 0-1-0) et gagne quelle que soit
+     la position de compilation. Style calqué sur .k-sug-step (bouton ± du stepper)
+     pour une cohérence visuelle immédiate : même taille, même fond sand, même
+     border-radius 50% — quand le produit passe au panier le − / N / + émerge
+     sans rupture graphique. */
+  #k-modal .k-sug-add {
+    width: 28px;
+    height: 28px;
+    background: var(--sand);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    padding: 0;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background .15s;
+  }
+  #k-modal .k-sug-add:active {
+    background: var(--sand-dark);
+    transform: scale(.9);
+  }
+  #k-modal .k-sug-add img {
+    width: 18px;
+    height: 18px;
+    display: block;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+
+  /* Fix overflow prix — sans ellipsis le texte sort par-dessous le bouton
+     quand le prix comporte un suffixe (15000 KMF → "KMF" tronqué visuellement
+     mais déborde dans le flux et décale la mise en page). */
+  #k-modal .k-sug-card-price {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 

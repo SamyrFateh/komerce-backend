@@ -83,10 +83,18 @@ def make_sobre(detail):
     d["product"]["inventory_model"] = "SIMPLE"
     d["option_axes"] = []
     d["sellable_units"] = []
+    # `content` reste un objet peuplé (jamais null) — c'est le contrat réel de
+    # services/catalog-product-detail.js::buildContent() : "Toujours peuplé,
+    # même pour un produit pauvre [...] jamais absent, pour que mobile et
+    # desktop consomment une forme unique sans code conditionnel de présence."
+    # Un produit non-enrichi a un content vide (champs null/[]), pas un
+    # content:null — un stub content:null ne reproduit pas la sortie réelle
+    # du service et peut faire diverger le rendu du harnais de la prod.
     d["content"] = {
-        "brand": None, "short_description": d["content"].get("short_description"),
+        "brand": None, "short_description": None,
         "highlights": [], "specifications": [], "sections": [],
-        "materials": None, "care": None, "warnings": [], "provenance": None,
+        "materials": [], "care": [], "warnings": [],
+        "provenance": {"source": "SUPPLIER", "enrichment_version": None, "reviewed": False},
     }
     d["media"] = d["media"][:1]  # une seule image, pas de galerie
     d["product"]["name"] = "Meuble raffiné"
@@ -138,22 +146,49 @@ def render_state(name, detail, viewport, delivery, out_dir):
           "image_url": "", "category": p.get("category", "Sport"), "is_available": True,
           "stock": 12, "inventory_model": d["inventory_model"]}
 
+    # Frères de catalogue pour que le rail de suggestions (sameCat/otherCat, cf.
+    # b-modal-suggestions.js::_ensureTwoSuggestionLevels) ait réellement de quoi
+    # peupler des cartes — sans ça sameCat/otherCat sont vides sur les 4 états,
+    # ce qui rend "suggestions toujours montées" invérifiable (seul le conteneur
+    # vide est testable). Catégorie identique à sp.category -> sameCat ; catégorie
+    # différente -> otherCat. Aucune donnée inventée sur l'article courant lui-même
+    # (la doctrine "rien d'inventé" ne porte que sur le produit ouvert dans la
+    # modale, pas sur le reste du catalogue mocké autour de lui).
+    same_cat = sp["category"]
+    other_cat = "autre-categorie" if same_cat != "autre-categorie" else "sport"
+    siblings = [
+        {"id": f"sibling-same-{i}", "name": f"Produit catalogue {i}",
+         "price_kmf": 9000 + i * 1000, "description": "", "images": [],
+         "image_url": "", "category": same_cat, "is_available": True,
+         "stock": 5, "inventory_model": "SIMPLE"}
+        for i in range(1, 4)
+    ] + [
+        {"id": f"sibling-other-{i}", "name": f"Produit hors-categorie {i}",
+         "price_kmf": 7000 + i * 1000, "description": "", "images": [],
+         "image_url": "", "category": other_cat, "is_available": True,
+         "stock": 5, "inventory_model": "SIMPLE"}
+        for i in range(1, 3)
+    ]
+    catalog = [sp] + siblings
+
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         page = browser.new_page(viewport=viewport, locale="fr-FR", device_scale_factor=2)
         page.route(re.compile(r"/api/"),
                    lambda r: r.fulfill(status=200, content_type="application/json", body="[]"))
         page.route(re.compile(r"/api/products(\?|$)"),
-                   lambda r: r.fulfill(status=200, content_type="application/json", body=json.dumps([sp])))
+                   lambda r: r.fulfill(status=200, content_type="application/json", body=json.dumps(catalog)))
         page.route(re.compile(r"/api/products/[^/]+/detail"),
                    lambda r: r.fulfill(status=200, content_type="application/json", body=json.dumps(d)))
         page.goto(f"http://127.0.0.1:{PORT}/boutique/index.html", wait_until="domcontentloaded")
         page.wait_for_function("() => window._kbus && window._kstate", timeout=8000)
-        page.evaluate("""(sp) => {
-            if (!window._kstate.products.find(x => String(x.id) === String(sp.id)))
-                window._kstate.products.push(sp);
-            window._kbus.emit('modal:open', {id: sp.id});
-        }""", sp)
+        page.evaluate("""(catalog) => {
+            catalog.forEach(function(item) {
+                if (!window._kstate.products.find(x => String(x.id) === String(item.id)))
+                    window._kstate.products.push(item);
+            });
+            window._kbus.emit('modal:open', {id: catalog[0].id});
+        }""", catalog)
         page.wait_for_selector("#k-modal", state="visible", timeout=6000)
         time.sleep(1.2)
         result = inspect(page)
@@ -175,10 +210,17 @@ def verdict(name, r):
         fails.append(f"emoji détecté sur le CTA Acheter : {r['buyBtnText']!r}")
     if EMOJI_RE.search(r.get("deliveryChipText") or ""):
         fails.append(f"emoji détecté sur le chip livraison : {r['deliveryChipText']!r}")
-    # suggestions : doit être monté (section visible) même si 0 carte (données absentes = ok,
-    # mais la section/peek elle-même ne doit jamais disparaître par doctrine).
+    # suggestions : le conteneur doit toujours être monté, quel que soit l'état
+    # (jamais masqué par hasEnrichedContent).
     if r["suggSectionVisible"] is None and r["suggPeekVisible"] is None:
         fails.append("bloc suggestions totalement absent du DOM/masqué (doit toujours être monté)")
+    # Le harnais seede désormais de vrais produits frères (même catégorie +
+    # autre catégorie) dans le catalogue mocké sur les 4 états identiquement
+    # (cf. render_state) : des données existent, donc des cartes DOIVENT
+    # apparaître. Un suggCardCount à 0 ici est un vrai écart, pas un cas
+    # "données absentes" légitime.
+    if r["suggCardCount"] == 0:
+        fails.append("0 carte de suggestion rendue alors que le catalogue mocké contient des produits frères")
     return (len(fails) == 0, fails)
 
 

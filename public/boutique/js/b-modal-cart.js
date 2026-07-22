@@ -60,11 +60,22 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
     const item = state.cart.find(i => String(i.product?.id ?? i.id) === pid);
     state.modalQty = item ? item.qty : 1; /* BUGFIX: défaut 1 (pas 0) — produit pas encore au panier → qty initiale = 1 pour ajouter directement */
     if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
+    /* PDC-6 : le stepper mute le panier "product-id first" (quickAdd/quickRemove
+       résolvent par product.id, jamais par selected_sku_id) — voie de mutation
+       invalide pour un produit SKU, même une fois au panier. Avant ce guard,
+       --filled était posé sur la seule présence panier : un produit SKU déjà
+       au panier affichait le stepper avec ses boutons −/+ désactivés (UI morte,
+       aucun retour visuel), pendant qu'un produit non-SKU gardait un stepper
+       pleinement fonctionnel — d'où le désalignement enrichi/non-enrichi. */
+    const isSku = state.modalProductDetail?.inventory_model === 'SKU';
     /* Cycle bouton↔stepper : le conteneur porte is-in-cart quand le produit est
-       réellement au panier → CSS affiche le stepper − N + et masque « Ajouter ».
+       réellement au panier ET que le stepper est une mutation valide (non-SKU)
+       → CSS affiche le stepper − N + et masque « Ajouter ». Pour un produit SKU,
+       le bouton « Dans le panier (N) » (branche else ci-dessous) reste la seule
+       représentation — jamais le stepper.
        Retour à 0 (quickRemove) → item disparaît → classe retirée → bouton revient. */
     const _actions = dom.addCartBtn && dom.addCartBtn.closest('.k-modal-actions');
-    if (_actions) _actions.classList.toggle('k-modal-actions--filled', !!item);
+    if (_actions) _actions.classList.toggle('k-modal-actions--filled', !!item && !isSku);
     // Update "Ajouter" button label
     if (dom.addCartBtn) {
       // FIX: tester item (produit réellement dans le panier), pas modalQty > 0

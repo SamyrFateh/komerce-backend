@@ -306,10 +306,14 @@
    .k-modal-trust { display:none } de la base hors-#k-modal (modal-shell.css
    L293) — spécificité #k-modal l'emporte, quel que soit l'ordre source. ── */
 @media (max-width: 899px) {
+  /* FIX trustRows=1 : nowrap + taille réduite pour tenir sur une seule ligne
+     à 390px (3 pills : Paiement sécurisé / Retrait en relais / Stock garanti).
+     flex-wrap:wrap était la cause du verdict FAIL trustRows=2 dans le harnais. */
   #k-modal .k-modal-trust {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px 18px;
+    flex-wrap: nowrap;
+    gap: 5px;
+    overflow: hidden;
     padding: 10px 0 2px;
     border-top: 1px solid var(--sand-dark);
     margin-top: 4px;
@@ -317,18 +321,20 @@
   #k-modal .k-modal-trust-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    gap: 4px;
+    font-size: 10px;
     font-weight: 500;
     color: var(--text-muted);
     background: none;
     border: none;
     padding: 0;
     border-radius: 0;
+    white-space: nowrap;
+    flex-shrink: 1;
   }
   #k-modal .k-modal-trust-item svg {
-    width: 15px;
-    height: 15px;
+    width: 13px;
+    height: 13px;
     color: var(--ocean);
     stroke: currentColor;
     fill: none;
