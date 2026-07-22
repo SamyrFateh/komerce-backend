@@ -627,37 +627,53 @@
     display: flex; align-items: center; gap: 8px;
   }
 
-  /* Avatar panier overlay */
+  /* Avatar panier overlay
+     FIX avatar (régression #2) : le fond sombre + border-radius:50% traitait
+     l'illustration comme une icône générique et la crop visuellement dans une
+     pastille — alors que desktop (.k-cart-avatar, layout.css) l'affiche libre,
+     sans conteneur circulaire. On retire le fond/pill ici aussi : le bouton
+     redevient un simple hit-target invisible, l'image porte le contraste via
+     un drop-shadow (le fond n'est plus garanti crème/sable ici, c'est l'image
+     produit en hero). */
   #k-modal .k-modal-cart-overlay {
     display: flex; align-items: center; justify-content: center;
-    width: 34px; height: 34px;
-    background: var(--overlay-dark-md);
-    border: none; border-radius: 50%;
+    width: 40px; height: 40px;
+    background: none;
+    border: none; border-radius: 0;
     cursor: pointer;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     -webkit-tap-highlight-color: transparent;
     position: relative;
   }
   #k-modal .k-modal-cart-overlay img {
-    /* FIX avatar overlay (régression) : le filter brightness(0) invert(1) écrasait
-       l'illustration en silhouette blanche générique, et 22×22 sans object-fit
-       écrasait l'image portrait (512×942) en la déformant. On reprend le pattern
-       correct du header (.k-cart-avatar, layout.css) : object-fit: contain,
-       pas de filter destructeur, mix-blend-mode: normal pour garder les couleurs. */
-    width: 26px; height: 26px;
+    /* Repris du pattern desktop correct (.k-cart-avatar, layout.css) :
+       object-fit: contain, pas de filter destructeur, mix-blend-mode: normal
+       pour garder les couleurs — plus de fond/pill qui le crop en silhouette. */
+    width: 34px; height: 34px;
     object-fit: contain;
     mix-blend-mode: normal;
+    filter: drop-shadow(0 1px 3px var(--overlay-black-lg));
   }
   #k-modal .k-modal-cart-overlay .k-modal-cart-badge-overlay {
-    position: absolute; top: -3px; right: -3px;
+    position: absolute; top: -2px; right: -2px;
     background: var(--coral); color: var(--white);
     font-size: 9px; font-weight: 700; line-height: 1;
     min-width: 16px; height: 16px;
     border-radius: 999px; padding: 0 3px;
     display: flex; align-items: center; justify-content: center;
-    border: 1.5px solid var(--overlay-dark-md);
+    border: 1.5px solid var(--white);
   }
   #k-modal .k-modal-cart-overlay .k-modal-cart-badge-overlay:empty { display: none; }
+
+  /* FIX badge promo masqué par le bouton retour : .k-modal-promo-badge
+     (modal-product.css, top:8px/left:8px) et .k-modal-topbar-overlay
+     (top: calc(10px + safe-area)) partagent le même repère — le coin
+     supérieur gauche de .k-modal-img-wrap — donc la pastille promo
+     et le rond retour se chevauchaient. On descend le badge sous la
+     rangée d'overlay (34px de haut + 10px d'offset + 10px de marge). */
+  #k-modal .k-modal-promo-badge {
+    top: calc(10px + env(safe-area-inset-top, 0px) + 34px + 10px);
+    left: 10px;
+  }
 
   /* ✕ fermer overlay */
   #k-modal .k-modal-close-overlay {

@@ -2220,9 +2220,13 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 500; transition: background .15s; touch-action: manipulation; cursor: pointer; }
 .k-qty-btn:active { background: var(--sand-dark); }
 .k-qty-val { min-width: 34px; text-align: center; font-size: 15px; font-weight: 500; }
-.k-add-cart-btn { grid-column: 1; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; /* P0-fix : overflow:hidden + text-overflow:ellipsis retirés — la troncature "Ajouter au pa…" venait de ce bloc + flex:1 1 0 desktop. Le conteneur .k-modal-actions gère l'overflow. */ }
+.k-add-cart-btn { grid-column: 1; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--cta-green); border: 2px solid var(--cta-green); border-radius: 50px; font-size: 14px; font-weight: 500; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; /* P0-fix : overflow:hidden + text-overflow:ellipsis retirés — la troncature "Ajouter au pa…" venait de ce bloc + flex:1 1 0 desktop. Le conteneur .k-modal-actions gère l'overflow. */ }
+/* FIX poids visuel "Ajouter" : bordure sand-dark quasi invisible + texte gris
+   se lisaient comme une action désactivée à côté d'Acheter (vert plein).
+   Bordure épaissie (2px) + teinte verte (texte + bordure) rattache Ajouter à
+   la famille CTA tout en restant outline-only : Acheter reste dominant. */
 .k-add-cart-btn svg { width: 18px; height: 18px; }
-.k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
+.k-add-cart-btn:active { transform: scale(.97); background: var(--green-bg-soft, var(--sand)); }
 .k-modal-actions .k-buy-now-btn { grid-column: 2; grid-row: 1; width: 100%; height: 44px; padding: 0 16px; background: var(--cta-green); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; /* P0-fix : overflow:hidden retiré */ }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
 .k-modal-subtotal strong { color: var(--text); font-weight: 500; font-size: 13px; }
@@ -5878,37 +5882,53 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     display: flex; align-items: center; gap: 8px;
   }
 
-  /* Avatar panier overlay */
+  /* Avatar panier overlay
+     FIX avatar (régression #2) : le fond sombre + border-radius:50% traitait
+     l'illustration comme une icône générique et la crop visuellement dans une
+     pastille — alors que desktop (.k-cart-avatar, layout.css) l'affiche libre,
+     sans conteneur circulaire. On retire le fond/pill ici aussi : le bouton
+     redevient un simple hit-target invisible, l'image porte le contraste via
+     un drop-shadow (le fond n'est plus garanti crème/sable ici, c'est l'image
+     produit en hero). */
   #k-modal .k-modal-cart-overlay {
     display: flex; align-items: center; justify-content: center;
-    width: 34px; height: 34px;
-    background: var(--overlay-dark-md);
-    border: none; border-radius: 50%;
+    width: 40px; height: 40px;
+    background: none;
+    border: none; border-radius: 0;
     cursor: pointer;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     -webkit-tap-highlight-color: transparent;
     position: relative;
   }
   #k-modal .k-modal-cart-overlay img {
-    /* FIX avatar overlay (régression) : le filter brightness(0) invert(1) écrasait
-       l'illustration en silhouette blanche générique, et 22×22 sans object-fit
-       écrasait l'image portrait (512×942) en la déformant. On reprend le pattern
-       correct du header (.k-cart-avatar, layout.css) : object-fit: contain,
-       pas de filter destructeur, mix-blend-mode: normal pour garder les couleurs. */
-    width: 26px; height: 26px;
+    /* Repris du pattern desktop correct (.k-cart-avatar, layout.css) :
+       object-fit: contain, pas de filter destructeur, mix-blend-mode: normal
+       pour garder les couleurs — plus de fond/pill qui le crop en silhouette. */
+    width: 34px; height: 34px;
     object-fit: contain;
     mix-blend-mode: normal;
+    filter: drop-shadow(0 1px 3px var(--overlay-black-lg));
   }
   #k-modal .k-modal-cart-overlay .k-modal-cart-badge-overlay {
-    position: absolute; top: -3px; right: -3px;
+    position: absolute; top: -2px; right: -2px;
     background: var(--coral); color: var(--white);
     font-size: 9px; font-weight: 700; line-height: 1;
     min-width: 16px; height: 16px;
     border-radius: 999px; padding: 0 3px;
     display: flex; align-items: center; justify-content: center;
-    border: 1.5px solid var(--overlay-dark-md);
+    border: 1.5px solid var(--white);
   }
   #k-modal .k-modal-cart-overlay .k-modal-cart-badge-overlay:empty { display: none; }
+
+  /* FIX badge promo masqué par le bouton retour : .k-modal-promo-badge
+     (modal-product.css, top:8px/left:8px) et .k-modal-topbar-overlay
+     (top: calc(10px + safe-area)) partagent le même repère — le coin
+     supérieur gauche de .k-modal-img-wrap — donc la pastille promo
+     et le rond retour se chevauchaient. On descend le badge sous la
+     rangée d'overlay (34px de haut + 10px d'offset + 10px de marge). */
+  #k-modal .k-modal-promo-badge {
+    top: calc(10px + env(safe-area-inset-top, 0px) + 34px + 10px);
+    left: 10px;
+  }
 
   /* ✕ fermer overlay */
   #k-modal .k-modal-close-overlay {
