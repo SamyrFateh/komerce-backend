@@ -39,9 +39,9 @@ function itemSkuId(item) {
 }
 
 /**
- * Retourne uniquement la ligne correspondant a la selection courante. Un produit
- * SKU ne doit jamais reutiliser la premiere ligne du meme product.id : deux
- * couleurs/tailles du meme produit sont deux intentions panier distinctes.
+ * Retourne uniquement la ligne correspondant à la sélection courante. Un produit
+ * SKU ne doit jamais réutiliser la première ligne du même product.id : deux
+ * couleurs/tailles du même produit sont deux intentions panier distinctes.
  */
 function currentModalCartItem() {
   if (!state.modalProduct) return null;
@@ -69,7 +69,7 @@ function currentModalCartItem() {
   ) || null;
 }
 
-/* Reset de l'etat transitoire du bouton Ajouter a chaque ouverture produit. */
+/* Reset de l'état transitoire du bouton Ajouter à chaque ouverture produit. */
 function resetAddCartButtonState() {
   if (!dom.addCartBtn) return;
   dom.addCartBtn.disabled = false;
@@ -82,17 +82,20 @@ function _syncModalQtyUI() {
   if (!state.modalProduct) return;
 
   const item = currentModalCartItem();
-  state.modalQty = item ? item.qty : 1;
+  const isSku = state.modalProductDetail?.inventory_model === 'SKU';
+
+  // Pour un SKU, le stepper est interdit : l'intention d'un clic CTA reste donc
+  // toujours une unité. La quantité déjà au panier n'est qu'une information de
+  // libellé et ne doit jamais devenir implicitement la prochaine quantité ajoutée.
+  state.modalQty = isSku ? 1 : (item ? item.qty : 1);
   if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
 
-  const isSku = state.modalProductDetail?.inventory_model === 'SKU';
   const actions = dom.addCartBtn?.closest('.k-modal-actions') || null;
   if (actions) {
     actions.dataset.inventoryModel = isSku ? 'SKU' : 'LEGACY';
     actions.classList.toggle('k-modal-actions--filled', Boolean(item) && !isSku);
   }
 
-  // Le stepper historique mute encore par product.id : il reste interdit aux SKU.
   [dom.qtyMinus, dom.qtyPlus].forEach((control) => {
     if (control) control.disabled = isSku;
   });
@@ -100,7 +103,7 @@ function _syncModalQtyUI() {
   if (!dom.addCartBtn) return;
   if (item) {
     dom.addCartBtn.classList.add('in-cart');
-    dom.addCartBtn.innerHTML = '🧺 Dans le panier (' + state.modalQty + ')';
+    dom.addCartBtn.innerHTML = '🧺 Dans le panier (' + item.qty + ')';
   } else {
     dom.addCartBtn.classList.remove('in-cart');
     dom.addCartBtn.innerHTML = '<img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" style="pointer-events:none;flex-shrink:0"> Ajouter';
