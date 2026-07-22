@@ -15,11 +15,14 @@ describe('contrat actions suggestions mobile', () => {
     expect(suggestions).toContain("k-sug-card-actions${qty > 0 ? ' is-filled' : ''}");
   });
 
-  test('le renderer catalogue utilise une classe distincte', () => {
+  test('le renderer et interactions utilisent la classe catalogue distincte', () => {
     const renderer = source('../../js/render/render-product-card.js');
+    const interactions = source('../../css/interactions.css');
 
     expect(renderer).toContain('class="k-catalog-sug-add"');
     expect(renderer).not.toContain('class="k-sug-add"');
+    expect(interactions).toContain('.k-catalog-sug-add');
+    expect(interactions).not.toContain('.k-sug-add');
   });
 
   test('les règles visuelles de la modale sont limitées au mobile', () => {
