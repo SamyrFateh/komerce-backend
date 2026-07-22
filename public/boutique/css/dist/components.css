@@ -5617,6 +5617,9 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 
   #k-modal .k-sug-grid .k-sug-card {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
     flex: 0 0 110px;
     width: 110px;
     max-width: 110px;
@@ -5853,6 +5856,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      Solution : layout colonne — prix sur sa ligne, panier/stepper dessous.
      Plus robuste que l'ellipsis horizontal car insensible à la largeur du stepper. */
   #k-modal .k-sug-card-bottom {
+    margin-top: auto;
     flex-direction: column;
     align-items: flex-start;
     gap: 3px;
