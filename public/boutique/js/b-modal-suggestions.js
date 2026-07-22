@@ -10,7 +10,7 @@
  * @used-by       b-modal-core.js
  * @doctrine      suggestions_decouverte_non_intrusives, boutique_canal_decouverte, no_hardcoded_taxonomy
  * @impact-areas  product-discovery, modal, personalization, catalog-navigation
- * @version       2026-06
+ * @version       2026-07
  */
 'use strict';
 
@@ -106,6 +106,7 @@ function _updateCardStepper(pid) {
   const qty = inCart ? inCart.qty : 0;
   const actionsEl = card.querySelector('.k-sug-card-actions');
   if (!actionsEl) return;
+  actionsEl.classList.toggle('is-filled', qty > 0);
   if (qty > 0) {
     actionsEl.innerHTML =
       `<button class="k-sug-step k-sug-minus" data-pid="${pid}">−</button>` +
@@ -224,7 +225,7 @@ function _bindCardActions(card) {
         ${reasonHtml}
         <div class="k-sug-card-bottom">
           <div class="k-sug-card-price">${fmtPrice(p.price_kmf)}</div>
-          <div class="k-sug-card-actions">
+          <div class="k-sug-card-actions${qty > 0 ? ' is-filled' : ''}">
             ${qty > 0
               ? `<button class="k-sug-step k-sug-minus" data-pid="${p.id}">−</button><span class="k-sug-qty">${qty}</span><button class="k-sug-step k-sug-plus" data-pid="${p.id}">+</button>`
               : `<button class="k-sug-add" data-add="${p.id}"><img src="/images/panier_tresse_vert.png" width="28" height="28" alt="+" style="pointer-events:none"></button>`
