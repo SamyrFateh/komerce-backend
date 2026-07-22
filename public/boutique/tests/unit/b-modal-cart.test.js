@@ -16,6 +16,8 @@ const {
 
 function resetDom() {
   document.body.innerHTML = '';
+  const modal = document.createElement('div');
+  modal.id = 'k-modal';
   const actions = document.createElement('div');
   actions.className = 'k-modal-actions';
 
@@ -25,16 +27,18 @@ function resetDom() {
   dom.qtyPlus = document.createElement('button');
 
   actions.append(dom.qtyMinus, dom.modalQtyVal, dom.qtyPlus, dom.addCartBtn);
-  document.body.appendChild(actions);
-  return actions;
+  modal.appendChild(actions);
+  document.body.appendChild(modal);
+  return { modal, actions };
 }
 
 describe('b-modal-cart', () => {
+  let modal;
   let actions;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    actions = resetDom();
+    ({ modal, actions } = resetDom());
     state.modalProduct = null;
     state.modalProductDetail = null;
     state.modalSelection = null;
@@ -169,6 +173,38 @@ describe('b-modal-cart', () => {
       dom.qtyMinus.dispatchEvent(new window.Event('click'));
       expect(quickAdd).not.toHaveBeenCalled();
       expect(quickRemove).not.toHaveBeenCalled();
+    });
+
+    it('réconcilie le bouton après un changement direct de sélection SKU', async () => {
+      setupModalCart();
+      state.modalProduct = { id: 42 };
+      state.modalProductDetail = { inventory_model: 'SKU' };
+      state.modalSelection = {
+        selected_sku_id: 'sku-blue',
+        selected_options: { color: 'Bleu' },
+      };
+      state.cart = [
+        { product: { id: 42, sku_id: 'sku-blue' }, variant_combo: { color: 'Bleu' }, qty: 5 },
+        { product: { id: 42, sku_id: 'sku-red' }, variant_combo: { color: 'Rouge' }, qty: 2 },
+      ];
+      _syncModalQtyUI();
+      expect(dom.addCartBtn.innerHTML).toContain('Dans le panier (5)');
+
+      const option = document.createElement('button');
+      option.dataset.optionValue = 'Rouge';
+      option.addEventListener('click', () => {
+        state.modalSelection = {
+          selected_sku_id: 'sku-red',
+          selected_options: { color: 'Rouge' },
+        };
+      });
+      modal.appendChild(option);
+      option.click();
+      await Promise.resolve();
+
+      expect(dom.addCartBtn.innerHTML).toContain('Dans le panier (2)');
+      expect(state.modalQty).toBe(1);
+      expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
     });
 
     it('Ajouter legacy transmet le produit d origine', () => {
