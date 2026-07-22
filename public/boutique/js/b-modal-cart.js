@@ -15,11 +15,13 @@
  * @brief Interactions panier de la fiche produit : stepper, ajout et sync UI.
  */
 
+import { bus } from './b-bus.js';
 import { state, dom } from './b-store.js';
 import { addToCart, quickAdd, quickRemove } from './b-cart.js';
 import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
 
 let _selectionReconcileInstalled = false;
+let _detailReadyReconcileInstalled = false;
 
 function normalizedCombo(combo) {
   if (!combo || typeof combo !== 'object') return '';
@@ -99,22 +101,26 @@ function _syncModalQtyUI() {
   if (!state.modalProduct) return;
 
   const item = currentModalCartItem();
-  const isSku = state.modalProductDetail?.inventory_model === 'SKU';
+  const inventoryModel = state.modalProductDetail?.inventory_model;
+  const isSku = inventoryModel === 'SKU';
+  const canUseProductStepper = Boolean(inventoryModel) && !isSku;
 
   // Pour un SKU, le stepper est interdit : l'intention d'un clic CTA reste donc
-  // toujours une unité. La quantité déjà au panier n'est qu'une information de
-  // libellé et ne doit jamais devenir implicitement la prochaine quantité ajoutée.
+  // toujours une unité. Avant résolution du contrat, le chemin reste fail-closed.
   state.modalQty = isSku ? 1 : (item ? item.qty : 1);
   if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
 
   const actions = dom.addCartBtn?.closest('.k-modal-actions') || null;
   if (actions) {
-    actions.dataset.inventoryModel = isSku ? 'SKU' : 'LEGACY';
-    actions.classList.toggle('k-modal-actions--filled', Boolean(item) && !isSku);
+    actions.dataset.inventoryModel = inventoryModel || 'UNKNOWN';
+    actions.classList.toggle(
+      'k-modal-actions--filled',
+      Boolean(item) && canUseProductStepper
+    );
   }
 
   [dom.qtyMinus, dom.qtyPlus].forEach((control) => {
-    if (control) control.disabled = isSku;
+    if (control) control.disabled = !canUseProductStepper;
   });
 
   if (!dom.addCartBtn) return;
@@ -145,8 +151,15 @@ function installSelectionReconcile() {
   });
 }
 
+function installDetailReadyReconcile() {
+  if (_detailReadyReconcileInstalled) return;
+  _detailReadyReconcileInstalled = true;
+  bus.on('modal:detail-ready', _syncModalQtyUI);
+}
+
 function setupModalCart() {
   installSelectionReconcile();
+  installDetailReadyReconcile();
 
   dom.qtyMinus.addEventListener('click', () => {
     if (!state.modalProduct) return;
