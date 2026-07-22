@@ -24,6 +24,11 @@
     flex-shrink: 0;
   }
 
+  #k-modal .k-sug-add:active {
+    background: transparent;
+    transform: none;
+  }
+
   #k-modal .k-sug-add img {
     width: 23px;
     height: 23px;
@@ -36,6 +41,7 @@
     display: grid;
     grid-template-columns: 24px 22px 24px;
     align-items: center;
+    padding: 0;
     border: 1px solid var(--border);
     border-radius: 999px;
     background: transparent;
