@@ -1139,6 +1139,11 @@
   body.cart-open  .k-side-cart.has-items {
     display: none;
   }
+  /* Quand la modale est ouverte, le side cart passe au-dessus de l'overlay
+     (overlay z-index:300, side cart z-index:200 par défaut → 350 ici). */
+  body.modal-open .k-side-cart.has-items {
+    z-index: 350;
+  }
 }
 
 
