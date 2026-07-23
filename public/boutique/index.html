@@ -74,7 +74,7 @@ if('serviceWorker' in navigator){
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=136">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=211">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=213">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=68">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
@@ -441,13 +441,6 @@ if('serviceWorker' in navigator){
                  transactionnelles factuelles, valables pour tout produit. -->
             <div id="k-modal-trust" class="k-modal-trust"></div>
             <div id="k-modal-share-row" class="k-modal-share-row"></div>
-            <!-- T-030+ : Teaser suggestions — sibling de #k-modal-trust, visible sans
-                 scroller jusqu'au rail. Peuplé/masqué en miroir exact de
-                 #k-modal-suggestions par renderSuggestions() (b-modal-suggestions.js) :
-                 jamais un texte affiché sans données réelles derrière. -->
-            <div id="k-modal-sugg-peek" class="k-modal-sugg-peek" hidden>
-              <span class="k-modal-sugg-peek-hint">Vous aimerez aussi ↓</span>
-            </div>
           </div><!-- end .k-modal-info -->
         </div><!-- end .k-modal-details — FIX T-030 desktop nesting -->
         <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
@@ -472,6 +465,11 @@ if('serviceWorker' in navigator){
       <div id="k-modal-enriched-content" class="k-modal-enriched-content" hidden></div>
       <!-- Suggestions : pleine largeur desktop, dans le scroll mobile -->
       <div class="k-modal-suggestions" id="k-modal-suggestions">
+        <!-- Entrée éditoriale : visible uniquement quand des suggestions réelles existent. -->
+        <div id="k-modal-sugg-peek" class="k-modal-sugg-peek" hidden>
+          <span class="k-modal-sugg-peek-kicker">Pour aller plus loin</span>
+          <span class="k-modal-sugg-peek-copy">Découvrez d’autres produits sélectionnés pour vous</span>
+        </div>
         <h3>Vous aimerez aussi</h3>
         <div class="k-sug-rail" id="k-sug-rail"></div>
       </div>
