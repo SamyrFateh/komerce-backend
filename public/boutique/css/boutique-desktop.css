@@ -1127,9 +1127,9 @@
     padding-right: 0;
     overflow: hidden; /* BUG-SCROLL-3 — lock scroll fond pendant overlay checkout/modal */
   }
-  /* 0-3-1 pour battre .k-side-cart.has-items (0-2-0) */
-  body.modal-open .k-side-cart,
-  body.modal-open .k-side-cart.has-items,
+  /* Side cart masqué quand le drawer panier est ouvert (chevauchement).
+     Reste visible pendant la modale produit — l'utilisateur garde un œil
+     sur son panier sans quitter la fiche. Maquettes validées 2026-07. */
   body.cart-open  .k-side-cart,
   body.cart-open  .k-side-cart.has-items {
     display: none;

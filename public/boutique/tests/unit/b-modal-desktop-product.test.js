@@ -1,3 +1,17 @@
+/**
+ * @komerce-arch-lite
+ * @role          desktop-product-modal-renderer-tests
+ * @domain        catalog
+ * @layer         test
+ * @status        production
+ * @owner         public/boutique/tests/unit/b-modal-desktop-product.test.js
+ * @purpose       Tests unitaires du renderer desktop PDC — galerie, buy box,
+ *                variantes SKU, stock, livraison pill, réassurance, actions.
+ *                Paiement et sous-total absents de la fiche (maquettes 2026-07).
+ * @impact-areas  product-modal, desktop, sku-selection
+ * @version       2026-07
+ */
+
 'use strict';
 
 jest.mock('../../js/b-store.js', () => ({
@@ -255,8 +269,9 @@ describe('desktop product detail renderer', () => {
     expect(document.querySelector('[data-pdc5-root]')).not.toBeNull();
     expect(document.querySelectorAll('.k-sku')).toHaveLength(2);
     expect(document.querySelectorAll('.k-vg-sizes .k-vp')).toHaveLength(2);
-    expect(document.querySelector('[data-delivery-code="SEA_STANDARD"] .k-modal-opt-row1').textContent)
-      .toContain('Livraison standard');
+    // Livraison desktop = pill compacte uniquement (pas de liste détaillée)
+    expect(document.querySelector('#k-modal-delivery .k-modal-delivery-pill')).not.toBeNull();
+    expect(document.querySelector('[data-delivery-code]')).toBeNull();
     expect(document.body.textContent).not.toContain('3 à 5 semaines');
     expect(document.body.textContent).not.toContain('Gratuit');
     expect(document.getElementById('k-modal-aed-price').textContent).toBe('');
@@ -314,24 +329,18 @@ describe('desktop product detail renderer', () => {
     document.querySelector('[data-axis-key="Taille"] [data-option-value="L"]').click();
 
     expect(dom.modalPrice.textContent).toBe('13000 KMF');
-    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('13000 KMF');
-
-    state.modalQty = 3;
-    refreshDesktopProductSubtotal();
-    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('39000 KMF');
+    // Sous-total supprimé de la fiche desktop (maquettes validées 2026-07)
+    expect(document.querySelector('.k-modal-subtotal strong')).toBeNull();
   });
 
-  // MDP-2 : couvre la régression où b-modal-desktop-product.js importait
-  // renderPaymentModes/startGroupCartFlow sans jamais les appeler après le
-  // retrait de renderPayment() de b-modal-approche-c-hybrid.js — le paiement
-  // ne s'affichait alors plus nulle part en desktop.
-  test('rend les 4 modes de paiement dans #k-modal-payment (même logique que mobile)', () => {
+  // Paiement appartient au tunnel de commande, pas à la fiche produit desktop.
+  // Maquettes validées 2026-07 : bloc paiement absent de la colonne droite.
+  test('ne rend pas les modes de paiement sur la fiche desktop', () => {
     const product = detail();
     renderDesktopProductDetail(product, createModalSelection(product));
 
     const payment = document.getElementById('k-modal-payment');
-    expect(payment.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(4);
-    expect(payment.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
+    expect(payment.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(0);
   });
 
   test('ne reconstruit jamais ancien prix depuis promo_pct', () => {
@@ -358,18 +367,21 @@ describe('desktop product detail renderer', () => {
     });
     renderDesktopProductDetail(product, createModalSelection(product));
 
-    const option = document.querySelector('[data-delivery-code="AIR_EXPRESS"]');
-    expect(option.textContent).toContain('Livraison express');
-    expect(option.textContent).toContain('2500 KMF · Sous 5 jours');
-    expect(document.querySelector('[data-delivery-code="SEA_STANDARD"]')).toBeNull();
+    // La pill affiche le mode dérivé par deriveDeliveryMode(), pas le label brut
+    const pill = document.querySelector('#k-modal-delivery .k-modal-delivery-pill--air');
+    expect(pill).not.toBeNull();
+    expect(pill.textContent).toContain('Sous 5 jours');
+    expect(document.querySelector('[data-delivery-code]')).toBeNull();
   });
 
   test('delivery_options absent reste honnête et ne crashe pas', () => {
     const product = detail({ delivery_options: null });
     renderDesktopProductDetail(product, createModalSelection(product));
 
-    expect(document.getElementById('k-modal-delivery').textContent)
-      .toContain('Option de livraison communiquée à la commande.');
+    // Pill fallback sea affichée même sans delivery_options
+    const pill = document.querySelector('#k-modal-delivery .k-modal-delivery-pill--sea');
+    expect(pill).not.toBeNull();
+    expect(document.querySelector('[data-delivery-code]')).toBeNull();
     expect(document.body.textContent).not.toContain('Gratuit');
     expect(document.body.textContent).not.toContain('3 à 5 semaines');
   });
@@ -386,7 +398,8 @@ describe('desktop product detail renderer', () => {
     dom.modalQtyVal.textContent = '3';
     await Promise.resolve();
 
-    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('37500 KMF');
+    // Sous-total supprimé de la fiche desktop — vérifie que le prix SKU est correct
+    expect(dom.modalPrice.textContent).toBe('12500 KMF');
   });
 
   test('hors desktop le renderer ne modifie pas la modal', () => {

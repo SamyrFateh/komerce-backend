@@ -151,9 +151,8 @@ describe('shipping-mode-pill — desktop (k-modal-delivery)', () => {
     expect(pill.classList.contains('k-modal-delivery-pill--air')).toBe(true);
     expect(pill.textContent).toContain('Sous 5 jours');
 
-    // La liste détaillée reste intacte (Option B : rien ne se perd)
-    expect(document.querySelector('[data-delivery-code="SEA_STANDARD"]')).not.toBeNull();
-    expect(document.querySelector('[data-delivery-code="AIR_EXPRESS"]')).not.toBeNull();
+    // Desktop : pill seule, pas de liste détaillée (maquettes validées 2026-07)
+    expect(document.querySelector('[data-delivery-code]')).toBeNull();
   });
 
   test('uniquement SEA_ → pill --sea, pas de mode air affiché', () => {
@@ -175,7 +174,8 @@ describe('shipping-mode-pill — desktop (k-modal-delivery)', () => {
 
     const pill = document.querySelector('#k-modal-delivery .k-modal-delivery-pill');
     expect(pill.classList.contains('k-modal-delivery-pill--sea')).toBe(true);
-    expect(document.querySelector('#k-modal-delivery').textContent).toContain('communiquée à la commande');
+    // Pill seule — pas de message texte fallback (maquettes validées 2026-07)
+    expect(document.querySelector('[data-delivery-code]')).toBeNull();
   });
 });
 

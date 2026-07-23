@@ -256,14 +256,12 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     expect(mobileCore).toEqual(desktopCore);
     expect(desktopCore.ctaDisabled).toBe(false);
 
-    // Desktop conserve sous-total et paiement (MDP-1/MDP-2 partagés avec
-    // mobile via b-modal-buybox-shared.js, mais uniquement composés côté
-    // desktop depuis MDM-8).
-    const paymentTabs = document.querySelectorAll('.k-buybox-payment-tab');
-    expect(paymentTabs).toHaveLength(4);
-    expect(document.querySelector('.k-buybox-payment-tab.is-active').dataset.pay).toBe('stripe');
-    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('25000 KMF'); // 12500 × qty 2
-    expect(document.body.textContent).toContain('Livraison standard');
+    // Paiement et sous-total appartiennent au tunnel, pas à la fiche desktop.
+    // Maquettes validées 2026-07.
+    expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(0);
+    expect(document.querySelector('.k-modal-subtotal strong')).toBeNull();
+    // Livraison = pill compacte (mode + délai)
+    expect(document.querySelector('#k-modal-delivery .k-modal-delivery-pill')).not.toBeNull();
   });
 
   test('TEST 2 — même sélection non résolue (option manquante) : parité de blocage CTA', () => {
@@ -287,8 +285,8 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
 
     expect(selection.selected_sku_id).toBeNull();
     expect(dom.addCartBtn.disabled).toBe(true);
-    // Desktop expose toujours le sélecteur de paiement même sans SKU résolu.
-    expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(4);
+    // Paiement absent de la fiche desktop (maquettes validées 2026-07).
+    expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(0);
   });
 
   test('TEST 3 — Beige + L : même prix SKU sur les deux compositions, sous-total desktop correct', () => {
@@ -311,6 +309,7 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     isDesktop.mockReturnValue(true);
     renderDesktopProductDetail(product, selection);
     expect(dom.modalPrice.textContent).toBe('13000 KMF');
-    expect(document.querySelector('.k-modal-subtotal strong').textContent).toBe('26000 KMF');
+    // Sous-total absent du desktop (maquettes validées 2026-07, comme mobile MDM-8).
+    expect(document.querySelector('.k-modal-subtotal strong')).toBeNull();
   });
 });

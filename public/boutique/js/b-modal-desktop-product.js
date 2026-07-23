@@ -374,56 +374,16 @@ function _deliveryIconSvg(isAir) {
   return svg;
 }
 
+/**
+ * Desktop : livraison = pill compacte uniquement (mode + délai).
+ * Le détail des options et le bloc paiement appartiennent au tunnel
+ * de commande, pas à la fiche produit. Conforme aux maquettes validées.
+ */
 function renderDeliveryOptions(detail) {
   const el = document.getElementById('k-modal-delivery');
   if (!el) return;
   el.innerHTML = '';
-
   renderDeliveryModePill(el, detail);
-
-  const title = document.createElement('div');
-  title.className = 'k-modal-section-title';
-  title.textContent = 'Livraison';
-  el.appendChild(title);
-
-  const options = detail?.delivery_options || [];
-  if (!options.length) {
-    const empty = document.createElement('div');
-    empty.className = 'k-modal-delivery-opt';
-    empty.textContent = 'Option de livraison communiquée à la commande.';
-    el.appendChild(empty);
-    return;
-  }
-
-  options.forEach((option) => {
-    const row = document.createElement('div');
-    row.className = 'k-modal-delivery-opt';
-    row.dataset.deliveryCode = option.code;
-
-    const body = document.createElement('div');
-    body.className = 'k-modal-opt-body';
-    const row1 = document.createElement('div');
-    row1.className = 'k-modal-opt-row1';
-    const isAir = typeof option.code === 'string' && option.code.startsWith('AIR_');
-    const icon = document.createElement('span');
-    icon.className = 'k-modal-opt-icon';
-    icon.appendChild(_deliveryIconSvg(isAir));
-    const label = document.createElement('span');
-    label.textContent = option.label;
-    row1.append(icon, label);
-
-    const metaText = deliveryMeta(option);
-    body.appendChild(row1);
-    if (metaText) {
-      const row2 = document.createElement('div');
-      row2.className = 'k-modal-opt-row2';
-      row2.textContent = metaText;
-      body.appendChild(row2);
-    }
-
-    row.appendChild(body);
-    el.appendChild(row);
-  });
 }
 
 /* ── Lot Content, commit 4 : contenu enrichi sous la zone transactionnelle ──
@@ -655,8 +615,6 @@ export function renderDesktopProductDetail(detail, selection, { forceMedia = fal
   renderTrust();
   renderShare(detail);
   renderDeliveryOptions(detail);
-  renderSubtotal(detail, selection);
-  renderPaymentSection(detail, selection);
   renderEnrichedContent(detail);
   renderMedia(detail, selection, forceMedia);
   ensureQtyObserver();
