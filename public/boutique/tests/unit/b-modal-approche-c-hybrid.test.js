@@ -118,34 +118,34 @@ describe('b-modal-approche-c-hybrid — composition only', () => {
     expect(document.getElementById('k-qty-val').textContent).toBe('1');
   });
 
-  test('actions : déplacement après livraison puis restauration au modal:closed', async () => {
+  // REFONTE COQUE DESKTOP (PROMPT_REFONTE_MODALE_DESKTOP_KOMERCE) : sur desktop,
+  // les CTA restent à leur position HTML native dans .k-modal-info (après
+  // #k-modal-delivery ET #k-modal-payment) — moveActionsAfterDelivery() /
+  // restoreActionsHome() sont du dead code volontaire, plus jamais appelées
+  // depuis applyHybridPdp()/reconcileComposition(). Ces tests verrouillent
+  // l'absence de déplacement, à l'ouverture comme à la fermeture.
+  test('actions : aucun déplacement JS à l’ouverture desktop, ni classe inline ajoutée', async () => {
     bus.emit('modal:opened');
     await flushRaf();
 
-    expect(delivery.nextElementSibling).toBe(actions);
-    expect(actions.classList.contains('k-buybox-actions-inline')).toBe(true);
-
-    bus.emit('modal:closed');
-    expect(actions.classList.contains('k-buybox-actions-inline')).toBe(false);
     expect(actions.parentElement).toBe(info);
     expect(actions.nextSibling).toBe(originalActionsNext);
+    expect(actions.classList.contains('k-buybox-actions-inline')).toBe(false);
+
+    bus.emit('modal:closed');
+    expect(actions.parentElement).toBe(info);
+    expect(actions.nextSibling).toBe(originalActionsNext);
+    expect(actions.classList.contains('k-buybox-actions-inline')).toBe(false);
   });
 
-  test('actions : fermeture puis réouverture recapture un home DOM frais', async () => {
+  test('actions : un resize (modal:composition-synced) ne déplace rien non plus', async () => {
     bus.emit('modal:opened');
     await flushRaf();
-    bus.emit('modal:closed');
+    bus.emit('modal:composition-synced');
 
-    const marker = document.createElement('div');
-    marker.dataset.actionsHomeMarker = '1';
-    info.insertBefore(marker, actions);
-
-    bus.emit('modal:opened');
-    await flushRaf();
-    bus.emit('modal:closed');
-
-    expect(marker.nextElementSibling).toBe(actions);
-    marker.remove();
+    expect(actions.parentElement).toBe(info);
+    expect(actions.nextSibling).toBe(originalActionsNext);
+    expect(actions.classList.contains('k-buybox-actions-inline')).toBe(false);
   });
 
   // MDP-2 : la logique fonctionnelle du paiement (onglets, changement de mode,

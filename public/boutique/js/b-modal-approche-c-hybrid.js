@@ -102,27 +102,23 @@ function restoreActionsHome() {
   _actionsHome = null;
 }
 
-// Composition desktop pure : placement des actions + garde de quantité.
-// Idempotent — peut être rappelée à chaque ouverture ou reconciliation resize
-// sans effet cumulatif (moveActionsAfterDelivery / installQtyGuard vérifient
-// leur propre état avant d'agir).
+// REFONTE COQUE DESKTOP (PROMPT_REFONTE_MODALE_DESKTOP_KOMERCE) : sur desktop,
+// les CTA restent dans .k-modal-info à leur position HTML native (après
+// #k-modal-delivery ET #k-modal-payment) — aucun déplacement JS.
+// moveActionsAfterDelivery() / restoreActionsHome() sont conservées ci-dessus
+// (dead code volontaire, pas supprimées) pour traçabilité de la décision,
+// mais ne sont plus appelées depuis applyHybridPdp()/reconcileComposition().
 function applyHybridPdp() {
   if (!isDesktop()) return;
   installQtyGuard();
-  moveActionsAfterDelivery();
   ensureIntentQty();
 }
 
 // MDP-3 : réconciliation appelée à chaque transition de viewport (resize),
-// en plus de l'ouverture de modal. Idempotente dans les deux sens :
-// - vers desktop : replace les actions si besoin (no-op si déjà en place) ;
-// - vers mobile : restaure les actions à leur emplacement d'origine
-//   (no-op si déjà restaurées, cf. garde `_actionsHome` dans restoreActionsHome).
+// en plus de l'ouverture de modal.
 function reconcileComposition() {
   if (isDesktop()) {
     applyHybridPdp();
-  } else {
-    restoreActionsHome();
   }
 }
 

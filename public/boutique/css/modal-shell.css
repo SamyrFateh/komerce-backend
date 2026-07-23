@@ -113,6 +113,21 @@
   display: contents;
 }
 
+/* ── COQUE CANONIQUE DESKTOP (PROMPT_REFONTE_MODALE_DESKTOP_KOMERCE) ─────
+   .k-modal-body / .k-modal-main / .k-modal-cart-slot. Sur mobile, ces
+   3 conteneurs restent transparents (display:contents) : ils ne changent
+   rien au flux existant de .k-modal-scroll (mobile gelé fonctionnellement).
+   Le panneau panier (.k-modal-cart-slot) est vide sur mobile — #k-side-cart
+   n'y est jamais reparenté (voir b-modal-core.js::mountSideCartInModal,
+   gardé par isDesktop()). ───────────────────────────────────────────── */
+.k-modal-body,
+.k-modal-main {
+  display: contents;
+}
+.k-modal-cart-slot {
+  display: none;
+}
+
 /* ── TOPBAR SEARCH MOBILE ────────────────────────────────────── */
 .k-topbar-search-trigger {
   width: 34px; height: 34px; border: none; background: var(--sand); border-radius: 50%;
@@ -451,12 +466,7 @@
   .k-modal-overlay.open { align-items: center; justify-content: center; padding: 28px; background: var(--overlay-dark-md); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
   /* ── Shell ───────────────────────────────────────────────── */
-  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; animation: none; }
-  /* Quand le side cart est visible, la modale se décale et rétrécit pour laisser 240px à droite. */
-  body:has(.k-side-cart.has-items) #k-modal.k-modal {
-    width: min(1280px, calc(100vw - 240px - 40px));
-    margin-right: 252px;
-  } /* [T-029] ombre retirée : règle morte par cascade, voir #k-modal.k-modal plus bas (var(--shadow-modal-neutral-10), ombre modale canonique) */
+  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; animation: none; } /* [T-029] ombre retirée : règle morte par cascade, voir #k-modal.k-modal plus bas (var(--shadow-modal-neutral-10), ombre modale canonique) */
 
   /* ── Topbar ──────────────────────────────────────────────── */
   #k-modal .k-modal-topbar { display: flex; /* restauré : masqué sur mobile uniquement */ position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); flex-shrink: 0; } /* [T-029] halo retiré */
@@ -472,12 +482,48 @@
   .k-modal-breadcrumb-cat:hover { color: var(--ocean); }
   .k-modal-breadcrumb-name { font-weight: 500; color: var(--text); }
 
-  /* ── Scroll owner desktop ────────────────────────────────── */
+  /* ── Scroll passe-plat desktop ──────────────────────────────
+     .k-modal-scroll ne scrolle plus lui-même sur desktop (coque
+     canonique) : le scroll owner devient .k-modal-main (colonne
+     produit), tandis que .k-modal-cart-slot scrolle indépendamment.
+     Sur mobile, .k-modal-scroll reste l'unique scroll owner
+     (règle base, non touchée). */
   #k-modal .k-modal-scroll {
     flex: 1 1 auto; min-height: 0; height: 100%;
     display: flex; flex-direction: column;
-    overflow-y: auto; overflow-x: hidden;
+    overflow: hidden;
     padding: 0; background: var(--white);
+  }
+
+  /* ── COQUE CANONIQUE DESKTOP — grille 2 zones (main | panier) ──────────
+     PROMPT_REFONTE_MODALE_DESKTOP_KOMERCE — remplace uniquement la
+     composition desktop, structure mobile inchangée (règles base ci-dessus,
+     display:contents / display:none, non touchées ici). */
+  #k-modal .k-modal-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 22vw, 340px);
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  #k-modal .k-modal-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto; /* scroll owner desktop de la colonne produit */
+  }
+  #k-modal .k-modal-cart-slot {
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    min-height: 0;
+  }
+  /* Slot vide (avant reparentage JS, ou si mountSideCartInModal n'a pas
+     encore tourné) : pas de bordure fantôme ni de largeur réservée à vide. */
+  #k-modal .k-modal-cart-slot:empty {
+    border-left: none;
   }
 
   /* ── Product-zone : grid 2 colonnes 900-1023px, 3 pistes ≥1024px
@@ -805,41 +851,14 @@
   body.modal-open .k-footer,
   body.modal-open footer { display: none; }
 
-  /* ── Overlay : fond blanc plein, sans padding ni flou ────── */
-  .k-modal-overlay.open {
-    padding: 0;
-    background: var(--white);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-  }
-
-  /* ── Shell : 100vw × 100dvh, sans carte flottante ────────── */
-  #k-modal.k-modal {
-    width: 100vw;
-    max-width: none; /* Contre-balance le max-width de desktop-commerce-skeleton.css */
-    height: 100vh;
-    height: 100dvh;
-    min-height: 100vh;
-    min-height: 100dvh;
-    max-height: 100dvh;
-    flex: 0 0 100dvh;
-    border-radius: 12px; /* [D12] Owner réel du radius desktop (gagne sur la
-       règle .k-modal { border-radius: 26px } plus bas dans ce fichier,
-       morte par spécificité — cf. bloc "Desktop : taille & ombre modale"). */
-    box-shadow: var(--shadow-modal-neutral-10); /* [D13] Owner réel de l'ombre
-       desktop (gagne sur var(--border-ocean-18) plus bas dans ce fichier,
-       morte par spécificité). Neutre gris chaud, plus de teinte ocean. */
-  }
-
-  /* Side-cart : glisse par-dessus, modal reste 100vw */
-  body.modal-has-cart #k-modal.k-modal {
-    width: 100vw;
-    margin-right: 0;
-    transition: none;
-  }
+  /* ── COQUE PLEIN-ÉCRAN DESKTOP RETIRÉE (PROMPT_REFONTE_MODALE_DESKTOP_KOMERCE) ──
+     .k-modal-overlay.open (fond blanc plein, sans padding) et #k-modal.k-modal
+     (100vw × 100dvh, sans carte flottante) écrasaient par cascade la coque
+     fenêtrée de §3 (#k-modal.k-modal { width:min(1280px,...); height:min(880px,...) },
+     ligne ~469 — carte centrée, coins arrondis, conforme à la maquette validée).
+     body.modal-has-cart #k-modal.k-modal (width:100vw) supprimée avec : plus de
+     glissement pleine largeur, le side-cart est désormais reparenté dans
+     .k-modal-cart-slot (grille ci-dessous), la carte garde sa largeur fixe. */
 
   /* ── Grid : 43 % image · 57 % détails ───────────────────── */
   /* min 380px sur col image : empêche la col droite de réduire

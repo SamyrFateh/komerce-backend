@@ -725,6 +725,28 @@
     transform: translateX(0);
   }
 
+  /* ── REFONTE COQUE DESKTOP — side cart reparenté dans .k-modal-cart-slot ──
+     mountSideCartInModal() (b-modal-core.js) ajoute cette classe au moment du
+     reparentage DOM. Neutralise le positionnement fixed (le panneau devient
+     un enfant en flux normal de .k-modal-cart-slot, cf. modal-shell.css) et
+     garde le panier visible même vide — état vide affiché dans le panneau,
+     pas de display:none comme hors modale (PROMPT_REFONTE_MODALE_DESKTOP_KOMERCE). */
+  .k-side-cart--in-modal {
+    position: static;
+    top: auto; right: auto; bottom: auto;
+    width: 100%;
+    height: auto;
+    flex: 1 1 auto;
+    z-index: auto;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    box-shadow: none;
+    border-top: none;
+    border-left: none;
+  }
+  .k-side-cart--in-modal:not(.has-items) { display: flex; }
+
   /* ──────────────────────────────────────────────────────────
      HEADER (top block Temu) — sous-total + livraison + CTAs.
      Tailles confortables : on a la pleine hauteur viewport.
@@ -1139,17 +1161,19 @@
   body.cart-open  .k-side-cart.has-items {
     display: none;
   }
-  /* Quand la modale est ouverte, le side cart passe au-dessus de l'overlay
-     (overlay z-index:300, side cart z-index:200 par défaut → 350 ici). */
-  body.modal-open .k-side-cart.has-items {
-    z-index: 350;
-  }
 }
 
 
 @media (min-width: 1200px) {
   .k-side-cart {
     width: 254px;
+  }
+  /* Le panneau reparenté doit rester à 100% de .k-modal-cart-slot (largeur
+     pilotée par la grille de la coque, modal-shell.css), pas à 254px fixe —
+     sans cette override, la règle .k-side-cart de ce bloc gagnerait par ordre
+     source (même spécificité 0-1-0). */
+  .k-side-cart--in-modal {
+    width: 100%;
   }
   body:has(.k-side-cart.has-items),
   body.sc-reserve {

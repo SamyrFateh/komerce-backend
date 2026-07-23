@@ -14,7 +14,7 @@
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1268 | 🔴 **ORPHELIN** |
+| `boutique-desktop.css` | 1297 | 🔴 **ORPHELIN** |
 | `cart.css` | 2120 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
 | `group-cart-flow.css` | 1937 | 🔴 **ORPHELIN** |
@@ -30,7 +30,7 @@
 | `modal-mobile-suggestion-actions.css` | 66 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 448 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1430 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1069 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1093 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 962 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
@@ -45,8 +45,8 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=136
- 2. /boutique/css/dist/components.css?v=215
- 3. /boutique/css/dist/desktop.css?v=69
+ 2. /boutique/css/dist/components.css?v=217
+ 3. /boutique/css/dist/desktop.css?v=71
  4. /boutique/css/dist/event.css?v=32
 ```
 

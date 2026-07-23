@@ -324,6 +324,13 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       document.body.classList.add('modal-has-cart');
     }
 
+    // REFONTE COQUE DESKTOP — reparentage #k-side-cart dans .k-modal-cart-slot.
+    // Pas de clone : le même noeud DOM change de parent, ses listeners
+    // (délégation sur #k-sc-items + IDs individuels) survivent intacts.
+    // Restauré à sa position d'origine dans closeModal() / au passage mobile
+    // (reconcileComposition / resize) — voir _cartHome ci-dessous.
+    mountSideCartInModal();
+
     // MOBILE SCROLL FIX — neutralise les styles inline posés par le pager
     // (#k-page-scroll.k-pager-active = position:fixed + overflow:hidden crée un
     // stacking context sur Chrome Android qui bride le scroll de .k-modal-scroll).
@@ -416,6 +423,12 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     document.body.classList.remove('modal-has-cart');
     document.body.style.removeProperty('--modal-scroll-y');
 
+    // REFONTE COQUE DESKTOP — restaurer #k-side-cart à sa position d'origine
+    // (hors overlay). Sans ça il resterait piégé dans .k-modal-cart-slot,
+    // display:none via .k-modal-overlay { display:none } et invisible au
+    // prochain rendu catalogue.
+    restoreSideCartHome();
+
     // MOBILE SCROLL FIX — restaurer les styles inline du pager
     if (window.innerWidth < 900 && state._savedPagerInlineStyles) {
       let _ps = dom.pageScroll;
@@ -503,6 +516,49 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
   }
 
   bus.on('modal:composition-synced', reorderActionsForViewport);
+
+  // ── REFONTE COQUE DESKTOP — reparentage #k-side-cart ────────────────────
+  // _cartHome mémorise la position d'origine (parent + nextSibling) pour un
+  // reparentage réversible, sans clone. Idempotent : appelable plusieurs
+  // fois sans effet si déjà dans le bon état (même doctrine que
+  // reorderActionsForViewport/restoreActionsHome ci-dessus/dans le hybrid).
+  let _cartHome = null;
+
+  function mountSideCartInModal() {
+    if (!isDesktop()) return;
+    const cart = document.getElementById('k-side-cart');
+    const slot = document.getElementById('k-modal-cart-slot');
+    if (!cart || !slot || cart.parentNode === slot) return;
+    _cartHome = { parent: cart.parentNode, nextSibling: cart.nextSibling };
+    slot.appendChild(cart);
+    cart.classList.add('k-side-cart--in-modal');
+  }
+
+  function restoreSideCartHome() {
+    const cart = document.getElementById('k-side-cart');
+    if (!cart) return;
+    cart.classList.remove('k-side-cart--in-modal');
+    if (!_cartHome || cart.parentNode !== document.getElementById('k-modal-cart-slot')) return;
+    if (_cartHome.nextSibling && _cartHome.nextSibling.parentNode === _cartHome.parent) {
+      _cartHome.parent.insertBefore(cart, _cartHome.nextSibling);
+    } else {
+      _cartHome.parent.appendChild(cart);
+    }
+    _cartHome = null;
+  }
+
+  // Switch desktop↔mobile pendant que la modale reste ouverte (resize/rotation) :
+  // même signal que reorderActionsForViewport, cohérent avec le reste du PDC.
+  function reconcileSideCartComposition() {
+    if (!dom.modalOverlay.classList.contains('open')) return;
+    if (isDesktop()) {
+      mountSideCartInModal();
+    } else {
+      restoreSideCartHome();
+    }
+  }
+
+  bus.on('modal:composition-synced', reconcileSideCartComposition);
 
   /**
    * Initialise le modal produit complet (carousel, topbar, suggestions, swipe).

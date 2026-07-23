@@ -74,8 +74,8 @@ if('serviceWorker' in navigator){
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=136">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=216">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=70">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=217">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=71">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
@@ -400,7 +400,13 @@ if('serviceWorker' in navigator){
         <button class="k-modal-close" id="k-modal-close">✕</button>
       </div>
     </div>
-    <div class="k-modal-scroll">
+    <!-- k-modal-body : coque desktop — colonne principale (.k-modal-scroll,
+         scroll owner inchangé, mobile ET desktop) + slot panier latéral
+         (.k-modal-cart-slot, reçoit #k-side-cart par reparentage JS desktop
+         uniquement — cf. b-modal-core.js). Transparent sur mobile
+         (display:contents), grille 2 colonnes ≥900px (modal-shell.css). -->
+    <div class="k-modal-body">
+    <div class="k-modal-scroll k-modal-main">
       <!-- Zone produit : 2 colonnes image | détails 900-1023px,
            3 pistes rail miniatures | média | détails ≥1024px (desktop) -->
       <div class="k-modal-product-zone">
@@ -484,6 +490,13 @@ if('serviceWorker' in navigator){
         <div class="k-sug-rail" id="k-sug-rail"></div>
       </div>
     </div>
+    <!-- Slot panier latéral desktop — vide au chargement, #k-side-cart y est
+         reparenté par mountSideCartInModal() (b-modal-core.js) à l'ouverture
+         desktop de la modale, et restauré à sa position d'origine (hors
+         overlay) à la fermeture / au passage mobile. Reste vide (masqué par
+         display:contents côté mobile, cf. modal-shell.css §COQUE CANONIQUE) -->
+    <div id="k-modal-cart-slot" class="k-modal-cart-slot"></div>
+  </div>
   </div>
 </div><!-- /#k-modal-overlay — FIX T-030 desktop modal nesting -->
 
