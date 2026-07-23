@@ -2591,9 +2591,6 @@ html.k-mobile-premium-v1 .k-chip-label {
      étroite (380px track - 56px padding = 324px < 361px pills). */
   #k-modal .k-modal-trust { gap: 6px; flex-wrap: nowrap; padding: 11px 0; }
   #k-modal .k-modal-trust-item { padding: 4px 7px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  /* FIX produit simple — espace vide : la description occupe l'espace restant
-     et pousse réassurance + partage vers le bas du panneau. */
-  #k-modal .k-modal-product-zone .k-modal-desc { flex-grow: 1; }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--ocean); }
@@ -2623,24 +2620,18 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
   #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
 
-  /* ── Actions : col droite, row 2, sticky bas ─────────────────────
-     T-023/D11 : grille 3 colonnes remplacée par un flex simple. Deux
-     variantes selon l'état posé par renderActions() (b-modal-desktop-
-     product.js) :
-       - AVAILABLE_EMPTY  (par défaut, pas de modificateur) : Ajouter +
-         Acheter, deux CTA flex:1 côte à côte, stepper masqué.
-       - AVAILABLE_FILLED (.k-modal-actions--filled) : stepper largeur
-         auto + Acheter flex:1, Ajouter masqué.
-     Spec : .agent/sources/CHANTIER_PDP_MAQUETTE_PREMIUM_ORIGINAL.md §13. */
+  /* ── Actions : inline dans la colonne droite, sous le contenu ───────────
+     Conformes aux maquettes validées 2026-07 : les CTA suivent directement
+     le contenu (prix, variantes, livraison, réassurance) sans sticky.
+     Le sticky créait un grand vide sur les produits simples (contenu court). */
   #k-modal .k-modal-product-zone .k-modal-actions {
-    order: unset; /* annule le order mobile */
-    grid-column: 2; grid-row: 2;
-    position: sticky; bottom: 0; z-index: 70;
-    margin: 0; padding: 12px 24px 16px;
-    background: var(--surface-white-98);
+    order: unset;
+    grid-column: 2; grid-row: 1;
+    position: static;
+    align-self: end;
+    margin: 0; padding: 16px 0 4px;
+    background: transparent;
     border-top: 1px solid var(--border-text-10);
-    /* [T-029] halo décoratif retiré : la bordure + l'ombre sticky mobile suffisent (une seule famille sticky) */
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
     display: flex;
     align-items: center; gap: 10px;
   }
@@ -2853,12 +2844,10 @@ html.k-mobile-premium-v1 .k-chip-label {
     overflow-x: hidden;
   }
 
-  /* ── Actions sticky : padding-inline aligné sur les détails  */
+  /* ── Actions inline : padding géré par .k-modal-details, pas ici ── */
   #k-modal .k-modal-product-zone .k-modal-actions {
-    padding-left:  clamp(24px, 4vw, 64px);
-    padding-right: clamp(24px, 4vw, 64px);
-    /* Annule le grid-template étroit hérité des §4-§5 */
-    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
+    padding-left:  0;
+    padding-right: 0;
   }
 
   /* ── Topbar : séparation nette sur fond blanc ────────────── */
@@ -2893,16 +2882,6 @@ html.k-mobile-premium-v1 .k-chip-label {
      l'ownership déjà documenté au profit de modal-product-lot4-hybrid.css
      et créait une dépendance à l'ordre du bundle. Cf. .agent/arbitrations/T-020.md. */
   #k-modal .k-modal-product-zone .k-modal-details  { padding: 0 clamp(18px, 3vw, 32px); }
-  #k-modal .k-modal-product-zone .k-modal-actions  {
-    padding-left:  clamp(18px, 3vw, 32px);
-    padding-right: clamp(18px, 3vw, 32px);
-    /* Réhabilite le layout 2 boutons col droite étroite */
-    grid-template-columns: auto minmax(140px, 1fr) minmax(170px, 1.1fr);
-    grid-template-rows: auto;
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
-    grid-column: 3; grid-row: 1;
-  }
 }
 
 /* ── Composition 3 pistes ≥1024px (T-020, arbitrage D8) ────────────────

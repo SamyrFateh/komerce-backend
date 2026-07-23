@@ -74,8 +74,8 @@ if('serviceWorker' in navigator){
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=136">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=212">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=70">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=214">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=69">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
@@ -455,22 +455,23 @@ if('serviceWorker' in navigator){
                  (le mobile les affiche via son propre flux). -->
             <div id="k-modal-delivery" class="k-modal-delivery"></div>
             <div id="k-modal-payment" class="k-modal-payment"></div>
+            <!-- Actions : dans .k-modal-info pour être dans le flux de la colonne droite.
+                 Desktop : inline sous le contenu (maquettes validées 2026-07).
+                 Mobile : display:contents sur product-zone → ordre naturel conservé. -->
+            <div class="k-modal-actions">
+              <div class="k-qty">
+                <button class="k-qty-btn" id="k-qty-minus">−</button>
+                <span class="k-qty-val" id="k-qty-val">1</span>
+                <button class="k-qty-btn" id="k-qty-plus">+</button>
+              </div>
+              <button class="k-add-cart-btn" id="k-add-cart-btn">
+                <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" aria-hidden="true">
+                Ajouter au panier
+              </button>
+              <button class="k-buy-now-btn" id="k-buy-now-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Acheter maintenant</button>
+            </div>
           </div><!-- end .k-modal-info -->
-        </div><!-- end .k-modal-details — FIX T-030 desktop nesting -->
-        <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
-        <!-- Sur mobile : display:contents rend product-zone transparent → ordre naturel -->
-        <div class="k-modal-actions">
-          <div class="k-qty">
-            <button class="k-qty-btn" id="k-qty-minus">−</button>
-            <span class="k-qty-val" id="k-qty-val">1</span>
-            <button class="k-qty-btn" id="k-qty-plus">+</button>
-          </div>
-          <button class="k-add-cart-btn" id="k-add-cart-btn">
-            <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" aria-hidden="true">
-            Ajouter au panier
-          </button>
-          <button class="k-buy-now-btn" id="k-buy-now-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Acheter maintenant</button>
-        </div>
+        </div><!-- end .k-modal-details -->
       </div><!-- end .k-modal-product-zone -->
       <!-- Contenu enrichi (Lot Content) — sous la zone transactionnelle, peuplé
            par b-modal-desktop-product.js / renderEnrichedContent(). Masqué mobile

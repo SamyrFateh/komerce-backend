@@ -14,7 +14,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
 | **Modal produit** `.k-modal*` | modal-shell.css (25), modal-product.css (4), interactions.css (2), boutique-desktop.css (1), modal-mobile-canonical.css (1) | 5 | 🔴 |
-| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (20), layout.css (10), hero.css (1) | 3 | 🔴 |
+| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (17), layout.css (10), hero.css (1) | 3 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
 | **Header** `.k-header*` | layout.css (21), hero.css (2), tokens.css (1) | 3 | 🔴 |
@@ -30,10 +30,10 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 
 | Module JS | DOM | CSS-inj | bus on/emit | Composants ciblés |
 |-----------|:---:|:-------:|:-----------:|-------------------|
-| `b-modal-desktop-product.js` | 93 | 0 | 0/0 | Modal produit |
 | `b-cart.js` | 58 | 31 | 1/6 | Modal produit, Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
 | `b-modal-mobile-product.js` | 89 | 0 | 0/0 | Modal produit, Panier |
 | `b-modal-core.js` | 30 | 54 | 3/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
+| `b-modal-desktop-product.js` | 78 | 0 | 0/0 | Modal produit |
 | `b-checkout.js` | 60 | 4 | 0/2 | Bottom-nav mobile |
 | `b-checkout-render.js` | 56 | 0 | 0/0 | — |
 | `b-modal-product.js` | 25 | 11 | 0/1 | Modal produit |
