@@ -15,9 +15,9 @@
     width: 28px;
     height: 28px;
     padding: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
+    background: var(--sand);
+    border: 1px solid var(--border);
+    border-radius: 50%;
     box-shadow: none;
     display: grid;
     place-items: center;
@@ -25,16 +25,12 @@
   }
 
   #k-modal .k-sug-add:active {
-    background: transparent;
-    transform: none;
+    background: var(--sand-dark);
+    transform: scale(.88);
   }
 
-  #k-modal .k-sug-add img {
-    width: 23px;
-    height: 23px;
-    display: block;
-    mix-blend-mode: normal;
-    pointer-events: none;
+  #k-modal .k-sug-add .k-sug-add-plus {
+    font-size: 17px;
   }
 
   #k-modal .k-sug-card-actions.is-filled {

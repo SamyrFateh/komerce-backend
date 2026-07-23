@@ -724,17 +724,16 @@ function _ensureHeroOverlay() {
   const right = document.createElement('div');
   right.className = 'k-modal-topbar-overlay-right';
 
-  // Avatar panier — .k-cart-avatar + .k-modal-cart-overlay sont maintenant
-  // couverts par updateCartBadge() (b-cart-core.js), source de vérité unique
-  // pour la synchro seule/panier ↔ avatar_seule.png/avatar_panier.png. Avant
-  // ce fix, cette image restait figée sur avatar_seule.png quel que soit
-  // l'état réel du panier (bug constaté en prod : badge "12" correct, icône
-  // toujours "seule"), faute de cette classe et de ce sélecteur.
+  // Icône panier — panier_tresse_vert.png, icône panier canonique de l'app
+  // (bnav, mini-cart CTA). Remplace l'avatar "petite dame" (avatar_seule.png)
+  // encore présent sur le header hors-modale. Icône fixe : pas de classe
+  // .k-cart-avatar, donc pas de swap seule/panier via updateCartBadge()
+  // (b-cart-core.js) — seul le badge se synchronise ici, cf. syncBadge().
   const cartBtn = document.createElement('button');
   cartBtn.type = 'button';
   cartBtn.className = 'k-modal-cart-overlay';
   cartBtn.setAttribute('aria-label', 'Panier');
-  cartBtn.innerHTML = '<img src="/images/avatar_seule.png" class="k-cart-avatar" alt="" aria-hidden="true"><span class="k-modal-cart-badge-overlay" id="k-modal-cart-badge-overlay"></span>';
+  cartBtn.innerHTML = '<img src="/images/panier_tresse_vert.png" class="k-modal-cart-overlay-icon" width="20" height="20" alt="" aria-hidden="true"><span class="k-modal-cart-badge-overlay" id="k-modal-cart-badge-overlay"></span>';
   cartBtn.addEventListener('click', () => dom.modalCartBtn?.click());
 
   // ✕ fermer
@@ -749,8 +748,8 @@ function _ensureHeroOverlay() {
   overlay.append(backBtn, right);
   imgWrap.appendChild(overlay);
 
-  // Sync immédiat — sans ça l'avatar reste sur avatar_seule.png (état
-  // initial codé en dur ci-dessus) jusqu'au prochain ajout/retrait panier,
+  // Sync immédiat — sans ça les classes has-items/is-empty et le badge
+  // restent sur l'état initial jusqu'au prochain ajout/retrait panier,
   // même si le panier contient déjà des articles à l'ouverture de la modale.
   updateCartBadge();
 

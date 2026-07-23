@@ -1134,16 +1134,20 @@ html.k-mobile-premium-v1 .k-chip-label {
   right: 7px;
   width: 32px;
   height: 32px;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
+  background: var(--ocean);
+  border-radius: 50%;
+  box-shadow: var(--elev-2);
   border: none;
   padding: 0;
   z-index: 5;
   cursor: pointer;
   overflow: visible;
-  transition: transform .15s var(--ease);
-  /* Détourage PNG fond blanc : img tag inséré via JS, mix-blend sur l'img */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .15s var(--ease), box-shadow .15s var(--ease);
+  /* Bouton rempli : le contenu est un <span class="k-card-add-plus"> texte
+     (pas d'<img>), cf. render-product-card.js renderAddControl(). */
 }
 .k-card-add:active {
   transform: scale(.9);
@@ -1957,11 +1961,13 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 500; min-width: 36px; text-align: center; }
 .k-modal-topbar-right { box-sizing: border-box; max-width: 100%; display: flex; align-items: center; gap: 8px; flex-shrink: 0; } /* S2.1+S2.3 — box-sizing garanti ; padding-right:10px (VIS-5) supprimé : inutile avec box-sizing correct ; gap revient à 8px nominal */
 .k-modal-cart-btn {
-  position: relative; width: auto; height: auto; border-radius: 0;
-  background: transparent; border: none; cursor: pointer;
+  position: relative; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--white); border: 1px solid var(--border); cursor: pointer;
   display: flex; align-items: center; justify-content: center; overflow: visible;
+  transition: background .2s;
 }
-.k-modal-cart-btn .k-cart-avatar { width: 36px; height: 36px; mix-blend-mode: multiply; } /* FIX: était 52px → poussait la croix hors écran */
+.k-modal-cart-btn:active { background: var(--sand); }
+.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; }
 .k-modal-cart-badge {
   position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;
@@ -2357,7 +2363,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-topbar { display: flex; /* restauré : masqué sur mobile uniquement */ position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); flex-shrink: 0; } /* [T-029] halo retiré */
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
-  #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
+  #k-modal .k-modal-cart-icon { width: 24px; height: 24px; }
   .k-topbar-search-trigger { display: none; }
   #k-modal .k-topbar-search-expanded { display: none; }
   .k-modal-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-left: 12px; flex: 1; min-width: 0; overflow: hidden; }
@@ -3519,11 +3525,12 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-sug-card-bottom { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 8px; gap: 4px; }
 .k-sug-card-price { font-size: 13px; font-weight: 700; color: var(--coral); flex: 1; min-width: 0; white-space: nowrap; } /* BUGFIX: white-space:nowrap empêche le prix de se couper sur 2 lignes (ex: 12300 / KMF) */
 /* Source de vérité modale — .k-sug-add dans le contexte modal produit.
-   32×32px, transparent, sans bordure. Actif via b-modal.js.
+   32×32px, rond, fond sand + bordure (même famille que .k-sug-step
+   ci-dessus, pour que le + et le stepper post-ajout soient perçus comme
+   un seul et même composant). Actif via b-modal.js.
    Voir interactions.css pour la variante catalogue (40×40, rond, fond blanc). */
-.k-sug-add { background: transparent; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; touch-action: manipulation; }
-.k-sug-add:active { transform: scale(.88); }
-.k-sug-add img { width: 28px; height: 28px; display: block; mix-blend-mode: multiply; }
+.k-sug-add { background: var(--sand); border: 1px solid var(--border); border-radius: 50%; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; touch-action: manipulation; box-shadow: var(--elev-1); transition: background .15s, transform .15s var(--ease); }
+.k-sug-add:active { transform: scale(.88); background: var(--sand-dark); }
 .k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: var(--white); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
 
 /* ── LOT 3 — RÉASSURANCE MOBILE COMPACTE ──────────────────────
@@ -8601,6 +8608,11 @@ body.cart-open  #k-section-index { display:none; }
 .k-catalog-sug-add:active { transform: scale(.92); }
 .k-catalog-sug-add:hover { border-color: var(--ocean); box-shadow: var(--elev-2); }
 .k-catalog-sug-add img { width: 24px; height: 24px; object-fit: contain; display: block; pointer-events: none; mix-blend-mode: multiply; }
+/* .k-sug-add-plus : rendu réel du "+" suggestions (span texte, cf.
+   render-product-card.js renderAddControl()). Partagé catalogue + modale —
+   ces contextes n'ont jamais eu de règle dédiée, le + héritait du style
+   bouton par défaut du navigateur. */
+.k-sug-add-plus { font-size: 20px; font-weight: 800; line-height: 1; color: var(--ocean); pointer-events: none; }
 .k-sug-arrow         { display:none; }
 .k-sug-card-actions  { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 8px; }
 .k-sug-card-bottom   { padding:4px 8px 8px; }
@@ -8752,9 +8764,9 @@ body.cart-open  #k-section-index { display:none; }
     width: 28px;
     height: 28px;
     padding: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
+    background: var(--sand);
+    border: 1px solid var(--border);
+    border-radius: 50%;
     box-shadow: none;
     display: grid;
     place-items: center;
@@ -8762,16 +8774,12 @@ body.cart-open  #k-section-index { display:none; }
   }
 
   #k-modal .k-sug-add:active {
-    background: transparent;
-    transform: none;
+    background: var(--sand-dark);
+    transform: scale(.88);
   }
 
-  #k-modal .k-sug-add img {
-    width: 23px;
-    height: 23px;
-    display: block;
-    mix-blend-mode: normal;
-    pointer-events: none;
+  #k-modal .k-sug-add .k-sug-add-plus {
+    font-size: 17px;
   }
 
   #k-modal .k-sug-card-actions.is-filled {

@@ -298,6 +298,11 @@ body.cart-open  #k-section-index { display:none; }
 .k-catalog-sug-add:active { transform: scale(.92); }
 .k-catalog-sug-add:hover { border-color: var(--ocean); box-shadow: var(--elev-2); }
 .k-catalog-sug-add img { width: 24px; height: 24px; object-fit: contain; display: block; pointer-events: none; mix-blend-mode: multiply; }
+/* .k-sug-add-plus : rendu réel du "+" suggestions (span texte, cf.
+   render-product-card.js renderAddControl()). Partagé catalogue + modale —
+   ces contextes n'ont jamais eu de règle dédiée, le + héritait du style
+   bouton par défaut du navigateur. */
+.k-sug-add-plus { font-size: 20px; font-weight: 800; line-height: 1; color: var(--ocean); pointer-events: none; }
 .k-sug-arrow         { display:none; }
 .k-sug-card-actions  { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 8px; }
 .k-sug-card-bottom   { padding:4px 8px 8px; }

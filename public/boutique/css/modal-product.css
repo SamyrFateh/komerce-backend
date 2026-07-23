@@ -214,11 +214,12 @@
 .k-sug-card-bottom { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 8px; gap: 4px; }
 .k-sug-card-price { font-size: 13px; font-weight: 700; color: var(--coral); flex: 1; min-width: 0; white-space: nowrap; } /* BUGFIX: white-space:nowrap empêche le prix de se couper sur 2 lignes (ex: 12300 / KMF) */
 /* Source de vérité modale — .k-sug-add dans le contexte modal produit.
-   32×32px, transparent, sans bordure. Actif via b-modal.js.
+   32×32px, rond, fond sand + bordure (même famille que .k-sug-step
+   ci-dessus, pour que le + et le stepper post-ajout soient perçus comme
+   un seul et même composant). Actif via b-modal.js.
    Voir interactions.css pour la variante catalogue (40×40, rond, fond blanc). */
-.k-sug-add { background: transparent; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; touch-action: manipulation; }
-.k-sug-add:active { transform: scale(.88); }
-.k-sug-add img { width: 28px; height: 28px; display: block; mix-blend-mode: multiply; }
+.k-sug-add { background: var(--sand); border: 1px solid var(--border); border-radius: 50%; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; touch-action: manipulation; box-shadow: var(--elev-1); transition: background .15s, transform .15s var(--ease); }
+.k-sug-add:active { transform: scale(.88); background: var(--sand-dark); }
 .k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: var(--white); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
 
 /* ── LOT 3 — RÉASSURANCE MOBILE COMPACTE ──────────────────────

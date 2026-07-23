@@ -131,16 +131,20 @@
   right: 7px;
   width: 32px;
   height: 32px;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
+  background: var(--ocean);
+  border-radius: 50%;
+  box-shadow: var(--elev-2);
   border: none;
   padding: 0;
   z-index: 5;
   cursor: pointer;
   overflow: visible;
-  transition: transform .15s var(--ease);
-  /* Détourage PNG fond blanc : img tag inséré via JS, mix-blend sur l'img */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .15s var(--ease), box-shadow .15s var(--ease);
+  /* Bouton rempli : le contenu est un <span class="k-card-add-plus"> texte
+     (pas d'<img>), cf. render-product-card.js renderAddControl(). */
 }
 .k-card-add:active {
   transform: scale(.9);

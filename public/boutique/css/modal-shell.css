@@ -72,11 +72,13 @@
 .k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 500; min-width: 36px; text-align: center; }
 .k-modal-topbar-right { box-sizing: border-box; max-width: 100%; display: flex; align-items: center; gap: 8px; flex-shrink: 0; } /* S2.1+S2.3 — box-sizing garanti ; padding-right:10px (VIS-5) supprimé : inutile avec box-sizing correct ; gap revient à 8px nominal */
 .k-modal-cart-btn {
-  position: relative; width: auto; height: auto; border-radius: 0;
-  background: transparent; border: none; cursor: pointer;
+  position: relative; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--white); border: 1px solid var(--border); cursor: pointer;
   display: flex; align-items: center; justify-content: center; overflow: visible;
+  transition: background .2s;
 }
-.k-modal-cart-btn .k-cart-avatar { width: 36px; height: 36px; mix-blend-mode: multiply; } /* FIX: était 52px → poussait la croix hors écran */
+.k-modal-cart-btn:active { background: var(--sand); }
+.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; }
 .k-modal-cart-badge {
   position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;
@@ -472,7 +474,7 @@
   #k-modal .k-modal-topbar { display: flex; /* restauré : masqué sur mobile uniquement */ position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); flex-shrink: 0; } /* [T-029] halo retiré */
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
-  #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
+  #k-modal .k-modal-cart-icon { width: 24px; height: 24px; }
   .k-topbar-search-trigger { display: none; }
   #k-modal .k-topbar-search-expanded { display: none; }
   .k-modal-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-left: 12px; flex: 1; min-width: 0; overflow: hidden; }
