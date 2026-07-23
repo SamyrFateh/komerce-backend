@@ -619,8 +619,11 @@
   .k-modal-trust { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--sand-dark); margin-top: 6px; }
   .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: var(--text-muted); }
   .k-modal-trust-item svg { width: 16px; height: 16px; color: var(--ocean); stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
-  #k-modal .k-modal-trust { gap: 10px; flex-wrap: wrap; padding: 11px 0; }
-  #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); }
+  /* FIX LOT1 — trust sur 1 ligne : nowrap + pills compacts (324px utiles à 1024px).
+     flex-wrap:wrap provoquait un saut de ligne systématique sur la colonne droite
+     étroite (380px track - 56px padding = 324px < 361px pills). */
+  #k-modal .k-modal-trust { gap: 6px; flex-wrap: nowrap; padding: 11px 0; }
+  #k-modal .k-modal-trust-item { padding: 4px 7px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* FIX produit simple — espace vide : la description occupe l'espace restant
      et pousse réassurance + partage vers le bas du panneau. */
   #k-modal .k-modal-product-zone .k-modal-desc { flex-grow: 1; }
@@ -760,15 +763,9 @@
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: static; background: none; padding: 0 0 16px; margin-bottom: 0; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section { margin-top: 32px; }
 
-  /* ── Livraison + Paiement : pleine largeur SOUS suggestions (D4 pt.3) ──── */
-  /* Position/layout owned : modal-shell. Contenu interne (options, badges…) reste owned modal-product.css. */
-  #k-modal-delivery.k-modal-delivery,
-  #k-modal-payment.k-modal-payment {
-    display: block; width: 100%;
-    margin-top: 0; padding: 28px 36px 0;
-    border-top: none;
-  }
-  #k-modal-payment.k-modal-payment { padding-top: 0; padding-bottom: 36px; }
+  /* ── Livraison + Paiement : layout full-width sous suggestions supprimé (LOT1).
+     #k-modal-delivery et #k-modal-payment sont désormais dans .k-modal-details
+     (colonne droite). Leur layout est owned par modal-product-lot4-hybrid.css. */
 
   /* ── Hover & focus ───────────────────────────────────────── */
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); } /* [T-029] halo décoratif retiré */
