@@ -74,7 +74,7 @@ if('serviceWorker' in navigator){
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=136">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=211">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=213">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=68">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
@@ -448,6 +448,13 @@ if('serviceWorker' in navigator){
             <div id="k-modal-sugg-peek" class="k-modal-sugg-peek" hidden>
               <span class="k-modal-sugg-peek-hint">Vous aimerez aussi ↓</span>
             </div>
+            <!-- LOT1 — Livraison + Paiement remontés dans la colonne droite (buy box).
+                 Étaient sous les suggestions (D4/T-016). Le renderer JS cible getElementById,
+                 insensible à la position DOM. Mobile : ces éléments sont peuplés par
+                 b-modal-mobile-product.js, leur position dans .k-modal-info est neutre
+                 (le mobile les affiche via son propre flux). -->
+            <div id="k-modal-delivery" class="k-modal-delivery"></div>
+            <div id="k-modal-payment" class="k-modal-payment"></div>
           </div><!-- end .k-modal-info -->
         </div><!-- end .k-modal-details — FIX T-030 desktop nesting -->
         <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
@@ -475,13 +482,6 @@ if('serviceWorker' in navigator){
         <h3>Vous aimerez aussi</h3>
         <div class="k-sug-rail" id="k-sug-rail"></div>
       </div>
-      <!-- D4 (T-016) : Livraison + Paiement déplacés sous les suggestions —
-           panneau commercial allégé conformément à D-P1. Rendus par
-           renderDeliveryOptions() / renderPaymentSection() dans
-           b-modal-desktop-product.js (getElementById, insensible à la
-           position DOM). -->
-      <div id="k-modal-delivery" class="k-modal-delivery"></div>
-      <div id="k-modal-payment" class="k-modal-payment"></div>
     </div>
   </div>
 </div><!-- /#k-modal-overlay — FIX T-030 desktop modal nesting -->
