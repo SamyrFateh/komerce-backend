@@ -878,19 +878,18 @@
     padding: 0 14px;
     border: none;
     border-radius: 999px;
-    background: var(--coral);
+    background: var(--text);
     color: var(--white);
     font-size: 13.5px;
     font-weight: 700;
     cursor: pointer;
     font-family: var(--font);
     letter-spacing: .02em;
-    box-shadow: 0 4px 16px var(--shadow-coral-22), 0 1px 3px var(--border-coral-22);
-    transition: background .15s, transform .12s, box-shadow .15s;
+    box-shadow: none;
+    transition: background .15s, transform .12s;
   }
   .k-sc-btn-checkout:hover {
-    background: var(--coral-dark);
-    box-shadow: 0 7px 22px var(--shadow-coral-22), 0 1px 4px var(--border-coral-22);
+    background: var(--text-muted);
     transform: translateY(-1px);
   }
   .k-sc-btn-checkout:active { transform: scale(.98); }

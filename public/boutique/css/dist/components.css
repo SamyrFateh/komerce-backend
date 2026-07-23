@@ -4757,7 +4757,9 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
          (clipping badges/CTA, cf. capture) car le breakpoint reste basé sur le viewport, pas sur
          la largeur réellement disponible. minmax() permet à cette piste de servir d'absorbeur
          d'espace (280→380) plutôt qu'à .k-modal-product-zone de déborder de son conteneur. */
-      grid-template-columns: 60px minmax(360px, 1fr) minmax(280px, 380px);
+      /* REF-2026-07 : image bornée (max 380px), détails en 1fr — évite que
+         l'image monopolise l'espace sur grands écrans (cf. référence image 1). */
+      grid-template-columns: 60px minmax(240px, 380px) minmax(300px, 1fr);
       gap: 18px;
       padding: 18px;
     }
@@ -4768,7 +4770,8 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
       /* P1-fix : 340px → 420px.
          REFONTE COQUE — même raison qu'au breakpoint 1024px ci-dessus : piste fixe →
          minmax(300px, 420px) pour absorber la largeur prise par .k-modal-cart-slot. */
-      grid-template-columns: 64px minmax(480px, 1fr) minmax(300px, 420px);
+      /* REF-2026-07 : même correction qu'à 1024px — image bornée, détails 1fr. */
+      grid-template-columns: 64px minmax(280px, 420px) minmax(340px, 1fr);
       gap: 22px;
       padding: 22px;
     }
