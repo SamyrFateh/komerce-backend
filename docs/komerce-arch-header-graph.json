@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 380,
+    "scannedCodeFiles": 381,
     "filesWithFullHeaders": 353,
-    "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 380,
+    "filesWithLiteHeaders": 28,
+    "filesWithAnyHeaders": 381,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 777,
-    "edges": 4375,
+    "graphNodes": 778,
+    "edges": 4382,
     "dbTables": 116,
     "doctrines": 154,
     "impactAreas": 127,
@@ -34,7 +34,7 @@
     "notification": 16,
     "auth": 8,
     "logistics": 35,
-    "boutique": 36,
+    "boutique": 37,
     "catalog": 55,
     "checkout": 2,
     "shared-cart": 42,
@@ -78,6 +78,7 @@
     "ui-infrastructure": 1,
     "state": 1,
     "util": 24,
+    "domain-helper": 1,
     "controller": 1,
     "api-client": 2,
     "state-store": 1,
@@ -95,7 +96,7 @@
     "critical": 76,
     "medium": 105,
     "high": 165,
-    "low": 34
+    "low": 35
   },
   "nodes": [
     {
@@ -2532,7 +2533,9 @@
       "depends": [
         "b-store.js",
         "b-utils.js",
-        "shop-schema.js"
+        "b-scroll-owner.js",
+        "b-cart.js",
+        "render-product-card.js"
       ],
       "usedBy": [
         "b-modal-core.js"
@@ -3265,6 +3268,34 @@
         "boutique"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/cart-product-summary.js",
+      "file": "public/boutique/js/cart-product-summary.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "cart-product-summary",
+      "domain": "boutique",
+      "layer": "domain-helper",
+      "criticality": "low",
+      "owner": "public/boutique/js/b-cart.js",
+      "purpose": "summarize every cart line belonging to one product without losing variant identity",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "cart",
+        "catalog",
+        "recommendations",
+        "favorites"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/controllers/home-controller.js",
@@ -23459,9 +23490,21 @@
     },
     {
       "from": "public/boutique/js/b-modal-suggestions.js",
-      "to": "public/boutique/js/shop-schema.js",
+      "to": "public/boutique/js/b-scroll-owner.js",
       "type": "depends",
-      "label": "shop-schema.js"
+      "label": "b-scroll-owner.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-suggestions.js",
+      "to": "public/boutique/js/b-cart.js",
+      "type": "depends",
+      "label": "b-cart.js"
+    },
+    {
+      "from": "public/boutique/js/b-modal-suggestions.js",
+      "to": "public/boutique/js/render/render-product-card.js",
+      "type": "depends",
+      "label": "render-product-card.js"
     },
     {
       "from": "public/boutique/js/b-modal-core.js",
@@ -24560,6 +24603,36 @@
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/cart-product-summary.js",
+      "to": "public/boutique/js/b-cart.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/b-cart.js"
+    },
+    {
+      "from": "public/boutique/js/cart-product-summary.js",
+      "to": "impact:cart",
+      "type": "impact",
+      "label": "cart"
+    },
+    {
+      "from": "public/boutique/js/cart-product-summary.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "public/boutique/js/cart-product-summary.js",
+      "to": "impact:recommendations",
+      "type": "impact",
+      "label": "recommendations"
+    },
+    {
+      "from": "public/boutique/js/cart-product-summary.js",
+      "to": "impact:favorites",
+      "type": "impact",
+      "label": "favorites"
     },
     {
       "from": "public/boutique/js/controllers/home-controller.js",
@@ -47436,7 +47509,8 @@
         "public/boutique/js/b-share-cart.js"
       ],
       "ownedFiles": [
-        "public/boutique/js/b-group-cart-flow.js"
+        "public/boutique/js/b-group-cart-flow.js",
+        "public/boutique/js/cart-product-summary.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -47472,12 +47546,14 @@
         "public/boutique/js/b-modal-approche-c-hybrid.js",
         "public/boutique/js/b-modal-buybox-shared.js",
         "public/boutique/js/b-modal-core.js",
+        "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-subcat.js",
         "public/boutique/js/boutique.js",
+        "public/boutique/js/cart-product-summary.js",
         "public/boutique/js/shop-schema.js",
         "routes/shared-cart.js",
         "services/shared-cart-items-service.js"
@@ -48744,7 +48820,9 @@
       "directDependsOn": [
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
-        "public/boutique/js/shop-schema.js"
+        "public/boutique/js/b-scroll-owner.js",
+        "public/boutique/js/b-cart.js",
+        "public/boutique/js/render/render-product-card.js"
       ],
       "directUsedBy": [
         "public/boutique/js/b-modal-core.js"
@@ -48775,11 +48853,13 @@
         "impact:personalization",
         "impact:product-discovery",
         "public/boutique/js/b-bus.js",
+        "public/boutique/js/b-cart.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-pdp-curation-suggestions.js",
+        "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-utils.js",
-        "public/boutique/js/shop-schema.js"
+        "public/boutique/js/render/render-product-card.js"
       ]
     },
     "public/boutique/js/b-modal.js": {
@@ -49081,6 +49161,7 @@
         "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-modal-desktop-product.js",
+        "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-subcat.js"
@@ -49548,6 +49629,34 @@
         "public/boutique/js/b-catalog.js"
       ]
     },
+    "public/boutique/js/cart-product-summary.js": {
+      "role": "cart-product-summary",
+      "domain": "boutique",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/b-cart.js",
+      "purpose": "summarize every cart line belonging to one product without losing variant identity",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "cart",
+        "catalog",
+        "recommendations",
+        "favorites"
+      ],
+      "mustCheck": [
+        "impact:cart",
+        "impact:catalog",
+        "impact:favorites",
+        "impact:recommendations",
+        "public/boutique/js/b-cart.js"
+      ]
+    },
     "public/boutique/js/controllers/home-controller.js": {
       "role": "boutique-home-navigation-controller",
       "domain": "catalog",
@@ -49947,6 +50056,7 @@
         "impact:product-discovery",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-catalog.js",
+        "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/render/render-home-sections.js"
       ]
     },
@@ -49991,7 +50101,6 @@
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-desktop-sidebar.js",
-        "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-subcat.js",
         "public/boutique/js/controllers/home-controller.js",
         "public/boutique/js/product-store.js",

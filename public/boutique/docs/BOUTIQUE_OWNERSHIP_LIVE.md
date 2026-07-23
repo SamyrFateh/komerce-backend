@@ -30,9 +30,9 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 
 | Module JS | DOM | CSS-inj | bus on/emit | Composants ciblés |
 |-----------|:---:|:-------:|:-----------:|-------------------|
-| `b-cart.js` | 58 | 31 | 1/6 | Modal produit, Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
 | `b-modal-mobile-product.js` | 89 | 0 | 0/0 | Modal produit, Panier |
 | `b-modal-core.js` | 33 | 54 | 4/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
+| `b-cart.js` | 54 | 31 | 2/8 | Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
 | `b-modal-desktop-product.js` | 78 | 0 | 0/0 | Modal produit |
 | `b-checkout.js` | 60 | 4 | 0/2 | Bottom-nav mobile |
 | `b-checkout-render.js` | 56 | 0 | 0/0 | — |
@@ -48,7 +48,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-identity.js` | 11 | 5 | 0/0 | — |
 | `b-group-view.js` | 10 | 5 | 0/1 | Header, Panier groupe, Bottom-nav mobile, Section catalogue |
 | `b-tracking.js` | 15 | 0 | 0/0 | Section catalogue |
-| `b-catalog.js` | 11 | 2 | 3/1 | Carte produit, Grille produits, Chips catégories, Section catalogue |
+| `b-catalog.js` | 11 | 2 | 3/2 | Carte produit, Grille produits, Chips catégories, Section catalogue |
 | `b-modal-image-ux.js` | 8 | 5 | 2/0 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
 | `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
@@ -56,9 +56,9 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/2 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
-| `b-modal-suggestions.js` | 6 | 0 | 2/4 | Modal produit |
+| `b-modal-suggestions.js` | 6 | 0 | 1/3 | Modal produit |
 | `b-nav.js` | 5 | 1 | 2/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
-| `b-favs.js` | 5 | 0 | 0/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
+| `b-favs.js` | 5 | 0 | 1/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `b-paypal.js` | 5 | 0 | 0/0 | — |
 | `b-home-premium-v1.js` | 4 | 0 | 2/0 | Hero, Chips catégories |
 | `b-mobile-modal-v1.js` | 2 | 2 | 1/0 | Modal produit |

@@ -557,19 +557,52 @@ function _installGridDelegation() {
       e.preventDefault();
       e.stopPropagation();
       const id = favBtn.dataset.fav || card.dataset.id;
-      if (id) toggleFav(id, favBtn);
+      if (id) {
+        toggleFav(id, favBtn);
+        if (grid.id === 'k-fav-grid') bus.emit('favorites:view-refresh');
+      }
       return;
     }
 
     // ADD / STEPPER ──────────────────────────────────────────────
-    const addBtn = e.target.closest('.k-card-add');
-    if (addBtn) {
+    const addControl = e.target.closest('.k-card-add');
+    if (addControl) {
       e.preventDefault();
       e.stopPropagation();
-      const id = addBtn.dataset.add || card.dataset.id;
+      const id = addControl.dataset.add || card.dataset.id;
       if (!id) return;
-      if (e.target.closest('.k-add-minus')) quickRemove(id, addBtn);
-      else quickAdd(id, addBtn);
+      let actionBtn = e.target.closest('button[data-action]');
+      let action = actionBtn?.dataset.action;
+
+      // Compatibilité avec les cartes/tests historiques pendant la migration DOM :
+      // le markup canonique utilise de vrais boutons data-action, mais un ancien
+      // contrôle vide ou un span .k-add-minus reste interprété sans créer un
+      // second moteur de listeners.
+      if (!action) {
+        const legacyMinus = e.target.closest('.k-add-minus');
+        const legacyPlus = e.target.closest('.k-add-plus-ic');
+        if (legacyMinus) {
+          action = 'decrement';
+          actionBtn = legacyMinus;
+        } else if (legacyPlus) {
+          action = 'increment';
+          actionBtn = legacyPlus;
+        } else if (!addControl.querySelector('button[data-action]')) {
+          action = 'add';
+          actionBtn = addControl;
+        }
+      }
+
+      if (!action) return;
+      if (action === 'decrement') {
+        quickRemove(id, actionBtn);
+      } else if (action === 'review') {
+        openModal(id);
+      } else if (addControl.dataset.hasVariants === '1') {
+        quickAdd(id, actionBtn, { hasVariants: true });
+      } else {
+        quickAdd(id, actionBtn);
+      }
       return;
     }
 

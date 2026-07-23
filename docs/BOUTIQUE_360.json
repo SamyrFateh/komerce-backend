@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-07-23T14:38:55.547Z",
+  "generatedAt": "2026-07-23T19:40:27.612Z",
   "summary": {
-    "modules": 74,
-    "withHeader": 74,
-    "events": 19,
+    "modules": 75,
+    "withHeader": 75,
+    "events": 20,
     "declaredActive": 13,
     "declaredDead": 5,
     "cssBundles": 3,
     "endpoints": 52,
     "orphanEmit": 1,
     "orphanListen": 1,
-    "undeclared": 7,
+    "undeclared": 8,
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 30,
     "dynamicEndpoints": 24
@@ -237,10 +237,11 @@
       "emits": [
         "modal:close",
         "side-cart:render",
-        "checkout:open",
-        "modal:open"
+        "modal:open",
+        "checkout:open"
       ],
       "listens": [
+        "cart:update",
         "side-cart:render"
       ],
       "imports": [
@@ -250,7 +251,9 @@
         "b-utils",
         "b-cart-core",
         "b-scroll-owner",
-        "shop-schema"
+        "shop-schema",
+        "render-product-card",
+        "cart-product-summary"
       ],
       "bodyClasses": [
         "cart-open",
@@ -322,7 +325,8 @@
         "b-nav.js"
       ],
       "emits": [
-        "catalog:cat-changed"
+        "catalog:cat-changed",
+        "favorites:view-refresh"
       ],
       "listens": [
         "chip:center",
@@ -510,13 +514,15 @@
         "boutique.js"
       ],
       "emits": [],
-      "listens": [],
+      "listens": [
+        "favorites:view-refresh"
+      ],
       "imports": [
         "b-store",
         "b-utils",
         "b-cart-core",
-        "b-cart",
-        "b-modal"
+        "b-bus",
+        "render-product-card"
       ],
       "bodyClasses": []
     },
@@ -1224,7 +1230,9 @@
       "depends": [
         "b-store.js",
         "b-utils.js",
-        "shop-schema.js"
+        "b-scroll-owner.js",
+        "b-cart.js",
+        "render-product-card.js"
       ],
       "usedBy": [
         "b-modal-core.js"
@@ -1234,14 +1242,16 @@
         "modal:suggestions-rendered"
       ],
       "listens": [
-        "modal:open"
+        "cart:update"
       ],
       "imports": [
         "b-bus",
         "b-store",
         "b-utils",
         "b-scroll-owner",
-        "b-cart"
+        "b-cart",
+        "cart-product-summary",
+        "render-product-card"
       ],
       "bodyClasses": []
     },
@@ -1774,6 +1784,22 @@
       "bodyClasses": []
     },
     {
+      "file": "public/boutique/js/cart-product-summary.js",
+      "id": "cart-product-summary",
+      "hasHeader": true,
+      "role": "cart-product-summary",
+      "domain": "boutique",
+      "layer": "domain-helper",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
       "file": "public/boutique/js/controllers/home-controller.js",
       "id": "home-controller",
       "hasHeader": true,
@@ -2056,6 +2082,7 @@
         "b-store",
         "b-utils",
         "b-cart-core",
+        "cart-product-summary",
         "product-card-view-model",
         "shop-schema"
       ],
@@ -2237,9 +2264,11 @@
         "b-cart-core"
       ],
       "listeners": [
+        "b-cart",
         "b-cart-core",
         "b-cart-pill",
         "b-mini-cart",
+        "b-modal-suggestions",
         "b-nav"
       ]
     },
@@ -2252,14 +2281,6 @@
         "b-modal-core"
       ]
     },
-    "checkout:open": {
-      "emitters": [
-        "b-cart"
-      ],
-      "listeners": [
-        "boutique"
-      ]
-    },
     "modal:open": {
       "emitters": [
         "b-cart",
@@ -2268,8 +2289,15 @@
       ],
       "listeners": [
         "b-modal-core",
-        "b-modal-suggestions",
         "b-product-open-contract"
+      ]
+    },
+    "checkout:open": {
+      "emitters": [
+        "b-cart"
+      ],
+      "listeners": [
+        "boutique"
       ]
     },
     "view:changed": {
@@ -2289,6 +2317,14 @@
       "listeners": [
         "b-catalog",
         "b-home-premium-v1"
+      ]
+    },
+    "favorites:view-refresh": {
+      "emitters": [
+        "b-catalog"
+      ],
+      "listeners": [
+        "b-favs"
       ]
     },
     "chip:center": {
@@ -3024,6 +3060,7 @@
     ],
     "undeclared": [
       "carousel:changed",
+      "favorites:view-refresh",
       "modal:closed",
       "modal:composition-synced",
       "modal:opened",

@@ -21,12 +21,11 @@
  * Extrait de b-views.js — refacto v2
  */
 
-import { state }                                                   from './b-store.js';
-import { fmt, fmtPrice, sanitize, optimizeImgUrl,
-         renderProductCarousel, bindCarouselDots, apiPost }        from './b-utils.js';
-import { showToast }                                               from './b-cart-core.js';
-import { toggleFav, quickAdd, quickRemove }                        from './b-cart.js';
-import { openModal }                                               from './b-modal.js';
+import { state } from './b-store.js';
+import { fmt, bindCarouselDots, apiPost } from './b-utils.js';
+import { showToast } from './b-cart-core.js';
+import { bus } from './b-bus.js';
+import { renderProductCard } from './render/render-product-card.js';
 
 'use strict';
 
@@ -58,29 +57,9 @@ export function renderFavView() {
     return;
   }
 
-  const cardsHTML = favProducts.map(p => {
-    const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
-    const qty    = inCart ? inCart.qty : 0;
-    return `<div class="k-card" data-id="${p.id}">
-      <div class="k-card-img-wrap">
-        ${renderProductCarousel(p, 400)}
-        ${p.promo_pct ? `<span class="k-card-promo k-card-promo-fav">🎉 -${p.promo_pct}%</span>` : ''}
-        <button class="k-card-fav liked" data-fav="${p.id}" aria-label="Retirer des favoris">❤️</button>
-        <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${p.id}" aria-label="Ajouter">
-          ${qty > 0
-            ? `<span class="k-add-minus" data-pid="${p.id}">−</span><span class="k-add-qty">${qty}</span><span class="k-add-plus-ic">+</span>`
-            : '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="20" height="20">'}
-        </button>
-      </div>
-      <div class="k-card-info">
-        <div class="k-card-name">${sanitize(p.name)}</div>
-        <div class="k-card-bottom k-card-prices-row">
-          <span class="k-card-price">${fmtPrice(p.price_kmf)}</span>
-          ${p.promo_pct ? `<span class="k-card-old-price">${fmtPrice(Math.round(p.price_kmf / (1 - p.promo_pct / 100)))}</span>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  // Réutilise le renderer canonique : même DOM, même synthèse multi-lignes,
+  // même fail-closed variantes et aucun template Favoris divergent.
+  const cardsHTML = favProducts.map((product) => renderProductCard(product)).join('');
 
   const promoBanner = promoFavs.length > 0
     ? `<div class="k-fav-promo-banner">
@@ -107,28 +86,9 @@ export function renderFavView() {
 
   const favGrid = document.getElementById('k-fav-grid');
   if (favGrid) {
-    favGrid.querySelectorAll('.k-card').forEach(card => {
-      bindCarouselDots(card);
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') || e.target.closest('.k-card-tab')) return;
-        openModal(card.dataset.id);
-      });
-    });
-    favGrid.querySelectorAll('.k-card-fav').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleFav(btn.dataset.fav, btn);
-        setTimeout(() => renderFavView(), 100);
-      });
-    });
-    favGrid.querySelectorAll('.k-card-add').forEach(btn => {
-      btn.dataset.bound = '1';
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (e.target.closest('.k-add-minus')) quickRemove(btn.dataset.add, btn);
-        else quickAdd(btn.dataset.add, btn);
-      });
-    });
+    // Les clics favori/ajout/ouverture sont possédés par la délégation unique
+    // de b-catalog.js, qui couvre explicitement #k-fav-grid.
+    favGrid.querySelectorAll('.k-card').forEach((card) => bindCarouselDots(card));
   }
 
   const shareWishlistBtn = document.getElementById('k-fav-share-btn');
@@ -136,6 +96,12 @@ export function renderFavView() {
     shareWishlistBtn.addEventListener('click', shareWishlistWhatsApp);
   }
 }
+
+let _favRefreshTimer = null;
+bus.on('favorites:view-refresh', function() {
+  clearTimeout(_favRefreshTimer);
+  _favRefreshTimer = setTimeout(renderFavView, 0);
+});
 
 /**
  * Met à jour le badge 🎉 sur l'onglet Favoris de la bnav.

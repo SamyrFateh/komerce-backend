@@ -1145,16 +1145,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   transition: transform .15s var(--ease);
   /* Détourage PNG fond blanc : img tag inséré via JS, mix-blend sur l'img */
 }
-/* Image panier dans .k-card-add (rendue via JS comme <img>) */
-.k-card-add > img,
-.k-card-add-basket {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  mix-blend-mode: multiply;
-}
-
 .k-card-add:active {
   transform: scale(.9);
   box-shadow: 0 0 0 4px rgba(224,90,72,.15);
@@ -1258,78 +1248,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
   60%  { transform: scale(1.2) rotate(10deg);  opacity: 1; }
   100% { transform: scale(1) rotate(0deg);     opacity: 1; }
-}
-
-/* Long-press indicator */
-.k-card-add.is-long-pressing {
-  transform: scale(1.08);
-  box-shadow: 0 0 0 3px var(--ocean), 0 4px 14px rgba(74,144,64,.3);
-}
-
-.k-card-add.stepper-open {
-  opacity: .7;
-}
-
-/* Stepper flottant */
-.k-card-add-stepper {
-  position: absolute;
-  bottom: 50px;
-  right: 0;
-  display: flex;
-  align-items: center;
-  background: var(--white);
-  border: 1.5px solid var(--ocean);
-  border-radius: 24px;
-  padding: 4px 6px;
-  gap: 4px;
-  box-shadow: var(--elev-3);
-  z-index: 10;
-  animation: stepperSlideDown .3s cubic-bezier(.34,1.56,.64,1);
-}
-
-@keyframes stepperSlideDown {
-  0%   { transform: translateY(12px); opacity: 0; }
-  100% { transform: translateY(0);    opacity: 1; }
-}
-
-.k-card-add-stepper.k-stepper-closing {
-  animation: stepperSlideUp .25s ease-in forwards;
-}
-
-@keyframes stepperSlideUp {
-  0%   { transform: translateY(0);    opacity: 1; }
-  100% { transform: translateY(12px); opacity: 0; }
-}
-
-.k-card-add-stepper button {
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: transparent;
-  color: var(--ocean);
-  font-size: 18px;
-  font-weight: 700;
-  cursor: pointer;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: background .15s;
-}
-
-.k-card-add-stepper button:active {
-  background: rgba(74,144,64,.12);
-  transform: scale(.9);
-}
-
-.k-card-add-stepper .k-stepper-qty {
-  min-width: 28px;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-  user-select: none;
 }
 
 /* Parts stepper */
@@ -8601,9 +8519,7 @@ body.cart-open  #k-section-index { display:none; }
 .k-load-more button:hover { background:var(--sand); color:var(--text); }
 .k-view-active       { display:none; }
 .k-bnav-label        { font-size:10px; font-weight:600; color:var(--text-light); margin-top:2px; }
-.k-bnav-btn.active .k-bnav-label, .k-bnav-item.active .k-bnav-label { color:var(--ocean-dark); }
-.k-card-add-basket   { width:100%; height:100%; object-fit:contain; display:block; mix-blend-mode:multiply; }
-.k-card-basket-icon  { pointer-events:none; }
+.k-bnav-btn.active .k-bnav-label, .k-bnav-item.active .k-bnav-label { color:var(--ocean-dark); }.k-card-basket-icon  { pointer-events:none; }
 
 /* Carousel mobile overlay fix */
 #k-sug-rail { display:block; }

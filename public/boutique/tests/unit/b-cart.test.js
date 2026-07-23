@@ -119,6 +119,10 @@ describe('b-cart', () => {
     state.editSharedCart = null;
     scroll.savedY = 0;
     isDesktop.mockReturnValue(false);
+    saveCart.mockImplementation(() => {
+      updateCartBadge();
+      bus.emit('cart:update');
+    });
   });
 
   describe('addToCart', () => {
@@ -217,7 +221,7 @@ describe('b-cart', () => {
     });
 
     it('appelle markAllCartButtons (synchronise les boutons .k-card-add existants)', () => {
-      const gridBtn = document.createElement('button');
+      const gridBtn = document.createElement('div');
       gridBtn.className = 'k-card-add';
       gridBtn.dataset.add = '1';
       document.body.appendChild(gridBtn);
@@ -346,7 +350,7 @@ describe('b-cart', () => {
   describe('markAllCartButtons', () => {
     it('affiche le stepper − qty + pour un produit dans le panier', () => {
       state.cart = [{ product: { id: 5 }, qty: 4 }];
-      const btn = document.createElement('button');
+      const btn = document.createElement('div');
       btn.className = 'k-card-add';
       btn.dataset.add = '5';
       document.body.appendChild(btn);
@@ -354,12 +358,12 @@ describe('b-cart', () => {
       markAllCartButtons();
 
       expect(btn.classList.contains('in-cart')).toBe(true);
-      expect(btn.innerHTML).toContain('k-add-qty">4');
+      expect(btn.querySelector('.k-add-qty').textContent).toBe('4');
     });
 
     it('remet le bouton "+" simple pour un produit absent du panier', () => {
       state.cart = [];
-      const btn = document.createElement('button');
+      const btn = document.createElement('div');
       btn.className = 'k-card-add';
       btn.classList.add('in-cart');
       btn.dataset.add = '5';
@@ -368,7 +372,8 @@ describe('b-cart', () => {
       markAllCartButtons();
 
       expect(btn.classList.contains('in-cart')).toBe(false);
-      expect(btn.innerHTML).toContain('panier_tresse_vert.png');
+      expect(btn.querySelector('.k-card-add-plus')).not.toBeNull();
+      expect(btn.innerHTML).not.toContain('panier_tresse_vert.png');
     });
   });
 

@@ -8,19 +8,21 @@ function source(relativePath) {
 }
 
 describe('contrat actions suggestions mobile', () => {
-  test('la modale pose is-filled dans le HTML initial et après mutation', () => {
+  test('la modale utilise le renderer canonique et resynchronise is-filled', () => {
     const suggestions = source('../../js/b-modal-suggestions.js');
 
-    expect(suggestions).toContain("actionsEl.classList.toggle('is-filled', qty > 0)");
-    expect(suggestions).toContain("k-sug-card-actions${qty > 0 ? ' is-filled' : ''}");
+    expect(suggestions).toContain("actions.classList.toggle('is-filled', canAdjust)");
+    expect(suggestions).toContain("renderAddControl(pid, summary, safeName, 'modal-suggestion')");
+    expect(suggestions).toContain("renderProductCard(product, { variant: 'suggestion', actionVariant: 'modal' })");
   });
 
-  test('le renderer et interactions utilisent la classe catalogue distincte', () => {
+  test('le renderer sépare explicitement catalogue et modale', () => {
     const renderer = source('../../js/render/render-product-card.js');
     const interactions = source('../../css/interactions.css');
 
-    expect(renderer).toContain('class="k-catalog-sug-add"');
-    expect(renderer).not.toContain('class="k-sug-add"');
+    expect(renderer).toContain("'k-catalog-sug-add'");
+    expect(renderer).toContain("'k-sug-add'");
+    expect(renderer).toContain("variant === 'modal-suggestion'");
     expect(interactions).toContain('.k-catalog-sug-add');
     expect(interactions).not.toMatch(/(^|\n)\s*\.k-sug-add(?:[:\s,{])/m);
   });

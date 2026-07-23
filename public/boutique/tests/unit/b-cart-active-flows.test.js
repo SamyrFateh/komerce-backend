@@ -386,19 +386,18 @@ test('signale une erreur API de panier partagé', async () => {
   warnSpy.mockRestore();
 });
 
-test('ouvre et ferme le stepper longue pression, puis adapte le placeholder', () => {
-  const btn = document.createElement('button');
-  btn.className = 'k-card-add in-cart';
-  btn.dataset.add = '41';
-  document.body.appendChild(btn);
+test('ignore l’appui long historique et adapte le placeholder', () => {
+  const control = document.createElement('div');
+  control.className = 'k-card-add in-cart';
+  control.dataset.add = '41';
+  control.innerHTML = '<button type="button" data-action="increment">+</button>';
+  document.body.appendChild(control);
   state.cart = [{ product: product('41'), qty: 2 }];
-  btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+  control.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
   jest.advanceTimersByTime(400);
-  expect(btn.classList.contains('stepper-open')).toBe(true);
-  expect(btn.querySelector('.k-stepper-qty').textContent).toBe('2');
-  document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  jest.advanceTimersByTime(250);
-  expect(btn.querySelector('.k-card-add-stepper')).toBeNull();
+  expect(control.classList.contains('stepper-open')).toBe(false);
+  expect(control.querySelector('.k-card-add-stepper')).toBeNull();
 
   const input = document.getElementById('k-search-input');
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 320 });

@@ -1,14 +1,14 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-23T14:38:55.547Z.
+> Régénéré le 2026-07-23T19:40:27.612Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **74** (74 headés) · Événements bus : **19** · Bundles CSS : **3**
+- Modules JS : **75** (75 headés) · Événements bus : **20** · Bundles CSS : **3**
 - Endpoints appelés : **52** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
-- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
+- Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 8 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
 
@@ -72,16 +72,17 @@
 | Événement | Émetteurs | Écouteurs | Statut |
 |---|---|---|---|
 | `carousel:changed` | b-modal-product | b-modal-image-ux | 🟡 non déclaré |
-| `cart:update` | b-cart-core | b-cart-core, b-cart-pill, b-mini-cart, b-nav | 🟢 sain |
+| `cart:update` | b-cart-core | b-cart, b-cart-core, b-cart-pill, b-mini-cart, b-modal-suggestions, b-nav | 🟢 sain |
 | `cat:select` | b-modal-core | b-catalog | 🟢 sain |
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
 | `checkout:open` | b-cart | boutique | 🟢 sain |
 | `chip:center` | b-pager | b-catalog | 🟢 sain |
+| `favorites:view-refresh` | b-catalog | b-favs | 🟡 non déclaré |
 | `modal:close` | b-cart, b-checkout | b-modal-core | 🟢 sain |
 | `modal:closed` | b-modal-core | b-modal-approche-c-hybrid, b-modal-product-detail-bootstrap, b-pager | 🟡 non déclaré |
 | `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-approche-c-hybrid, b-modal-core, b-modal-desktop-enhancers | 🟡 non déclaré |
 | `modal:detail-ready` | b-modal-product-detail-bootstrap | b-modal-cart | 🟢 sain |
-| `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-modal-suggestions, b-product-open-contract | 🟢 sain |
+| `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-product-open-contract | 🟢 sain |
 | `modal:opened` | b-modal-core | b-mobile-modal-v1, b-mobile-premium-v1, b-modal-approche-c-hybrid, b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟡 non déclaré |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
@@ -97,25 +98,26 @@
 graph LR
   b_cart_core["b-cart-core"] -->|side-cart:render| b_cart["b-cart"]
   b_group_view["b-group-view"] -->|side-cart:render| b_cart["b-cart"]
+  b_cart_core["b-cart-core"] -->|cart:update| b_cart["b-cart"]
   b_cart_core["b-cart-core"] -->|cart:update| b_cart_pill["b-cart-pill"]
   b_cart_core["b-cart-core"] -->|cart:update| b_mini_cart["b-mini-cart"]
+  b_cart_core["b-cart-core"] -->|cart:update| b_modal_suggestions["b-modal-suggestions"]
   b_cart_core["b-cart-core"] -->|cart:update| b_nav["b-nav"]
   b_cart["b-cart"] -->|modal:close| b_modal_core["b-modal-core"]
   b_checkout["b-checkout"] -->|modal:close| b_modal_core["b-modal-core"]
-  b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
   b_cart["b-cart"] -->|modal:open| b_modal_core["b-modal-core"]
-  b_cart["b-cart"] -->|modal:open| b_modal_suggestions["b-modal-suggestions"]
   b_cart["b-cart"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
   b_modal_nav["b-modal-nav"] -->|modal:open| b_modal_core["b-modal-core"]
-  b_modal_nav["b-modal-nav"] -->|modal:open| b_modal_suggestions["b-modal-suggestions"]
   b_modal_nav["b-modal-nav"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
   b_modal_suggestions["b-modal-suggestions"] -->|modal:open| b_modal_core["b-modal-core"]
   b_modal_suggestions["b-modal-suggestions"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
+  b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
   b_nav["b-nav"] -->|view:changed| b_catalog_desktop_enhancers["b-catalog-desktop-enhancers"]
   b_nav["b-nav"] -->|view:changed| b_home_premium_v1["b-home-premium-v1"]
   b_catalog["b-catalog"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]
   b_store["b-store"] -->|catalog:cat-changed| b_catalog["b-catalog"]
   b_store["b-store"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]
+  b_catalog["b-catalog"] -->|favorites:view-refresh| b_favs["b-favs"]
   b_pager["b-pager"] -->|chip:center| b_catalog["b-catalog"]
   b_modal_core["b-modal-core"] -->|cat:select| b_catalog["b-catalog"]
   b_checkout["b-checkout"] -->|nav:goto-track| b_nav["b-nav"]

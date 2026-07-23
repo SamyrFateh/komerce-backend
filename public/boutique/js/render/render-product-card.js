@@ -27,34 +27,88 @@ import {
   renderProductCarousel,
 } from '../b-utils.js';
 import { isFav } from '../b-cart-core.js';
+import { getProductCartSummary } from '../cart-product-summary.js';
 import { buildProductCardViewModel } from '../view-models/product-card-view-model.js';
 import { getCategoryByKey } from '../shop-schema.js';
 
-function getCartQty(productId) {
-  const inCart = state.cart.find((item) => String(item.product.id) === String(productId));
-  return inCart ? inCart.qty : 0;
+function normalizeCartSummary(productId, value) {
+  if (value && typeof value === 'object' && 'totalQty' in value) return value;
+  const qty = Number(value) || 0;
+  return {
+    productId: String(productId),
+    lines: [],
+    line: null,
+    lineCount: qty > 0 ? 1 : 0,
+    totalQty: qty,
+    hasVariantLines: false,
+    isAmbiguous: false,
+    canQuickAdjust: qty > 0,
+  };
 }
 
-function renderAddControl(productId, qty, variant) {
-  if (variant === 'suggestion') {
-    if (qty > 0) {
-      return `<button class="k-sug-step k-sug-minus" data-pid="${productId}">−</button><span class="k-sug-qty">${qty}</span><button class="k-sug-step k-sug-plus" data-pid="${productId}">+</button>`;
-    }
-    return `<button class="k-catalog-sug-add" data-add="${productId}"><img src="/images/panier_tresse_vert.png" width="28" height="28" alt="+" style="pointer-events:none"></button>`;
+/**
+ * Rend le contenu du contrôle d'ajout — conteneur non interactif,
+ * vrais boutons à l'intérieur (jamais de bouton imbriqué dans un bouton).
+ *
+ * `cartState` accepte encore un nombre pour compatibilité avec les tests et
+ * consommateurs historiques, mais les renderers canoniques lui passent la
+ * synthèse complète produite par getProductCartSummary().
+ *
+ * @param {string} productId
+ * @param {number|Object} cartState
+ * @param {string} safeName - nom échappé du produit (pour aria-label)
+ * @param {'grid'|'suggestion'|'catalog-suggestion'|'modal-suggestion'} variant
+ */
+export function renderAddControl(productId, cartState, safeName, variant) {
+  const summary = normalizeCartSummary(productId, cartState);
+  const qty = summary.totalQty;
+  const label = safeName || 'ce produit';
+  const isModalSuggestion = variant === 'modal-suggestion';
+  const isCatalogSuggestion = variant === 'suggestion' || variant === 'catalog-suggestion';
+  const isSuggestion = isModalSuggestion || isCatalogSuggestion;
+  const addClass = isModalSuggestion
+    ? 'k-sug-add'
+    : isCatalogSuggestion
+      ? 'k-catalog-sug-add'
+      : 'k-card-add-trigger';
+  const plusClass = isSuggestion ? 'k-sug-add-plus' : 'k-card-add-plus';
+  const minusClass = isSuggestion ? 'k-sug-step k-sug-minus' : 'k-add-minus';
+  const plusIcClass = isSuggestion ? 'k-sug-step k-sug-plus' : 'k-add-plus-ic';
+  const qtyClass = isSuggestion ? 'k-sug-qty' : 'k-add-qty';
+
+  if (qty > 0 && summary.canQuickAdjust) {
+    return (
+      `<button type="button" class="${minusClass}" data-action="decrement" data-pid="${productId}" aria-label="Retirer une unité de ${label}">−</button>` +
+      `<output class="${qtyClass}" aria-live="polite" aria-label="Quantité">${qty}</output>` +
+      `<button type="button" class="${plusIcClass}" data-action="increment" data-pid="${productId}" aria-label="Ajouter une unité de ${label}">+</button>`
+    );
   }
 
+  // Plusieurs lignes (ex. plusieurs tailles/couleurs) : afficher le total sans
+  // proposer un +/- trompeur. Le clic ouvre la fiche pour modifier précisément.
   if (qty > 0) {
-    return `<span class="k-add-minus" data-pid="${productId}">−</span><span class="k-add-qty">${qty}</span><span class="k-add-plus-ic">+</span>`;
+    return (
+      `<button type="button" class="${addClass} k-card-add-review" data-action="review" aria-label="Modifier les variantes de ${label}, quantité totale ${qty}">` +
+        `<span class="${qtyClass}" aria-hidden="true">${qty}</span>` +
+      `</button>`
+    );
   }
-  return '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="28" height="28">';
+
+  return (
+    `<button type="button" class="${addClass}" data-action="add" aria-label="Ajouter ${label} au panier">` +
+      `<span class="${plusClass}" aria-hidden="true">+</span>` +
+    `</button>`
+  );
 }
 
-function renderGridCard(product, qty) {
+function renderGridCard(product, cartSummary) {
   const vm = buildProductCardViewModel(product, {
     variant: 'grid',
     imageSize: 400,
     category: getCategoryByKey(product.category) || null,
   });
+  const hasQty = cartSummary.totalQty > 0;
+  const canAdjust = hasQty && cartSummary.canQuickAdjust;
 
   return `
     <div class="k-card ${vm.cssClassName}" data-id="${vm.id}">
@@ -74,20 +128,26 @@ function renderGridCard(product, qty) {
             ${vm.priceEurLabel ? `<span class="k-card-price-eur">${vm.priceEurLabel}</span>` : ''}
             ${vm.oldPriceLabel ? `<span class="k-card-old-price">${vm.oldPriceLabel}</span>` : ''}
           </div>
-          <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${vm.id}" aria-label="Ajouter">
-            ${renderAddControl(vm.id, qty, 'grid')}
-          </button>
+          <div class="k-card-add${canAdjust ? ' in-cart' : ''}${hasQty && !canAdjust ? ' has-multiple-lines' : ''}" data-add="${vm.id}" data-has-variants="${vm.hasVariants ? '1' : '0'}" data-cart-lines="${cartSummary.lineCount}" role="group" aria-label="Quantité de ${vm.safeName}">
+            ${renderAddControl(vm.id, cartSummary, vm.safeName, 'grid')}
+          </div>
         </div>
       </div>
     </div>`;
 }
 
-function renderSuggestionCard(product, qty) {
+function renderSuggestionCard(product, cartSummary, actionVariant) {
   const vm = buildProductCardViewModel(product, {
     variant: 'suggestion',
     imageSize: 200,
     category: getCategoryByKey(product.category) || null,
   });
+  const hasQty = cartSummary.totalQty > 0;
+  const canAdjust = hasQty && cartSummary.canQuickAdjust;
+  const controlVariant = actionVariant === 'modal' ? 'modal-suggestion' : 'catalog-suggestion';
+  const reasonHtml = vm.raw.reason_label
+    ? `<div class="k-sug-card-reason">${sanitize(vm.raw.reason_label)}</div>`
+    : '';
 
   return `
     <div class="k-sug-card ${vm.cssClassName}" data-id="${vm.id}" data-subcat="${sanitize(vm.raw.subcategory || '')}">
@@ -96,10 +156,11 @@ function renderSuggestionCard(product, qty) {
         ${vm.promoLabel ? `<span class="k-sug-promo-badge">${vm.promoLabel}</span>` : ''}
       </div>
       <div class="k-sug-card-name">${vm.safeName}</div>
+      ${reasonHtml}
       <div class="k-sug-card-bottom">
         <div class="k-sug-card-price">${vm.priceLabel}</div>
-        <div class="k-sug-card-actions">
-          ${renderAddControl(vm.id, qty, 'suggestion')}
+        <div class="k-sug-card-actions${canAdjust ? ' is-filled' : ''}${hasQty && !canAdjust ? ' has-multiple-lines' : ''}" data-add="${vm.id}" data-has-variants="${vm.hasVariants ? '1' : '0'}" data-cart-lines="${cartSummary.lineCount}" role="group" aria-label="Quantité de ${vm.safeName}">
+          ${renderAddControl(vm.id, cartSummary, vm.safeName, controlVariant)}
         </div>
       </div>
     </div>`;
@@ -107,7 +168,9 @@ function renderSuggestionCard(product, qty) {
 
 export function renderProductCard(product, options = {}) {
   const variant = options.variant || 'grid';
-  const qty = getCartQty(product.id);
-  if (variant === 'suggestion') return renderSuggestionCard(product, qty);
-  return renderGridCard(product, qty);
+  const cartSummary = getProductCartSummary(state.cart, product.id);
+  if (variant === 'suggestion') {
+    return renderSuggestionCard(product, cartSummary, options.actionVariant || 'catalog');
+  }
+  return renderGridCard(product, cartSummary);
 }

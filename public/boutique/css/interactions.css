@@ -247,9 +247,7 @@ body.cart-open  #k-section-index { display:none; }
 .k-load-more button:hover { background:var(--sand); color:var(--text); }
 .k-view-active       { display:none; }
 .k-bnav-label        { font-size:10px; font-weight:600; color:var(--text-light); margin-top:2px; }
-.k-bnav-btn.active .k-bnav-label, .k-bnav-item.active .k-bnav-label { color:var(--ocean-dark); }
-.k-card-add-basket   { width:100%; height:100%; object-fit:contain; display:block; mix-blend-mode:multiply; }
-.k-card-basket-icon  { pointer-events:none; }
+.k-bnav-btn.active .k-bnav-label, .k-bnav-item.active .k-bnav-label { color:var(--ocean-dark); }.k-card-basket-icon  { pointer-events:none; }
 
 /* Carousel mobile overlay fix */
 #k-sug-rail { display:block; }

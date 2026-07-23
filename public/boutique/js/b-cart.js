@@ -20,7 +20,7 @@
  *
  * §7  : addToCart, setQty, fly animation, cart badge sync
  * §10 : tiroir panier, partage WhatsApp, shareCartWhatsApp, showShareChoiceModal
- * §14 : stepper +/- haptic, renderStepper (setupLongPressSteppers IIFE)
+ * §14 : stepper +/- inline sur les cartes
  */
 
 import { bus }           from './b-bus.js';
@@ -33,10 +33,12 @@ import {
   productEmoji, _currency, apiGet, apiPost,
 }                         from './b-utils.js';
 import {
-  showToast, updateCartBadge, saveCart, cartQty, cartTotal, saveFavs,
+  showToast, saveCart, cartQty, cartTotal, saveFavs,
 }                         from './b-cart-core.js';
 import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
+import { renderAddControl } from './render/render-product-card.js';
+import { getProductCartSummary, getCartItemProductId } from './cart-product-summary.js';
 
 'use strict';
 
@@ -45,14 +47,57 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
   //  → Futur module: b-cart.js
 
   /**
-   * Animation "fly to cart" — produit vole de la carte vers l'avatar panier.
+   * Détermine si un élément est visuellement présent et interactif
+   * (dimensions non nulles, pas display:none, pas visibility:hidden).
+   * @param {HTMLElement|null} element
+   * @returns {boolean}
+   */
+  function isElementVisible(element) {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    const styles = window.getComputedStyle(element);
+    return (
+      rect.width > 0 &&
+      rect.height > 0 &&
+      styles.display !== 'none' &&
+      styles.visibility !== 'hidden'
+    );
+  }
+
+  /**
+   * Détermine la cible réelle de l'animation flyToCart selon le contexte :
+   * si la modale est ouverte et son bouton panier visible, on vole vers
+   * lui plutôt que vers la petite dame du header (masquée derrière l'overlay).
+   * @returns {HTMLElement|null}
+   */
+  function getFlyToCartTarget() {
+    const modalOverlay = dom.modalOverlay;
+    const modalCartButton = dom.modalCartBtn;
+    const globalCartButton = dom.cartBtn;
+
+    const modalIsOpen = modalOverlay && modalOverlay.classList.contains('open');
+
+    if (modalIsOpen && isElementVisible(modalCartButton)) {
+      return modalCartButton;
+    }
+
+    if (isElementVisible(globalCartButton)) {
+      return globalCartButton;
+    }
+
+    return null;
+  }
+
+  /**
+   * Animation "fly to cart" — produit vole de la carte vers le panier actif
+   * (petite dame du header ou icône panier de la modale selon le contexte).
    * Clone l'image → arc de Bézier → burst sparkles → updateCartBadge.
    * Exception légitime : animation frame-by-frame (rAF).
    * @param {HTMLElement} btn - Bouton panier cliqué
    * @param {number} productId - ID du produit ajouté
    */
   function flyToCart(sourceEl, product) {
-    const cartIcon = dom.cartBtn;
+    const cartIcon = getFlyToCartTarget();
     if (!cartIcon || !sourceEl) return;
     const srcRect = sourceEl.getBoundingClientRect();
     const dstRect = cartIcon.getBoundingClientRect();
@@ -165,10 +210,13 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
           particle.remove();
           sparkles.forEach(sp => sp.remove());
         }, 200);
-        // Badge bump
-        dom.cartBadge.classList.remove('bump');
-        void dom.cartBadge.offsetWidth;
-        dom.cartBadge.classList.add('bump');
+        // Badge bump — celui du bouton réellement ciblé par l'animation
+        const targetBadge = cartIcon === dom.modalCartBtn ? dom.modalCartBadge : dom.cartBadge;
+        if (targetBadge) {
+          targetBadge.classList.remove('bump');
+          void targetBadge.offsetWidth;
+          targetBadge.classList.add('bump');
+        }
       }
     }
 
@@ -182,8 +230,9 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
  * @param {number|string} id - ID produit
  * @param {Object} [opts] - { fromModal, qty }
  */
-  function addToCart(product, qty, sourceBtn) {
+  function addToCart(product, qty, sourceBtn, options) {
   qty = qty || 1;
+  options = options || {};
 
   // Lot 2 — capturer le variant_combo au moment de l'ajout (snapshot)
   let combo = null;
@@ -194,8 +243,14 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
     comboLabel = Object.values(combo).join(' / ');
   }
 
-  const existing = state.cart.find(i =>
-    String(i.product?.id ?? i.id) === String(product.id)
+  // Lorsqu'une carte vise une unique ligne variante déjà au panier, elle
+  // transmet explicitement cette ligne. On l'incrémente par identité d'objet
+  // au lieu de recréer une ligne générique sans variant_combo.
+  const explicitLine = options.existingLine && state.cart.includes(options.existingLine)
+    ? options.existingLine
+    : null;
+  const existing = explicitLine || state.cart.find(i =>
+    getCartItemProductId(i) === String(product.id)
     && JSON.stringify(i.variant_combo || null) === JSON.stringify(combo)
   );
 
@@ -241,30 +296,26 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
     }, 800);
   }
 
-  // Mark all grid buttons for this product
-  markAllCartButtons();
+  // Feedback uniquement sur la destination visuelle réelle de l'ajout.
+  // L'avatar du catalogue ne s'anime jamais derrière une modale ouverte.
+  const feedbackTarget = getFlyToCartTarget();
+  if (feedbackTarget === dom.cartBtn) {
+    dom.cartBtn.classList.remove('ring-pulse');
+    void dom.cartBtn.offsetWidth;
+    dom.cartBtn.classList.add('ring-pulse');
+    setTimeout(() => dom.cartBtn.classList.remove('ring-pulse'), 1500);
 
-  // Animation "coucou" : la petite dame fait signe
-  // On cible LES DEUX dames (header catalogue + topbar modale) pour que
-  // l'animation soit toujours visible quel que soit le contexte.
-  const cartBtns = [
-    document.getElementById('k-cart-btn'),
-    document.getElementById('k-modal-cart-btn'),
-  ].filter(Boolean);
-
-  cartBtns.forEach(btn => {
-    // Ring pulse coral
-    btn.classList.remove('ring-pulse');
-    void btn.offsetWidth;
-    btn.classList.add('ring-pulse');
-    setTimeout(() => btn.classList.remove('ring-pulse'), 1500);
-
-    // Animation "coucou" de l'avatar
-    btn.classList.remove('avatar-wave');
-    void btn.offsetWidth;
-    btn.classList.add('avatar-wave');
-    setTimeout(() => btn.classList.remove('avatar-wave'), 900);
-  });
+    dom.cartBtn.classList.remove('avatar-wave');
+    void dom.cartBtn.offsetWidth;
+    dom.cartBtn.classList.add('avatar-wave');
+    setTimeout(() => dom.cartBtn.classList.remove('avatar-wave'), 900);
+  } else if (feedbackTarget === dom.modalCartBtn) {
+    dom.modalCartBtn.classList.remove('ring-pulse', 'cart-icon-pulse');
+    void dom.modalCartBtn.offsetWidth;
+    dom.modalCartBtn.classList.add('ring-pulse', 'cart-icon-pulse');
+    setTimeout(() => dom.modalCartBtn.classList.remove('ring-pulse'), 1500);
+    setTimeout(() => dom.modalCartBtn.classList.remove('cart-icon-pulse'), 350);
+  }
 
   if (isModalAdd) {
     // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
@@ -299,98 +350,143 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 }
 
   /**
-   * @brief setQty — Met à jour la quantité d'un article dans le panier
-   * Si newQty < 1 → supprime l'article (removeFromCart)
-   * Met à jour le DOM stepper + badge + localStorage
-   * @param {string|number} productId - ID du produit
-   * @param {number} newQty - Nouvelle quantité cible
+   * Met à jour une ligne panier exacte. Lorsque plusieurs variantes du même
+   * produit existent et qu'aucune ligne n'est fournie, la mutation échoue
+   * volontairement au lieu de viser la première ligne trouvée.
+   * @param {string|number} productId
+   * @param {number} newQty
+   * @param {Object|null} [targetLine]
+   * @returns {boolean}
    */
-    function setQty(productId, newQty) {
+  function setQty(productId, newQty, targetLine) {
     const pid = String(productId);
-    if (newQty < 1) { removeFromCart(pid); return; }
-    const item = state.cart.find(i => String(i.product.id) === pid);
-    if (item) {
-      item.qty = newQty;
-      saveCart();
-      renderCartBody();
-      markAllCartButtons();
-      updateCartBadge();
+    const summary = getProductCartSummary(state.cart, pid);
+    const item = targetLine && state.cart.includes(targetLine)
+      ? targetLine
+      : summary.line;
+
+    if (!item) {
+      if (summary.isAmbiguous) openCartWithHighlight(pid);
+      return false;
     }
+
+    if (newQty < 1) return removeFromCart(pid, item);
+
+    item.qty = newQty;
+    saveCart();
+    renderCartBody();
+    return true;
   }
 
   /**
-   * Synchronise l'état visuel de tous les boutons panier dans les grilles.
-   * 🧺 → stepper si produit dans le panier, reset sinon.
-   * Appelé après chaque modification du panier.
+   * Synchronise l'état visuel de toutes les cartes catalogue/favoris depuis
+   * la synthèse complète des lignes panier. Une quantité multi-variantes est
+   * affichée comme un total consultable, jamais comme le qty de la première ligne.
    */
   function markAllCartButtons() {
-    // IDs actuellement dans le panier
-    const inCartIds = new Set(state.cart.map(i => String(i.product.id)));
+    document.querySelectorAll('.k-card-add').forEach(control => {
+      const pid = String(control.dataset.add || '');
+      if (!pid) return;
+      const nameEl = control.closest('.k-card')?.querySelector('.k-card-name');
+      const safeName = nameEl ? sanitize(nameEl.textContent || '') : '';
+      const summary = getProductCartSummary(state.cart, pid);
+      const canAdjust = summary.totalQty > 0 && summary.canQuickAdjust;
+      const hasMultipleLines = summary.totalQty > 0 && !summary.canQuickAdjust;
 
-    // OPTION C : panier tressé visuel + stepper "− qty +" visible dès ajout
-    //            (plus besoin de long-press, le stepper est directement accessible)
-    document.querySelectorAll('.k-card-add').forEach(btn => {
-      const pid = String(btn.dataset.add);
-      if (inCartIds.has(pid)) {
-        const item = state.cart.find(i => String(i.product.id) === pid);
-        btn.classList.add('in-cart');
-        // Stepper compact : − quantité + (tous cliquables indépendamment)
-        btn.innerHTML =
-          '<span class="k-add-minus" data-pid="' + pid + '">−</span>' +
-          '<span class="k-add-qty">' + item.qty + '</span>' +
-          '<span class="k-add-plus-ic">+</span>';
-      } else {
-        // Produit plus dans le panier → remettre juste le "+"
-        btn.classList.remove('in-cart');
-        btn.innerHTML = '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="20" height="20">';
-      }
+      control.classList.toggle('in-cart', canAdjust);
+      control.classList.toggle('has-multiple-lines', hasMultipleLines);
+      control.dataset.cartLines = String(summary.lineCount);
+      control.innerHTML = renderAddControl(pid, summary, safeName, 'grid');
     });
   }
 
+  // saveCart() → updateCartBadge() → bus 'cart:update'. Ce signal existant est
+  // le point de synchronisation commun pour les mutations venant du catalogue,
+  // du drawer, du side-cart, de la buybox ou d'un panier partagé.
+  bus.on('cart:update', markAllCartButtons);
+
   /* ── REMOVE FROM CART ───────────────────────────────────── */
   /**
- * Retire complètement un produit du panier.
- * @param {number|string} id - ID produit
- */
-  function removeFromCart(productId) {
+   * Retire une ligne exacte. Sans cible explicite, ne retire le produit que
+   * lorsqu'une seule ligne existe ; plusieurs variantes restent fail-closed.
+   * @param {number|string} productId
+   * @param {Object|null} [targetLine]
+   * @returns {boolean}
+   */
+  function removeFromCart(productId, targetLine) {
     const pid = String(productId);
-    state.cart = state.cart.filter(i => String(i.product.id) !== pid);
+    const summary = getProductCartSummary(state.cart, pid);
+    const item = targetLine && state.cart.includes(targetLine)
+      ? targetLine
+      : summary.line;
+
+    if (!item) {
+      if (summary.isAmbiguous) openCartWithHighlight(pid);
+      return false;
+    }
+
+    state.cart = state.cart.filter(line => line !== item);
     saveCart();
     renderCartBody();
-    markAllCartButtons();
+    return true;
   }
 
   /* ── QUICK ADD FROM GRID ────────────────────────────────── */
-/**
- * Ajout rapide depuis une carte (bouton 🧺).
- * @param {number|string} id - ID produit
- * @param {HTMLElement} btn - Bouton déclencheur
- */
-  function quickAdd(productId, btnEl) {
-  const pid = String(productId);
-  const product = state.products.find(p => String(p.id) === pid);
+  /**
+   * Ajout rapide depuis une carte. Les variantes ne sont jamais choisies
+   * arbitrairement : une ligne variante existante et unique est incrémentée
+   * exactement ; sinon la fiche produit est ouverte sans mutation.
+   * @param {number|string} productId
+   * @param {HTMLElement} btnEl
+   * @param {{hasVariants?: boolean}} [opts]
+   */
+  function quickAdd(productId, btnEl, opts) {
+    const pid = String(productId);
+    const product = state.products.find(p => String(p.id) === pid);
 
-  if (!product) {
-    console.warn('[quickAdd] Produit introuvable:', productId);
-    return;
+    if (!product) {
+      console.warn('[quickAdd] Produit introuvable:', productId);
+      return;
+    }
+
+    const summary = getProductCartSummary(state.cart, pid);
+    const hasVariants = Boolean(opts && opts.hasVariants) || summary.hasVariantLines;
+
+    if (summary.isAmbiguous) {
+      bus.emit('modal:open', { id: product.id });
+      return;
+    }
+
+    if (hasVariants) {
+      if (!summary.line) {
+        bus.emit('modal:open', { id: product.id });
+        return;
+      }
+      addToCart(product, 1, btnEl, { existingLine: summary.line });
+      return;
+    }
+
+    addToCart(product, 1, btnEl);
   }
 
-  addToCart(product, 1, btnEl);
-}
-
-/**
- * Supprime instantanément un produit du panier (swipe left sur mobile).
- * @param {number|string} productId - ID produit à supprimer
- */
-function quickRemove(productId, btnEl) {
+  /**
+   * Décrémente uniquement une ligne non ambiguë.
+   * @param {number|string} productId
+   * @param {HTMLElement} btnEl
+   */
+  function quickRemove(productId, btnEl) {
     const pid = String(productId);
-    const item = state.cart.find(i => String(i.product.id) === pid);
-    if (!item) return;
-    if (item.qty <= 1) {
-      removeFromCart(pid);
-    } else {
-      setQty(pid, item.qty - 1);
+    const summary = getProductCartSummary(state.cart, pid);
+    if (summary.lineCount === 0) return;
+
+    if (summary.isAmbiguous) {
+      openCartWithHighlight(pid);
+      return;
     }
+
+    const item = summary.line;
+    if (item.qty <= 1) removeFromCart(pid, item);
+    else setQty(pid, item.qty - 1, item);
   }
 
   /* ── TOGGLE FAV ─────────────────────────────────────────── */
@@ -591,7 +687,7 @@ function quickRemove(productId, btnEl) {
       const minusBtn = document.createElement('button');
       minusBtn.className = 'k-qty-btn';
       minusBtn.textContent = '−';
-      minusBtn.addEventListener('click', () => setQty(p.id, item.qty - 1));
+      minusBtn.addEventListener('click', () => setQty(p.id, item.qty - 1, item));
       qtyRow.appendChild(minusBtn);
 
       const qtyVal = document.createElement('span');
@@ -602,7 +698,7 @@ function quickRemove(productId, btnEl) {
       const plusBtn = document.createElement('button');
       plusBtn.className = 'k-qty-btn';
       plusBtn.textContent = '+';
-      plusBtn.addEventListener('click', () => setQty(p.id, item.qty + 1));
+      plusBtn.addEventListener('click', () => setQty(p.id, item.qty + 1, item));
       qtyRow.appendChild(plusBtn);
 
       info.appendChild(qtyRow);
@@ -622,7 +718,7 @@ function quickRemove(productId, btnEl) {
       removeBtn.className = 'k-cart-item-remove';
       removeBtn.textContent = '✕';
       removeBtn.title = 'Retirer';
-      removeBtn.addEventListener('click', () => removeFromCart(p.id));
+      removeBtn.addEventListener('click', () => removeFromCart(p.id, item));
       row.appendChild(removeBtn);
 
       dom.cartBody.appendChild(row);
@@ -930,192 +1026,8 @@ function quickRemove(productId, btnEl) {
      ══════════════════════════════════════════════════════════ */
 
 
-  // ╔══════════════════════════════════════════════════════════════════╗
-//  OPTION C : Long-press sur panier tressé → stepper flottant
-//  - Tap court : +1 au panier (comportement normal)
-//  - Long-press (400ms) : ouvre un stepper flottant [- qty +] au-dessus
-//  - Tap ailleurs : ferme le stepper
-//  - Pas d'activité 3s : ferme le stepper automatiquement
-// ═══════════════════════════════════════════════════════════════════════
-(function setupLongPressSteppers() {
-  const LONG_PRESS_MS = 400;
-  const STEPPER_AUTOCLOSE_MS = 3000;
-  let pressTimer = null;
-  let activeStepperBtn = null;
-  let autoCloseTimer = null;
-  let isLongPress = false;
-
-
-  // ╔══════════════════════════════════════════════════════════════════╗
-  // ║  §14 · STEPPER — Bouton panier → stepper +/- avec haptic         ║
-  // ╚══════════════════════════════════════════════════════════════════╝
-  //  → Futur module: b-cart.js (même module §7)
-
-  /**
-   * Ferme le stepper actuellement ouvert et remet le bouton 🧺 panier à sa place.
-   */
-  function closeActiveStepper() {
-    if (!activeStepperBtn) return;
-    const stepper = activeStepperBtn.querySelector('.k-card-add-stepper');
-    if (stepper) {
-      stepper.classList.add('k-stepper-closing');
-      setTimeout(() => stepper.remove(), 250);
-    }
-    activeStepperBtn.classList.remove('stepper-open');
-    activeStepperBtn = null;
-    if (autoCloseTimer) { clearTimeout(autoCloseTimer); autoCloseTimer = null; }
-  }
-
-  /**
-   * Remet à zéro le timer d'auto-fermeture du stepper (3s sans interaction).
-   */
-  function resetAutoClose() {
-    if (autoCloseTimer) clearTimeout(autoCloseTimer);
-    autoCloseTimer = setTimeout(closeActiveStepper, STEPPER_AUTOCLOSE_MS);
-  }
-
-  /**
-   * Ouvre le stepper inline sur une carte produit et anime son apparition.
-   * @param {HTMLElement} btn - Bouton 🧺 qui déclenche l'ouverture
-   */
-  function openStepper(btn) {
-    // Fermer tout autre stepper ouvert
-    closeActiveStepper();
-
-    const pid = btn.dataset.add;
-    if (!pid) return;
-    const item = state?.cart?.find(i => String(i.product.id) === String(pid));
-    if (!item) return;
-
-    // Vibration haptic sur iOS/Android si disponible
-    if (navigator.vibrate) { try { navigator.vibrate(15); } catch(e){} }
-
-    // Construire le stepper flottant
-    const stepper = document.createElement('div');
-    stepper.className = 'k-card-add-stepper';
-    stepper.innerHTML =
-      '<button class="k-stepper-minus" aria-label="Moins">−</button>' +
-      '<span class="k-stepper-qty">' + item.qty + '</span>' +
-      '<button class="k-stepper-plus" aria-label="Plus">+</button>';
-
-    // Positionner au-dessus du panier tressé
-    btn.appendChild(stepper);
-    btn.classList.add('stepper-open');
-    activeStepperBtn = btn;
-
-    // Bind les +/- du stepper
-    stepper.querySelector('.k-stepper-minus').addEventListener('click', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      const curItem = state?.cart?.find(i => String(i.product.id) === String(pid));
-      if (!curItem) return closeActiveStepper();
-      if (curItem.qty <= 1) {
-        // Retirer du panier → ferme le stepper
-        document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: 0 } }));
-        closeActiveStepper();
-      } else {
-        document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: curItem.qty - 1 } }));
-        stepper.querySelector('.k-stepper-qty').textContent = curItem.qty - 1;
-        resetAutoClose();
-      }
-    });
-
-    stepper.querySelector('.k-stepper-plus').addEventListener('click', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      const curItem = state?.cart?.find(i => String(i.product.id) === String(pid));
-      if (!curItem) return;
-      document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: curItem.qty + 1 } }));
-      stepper.querySelector('.k-stepper-qty').textContent = curItem.qty + 1;
-      resetAutoClose();
-    });
-
-    resetAutoClose();
-  }
-
-  /**
-   * Démarre le chrono de long-press sur un bouton stepper (−/+).
-   * Déclenche une répétition accélérée après 500ms.
-   * @param {Event} e - Événement pointerdown
-   */
-  function startPress(e) {
-    const btn = e.target.closest('.k-card-add.in-cart');
-    if (!btn) return;
-
-    isLongPress = false;
-    btn.classList.add('is-long-pressing');
-
-    pressTimer = setTimeout(() => {
-      isLongPress = true;
-      btn.classList.remove('is-long-pressing');
-      openStepper(btn);
-    }, LONG_PRESS_MS);
-  }
-
-  /**
-   * Arrête la répétition du long-press et libère le pointeur.
-   * @param {Event} e - Événement pointerup/pointerleave
-   */
-  function endPress(e) {
-    const btn = e.target.closest('.k-card-add.in-cart');
-    if (btn) btn.classList.remove('is-long-pressing');
-
-    if (pressTimer) {
-      clearTimeout(pressTimer);
-      pressTimer = null;
-    }
-    // Si long-press déclenché, on bloque le click normal (qui ferait +1)
-    if (isLongPress) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    isLongPress = false;
-  }
-
-  /**
-   * Annule le long-press en cours sans déclencher d'action répétée.
-   */
-  function cancelPress() {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    document.querySelectorAll('.k-card-add.is-long-pressing').forEach(b => {
-      b.classList.remove('is-long-pressing');
-    });
-    isLongPress = false;
-  }
-
-  // Bindings globaux (delegation car les cartes sont dynamiques)
-  document.addEventListener('mousedown', startPress);
-  document.addEventListener('touchstart', startPress, { passive: true });
-
-  document.addEventListener('mouseup', endPress);
-  document.addEventListener('touchend', endPress);
-
-  document.addEventListener('mouseleave', cancelPress);
-  document.addEventListener('touchcancel', cancelPress);
-
-  // Click ailleurs → ferme le stepper
-  document.addEventListener('click', function(e) {
-    if (!activeStepperBtn) return;
-    // Si on tape DANS le stepper, on ne ferme pas
-    if (e.target.closest('.k-card-add-stepper')) return;
-    // Si on tape sur le panier tressé qui a le stepper, on ne ferme pas (géré par le bouton lui-même)
-    if (e.target.closest('.k-card-add.stepper-open')) return;
-    closeActiveStepper();
-  });
-
-  // Si un click normal sur .k-card-add se déclenche ET qu'un long-press vient de finir,
-  // on bloque (sinon le +1 s'ajoute en plus du stepper ouvert)
-  document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.k-card-add');
-    if (btn && btn.classList.contains('stepper-open')) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }, true);  // capture phase pour intercepter avant le handler normal
-
-  // closeActiveStepper est exporté pour que d'autres modules puissent fermer le stepper
-})();
-
+  // Le stepper flottant par appui long a été supprimé : le contrôle canonique
+  // est désormais directement visible sur la carte (0 → +, >0 → − quantité +).
 
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1294,6 +1206,7 @@ function renderSideCart() {
   if (itemsEl) {
     itemsEl.innerHTML = '';
     [...items].reverse().forEach(item => {
+      const lineIndex = state.cart.indexOf(item);
       const el       = document.createElement('div');
       el.className   = 'k-sc-item';
       const imgSrc   = item.product.image_url ? optimizeImgUrl(item.product.image_url, 120) : '';
@@ -1301,6 +1214,7 @@ function renderSideCart() {
       const linePrice = fmtPrice(unitPrice * item.qty);
       const pid      = String(item.product.id || item.id || '');
       el.dataset.pid = pid;
+      el.dataset.cartIndex = String(lineIndex);
 
       // Prix barré si promo
       const promoPct = item.product.promo_pct || 0;
@@ -1326,11 +1240,11 @@ function renderSideCart() {
             `</div>` +
             `<div class="k-sc-item-actions">` +
               `<div class="k-sc-item-stepper">` +
-                `<button class="k-sc-step-minus" data-pid="${pid}" aria-label="Retirer un">−</button>` +
+                `<button class="k-sc-step-minus" data-pid="${pid}" data-cart-index="${lineIndex}" aria-label="Retirer un">−</button>` +
                 `<span class="k-sc-item-stepper-qty">${item.qty}</span>` +
-                `<button class="k-sc-step-plus" data-pid="${pid}" aria-label="Ajouter un">+</button>` +
+                `<button class="k-sc-step-plus" data-pid="${pid}" data-cart-index="${lineIndex}" aria-label="Ajouter un">+</button>` +
               `</div>` +
-              `<button class="k-sc-item-remove" data-pid="${pid}" aria-label="Supprimer l'article">` +
+              `<button class="k-sc-item-remove" data-pid="${pid}" data-cart-index="${lineIndex}" aria-label="Supprimer l'article">` +
                 `<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="1.5" x2="1.5" y2="9.5"/></svg>` +
               `</button>` +
             `</div>` +
@@ -1346,18 +1260,18 @@ function renderSideCart() {
         const minus  = e.target.closest('.k-sc-step-minus');
         const plus   = e.target.closest('.k-sc-step-plus');
         const remove = e.target.closest('.k-sc-item-remove');
-        const pid    = (minus || plus || remove)
-          ? (minus || plus || remove).dataset.pid
-          : null;
-        if (!pid) return;
-        const currentItem = state.cart.find(i => String(i.product?.id ?? i.id) === pid);
-        if (!currentItem) return;
+        const actionEl = minus || plus || remove;
+        const pid = actionEl ? actionEl.dataset.pid : null;
+        const lineIndex = actionEl ? Number(actionEl.dataset.cartIndex) : -1;
+        if (!pid || !Number.isInteger(lineIndex) || lineIndex < 0) return;
+        const currentItem = state.cart[lineIndex];
+        if (!currentItem || getCartItemProductId(currentItem) !== String(pid)) return;
         if (minus) {
-          setQty(pid, currentItem.qty - 1);
+          setQty(pid, currentItem.qty - 1, currentItem);
         } else if (plus) {
-          setQty(pid, currentItem.qty + 1);
+          setQty(pid, currentItem.qty + 1, currentItem);
         } else if (remove) {
-          setQty(pid, 0);
+          setQty(pid, 0, currentItem);
         }
       });
     }

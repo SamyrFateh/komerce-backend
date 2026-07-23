@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 380
+- Scanned code files: 381
 - Files with full headers: 353
-- Files with lite headers: 27
-- Files with any headers: 380
+- Files with lite headers: 28
+- Files with any headers: 381
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 777
-- Edges: 4375
+- Graph nodes: 778
+- Edges: 4382
 - DB tables: 116
 - Doctrines: 154
 - Impact areas: 127
@@ -27,7 +27,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 4
 - bootstrap: 1
-- boutique: 36
+- boutique: 37
 - catalog: 55
 - checkout: 2
 - customs: 6
@@ -60,6 +60,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - controller: 1
 - cron: 1
 - data-service: 1
+- domain-helper: 1
 - entrypoint: 1
 - external-adapter: 2
 - machine: 2
@@ -352,6 +353,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-product-open-contract.js -> owner public/boutique/js/b-modal-core.js (catalog-b-product-open-contract)
 - public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-group-view.js (boutique-b-share-phone-guard)
 - public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
+- public/boutique/js/cart-product-summary.js -> owner public/boutique/js/b-cart.js (cart-product-summary)
 - public/boutique/js/group/group-state.js -> owner public/boutique/js/b-group-view.js (shared-cart-group-state)
 - public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
 - public/boutique/js/render/render-categories.js -> owner public/boutique/js/b-catalog.js (boutique-render-categories)

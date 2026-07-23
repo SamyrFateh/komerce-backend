@@ -49,6 +49,7 @@ module.exports = {
       '../js/b-cart-pill.js',
       '../js/b-cart-stepper-guard.js',
       '../js/b-cart.js',
+      '../js/cart-product-summary.js',
       '../js/b-desktop-global-cart-access.js',
       '../js/b-desktop-sidebar.js',
       '../js/b-desktop-upgrade.js',
