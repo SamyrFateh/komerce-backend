@@ -2835,9 +2835,19 @@ html.k-mobile-premium-v1 .k-chip-label {
    .k-modal-thumbs reste absolute dans .k-modal-img-wrap (visuel : T-021),
    d'où le wrapper média qui couvre les 2 premières pistes. ───────────── */
 @media (min-width: 1024px) {
+  /* REF-2026-07 : placement grille 3 pistes + reset sticky du 900px.
+     align-self / height / max-height / aspect-ratio / margin sont owned par
+     modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —
+     ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard). */
+  #k-modal .k-modal-product-zone {
+    align-self: stretch;
+    min-height: 100%;
+  }
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     grid-column: 1 / 3;
     grid-row: 1 / 3;
+    position: relative; /* annule sticky hérité du 900px */
+    top: auto;          /* annule top:0 hérité du 900px */
   }
   #k-modal .k-modal-product-zone .k-modal-details {
     grid-column: 3;
@@ -5182,6 +5192,24 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
 @media (min-width: 900px) and (prefers-reduced-motion: reduce) {
   #k-modal .k-mdm-skeleton-row { animation: none; }
+}
+
+/* ── REF-2026-07 : override modal-media.css (source order) ─────────────────
+   modal-media.css pose align-self:center + aspect-ratio:4/3 + max-height:500px
+   + margin:auto sur .k-modal-img-wrap à ≥900px. Cela centre le container à
+   360px dans la colonne au lieu de le faire remplir toute la hauteur.
+   Ce fichier vient après modal-media dans le bundle → override gagant.
+   À ≥1024px : le container image doit occuper toute la hauteur de la colonne
+   (background visible de haut en bas, cf. référence). L'image à l'intérieur
+   reste centrée par object-fit + margin:auto sur le slide. ──────────────── */
+@media (min-width: 1024px) {
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    align-self: stretch; /* override center → remplit la hauteur de colonne   */
+    height: 100%;        /* hérite de la hauteur de la grid-row (stretch)     */
+    max-height: 100%;    /* override 500px de modal-media.css                 */
+    aspect-ratio: unset; /* override 4/3 — c'est la hauteur de grille qui pilote */
+    margin: 0;           /* override margin:auto de modal-media.css            */
+  }
 }
 
 

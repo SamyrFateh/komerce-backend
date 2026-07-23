@@ -456,3 +456,21 @@
 @media (min-width: 900px) and (prefers-reduced-motion: reduce) {
   #k-modal .k-mdm-skeleton-row { animation: none; }
 }
+
+/* ── REF-2026-07 : override modal-media.css (source order) ─────────────────
+   modal-media.css pose align-self:center + aspect-ratio:4/3 + max-height:500px
+   + margin:auto sur .k-modal-img-wrap à ≥900px. Cela centre le container à
+   360px dans la colonne au lieu de le faire remplir toute la hauteur.
+   Ce fichier vient après modal-media dans le bundle → override gagant.
+   À ≥1024px : le container image doit occuper toute la hauteur de la colonne
+   (background visible de haut en bas, cf. référence). L'image à l'intérieur
+   reste centrée par object-fit + margin:auto sur le slide. ──────────────── */
+@media (min-width: 1024px) {
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    align-self: stretch; /* override center → remplit la hauteur de colonne   */
+    height: 100%;        /* hérite de la hauteur de la grid-row (stretch)     */
+    max-height: 100%;    /* override 500px de modal-media.css                 */
+    aspect-ratio: unset; /* override 4/3 — c'est la hauteur de grille qui pilote */
+    margin: 0;           /* override margin:auto de modal-media.css            */
+  }
+}
