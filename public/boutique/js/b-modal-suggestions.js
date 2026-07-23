@@ -19,7 +19,7 @@
  * @brief Rail de suggestions de la fiche produit — extrait de b-modal.js (ARCH-2, PR2).
  *
  * Périmètre (responsabilité « Rail suggestions, filtre sous-catégorie interne ») :
- *   - renderSuggestions : 2 sections (« même univers » + « sélection Komerce »),
+ *   - renderSuggestions : 2 sections (« même catégorie » + « cela peut vous plaire »),
  *     cartes avec stepper panier, chips de filtre sous-catégorie, et le modal infini
  *     mobile (auto-advance des chips en fin de scroll).
  *   - applyModalDesktopSuggestionState : bascule layout desktop (privé, intra-module).
@@ -160,7 +160,7 @@ function _bindCardActions(card) {
 }
 
   /**
-   * Affiche deux niveaux éditoriaux : même univers puis sélection Komerce.
+   * Affiche les suggestions "🔍 Vous aimeriez vraiment" sous la fiche produit.
    * 20 produits, grille 2 colonnes, chips subcats filtrants.
    * IntersectionObserver sur sentinel → modal infini (v276).
    * @param {Object} product - Produit actif
@@ -239,6 +239,7 @@ function _bindCardActions(card) {
     let html = '';
 
     if (sameCat.length > 0) {
+      const catLabel = categoryName ? categoryName.toLowerCase() : 'même catégorie';
       // ── Subcategory chips — "profond dedans" ──
       const uniqueSubcats = [...new Set(sameCat.map(p => p.subcategory).filter(Boolean))].sort().slice(0, 6);
       const activeFilter = state.modalSubcatFilter || null;
@@ -247,14 +248,18 @@ function _bindCardActions(card) {
         chipsHTML = `<div class="k-sug-chips">
           <button class="k-sug-chip${!activeFilter ? ' is-active' : ''}" data-subcat="">Tout</button>
           ${uniqueSubcats.map(s => {
-            return `<button class="k-sug-chip${activeFilter === s ? ' is-active' : ''}" data-subcat="${sanitize(s)}">${sanitize(s)}</button>`;
+            const meta = (typeof getSubcategoryMeta === 'function' && categoryName)
+              ? getSubcategoryMeta(categoryName, s) : null;
+            const icon = meta && meta.icon ? `<span style="font-size:12px;line-height:1">${meta.icon}</span>` : '';
+            return `<button class="k-sug-chip${activeFilter === s ? ' is-active' : ''}" data-subcat="${sanitize(s)}">${icon}${sanitize(s)}</button>`;
           }).join('')}
         </div>`;
       }
       html += `
         <div class="k-sug-section">
           <div class="k-sug-title">
-            <span class="k-sug-title-text">Dans le même univers</span>
+            <span class="k-sug-title-icon">🔍</span>
+            <span class="k-sug-title-text">🔍 Vous aimeriez vraiment ${sanitize(catLabel)}</span>
           </div>
           ${chipsHTML}
           <div class="k-sug-grid k-sug-grid--same">${sameCat.map(cardHTML).join('')}</div>
@@ -265,7 +270,8 @@ function _bindCardActions(card) {
       html += `
         <div class="k-sug-section">
           <div class="k-sug-title">
-            <span class="k-sug-title-text">Sélection Komerce</span>
+            <span class="k-sug-title-icon">✨</span>
+            <span class="k-sug-title-text">✨ Cela peut vous plaire</span>
           </div>
           <div class="k-sug-grid k-sug-grid--other">${otherCat.map(cardHTML).join('')}</div>
         </div>`;
