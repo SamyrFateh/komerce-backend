@@ -1201,6 +1201,10 @@ function renderSideCart() {
   const countInline = sc.querySelector('#k-sc-count-inline');
   if (countInline) countInline.textContent = qty;
 
+  // Badge "Mon panier (N)" dans la title bar (référence image 1)
+  const titleBadge = sc.querySelector('#k-sc-title-badge');
+  if (titleBadge) titleBadge.textContent = qty > 0 ? String(qty) : '';
+
   // Articles (plus récents en premier)
   const itemsEl = sc.querySelector('#k-sc-items');
   if (itemsEl) {

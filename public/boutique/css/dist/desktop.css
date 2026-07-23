@@ -747,15 +747,46 @@
   }
   .k-side-cart--in-modal:not(.has-items) { display: flex; }
 
+  /* ── TITLE BAR — "Mon panier" + badge count (référence image 1) ── */
+  .k-sc-title-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px 10px;
+    background: var(--surface-sand-97);
+    border-bottom: 1px solid var(--border-coral-09);
+  }
+  .k-sc-title-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: .01em;
+  }
+  .k-sc-title-badge {
+    min-width: 18px;
+    height: 18px;
+    background: var(--cta-green);
+    color: var(--white);
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+  }
+  .k-sc-title-badge:empty { display: none; }
+
   /* ──────────────────────────────────────────────────────────
-     HEADER (top block Temu) — sous-total + livraison + CTAs.
+     FOOTER (bottom block) — livraison + sous-total + CTAs.
      Tailles confortables : on a la pleine hauteur viewport.
      ────────────────────────────────────────────────────────── */
   .k-sc-header {
     flex-shrink: 0;
-    padding: 14px 14px 12px;
+    padding: 12px 14px 14px;
     background: var(--surface-sand-96);
-    border-bottom: 1px solid var(--border-coral-09);
+    border-top: 1px solid var(--border-coral-09);
     display: flex;
     flex-direction: column;
     gap: 8px;

@@ -44,6 +44,42 @@ function isPhotoAxis(axis) {
   return /couleur|color|coloris|teinte/i.test(axis.key || axis.display_name || '');
 }
 
+/* F5 — Palette de correspondance nom → hex pour les axes couleur sans thumbnail.
+   La clé est le nom normalisé (minuscule, sans accent).
+   Étendue au fil des couleurs rencontrées en production. */
+const COLOR_HEX_MAP = {
+  // Neutres
+  blanc: '#ffffff', white: '#ffffff',
+  noir: '#1a1a1a', black: '#1a1a1a',
+  gris: '#9e9e9e', grey: '#9e9e9e', gray: '#9e9e9e',
+  // Bruns / naturels
+  naturel: '#c4a882', beige: '#f0e0c8', camel: '#c19a6b',
+  marron: '#795548', brun: '#6d4c41', chocolat: '#4e342e',
+  // Rouges
+  rouge: '#d32f2f', red: '#d32f2f', bordeaux: '#7b1fa2',
+  corail: '#ff7043', coral: '#ff7043', rose: '#f48fb1', pink: '#f48fb1',
+  // Oranges
+  orange: '#f57c00', ocre: '#e65100',
+  // Jaunes
+  jaune: '#fbc02d', yellow: '#fbc02d', or: '#ffd54f', gold: '#ffd54f',
+  // Verts
+  vert: '#388e3c', green: '#388e3c', kaki: '#827717', olive: '#827717',
+  // Bleus
+  bleu: '#1565c0', blue: '#1565c0', marine: '#0d47a1', navy: '#0d47a1',
+  turquoise: '#00897b', cyan: '#0097a7',
+  // Violets
+  violet: '#6a1b9a', purple: '#7b1fa2', lilas: '#9c27b0',
+};
+
+function colorNameToHex(name) {
+  if (!name) return '#bdbdbd';
+  // Normalise : minuscule, supprime accents
+  const key = name.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .trim();
+  return COLOR_HEX_MAP[key] || '#bdbdbd';
+}
+
 function mediaSignature(selection) {
   return (selection.selected_media || []).map((media) => `${media.id}:${media.url}`).join('|');
 }
@@ -292,6 +328,11 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
       name.className = 'k-sku-name';
       name.textContent = option.value;
       button.append(image, name);
+    } else if (photo) {
+      // F5 — Swatch couleur pur (pas de thumbnail) : cercle CSS coloré
+      button.className = `k-sku k-sku--color${active ? ' k-sku--active' : ''}${unavailable ? ' k-vp--out' : ''}`;
+      button.style.background = colorNameToHex(option.value);
+      button.title = option.value;
     } else {
       button.className = `k-vp${active ? ' k-vp--active' : ''}${unavailable ? ' k-vp--out' : ''}`;
       button.textContent = option.value;

@@ -76,6 +76,28 @@ function isPhotoAxis(axis) {
   return /couleur|color|coloris|teinte/i.test(axis.key || axis.display_name || '');
 }
 
+/* F5 — Palette nom→hex partagée avec b-modal-desktop-product.js */
+const _COLOR_HEX_MAP = {
+  blanc: '#ffffff', white: '#ffffff',
+  noir: '#1a1a1a', black: '#1a1a1a',
+  gris: '#9e9e9e', grey: '#9e9e9e', gray: '#9e9e9e',
+  naturel: '#c4a882', beige: '#f0e0c8', camel: '#c19a6b',
+  marron: '#795548', brun: '#6d4c41', chocolat: '#4e342e',
+  rouge: '#d32f2f', red: '#d32f2f', bordeaux: '#7b1fa2',
+  corail: '#ff7043', coral: '#ff7043', rose: '#f48fb1', pink: '#f48fb1',
+  orange: '#f57c00', ocre: '#e65100',
+  jaune: '#fbc02d', yellow: '#fbc02d', or: '#ffd54f', gold: '#ffd54f',
+  vert: '#388e3c', green: '#388e3c', kaki: '#827717', olive: '#827717',
+  bleu: '#1565c0', blue: '#1565c0', marine: '#0d47a1', navy: '#0d47a1',
+  turquoise: '#00897b', cyan: '#0097a7',
+  violet: '#6a1b9a', purple: '#7b1fa2', lilas: '#9c27b0',
+};
+function _colorNameToHex(name) {
+  if (!name) return '#bdbdbd';
+  const key = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  return _COLOR_HEX_MAP[key] || '#bdbdbd';
+}
+
 function activeUnit(detail, selection) {
   return (detail.sellable_units || []).find(
     (unit) => unit.sku_id === selection.selected_sku_id
@@ -240,6 +262,13 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
       name.textContent = option.value;
       button.appendChild(image);
       button.appendChild(name);
+    } else if (photo) {
+      // F5 — Swatch couleur pur (pas de thumbnail) : cercle CSS coloré
+      button.className = `k-sku k-sku--color${active ? ' k-sku--active' : ''}${
+        unavailable ? ' k-vp--out' : ''
+      }`;
+      button.style.background = _colorNameToHex(option.value);
+      button.title = option.value;
     } else {
       button.className = `k-vp${active ? ' k-vp--active' : ''}${
         unavailable ? ' k-vp--out' : ''

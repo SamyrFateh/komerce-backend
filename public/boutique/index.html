@@ -75,7 +75,7 @@ if('serviceWorker' in navigator){
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=136">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=221">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=71">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=73">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
@@ -339,18 +339,27 @@ if('serviceWorker' in navigator){
          Layout vertical : header sticky (sous-total + CTAs) en haut,
          puis liste items scrollable. -->
     <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
-      <!-- ── HEADER : sous-total + CTAs (Temu top block) ── -->
+      <!-- ── TITLE : "Mon panier" + badge (référence image 1) ── -->
+      <div class="k-sc-title-bar">
+        <span class="k-sc-title-label">Mon panier</span>
+        <span id="k-sc-title-badge" class="k-sc-title-badge"></span>
+      </div>
+
+      <!-- ── ITEMS : zone scrollable, prend le reste de la hauteur ── -->
+      <div id="k-sc-items" class="k-sc-items"></div>
+
+      <!-- ── FOOTER : livraison + sous-total + Commander (référence image 1) ── -->
       <div class="k-sc-header">
+        <div class="k-sc-free-ship">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 5l5 3 5-3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M3 5v6l5 3 5-3V5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          Livraison incluse aux Comores
+        </div>
         <div class="k-sc-subtotal-row">
           <span class="k-sc-subtotal-label">
             <svg class="k-sc-subtotal-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h2l1.5 7h7.5l1.5-5H4.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6.5" cy="13.5" r="1" fill="currentColor"/><circle cx="12" cy="13.5" r="1" fill="currentColor"/></svg>
             Sous-total
           </span>
           <strong id="k-sc-total" class="k-sc-subtotal-amount"></strong>
-        </div>
-        <div class="k-sc-free-ship">
-          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 5l5 3 5-3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M3 5v6l5 3 5-3V5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-          Livraison incluse aux Comores
         </div>
         <button id="k-sc-checkout" class="k-sc-btn-checkout" type="button">
           Commander (<span id="k-sc-count-inline">0</span>)
@@ -377,9 +386,6 @@ if('serviceWorker' in navigator){
           <span>Vider</span>
         </button>
       </div>
-
-      <!-- ── ITEMS : zone scrollable, prend le reste de la hauteur ── -->
-      <div id="k-sc-items" class="k-sc-items"></div>
     </aside>
   </div><!-- /k-desktop-catalog-wrap -->
 </div><!-- /k-page-scroll -->
@@ -433,37 +439,19 @@ if('serviceWorker' in navigator){
             <!-- Masquées mobile (display:none par défaut) · révélées ≥900px via modal.css -->
             <div id="k-modal-aed-price" class="k-modal-aed-price"></div>
             <div id="k-modal-stock-bar" class="k-modal-stock-bar"></div>
-            <!-- Variant picker (Taille / Couleur / Pointure) — juste après le prix -->
+            <!-- REF-2026-07 : Livraison avant les variants (référence image 1).
+                 ID stable — le renderer JS (getElementById) est insensible à la position DOM.
+                 Mobile : peuplé par b-modal-mobile-product.js, position neutre dans le flux. -->
+            <div id="k-modal-delivery" class="k-modal-delivery"></div>
+            <!-- Variant picker (Couleur / Taille / Pointure) — juste après la livraison -->
             <div id="k-modal-variants" class="k-modal-variants"></div>
             <p class="k-modal-desc" id="k-modal-desc"></p>
             <div class="k-modal-meta">
               <span id="k-modal-cat"></span>
               <span id="k-modal-stock"></span>
             </div>
-            <!-- Réassurance + partage — toujours affichés (produit simple ET enrichi),
-                 peuplés par renderDesktopProductDetail() dans b-modal-desktop-product.js.
-                 Contrairement au contenu enrichi (#k-modal-enriched-content), ce ne sont
-                 pas des données éditoriales conditionnelles : ce sont des garanties
-                 transactionnelles factuelles, valables pour tout produit. -->
-            <div id="k-modal-trust" class="k-modal-trust"></div>
-            <div id="k-modal-share-row" class="k-modal-share-row"></div>
-            <!-- T-030+ : Teaser suggestions — sibling de #k-modal-trust, visible sans
-                 scroller jusqu'au rail. Peuplé/masqué en miroir exact de
-                 #k-modal-suggestions par renderSuggestions() (b-modal-suggestions.js) :
-                 jamais un texte affiché sans données réelles derrière. -->
-            <div id="k-modal-sugg-peek" class="k-modal-sugg-peek" hidden>
-              <span class="k-modal-sugg-peek-hint">Vous aimerez aussi ↓</span>
-            </div>
-            <!-- LOT1 — Livraison + Paiement remontés dans la colonne droite (buy box).
-                 Étaient sous les suggestions (D4/T-016). Le renderer JS cible getElementById,
-                 insensible à la position DOM. Mobile : ces éléments sont peuplés par
-                 b-modal-mobile-product.js, leur position dans .k-modal-info est neutre
-                 (le mobile les affiche via son propre flux). -->
-            <div id="k-modal-delivery" class="k-modal-delivery"></div>
-            <div id="k-modal-payment" class="k-modal-payment"></div>
-            <!-- Actions : dans .k-modal-info pour être dans le flux de la colonne droite.
-                 Desktop : inline sous le contenu (maquettes validées 2026-07).
-                 Mobile : display:contents sur product-zone → ordre naturel conservé. -->
+            <!-- Actions remontées avant la réassurance (référence image 1 : Ajouter/Acheter
+                 juste sous les sélecteurs, avant trust + partage). -->
             <div class="k-modal-actions">
               <div class="k-qty">
                 <button class="k-qty-btn" id="k-qty-minus">−</button>
@@ -476,6 +464,14 @@ if('serviceWorker' in navigator){
               </button>
               <button class="k-buy-now-btn" id="k-buy-now-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Acheter maintenant</button>
             </div>
+            <!-- Réassurance + partage — après les actions (référence image 1) -->
+            <div id="k-modal-trust" class="k-modal-trust"></div>
+            <div id="k-modal-share-row" class="k-modal-share-row"></div>
+            <!-- T-030+ : Teaser suggestions -->
+            <div id="k-modal-sugg-peek" class="k-modal-sugg-peek" hidden>
+              <span class="k-modal-sugg-peek-hint">Vous aimerez aussi ↓</span>
+            </div>
+            <div id="k-modal-payment" class="k-modal-payment"></div>
           </div><!-- end .k-modal-info -->
         </div><!-- end .k-modal-details -->
       </div><!-- end .k-modal-product-zone -->

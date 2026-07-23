@@ -1,0 +1,20 @@
+{
+  "orphanEmit": [
+    "sidebar:built"
+  ],
+  "orphanListen": [
+    "modal:product-changed"
+  ],
+  "undeclared": [
+    "carousel:changed",
+    "favorites:view-refresh",
+    "modal:closed",
+    "modal:composition-synced",
+    "modal:opened",
+    "modal:product-changed",
+    "sidebar:built",
+    "view:changed"
+  ],
+  "notFoundEndpoints": [],
+  "savedAt": "2026-07-23T19:58:15.161Z"
+}
