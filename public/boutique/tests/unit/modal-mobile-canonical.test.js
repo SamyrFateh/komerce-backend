@@ -1,56 +1,41 @@
-﻿'use strict';
+'use strict';
 
 const fs = require('fs');
 const path = require('path');
 
-const cssPath = path.resolve(__dirname, '../../css/modal-mobile-canonical.css');
-const css = fs.readFileSync(cssPath, 'utf8');
+describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
+  const css = fs.readFileSync(
+    path.join(__dirname, '../../css/modal-mobile-canonical.css'),
+    'utf8'
+  );
 
-function selectorBlocks(selector) {
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return css.match(new RegExp(`${escaped}\\s*\\{[^}]*\\}`, 'g')) || [];
-}
-
-function ownerBlock(selector, signature) {
-  const block = selectorBlocks(selector).find(candidate => candidate.includes(signature));
-  expect(block).toBeDefined();
-  return block;
-}
-
-describe('modal-mobile-canonical.css - MDM-9', () => {
-  it('keeps suggestion rail sizing in the canonical owner rules', () => {
-    const grid = ownerBlock('#k-modal .k-sug-grid', 'display: flex;');
-    expect(grid).toContain('padding: 3px 28px 8px 14px;');
-    expect(grid).toContain('gap: 10px;');
-
-    const card = ownerBlock('#k-modal .k-sug-grid .k-sug-card', 'display: flex;');
-    expect(card).toContain('flex: 0 0 128px;');
-    expect(card).toContain('width: 128px;');
-    expect(card).toContain('max-width: 128px;');
+  test('does not own the visual suggestion button styles', () => {
+    expect(css).not.toMatch(
+      /(^|\n)\s*#k-modal\s+\.k-sug-add(?:[:\s,{])/m
+    );
   });
 
-  it('exposes the editorial entry and one-line reason labels', () => {
-    expect(css).toContain('#k-modal .k-modal-sugg-peek-kicker');
-    expect(css).toContain('#k-modal .k-modal-sugg-peek-copy');
+  test('keeps the vertical price then actions layout', () => {
+    expect(css).toMatch(
+      /#k-modal\s+\.k-sug-card-bottom\s*\{[^}]*flex-direction:\s*column[^}]*align-items:\s*flex-start/s
+    );
 
-    const reason = ownerBlock('#k-modal .k-sug-card-reason', 'white-space: nowrap;');
-    expect(reason).toContain('text-overflow: ellipsis;');
+    expect(css).toMatch(
+      /#k-modal\s+\.k-sug-card-price\s*\{[^}]*white-space:\s*nowrap/s
+    );
+
+    expect(css).toMatch(
+      /#k-modal\s+\.k-sug-card-actions\s*\{[^}]*justify-content:\s*flex-start/s
+    );
   });
 
-  it('keeps 44px hero touch targets and the contrast veil', () => {
-    const controls = css.match(
-      /#k-modal \.k-modal-back-overlay,[\s\S]*?#k-modal \.k-modal-cart-overlay\s*\{[^}]*\}/
+  test('aligns suggestion actions at the bottom of every card', () => {
+    expect(css).toMatch(
+      /#k-modal\s+\.k-sug-grid\s+\.k-sug-card\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column[^}]*align-self:\s*stretch/s
     );
 
-    expect(controls).not.toBeNull();
-    expect(controls[0]).toContain('width: 44px;');
-    expect(controls[0]).toContain('height: 44px;');
-
-    const veil = ownerBlock(
-      '#k-modal .k-modal-topbar-overlay::before',
-      'linear-gradient'
+    expect(css).toMatch(
+      /#k-modal\s+\.k-sug-card-bottom\s*\{[^}]*margin-top:\s*auto/s
     );
-
-    expect(veil).toContain('height: 100px;');
   });
 });
