@@ -2901,10 +2901,8 @@ html.k-mobile-premium-v1 .k-chip-label {
     grid-column: 3;
     grid-row: 1;
   }
-  #k-modal .k-modal-product-zone .k-modal-actions {
-    grid-column: 3;
-    grid-row: 2;
-  }
+  /* Actions : inline dans .k-modal-info (colonne droite), pas en grid-row:2.
+     Maquettes validées 2026-07. */
 }
 
 
