@@ -21,18 +21,18 @@
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 971 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
-| `interactions.css` | 432 | 🔴 **ORPHELIN** |
+| `interactions.css` | 437 | 🔴 **ORPHELIN** |
 | `layout.css` | 1168 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
 | `modal-media.css` | 313 | 🔴 **ORPHELIN** |
 | `modal-mobile-canonical.css` | 718 | 🔴 **ORPHELIN** |
-| `modal-mobile-suggestion-actions.css` | 66 | 🔴 **ORPHELIN** |
+| `modal-mobile-suggestion-actions.css` | 62 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 477 | 🔴 **ORPHELIN** |
-| `modal-product.css` | 1430 | 🔴 **ORPHELIN** |
-| `modal-shell.css` | 1103 | 🔴 **ORPHELIN** |
+| `modal-product.css` | 1431 | 🔴 **ORPHELIN** |
+| `modal-shell.css` | 1105 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
-| `products.css` | 880 | 🔴 **ORPHELIN** |
+| `products.css` | 884 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 71 | 🔴 **ORPHELIN** |
 | `shared-followup.css` | 3 | 🔴 **ORPHELIN** |
@@ -45,7 +45,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=136
- 2. /boutique/css/dist/components.css?v=226
+ 2. /boutique/css/dist/components.css?v=227
  3. /boutique/css/dist/desktop.css?v=73
  4. /boutique/css/dist/event.css?v=32
 ```

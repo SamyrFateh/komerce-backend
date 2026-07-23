@@ -1626,6 +1626,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   /* Stepper inline dans la carte desktop */
   .k-card-add.in-cart {
+    border-radius: 18px;
     background-color: var(--white);
     box-shadow: var(--elev-2);
   }
@@ -1683,24 +1684,14 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-card:hover .k-card-fav { opacity: 1; }
   .k-card-fav.liked { opacity: 1; }
 
-  /* ── BOUTON PANIER desktop : taille réduite + stepper compact ───────── */
-  /* Override de la taille mobile (32px) : plus discret sur desktop.       */
-  .k-card-add {
-    width: 26px;
-    height: 26px;
-    bottom: 8px;
-    right: 8px;
-  }
-
-  /* Stepper − qty + : plus compact sur desktop (mobile = 68-86px).
-     Surchargé depuis products.css @900px (100px → 80px).                */
-  .k-card-add.in-cart {
-    width: 80px;
-    height: 28px;
-    border-radius: 18px;
-    background-color: var(--white);
-    box-shadow: var(--elev-2);
-  }
+  /* ── BOUTON PANIER desktop ───────────────────────────────────────────
+     Taille/position (width, height, bottom, right) : source de vérité
+     réelle = cart.css @900px (46px / 88px en-cart / bottom-right 10px).
+     cart.css est bundlé après products.css (voir css-bundles.js), donc
+     tout width/height/bottom/right redéfini ici serait mort par cascade
+     — ne pas en rajouter. Fond/radius/ombre de l'état en-cart : voir
+     le bloc "Stepper inline dans la carte desktop" plus haut dans ce
+     même @media. Ce bloc-ci ne porte que la taille des enfants (−/qty/+). */
 
   .k-card-add.in-cart .k-add-minus,
   .k-card-add.in-cart .k-add-plus-ic {
