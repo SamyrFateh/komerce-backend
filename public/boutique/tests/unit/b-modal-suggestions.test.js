@@ -25,8 +25,8 @@
  * à jour ciblées soient observables en test.
  *
  * Périmètre couvert : `_ensureTwoSuggestionLevels` (complément local quand
- * l'API ne renvoie qu'un niveau), le rendu des 2 sections (même catégorie /
- * cela peut vous plaire), la carte (stepper add/plus/minus via
+ * l'API ne renvoie qu'un niveau), le rendu des 2 sections (même univers /
+ * sélection Komerce), la carte (stepper add/plus/minus via
  * `_bindCardActions`/`_updateCardStepper`, badge promo, reason_label), le
  * clic carte → bus 'modal:open' (hors zone stepper), les chips de filtre
  * sous-catégorie, `applyModalDesktopSuggestionState` (bascule desktop +
@@ -59,6 +59,7 @@ const { renderSuggestions } = require('../../js/b-modal-suggestions.js');
 function buildDom() {
   document.body.innerHTML =
     '<div id="k-modal-suggestions">' +
+      '<div id="k-modal-sugg-peek" hidden></div>' +
       '<h3>Vous aimerez aussi</h3>' +
     '</div>' +
     '<div id="k-sug-rail"></div>' +
@@ -111,21 +112,23 @@ describe('b-modal-suggestions', () => {
       renderSuggestions([], [], 'Chaussures');
       const section = document.getElementById('k-modal-suggestions');
       expect(section.classList.contains('u-hidden')).toBe(true);
+      expect(document.getElementById('k-modal-sugg-peek').hidden).toBe(true);
       expect(dom.sugRail.innerHTML).toBe('');
     });
 
-    it('sameCat non vide -> section visible, 1 carte, titre contextuel avec le nom de catégorie', () => {
+    it('sameCat non vide -> section visible, annonce active et titre éditorial', () => {
       renderSuggestions([product({ id: 1, name: 'Basket' })], [], 'Chaussures');
       const section = document.getElementById('k-modal-suggestions');
       expect(section.classList.contains('u-hidden')).toBe(false);
+      expect(document.getElementById('k-modal-sugg-peek').hidden).toBe(false);
       expect(dom.sugRail.querySelectorAll('.k-sug-card').length).toBe(1);
-      expect(dom.sugRail.textContent).toContain('chaussures');
+      expect(dom.sugRail.textContent).toContain('Dans le même univers');
       expect(dom.sugRail.querySelector('.k-sug-card-name').textContent).toBe('Basket');
     });
 
-    it('otherCat non vide -> section "Cela peut vous plaire" avec ses cartes', () => {
+    it('otherCat non vide -> section "Sélection Komerce" avec ses cartes', () => {
       renderSuggestions([], [product({ id: 2, name: 'Sac', category: 'Sacs' })], null);
-      expect(dom.sugRail.textContent).toContain('Cela peut vous plaire');
+      expect(dom.sugRail.textContent).toContain('Sélection Komerce');
       expect(dom.sugRail.querySelectorAll('.k-sug-grid--other .k-sug-card').length).toBe(1);
     });
 
