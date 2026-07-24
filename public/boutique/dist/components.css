@@ -1959,7 +1959,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   transition: background .2s;
 }
 .k-modal-cart-btn:active { background: var(--sand); }
-.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; color: var(--ocean-dark); }
+.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; object-fit: contain; }
 .k-modal-cart-badge {
   position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;

@@ -30,9 +30,9 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 
 | Module JS | DOM | CSS-inj | bus on/emit | Composants ciblés |
 |-----------|:---:|:-------:|:-----------:|-------------------|
-| `b-modal-mobile-product.js` | 89 | 1 | 0/0 | Modal produit, Panier |
 | `b-modal-core.js` | 33 | 54 | 4/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-cart.js` | 54 | 31 | 2/8 | Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
+| `b-modal-mobile-product.js` | 81 | 1 | 0/0 | Modal produit |
 | `b-modal-desktop-product.js` | 78 | 1 | 0/0 | Modal produit |
 | `b-checkout.js` | 60 | 4 | 0/2 | Bottom-nav mobile |
 | `b-checkout-render.js` | 56 | 0 | 0/0 | — |
