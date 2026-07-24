@@ -19,6 +19,7 @@ import { bus } from './b-bus.js';
 import { state, dom } from './b-store.js';
 import { addToCart, quickAdd, quickRemove } from './b-cart.js';
 import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
+import { getModalDeliveryMode } from './b-modal-desktop-product.js';
 
 let _selectionReconcileInstalled = false;
 let _detailReadyReconcileInstalled = false;
@@ -182,7 +183,7 @@ function setupModalCart() {
       state.modalProductDetail,
       state.modalSelection
     );
-    addToCart(cartProduct, 1, dom.addCartBtn);
+    addToCart(cartProduct, 1, dom.addCartBtn, { delivery_mode: getModalDeliveryMode() });
     _syncModalQtyUI();
   });
 }

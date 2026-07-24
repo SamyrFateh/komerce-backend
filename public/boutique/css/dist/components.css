@@ -4428,6 +4428,59 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
   .k-modal-delivery-opt:last-child { margin-bottom: 0; }
   .k-modal-delivery-opt .k-modal-opt-radio { display: none; }
+
+  /* ── Sélecteur mode livraison (Maritime / Express) ── */
+  .k-dsel-wrap {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .k-dsel-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, background 0.15s;
+    min-width: 0;
+  }
+  .k-dsel-btn:hover { border-color: var(--coral); }
+  .k-dsel-btn.is-selected {
+    border-color: var(--coral);
+    background: var(--coral-light);
+  }
+  .k-dsel-icon { font-size: 18px; flex-shrink: 0; }
+  .k-dsel-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .k-dsel-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .k-dsel-delay {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.2;
+  }
+  .k-dsel-price {
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .k-dsel-price--free { color: var(--ocean-dark); }
+  .k-dsel-price--pending { color: var(--text-muted); }
   .k-modal-opt-body { flex: 1; min-width: 0; }
   .k-modal-opt-row1 {
     display: flex;

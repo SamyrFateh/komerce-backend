@@ -137,7 +137,7 @@ describe('shipping-mode-pill — desktop (k-modal-delivery)', () => {
     clearDesktopProductDetailState();
   });
 
-  test('AIR_ dispo → pill --air visible, liste détaillée conservée en dessous', () => {
+  test('AIR_ dispo → sélecteur Maritime/Express visible, bouton air présent', () => {
     const product = detail({
       delivery_options: [
         { code: 'SEA_STANDARD', label: 'Livraison standard', available: true, price_kmf: null, eta_label: null },
@@ -146,12 +146,15 @@ describe('shipping-mode-pill — desktop (k-modal-delivery)', () => {
     });
     renderDesktopProductDetail(product, createModalSelection(product));
 
-    const pill = document.querySelector('#k-modal-delivery .k-modal-delivery-pill');
-    expect(pill).not.toBeNull();
-    expect(pill.classList.contains('k-modal-delivery-pill--air')).toBe(true);
-    expect(pill.textContent).toContain('Sous 5 jours');
-
-    // Desktop : pill seule, pas de liste détaillée (maquettes validées 2026-07)
+    // Deux modes disponibles → sélecteur (pas de pill, pas de liste détaillée)
+    const selector = document.querySelector('#k-modal-delivery .k-dsel-wrap');
+    expect(selector).not.toBeNull();
+    const airBtn = selector.querySelector('.k-dsel-btn[data-mode="air"]');
+    expect(airBtn).not.toBeNull();
+    const seaBtn = selector.querySelector('.k-dsel-btn[data-mode="sea"]');
+    expect(seaBtn).not.toBeNull();
+    // Maritime sélectionné par défaut
+    expect(seaBtn.classList.contains('is-selected')).toBe(true);
     expect(document.querySelector('[data-delivery-code]')).toBeNull();
   });
 

@@ -367,7 +367,7 @@ describe('desktop product detail renderer', () => {
     });
     renderDesktopProductDetail(product, createModalSelection(product));
 
-    // La pill affiche le mode dérivé par deriveDeliveryMode(), pas le label brut
+    // Pill single-mode : AIR seul → pill --air avec le délai
     const pill = document.querySelector('#k-modal-delivery .k-modal-delivery-pill--air');
     expect(pill).not.toBeNull();
     expect(pill.textContent).toContain('Sous 5 jours');

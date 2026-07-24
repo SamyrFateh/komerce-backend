@@ -166,6 +166,7 @@ const orders = {
       items: Joi.array().items(Joi.object({
         product_id: uuid.required(),
         quantity:   posInt.max(100).default(1),
+        delivery_mode: Joi.string().valid('sea', 'air').default('sea'),
         module_type:       Joi.string().valid(...MODULE_TYPES),
         module_fabric_id:  uuid,
         module_fabric_type: safeStr(100),

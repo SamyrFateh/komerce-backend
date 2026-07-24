@@ -429,8 +429,9 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
            module_size, module_retouche, module_qty_meters, module_accessories,
            variant_combo, sku_id,
            customs_category_key, sh_code, douane_pct, tva_pct, taxe_add_pct,
-           classification_defaulted
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+           classification_defaulted,
+           delivery_mode
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
         [
           order.id,
           item.product_id,
@@ -460,6 +461,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           clf.tva_pct,
           clf.taxe_add_pct,
           clf.classification_defaulted,
+          // Mode livraison choisi par le client (sea = défaut, air = express)
+          item.delivery_mode || 'sea',
         ]
       );
     }

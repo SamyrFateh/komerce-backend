@@ -271,6 +271,7 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
       qty: qty,
       variant_combo: combo,
       variant_label: comboLabel,
+      delivery_mode: options.delivery_mode || 'sea',
     });
   }
 

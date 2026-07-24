@@ -1,3 +1,17 @@
+/**
+ * @komerce-arch-lite
+ * @role          checkout-submit-order-tests
+ * @domain        checkout
+ * @layer         test
+ * @status        production
+ * @owner         public/boutique/tests/unit/b-checkout.test.js
+ * @purpose       Tests unitaires du flux de commande (submitOrder, PayPal,
+ *                cash_relais). Vérifie le payload POST /api/orders incluant
+ *                delivery_mode par item (sea/air, introduit lot livraison 2026-07).
+ * @impact-areas  checkout, orders, cart, delivery-mode
+ * @version       2026-07
+ */
+
 'use strict';
 
 /**
@@ -419,7 +433,7 @@ describe('b-checkout', () => {
       await submitOrder(btn);
 
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
-        items: [{ product_id: '1', quantity: 2, confection_type: 'aucun', variant_combo: null }],
+        items: [{ product_id: '1', quantity: 2, confection_type: 'aucun', variant_combo: null, delivery_mode: 'sea' }],
         relais_id: 7,
         recipient_name: 'Amina',
         recipient_phone: '+269123456',
@@ -1001,7 +1015,7 @@ describe('b-checkout', () => {
       const result = await prepareKomerceOrder();
 
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
-        items: [{ product_id: '42', quantity: 2, confection_type: 'aucun', variant_combo: null }],
+        items: [{ product_id: '42', quantity: 2, confection_type: 'aucun', variant_combo: null, delivery_mode: 'sea' }],
         relais_id: 7,
         recipient_name: 'Fatima',
         recipient_phone: '3211234',

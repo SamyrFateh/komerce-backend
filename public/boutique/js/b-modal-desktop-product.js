@@ -355,23 +355,106 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
   return group;
 }
 
-function renderDeliveryModePill(container, detail) {
-  const { mode, label, lead_time_label } = deriveDeliveryMode(detail?.delivery_options);
-  const pill = document.createElement('div');
-  pill.className = `k-modal-delivery-pill k-modal-delivery-pill--${mode}`;
-  pill.dataset.deliveryMode = mode;
+function getModalDeliveryMode() {
+  const el = document.getElementById('k-modal-delivery');
+  return el ? (el.dataset.selectedMode || 'sea') : 'sea';
+}
 
-  const icon = document.createElement('span');
-  icon.className = 'k-modal-delivery-pill-icon';
-  icon.setAttribute('aria-hidden', 'true');
-  icon.textContent = mode === 'air' ? '✈️' : '🚢';
-  pill.appendChild(icon);
+export { getModalDeliveryMode };
 
-  const text = document.createElement('span');
-  text.textContent = lead_time_label ? `${label} · ${lead_time_label}` : label;
-  pill.appendChild(text);
+function renderDeliverySelector(container, detail) {
+  const options = detail?.delivery_options || [];
+  const hasAir = options.some(o => o.code === 'AIR_EXPRESS');
+  const hasSea = options.some(o => o.code === 'SEA_STANDARD') || !hasAir;
 
-  container.appendChild(pill);
+  // Si un seul mode disponible → pill informative simple (pas de choix)
+  if (!hasAir || !hasSea) {
+    const { mode, label, lead_time_label } = deriveDeliveryMode(options);
+    const pill = document.createElement('div');
+    pill.className = `k-modal-delivery-pill k-modal-delivery-pill--${mode}`;
+    pill.dataset.deliveryMode = mode;
+    pill.dataset.selectedMode = mode;
+    container.dataset.selectedMode = mode;
+    const icon = document.createElement('span');
+    icon.className = 'k-modal-delivery-pill-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = mode === 'air' ? '✈️' : '🚢';
+    pill.appendChild(icon);
+    const text = document.createElement('span');
+    text.textContent = lead_time_label ? `${label} · ${lead_time_label}` : label;
+    pill.appendChild(text);
+    container.appendChild(pill);
+    return;
+  }
+
+  // Deux modes disponibles → sélecteur
+  container.dataset.selectedMode = container.dataset.selectedMode || 'sea';
+
+  const MODES = [
+    {
+      code: 'sea',
+      icon: '🚢',
+      label: 'Maritime',
+      delay: '3 à 5 semaines',
+      priceLabel: 'Inclus',
+      priceClass: 'k-dsel-price--free',
+    },
+    {
+      code: 'air',
+      icon: '✈️',
+      label: 'Express',
+      delay: '1 semaine max',
+      priceLabel: 'Frais à confirmer',
+      priceClass: 'k-dsel-price--pending',
+    },
+  ];
+
+  const wrap = document.createElement('div');
+  wrap.className = 'k-dsel-wrap';
+  wrap.setAttribute('role', 'radiogroup');
+  wrap.setAttribute('aria-label', 'Mode de livraison');
+
+  MODES.forEach(({ code, icon, label, delay, priceLabel, priceClass }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'k-dsel-btn';
+    btn.dataset.mode = code;
+    btn.setAttribute('role', 'radio');
+    const isSelected = container.dataset.selectedMode === code;
+    btn.setAttribute('aria-checked', String(isSelected));
+    if (isSelected) btn.classList.add('is-selected');
+
+    btn.innerHTML =
+      `<span class="k-dsel-icon" aria-hidden="true">${icon}</span>` +
+      `<span class="k-dsel-body">` +
+        `<span class="k-dsel-label">${label}</span>` +
+        `<span class="k-dsel-delay">${delay}</span>` +
+      `</span>` +
+      `<span class="k-dsel-price ${priceClass}">${priceLabel}</span>`;
+
+    btn.addEventListener('click', () => {
+      container.dataset.selectedMode = code;
+      wrap.querySelectorAll('.k-dsel-btn').forEach(b => {
+        const active = b.dataset.mode === code;
+        b.classList.toggle('is-selected', active);
+        b.setAttribute('aria-checked', String(active));
+      });
+    });
+
+    wrap.appendChild(btn);
+  });
+
+  container.appendChild(wrap);
+}
+
+function renderDeliveryOptions(detail) {
+  const el = document.getElementById('k-modal-delivery');
+  if (!el) return;
+  // Conserver le choix si on re-render (changement SKU etc.)
+  const previousMode = el.dataset.selectedMode || 'sea';
+  el.innerHTML = '';
+  el.dataset.selectedMode = previousMode;
+  renderDeliverySelector(el, detail);
 }
 
 function deliveryMeta(option) {
@@ -415,17 +498,6 @@ function _deliveryIconSvg(isAir) {
   return svg;
 }
 
-/**
- * Desktop : livraison = pill compacte uniquement (mode + délai).
- * Le détail des options et le bloc paiement appartiennent au tunnel
- * de commande, pas à la fiche produit. Conforme aux maquettes validées.
- */
-function renderDeliveryOptions(detail) {
-  const el = document.getElementById('k-modal-delivery');
-  if (!el) return;
-  el.innerHTML = '';
-  renderDeliveryModePill(el, detail);
-}
 
 /* ── Lot Content, commit 4 : contenu enrichi sous la zone transactionnelle ──
  * Même view-model que le mobile (view-models/product-content-model.js) —
