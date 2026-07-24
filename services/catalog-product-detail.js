@@ -314,25 +314,39 @@ function buildSellableUnits(product, skuRows, media, explicitSkuMediaMap = new M
   });
 }
 
-function buildDeliveryOptions() {
-  return listCommercialTransportRails().map((rail) => {
-    const label = PUBLIC_RAIL_LABELS[rail.code];
-    if (!label) {
-      const error = new Error(`Rail commercial sans label public produit : ${rail.code}`);
-      error.code = 'PRODUCT_DETAIL_RAIL_LABEL_MISSING';
-      throw error;
-    }
-    return {
-      code: rail.code,
-      label,
-      available: true,
-      // Aucun moteur de devis produit/destination ne fournit encore ces valeurs.
-      // null est une absence honnête ; surtout pas "Gratuit" ou "3 à 5 semaines".
-      price_kmf: null,
-      eta_label: null,
-      unavailable_reason: null,
-    };
-  });
+/**
+ * Construit les options de livraison exposées dans la fiche produit.
+ *
+ * Logique opt-out : tous les rails commerciaux actifs sont proposés par
+ * défaut. Le rail AIR_EXPRESS est retiré uniquement si le produit porte
+ * air_excluded = true (volume prohibitif, matières dangereuses, fragile
+ * non-validé pour le fret aérien).
+ *
+ * @param {{ air_excluded?: boolean }} product  — ligne products lue en DB
+ */
+function buildDeliveryOptions(product = {}) {
+  const airExcluded = product.air_excluded === true;
+
+  return listCommercialTransportRails()
+    .filter((rail) => !(rail.code === 'AIR_EXPRESS' && airExcluded))
+    .map((rail) => {
+      const label = PUBLIC_RAIL_LABELS[rail.code];
+      if (!label) {
+        const error = new Error(`Rail commercial sans label public produit : ${rail.code}`);
+        error.code = 'PRODUCT_DETAIL_RAIL_LABEL_MISSING';
+        throw error;
+      }
+      return {
+        code: rail.code,
+        label,
+        available: true,
+        // Aucun moteur de devis produit/destination ne fournit encore ces valeurs.
+        // null est une absence honnête ; surtout pas "Gratuit" ou "3 à 5 semaines".
+        price_kmf: null,
+        eta_label: null,
+        unavailable_reason: null,
+      };
+    });
 }
 
 function assertContract(detail) {
@@ -350,7 +364,8 @@ function assertContract(detail) {
 async function getProductDetail(dbClient, productId) {
   const { rows: [product] } = await dbClient.query(
     `SELECT id, product_ref, sku, name, description, category, subcategory, series,
-            price_kmf, promo_pct, image_url, images, has_variants, inventory_model
+            price_kmf, promo_pct, image_url, images, has_variants, inventory_model,
+            air_excluded
        FROM products
       WHERE id = $1 AND is_active = TRUE`,
     [productId]
@@ -453,7 +468,7 @@ async function getProductDetail(dbClient, productId) {
     media,
     option_axes: buildOptionAxes(variantRows),
     sellable_units: buildSellableUnits(product, skuRows, media, explicitSkuMediaMap),
-    delivery_options: buildDeliveryOptions(),
+    delivery_options: buildDeliveryOptions(product),
     content: buildContent(profileRow || null, sectionRows, attributeRows),
   };
 

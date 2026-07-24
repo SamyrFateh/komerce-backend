@@ -63,9 +63,9 @@ const TRANSPORT_RAILS = Object.freeze({
   AIR_EXPRESS: Object.freeze({
     code: 'AIR_EXPRESS',
     corridor: Object.freeze(['DXB', 'ADD', 'HAH']),
-    capacity_status: CAPACITY_STATUS.INTERNAL,
-    pricing_status: PRICING_STATUS.PENDING,
-    commercial_exposure: COMMERCIAL_EXPOSURE.DISABLED,
+    capacity_status: CAPACITY_STATUS.ACTIVE,
+    pricing_status: PRICING_STATUS.ACTIVE,
+    commercial_exposure: COMMERCIAL_EXPOSURE.PUBLIC,
   }),
 });
 
