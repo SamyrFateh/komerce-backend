@@ -1936,7 +1936,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   flex-shrink: 1; min-width: 0;
 }
 .k-modal-back svg { width: 18px; height: 18px; flex-shrink: 0; }
-#k-modal-back-label { display: none; /* OPT : label texte masqué, flèche seule suffit */ }
+#k-modal-back-label { display: none; } /* masqué mobile, visible desktop via la règle ≥900px ci-dessous */
 .k-modal-back:active { opacity: .7; }
 #k-modal-nav { display: flex; align-items: center; gap: 6px; }
 /* PR-D3 — nav-btn pill texte sobre (← produit précédent / → produit suivant) */
@@ -1959,7 +1959,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   transition: background .2s;
 }
 .k-modal-cart-btn:active { background: var(--sand); }
-.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; object-fit: contain; }
+.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; color: var(--ocean-dark); }
 .k-modal-cart-badge {
   position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;
@@ -2355,6 +2355,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* ── Topbar ──────────────────────────────────────────────── */
   #k-modal .k-modal-topbar { display: flex; /* restauré : masqué sur mobile uniquement */ position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: var(--surface-sand-97); border-bottom: 1px solid var(--border-text-08); flex-shrink: 0; } /* [T-029] halo retiré */
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
+  /* REF-2026-07 : label "Retour" visible desktop (était masqué globalement) */
+  #k-modal #k-modal-back-label { display: inline; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
   #k-modal .k-modal-cart-icon { width: 24px; height: 24px; }
   .k-topbar-search-trigger { display: none; }
@@ -2365,6 +2367,9 @@ html.k-mobile-premium-v1 .k-chip-label {
   .k-modal-breadcrumb-cat { cursor: pointer; transition: color .12s; }
   .k-modal-breadcrumb-cat:hover { color: var(--ocean); }
   .k-modal-breadcrumb-name { font-weight: 500; color: var(--text); }
+  /* REF-2026-07 : Partager masqué dans le panier latéral in-modal.
+     Le bouton appartient au tiroir panier standalone, pas au side cart modal. */
+  #k-modal #k-sc-share { display: none; }
 
   /* ── Scroll passe-plat desktop ──────────────────────────────
      .k-modal-scroll ne scrolle plus lui-même sur desktop (coque
