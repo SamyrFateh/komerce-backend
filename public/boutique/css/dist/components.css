@@ -2868,10 +2868,10 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* REF-2026-07 : placement grille 3 pistes + reset sticky du 900px.
      align-self / height / max-height / aspect-ratio / margin sont owned par
      modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —
-     ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard). */
+     ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard).
+     min-height : owned par modal-product-lot4-hybrid.css (clamp suggpek). */
   #k-modal .k-modal-product-zone {
     align-self: stretch;
-    min-height: 100%;
   }
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     grid-column: 1 / 3;
@@ -5277,18 +5277,9 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   /* REF-2026-07b : aération réassurance + partage.
      Gaps actuels CTA→trust (12px) et trust→share (10px) trop serrés.
-     Measurements harnais : viewport=800px, zone=742px, sugg y=828.
      On donne de la respiration entre chaque section. */
   #k-modal .k-modal-trust   { margin-top: 18px; }
   #k-modal .k-modal-share-row { margin-top: 14px; }
-
-  /* REF-2026-07b : suggestions peek sans scroll.
-     Zone produit h=742px dépasse viewport 800px → suggestions à y=828 (28px
-     sous le fold). max-height: calc(100vh - 140px) → zone≈660px, sugg
-     débutent à y≈746, ~54px visibles sans scroller. img-wrap suit (h:100%). */
-  #k-modal .k-modal-product-zone {
-    max-height: calc(100vh - 140px);
-  }
 }
 
 

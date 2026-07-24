@@ -975,10 +975,10 @@
   /* REF-2026-07 : placement grille 3 pistes + reset sticky du 900px.
      align-self / height / max-height / aspect-ratio / margin sont owned par
      modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —
-     ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard). */
+     ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard).
+     min-height : owned par modal-product-lot4-hybrid.css (clamp suggpek). */
   #k-modal .k-modal-product-zone {
     align-self: stretch;
-    min-height: 100%;
   }
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     grid-column: 1 / 3;

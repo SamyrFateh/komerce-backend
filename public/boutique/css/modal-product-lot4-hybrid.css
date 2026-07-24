@@ -491,16 +491,7 @@
 
   /* REF-2026-07b : aération réassurance + partage.
      Gaps actuels CTA→trust (12px) et trust→share (10px) trop serrés.
-     Measurements harnais : viewport=800px, zone=742px, sugg y=828.
      On donne de la respiration entre chaque section. */
   #k-modal .k-modal-trust   { margin-top: 18px; }
   #k-modal .k-modal-share-row { margin-top: 14px; }
-
-  /* REF-2026-07b : suggestions peek sans scroll.
-     Zone produit h=742px dépasse viewport 800px → suggestions à y=828 (28px
-     sous le fold). max-height: calc(100vh - 140px) → zone≈660px, sugg
-     débutent à y≈746, ~54px visibles sans scroller. img-wrap suit (h:100%). */
-  #k-modal .k-modal-product-zone {
-    max-height: calc(100vh - 140px);
-  }
 }
