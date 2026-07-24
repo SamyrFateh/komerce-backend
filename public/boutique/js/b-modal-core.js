@@ -1230,7 +1230,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       target &&
       typeof target.closest === 'function' &&
       target.closest(
-        '.k-modal-topbar-overlay, .k-modal-view-full, button, a, input, select, textarea, [role="button"]'
+        '.k-modal-view-full, button, a, input, select, textarea, [role="button"]'
       )
     );
   }

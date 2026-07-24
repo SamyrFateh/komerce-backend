@@ -73,8 +73,8 @@ if('serviceWorker' in navigator){
 <script>/* Anti-FOUC premium desktop — doit s'exécuter AVANT tout CSS rendu */
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=136">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=228">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=138">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=231">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=73">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 
@@ -400,10 +400,10 @@ if('serviceWorker' in navigator){
       </button>
       <div class="k-modal-topbar-right">
         <button class="k-modal-cart-btn" id="k-modal-cart-btn" aria-label="Panier">
-          <img src="/images/panier_tresse_vert.png" class="k-modal-cart-icon" width="20" height="20" alt="" aria-hidden="true">
+          <svg class="k-modal-cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8V6a4 4 0 0 1 8 0v2"/><path d="M4.5 8h11l1 12H3.5z"/></svg>
           <span class="k-modal-cart-badge" id="k-modal-cart-badge"></span>
         </button>
-        <button class="k-modal-close" id="k-modal-close">✕</button>
+        <button class="k-modal-close" id="k-modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
       </div>
     </div>
     <!-- k-modal-body : coque desktop — colonne principale (.k-modal-scroll,

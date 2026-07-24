@@ -36,14 +36,16 @@
   box-sizing: border-box; max-width: 100%; /* S2.1 */
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 400;
-  padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
+  padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
   background: var(--surface-sand-96);
-  backdrop-filter: blur(20px) saturate(200%);
-  -webkit-backdrop-filter: blur(20px) saturate(200%);
-  border-bottom: 1px solid var(--overlay-black-sm);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: none;
   flex-shrink: 0;
-  /* OPT : cachée sur mobile — boutons repositionnés en overlay sur le hero */
-  display: none;
+  /* Réactivée sur mobile (OPT précédente : masquée, boutons en overlay sur le
+     hero — abandonné : plus de respiration en haut + panier mal intégré).
+     Version "légère" : moins haute et moins de bordure que le desktop
+     (≥900px ci-dessous reprend une topbar plus dense, min-height 58px). */
 }
 .k-modal-back {
   display: flex; align-items: center; gap: 4px;
@@ -78,7 +80,7 @@
   transition: background .2s;
 }
 .k-modal-cart-btn:active { background: var(--sand); }
-.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; }
+.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; color: var(--ocean-dark); }
 .k-modal-cart-badge {
   position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;
@@ -93,6 +95,7 @@
   border-radius: 50%; font-size: 16px; color: var(--text);
   display: flex; align-items: center; justify-content: center; transition: background .2s;
 }
+.k-modal-close svg { width: 18px; height: 18px; }
 .k-modal-close:active { background: var(--sand); }
 
 /* ── SCROLL AREA (mobile : seul scroll owner) ────────────────── */

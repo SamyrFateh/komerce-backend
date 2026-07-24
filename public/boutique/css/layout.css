@@ -1070,8 +1070,7 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-header-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
-    /* skeleton: gap: 8px merged — keeping boutique-desktop gap:4px as tighter default */
+    gap: 10px;
   }
 
   /* k-cart-btn.k-header-action desktop — BUG-AVATAR-2 :

@@ -933,7 +933,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   html.k-home-premium-v1 .k-cats {
     position: relative;
-    gap: 14px;
+    gap: 20px;
     /* FIX AUDIT 2026-06-11 : la min-width premium vit sur les TRACKS, pas sur
        les chips. Avec min-width:164px sur .k-chip, les tracks minmax(120px,1fr)
        ne faisaient que ~131px à 900px → chips débordant du conteneur (+12px de

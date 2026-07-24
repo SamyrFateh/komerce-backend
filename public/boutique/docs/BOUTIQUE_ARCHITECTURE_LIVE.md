@@ -32,7 +32,7 @@
 | `modal-product.css` | 1431 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 1105 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
-| `products.css` | 884 | 🔴 **ORPHELIN** |
+| `products.css` | 875 | 🔴 **ORPHELIN** |
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 71 | 🔴 **ORPHELIN** |
 | `shared-followup.css` | 3 | 🔴 **ORPHELIN** |
@@ -45,7 +45,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=136
- 2. /boutique/css/dist/components.css?v=227
+ 2. /boutique/css/dist/components.css?v=228
  3. /boutique/css/dist/desktop.css?v=73
  4. /boutique/css/dist/event.css?v=32
 ```
@@ -63,7 +63,7 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 | `.k-subchip` ⚠️ | `boutique-desktop.css` (19/3)<br>`categories.css` (6/0) |
 | `.k-grid` ⚠️ | `cart.css` (2/0)<br>`layout.css` (0/1)<br>`products.css` (10/3) |
 | `.k-card` ⚠️ | `boutique-desktop.css` (0/2)<br>`categories.css` (9/0)<br>`products.css` (7/16) |
-| `.k-card-add` ⚠️ | `cart.css` (0/2)<br>`products.css` (7/5) |
+| `.k-card-add` ⚠️ | `cart.css` (0/2)<br>`products.css` (7/3) |
 | `.k-card-fav` ⚠️ | `cart.css` (0/1)<br>`products.css` (4/3) |
 | `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/7)<br>`layout.css` (2/0) |
 | `#k-desktop-catalog-wrap` | `layout.css` (1/7) |

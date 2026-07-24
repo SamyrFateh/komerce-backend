@@ -131,9 +131,9 @@
   right: 7px;
   width: 32px;
   height: 32px;
-  background: var(--ocean);
+  background: transparent;
   border-radius: 50%;
-  box-shadow: var(--elev-2);
+  box-shadow: none;
   border: none;
   padding: 0;
   z-index: 5;
@@ -142,19 +142,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform .15s var(--ease), box-shadow .15s var(--ease);
-  /* Bouton rempli : le contenu est un <span class="k-card-add-plus"> texte
+  transition: transform .15s var(--ease);
+  /* Bouton sans cercle : le contenu est un <span class="k-card-add-plus"> texte
      (pas d'<img>), cf. render-product-card.js renderAddControl(). */
 }
 .k-card-add:active {
-  transform: scale(.9);
-  box-shadow: 0 0 0 4px rgba(224,90,72,.15);
+  transform: scale(.88);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .k-card-add:hover {
-    transform: scale(1.05);
-    box-shadow: var(--elev-3);
+    transform: scale(1.1);
   }
 }
 
@@ -253,11 +251,12 @@
 
 /* Parts stepper */
 .k-card-add-plus {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 900;
-  color: var(--white);
+  color: var(--coral);
   line-height: 1;
   pointer-events: none;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.18));
 }
 
 .k-add-minus,

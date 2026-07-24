@@ -222,6 +222,24 @@
 .k-sug-add:active { transform: scale(.88); background: var(--sand-dark); }
 .k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: var(--white); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
 
+/* FIX desktop — même bug déjà corrigé côté mobile (voir modal-mobile-canonical.css
+   §"FIX layout carte suggestion") : une fois le produit en panier, le stepper
+   (− N +, ~85-90px) élargit .k-sug-card-actions ; en ligne avec justify-content:
+   space-between, le prix (flex:1, min-width:0, white-space:nowrap, sans clip)
+   déborde et se fait peindre sous le stepper. Bascule en colonne dès que le
+   stepper est actif — plus robuste qu'un ellipsis, insensible à la largeur
+   réelle du stepper. Scopé ≥900px : le mobile a déjà son propre fix. */
+@media (min-width: 900px) {
+  .k-sug-card-bottom:has(.k-sug-card-actions.is-filled) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+  .k-sug-card-bottom:has(.k-sug-card-actions.is-filled) .k-sug-card-actions {
+    justify-content: flex-start;
+  }
+}
+
 /* ── LOT 3 — RÉASSURANCE MOBILE COMPACTE ──────────────────────
    Ligne unique : icône 📦 + "Livraison relais · 3 à 5 semaines" + chevron.
    Accordéon déplié sur clic → 3 items trust (retrait / cash / échange).
@@ -1394,7 +1412,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal-suggestions.k-pdp-curation .k-pdp-curation-section--complements .k-sug-grid {
     display: grid;
-    grid-template-columns: repeat(6, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 14px;
   }
 

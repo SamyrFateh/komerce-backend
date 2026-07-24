@@ -59,7 +59,6 @@ import { setupImageUX } from './b-modal-image-ux.js';
 import { wireBuyNowButton } from './b-modal-buybox-shared.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
 import { renderTrust } from './b-modal-desktop-product.js';
-import { updateCartBadge } from './b-cart-core.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -658,9 +657,6 @@ export function renderMobileProductDetail(
   // enrichi), même owner unique que le desktop (voir renderTrust()).
   renderTrust();
 
-  // OPT : injecter les boutons overlay sur le hero (topbar masquée sur mobile)
-  _ensureHeroOverlay();
-
   // Clear and rebuild the variants container
   container.innerHTML = '';
   const root = document.createElement('div');
@@ -695,77 +691,6 @@ export function renderMobileProductDetail(
   // MDM-2: Media into shell carousel
   renderMedia(detail, selection, forceMedia);
 }
-
-/**
- * OPT — Boutons overlay sur le hero mobile (topbar supprimée).
- * Injecte ←, avatar panier et ✕ en position absolue sur .k-modal-img-wrap.
- * Idempotent : ne recrée pas si déjà présents.
- */
-function _ensureHeroOverlay() {
-  const imgWrap = dom.modal?.querySelector('.k-modal-img-wrap');
-  if (!imgWrap || imgWrap.querySelector('.k-modal-topbar-overlay')) return;
-
-  // Conteneur overlay
-  const overlay = document.createElement('div');
-  overlay.className = 'k-modal-topbar-overlay';
-
-  // ← back
-  const backBtn = document.createElement('button');
-  backBtn.type = 'button';
-  backBtn.className = 'k-modal-back-overlay';
-  backBtn.setAttribute('aria-label', 'Retour');
-  backBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>';
-  backBtn.addEventListener('click', () => {
-    // Réutilise le handler du bouton back original
-    dom.modalBack?.click();
-  });
-
-  // Groupe droit : panier + ✕
-  const right = document.createElement('div');
-  right.className = 'k-modal-topbar-overlay-right';
-
-  // Icône panier — panier_tresse_vert.png, icône panier canonique de l'app
-  // (bnav, mini-cart CTA). Remplace l'avatar "petite dame" (avatar_seule.png)
-  // encore présent sur le header hors-modale. Icône fixe : pas de classe
-  // .k-cart-avatar, donc pas de swap seule/panier via updateCartBadge()
-  // (b-cart-core.js) — seul le badge se synchronise ici, cf. syncBadge().
-  const cartBtn = document.createElement('button');
-  cartBtn.type = 'button';
-  cartBtn.className = 'k-modal-cart-overlay';
-  cartBtn.setAttribute('aria-label', 'Panier');
-  cartBtn.innerHTML = '<img src="/images/panier_tresse_vert.png" class="k-modal-cart-overlay-icon" width="20" height="20" alt="" aria-hidden="true"><span class="k-modal-cart-badge-overlay" id="k-modal-cart-badge-overlay"></span>';
-  cartBtn.addEventListener('click', () => dom.modalCartBtn?.click());
-
-  // ✕ fermer
-  const closeBtn = document.createElement('button');
-  closeBtn.type = 'button';
-  closeBtn.className = 'k-modal-close-overlay';
-  closeBtn.setAttribute('aria-label', 'Fermer');
-  closeBtn.textContent = '✕';
-  closeBtn.addEventListener('click', () => dom.modalClose?.click());
-
-  right.append(cartBtn, closeBtn);
-  overlay.append(backBtn, right);
-  imgWrap.appendChild(overlay);
-
-  // Sync immédiat — sans ça les classes has-items/is-empty et le badge
-  // restent sur l'état initial jusqu'au prochain ajout/retrait panier,
-  // même si le panier contient déjà des articles à l'ouverture de la modale.
-  updateCartBadge();
-
-  // Sync badge panier avec le badge original
-  const syncBadge = () => {
-    const src = document.getElementById('k-modal-cart-badge');
-    const dst = document.getElementById('k-modal-cart-badge-overlay');
-    if (src && dst) dst.textContent = src.textContent;
-  };
-  syncBadge();
-  const badgeSrc = document.getElementById('k-modal-cart-badge');
-  if (badgeSrc) {
-    new MutationObserver(syncBadge).observe(badgeSrc, { childList: true, characterData: true, subtree: true });
-  }
-}
-
 
 export function clearMobileProductDetailState() {
   state.modalProductDetail = null;
