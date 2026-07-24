@@ -12,10 +12,22 @@
     Promise.all(regs.map(function(r){return r.unregister();})).then(function(){
       return caches.keys();
     }).then(function(keys){
-      return Promise.all(keys.map(function(k){return caches.delete(k);}));
-    }).then(function(){
-      console.log('[RESET v334] All SWs unregistered, all caches cleared. Reloading...');
-      location.reload();
+      return Promise.all(keys.map(function(k){return caches.delete(k);})).then(function(){
+        return keys;
+      });
+    }).then(function(keys){
+      /* FIX flash hero : ne reload QUE s'il y avait vraiment quelque chose
+         à nettoyer (regs ou keys non vides). Sans ce garde, ce script
+         rechargeait la page à chaque premier chargement dans un contexte
+         sans le flag localStorage (fenêtre privée, cache vidé, nouveau
+         profil) — même quand il n'y avait rien à unregister — provoquant
+         le flash du hero (plus gros élément visible) à chaque reload en
+         cascade. La migration légitime (cache/SW legacy réellement présent)
+         continue de recharger normalement. */
+      if (regs.length || keys.length) {
+        console.log('[RESET v334] All SWs unregistered, all caches cleared. Reloading...');
+        location.reload();
+      }
     });
   });
 })();
@@ -28,8 +40,14 @@ if('serviceWorker' in navigator){
 
   navigator.serviceWorker.addEventListener('message', function(e){
     if(e.data && e.data.type === 'sw-updated'){
-      console.log('[SW] Nouvelle version', e.data.version, '→ reload auto');
-      location.reload();
+      /* Ne reload que si un SW contrôlait déjà la page au chargement (donc
+         une vraie mise à jour) — jamais lors d'une première activation.
+         Défensif : protège contre le même symptôme si register() est
+         réintroduit un jour (aucun register() n'existe actuellement). */
+      if (navigator.serviceWorker.controller) {
+        console.log('[SW] Nouvelle version', e.data.version, '→ reload auto');
+        location.reload();
+      }
     }
   });
 
@@ -74,7 +92,7 @@ if('serviceWorker' in navigator){
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=137">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=233">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=235">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=73">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
 

@@ -46,11 +46,11 @@ describe('updateModalNavArrows', () => {
     return { topbar, right };
   }
 
-  it('ne fait rien sur mobile (viewport < 900px)', () => {
+  it('crée la nav aussi sur mobile (viewport < 900px) — Point 5 : plus réservé au desktop', () => {
     window.innerWidth = 500;
     makeTopbar();
     updateModalNavArrows([{ id: 1 }, { id: 2 }], 0);
-    expect(document.getElementById('k-modal-nav')).toBeNull();
+    expect(document.getElementById('k-modal-nav')).not.toBeNull();
   });
 
   it('crée la nav (prev/counter/next) et l\'insère dans la topbar à droite', () => {

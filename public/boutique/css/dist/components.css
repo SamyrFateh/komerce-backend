@@ -1149,6 +1149,20 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* Bouton sans cercle : le contenu est un <span class="k-card-add-plus"> texte
      (pas d'<img>), cf. render-product-card.js renderAddControl(). */
 }
+/* FIX centrage + : .k-card-add-trigger est le <button> réel généré par
+   renderAddControl() À L'INTÉRIEUR de .k-card-add (le conteneur positionné).
+   Sans règle dédiée, le padding par défaut du <button> (non neutralisé par le
+   reset global button{border:none;background:none;}, cf. reset.css) décalait
+   le glyphe "+" hors du centre optique du cercle. */
+.k-card-add-trigger {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .k-card-add:active {
   transform: scale(.88);
 }
@@ -1959,7 +1973,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   transition: background .2s;
 }
 .k-modal-cart-btn:active { background: var(--sand); }
-.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; color: var(--ocean-dark); }
+.k-modal-cart-icon { width: 20px; height: 20px; display: block; pointer-events: none; object-fit: contain; }
 .k-modal-cart-badge {
   position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;
@@ -2021,7 +2035,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-topbar-search-trigger svg { width: 17px; height: 17px; stroke: var(--text); fill: none; stroke-width: 2; }
 .k-topbar-search-trigger:active { transform: scale(.9); background: var(--sand-dark); }
 .k-topbar-search-expanded {
-  display: none; position: absolute; inset: 0; z-index: 410;
+  display: none; position: absolute; top: 0; left: 0; right: 0; z-index: 410;
   background: var(--surface-sand-96);
   backdrop-filter: blur(20px) saturate(200%); -webkit-backdrop-filter: blur(20px) saturate(200%);
   padding: calc(10px + env(safe-area-inset-top)) 10px 10px;
@@ -2044,7 +2058,8 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-topbar.search-mode .k-modal-topbar-right,
 .k-modal-topbar.search-mode .k-topbar-search-trigger,
 .k-modal-topbar.search-mode .k-modal-topbar-product,
-.k-modal-topbar.search-mode .k-modal-breadcrumb { display: none; }
+.k-modal-topbar.search-mode .k-modal-breadcrumb,
+.k-modal-topbar.search-mode #k-modal-nav { display: none; } /* Point 5 : le pager, désormais visible mobile aussi, doit disparaître en mode recherche comme le reste de la topbar. */
 
 /* ── MICRO ───────────────────────────────────────────────────── */
 .k-modal-search-mic { width: 30px; height: 30px; border: none; background: transparent; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .12s, transform .12s; -webkit-tap-highlight-color: transparent; padding: 0; }
@@ -2208,11 +2223,6 @@ html.k-mobile-premium-v1 .k-chip-label {
    ══════════════════════════════════════════════════════════════ */
 #k-modal-overlay, #k-modal { max-width: 100vw; overflow-x: hidden; }
 
-/* FIX topbar overflow mobile : #k-modal-nav (← N/total →) est réservé desktop.
-   Sans cette règle, les 5 éléments de la topbar dépassent sur écrans ≤390px
-   et poussent la croix ✕ hors du cadre. */
-#k-modal-nav { display: none; visibility: hidden; } /* VIS-4: visibility:hidden élimine le flash d'une frame avant résolution media query */
-
 /* Scroll owner mobile : flex colonne, prend tout l'espace disponible */
 #k-modal .k-modal-scroll {
   display: flex;
@@ -2300,6 +2310,20 @@ html.k-mobile-premium-v1 .k-chip-label {
      (b-modal-core.js — VIS-6)
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
+  /* Point 5 : le pager (← N/total →) est désormais activé mobile ET desktop
+     (garde JS window.innerWidth<900 retirée dans b-modal-nav.js). La pill
+     desktop (30px, padding 0 10px, cf. .k-modal-nav-btn base) ferait
+     déborder la topbar sur écrans ≤390px et pousserait la croix ✕ hors
+     cadre — donc version compacte icônes seules ici ; la pill pleine
+     largeur reprend le dessus ≥900px (règle #k-modal #k-modal-nav plus bas,
+     non touchée par ce bloc). */
+  #k-modal-nav { display: flex; align-items: center; gap: 2px; }
+  #k-modal-nav .k-modal-nav-btn {
+    height: 26px; width: 26px; padding: 0; border-radius: 50%;
+    justify-content: center; gap: 0; font-size: 13px;
+  }
+  #k-modal-nav .k-modal-nav-counter { font-size: 10px; min-width: 26px; }
+
   #k-modal-overlay {
     position: fixed;
     /* Ancrage 4 côtés sans width:100vw : on évite le mismatch
@@ -2772,12 +2796,14 @@ html.k-mobile-premium-v1 .k-chip-label {
      360-500px. La géométrie intrinsèque du hero (aspect-ratio, bornes de
      taille, centrage) est désormais définie dans modal-media.css — source
      de vérité unique pour cette responsabilité (voir arbitrage
-     .agent/arbitrations/T-018.md). overflow/max-width/width restent ici :
-     ce sont des propriétés de confinement (empêchent le débordement hors
-     de la colonne), pas de géométrie intrinsèque. */
+     .agent/arbitrations/T-018.md). overflow/width restent ici : ce sont
+     des propriétés de confinement (empêchent le débordement hors de la
+     colonne). max-width retiré (2026-07) : modal-media.css pose déjà
+     max-width:min(100%, calc(500px*4/3)) — toujours ≤100%, donc cette
+     déclaration était intégralement morte (conflit inutile en cascade,
+     cf. css:guard) sans jamais changer le rendu. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     overflow: hidden;
-    max-width: 100%;
     width: 100%;
   }
 
@@ -5587,6 +5613,12 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     overflow-x: auto;
     gap: 10px;
     padding: 2px 2px 4px;
+    /* FIX teaser : réserve ~45px de marge droite pour que la carte en bord
+       de rail soit toujours visiblement coupée (amorce de scroll), même
+       quand N cartes × (110px + gap) tombe presque pile sur la largeur
+       visible (cas très fréquent sur mobile — cf. 3 cartes ≈ 350px pour
+       ~351px dispo, aucune amorce sans cette marge). */
+    margin-right: 45px;
     scrollbar-width: none;
   }
 

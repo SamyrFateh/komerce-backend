@@ -146,6 +146,20 @@
   /* Bouton sans cercle : le contenu est un <span class="k-card-add-plus"> texte
      (pas d'<img>), cf. render-product-card.js renderAddControl(). */
 }
+/* FIX centrage + : .k-card-add-trigger est le <button> réel généré par
+   renderAddControl() À L'INTÉRIEUR de .k-card-add (le conteneur positionné).
+   Sans règle dédiée, le padding par défaut du <button> (non neutralisé par le
+   reset global button{border:none;background:none;}, cf. reset.css) décalait
+   le glyphe "+" hors du centre optique du cercle. */
+.k-card-add-trigger {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .k-card-add:active {
   transform: scale(.88);
 }

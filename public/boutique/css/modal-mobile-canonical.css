@@ -348,6 +348,12 @@
     overflow-x: auto;
     gap: 10px;
     padding: 2px 2px 4px;
+    /* FIX teaser : réserve ~45px de marge droite pour que la carte en bord
+       de rail soit toujours visiblement coupée (amorce de scroll), même
+       quand N cartes × (110px + gap) tombe presque pile sur la largeur
+       visible (cas très fréquent sur mobile — cf. 3 cartes ≈ 350px pour
+       ~351px dispo, aucune amorce sans cette marge). */
+    margin-right: 45px;
     scrollbar-width: none;
   }
 

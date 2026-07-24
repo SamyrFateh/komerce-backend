@@ -45,13 +45,11 @@ import { state, dom } from './b-store.js';
   // ── Boutons ← → dans la topbar de la modal
   /**
    * Met à jour les flèches de navigation produit suivant/précédent.
-   * Masquées sur mobile, visibles desktop.
+   * Visible mobile ET desktop (mobile : version compacte, cf. modal-shell.css).
    * @param {number} currentIndex - Index produit dans la liste
    * @param {number} total - Total produits disponibles
    */
   function updateModalNavArrows(list, currentIdx) {
-    if (window.innerWidth < 900) return; // nav réservé desktop — évite injection + flash sur mobile
-
     let navEl = document.getElementById('k-modal-nav');
     if (!navEl) {
       navEl = document.createElement('div');
