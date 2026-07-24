@@ -26,6 +26,9 @@ Tout tourne dans `check:fast` (statique, pre-commit) et `check:all` (= `check:fa
 | Imports JS valides / pas de cycles | `check:imports` | bloquant | — |
 | Classes body cohérentes | `check:body-classes` | bloquant | — |
 | Wording groupe | `check:group-wording` | bloquant | — |
+| `var(--x)` orpheline (jamais définie en CSS, jamais posée en JS) | `check:css-vars` | bloquant (`--strict`) + allowlist | `governance/css-vars-manifest.json` |
+| z-index réel des couches overlay/modal/panier/toast dans les bornes attendues + ordre pairwise | `check:zindex` | bloquant (`--strict`) | `governance/zindex-contract.json` |
+| `animation:` sans `@keyframes` correspondante | `check:keyframes` | bloquant | — |
 
 ## Câblage git
 
@@ -51,3 +54,8 @@ Un `--save` doit être un choix daté et justifié en message de commit, jamais 
 ## Dette résiduelle connue (sous cliquet, donc non croissante)
 
 - `!important` hors `boutique-desktop.css` : **6** (4 `hero.css`, 2 `share-cart.css`). Réductibles à la pièce ; le cliquet empêche toute hausse.
+- 7 `var(--x, fallback)` jamais branchées (`--cta`, `--cta-green-dark`, `--green-bg-10`, `--green-border-22`, `--leaf-border`, `--surface`, `--coral-rgb`) : sans impact visuel (le fallback s'applique toujours), documentées dans `governance/css-vars-manifest.json` pour ne pas refaire le triage à froid. `--cta-green-dark` en particulier suggère un état hover jamais différencié — candidat produit, pas gate.
+
+## Porte pas encore câblée (à dessein)
+
+`check-dom-contract.js` (`getElementById`/classes JS ↔ existence réelle HTML/CSS, `governance/dom-contract.json`) existe et est exécutable (`npm run check:dom-contract`), mais n'est **pas** dans `check:fast`/`check:all` : `#k-modal-fav-btn` (bouton favori dans la modale produit, `js/b-modal-core.js:256,585`) n'a jamais de markup HTML correspondant — feature incomplète, pas du code mort documenté comme les autres cas. À trancher (construire le bouton ou assumer/retirer le JS) avant de câbler ce gate en bloquant.

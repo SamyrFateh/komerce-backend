@@ -891,11 +891,6 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
      Remplacé par b-share-cart.js (owner exclusif du flow "📤 Partager").
      Stubs conservés pour compatibilité exports. À supprimer en nettoyage PR-event. */
 
-  function _closeShareModal() {
-    let ov = document.getElementById('k-share-overlay');
-    if (ov) ov.remove();
-  }
-
   /** @deprecated PR-1 — stub, flow géré par b-share-cart.js */
   function showShareChoiceModal() {
     // no-op — b-share-cart.js prend en charge le flow "📤 Partager"

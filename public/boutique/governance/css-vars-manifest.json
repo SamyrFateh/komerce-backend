@@ -1,0 +1,37 @@
+{
+  "$schema": "Contrat custom properties CSS — voir scripts/check-css-vars.js",
+  "_procedure": "Quand tu ajoutes un `var(--x)` qui n'a pas encore de `--x:` défini dans css/ : soit tu ajoutes la définition, soit — si c'est volontairement posé en JS via setProperty avec un nom dynamique non détectable statiquement — tu l'ajoutes à jsSetProperties, soit — si le fallback est la valeur définitive voulue et --x un alias jamais branché — tu l'ajoutes à fallbackOnlyAllowed. Mets à jour dans la même PR.",
+
+  "jsSetProperties": [],
+
+  "fallbackOnlyAllowed": [
+    {
+      "var": "--coral-rgb",
+      "reason": "hero.css:292 — rgba(var(--coral-rgb, 210,80,50), .28). Fallback = valeur RVB décimale de --coral. Jamais branché en tant que triplet RVB séparé, mais le fallback est correct et stable. À muter en vraie variable si un theming dynamique de --coral est ajouté un jour."
+    },
+    {
+      "var": "--cta",
+      "reason": "modal-product.css:681 — background: var(--ocean, var(--cta)). --ocean est TOUJOURS défini (tokens.css) donc ce fallback est mort/inatteignable en pratique. Probable coquille pour --cta-green (le vrai token CTA) lors d'un refactor — sans impact visuel actuel puisque --ocean ne manque jamais, mais à nettoyer : soit supprimer le fallback mort, soit corriger en --cta-green si l'intention était différente."
+    },
+    {
+      "var": "--cta-green-dark",
+      "reason": "modal-shell.css:742 — background: var(--cta-green-dark, var(--cta-green)). Aucune teinte 'CTA vert foncé' n'a jamais été créée : cet état (probablement hover/active du bouton CTA) utilise donc toujours la même couleur que l'état normal, sans jamais assombrir. Fonctionnellement inoffensif (fallback cohérent) mais la différenciation visuelle prévue ne s'est jamais produite — candidat à définir dans tokens.css si l'intention hover est encore voulue."
+    },
+    {
+      "var": "--green-bg-10",
+      "reason": "group-cart-flow.css — pills de statut group-cart, fallback rgba(42,122,62,.1) stable, jamais branché comme token nommé."
+    },
+    {
+      "var": "--green-border-22",
+      "reason": "group-cart-flow.css — même famille que --green-bg-10, fallback rgba(42,122,62,.22) stable."
+    },
+    {
+      "var": "--leaf-border",
+      "reason": "cart.css — fallback var(--border) systématique, alias jamais promu en token propre."
+    },
+    {
+      "var": "--surface",
+      "reason": "modal-product.css — utilisé 4x toujours avec fallback (var(--gray-bg), var(--sand)...), alias générique jamais branché ; les vraies surfaces utilisées ailleurs sont --surface-white-* / --surface-sand-* (définies dans tokens.css)."
+    }
+  ]
+}

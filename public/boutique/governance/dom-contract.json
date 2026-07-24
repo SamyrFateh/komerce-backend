@@ -1,0 +1,60 @@
+{
+  "$schema": "Contrat HTML ↔ JS ↔ CSS — voir scripts/check-dom-contract.js",
+  "_procedure": "Quand tu ajoutes un classList.add/toggle sur un élément non-body, ou un getElementById ciblant un nouvel ID, ou un commentaire HTML décrivant une structure encore à créer : mets à jour cette liste dans la même PR. Le gate échoue sinon dès que le contrat n'est pas honoré des deux côtés.",
+
+  "requiredSelectors": [
+    {
+      "selector": "#k-modal .k-modal-main",
+      "reason": "Conteneur desktop de la modale produit — sans lui, le CSS #k-modal .k-modal-main ne cible rien (incident du 2026-07-24)"
+    },
+    {
+      "selector": "#k-modal .k-modal-cart-slot",
+      "reason": "Slot de reparentage desktop du side-cart dans la modale (incident du 2026-07-24)"
+    }
+  ],
+
+  "logicOnlyClasses": [
+    {
+      "class": "stepper-open",
+      "reason": "Marqueur d'état lu uniquement via .closest('.k-card-add.stepper-open') en JS (js/b-cart-stepper-guard.js) — aucun style requis"
+    }
+  ],
+
+  "deprecatedIds": [
+    {
+      "id": "k-promos-section",
+      "reason": "Absence volontaire déjà actée dans check-html-balance.js (OPTIONAL_IDS) — comportement optionnel documenté, pas un bug. Alignement du manifeste dom-contract sur cette décision existante."
+    },
+    {
+      "id": "k-desktop-sidebar",
+      "reason": "Ancienne sidebar catégories desktop, remplacée par le chip rail (.k-chip / home-controller.js). CSS la met en display:none (categories.css, components.css) et home-controller.js documente lui-même 'l'ancienne sidebar desktop si elle existe encore'. js/b-desktop-sidebar.js n'est même plus importé nulle part — module mort en entier. Candidat sûr à la suppression complète (fichier + import), à confirmer avant de le faire."
+    },
+    {
+      "id": "k-modal-flash-bar",
+      "reason": "Zone legacy 'flash promo' de la modale produit, neutralisée par PDC-5 (js/b-modal-desktop-product.js:renderIdentity — commentaire explicite : 'PDC-6 supprimera leur code legacy')."
+    },
+    {
+      "id": "k-modal-fab",
+      "reason": "Ancien bouton FAB flottant de la modale, commentaire JS explicite 'Hide legacy FAB if present' (js/b-modal-product.js)."
+    }
+  ],
+
+  "knownDynamicIds": [
+    "of-beneficiary-name",
+    "of-beneficiary-phone",
+    "of-beneficiary-phone-country",
+    "k-modal-nav",
+    "k-modal-nav-pos",
+    "k-modal-prev",
+    "k-modal-next",
+    "k-modal-fullscreen",
+    "k-modal-search-dropdown",
+    "k-modal-keyboard-hint",
+    "k-flat-subcat-chrome",
+    "k-load-more-spinner",
+    "k-countdown-root",
+    "k-countdown-text",
+    "k-cart-edit-bar",
+    "k-ge-saved-state"
+  ]
+}
