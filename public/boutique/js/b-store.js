@@ -35,9 +35,6 @@ import { bus } from './b-bus.js';
 /** Version du panier — incrémenter pour forcer un reset localStorage */
 export const CART_VERSION = 3;
 
-/** URL de base pour les images produits Cloudinary */
-export const CLOUD_BASE = 'https://res.cloudinary.com/dloffvvdz/image/upload';
-
 /** Nombre de produits chargés par page Temu */
 export const PAGE_SIZE = 20;
 

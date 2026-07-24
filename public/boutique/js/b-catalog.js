@@ -787,4 +787,3 @@ export {
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
   loadProducts, _renderCard,
 };
-export { setupCats as initCats, setupSearch as initSearch };

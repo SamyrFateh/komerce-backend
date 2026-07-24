@@ -137,7 +137,3 @@ export function setupApprocheCHybridPdp() {
   bus.on('modal:composition-synced', reconcileComposition);
   bus.on('modal:closed', restoreActionsHome);
 }
-
-export const _hybridPdpTestApi = Object.freeze({
-  reconcileComposition,
-});
