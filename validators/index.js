@@ -166,7 +166,12 @@ const orders = {
       items: Joi.array().items(Joi.object({
         product_id: uuid.required(),
         quantity:   posInt.max(100).default(1),
-        delivery_mode: Joi.string().valid('sea', 'air').default('sea'),
+        // Code canonique du rail demandé par le client (null = aucun choix explicite).
+        // Ne pas déduire SEA_STANDARD par défaut : c'est l'orchestrateur qui assigne.
+        requested_transport_rail: Joi.string()
+          .valid('SEA_STANDARD', 'AIR_EXPRESS')
+          .allow(null)
+          .default(null),
         module_type:       Joi.string().valid(...MODULE_TYPES),
         module_fabric_id:  uuid,
         module_fabric_type: safeStr(100),

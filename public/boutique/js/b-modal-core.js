@@ -475,6 +475,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     scrollToPosition(scrollY);
     state.modalProduct = null;
     state.modalHistory = [];
+    // Réinitialiser le choix de livraison — ne pas conserver entre deux produits
+    state.modalDeliverySelection = { requested_transport_rail: null };
   }
 
 

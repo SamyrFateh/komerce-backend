@@ -97,6 +97,18 @@ export const state = {
   modalProductDetail: null,
   /** PDC-3 — état dérivé unique de sélection SKU, partagé par les renderers. */
   modalSelection: null,
+  /**
+   * État de sélection du mode de livraison — partagé entre mobile, desktop
+   * et tous les CTA (Ajouter, Acheter, panier partagé, cagnotte).
+   *
+   * Structure :
+   *   { requested_transport_rail: 'SEA_STANDARD' | 'AIR_EXPRESS' | null }
+   *
+   * null = aucun choix explicite (le backend ne déduit pas silencieusement).
+   * Réinitialisé à l'ouverture d'un nouveau produit et à la fermeture de modal.
+   * Ne jamais lire un dataset DOM comme source de vérité pour cette valeur.
+   */
+  modalDeliverySelection: { requested_transport_rail: null },
   /** Signature des médias déjà rendus ; évite de reconstruire le carousel à vide. */
   modalMediaSignature: '',
   /** Variantes legacy sélectionnées : transition jusqu'à extinction PDC-6. */

@@ -664,6 +664,24 @@ export function renderMobileProductDetail(
   root.className = 'k-mdm-root';
   container.appendChild(root);
 
+  // Initialiser l'état de sélection livraison depuis le contrat produit.
+  // Mobile et desktop partagent state.modalDeliverySelection — jamais dataset DOM.
+  // Si une seule option disponible (cas courant Air DISABLED), le rail est forcé.
+  // Si plusieurs options, conserver la sélection précédente si valide.
+  const deliveryOptions = detail?.delivery_options || [];
+  if (deliveryOptions.length === 1) {
+    state.modalDeliverySelection = { requested_transport_rail: deliveryOptions[0].code };
+  } else if (deliveryOptions.length > 1) {
+    const prevRail = state.modalDeliverySelection?.requested_transport_rail;
+    const validPrev = deliveryOptions.some(o => o.code === prevRail);
+    if (!validPrev) {
+      state.modalDeliverySelection = { requested_transport_rail: deliveryOptions[0].code };
+    }
+    // sinon conserver le choix précédent
+  } else {
+    state.modalDeliverySelection = { requested_transport_rail: null };
+  }
+
   // MDM-5: Info strip (availability chip + delivery chips) — juste sous le
   // prix, AVANT couleur/taille (réf. docs/reference/reference-modale-
   // architecture.html : prix → pill livraison → couleur → taille → suggestions).

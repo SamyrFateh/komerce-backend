@@ -430,7 +430,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
            variant_combo, sku_id,
            customs_category_key, sh_code, douane_pct, tva_pct, taxe_add_pct,
            classification_defaulted,
-           delivery_mode
+           requested_transport_rail
          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
         [
           order.id,
@@ -461,8 +461,9 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           clf.tva_pct,
           clf.taxe_add_pct,
           clf.classification_defaulted,
-          // Mode livraison choisi par le client (sea = défaut, air = express)
-          item.delivery_mode || 'sea',
+          // Code canonique du rail demandé par le client (null = aucun choix explicite).
+          // L'orchestrateur logistique assigne le rail réel dans assigned_transport_rail.
+          item.requested_transport_rail ?? null,
         ]
       );
     }

@@ -317,18 +317,19 @@ function buildSellableUnits(product, skuRows, media, explicitSkuMediaMap = new M
 /**
  * Construit les options de livraison exposées dans la fiche produit.
  *
- * Logique opt-out : tous les rails commerciaux actifs sont proposés par
- * défaut. Le rail AIR_EXPRESS est retiré uniquement si le produit porte
- * air_excluded = true (volume prohibitif, matières dangereuses, fragile
- * non-validé pour le fret aérien).
+ * Règles :
+ *  1. Seuls les rails PUBLIC + ACTIVE + ACTIVE (listCommercialTransportRails) sont exposés.
+ *  2. AIR_EXPRESS est filtré si le produit n'est pas ELIGIBLE (PENDING_REVIEW ou EXCLUDED).
+ *  3. Aucun prix ni délai n'est inventé ici. price_kmf et eta_label sont null
+ *     tant que les moteurs logistics + economic-engine ne les fournissent pas.
  *
- * @param {{ air_excluded?: boolean }} product  — ligne products lue en DB
+ * @param {{ air_eligibility_status?: string }} product — ligne products lue en DB
  */
 function buildDeliveryOptions(product = {}) {
-  const airExcluded = product.air_excluded === true;
+  const airEligible = product.air_eligibility_status === 'ELIGIBLE';
 
   return listCommercialTransportRails()
-    .filter((rail) => !(rail.code === 'AIR_EXPRESS' && airExcluded))
+    .filter((rail) => !(rail.code === 'AIR_EXPRESS' && !airEligible))
     .map((rail) => {
       const label = PUBLIC_RAIL_LABELS[rail.code];
       if (!label) {
@@ -340,8 +341,8 @@ function buildDeliveryOptions(product = {}) {
         code: rail.code,
         label,
         available: true,
-        // Aucun moteur de devis produit/destination ne fournit encore ces valeurs.
-        // null est une absence honnête ; surtout pas "Gratuit" ou "3 à 5 semaines".
+        // Doctrine DOCTRINE_PRODUCT_DETAIL_CONTRACT : aucune vérité inventée.
+        // Ces valeurs viendront des moteurs logistics et economic-engine.
         price_kmf: null,
         eta_label: null,
         unavailable_reason: null,
@@ -365,7 +366,7 @@ async function getProductDetail(dbClient, productId) {
   const { rows: [product] } = await dbClient.query(
     `SELECT id, product_ref, sku, name, description, category, subcategory, series,
             price_kmf, promo_pct, image_url, images, has_variants, inventory_model,
-            air_excluded
+            air_eligibility_status
        FROM products
       WHERE id = $1 AND is_active = TRUE`,
     [productId]
