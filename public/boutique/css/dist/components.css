@@ -5267,12 +5267,22 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     object-position: top center;
   }
 
-  /* REF-2026-07b : trust badges — override modal-product.css nowrap+overflow:hidden
-     (posé à ≥900px pour tenir sur 1 ligne à 390px mobile).
-     À ≥1024px le bundle place ce fichier après modal-product → override cascade. */
+  /* REF-2026-07b : trust badges — override modal-product.css nowrap+overflow:hidden */
   #k-modal .k-modal-trust {
     flex-wrap: wrap;
     overflow: visible;
+  }
+
+  /* REF-2026-07b : suggestions visibles quand l'espace le permet.
+     Le min-height de modal-shell.css (≈686px à 800px) bat seul le max-height.
+     Il faut les deux : min bridé + max bridé, pour que la zone laisse
+     ~114px de suggestions visibles à 800-900px, plus sur grands écrans.
+       800px : min=540, max=600 → zone=600, sugg y=686, peek=114px ✅
+       900px : min=600, max=700 → zone=700, sugg y=786, peek=114px ✅
+      1080px : min=600, max=700 → zone=700, sugg y=786, peek=294px ✅ */
+  #k-modal .k-modal-product-zone {
+    min-height: clamp(400px, calc(100vh - 260px), 600px);
+    max-height: clamp(400px, calc(100vh - 200px), 700px);
   }
 }
 
