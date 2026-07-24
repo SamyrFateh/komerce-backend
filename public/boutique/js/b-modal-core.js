@@ -22,7 +22,7 @@
  * Périmètre : tout ce qui constitue le cycle de vie de la modal produit :
  *   - openModal / closeModal : ouverture, rendu, overlay, body-lock, scroll.
  *   - modalGoBack : retour dans la pile d'historique modal.
- *   - setupModal : câblage complet (listeners, search inline, topbar, clavier,
+ *   - setupModal : câblage complet (listeners, search inline, clavier,
  *     buyNowBtn, modalCartBtn, image-zone, …).
  *   - Gestion de l'historique navigateur (_modalHistoryPushed, _closingFromPopstate,
  *     _pendingHistoryBack, handler popstate) — flags mutables, intra-module, non exportables.
@@ -812,16 +812,16 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
       // ── Render dropdown — Sprint 2 : résultats catégorisés ──
       /* FIX: dropdown est maintenant position:fixed, attaché au modal root.
-         _positionDropdown() calcule la position sous l'input actif (inline ou topbar).
-         _liftDetails() garde le bump z-index en sécurité additionnelle. */
+         _positionDropdown() calcule la position sous l'input inline.
+         _liftDetails() garde le bump z-index en sécurité additionnelle.
+         REF-2026-07c : la loupe topbar (Sprint 4) a été retirée — un seul point
+         d'entrée recherche dans la modale, la barre inline ci-dessus. */
       let _detailsEl = dom.modal.querySelector('.k-modal-details');
       function _liftDetails()   { if (_detailsEl) _detailsEl.style.zIndex = '35'; }
       function _unliftDetails() { if (_detailsEl) _detailsEl.style.zIndex = ''; }
 
       function _positionDropdown() {
-        let topbarActive = document.querySelector('.k-topbar-search-expanded.is-active');
-        let refEl = topbarActive || searchWrap;
-        let rect = refEl.getBoundingClientRect();
+        let rect = searchWrap.getBoundingClientRect();
         dropdown.style.top = (rect.bottom + 4) + 'px';
         // Sur desktop, aligner avec la barre de recherche
         if (window.innerWidth >= 900) {
@@ -985,130 +985,6 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         dropdown.classList.remove('open');
         _unliftDetails();
       }
-    })();
-
-    // ── Sprint 4 : Loupe mobile dans la topbar (collapse/expand) ──────
-    // Sur mobile, ajoute un bouton loupe dans la topbar qui, au tap,
-    // expand une barre de recherche pleine largeur dans la topbar.
-    // Synced avec le même input/dropdown que la barre inline.
-    (function setupTopbarSearch() {
-      if (window.innerWidth >= 900) return; // desktop only uses inline search
-
-      let topbar = dom.modal ? dom.modal.querySelector('.k-modal-topbar') : null;
-      if (!topbar) return;
-
-      // Ne pas injecter 2 fois
-      if (topbar.querySelector('.k-topbar-search-trigger')) return;
-
-      // ── Bouton loupe trigger ──
-      let trigger = document.createElement('button');
-      trigger.className = 'k-topbar-search-trigger';
-      trigger.type = 'button';
-      trigger.setAttribute('aria-label', 'Rechercher');
-      trigger.innerHTML =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-          '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>' +
-        '</svg>';
-
-      // ── Barre expanded ──
-      let expandedBar = document.createElement('div');
-      expandedBar.className = 'k-topbar-search-expanded';
-      expandedBar.innerHTML =
-        '<button class="k-topbar-search-back" type="button" aria-label="Fermer la recherche">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>' +
-        '</button>' +
-        '<input type="search" class="k-topbar-search-input" placeholder="Chercher un produit\u2026" autocomplete="off" autocorrect="off">' +
-        '<button class="k-topbar-search-clear-btn" type="button" aria-label="Effacer">\u00d7</button>';
-
-      // Insert trigger before topbar-right
-      let topbarRight = topbar.querySelector('.k-modal-topbar-right');
-      if (topbarRight) {
-        topbar.insertBefore(trigger, topbarRight);
-      } else {
-        topbar.appendChild(trigger);
-      }
-      topbar.appendChild(expandedBar);
-
-      let tbInput = expandedBar.querySelector('.k-topbar-search-input');
-      let tbBack = expandedBar.querySelector('.k-topbar-search-back');
-      let tbClear = expandedBar.querySelector('.k-topbar-search-clear-btn');
-
-      function _expandSearch() {
-        expandedBar.classList.add('is-active');
-        topbar.classList.add('search-mode');
-        requestAnimationFrame(function() { tbInput.focus(); });
-      }
-
-      function _collapseSearch() {
-        expandedBar.classList.remove('is-active');
-        topbar.classList.remove('search-mode');
-        tbInput.value = '';
-        tbClear.classList.remove('is-visible');
-        // Also reset the main inline search + dropdown
-        if (state._modalSearchInput) {
-          state._modalSearchInput.value = '';
-          let wrap = state._modalSearchInput.closest('.k-modal-inner-search');
-          if (wrap) wrap.classList.remove('has-value');
-        }
-        let dd = document.getElementById('k-modal-search-dropdown');
-        if (dd) dd.classList.remove('open');
-        // Restore suggestions
-        let rail = document.getElementById('k-sug-rail');
-        if (rail) rail.querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
-      }
-
-      trigger.addEventListener('click', function(e) {
-        e.stopPropagation();
-        _expandSearch();
-      });
-
-      tbBack.addEventListener('click', function(e) {
-        e.stopPropagation();
-        _collapseSearch();
-      });
-
-      tbClear.addEventListener('click', function(e) {
-        e.stopPropagation();
-        tbInput.value = '';
-        tbClear.classList.remove('is-visible');
-        tbInput.focus();
-        // Sync : clear the inline search too
-        if (state._modalSearchInput) {
-          state._modalSearchInput.value = '';
-          state._modalSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      });
-
-      // Sync typing → inject into the inline search (which does the real work)
-      tbInput.addEventListener('input', function() {
-        let q = tbInput.value;
-        tbClear.classList.toggle('is-visible', q.length > 0);
-        // Sync with the inline search input
-        if (state._modalSearchInput) {
-          state._modalSearchInput.value = q;
-          state._modalSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      });
-
-      // Enter in topbar → same as inline Enter
-      tbInput.addEventListener('keydown', function(e) {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-        // Delegate to inline search Enter handler by syncing then firing
-        if (state._modalSearchInput) {
-          state._modalSearchInput.value = tbInput.value;
-          state._modalSearchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-        }
-        _collapseSearch();
-      });
-
-      // Collapse on Escape
-      tbInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-          e.stopPropagation();
-          _collapseSearch();
-        }
-      });
     })();
 
     // ── Sprint 5 : Recherche vocale (Web Speech API) ──────────────

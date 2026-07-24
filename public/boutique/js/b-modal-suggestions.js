@@ -111,6 +111,33 @@ function _syncSuggestionControls(productId) {
   });
 }
 
+const _boundSuggPeeks = new WeakSet();
+
+/**
+ * T-030+ (finition) : le teaser n'était qu'un texte statique — aucun geste ne menait
+ * réellement aux cartes qu'il annonce. Sur les produits à contenu enrichi long
+ * (specs/highlights desktop et mobile), les cartes peuvent être à 900px+ sous le fold ;
+ * le teaser reste le seul repère garanti visible. On le rend donc activable :
+ * clic ou clavier (Enter/Espace) scrolle jusqu'à #k-modal-suggestions.
+ * Idempotent : le nœud est statique (jamais recréé par innerHTML), un seul bind suffit.
+ */
+function _bindSuggPeekScroll(sugPeek, sugSection) {
+  if (!sugPeek || !sugSection || _boundSuggPeeks.has(sugPeek)) return;
+  _boundSuggPeeks.add(sugPeek);
+
+  const goToSuggestions = () => {
+    sugSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  sugPeek.addEventListener('click', goToSuggestions);
+  sugPeek.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      goToSuggestions();
+    }
+  });
+}
+
 function _installSuggestionDelegation(root) {
   if (!root || _delegatedRoots.has(root)) return;
   _delegatedRoots.add(root);
@@ -272,7 +299,10 @@ function renderSuggestions(sameCat, otherCat, categoryName) {
   }
 
   sugSection.classList.remove('u-hidden');
-  if (sugPeek) sugPeek.hidden = false;
+  if (sugPeek) {
+    sugPeek.hidden = false;
+    _bindSuggPeekScroll(sugPeek, sugSection);
+  }
   sugSection.classList.remove('k-pdp-curation');
   delete sugSection.dataset.curationProductId;
   if (categoryName) sugSection.dataset.cat = categoryName;

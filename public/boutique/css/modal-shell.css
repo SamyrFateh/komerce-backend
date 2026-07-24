@@ -133,40 +133,11 @@
   display: none;
 }
 
-/* ── TOPBAR SEARCH MOBILE ────────────────────────────────────── */
-.k-topbar-search-trigger {
-  width: 34px; height: 34px; border: none; background: var(--sand); border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
-  transition: background .12s, transform .12s; -webkit-tap-highlight-color: transparent;
-}
-.k-topbar-search-trigger svg { width: 17px; height: 17px; stroke: var(--text); fill: none; stroke-width: 2; }
-.k-topbar-search-trigger:active { transform: scale(.9); background: var(--sand-dark); }
-.k-topbar-search-expanded {
-  display: none; position: absolute; top: 0; left: 0; right: 0; z-index: 410;
-  background: var(--surface-sand-96);
-  backdrop-filter: blur(20px) saturate(200%); -webkit-backdrop-filter: blur(20px) saturate(200%);
-  padding: calc(10px + env(safe-area-inset-top)) 10px 10px;
-  align-items: center; gap: 8px; animation: k-topbar-search-in .2s var(--ease);
-}
-.k-topbar-search-expanded.is-active { display: flex; }
-@keyframes k-topbar-search-in {
-  from { opacity: 0; transform: translateX(30px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-.k-topbar-search-back { width: 34px; height: 34px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; border-radius: 50%; -webkit-tap-highlight-color: transparent; }
-.k-topbar-search-back svg { width: 20px; height: 20px; stroke: var(--text); fill: none; stroke-width: 2; }
-.k-topbar-search-back:active { background: var(--sand); }
-.k-topbar-search-input { flex: 1; height: 36px; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 10px; font-size: 14px; font-weight: 500; color: var(--text); background: var(--white); outline: none; transition: border-color .15s; -webkit-appearance: none; min-width: 0; }
-.k-topbar-search-input:focus { border-color: var(--accent-blue); }
-.k-topbar-search-input::placeholder { color: var(--text-light); font-weight: 400; }
-.k-topbar-search-clear-btn { display: none; width: 28px; height: 28px; border: none; background: var(--sand-dark); border-radius: 50%; color: var(--text-muted); font-size: 15px; font-weight: 600; line-height: 1; cursor: pointer; flex-shrink: 0; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
-.k-topbar-search-clear-btn.is-visible { display: flex; }
-.k-modal-topbar.search-mode .k-modal-back,
-.k-modal-topbar.search-mode .k-modal-topbar-right,
-.k-modal-topbar.search-mode .k-topbar-search-trigger,
-.k-modal-topbar.search-mode .k-modal-topbar-product,
-.k-modal-topbar.search-mode .k-modal-breadcrumb,
-.k-modal-topbar.search-mode #k-modal-nav { display: none; } /* Point 5 : le pager, désormais visible mobile aussi, doit disparaître en mode recherche comme le reste de la topbar. */
+/* REF-2026-07c : loupe topbar (Sprint 4) retirée — deux zones de recherche
+   dans la modale mobile étaient source de confusion et le mode expand/collapse
+   n'était jamais réinitialisé à la fermeture de la modale (état résiduel au
+   réouverture). Un seul point d'entrée recherche désormais : la barre inline
+   (.k-modal-inner-search, avant #k-modal-suggestions). ──────────────────── */
 
 /* ── MICRO ───────────────────────────────────────────────────── */
 .k-modal-search-mic { width: 30px; height: 30px; border: none; background: transparent; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .12s, transform .12s; -webkit-tap-highlight-color: transparent; padding: 0; }
@@ -290,7 +261,6 @@
 /* ARCH-6 : règles is-scrolled rapatriées depuis interactions.css → owner unique ici */
 .k-modal.is-scrolled .k-modal-back,
 .k-modal.is-scrolled #k-modal-nav      { display: none; }
-.k-modal.is-scrolled .k-topbar-search-trigger { display: none; }
 .k-modal.is-scrolled .k-modal-topbar-product { display: flex; opacity: 1; transform: translateY(0); }
 .k-modal.is-scrolled .k-modal-topbar-right   { display: flex; align-items: center; gap: 8px; }
 /* ── TOPBAR MODAL — source de vérité (fusionné depuis interactions.css, Lot 5) ── */
@@ -391,7 +361,6 @@
 #k-modal .k-add-cart-btn, #k-modal .k-modal-actions .k-buy-now-btn,
 #k-modal .k-qty { min-width: 0; max-width: 100%; }
 /* P0-fix : règle redondante overflow:hidden retirée — voir .k-add-cart-btn base ci-dessus */ 
-#k-modal .k-topbar-search-expanded { width: 100%; max-width: 100%; overflow-x: hidden; }
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -490,8 +459,6 @@
   #k-modal #k-modal-back-label { display: inline; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
   #k-modal .k-modal-cart-icon { width: 24px; height: 24px; }
-  .k-topbar-search-trigger { display: none; }
-  #k-modal .k-topbar-search-expanded { display: none; }
   .k-modal-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-left: 12px; flex: 1; min-width: 0; overflow: hidden; }
   .k-modal-breadcrumb span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .k-modal-breadcrumb-sep { color: var(--text-light); flex-shrink: 0; }
@@ -975,10 +942,10 @@
   /* REF-2026-07 : placement grille 3 pistes + reset sticky du 900px.
      align-self / height / max-height / aspect-ratio / margin sont owned par
      modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —
-     ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard).
-     min-height : owned par modal-product-lot4-hybrid.css (clamp suggpek). */
+     ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard). */
   #k-modal .k-modal-product-zone {
     align-self: stretch;
+    min-height: 100%;
   }
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     grid-column: 1 / 3;

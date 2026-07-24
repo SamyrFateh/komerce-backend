@@ -487,15 +487,65 @@
     overflow: visible;
   }
 
-  /* REF-2026-07b : suggestions visibles quand l'espace le permet.
-     Le min-height de modal-shell.css (≈686px à 800px) bat seul le max-height.
-     Il faut les deux : min bridé + max bridé, pour que la zone laisse
-     ~114px de suggestions visibles à 800-900px, plus sur grands écrans.
-       800px : min=540, max=600 → zone=600, sugg y=686, peek=114px ✅
-       900px : min=600, max=700 → zone=700, sugg y=786, peek=114px ✅
-      1080px : min=600, max=700 → zone=700, sugg y=786, peek=294px ✅ */
+  /* REF-2026-07b : typographie agrandie pour combler l'espace vide.
+     Harnais : contenu naturel = 491px, zone = 620px → 129px de vide.
+     Titre 18px→24px (+12px) + prix 28px→34px (+6px) + espacements (+40px)
+     = +58px → contenu 549px ≈ zone 560px → plus de vide, cartes visibles. */
+  #k-modal .k-modal-info h2 {
+    font-size: 24px;
+    line-height: 1.25;
+  }
+  #k-modal .k-modal-price {
+    font-size: 34px;
+  }
+  #k-modal .k-modal-price-row  { margin-top: 16px; }
+  #k-modal .k-modal-desc        { margin-top: 10px; line-height: 1.55; }
+  #k-modal .k-modal-actions     { margin-top: 22px; }
+
+  /* Suggestions visibles quand l'espace le permet.
+     Avec le contenu enrichi (~549px), zone 560px → 0px vide droite.
+     Peek: 860px viewport → sugg y=646 → peek=214px ≈ 1 carte entière. */
   #k-modal .k-modal-product-zone {
-    min-height: clamp(400px, calc(100vh - 260px), 600px);
-    max-height: clamp(400px, calc(100vh - 200px), 700px);
+    min-height: clamp(400px, calc(100vh - 340px), 520px);
+    max-height: clamp(400px, calc(100vh - 300px), 560px);
+  }
+}
+
+/* ── REF-2026-07b : keyframe scroll hint ────────────────────────────────
+   Bounce léger sur la flèche ↓ du teaser suggestions desktop.
+   prefers-reduced-motion : désactivé pour accessibilité. */
+@keyframes k-sugg-hint-bounce {
+  0%, 60%, 100% { transform: translateY(0);   }
+  30%            { transform: translateY(5px); }
+}
+
+@media (min-width: 1024px) {
+  /* Renforcer la visibilité du teaser desktop : fond léger + border */
+  #k-modal .k-modal-sugg-peek {
+    margin-top: 20px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--sand) 60%, var(--white));
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  #k-modal .k-modal-sugg-peek-hint {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  #k-modal .k-modal-sugg-peek:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  #k-modal-sugg-peek .k-modal-sugg-peek-hint {
+    animation: k-sugg-hint-bounce 2s ease-in-out infinite;
   }
 }

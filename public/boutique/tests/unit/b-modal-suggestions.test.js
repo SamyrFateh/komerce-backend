@@ -47,7 +47,10 @@ const { renderSuggestions } = require('../../js/b-modal-suggestions.js');
 
 function buildDom() {
   document.body.innerHTML =
-    '<div id="k-modal"><div class="k-modal-scroll"><div class="k-modal-product-zone"></div></div></div>' +
+    '<div id="k-modal"><div class="k-modal-scroll"><div class="k-modal-product-zone">' +
+    '<div id="k-modal-sugg-peek" role="button" tabindex="0" hidden>' +
+    '<span class="k-modal-sugg-peek-hint">Vous aimerez aussi ↓</span></div>' +
+    '</div></div></div>' +
     '<div id="k-modal-suggestions"><h3>Vous aimerez aussi</h3></div>' +
     '<div id="k-sug-rail"></div>';
   dom.sugRail = document.getElementById('k-sug-rail');
@@ -189,5 +192,56 @@ describe('b-modal-suggestions — filtre et composition', () => {
     const scroll = document.querySelector('.k-modal-scroll');
     expect(scroll.querySelectorAll('#k-modal-suggestions')).toHaveLength(1);
     expect(document.getElementById('k-modal-suggestions').classList.contains('k-modal-suggestions--desktop-list')).toBe(true);
+  });
+});
+
+describe('b-modal-suggestions — teaser #k-modal-sugg-peek activable', () => {
+  it('se démasque et scrolle vers #k-modal-suggestions au clic (sans dépendre du contenu enrichi au-dessus)', () => {
+    const sugSection = document.getElementById('k-modal-suggestions');
+    sugSection.scrollIntoView = jest.fn();
+
+    renderSuggestions([product({ id: 1 })], [], 'Chaussures');
+    const peek = document.getElementById('k-modal-sugg-peek');
+    expect(peek.hidden).toBe(false);
+
+    peek.dispatchEvent(new window.Event('click', { bubbles: true }));
+    expect(sugSection.scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: 'smooth', block: 'start' })
+    );
+  });
+
+  it('répond aussi au clavier (Entrée / Espace)', () => {
+    const sugSection = document.getElementById('k-modal-suggestions');
+    sugSection.scrollIntoView = jest.fn();
+
+    renderSuggestions([product({ id: 1 })], [], 'Chaussures');
+    const peek = document.getElementById('k-modal-sugg-peek');
+
+    peek.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(sugSection.scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  it('ne double-bind pas le listener sur des rendus répétés (nœud statique, jamais recréé)', () => {
+    const sugSection = document.getElementById('k-modal-suggestions');
+    sugSection.scrollIntoView = jest.fn();
+
+    renderSuggestions([product({ id: 1 })], [], 'Chaussures');
+    renderSuggestions([product({ id: 1 })], [], 'Chaussures');
+    const peek = document.getElementById('k-modal-sugg-peek');
+
+    peek.dispatchEvent(new window.Event('click', { bubbles: true }));
+    expect(sugSection.scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  it('se re-masque et ne scrolle plus rien quand il n\'y a aucune suggestion', () => {
+    const sugSection = document.getElementById('k-modal-suggestions');
+    sugSection.scrollIntoView = jest.fn();
+
+    renderSuggestions([], [], 'Chaussures');
+    const peek = document.getElementById('k-modal-sugg-peek');
+    expect(peek.hidden).toBe(true);
+
+    peek.dispatchEvent(new window.Event('click', { bubbles: true }));
+    expect(sugSection.scrollIntoView).not.toHaveBeenCalled();
   });
 });

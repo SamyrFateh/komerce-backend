@@ -310,23 +310,23 @@ test('la recherche interne groupe les résultats et gère les recherches récent
   expect(localStorage.getItem('k_recent_searches')).toBeNull();
 });
 
-test('Enter relaie la recherche et la topbar mobile se synchronise', () => {
+// REF-2026-07c : la loupe topbar (Sprint 4) a été retirée — deux zones de
+// recherche dans la modale mobile étaient source de confusion, et le mode
+// expand/collapse n'était jamais réinitialisé à la fermeture de la modale
+// (état résiduel à la réouverture). La barre inline est désormais le seul
+// point d'entrée recherche de la modale.
+test('Enter relaie la recherche inline vers la barre principale du catalogue', () => {
   const inline = document.querySelector('.k-modal-inner-search-input');
-  const trigger = document.querySelector('.k-topbar-search-trigger');
-  const expanded = document.querySelector('.k-topbar-search-expanded');
-  const topbarInput = expanded.querySelector('.k-topbar-search-input');
 
-  trigger.click();
-  topbarInput.value = 'maison';
-  topbarInput.dispatchEvent(new Event('input', { bubbles: true }));
-  expect(inline.value).toBe('maison');
-  topbarInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  inline.value = 'maison';
+  inline.dispatchEvent(new Event('input', { bubbles: true }));
+  inline.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   expect(dom.searchInput.value).toBe('maison');
-  expect(expanded.classList.contains('is-active')).toBe(false);
+});
 
-  trigger.click();
-  topbarInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-  expect(expanded.classList.contains('is-active')).toBe(false);
+test('la loupe topbar (Sprint 4) a été retirée — un seul point d\'entrée recherche dans la modale', () => {
+  expect(document.querySelector('.k-topbar-search-trigger')).toBeNull();
+  expect(document.querySelector('.k-topbar-search-expanded')).toBeNull();
 });
 
 test('navigation clavier et zones image desktop délèguent correctement', () => {
