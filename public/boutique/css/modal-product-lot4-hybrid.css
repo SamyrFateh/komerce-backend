@@ -312,10 +312,10 @@
     border: 1px solid var(--violet-mid);
   }
 
-  /* ── Trust + partage ── */
+  /* ── Trust + partage — aération identique mobile et desktop ── */
   #k-modal .k-modal-trust {
     border-top: 0;
-    margin-top: 12px;
+    margin-top: 18px;
     padding: 0;
     gap: 8px;
   }
@@ -328,7 +328,7 @@
 
   #k-modal .k-modal-share-row {
     border-top: 0;
-    margin-top: 10px;
+    margin-top: 14px;
     padding-top: 0;
     display: flex;
     align-items: center;
@@ -488,10 +488,4 @@
     flex-wrap: wrap;
     overflow: visible;
   }
-
-  /* REF-2026-07b : aération réassurance + partage.
-     Gaps actuels CTA→trust (12px) et trust→share (10px) trop serrés.
-     On donne de la respiration entre chaque section. */
-  #k-modal .k-modal-trust   { margin-top: 18px; }
-  #k-modal .k-modal-share-row { margin-top: 14px; }
 }
