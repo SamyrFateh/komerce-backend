@@ -85,7 +85,10 @@ const _CATEGORY_IMAGES = {
   'Sur-mesure':     '/boutique/categories/sur-mesure.jpg',   // DSC-A2 : asset à créer
 };
 
-// Fallback — sous-ensemble strict du seed 061. Ordre = display_order du seed.
+// Fallback secours — aligné sur boutique_categories (vérification 2026-07-24).
+// Source unique : la base. Ce fallback n'intervient qu'en cas de panne réseau.
+// Catégories masquées en base (show_in_rail=false) : Enfant, Sport, Sur-mesure — absentes ici.
+// Images manquantes en base (Bricolage, Auto) : fallback emoji via render-categories.js (onerror).
 const _FALLBACK_CATEGORIES = [
   {
     key: 'all', label: 'Tout', shortLabel: 'Tout',
@@ -107,23 +110,29 @@ const _FALLBACK_CATEGORIES = [
     image: _CATEGORY_IMAGES['Mode & Beauté'], dbKeys: ['Mode', 'Beauté'], filterType: null, filter: null,
     displayOrder: 2, showInRail: true, showInSections: true, showInMobileRail: true,
     subcategories: [
-      { key: 'Femme',      label: 'Femme',      shortLabel: 'Femme',    icon: '👗', dbKeys: ['Femme'] },
-      { key: 'Homme',      label: 'Homme',      shortLabel: 'Homme',    icon: '👔', dbKeys: ['Homme'] },
-      { key: 'Hijab',      label: 'Hijab',      shortLabel: 'Hijab',    icon: '🧕', dbKeys: ['Hijab'] },
-      { key: 'Boubou',     label: 'Boubou',     shortLabel: 'Boubou',   icon: '👘', dbKeys: ['Boubou'] },
-      { key: 'Shoes',      label: 'Shoes',      shortLabel: 'Shoes',    icon: '👟', dbKeys: ['Shoes'] },
-      { key: 'Parfums',    label: 'Parfum',     shortLabel: 'Parfum',   icon: '🌸', dbKeys: ['Parfums'] },
-      { key: 'Soins',      label: 'Soin',       shortLabel: 'Soin',     icon: '🧴', dbKeys: ['Soins'] },
-      { key: 'Cheveux',    label: 'Cheveux',    shortLabel: 'Cheveux',  icon: '💇', dbKeys: ['Cheveux'] },
-      { key: 'Maquillage', label: 'Maquil.',    shortLabel: 'Maquil.',  icon: '💄', dbKeys: ['Maquillage'] },
-      { key: 'Ongles',     label: 'Ongles',     shortLabel: 'Ongles',   icon: '💅', dbKeys: ['Ongles'] },
+      { key: 'Femme',  label: 'Femme',           shortLabel: 'Femme',  icon: '👗', dbKeys: ['Femme'] },
+      { key: 'Homme',  label: 'Homme',           shortLabel: 'Homme',  icon: '👔', dbKeys: ['Homme'] },
+      { key: 'Enfant', label: 'Enfant & Bébé',   shortLabel: 'Enfant', icon: '🍼', dbKeys: ['Enfant'] },
+      { key: 'Beauté', label: 'Beauté & Bien-être', shortLabel: 'Beauté', icon: '💄', dbKeys: ['Beauté'] },
+    ],
+  },
+  {
+    key: 'Maison', label: 'Maison', shortLabel: 'Maison',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '🏠', iconSvg: _ICON_SVGS.Maison,
+    image: _CATEGORY_IMAGES.Maison, dbKeys: ['Maison'], filterType: null, filter: null,
+    displayOrder: 3, showInRail: true, showInSections: true, showInMobileRail: true,
+    subcategories: [
+      { key: 'Confort',  label: 'Confort & Énergie',  shortLabel: 'Confort',  icon: '🔋', dbKeys: ['Confort'] },
+      { key: 'Cuisine',  label: 'Cuisine',             shortLabel: 'Cuisine',  icon: '🍳', dbKeys: ['Cuisine'] },
+      { key: 'Déco',     label: 'Déco & Rangement',   shortLabel: 'Déco',     icon: '🖼', dbKeys: ['Déco'] },
+      { key: 'Enfants',  label: 'Enfants & Scolaire', shortLabel: 'Enfants',  icon: '🧸', dbKeys: ['Enfants'] },
     ],
   },
   {
     key: 'Tech', label: 'Tech', shortLabel: 'Tech',
     type: NAV_TYPES.UNIVERSE, sectionEmoji: '📱', iconSvg: _ICON_SVGS.Tech,
     image: _CATEGORY_IMAGES.Tech, dbKeys: ['Tech'], filterType: null, filter: null,
-    displayOrder: 3, showInRail: true, showInSections: true, showInMobileRail: true,
+    displayOrder: 4, showInRail: true, showInSections: true, showInMobileRail: true,
     subcategories: [
       { key: 'Phones',  label: 'Tél.',    shortLabel: 'Tél.',    icon: '📱', dbKeys: ['Phones'] },
       { key: 'Ordi',    label: 'Ordi',    shortLabel: 'Ordi',    icon: '💻', dbKeys: ['Ordi'] },
@@ -133,55 +142,37 @@ const _FALLBACK_CATEGORIES = [
     ],
   },
   {
-    key: 'Enfant', label: 'Enfant', shortLabel: 'Enfant',
-    type: NAV_TYPES.UNIVERSE, sectionEmoji: '🧒', iconSvg: _ICON_SVGS.Enfant,
-    image: _CATEGORY_IMAGES.Enfant, dbKeys: ['Enfant'], filterType: null, filter: null,
-    displayOrder: 4, showInRail: true, showInSections: true, showInMobileRail: true,
-    subcategories: [
-      { key: 'Bébé',   label: 'Bébé',   shortLabel: 'Bébé',   icon: '🍼', dbKeys: ['Bébé'] },
-      { key: 'Garçon', label: 'Garçon', shortLabel: 'Garçon', icon: '👦', dbKeys: ['Garçon'] },
-      { key: 'Fille',  label: 'Fille',  shortLabel: 'Fille',  icon: '👧', dbKeys: ['Fille'] },
-      { key: 'Jouets', label: 'Jouets', shortLabel: 'Jouets', icon: '🧸', dbKeys: ['Jouets'] },
-      { key: 'École',  label: 'École',  shortLabel: 'École',  icon: '📚', dbKeys: ['École'] },
-    ],
-  },
-  {
-    key: 'Maison', label: 'Maison', shortLabel: 'Maison',
-    type: NAV_TYPES.UNIVERSE, sectionEmoji: '🏠', iconSvg: _ICON_SVGS.Maison,
-    image: _CATEGORY_IMAGES.Maison, dbKeys: ['Maison'], filterType: null, filter: null,
+    key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔧', iconSvg: null,
+    image: null, dbKeys: ['Bricolage'], filterType: null, filter: null,
     displayOrder: 5, showInRail: true, showInSections: true, showInMobileRail: true,
     subcategories: [
-      { key: 'Cuisine',    label: 'Cuisine',  shortLabel: 'Cuisine',  icon: '🍳', dbKeys: ['Cuisine'] },
-      { key: 'Salon',      label: 'Salon',    shortLabel: 'Salon',    icon: '🛋', dbKeys: ['Salon'] },
-      { key: 'Chambre',    label: 'Chambre',  shortLabel: 'Chambre',  icon: '🛏', dbKeys: ['Chambre'] },
-      { key: 'Déco',       label: 'Déco',     shortLabel: 'Déco',     icon: '🖼', dbKeys: ['Déco'] },
-      { key: 'Rangement',  label: 'Rangem.',  shortLabel: 'Rangem.',  icon: '📦', dbKeys: ['Rangement'] },
+      { key: 'Outillage',    label: 'Outils & Fixation',        shortLabel: 'Outils', icon: '🔧', dbKeys: ['Outillage'] },
+      { key: 'Electricité',  label: 'Électricité & Plomberie',  shortLabel: 'Élec.',  icon: '⚡', dbKeys: ['Electricité'] },
+      { key: 'Sécurité',     label: 'Serrures & Sécurité',      shortLabel: 'Sécu.',  icon: '🔒', dbKeys: ['Sécurité'] },
     ],
   },
   {
-    key: 'Sport', label: 'Sport', shortLabel: 'Sport',
-    type: NAV_TYPES.UNIVERSE, sectionEmoji: '⚽', iconSvg: _ICON_SVGS.Sport,
-    image: _CATEGORY_IMAGES.Sport, dbKeys: ['Sport'], filterType: null, filter: null,
+    key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '✨', iconSvg: null,
+    image: null, dbKeys: ['Créations', 'Sur-mesure'], filterType: null, filter: null,
     displayOrder: 6, showInRail: true, showInSections: true, showInMobileRail: true,
     subcategories: [
-      { key: 'Foot',     label: 'Foot',     shortLabel: 'Foot',     icon: '⚽', dbKeys: ['Foot'] },
-      { key: 'Fitness',  label: 'Fitness',  shortLabel: 'Fitness',  icon: '💪', dbKeys: ['Fitness'] },
-      { key: 'Natation', label: 'Natation', shortLabel: 'Natation', icon: '🏊', dbKeys: ['Natation'] },
-      { key: 'Yoga',     label: 'Yoga',     shortLabel: 'Yoga',     icon: '🧘', dbKeys: ['Yoga'] },
-      { key: 'Outdoor',  label: 'Outdoor',  shortLabel: 'Outdoor',  icon: '🏕', dbKeys: ['Outdoor'] },
+      { key: 'Cérémonie',  label: 'Tenues de cérémonie',   shortLabel: 'Cérémo.',  icon: '👑', dbKeys: ['Cérémonie'] },
+      { key: 'Cadeau',     label: 'Cadeaux personnalisés',  shortLabel: 'Cadeau',   icon: '🎁', dbKeys: ['Cadeau'] },
+      { key: 'Impression', label: 'Impression & Design',    shortLabel: 'Imprim.',  icon: '🖨️', dbKeys: ['Impression'] },
     ],
   },
   {
-    key: 'Sur-mesure', label: 'Sur-mesure', shortLabel: 'Pour vous...',
-    type: NAV_TYPES.UNIVERSE, sectionEmoji: '✨', iconSvg: _ICON_SVGS['Sur-mesure'],
-    image: _CATEGORY_IMAGES['Sur-mesure'], dbKeys: ['Sur-mesure'], filterType: null, filter: null,
+    key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '🚗', iconSvg: null,
+    image: null, dbKeys: ['Auto', 'Moto'], filterType: null, filter: null,
     displayOrder: 7, showInRail: true, showInSections: true, showInMobileRail: true,
     subcategories: [
-      { key: 'Couture',  label: 'Couture',  shortLabel: 'Couture',  icon: '🧵', dbKeys: ['Couture'] },
-      { key: 'Design',   label: 'Design',   shortLabel: 'Design',   icon: '✏️',  dbKeys: ['Design'] },
-      { key: 'Mesure',   label: 'Mesure',   shortLabel: 'Mesure',   icon: '📏', dbKeys: ['Mesure'] },
-      { key: 'Broderie', label: 'Broderie', shortLabel: 'Broderie', icon: '🪡', dbKeys: ['Broderie'] },
-      { key: 'Premium',  label: 'Premium',  shortLabel: 'Premium',  icon: '⭐', dbKeys: ['Premium'] },
+      { key: 'Filtres',   label: 'Filtres & Entretien',       shortLabel: 'Filtres', icon: '🔧', dbKeys: ['Filtres'] },
+      { key: 'Freinage',  label: 'Freinage & Sécurité',       shortLabel: 'Frein.',  icon: '🛑', dbKeys: ['Freinage'] },
+      { key: 'Éclairage', label: 'Éclairage & Électrique',    shortLabel: 'Éclai.',  icon: '💡', dbKeys: ['Éclairage'] },
+      { key: 'Moto',      label: 'Moto',                      shortLabel: 'Moto',    icon: '🏍️', dbKeys: ['Moto'] },
     ],
   },
 ];

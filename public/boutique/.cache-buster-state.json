@@ -3,7 +3,8 @@
     "base.css": 138,
     "components.css": 241,
     "desktop.css": 73,
-    "event.css": 32
+    "event.css": 32,
+    "main.js": 352
   },
   "hashes": {
     "base.css": "26e8d2c6e9e6",

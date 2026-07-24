@@ -281,55 +281,10 @@ if('serviceWorker' in navigator){
   <div class="k-cats-shell">
   <div class="k-cats-wrap-fade-left"></div>
   <nav class="k-cats" id="k-cats">
-    <!-- Rail v2 — 8 chips : 2 filtres transverses + 6 piliers (architecture comorienne) -->
-    <button class="k-chip active" data-cat="all" aria-label="Toutes les catégories">
-      <span class="k-chip-photo">
-        <img src="/boutique/categories/all.jpg" alt="" loading="eager" width="80" height="80">
-      </span>
-      <span class="k-chip-label">Tout</span>
-    </button>
-    <button class="k-chip" data-cat="Soldes" aria-label="Soldes">
-      <span class="k-chip-photo">
-        <img src="/boutique/categories/soldes.jpg" alt="" loading="eager" width="80" height="80">
-      </span>
-      <span class="k-chip-label">Soldes</span>
-    </button>
-    <button class="k-chip" data-cat="Mode & Beauté" aria-label="Mode et Beauté">
-      <span class="k-chip-photo">
-        <img src="/boutique/categories/mode.jpg" alt="" loading="eager" width="80" height="80">
-      </span>
-      <span class="k-chip-label">Mode</span>
-    </button>
-    <button class="k-chip" data-cat="Maison" aria-label="Maison">
-      <span class="k-chip-photo">
-        <img src="/boutique/categories/maison.jpg" alt="" loading="eager" width="80" height="80">
-      </span>
-      <span class="k-chip-label">Maison</span>
-    </button>
-    <button class="k-chip" data-cat="Tech" aria-label="Tech">
-      <span class="k-chip-photo">
-        <img src="/boutique/categories/tech.jpg" alt="" loading="eager" width="80" height="80">
-      </span>
-      <span class="k-chip-label">Tech</span>
-    </button>
-    <button class="k-chip" data-cat="Bricolage" aria-label="Bricolage">
-      <span class="k-chip-photo">
-        <img src="/boutique/categories/bricolage.jpg" alt="" loading="eager" width="80" height="80">
-      </span>
-      <span class="k-chip-label">Bricolage</span>
-    </button>
-    <button class="k-chip" data-cat="Créations personnelles" aria-label="Créations personnelles">
-      <span class="k-chip-photo">
-        <img src="/boutique/categories/creations.jpg" alt="" loading="eager" width="80" height="80">
-      </span>
-      <span class="k-chip-label">Perso.</span>
-    </button>
-    <button class="k-chip" data-cat="Auto" aria-label="Auto et Moto">
-      <span class="k-chip-photo">
-        <img src="/boutique/categories/auto.jpg" alt="" loading="eager" width="80" height="80">
-      </span>
-      <span class="k-chip-label">Auto</span>
-    </button>
+    <!-- Rail piloté par la donnée — rendu par render-categories.js via renderCategoryRail()
+         Source : GET /api/categories → shop-schema.js → renderCategoryRailMarkup()
+         Fallback secours : _FALLBACK_CATEGORIES dans shop-schema.js (aligné sur la base)
+         Ne pas remettre de chips en dur ici. -->
   </nav>
   <div class="k-cats-wrap-fade-right"></div>
   </div><!-- /k-cats-shell -->
@@ -820,7 +775,7 @@ if('serviceWorker' in navigator){
 <!-- <script src="/boutique/js/mock-data.js"></script> -->
 <script src="/boutique/js/komerce-api.js?v=339"></script>
 <!-- Phase 2 Option C : main.js orchestre tous les modules ES -->
-<script type="module" src="/boutique/js/main.js?v=351"></script>
+<script type="module" src="/boutique/js/main.js?v=352"></script>
 
   <!-- Contract DOM: required by b-store.js initDom(); kept hidden unless cart UI enables it -->
   <a id="k-cart-whatsapp"
