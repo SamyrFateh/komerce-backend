@@ -1,81 +1,119 @@
-# Prompt d'exécution — refacto modale produit (pour Claude Sonnet)
+# Prompt d'exécution — modale produit canonique (Sonnet)
 
-> Copier le bloc ci-dessous comme instruction à Sonnet. Les gates existent déjà.
-> **Point zéro (baseline) : ownership = 5 violations · layout = 0 · à confirmer par un run.**
+> Lire avant toute modification :
+>
+> 1. `public/boutique/docs/reference/PRODUCT_MODAL_REFERENCE_CANONICAL.md`
+> 2. `public/boutique/docs/reference/reference-modale-4-etats.html`
+> 3. `public/boutique/docs/reference/reference-modale-architecture.html`
+> 4. `docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md`
+> 5. `public/boutique/HANDOFF_MODALE_PROPRIETE_UNIQUE.md`
 
-```
+```text
 RÔLE
-Tu es l'agent d'exécution du refacto de la modale produit de Komerce (public/boutique).
-Tu mets en œuvre une architecture déjà décidée et documentée. Tu N'inventes PAS de
-direction : tu implémentes ce qui est spécifié, tu fais passer les oracles, et tu ne
-te déclares PAS « terminé » — la validation finale est réservée à un second passage.
+Tu es l'agent d'exécution de la modale produit Komerce dans public/boutique.
+Tu n'inventes pas une nouvelle direction visuelle ou un nouveau contrat. Tu mets à jour
+l'existant afin qu'il respecte la référence canonique Product Modal v2.1.
 
-TROIS SOURCES DE VÉRITÉ (lis les trois avant d'écrire une ligne)
-1. RUNBOOK : public/boutique/HANDOFF_MODALE_PROPRIETE_UNIQUE.md
-   → contrats, ownership, séquence des chantiers, machine à états, oracles. C'est LE plan.
-2. RÉFÉRENCE VISUELLE :
-   - docs/reference/reference-modale-architecture.html → LE MODÈLE de layout
-     (un seul conteneur qui scrolle + CTA sticky, densité-robuste).
-   - docs/reference/reference-modale-4-etats.html → détail des 4 états.
-3. GATES (garde-fous exécutables, déjà en place) :
-   - scripts/audit-modal-ownership.js + modal-ownership.contract.json
-   - scripts/audit-modal-layout.js    + modal-layout.contract.json
+DÉCISION D'ARCHITECTURE
+Il existe un seul Product Detail Contract, un seul état de sélection et deux axes :
+- layout : desktop | mobile
+- richesse : simple | enriched
 
-ORACLES NON NÉGOCIABLES (aucun chantier fini tant qu'ils ne sont pas verts)
-  cd public/boutique
-  npm run audit:modal-ownership   → exit 0  (baseline : 5 violations à clore)
-  npm run audit:modal-layout      → exit 0  (baseline : déjà vert — NE PAS le casser)
-  npm run test:unit               → 0 échec (inclut modal-layout-invariant.test.js)
-Lance-les après CHAQUE étape. Commit par étape. Colle la sortie + le compte restant.
-Si un test casse, tu répares AVANT de continuer.
+La combinaison produit quatre rendus :
+1. desktop simple
+2. desktop enrichi
+3. mobile simple
+4. mobile enrichi
 
-RÈGLES DURES (violer = régression)
-A. La maquette est une INTENTION, pas du code. NE recopie JAMAIS ses hauteurs en px.
-   Traduis : hero relatif (vh + min/max px bornés), un seul conteneur qui scrolle, CTA
-   sticky. Toute height:Npx sur une zone de flux fait échouer audit:modal-layout.
-B. Une zone DOM = un seul owner. Pour lever une violation : déplace l'écriture chez
-   l'owner, ou ajoute au `allow` UNIQUEMENT si co-écriture intentionnelle ET documentée.
-   Jamais d'`allow` de confort.
-C. Données depuis le contrat détail / view-model partagé, jamais en dur. swatch = image
-   de variante (media du SKU) ; pill livraison = delivery.mode ("air"|"sea", défaut
-   "sea") ; stock = modèle de sélection ; prix idem.
-D. Réassurance, partage ET suggestions TOUJOURS montés — jamais conditionnés à
-   hasEnrichedContent. Suggestions du non-enrichi = cross-sell (autres produits).
-E. Variantes en flex-wrap : peu → 1 ligne, beaucoup (22 coloris) → plusieurs lignes qui
-   participent au scroll. Jamais de cadre à hauteur fixe qui tronque.
-F. Bouton panier ↔ stepper : qté 0 = « Ajouter au panier » ; après ajout = stepper
-   − N + ; retour à 0 via − = removeFromCart PUIS le bouton réapparaît. Un seul contrôle
-   affiché à la fois.
-G. NE PAS rejouer le correctif viewport (manche 0) sans son lot de tests (handoff §4).
-   NE PAS supprimer un module à l'aveugle : morts = tests + manifestes (handoff §5).
+Ces quatre rendus ne sont jamais quatre composants ou quatre arbres DOM indépendants.
+Les capacités activent des sections facultatives ; le responsive change la composition.
 
-SÉQUENCE (chaque étape : implémente → 3 oracles → commit)
-1. Chantier Desktop (handoff §2) : clore les 5 violations d'ownership restantes
-   (k-modal-variants, k-sug-rail, k-add-cart-btn, k-buy-now-btn, k-qty-val).
-2. Chantier Déduplication (handoff §3) : converger le DOM scalaire des renderers dans
-   b-modal-product-fields.js ; vider le `allow` scalaire. NE fusionne PAS ce qui est
-   légitimement différent (pill stock vs texte, below-fold vs panel) — état déjà partagé.
-3. Chantier UI (handoff §6) :
-   3a. Passer la modale au modèle densité-robuste (réf. architecture.html) : conteneur
-       scroll + CTA sticky compact (Ajouter primaire / Acheter secondaire, une rangée),
-       hauteurs relatives. Supprimer toute logique de fold-fitting.
-   3b. Ordre des blocs : image → titre → prix → pill livraison → couleur → taille →
-       suggestions. Couleur+taille sous le prix (immédiateté en faible densité).
-   3c. shipping_mode : champ delivery.mode + pill sous le prix (air = accent bleu, sea =
-       neutre). Owner = k-modal-delivery. Supprimer l'ancienne ligne livraison en bas.
-   3d. Suggestions : rail présent sur les 4 états ; une demi-rangée affleure sous le CTA
-       sticky en faible densité (teasing cross-sell).
-4. Garantie déjà en place : le test tests/unit/modal-layout-invariant.test.js et le gate
-   audit:modal-layout doivent rester verts. Ajoute les oracles UI du handoff §6.3
-   (shipping_mode air/sea + fallback ; cycle bouton↔stepper avec removeFromCart).
+STRUCTURE SÉMANTIQUE ATTENDUE
+ProductModal
+├── ModalHeader
+├── ProductMain
+│   ├── ProductMedia
+│   │   ├── GalleryRail / pagination facultatifs
+│   │   └── MainMedia
+│   ├── ProductInformation
+│   │   ├── Identity / stock / price / delivery
+│   │   ├── Variants facultatifs
+│   │   ├── Description
+│   │   ├── Actions
+│   │   ├── Reassurance
+│   │   └── Share
+│   └── DesktopCartPanel — desktop uniquement
+├── ProductRecommendations
+└── MobileStickyActions — mobile uniquement
+
+RÈGLES VISUELLES
+- Desktop : grille médias | informations | panier.
+- Le panier appartient au shell ; il n'est pas fixed hors de la modale.
+- Les suggestions desktop occupent médias + informations, jamais la colonne panier.
+- Mobile : composition verticale native, galerie tactile, panier dans le header.
+- Ordre mobile : média → identité → stock → prix → livraison → variantes → description
+  → réassurance → partage → suggestions → actions sticky.
+- Le mobile enrichi est obligatoire.
+- Une seule croix de fermeture.
+- Une section absente disparaît sans vide, séparateur ou message technique.
+
+SUGGESTIONS
+- « Vous aimerez aussi » existe dans les quatre états quand des recommandations existent.
+- Simple : le rail arrive plus tôt car le contenu produit est plus court ; rôle découverte.
+- Enrichi : le même rail arrive après davantage d'informations ; rôle complément d'achat.
+- La différence porte sur le contexte, pas sur l'existence ou sur un autre composant.
+- Mobile : rail horizontal tactile, environ 1,6 à 2 cartes visibles.
+- Cartes : image, nom, prix, promotion éventuelle, contrôle neutre + puis stepper − N +.
+- Aucun petit panier sur les cartes.
+- Le rail reste au-dessus de la barre sticky et possède un libellé accessible.
+
+ÉTAT PANIER
+quantité 0 : bouton Ajouter
+quantité > 0 : stepper − N +
+retour à 0 : removeFromCart puis retour du bouton Ajouter
+Une seule source de vérité et aucun état concurrent entre renderers.
+
+DONNÉES
+Prix, ancien prix, remise, stock, disponibilité, média, sélection, livraison et sous-total
+proviennent du contrat détail et de l'état partagé. Ne rien déduire localement.
 
 INTERDITS
-- Ne te déclare pas « terminé » sans les 3 oracles verts + violations à 0.
-- Ne recopie pas les px de la maquette. Pas de height fixe sur les zones de flux.
-- Ne conditionne pas réassurance/partage/suggestions à l'enrichissement.
-- Pas d'`allow` de complaisance pour faire taire un gate.
+- Pas de quatre HTML indépendants.
+- Pas de déplacement de blocs au JavaScript selon le viewport.
+- Pas de clonage fonctionnel des CTA.
+- Pas de conditionnement réassurance/partage/suggestions à hasEnrichedContent.
+- Pas de hauteur fixe sur les zones de flux.
+- Pas de placeholders ou textes de debug en production.
+- Pas d'allow de complaisance pour contourner l'ownership.
 
-LIVRABLE
-Un commit par étape avec : le diff, la sortie des 3 oracles, le compte restant. À la fin :
-ownership = 0, layout = 0, test:unit vert. Laisse l'analyse finale au second passage.
+ORACLES NON NÉGOCIABLES
+cd public/boutique
+npm run audit:modal-ownership
+npm run audit:modal-layout
+npm run test:unit
+
+Lance les trois après chaque étape. Répare toute régression avant de poursuivre.
+
+MISSION
+1. Inspecte le référentiel et le DOM actuel avant modification.
+2. Produis une matrice précise : existant / conforme / écart / action.
+3. Conserve ce qui respecte déjà la référence.
+4. Ajoute proprement le mobile enrichi sans créer un quatrième renderer autonome.
+5. Aligne les suggestions des quatre états sur la règle canonique.
+6. Aligne les cartes sur le contrôle + / stepper neutre.
+7. Vérifie le panier desktop dans le shell et les actions sticky mobile.
+8. Ajoute ou adapte les tests d'invariant nécessaires.
+9. Fournis le diff, la liste des fichiers et les sorties des trois oracles.
+
+CRITÈRES D'ACCEPTATION
+- Quatre états rendables depuis le même contrat.
+- Mobile enrichi présent.
+- Suggestions desktop/mobile et simple/enrichi.
+- Variantes avant description.
+- Produit simple compact sans trous.
+- Panier desktop structurel.
+- Sticky mobile sans contenu masqué, y compris Samsung Internet et safe-area.
+- Ownership = 0, layout = 0, tests unitaires verts.
+
+Ne te déclare pas terminé sans preuves exécutables.
 ```
