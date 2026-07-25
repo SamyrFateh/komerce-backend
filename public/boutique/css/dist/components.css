@@ -3124,6 +3124,27 @@ html.k-mobile-premium-v1 .k-chip-label {
   html.k-doc-scroll #k-modal .k-modal-scroll {
     padding-bottom: calc(var(--k-modal-cta-h, 75px) + env(safe-area-inset-bottom, 0px));
   }
+
+  /* 8. Témoin visuel — sur mobile on ne peut pas ouvrir les devtools pour
+        vérifier que ?docscroll=1 a bien pris. Ce badge lève l'ambiguïté
+        pendant le test. Sélecteur neuf (aucune règle body::after ailleurs),
+        donc aucun override de spécificité ajouté. Disparaît avec le spike. */
+  html.k-doc-scroll body::after {
+    content: 'docscroll ON';
+    position: fixed;
+    left: 6px;
+    bottom: 6px;
+    z-index: 9999;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--text);
+    color: var(--white);
+    font-size: 10px;
+    font-family: monospace;
+    letter-spacing: .04em;
+    pointer-events: none;
+    opacity: .75;
+  }
 }
 
 
