@@ -64,13 +64,6 @@
 .k-modal-old-price { font-size: 13px; color: var(--text-light); text-decoration: line-through; white-space: nowrap; flex-shrink: 0; }
 .k-modal-meta { display: flex; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
 .k-modal-meta span { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; background: var(--sand); border-radius: 50px; }
-/* Identité (catégorie + stock) — même habillage visuel que .k-modal-meta
-   (pill sable), conteneur distinct car owners différents (voir index.html).
-   Masqué sur mobile ≤899px (modal-mobile-canonical.css) — stock déjà
-   affiché via #k-modal-stock-pill mobile. */
-.k-modal-identity-meta { display: flex; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
-.k-modal-identity-meta span { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; background: var(--sand); border-radius: 50px; }
-.k-modal-identity-meta:empty { display: none; }
 /* ── SOCIAL PROOF — badges vendus/note, conditionnels (données backend) ──
    Si product.sold_count, product.rating ou product.rank sont absents,
    injectSocialProof() laisse .k-modal-meta vide et il est display:none.

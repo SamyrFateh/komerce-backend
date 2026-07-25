@@ -76,6 +76,22 @@ module.exports = defineConfig({
     ? [['junit', { outputFile: 'test-results/results.xml' }], ['list']]
     : [['html', { open: 'never' }], ['list']],
 
+  // Volet 3.3 — tolérance de diff pixel pour toHaveScreenshot(). Calibré sur
+  // mesure réelle (pas au jugé), re-vérifiée le 26/07 dans cet environnement :
+  // la même régression volontaire (couleur du bouton WhatsApp) ne produit
+  // que ~0.22-0.23% de pixels différents sur l'état mobile-simple (mesuré à
+  // ImageMagick `compare -metric AE` : 741/329160 px) — le bouton y occupe
+  // une petite portion du cadre. L'ancien seuil (0.002 = 0.2%) était donc
+  // TROP PRÈS de ce signal réel : il laissait passer cette régression sous
+  // pixelmatch (qui exclut les pixels d'anti-aliasing du compte). 0.001
+  // (0.1%) reste net en dessous du signal réel mesuré sur le cas le plus
+  // défavorable (mobile-simple) tout en absorbant l'anti-aliasing
+  // sous-pixel entre environnements (OS/GPU). Voir l'avertissement de
+  // portabilité en tête de tests/e2e/modal-visual-regression.spec.js.
+  expect: {
+    toHaveScreenshot: { maxDiffPixelRatio: 0.001 },
+  },
+
   // ── Serveur de développement intégré (mode LOCAL uniquement) ──────────────
   // Lance `npx serve ..` (racine = public/, car index.html référence des
   // chemins absolus /boutique/css/..., /images/...) avant les tests et
@@ -153,6 +169,24 @@ module.exports = defineConfig({
       },
     },
 
+    // ── Volets 3.2/3.3 — Projet dédié specs LOCAL-only ─────────────────────
+    // modal-geometry.spec.js (mesures getBoundingClientRect) et
+    // modal-visual-regression.spec.js (toHaveScreenshot) stubbent l'API via
+    // page.route et gèrent leurs propres viewports en interne (test.use côté
+    // spec) — même raison qu'MDM-9 : projet Chromium unique dédié pour éviter
+    // la multiplication ×5 navigateurs. Ces specs dépendent de données
+    // déterministes (fixtures) plutôt que du backend réel : les exécuter en
+    // DISTANT contre le catalogue live romprait le déterminisme des captures
+    // (volet 3.3) sans rien gagner (volet 3.2 ne teste que du layout/CSS).
+    {
+      name: 'Chromium Local-Only',
+      testMatch: ['**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
+      use: {
+        ...devices['Desktop Chrome'],
+        locale: 'fr-FR',
+      },
+    },
+
     // ── Desktop (public, sans session) ─────────────────────────────────────
     // testIgnore : les specs authenticated/ ont besoin du storageState posé
     // par le projet "authenticated" (dépendance sur "setup") — sans lui, un
@@ -161,7 +195,7 @@ module.exports = defineConfig({
     // explicitement ici pour ne pas les rejouer en double, sans session.
     {
       name: 'Desktop Chrome',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
@@ -170,7 +204,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Desktop Firefox',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
       use: {
         ...devices['Desktop Firefox'],
         viewport: { width: 1280, height: 800 },
@@ -179,7 +213,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Desktop Safari',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
       use: {
         ...devices['Desktop Safari'],
         viewport: { width: 1280, height: 800 },
@@ -190,7 +224,7 @@ module.exports = defineConfig({
     // ── Mobile (la boutique est mobile-first — diaspora comorienne) ─────────
     {
       name: 'Mobile Chrome',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
       use: {
         ...devices['Pixel 7'],
         locale: 'fr-FR',
@@ -198,7 +232,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Mobile Safari',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
       use: {
         ...devices['iPhone 14'],
         locale: 'fr-FR',
