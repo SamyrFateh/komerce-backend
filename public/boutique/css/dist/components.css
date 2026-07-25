@@ -3075,24 +3075,15 @@ html.k-mobile-premium-v1 .k-chip-label {
     max-height: none;
   }
 
-  /* 2. L'overlay rejoint le flux (plus de fixed, plus de clip, plus de contain)
-        `relative` et non `static` : garde l'élément dans le flux du document
-        (donc le document scrolle toujours) MAIS le rend positionné, ce qui
-        réactive le `z-index: 300` de la règle de base .k-modal-overlay —
-        sans quoi le catalogue en cage fixe peint par-dessus la modale
-        (.k-hero-fixed-wrap z:50, .k-bnav z:90, .k-header z:100,
-        .k-hero-cats-sticky z:110). On ne redéclare PAS de z-index ici :
-        300 suffit, et le contrat governance/zindex-contract.json rattache
-        la couche `modal-overlay` au sélecteur de classe, pas à l'ID.
-        Fond opaque pour la même raison. */
+  /* 2. L'overlay rejoint le flux (plus de fixed, plus de clip, plus de contain) */
   html.k-doc-scroll #k-modal-overlay.open {
-    position: relative;
+    position: static;
     inset: auto;
     overflow: visible;
     contain: none;
     height: auto;
     max-height: none;
-    background: var(--page-bg);
+    background: transparent; /* plus de voile : la modale EST la page */
   }
 
   /* 3. Le shell ne contraint plus la hauteur */
