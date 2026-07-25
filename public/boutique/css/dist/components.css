@@ -3129,34 +3129,9 @@ html.k-mobile-premium-v1 .k-chip-label {
     bottom: 0;
   }
 
-  /* 7. (retiré) Le padding-bottom réservait la place d'un CTA `fixed`.
-        Le CTA est passé `sticky` : il occupe sa propre place dans le flux,
-        donc ce padding ne faisait qu'ajouter ~75px de vide sous lui — ce qui
-        empêchait la modale d'atteindre le bas du document et décrochait le
-        CTA du bas de l'écran en fin de scroll. */
-
-  /* 9. Masquer le chrome catalogue resté en position:fixed pendant que la
-        modale est ouverte.
-        Pourquoi ce n'est PAS un problème de z-index : l'overlay à z-index:300
-        ne peint que SA boîte. Dès que le contenu de la modale se termine
-        (hauteur auto), la zone en dessous laisse voir le catalogue fixe —
-        et comme le document se termine là, le CTA `sticky bottom:0` décroche
-        à mi-écran au lieu de rester en bas.
-        `visibility` et non `display` : préserve le scrollTop de #k-page-scroll
-        pour la restauration de position à la fermeture. */
-  html.k-doc-scroll body.modal-open #k-page-scroll,
-  html.k-doc-scroll body.modal-open .k-hero-fixed-wrap,
-  html.k-doc-scroll body.modal-open .k-header,
-  html.k-doc-scroll body.modal-open .k-bnav {
-    visibility: hidden;
-  }
-
-  /* 9b. La nav basse étant masquée, la place que le body lui réserve n'a plus
-         lieu d'être : reset.css pose padding-bottom: calc(--bnav-h + 90px)
-         = 140px, qui prolongeaient le document sous la modale et empêchaient
-         le CTA `sticky bottom:0` d'atteindre le bas de l'écran. */
-  html.k-doc-scroll body.modal-open {
-    padding-bottom: 0;
+  /* 7. Réserver la place du CTA fixe en fin de contenu */
+  html.k-doc-scroll #k-modal .k-modal-scroll {
+    padding-bottom: calc(var(--k-modal-cta-h, 75px) + env(safe-area-inset-bottom, 0px));
   }
 
   /* 8. Témoin visuel — sur mobile on ne peut pas ouvrir les devtools pour
