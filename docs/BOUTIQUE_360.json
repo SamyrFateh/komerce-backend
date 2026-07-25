@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T16:13:37.835Z",
+  "generatedAt": "2026-07-25T18:42:12.650Z",
   "summary": {
     "modules": 72,
     "withHeader": 72,
@@ -788,8 +788,7 @@
         "b-bus",
         "b-store",
         "b-cart",
-        "modal-cart-product-model",
-        "b-modal-desktop-product"
+        "modal-cart-product-model"
       ],
       "bodyClasses": []
     },
@@ -981,6 +980,7 @@
         "b-modal-product",
         "b-modal-image-ux",
         "b-modal-buybox-shared",
+        "delivery-mode-model",
         "b-modal-product-fields",
         "b-modal-desktop-product",
         "product-content-model",

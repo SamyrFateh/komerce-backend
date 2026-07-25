@@ -74,3 +74,28 @@ export function deriveDeliveryMode(deliveryOptions) {
   // hors convention) : fallback sea neutre, sans faux délai inventé.
   return { mode: 'sea', label: 'Livraison', lead_time_label: null };
 }
+
+/**
+ * Réconcilie `state.modalDeliverySelection` avec les `delivery_options[]`
+ * du contrat courant (changement de produit, de SKU, ou re-render).
+ *
+ * Règle stricte : afficher une option — même unique — n'est jamais une
+ * demande explicite du client. `requested_transport_rail` ne peut donc
+ * jamais être auto-rempli à l'ouverture ou au re-render, y compris quand il
+ * n'y a qu'un seul rail disponible. Seul un choix précédent explicite (posé
+ * par un clic utilisateur) est conservé, et uniquement s'il reste valide
+ * parmi les options actuelles ; sinon la sélection retombe à `null`.
+ *
+ * Owner unique de cette logique — mobile et desktop l'appellent tous les
+ * deux au lieu de dupliquer la règle de conservation/reset.
+ *
+ * @param {Array<{code?: string}>} deliveryOptions
+ * @param {{requested_transport_rail?: string|null}|null|undefined} previousSelection
+ * @returns {{requested_transport_rail: string|null}}
+ */
+export function reconcileDeliverySelection(deliveryOptions, previousSelection) {
+  const options = Array.isArray(deliveryOptions) ? deliveryOptions : [];
+  const prevRail = previousSelection?.requested_transport_rail ?? null;
+  const stillValid = prevRail != null && options.some((option) => option.code === prevRail);
+  return { requested_transport_rail: stillValid ? prevRail : null };
+}

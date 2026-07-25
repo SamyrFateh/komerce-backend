@@ -57,6 +57,7 @@ import {
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { wireBuyNowButton } from './b-modal-buybox-shared.js';
+import { reconcileDeliverySelection } from './view-models/delivery-mode-model.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
 import { renderTrust, renderShare } from './b-modal-desktop-product.js';
 import {
@@ -672,23 +673,16 @@ export function renderMobileProductDetail(
   root.className = 'k-mdm-root';
   container.appendChild(root);
 
-  // Initialiser l'état de sélection livraison depuis le contrat produit.
+  // Réconcilier l'état de sélection livraison avec le contrat produit courant.
   // Mobile et desktop partagent state.modalDeliverySelection — jamais dataset DOM.
-  // Si une seule option disponible (cas courant Air DISABLED), le rail est forcé.
-  // Si plusieurs options, conserver la sélection précédente si valide.
+  // Afficher une option, même unique, n'est pas un choix explicite du client :
+  // requested_transport_rail reste null tant qu'aucun clic n'a eu lieu. Seul un
+  // choix précédent encore valide parmi les options actuelles est conservé.
   const deliveryOptions = detail?.delivery_options || [];
-  if (deliveryOptions.length === 1) {
-    state.modalDeliverySelection = { requested_transport_rail: deliveryOptions[0].code };
-  } else if (deliveryOptions.length > 1) {
-    const prevRail = state.modalDeliverySelection?.requested_transport_rail;
-    const validPrev = deliveryOptions.some(o => o.code === prevRail);
-    if (!validPrev) {
-      state.modalDeliverySelection = { requested_transport_rail: deliveryOptions[0].code };
-    }
-    // sinon conserver le choix précédent
-  } else {
-    state.modalDeliverySelection = { requested_transport_rail: null };
-  }
+  state.modalDeliverySelection = reconcileDeliverySelection(
+    deliveryOptions,
+    state.modalDeliverySelection
+  );
 
   // MDM-5: Info strip (availability chip + delivery chips) — juste sous le
   // prix, AVANT couleur/taille (réf. docs/reference/reference-modale-

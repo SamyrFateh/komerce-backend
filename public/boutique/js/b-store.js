@@ -57,6 +57,27 @@ export const $$ = (s) => document.querySelectorAll(s);
 /* ── CART INIT ───────────────────────────────────────────── */
 
 /**
+ * Migration de compatibilité — anciens paniers localStorage stockaient
+ * `delivery_mode: 'sea'|'air'`. Le modèle actif est `requested_transport_rail`
+ * (code canonique du rail, cf. migration DB 117). Cette fonction traduit une
+ * seule fois à l'hydratation puis supprime le champ legacy de l'objet : la
+ * prochaine saveCart() ne le réécrit jamais (aucune clé `delivery_mode` n'est
+ * plus produite ailleurs dans le code actif).
+ */
+const LEGACY_DELIVERY_MODE_TO_RAIL = Object.freeze({
+  sea: 'SEA_STANDARD',
+  air: 'AIR_EXPRESS',
+});
+function _migrateLegacyCartItem(item) {
+  if (!item || typeof item !== 'object' || !('delivery_mode' in item)) return item;
+  const { delivery_mode, ...rest } = item;
+  if (rest.requested_transport_rail === undefined) {
+    rest.requested_transport_rail = LEGACY_DELIVERY_MODE_TO_RAIL[delivery_mode] ?? null;
+  }
+  return rest;
+}
+
+/**
  * Charge le panier depuis localStorage en vérifiant la version.
  * @returns {Array} Tableau d'items panier (peut être vide)
  */
@@ -64,7 +85,8 @@ function _loadCart() {
   try {
     const v = localStorage.getItem('kmrc_cart_v');
     if (String(v) !== String(CART_VERSION)) return [];
-    return JSON.parse(localStorage.getItem('kmrc_cart') || '[]');
+    const items = JSON.parse(localStorage.getItem('kmrc_cart') || '[]');
+    return Array.isArray(items) ? items.map(_migrateLegacyCartItem) : [];
   } catch(e) { return []; }
 }
 
@@ -109,6 +131,8 @@ export const state = {
    * Ne jamais lire un dataset DOM comme source de vérité pour cette valeur.
    */
   modalDeliverySelection: { requested_transport_rail: null },
+  /* getRequestedTransportRail est exporté juste après cet objet — ne pas
+     dupliquer sa lecture inline dans les CTA (Ajouter / Acheter / partagé). */
   /** Signature des médias déjà rendus ; évite de reconstruire le carousel à vide. */
   modalMediaSignature: '',
   /** Variantes legacy sélectionnées : transition jusqu'à extinction PDC-6. */
@@ -145,6 +169,20 @@ export const state = {
    */
   editSharedCart: null,
 };
+
+/**
+ * Helper partagé unique — source de vérité pour tout CTA transactionnel
+ * (Ajouter au panier, Acheter maintenant, Panier partagé) qui doit connaître
+ * le rail de transport demandé par le client.
+ *
+ * Ne lit jamais un dataset DOM. `null` = aucun choix explicite ; ce n'est pas
+ * au CTA de déduire un rail par défaut (cf. DOCTRINE_TRANSPORT_RAILS §4).
+ *
+ * @returns {string|null} code canonique du rail ('SEA_STANDARD' | 'AIR_EXPRESS') ou null
+ */
+export function getRequestedTransportRail() {
+  return state.modalDeliverySelection?.requested_transport_rail ?? null;
+}
 
 // Debug global (read-only) — dev/local uniquement (pas en prod)
 if (

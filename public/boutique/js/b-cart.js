@@ -243,15 +243,26 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
     comboLabel = Object.values(combo).join(' / ');
   }
 
+  // Identité canonique d'une ligne panier (doctrine §7) : produit + variant
+  // + rail de transport demandé. Deux lignes avec le même produit/variant
+  // mais un rail différent ne sont jamais fusionnées — null (aucun choix
+  // explicite) est une valeur de rail à part entière pour cette comparaison.
+  const requestedTransportRail = options.requested_transport_rail ?? null;
+
   // Lorsqu'une carte vise une unique ligne variante déjà au panier, elle
   // transmet explicitement cette ligne. On l'incrémente par identité d'objet
-  // au lieu de recréer une ligne générique sans variant_combo.
-  const explicitLine = options.existingLine && state.cart.includes(options.existingLine)
+  // au lieu de recréer une ligne générique sans variant_combo. On vérifie
+  // quand même le rail : une ligne explicite avec un rail différent ne doit
+  // pas absorber silencieusement le nouveau choix.
+  const explicitLine = options.existingLine
+    && state.cart.includes(options.existingLine)
+    && (options.existingLine.requested_transport_rail ?? null) === requestedTransportRail
     ? options.existingLine
     : null;
   const existing = explicitLine || state.cart.find(i =>
     getCartItemProductId(i) === String(product.id)
     && JSON.stringify(i.variant_combo || null) === JSON.stringify(combo)
+    && (i.requested_transport_rail ?? null) === requestedTransportRail
   );
 
   if (existing) {
@@ -271,7 +282,7 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
       qty: qty,
       variant_combo: combo,
       variant_label: comboLabel,
-      delivery_mode: options.delivery_mode || 'sea',
+      requested_transport_rail: requestedTransportRail,
     });
   }
 

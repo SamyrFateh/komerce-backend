@@ -16,10 +16,9 @@
  */
 
 import { bus } from './b-bus.js';
-import { state, dom } from './b-store.js';
+import { state, dom, getRequestedTransportRail } from './b-store.js';
 import { addToCart, quickAdd, quickRemove } from './b-cart.js';
 import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
-import { getModalDeliveryMode } from './b-modal-desktop-product.js';
 
 let _selectionReconcileInstalled = false;
 let _detailReadyReconcileInstalled = false;
@@ -66,8 +65,11 @@ function paintAddButton(button) {
 function currentModalCartItem() {
   if (!state.modalProduct) return null;
   const pid = String(state.modalProduct.id);
+  const currentRail = getRequestedTransportRail();
   const candidates = (state.cart || []).filter(
-    (item) => String(itemProductId(item)) === pid
+    (item) =>
+      String(itemProductId(item)) === pid
+      && (item.requested_transport_rail ?? null) === currentRail
   );
 
   const isSku = state.modalProductDetail?.inventory_model === 'SKU';
@@ -183,7 +185,9 @@ function setupModalCart() {
       state.modalProductDetail,
       state.modalSelection
     );
-    addToCart(cartProduct, 1, dom.addCartBtn, { delivery_mode: getModalDeliveryMode() });
+    addToCart(cartProduct, 1, dom.addCartBtn, {
+      requested_transport_rail: getRequestedTransportRail(),
+    });
     _syncModalQtyUI();
   });
 }

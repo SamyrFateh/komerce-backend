@@ -51,6 +51,10 @@ describe('shipping-mode-pill — desktop (k-modal-delivery)', () => {
       const { dom } = require('../../js/b-store.js');
       return dom.modal ? dom.modal.querySelector(selector) : null;
     }),
+    getRequestedTransportRail: jest.fn(() => {
+      const { state } = require('../../js/b-store.js');
+      return state.modalDeliverySelection?.requested_transport_rail ?? null;
+    }),
   }));
   jest.mock('../../js/b-utils.js', () => ({
     fmtPrice: (value) => (value == null ? '' : `${value} KMF`),
@@ -137,7 +141,7 @@ describe('shipping-mode-pill — desktop (k-modal-delivery)', () => {
     clearDesktopProductDetailState();
   });
 
-  test('AIR_ dispo → sélecteur Maritime/Express visible, bouton air présent', () => {
+  test('AIR_ dispo → sélecteur Maritime/Express visible, bouton air présent, aucun rail présélectionné', () => {
     const product = detail({
       delivery_options: [
         { code: 'SEA_STANDARD', label: 'Livraison standard', available: true, price_kmf: null, eta_label: null },
@@ -149,13 +153,37 @@ describe('shipping-mode-pill — desktop (k-modal-delivery)', () => {
     // Deux modes disponibles → sélecteur (pas de pill, pas de liste détaillée)
     const selector = document.querySelector('#k-modal-delivery .k-dsel-wrap');
     expect(selector).not.toBeNull();
-    const airBtn = selector.querySelector('.k-dsel-btn[data-mode="air"]');
+    const airBtn = selector.querySelector('.k-dsel-btn[data-rail="AIR_EXPRESS"]');
     expect(airBtn).not.toBeNull();
-    const seaBtn = selector.querySelector('.k-dsel-btn[data-mode="sea"]');
+    const seaBtn = selector.querySelector('.k-dsel-btn[data-rail="SEA_STANDARD"]');
     expect(seaBtn).not.toBeNull();
-    // Maritime sélectionné par défaut
-    expect(seaBtn.classList.contains('is-selected')).toBe(true);
+    // Aucun rail présélectionné : afficher plusieurs options n'est jamais une
+    // demande explicite du client (doctrine transport-rails §4, ajustement #1).
+    expect(seaBtn.classList.contains('is-selected')).toBe(false);
+    expect(airBtn.classList.contains('is-selected')).toBe(false);
+    expect(seaBtn.getAttribute('aria-checked')).toBe('false');
+    expect(airBtn.getAttribute('aria-checked')).toBe('false');
     expect(document.querySelector('[data-delivery-code]')).toBeNull();
+  });
+
+  test('clic sur un bouton du sélecteur → sélectionne ce rail et déclare le choix dans state.modalDeliverySelection', () => {
+    const product = detail({
+      delivery_options: [
+        { code: 'SEA_STANDARD', label: 'Livraison standard', available: true, price_kmf: null, eta_label: null },
+        { code: 'AIR_EXPRESS', label: 'Livraison express', available: true, price_kmf: 2500, eta_label: 'Sous 5 jours' },
+      ],
+    });
+    renderDesktopProductDetail(product, createModalSelection(product));
+
+    const selector = document.querySelector('#k-modal-delivery .k-dsel-wrap');
+    const airBtn = selector.querySelector('.k-dsel-btn[data-rail="AIR_EXPRESS"]');
+    airBtn.click();
+
+    expect(state.modalDeliverySelection.requested_transport_rail).toBe('AIR_EXPRESS');
+    expect(airBtn.classList.contains('is-selected')).toBe(true);
+    expect(airBtn.getAttribute('aria-checked')).toBe('true');
+    const seaBtn = selector.querySelector('.k-dsel-btn[data-rail="SEA_STANDARD"]');
+    expect(seaBtn.classList.contains('is-selected')).toBe(false);
   });
 
   test('uniquement SEA_ → pill --sea, pas de mode air affiché', () => {

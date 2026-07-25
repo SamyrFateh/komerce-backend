@@ -204,6 +204,49 @@ describe('product detail modal bootstrap', () => {
     expect(bus.emit).toHaveBeenCalledWith('modal:composition-synced');
   });
 
+  describe('reset de modalDeliverySelection (chantier Air Shipped — doctrine §6)', () => {
+    test('ouverture d\'un nouveau produit réinitialise le rail choisi sur le produit précédent', async () => {
+      state.modalDeliverySelection = { requested_transport_rail: 'AIR_EXPRESS' };
+      fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(detail()) });
+
+      handlers['modal:opened']({ id: PRODUCT_ID, name: 'Robe Dubaï' });
+
+      // Le reset est synchrone (avant même la résolution du fetch) : un rail
+      // choisi sur le produit A ne doit jamais survivre, même le temps du fetch.
+      expect(state.modalDeliverySelection).toEqual({ requested_transport_rail: null });
+      await flush();
+      await flush();
+      expect(state.modalDeliverySelection).toEqual({ requested_transport_rail: null });
+    });
+
+    test('navigation précédent/suivant (deuxième modal:opened sans fermeture) réinitialise aussi le rail', async () => {
+      fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(detail()) });
+      handlers['modal:opened']({ id: PRODUCT_ID, name: 'Robe Dubaï' });
+      await flush();
+      await flush();
+
+      state.modalDeliverySelection = { requested_transport_rail: 'SEA_STANDARD' };
+      const otherProductId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+      state.modalProduct = { id: otherProductId, name: 'Sac raphia' };
+      fetch.mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue(Object.assign(detail(), {
+          product: { id: otherProductId, name: 'Sac raphia' },
+        })),
+      });
+
+      handlers['modal:opened']({ id: otherProductId, name: 'Sac raphia' });
+
+      expect(state.modalDeliverySelection).toEqual({ requested_transport_rail: null });
+    });
+
+    test('fermeture de la modale réinitialise également le rail', () => {
+      state.modalDeliverySelection = { requested_transport_rail: 'AIR_EXPRESS' };
+      handlers['modal:closed']();
+      expect(state.modalDeliverySelection).toEqual({ requested_transport_rail: null });
+    });
+  });
+
   test('resize dans le même mode ne rerend pas', async () => {
     fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(detail()) });
     handlers['modal:opened']({ id: PRODUCT_ID });

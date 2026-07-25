@@ -37,7 +37,7 @@ import { fmtPrice } from './b-utils.js';
 import { closeModal } from './b-modal.js';
 import { addToCart, openCart } from './b-cart.js';
 import { startShareFlow } from './b-share-cart.js';
-import { state } from './b-store.js';
+import { state, getRequestedTransportRail } from './b-store.js';
 import { buildModalCartProduct } from './view-models/modal-cart-product-model.js';
 
 function currentCartProduct(product = state.modalProduct) {
@@ -70,8 +70,12 @@ export function wireBuyNowButton(buyNowBtn) {
     buyNowBtn.disabled = true;
     buyNowBtn.classList.add('buy-confirmed');
 
-    // 2. Ajout au panier avec snapshot du SKU sélectionné.
-    addToCart(currentCartProduct(), state.modalQty, buyNowBtn);
+    // 2. Ajout au panier avec snapshot du SKU sélectionné. Même helper
+    //    partagé que "Ajouter au panier" et "Panier partagé" — le rail
+    //    demandé ne doit jamais différer selon le CTA cliqué.
+    addToCart(currentCartProduct(), state.modalQty, buyNowBtn, {
+      requested_transport_rail: getRequestedTransportRail(),
+    });
 
     // 3. Transition ÉTENDUE : 1200ms pour voir le feedback + coucou dame
     //    puis fermeture douce et ouverture panier avec 400ms entre les 2
@@ -172,7 +176,9 @@ function buildPaymentDetail(key) {
  */
 export function startGroupCartFlow(product, qty, sourceEl) {
   if (!product) return;
-  addToCart(currentCartProduct(product), qty || 1, sourceEl);
+  addToCart(currentCartProduct(product), qty || 1, sourceEl, {
+    requested_transport_rail: getRequestedTransportRail(),
+  });
   closeModal();
   setTimeout(() => startShareFlow(), 250);
 }

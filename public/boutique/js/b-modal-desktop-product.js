@@ -18,7 +18,7 @@
 
 'use strict';
 
-import { state, dom, modalZone } from './b-store.js';
+import { state, dom, modalZone, getRequestedTransportRail } from './b-store.js';
 import { fmtPrice, optimizeImgUrl } from './b-utils.js';
 import { isDesktop } from './b-scroll-owner.js';
 import {
@@ -28,7 +28,7 @@ import {
 import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { renderSubtotalInto, renderPaymentModes, startGroupCartFlow, wireBuyNowButton } from './b-modal-buybox-shared.js';
-import { deriveDeliveryMode } from './view-models/delivery-mode-model.js';
+import { deriveDeliveryMode, reconcileDeliverySelection } from './view-models/delivery-mode-model.js';
 import { showToast } from './b-cart-core.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
 import {
@@ -355,30 +355,28 @@ function renderAxis(detail, selection, axis, onSelectionChanged) {
   return group;
 }
 
-function getModalDeliveryMode() {
-  const el = document.getElementById('k-modal-delivery');
-  return el ? (el.dataset.selectedMode || 'sea') : 'sea';
-}
-
-export { getModalDeliveryMode };
-
+/**
+ * Sélecteur de mode de livraison desktop — dérivé exclusivement de
+ * `detail.delivery_options[]`. Aucun libellé, délai ou prix en dur : ce
+ * renderer n'invente jamais Maritime/Express, ne connaît que ce que le
+ * contrat lui donne. La sélection vit dans `state.modalDeliverySelection`
+ * (owner : b-store.js) — jamais dans un dataset DOM.
+ */
 function renderDeliverySelector(container, detail) {
-  const options = detail?.delivery_options || [];
-  const hasAir = options.some(o => o.code === 'AIR_EXPRESS');
-  const hasSea = options.some(o => o.code === 'SEA_STANDARD') || !hasAir;
+  const options = (detail?.delivery_options || []).filter((option) => option.available !== false);
 
-  // Si un seul mode disponible → pill informative simple (pas de choix)
-  if (!hasAir || !hasSea) {
+  // Une seule option (ou aucune) exposée → pill informative, aucun choix à
+  // faire. L'afficher n'est pas une demande explicite du client : on ne
+  // force jamais requested_transport_rail ici (cf. reconcileDeliverySelection).
+  if (options.length <= 1) {
     const { mode, label, lead_time_label } = deriveDeliveryMode(options);
     const pill = document.createElement('div');
     pill.className = `k-modal-delivery-pill k-modal-delivery-pill--${mode}`;
     pill.dataset.deliveryMode = mode;
-    pill.dataset.selectedMode = mode;
-    container.dataset.selectedMode = mode;
     const icon = document.createElement('span');
     icon.className = 'k-modal-delivery-pill-icon';
     icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = mode === 'air' ? '✈️' : '🚢';
+    icon.appendChild(_deliveryIconSvg(mode === 'air'));
     pill.appendChild(icon);
     const text = document.createElement('span');
     text.textContent = lead_time_label ? `${label} · ${lead_time_label}` : label;
@@ -387,55 +385,72 @@ function renderDeliverySelector(container, detail) {
     return;
   }
 
-  // Deux modes disponibles → sélecteur
-  container.dataset.selectedMode = container.dataset.selectedMode || 'sea';
-
-  const MODES = [
-    {
-      code: 'sea',
-      icon: '🚢',
-      label: 'Maritime',
-      delay: '3 à 5 semaines',
-      priceLabel: 'Inclus',
-      priceClass: 'k-dsel-price--free',
-    },
-    {
-      code: 'air',
-      icon: '✈️',
-      label: 'Express',
-      delay: '1 semaine max',
-      priceLabel: 'Frais à confirmer',
-      priceClass: 'k-dsel-price--pending',
-    },
-  ];
-
+  // Plusieurs options réellement exposées → radiogroup. Le clic est la
+  // seule façon d'obtenir un requested_transport_rail non-null : tant
+  // qu'aucun bouton n'a été cliqué, aucun n'est sélectionné (aria-checked
+  // false partout), même si un choix précédent existait sur un autre
+  // produit — reconcileDeliverySelection() a déjà tranché avant l'appel.
   const wrap = document.createElement('div');
   wrap.className = 'k-dsel-wrap';
   wrap.setAttribute('role', 'radiogroup');
   wrap.setAttribute('aria-label', 'Mode de livraison');
 
-  MODES.forEach(({ code, icon, label, delay, priceLabel, priceClass }) => {
+  const selectedRail = getRequestedTransportRail();
+
+  options.forEach((option) => {
+    const isAir = typeof option.code === 'string' && option.code.startsWith('AIR_');
+    const isSelected = option.code === selectedRail;
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'k-dsel-btn';
-    btn.dataset.mode = code;
+    btn.dataset.rail = option.code;
     btn.setAttribute('role', 'radio');
-    const isSelected = container.dataset.selectedMode === code;
     btn.setAttribute('aria-checked', String(isSelected));
     if (isSelected) btn.classList.add('is-selected');
 
-    btn.innerHTML =
-      `<span class="k-dsel-icon" aria-hidden="true">${icon}</span>` +
-      `<span class="k-dsel-body">` +
-        `<span class="k-dsel-label">${label}</span>` +
-        `<span class="k-dsel-delay">${delay}</span>` +
-      `</span>` +
-      `<span class="k-dsel-price ${priceClass}">${priceLabel}</span>`;
+    const iconWrap = document.createElement('span');
+    iconWrap.className = 'k-dsel-icon';
+    iconWrap.setAttribute('aria-hidden', 'true');
+    iconWrap.appendChild(_deliveryIconSvg(isAir));
+
+    const body = document.createElement('span');
+    body.className = 'k-dsel-body';
+    const labelEl = document.createElement('span');
+    labelEl.className = 'k-dsel-label';
+    labelEl.textContent = option.label;
+    body.appendChild(labelEl);
+    // Délai uniquement si le moteur logistique en fournit un — jamais de
+    // texte générique en remplacement d'un eta_label absent.
+    if (option.eta_label) {
+      const delayEl = document.createElement('span');
+      delayEl.className = 'k-dsel-delay';
+      delayEl.textContent = option.eta_label;
+      body.appendChild(delayEl);
+    }
+
+    btn.append(iconWrap, body);
+
+    // Prix uniquement si price_kmf est fourni. Pas de "Inclus"/"Frais à
+    // confirmer" par défaut : un rail sans prix stabilisé qui apparaîtrait
+    // ici serait une régression de buildDeliveryOptions(), pas un cas à
+    // habiller côté frontend.
+    if (option.price_kmf != null) {
+      const priceEl = document.createElement('span');
+      priceEl.className = 'k-dsel-price';
+      priceEl.textContent = fmtPrice(option.price_kmf);
+      btn.appendChild(priceEl);
+    } else if (option.unavailable_reason) {
+      const reasonEl = document.createElement('span');
+      reasonEl.className = 'k-dsel-price k-dsel-price--pending';
+      reasonEl.textContent = option.unavailable_reason;
+      btn.appendChild(reasonEl);
+    }
 
     btn.addEventListener('click', () => {
-      container.dataset.selectedMode = code;
-      wrap.querySelectorAll('.k-dsel-btn').forEach(b => {
-        const active = b.dataset.mode === code;
+      state.modalDeliverySelection = { requested_transport_rail: option.code };
+      wrap.querySelectorAll('.k-dsel-btn').forEach((b) => {
+        const active = b.dataset.rail === option.code;
         b.classList.toggle('is-selected', active);
         b.setAttribute('aria-checked', String(active));
       });
@@ -450,19 +465,13 @@ function renderDeliverySelector(container, detail) {
 function renderDeliveryOptions(detail) {
   const el = document.getElementById('k-modal-delivery');
   if (!el) return;
-  // Conserver le choix si on re-render (changement SKU etc.)
-  const previousMode = el.dataset.selectedMode || 'sea';
+  const deliveryOptions = detail?.delivery_options || [];
+  state.modalDeliverySelection = reconcileDeliverySelection(
+    deliveryOptions,
+    state.modalDeliverySelection
+  );
   el.innerHTML = '';
-  el.dataset.selectedMode = previousMode;
   renderDeliverySelector(el, detail);
-}
-
-function deliveryMeta(option) {
-  const parts = [];
-  if (option.price_kmf != null) parts.push(fmtPrice(option.price_kmf));
-  if (option.eta_label) parts.push(option.eta_label);
-  if (!option.available && option.unavailable_reason) parts.push(option.unavailable_reason);
-  return parts.join(' · ');
 }
 
 /* ── Icône livraison (SVG uniquement — doctrine "un seul langage graphique") ──

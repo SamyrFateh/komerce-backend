@@ -90,7 +90,8 @@ describe('b-modal-buybox-shared — achat immédiat', () => {
         image_url: '/sku-1.jpg',
       }),
       1,
-      button
+      button,
+      { requested_transport_rail: null }
     );
 
     jest.advanceTimersByTime(1200);
@@ -222,7 +223,7 @@ describe('b-modal-buybox-shared — panier partagé', () => {
     const product = { id: 1 };
     startGroupCartFlow(product, 0, null);
 
-    expect(addToCart).toHaveBeenCalledWith(product, 1, null);
+    expect(addToCart).toHaveBeenCalledWith(product, 1, null, { requested_transport_rail: null });
     expect(closeModal).toHaveBeenCalled();
     jest.advanceTimersByTime(250);
     expect(startShareFlow).toHaveBeenCalled();
@@ -242,7 +243,8 @@ describe('b-modal-buybox-shared — panier partagé', () => {
         image_url: '/sku-1.jpg',
       }),
       2,
-      null
+      null,
+      { requested_transport_rail: null }
     );
     jest.advanceTimersByTime(250);
     expect(startShareFlow).toHaveBeenCalled();

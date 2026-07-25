@@ -336,7 +336,7 @@ describe('b-modal-cart', () => {
       const product = { id: 33 };
       state.modalProduct = product;
       dom.addCartBtn.click();
-      expect(addToCart).toHaveBeenCalledWith(product, 1, dom.addCartBtn, { delivery_mode: 'sea' });
+      expect(addToCart).toHaveBeenCalledWith(product, 1, dom.addCartBtn, { requested_transport_rail: null });
     });
 
     test('Ajouter SKU transmet le snapshot sélectionné', () => {
@@ -365,7 +365,7 @@ describe('b-modal-cart', () => {
         }),
         1,
         dom.addCartBtn,
-        { delivery_mode: 'sea' }
+        { requested_transport_rail: null }
       );
     });
 

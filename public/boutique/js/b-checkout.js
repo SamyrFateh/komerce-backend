@@ -1184,7 +1184,7 @@ export async function submitOrder(btn) {
       quantity: i.qty,
       confection_type: 'aucun',
       variant_combo: i.variant_combo || null,
-      delivery_mode: i.delivery_mode || 'sea',
+      requested_transport_rail: i.requested_transport_rail ?? null,
     }));
 
     let orderData = null;
@@ -1364,7 +1364,7 @@ async function _createKomerceOrderForPayPal() {
     quantity:   i.qty,
     confection_type: 'aucun',
     variant_combo: i.variant_combo || null,
-    delivery_mode: i.delivery_mode || 'sea',
+    requested_transport_rail: i.requested_transport_rail ?? null,
   }));
 
   const apiResult = await apiPost('/api/orders', {

@@ -233,6 +233,47 @@ describe('b-cart', () => {
     });
   });
 
+  describe('addToCart — identité de ligne par rail de transport (chantier Air Shipped §7)', () => {
+    it('stocke requested_transport_rail sur la ligne créée, null par défaut si aucun choix explicite', () => {
+      addToCart(makeProduct(), 1);
+      expect(state.cart[0].requested_transport_rail).toBeNull();
+      expect(state.cart[0].delivery_mode).toBeUndefined();
+    });
+
+    it('transmet le code canonique du rail passé via options.requested_transport_rail', () => {
+      addToCart(makeProduct(), 1, null, { requested_transport_rail: 'AIR_EXPRESS' });
+      expect(state.cart[0].requested_transport_rail).toBe('AIR_EXPRESS');
+    });
+
+    it('même produit, même rail → fusionne (incrémente la même ligne)', () => {
+      const product = makeProduct();
+      addToCart(product, 1, null, { requested_transport_rail: 'SEA_STANDARD' });
+      addToCart(product, 2, null, { requested_transport_rail: 'SEA_STANDARD' });
+
+      expect(state.cart).toHaveLength(1);
+      expect(state.cart[0].qty).toBe(3);
+    });
+
+    it('même produit, rails différents → deux lignes distinctes, jamais fusionnées', () => {
+      const product = makeProduct();
+      addToCart(product, 1, null, { requested_transport_rail: 'SEA_STANDARD' });
+      addToCart(product, 1, null, { requested_transport_rail: 'AIR_EXPRESS' });
+
+      expect(state.cart).toHaveLength(2);
+      const rails = state.cart.map((item) => item.requested_transport_rail).sort();
+      expect(rails).toEqual(['AIR_EXPRESS', 'SEA_STANDARD']);
+      expect(state.cart.every((item) => item.qty === 1)).toBe(true);
+    });
+
+    it('même produit, un rail explicite et un rail null → deux lignes distinctes (null est une valeur de rail à part entière)', () => {
+      const product = makeProduct();
+      addToCart(product, 1); // pas d'options → rail null
+      addToCart(product, 1, null, { requested_transport_rail: 'AIR_EXPRESS' });
+
+      expect(state.cart).toHaveLength(2);
+    });
+  });
+
   describe('setQty', () => {
     beforeEach(() => {
       state.cart = [{ product: { id: 1 }, id: 1, name: 'X', price: 100, image: '', qty: 2 }];

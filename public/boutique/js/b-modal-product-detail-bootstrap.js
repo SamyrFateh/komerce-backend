@@ -50,6 +50,12 @@ function currentProductId() {
 function clearProductDetailState() {
   clearDesktopProductDetailState();
   clearMobileProductDetailState();
+  // Doctrine §6 : un changement de produit (nouvelle ouverture ou navigation
+  // précédent/suivant sans fermeture de modal) réinitialise la sélection
+  // livraison. Sans ce reset, un rail choisi explicitement sur le produit A
+  // pourrait survivre silencieusement sur le produit B si les codes de rail
+  // coïncident (ex. deux produits SEA_STANDARD-only).
+  state.modalDeliverySelection = { requested_transport_rail: null };
 }
 
 // PDC-6 : le chemin transactionnel (ajout panier, achat direct, stepper) ne
