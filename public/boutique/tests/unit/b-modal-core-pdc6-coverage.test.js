@@ -130,7 +130,6 @@ function resetState() {
   state._savedCatalogScrollY = 0;
   state._savedPagerInlineStyles = null;
   state._savedGridScrollLeft = null;
-  state._modalSearchInput = null;
 }
 
 describe('b-modal-core — PDC-6 coverage recovery', () => {

@@ -284,47 +284,13 @@ test('openModal charge les suggestions sans fetch legacy /api/products/:id puis 
 // depuis renderActions() des renderers PDC. Couverture équivalente désormais dans
 // tests/unit/b-modal-buybox-shared.test.js.
 
-test('la recherche interne groupe les résultats et gère les recherches récentes', () => {
-  const input = document.querySelector('.k-modal-inner-search-input');
-  const dropdown = document.getElementById('k-modal-search-dropdown');
-  input.value = 'produit';
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  jest.advanceTimersByTime(150);
-  expect(dropdown.classList.contains('open')).toBe(true);
-  expect(dropdown.querySelectorAll('.k-msearch-group')).toHaveLength(2);
-  expect(dropdown.textContent).toContain('4 résultats');
-
-  dropdown.querySelector('.k-msearch-item[data-id="2"]').click();
-  expect(state.modalProduct.id).toBe(2);
-  expect(JSON.parse(localStorage.getItem('k_recent_searches'))).toContain('produit');
-
-  input.value = 'inexistant';
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  jest.advanceTimersByTime(150);
-  expect(dropdown.querySelector('.k-msearch-empty')).not.toBeNull();
-
-  input.value = '';
-  input.dispatchEvent(new FocusEvent('focus'));
-  expect(dropdown.textContent).toContain('Récentes');
-  dropdown.querySelector('.k-msearch-recents-clear').click();
-  expect(localStorage.getItem('k_recent_searches')).toBeNull();
-});
-
-// REF-2026-07c : la loupe topbar (Sprint 4) a été retirée — deux zones de
-// recherche dans la modale mobile étaient source de confusion, et le mode
-// expand/collapse n'était jamais réinitialisé à la fermeture de la modale
-// (état résiduel à la réouverture). La barre inline est désormais le seul
-// point d'entrée recherche de la modale.
-test('Enter relaie la recherche inline vers la barre principale du catalogue', () => {
-  const inline = document.querySelector('.k-modal-inner-search-input');
-
-  inline.value = 'maison';
-  inline.dispatchEvent(new Event('input', { bubbles: true }));
-  inline.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-  expect(dom.searchInput.value).toBe('maison');
-});
-
-test('la loupe topbar (Sprint 4) a été retirée — un seul point d\'entrée recherche dans la modale', () => {
+// REF-2026-07d : recherche interne retirée complètement de la modale (barre
+// inline + dropdown + récents + vocal), en plus de la loupe topbar (Sprint 4,
+// REF-2026-07c) déjà retirée avant elle. Aucun point d'entrée recherche dans
+// la modale désormais — voir css/modal-shell.css pour l'historique complet.
+test('aucun point d\'entrée recherche n\'existe dans la modale', () => {
+  expect(document.querySelector('.k-modal-inner-search')).toBeNull();
+  expect(document.getElementById('k-modal-search-dropdown')).toBeNull();
   expect(document.querySelector('.k-topbar-search-trigger')).toBeNull();
   expect(document.querySelector('.k-topbar-search-expanded')).toBeNull();
 });

@@ -193,7 +193,7 @@ export function installScrollOwner() {
     let target = e.target;
     if (!target || !target.closest) return;
 
-    if (target.closest('.k-modal, .k-cart-drawer, .k-search-dropdown, .k-modal-search-dropdown, .k-desktop-sidebar')) {
+    if (target.closest('.k-modal, .k-cart-drawer, .k-search-dropdown, .k-desktop-sidebar')) {
       return;
     }
 

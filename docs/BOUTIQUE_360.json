@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-07-25T10:23:38.178Z",
+  "generatedAt": "2026-07-25T10:57:58.887Z",
   "summary": {
     "modules": 72,
     "withHeader": 72,
     "events": 20,
-    "declaredActive": 13,
-    "declaredDead": 5,
+    "declaredActive": 12,
+    "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 52,
     "orphanEmit": 1,
@@ -322,6 +322,7 @@
         "b-nav.js"
       ],
       "emits": [
+        "cat:select",
         "catalog:cat-changed",
         "favorites:view-refresh"
       ],
@@ -823,8 +824,7 @@
       ],
       "emits": [
         "modal:opened",
-        "modal:closed",
-        "cat:select"
+        "modal:closed"
       ],
       "listens": [
         "modal:close",
@@ -2229,6 +2229,14 @@
         "b-home-premium-v1"
       ]
     },
+    "cat:select": {
+      "emitters": [
+        "b-catalog"
+      ],
+      "listeners": [
+        "b-catalog"
+      ]
+    },
     "catalog:cat-changed": {
       "emitters": [
         "b-catalog",
@@ -2250,14 +2258,6 @@
     "chip:center": {
       "emitters": [
         "b-pager"
-      ],
-      "listeners": [
-        "b-catalog"
-      ]
-    },
-    "cat:select": {
-      "emitters": [
-        "b-modal-core"
       ],
       "listeners": [
         "b-catalog"
@@ -2951,7 +2951,6 @@
       "checkout:open",
       "product:open-from-cart",
       "view:switch",
-      "cat:select",
       "chip:center",
       "catalog:cat-changed",
       "modal:suggestions-rendered",
@@ -2963,7 +2962,11 @@
       "cart:open",
       "cart:close",
       "search:query",
-      "pager:navigate"
+      "pager:navigate",
+      "cat:select",
+      "seul",
+      "supprim",
+      "b-catalog"
     ]
   },
   "diagnostics": {

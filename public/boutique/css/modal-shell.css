@@ -134,20 +134,13 @@
   display: none;
 }
 
-/* REF-2026-07c : loupe topbar (Sprint 4) retirée — deux zones de recherche
-   dans la modale mobile étaient source de confusion et le mode expand/collapse
-   n'était jamais réinitialisé à la fermeture de la modale (état résiduel au
-   réouverture). Un seul point d'entrée recherche désormais : la barre inline
-   (.k-modal-inner-search, avant #k-modal-suggestions). ──────────────────── */
-
-/* ── MICRO ───────────────────────────────────────────────────── */
-.k-modal-search-mic { width: 30px; height: 30px; border: none; background: transparent; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .12s, transform .12s; -webkit-tap-highlight-color: transparent; padding: 0; }
-.k-modal-search-mic svg { width: 17px; height: 17px; stroke: var(--text-muted); fill: none; stroke-width: 2; transition: stroke .15s; }
-.k-modal-search-mic:active { transform: scale(.88); }
-/* [T-028] animation k-mic-pulse retirée : mouvement décoratif parasite.
-   L'état "écoute" reste porté par la couleur de fond (--hero-red). */
-.k-modal-search-mic.is-listening { background: var(--hero-red); }
-.k-modal-search-mic.is-listening svg { stroke: var(--white); }
+/* REF-2026-07d : recherche interne retirée complètement de la modale (barre
+   inline + dropdown + récents + vocal). Historique : la loupe topbar (Sprint 4,
+   REF-2026-07c) avait déjà été retirée pour éviter deux zones de recherche et
+   un bug de reset d'état. La barre inline restante consommait trop de place
+   dans le flux mobile serré (conflit avec réassurance/partage) sans que le
+   besoin justifie de lui trouver une nouvelle place (ex. icône topbar) —
+   décision : aucun point d'entrée recherche dans la modale. */
 
 /* ── ACTIONS (mobile : sticky bas, flex-shrink:0) ────────────── */
 .k-modal-actions {
@@ -352,12 +345,7 @@
 #k-modal .k-sug-card, #k-modal .k-sug-card-img,
 #k-modal .k-sug-card-bottom, #k-modal .k-sug-card-actions { min-width: 0; max-width: 100%; }
 #k-modal .k-modal-info h2, #k-modal .k-modal-desc,
-#k-modal .k-sug-card-name, #k-modal .k-msearch-item-name,
-#k-modal .k-msearch-item-cat { min-width: 0; overflow-wrap: anywhere; word-break: normal; }
-#k-modal .k-modal-inner-search, #k-modal .k-modal-search-dropdown {
-  width: auto; max-width: calc(100% - 24px); margin-left: 12px; margin-right: 12px;
-}
-#k-modal .k-msearch-item, #k-modal .k-msearch-item-info { min-width: 0; max-width: 100%; }
+#k-modal .k-sug-card-name { min-width: 0; overflow-wrap: anywhere; word-break: normal; }
 #k-modal .k-modal-actions { margin-left: 0; margin-right: 0; }
 #k-modal .k-add-cart-btn, #k-modal .k-modal-actions .k-buy-now-btn,
 #k-modal .k-qty { min-width: 0; max-width: 100%; }
@@ -686,12 +674,6 @@
   .k-modal-spec-table td:first-child { font-weight: 500; color: var(--text-muted); white-space: nowrap; width: 35%; }
   .k-modal--has-specs #k-modal .k-modal-specs { margin-top: 8px; border-top: 1px solid var(--sand-dark); }
 
-  /* ── Recherche interne ───────────────────────────────────── */
-  #k-modal .k-modal-inner-search { flex: 0 0 auto; margin: 10px 0 8px; border-radius: 14px; padding: 10px 16px; }
-  .k-modal-inner-search-input { font-size: 14px; }
-  .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
-  #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
-
   /* ── Actions : inline dans la colonne droite, sous le contenu ───────────
      Conformes aux maquettes validées 2026-07 : les CTA suivent directement
      le contenu (prix, variantes, livraison, réassurance) sans sticky.
@@ -799,12 +781,6 @@
 
   /* ── Hover & focus ───────────────────────────────────────── */
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); } /* [T-029] halo décoratif retiré */
-  .k-msearch-item:hover { background: var(--sand); }
-  .k-msearch-footer:hover { background: var(--sand); color: var(--coral); }
-  .k-modal-search-clear:hover { background: var(--border); color: var(--text); }
-  .k-msearch-group-more:hover { background: var(--sand); color: var(--coral-dark); }
-  .k-msearch-recent-item:hover { background: var(--sand); }
-  .k-msearch-recent-remove:hover { background: var(--sand-dark); color: var(--text); }
   .k-modal, .k-modal * { -webkit-tap-highlight-color: transparent; }
   .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
   .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }

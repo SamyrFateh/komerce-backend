@@ -361,10 +361,6 @@
   #k-modal .k-modal-share-btn svg { width: 13px; height: 13px; }
   #k-modal .k-modal-share-btn.k-modal-share-btn--wa svg { fill: currentColor; }
 
-  /* Masquer la recherche interne en bas du panneau desktop.
-     Spécificité : 1-2-0 → bat le base .k-modal-inner-search (0-1-0). Sans !important. */
-  #k-modal .k-modal-details > .k-modal-inner-search { display: none; }
-
   /* ── Suggestions desktop list (D10 — spec §330) : aplat --page-bg,
      titre 15/500, retrait ombres cards. Border-top dashed : owned
      modal-shell.css. Grille 4 cols à 1024+, 5 sur large : ce bloc. ── */

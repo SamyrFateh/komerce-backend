@@ -1,7 +1,7 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-25T10:23:38.178Z.
+> Régénéré le 2026-07-25T10:57:58.887Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
@@ -73,7 +73,7 @@
 |---|---|---|---|
 | `carousel:changed` | b-modal-product | b-modal-image-ux | 🟡 non déclaré |
 | `cart:update` | b-cart-core | b-cart, b-cart-core, b-cart-pill, b-mini-cart, b-modal-suggestions, b-nav | 🟢 sain |
-| `cat:select` | b-modal-core | b-catalog | 🟢 sain |
+| `cat:select` | b-catalog | b-catalog | 🟢 sain |
 | `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
 | `checkout:open` | b-cart | boutique | 🟢 sain |
 | `chip:center` | b-pager | b-catalog | 🟢 sain |
@@ -119,7 +119,6 @@ graph LR
   b_store["b-store"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]
   b_catalog["b-catalog"] -->|favorites:view-refresh| b_favs["b-favs"]
   b_pager["b-pager"] -->|chip:center| b_catalog["b-catalog"]
-  b_modal_core["b-modal-core"] -->|cat:select| b_catalog["b-catalog"]
   b_checkout["b-checkout"] -->|nav:goto-track| b_nav["b-nav"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:detail-ready| b_modal_cart["b-modal-cart"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]

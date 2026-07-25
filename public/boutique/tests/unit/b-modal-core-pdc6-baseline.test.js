@@ -120,7 +120,6 @@ function resetState() {
   state._savedCatalogScrollY = 0;
   state._savedPagerInlineStyles = null;
   state._savedGridScrollLeft = null;
-  state._modalSearchInput = null;
 }
 
 describe('b-modal-core — PDC-6 measured baseline closure', () => {
@@ -150,46 +149,9 @@ describe('b-modal-core — PDC-6 measured baseline closure', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  test('une recherche interne existante est remise à zéro avant la projection produit', () => {
-    const wrap = document.createElement('div');
-    wrap.className = 'k-modal-inner-search has-value';
-    const input = document.createElement('input');
-    input.value = 'robe';
-    wrap.appendChild(input);
-    document.body.appendChild(wrap);
-
-    const rail = document.createElement('div');
-    rail.id = 'k-sug-rail';
-    const card = document.createElement('div');
-    card.className = 'k-sug-card search-hidden';
-    rail.appendChild(card);
-    document.body.appendChild(rail);
-
-    const dropdown = document.createElement('div');
-    dropdown.id = 'k-modal-search-dropdown';
-    dropdown.className = 'open';
-    document.body.appendChild(dropdown);
-
-    state._modalSearchInput = input;
-    openModal(1, false);
-
-    expect(input.value).toBe('');
-    expect(wrap.classList.contains('has-value')).toBe(false);
-    expect(card.classList.contains('search-hidden')).toBe(false);
-    expect(dropdown.classList.contains('open')).toBe(false);
-  });
-
-  test('le reset recherche reste fail-safe sans wrapper, rail ni dropdown', () => {
-    const input = document.createElement('input');
-    input.value = 'robe';
-    document.body.appendChild(input);
-    state._modalSearchInput = input;
-
-    openModal(1, false);
-
-    expect(input.value).toBe('');
-    expect(state.modalProduct.id).toBe(1);
-  });
+  // REF-2026-07d : la recherche interne (barre + dropdown) et le HOTFIX #213
+  // qui la remettait à zéro à l'ouverture ont été retirés — plus de reset à
+  // tester, il n'y a plus de recherche dans la modale.
 
   test('panier, promo, favori, historique et liste filtrée suivent leurs branches positives', () => {
     const product = {

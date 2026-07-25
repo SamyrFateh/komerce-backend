@@ -92,10 +92,13 @@ const _normalizeCat = normalizeCategoryKey;
 // Pager → catalog : centrer la chip active (découplage circulaire)
 bus.on('chip:center', function(chip) { centerActiveChip(chip); });
 
-// FIX BUG-M4 : b-modal.js utilisait un import direct de setActiveCat,
-// créant une dépendance circulaire (modal→catalog→modal via openModal).
-// On passe maintenant par le bus : b-modal.js émet 'cat:select', on écoute ici.
-bus.on('cat:select', function(cat) { setActiveCat(cat); });
+// REF-2026-07d : bus.on('cat:select', ...) retiré — son seul émetteur était
+// le bouton "Voir les N autres dans [catégorie]" de la recherche interne
+// modale, supprimée avec toute la fonctionnalité (barre inline + dropdown +
+// récents + vocal). Plus aucun code n'émet cat:select. Événement déplacé
+// dans le cimetière JSDoc de b-bus.js. Si le besoin de découplage circulaire
+// (BUG-M4) revient, réémettre via bus.emit('cat:select', cat) suffit — le
+// listener ci-dessus n'a rien à faire de plus que setActiveCat(cat).
 
 // Fix: écouter catalog:cat-changed émis par b-desktop-upgrade.js (merch cards, promo strip)
 // pour synchroniser le rail de chips desktop.

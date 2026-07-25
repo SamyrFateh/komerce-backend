@@ -651,8 +651,8 @@ export function renderMobileProductDetail(
     // hasEnrichedContent, sur aucune surface. Les suggestions non-enrichies
     // sont du cross-sell légitime (d'autres produits), pas du faux contenu
     // enrichi sur l'article courant. On ne masque donc plus jamais
-    // #k-modal-suggestions / .k-modal-inner-search via cette classe — la
-    // classe .k-modal--suggestions-hidden et sa règle CSS sont retirées.
+    // #k-modal-suggestions via cette classe — la classe
+    // .k-modal--suggestions-hidden et sa règle CSS sont retirées.
   }
 
   // Réassurance transactionnelle — toujours affichée (produit simple ET

@@ -31,7 +31,6 @@
  *   checkout:open    —                  — ouvrir la modale de commande [ARCH-1]
  *   product:open-from-cart { id }        — ouvrir fiche depuis le panier [ARCH-1]
  *   view:switch      { view }           — changer d'onglet (home/favs/suivi)
- *   cat:select       { cat }            — filtrer catalogue sur catégorie [b-modal → b-catalog]
  *   chip:center      { chip }           — centrer chip active dans le pager [b-pager → b-catalog]
  *   catalog:cat-changed { cat }         — catégorie active changée [b-catalog → b-desktop-upgrade]
  *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
@@ -40,6 +39,10 @@
  *
  * Événements retirés du JSDoc (déclarés mais jamais émis ni consommés) :
  *   cart:add, cart:open, cart:close, search:query, pager:navigate
+ *   cat:select — retiré REF-2026-07d, seul émetteur (recherche interne modale)
+ *     supprimé avec toute la fonctionnalité recherche. Écouteur retiré de
+ *     b-catalog.js. Réintroduire si un besoin de découplage circulaire
+ *     [b-modal ↔ b-catalog] réapparaît (cf. BUG-M4 historique).
  */
 
 const _listeners = {};

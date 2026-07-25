@@ -391,7 +391,7 @@ pre.tree{margin:0;background:var(--sand-warm);border:1px solid var(--border);bor
     <ul><li>Affichées après le contenu produit sur Desktop et Mobile, jamais masquées si le catalogue a des résultats.</li></ul>
     <h4>Données</h4>
     <ul><li>Les sections vides ne doivent pas être affichées (ex. variantes sur produit simple).</li><li>Aucun chiffre de stock, prix ou livraison inventé par le renderer.</li></ul>
-    <div class="note"><span class="dot">i</span><span>Cette référence remplace le wireframe abstrait précédent. Le développement doit comparer son rendu à cette structure et à ces couleurs — pas à un gabarit générique.</span></div>
+    <div class="note"><span class="dot">i</span><span>Cette référence remplace le wireframe abstrait précédent. Le développement doit comparer son rendu à cette structure et à ces couleurs — pas à un gabarit générique. Pendant desktop : <code>REFERENCE_MODALE_DESKTOP_2026-07.md</code> (ASCII validé, ≥900px) — les deux se corroborent, aucune ne supersède l'autre.</span></div>
   </aside>
 </section>
 
@@ -413,6 +413,19 @@ Cette référence visuelle (états 3 et 4) : réassurance nowrap 1 ligne
                                             + partage sur la ligne du dessous
 Code prod actuel : partage absent sur mobile (Ct() gardé par d()=desktop) → reste à corriger</pre>
     <p class="note">Layout tranché : même schéma qu'en desktop — réassurance compactée sur une seule ligne (<code>flex-wrap:nowrap</code>, déjà en prod côté mobile via le fix LOT1 de <code>modal-shell.css</code>), partage en ligne séparée juste en dessous (<code>border-top</code>). Le CSS mobile de <code>.k-modal-share-row</code> le supporte déjà. Seul le JS manque : <code>Ct()</code> (<code>b-modal-desktop-enhancers.js</code>) est gardé par <code>d()</code> (desktop uniquement) — il faut soit la rendre inconditionnelle, soit dupliquer l'injection dans <code>b-modal-mobile-product.js</code>.</p>
+  </article>
+  <article class="rule">
+    <h2>Décision actée — Recherche interne retirée</h2>
+    <pre>Constat : la barre de recherche interne (.k-modal-inner-search) était injectée
+         entre la description et #k-modal-suggestions, hors doc canonique §5.
+         Sur mobile, elle entrait en conflit d'espace avec réassurance + partage
+         (3 blocs à caser sur un écran déjà serré).
+Historique : une loupe topbar (Sprint 4) avait déjà été retirée avant elle
+         (REF-2026-07c) — deux zones de recherche, confusion + bug de reset
+         d'état non réinitialisé à la fermeture de la modale.
+Décision (REF-2026-07d) : retrait complet, flux vertical ET topbar — pas de
+         nouveau point d'entrée recherche dans la modale.</pre>
+    <p class="note">Le flux mobile canonique redevient donc exactement §5 du doc de référence, sans écart à documenter : réassurance → partage → suggestions. Code retiré : barre inline, dropdown résultats, recherches récentes, recherche vocale (<code>b-modal-core.js</code>), CSS associé (<code>modal-product.css</code>, <code>modal-shell.css</code>, <code>modal-product-lot4-hybrid.css</code>). Le catalogue reste cherchable via la barre principale hors modale, inchangée.</p>
   </article>
 </section>
 

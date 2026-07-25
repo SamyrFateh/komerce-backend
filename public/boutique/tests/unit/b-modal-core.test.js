@@ -184,7 +184,6 @@ describe('b-modal-core', () => {
     state._savedCatalogScrollY = 0;
     state._savedPagerInlineStyles = null;
     state._savedGridScrollLeft = null;
-    state._modalSearchInput = null;
     localStorage.clear();
 
     // Neutralise la vraie navigation navigateur (pushState/back) pendant les tests

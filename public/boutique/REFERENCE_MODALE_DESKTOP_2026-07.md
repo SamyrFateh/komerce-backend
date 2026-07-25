@@ -1,6 +1,7 @@
 # Référence modale desktop — Komerce juillet 2026
 
 > Maquette validée. Toute modification structurelle doit être comparée à cette référence.
+> Pendant desktop de `docs/reference/reference-modale-4-etats.html` (référence mobile — états 1 à 4, HTML/CSS fidèle au rendu réel). Les deux se corroborent : aucune ne supersède l'autre, elles couvrent chacune une largeur d'écran.
 
 ## Composition cible ≥900px
 

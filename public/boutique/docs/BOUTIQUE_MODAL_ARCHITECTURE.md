@@ -39,7 +39,7 @@ Cette mini-doc complète `BOUTIQUE_ARCHITECTURE.md` en remplissant le trou : **`
 
 | § | Lignes approx. | Rôle | Media query |
 |---|---|---|---|
-| **§1 Base mobile** | 27-670 | Tout le mobile : overlay, shell, topbar, scroll owner, image, infos, recherche, actions sticky bas, suggestions, livraison/trust mobile minimal | Aucune (base) |
+| **§1 Base mobile** | 27-670 | Tout le mobile : overlay, shell, topbar, scroll owner, image, infos, actions sticky bas, suggestions, livraison/trust mobile minimal | Aucune (base) |
 | **§2 Mobile guard** | 672-744 | Haute spécificité `#k-modal` pour contrer les conflits, force `flex:1` et `min-height:0` | `(max-width: 899px)` |
 | **§3 Desktop ≥900px** | 746-978 | **Typographie, espacement, topbar, actions desktop — PAS DE GRILLE** (la grille vit dans §6) | `(min-width: 900px)` |
 | **§4 Variantes** | 980-1373 | SKUs couleur, grille tailles/pointures, guide des tailles overlay (sans media query — composant pur) | Aucune |
@@ -124,7 +124,7 @@ Tirés du code (commentaires lignes 1-25, mobile guard §2, header §6), formali
 .k-modal-dots, .k-modal-dot, .k-modal-thumbs, .k-modal-thumb, .k-modal-counter,
 .k-modal-fav-btn, .k-modal-fullscreen, .k-modal-details, .k-modal-promo-badge,
 .k-modal-info, .k-modal-desc, .k-modal-price-row, .k-modal-price,
-.k-modal-old-price, .k-modal-meta, .k-modal-inner-search, .k-modal-search-*,
+.k-modal-old-price, .k-modal-meta,
 .k-modal-actions, .k-modal-subtotal, .k-modal-topbar-product, .k-modal-share-row,
 .k-modal-share-btn, .k-modal-specs, .k-modal-spec-*, .k-modal-trust,
 .k-modal-suggestions, .k-modal-aed-*, .k-modal-flash-bar, .k-modal-stock-bar,
@@ -229,7 +229,7 @@ Plus les variantes `.k-vg`, `.k-vg-skus`, `.k-vg-sizes`, `.k-sku`, `.k-vp` (dans
 | Tu veux modifier... | Tu touches... |
 |---|---|
 | Carousel image, thumbs, fullscreen | §1 (mobile) + §3 (desktop typo/espacement) |
-| Topbar (back, breadcrumb, search, cart, close) | §1 + §3 + JS breadcrumb dans `b-modal-desktop-enhancers.js` |
+| Topbar (back, breadcrumb, cart, close) | §1 + §3 + JS breadcrumb dans `b-modal-desktop-enhancers.js` |
 | **Layout grid principal desktop** | **§6 uniquement** (B-M-11) |
 | Padding détails desktop | §3 (typo) + §6 (layout) |
 | Barre d'actions (qty, add, buy) | §1 mobile (sticky bas) + §3 desktop + §6 si position dans la grille |
