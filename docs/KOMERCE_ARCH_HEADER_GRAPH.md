@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 381
-- Files with full headers: 353
-- Files with lite headers: 28
-- Files with any headers: 381
+- Scanned code files: 378
+- Files with full headers: 352
+- Files with lite headers: 26
+- Files with any headers: 378
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 778
-- Edges: 4382
+- Graph nodes: 775
+- Edges: 4365
 - DB tables: 116
 - Doctrines: 154
 - Impact areas: 127
-- Unresolved code edges: 419
+- Unresolved code edges: 420
 - Tables multi-écrivains directs (>=2): 67
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -27,7 +27,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 4
 - bootstrap: 1
-- boutique: 37
+- boutique: 34
 - catalog: 55
 - checkout: 2
 - customs: 6
@@ -73,10 +73,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - service: 154
 - state: 1
 - state-store: 1
-- ui-component: 38
+- ui-component: 36
 - ui-controller: 1
 - ui-enhancer: 3
-- ui-experiment: 1
 - ui-infrastructure: 1
 - ui-page: 4
 - ui-renderer: 9
@@ -342,8 +341,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-greeting.js -> owner public/boutique/js/b-catalog.js (boutique-b-greeting)
 - public/boutique/js/b-group-cart-flow.js -> owner public/boutique/js/b-cart.js (boutique-b-group-cart-flow)
 - public/boutique/js/b-home-premium-v1.js -> owner public/boutique/js/b-catalog.js (boutique-b-home-premium-v1)
-- public/boutique/js/b-mobile-modal-v1.js -> owner public/boutique/js/boutique.js (boutique-b-mobile-modal-v1)
-- public/boutique/js/b-mobile-premium-v1.js -> owner public/boutique/js/boutique.js (boutique-b-mobile-premium-v1)
 - public/boutique/js/b-modal-cart.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-cart)
 - public/boutique/js/b-modal-nav.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-nav)
 - public/boutique/js/b-modal-social-proof.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-social-proof)
@@ -599,6 +596,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
 - uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
 - depends: bootstrap/api-routes.js -> routes/economic-engine.js (routes/economic-engine.js)
 - depends: bootstrap/startup-migrations.js -> scripts/migration-037-fix-products.js (scripts/migration-037-fix-products.js)
@@ -712,7 +710,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/categories.js -> db.js (db.js)
 - depends: routes/categories.js -> services/* (services/*)
 - depends: routes/client-auth.js -> db.js (db.js)
-- depends: routes/client-auth.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 

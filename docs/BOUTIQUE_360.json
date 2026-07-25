@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-24T20:00:40.698Z",
+  "generatedAt": "2026-07-25T08:05:04.208Z",
   "summary": {
-    "modules": 75,
-    "withHeader": 75,
+    "modules": 72,
+    "withHeader": 72,
     "events": 20,
     "declaredActive": 13,
     "declaredDead": 5,
@@ -57,9 +57,6 @@
         "public/boutique/js/b-group-view.js",
         "public/boutique/js/b-home-premium-v1.js",
         "public/boutique/js/b-mini-cart.js",
-        "public/boutique/js/b-mobile-modal-v1.js",
-        "public/boutique/js/b-mobile-premium-v1.js",
-        "public/boutique/js/b-modal-approche-c-hybrid.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-modal-image-ux.js",
@@ -733,85 +730,6 @@
         "b-cart-core",
         "b-utils",
         "b-bus"
-      ],
-      "bodyClasses": []
-    },
-    {
-      "file": "public/boutique/js/b-mobile-modal-v1.js",
-      "id": "b-mobile-modal-v1",
-      "hasHeader": true,
-      "role": "boutique-b-mobile-modal-v1",
-      "domain": "boutique",
-      "layer": "ui-component",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [
-        "modal:opened"
-      ],
-      "imports": [
-        "b-bus",
-        "b-store",
-        "b-utils",
-        "b-scroll-owner"
-      ],
-      "bodyClasses": []
-    },
-    {
-      "file": "public/boutique/js/b-mobile-premium-v1.js",
-      "id": "b-mobile-premium-v1",
-      "hasHeader": true,
-      "role": "boutique-b-mobile-premium-v1",
-      "domain": "boutique",
-      "layer": "ui-component",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [
-        "modal:opened"
-      ],
-      "imports": [
-        "b-bus",
-        "b-store",
-        "b-utils",
-        "b-scroll-owner"
-      ],
-      "bodyClasses": []
-    },
-    {
-      "file": "public/boutique/js/b-modal-approche-c-hybrid.js",
-      "id": "b-modal-approche-c-hybrid",
-      "hasHeader": true,
-      "role": "hybrid-product-modal-flow",
-      "domain": "boutique",
-      "layer": "ui-experiment",
-      "criticality": "medium",
-      "doctrine": [
-        "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
-      ],
-      "depends": [
-        "b-cart.js",
-        "b-share-cart.js",
-        "b-modal-core.js"
-      ],
-      "usedBy": [
-        "main.js"
-      ],
-      "emits": [],
-      "listens": [
-        "modal:opened",
-        "modal:composition-synced",
-        "modal:closed"
-      ],
-      "imports": [
-        "b-bus",
-        "b-store",
-        "b-scroll-owner"
       ],
       "bodyClasses": []
     },
@@ -2357,14 +2275,19 @@
       ],
       "listeners": []
     },
+    "modal:detail-ready": {
+      "emitters": [
+        "b-modal-product-detail-bootstrap"
+      ],
+      "listeners": [
+        "b-modal-cart"
+      ]
+    },
     "modal:opened": {
       "emitters": [
         "b-modal-core"
       ],
       "listeners": [
-        "b-mobile-modal-v1",
-        "b-mobile-premium-v1",
-        "b-modal-approche-c-hybrid",
         "b-modal-desktop-enhancers",
         "b-modal-product-detail-bootstrap",
         "b-pager",
@@ -2372,32 +2295,22 @@
         "boutique"
       ]
     },
-    "modal:composition-synced": {
-      "emitters": [
-        "b-modal-product-detail-bootstrap"
-      ],
-      "listeners": [
-        "b-modal-approche-c-hybrid",
-        "b-modal-core",
-        "b-modal-desktop-enhancers"
-      ]
-    },
     "modal:closed": {
       "emitters": [
         "b-modal-core"
       ],
       "listeners": [
-        "b-modal-approche-c-hybrid",
         "b-modal-product-detail-bootstrap",
         "b-pager"
       ]
     },
-    "modal:detail-ready": {
+    "modal:composition-synced": {
       "emitters": [
         "b-modal-product-detail-bootstrap"
       ],
       "listeners": [
-        "b-modal-cart"
+        "b-modal-core",
+        "b-modal-desktop-enhancers"
       ]
     },
     "carousel:changed": {

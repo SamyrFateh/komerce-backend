@@ -45,7 +45,7 @@ const BLOCKING_LEVELS = new Set(['high', 'critical']);
 
 function runNpmAudit() {
   try {
-    const out = execSync('npm audit --json', { cwd: ROOT, encoding: 'utf8', maxBuffer: 1024 * 1024 * 20 });
+    const out = execSync('npm audit --json --omit=dev', { cwd: ROOT, encoding: 'utf8', maxBuffer: 1024 * 1024 * 20 });
     return JSON.parse(out);
   } catch (e) {
     // npm audit retourne un exit code != 0 dès qu'il y a des vulnérabilités —

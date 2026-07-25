@@ -30,8 +30,8 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 
 | Module JS | DOM | CSS-inj | bus on/emit | Composants ciblés |
 |-----------|:---:|:-------:|:-----------:|-------------------|
-| `b-modal-desktop-product.js` | 105 | 1 | 0/0 | Modal produit |
 | `b-cart.js` | 54 | 31 | 2/8 | Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
+| `b-modal-desktop-product.js` | 83 | 1 | 0/0 | Modal produit |
 | `b-modal-mobile-product.js` | 81 | 1 | 0/0 | Modal produit |
 | `b-modal-core.js` | 26 | 54 | 4/3 | Modal produit, Side-cart desktop, Carte produit, Grille produits |
 | `b-checkout.js` | 60 | 4 | 0/2 | Bottom-nav mobile |
@@ -61,14 +61,11 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-favs.js` | 5 | 0 | 1/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `b-paypal.js` | 5 | 0 | 0/0 | — |
 | `b-home-premium-v1.js` | 4 | 0 | 2/0 | Hero, Chips catégories |
-| `b-mobile-modal-v1.js` | 2 | 2 | 1/0 | Modal produit |
-| `b-mobile-premium-v1.js` | 2 | 2 | 1/0 | — |
 | `b-scroll-owner.js` | 0 | 4 | 0/0 | Modal produit, Side-cart desktop, Panier, Grille produits |
 | `komerce-api.js` | 4 | 0 | 0/0 | — |
 | `b-catalog-desktop-enhancers.js` | 0 | 3 | 1/0 | Header, Chips catégories |
 | `b-modal-cart.js` | 1 | 2 | 1/0 | Modal produit |
 | `b-greeting.js` | 2 | 0 | 0/0 | — |
-| `b-modal-approche-c-hybrid.js` | 2 | 0 | 3/0 | Modal produit |
 | `b-utils.js` | 2 | 0 | 0/0 | Carte produit |
 | `b-cart-core.js` | 1 | 0 | 1/2 | Modal produit, Panier, Bottom-nav mobile |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
@@ -138,7 +135,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Indicateur | Valeur | Cible |
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
-| Modules JS écrivant le DOM | 39 | ≤ 5 |
+| Modules JS écrivant le DOM | 36 | ≤ 5 |
 | Breakpoints distincts | 9 | ≤ 2 |
 | Violations breakpoint | 18 | 0 |
 | `!important` | 23 | < 5 |
