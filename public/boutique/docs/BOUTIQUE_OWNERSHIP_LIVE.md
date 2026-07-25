@@ -48,11 +48,11 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-identity.js` | 11 | 5 | 0/0 | — |
 | `b-group-view.js` | 10 | 5 | 0/1 | Header, Panier groupe, Bottom-nav mobile, Section catalogue |
 | `b-tracking.js` | 15 | 0 | 0/0 | Section catalogue |
-| `boutique.js` | 0 | 14 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-catalog.js` | 11 | 2 | 3/3 | Carte produit, Grille produits, Chips catégories, Section catalogue |
 | `b-modal-image-ux.js` | 8 | 5 | 2/0 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
 | `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
+| `boutique.js` | 0 | 11 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/2 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
