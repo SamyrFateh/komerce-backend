@@ -436,33 +436,13 @@
     flex-shrink: 0;
   }
 
-  /* ── T-030+ : Teaser suggestions — évite le rail "invisible" en fin de
-     scroll. Sibling de #k-modal-trust dans le shell (index.html), peuplé/
-     masqué par renderSuggestions() (b-modal-suggestions.js) en miroir exact
-     de la visibilité de #k-modal-suggestions (jamais un texte "creux" sans
-     données réelles derrière). Cf. docs/reference/reference-modale-4-etats.html
-     (.sugg-peek) — même contrat visuel, implémenté ici pour de vrai. ──── */
-  .k-modal-sugg-peek {
-    margin: 14px 0 2px;
-    padding-top: 12px;
-    border-top: 0.5px solid var(--border);
-    font-size: 12px;
-    color: var(--text-muted);
-    cursor: pointer;
-  }
 
-  .k-modal-sugg-peek:focus-visible {
-    outline: 2px solid var(--text);
-    outline-offset: 2px;
-  }
-
-  .k-modal-sugg-peek[hidden] {
-    display: none;
-  }
-
-  .k-modal-sugg-peek-hint {
-    color: var(--text);
-  }
+  /* Le teaser "#k-modal-sugg-peek" (T-030+) a été retiré du DOM/CSS mobile
+     et desktop : décision explicite — les vraies cartes de suggestions
+     s'annoncent elles-mêmes par leur visibilité partielle (peek naturel,
+     sans plafond de hauteur), pas par une ligne de texte cliquable séparée.
+     Le contrat visuel ".sugg-peek" de reference-modale-4-etats.html (v2.1)
+     est superseded par cette décision — référence à mettre à jour. */
 
   /* ── MDM-7 : Below-fold separator ──────────────────────────── */
 

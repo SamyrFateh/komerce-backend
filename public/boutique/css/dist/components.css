@@ -5353,44 +5353,12 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      26/07 : "si il faut scroller pour voir le reste alors on scrollera"). */
 }
 
-/* ── REF-2026-07b : keyframe scroll hint ────────────────────────────────
-   Bounce léger sur la flèche ↓ du teaser suggestions desktop.
-   prefers-reduced-motion : désactivé pour accessibilité. */
-@keyframes k-sugg-hint-bounce {
-  0%, 60%, 100% { transform: translateY(0);   }
-  30%            { transform: translateY(5px); }
-}
-
-@media (min-width: 1024px) {
-  /* Renforcer la visibilité du teaser desktop : fond léger + border */
-  #k-modal .k-modal-sugg-peek {
-    margin-top: 20px;
-    padding: 10px 12px;
-    background: color-mix(in srgb, var(--sand) 60%, var(--white));
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-  }
-  #k-modal .k-modal-sugg-peek-hint {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  #k-modal .k-modal-sugg-peek:focus-visible {
-    outline: 2px solid var(--text);
-    outline-offset: 2px;
-  }
-}
-
-@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-  #k-modal-sugg-peek .k-modal-sugg-peek-hint {
-    animation: k-sugg-hint-bounce 2s ease-in-out infinite;
-  }
-}
+/* Le teaser texte "#k-modal-sugg-peek" (bloc REF-2026-07b + T-030+) a été
+   retiré du DOM et de son CSS : redondant depuis que les vraies cartes de
+   suggestions remontent naturellement (peek sans plafond de hauteur,
+   cf. bloc ci-dessus). Décision explicite : les cartes s'annoncent
+   elles-mêmes par leur visibilité partielle, pas par une ligne de texte
+   cliquable séparée. */
 
 
 /* ── modal-mobile-canonical.css ──────────────────────────── */
@@ -5832,33 +5800,13 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     flex-shrink: 0;
   }
 
-  /* ── T-030+ : Teaser suggestions — évite le rail "invisible" en fin de
-     scroll. Sibling de #k-modal-trust dans le shell (index.html), peuplé/
-     masqué par renderSuggestions() (b-modal-suggestions.js) en miroir exact
-     de la visibilité de #k-modal-suggestions (jamais un texte "creux" sans
-     données réelles derrière). Cf. docs/reference/reference-modale-4-etats.html
-     (.sugg-peek) — même contrat visuel, implémenté ici pour de vrai. ──── */
-  .k-modal-sugg-peek {
-    margin: 14px 0 2px;
-    padding-top: 12px;
-    border-top: 0.5px solid var(--border);
-    font-size: 12px;
-    color: var(--text-muted);
-    cursor: pointer;
-  }
 
-  .k-modal-sugg-peek:focus-visible {
-    outline: 2px solid var(--text);
-    outline-offset: 2px;
-  }
-
-  .k-modal-sugg-peek[hidden] {
-    display: none;
-  }
-
-  .k-modal-sugg-peek-hint {
-    color: var(--text);
-  }
+  /* Le teaser "#k-modal-sugg-peek" (T-030+) a été retiré du DOM/CSS mobile
+     et desktop : décision explicite — les vraies cartes de suggestions
+     s'annoncent elles-mêmes par leur visibilité partielle (peek naturel,
+     sans plafond de hauteur), pas par une ligne de texte cliquable séparée.
+     Le contrat visuel ".sugg-peek" de reference-modale-4-etats.html (v2.1)
+     est superseded par cette décision — référence à mettre à jour. */
 
   /* ── MDM-7 : Below-fold separator ──────────────────────────── */
 

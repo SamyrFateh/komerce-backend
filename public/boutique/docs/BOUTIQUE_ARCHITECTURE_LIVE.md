@@ -25,10 +25,10 @@
 | `layout.css` | 1167 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
-| `modal-media.css` | 312 | 🔴 **ORPHELIN** |
+| `modal-media.css` | 319 | 🔴 **ORPHELIN** |
 | `modal-mobile-canonical.css` | 628 | 🔴 **ORPHELIN** |
 | `modal-mobile-suggestion-actions.css` | 62 | 🔴 **ORPHELIN** |
-| `modal-product-lot4-hybrid.css` | 541 | 🔴 **ORPHELIN** |
+| `modal-product-lot4-hybrid.css` | 547 | 🔴 **ORPHELIN** |
 | `modal-product.css` | 1476 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 1153 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
@@ -45,7 +45,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=138
- 2. /boutique/css/dist/components.css?v=257
+ 2. /boutique/css/dist/components.css?v=259
  3. /boutique/css/dist/desktop.css?v=73
  4. /boutique/css/dist/event.css?v=32
 ```

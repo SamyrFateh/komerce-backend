@@ -28,21 +28,4 @@ describe('modal-product-lot4-hybrid.css - densification zone produit + teaser su
     expect(zoneRule).not.toMatch(/min-height\s*:\s*clamp/);
   });
 
-  test('le teaser suggestions desktop est activable au clic/clavier (curseur + focus visible)', () => {
-    expect(css).toMatch(
-      /#k-modal\s+\.k-modal-sugg-peek\s*\{[^}]*cursor:\s*pointer/s
-    );
-    expect(css).toMatch(
-      /#k-modal\s+\.k-modal-sugg-peek:focus-visible\s*\{[^}]*outline/s
-    );
-  });
-
-  test('anime le hint de scroll uniquement sans prefers-reduced-motion', () => {
-    expect(css).toMatch(
-      /@media \(min-width: 1024px\) and \(prefers-reduced-motion: no-preference\)/
-    );
-    expect(css).toMatch(
-      /k-sugg-hint-bounce/
-    );
-  });
 });

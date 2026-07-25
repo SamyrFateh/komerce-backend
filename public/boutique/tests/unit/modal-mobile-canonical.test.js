@@ -38,13 +38,4 @@ describe('modal-mobile-canonical.css - suggestion responsibilities', () => {
       /#k-modal\s+\.k-sug-card-bottom\s*\{[^}]*margin-top:\s*auto/s
     );
   });
-
-  test('le teaser suggestions est activable au clic/clavier (curseur + focus visible)', () => {
-    expect(css).toMatch(
-      /\.k-modal-sugg-peek\s*\{[^}]*cursor:\s*pointer/s
-    );
-    expect(css).toMatch(
-      /\.k-modal-sugg-peek:focus-visible\s*\{[^}]*outline/s
-    );
-  });
 });

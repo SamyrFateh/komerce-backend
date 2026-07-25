@@ -506,41 +506,9 @@
      26/07 : "si il faut scroller pour voir le reste alors on scrollera"). */
 }
 
-/* ── REF-2026-07b : keyframe scroll hint ────────────────────────────────
-   Bounce léger sur la flèche ↓ du teaser suggestions desktop.
-   prefers-reduced-motion : désactivé pour accessibilité. */
-@keyframes k-sugg-hint-bounce {
-  0%, 60%, 100% { transform: translateY(0);   }
-  30%            { transform: translateY(5px); }
-}
-
-@media (min-width: 1024px) {
-  /* Renforcer la visibilité du teaser desktop : fond léger + border */
-  #k-modal .k-modal-sugg-peek {
-    margin-top: 20px;
-    padding: 10px 12px;
-    background: color-mix(in srgb, var(--sand) 60%, var(--white));
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-  }
-  #k-modal .k-modal-sugg-peek-hint {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  #k-modal .k-modal-sugg-peek:focus-visible {
-    outline: 2px solid var(--text);
-    outline-offset: 2px;
-  }
-}
-
-@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-  #k-modal-sugg-peek .k-modal-sugg-peek-hint {
-    animation: k-sugg-hint-bounce 2s ease-in-out infinite;
-  }
-}
+/* Le teaser texte "#k-modal-sugg-peek" (bloc REF-2026-07b + T-030+) a été
+   retiré du DOM et de son CSS : redondant depuis que les vraies cartes de
+   suggestions remontent naturellement (peek sans plafond de hauteur,
+   cf. bloc ci-dessus). Décision explicite : les cartes s'annoncent
+   elles-mêmes par leur visibilité partielle, pas par une ligne de texte
+   cliquable séparée. */
