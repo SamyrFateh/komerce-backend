@@ -1150,3 +1150,85 @@
     transition: none;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPIKE ROUTE B — scroll document mobile (TEMPORAIRE, réversible)
+
+   Activation : ?docscroll=1 → js/boutique.js pose .k-doc-scroll sur <html>.
+   Sans le flag, aucune de ces règles ne s'applique : prod inchangée.
+
+   Principe : la modale quitte le `position:fixed` et rejoint le flux du
+   document. Le document devient réellement scrollable, seule condition pour
+   qu'un navigateur mobile rétracte sa barre d'adresse (~100-150px rendus).
+   Le catalogue reste dans sa cage fixe — étant `position:fixed`, il ne
+   contribue pas à la hauteur du document et n'interfère donc pas.
+
+   Spécificité : `body:has(#k-page-scroll.k-pager-active)` pèse (1,1,1).
+   On préfixe donc par `html.k-doc-scroll` pour passer devant.
+
+   À SUPPRIMER après arbitrage (avec le bloc SPIKE de js/boutique.js).
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 899px) {
+
+  /* 1. Déverrouiller le document — sinon rien ne peut scroller */
+  html.k-doc-scroll,
+  html.k-doc-scroll body,
+  html.k-doc-scroll body.modal-open,
+  html.k-doc-scroll body:has(#k-page-scroll.k-pager-active) {
+    overflow: visible;
+    overflow-y: visible;
+    position: static;
+    height: auto;
+    max-height: none;
+  }
+
+  /* 2. L'overlay rejoint le flux (plus de fixed, plus de clip, plus de contain) */
+  html.k-doc-scroll #k-modal-overlay.open {
+    position: static;
+    inset: auto;
+    overflow: visible;
+    contain: none;
+    height: auto;
+    max-height: none;
+    background: transparent; /* plus de voile : la modale EST la page */
+  }
+
+  /* 3. Le shell ne contraint plus la hauteur */
+  html.k-doc-scroll #k-modal {
+    height: auto;
+    max-height: none;
+    min-height: 100dvh;
+    overflow: visible;
+    animation: none; /* le slide-up n'a plus de sens hors overlay fixed */
+  }
+
+  /* 4. Le scroller interne rend la main au document */
+  html.k-doc-scroll #k-modal .k-modal-scroll {
+    overflow-y: visible;
+    height: auto;
+    max-height: none;
+    flex: 0 0 auto;
+  }
+
+  /* 5. Topbar collante en haut du document */
+  html.k-doc-scroll #k-modal .k-modal-topbar {
+    position: sticky;
+    top: 0;
+  }
+
+  /* 6. CTA maintenu visible pendant le scroll document.
+        `sticky` plutôt que `fixed` : le scroll est désormais celui du
+        document, donc sticky suffit et conserve la largeur de flux —
+        pas besoin de réancrer left/right/z-index (3 overrides de moins
+        au regard de check:css-specificity-guard). */
+  html.k-doc-scroll #k-modal .k-modal-actions,
+  html.k-doc-scroll #k-modal > .k-modal-actions {
+    position: sticky;
+    bottom: 0;
+  }
+
+  /* 7. Réserver la place du CTA fixe en fin de contenu */
+  html.k-doc-scroll #k-modal .k-modal-scroll {
+    padding-bottom: calc(var(--k-modal-cta-h, 75px) + env(safe-area-inset-bottom, 0px));
+  }
+}
