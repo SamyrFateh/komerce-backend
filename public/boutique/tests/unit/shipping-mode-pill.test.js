@@ -239,7 +239,7 @@ describe('shipping-mode-pill — mobile (chip k-mdm-chip--air)', () => {
         '<button id="k-qty-minus"></button>' +
         '<button id="k-qty-plus"></button>' +
       '</div>';
-    window.matchMedia = jest.fn().mockReturnValue({ matches: true }); // mobile
+    require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(false); // mobile
     dom.modal = document.getElementById('k-modal');
     dom.modalVariants = document.getElementById('k-modal-variants');
     dom.addCartBtn = document.getElementById('k-add-cart-btn');

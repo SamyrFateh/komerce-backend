@@ -31,6 +31,12 @@ jest.mock('../../js/b-modal-mobile-product.js', () => ({
   renderMobileProductDetail: jest.fn(),
 }));
 
+jest.mock('../../js/b-scroll-owner.js', () => ({
+  isDesktop: jest.fn(),
+  getScrollY: jest.fn(() => 0),
+  scrollToPosition: jest.fn(),
+}));
+
 jest.mock('../../js/b-modal-desktop-product.js', () => ({
   clearDesktopProductDetailState: jest.fn(),
   renderDesktopProductDetail: jest.fn(),
@@ -88,7 +94,7 @@ function installDom() {
 describe('product detail bootstrap — branches défensives', () => {
   beforeAll(() => {
     installDom();
-    window.matchMedia = jest.fn(() => ({ matches: true }));
+    require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(false); // mobile
     setupProductDetailModal();
     setupProductDetailModal();
   });
@@ -96,7 +102,7 @@ describe('product detail bootstrap — branches défensives', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     installDom();
-    window.matchMedia.mockReturnValue({ matches: true });
+    require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(false); // mobile
     state.modalOpen = true;
     state.modalProduct = { id: 'one' };
     state.modalProductDetail = null;

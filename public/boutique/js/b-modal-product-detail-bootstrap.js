@@ -21,6 +21,7 @@
 import { bus } from './b-bus.js';
 import { state, dom } from './b-store.js';
 import { createModalSelection } from './view-models/modal-selection-model.js';
+import { isDesktop } from './b-scroll-owner.js';
 import {
   clearMobileProductDetailState,
   renderMobileProductDetail,
@@ -35,12 +36,11 @@ let _generation = 0;
 let _viewportMode = null;
 let _resizeTimer = null;
 
-function isMobileViewport() {
-  return window.matchMedia('(max-width: 899px)').matches;
-}
-
+// §4 — Unification viewport sur isDesktop() (b-scroll-owner.js, innerWidth>=900).
+// Remplace matchMedia('max-width:899px') qui créait un self-abort [899,900)
+// et obligeait les tests à mocker window.matchMedia.
 function viewportMode() {
-  return isMobileViewport() ? 'mobile' : 'desktop';
+  return isDesktop() ? 'desktop' : 'mobile';
 }
 
 function currentProductId() {

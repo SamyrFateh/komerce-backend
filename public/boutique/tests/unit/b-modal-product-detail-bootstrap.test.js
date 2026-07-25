@@ -36,6 +36,13 @@ jest.mock('../../js/b-modal-desktop-product.js', () => ({
   renderDesktopProductDetail: jest.fn(),
 }));
 
+// §4 — mock isDesktop (remplace window.matchMedia dans ce fichier)
+jest.mock('../../js/b-scroll-owner.js', () => ({
+  isDesktop: jest.fn(),
+  getScrollY: jest.fn(() => 0),
+  scrollToPosition: jest.fn(),
+}));
+
 const { bus } = require('../../js/b-bus.js');
 const { state, dom } = require('../../js/b-store.js');
 const { createModalSelection } = require('../../js/view-models/modal-selection-model.js');
@@ -82,7 +89,7 @@ function installDom() {
         '<button id="k-qty-plus"></button>' +
       '</div>' +
     '</div>';
-  window.matchMedia = jest.fn().mockReturnValue({ matches: true });
+  require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(false); // mobile
   dom.modal = document.getElementById('k-modal');
   dom.modalVariants = document.getElementById('k-modal-variants');
   dom.addCartBtn = document.getElementById('k-add-cart-btn');
@@ -152,7 +159,7 @@ describe('product detail modal bootstrap', () => {
   });
 
   test('desktop : rend PDC puis publie modal:detail-ready', async () => {
-    window.matchMedia.mockReturnValue({ matches: false });
+    require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(true); // desktop
     const payload = detail();
     fetch.mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue(payload) });
 
@@ -181,7 +188,7 @@ describe('product detail modal bootstrap', () => {
     renderMobileProductDetail.mockClear();
     renderDesktopProductDetail.mockClear();
     bus.emit.mockClear();
-    window.matchMedia.mockReturnValue({ matches: false });
+    require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(true); // desktop
 
     _productDetailBootstrapTestApi.syncResponsiveComposition();
 

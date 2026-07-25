@@ -14,6 +14,12 @@ jest.mock('../../js/b-modal-mobile-product.js', () => ({
   clearMobileProductDetailState: jest.fn(),
   renderMobileProductDetail: jest.fn(),
 }));
+jest.mock('../../js/b-scroll-owner.js', () => ({
+  isDesktop: jest.fn(),
+  getScrollY: jest.fn(() => 0),
+  scrollToPosition: jest.fn(),
+}));
+
 jest.mock('../../js/b-modal-desktop-product.js', () => ({
   clearDesktopProductDetailState: jest.fn(),
   renderDesktopProductDetail: jest.fn(),
@@ -43,7 +49,7 @@ describe('product detail bootstrap — PDC-6 branch closure', () => {
     dom.addCartBtn = document.getElementById('k-add-cart-btn');
     dom.qtyMinus = document.getElementById('k-qty-minus');
     dom.qtyPlus = document.getElementById('k-qty-plus');
-    window.matchMedia = jest.fn().mockReturnValue({ matches: true });
+    require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(false); // mobile
     state.modalOpen = false;
     state.modalProductDetail = { product: { id: 'p1' } };
     state.modalSelection = { selected_options: {} };
@@ -67,7 +73,7 @@ describe('product detail bootstrap — PDC-6 branch closure', () => {
     _productDetailBootstrapTestApi.renderResponsiveProductDetail(detail, selection, true);
     expect(renderMobileProductDetail).toHaveBeenCalledWith(detail, selection, { forceMedia: true });
 
-    window.matchMedia.mockReturnValue({ matches: false });
+    require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(true); // desktop
     window.dispatchEvent(new Event('resize'));
     window.dispatchEvent(new Event('resize'));
     jest.advanceTimersByTime(119);

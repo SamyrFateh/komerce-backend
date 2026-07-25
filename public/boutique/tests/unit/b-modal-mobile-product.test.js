@@ -54,6 +54,13 @@ jest.mock('../../js/b-modal.js', () => ({ closeModal: jest.fn() }));
 jest.mock('../../js/b-cart.js', () => ({ addToCart: jest.fn() }));
 jest.mock('../../js/b-share-cart.js', () => ({ startShareFlow: jest.fn() }));
 
+// §4 — mock isDesktop pour le routing viewport (remplace window.matchMedia)
+jest.mock('../../js/b-scroll-owner.js', () => ({
+  isDesktop: jest.fn(() => false), // défaut : mobile
+  getScrollY: jest.fn(() => 0),
+  scrollToPosition: jest.fn(),
+}));
+
 const { state, dom } = require('../../js/b-store.js');
 const { renderMobileProductDetail } = require('../../js/b-modal-mobile-product.js');
 
@@ -72,7 +79,7 @@ function installDom() {
       '<button id="k-qty-minus"></button>' +
       '<button id="k-qty-plus"></button>' +
     '</div>';
-  window.matchMedia = jest.fn().mockReturnValue({ matches: true }); // mobile
+  // isDesktop() mocké à false (mobile) via jest.mock de b-scroll-owner.js ci-dessus
   dom.modal = document.getElementById('k-modal');
   dom.modalVariants = document.getElementById('k-modal-variants');
   dom.addCartBtn = document.getElementById('k-add-cart-btn');

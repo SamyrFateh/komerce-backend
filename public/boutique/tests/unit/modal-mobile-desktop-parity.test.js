@@ -233,7 +233,6 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
 
     // Rendu mobile
     installMobileDom();
-    window.matchMedia = jest.fn().mockReturnValue({ matches: true }); // mobile
     isDesktop.mockReturnValue(false);
     let selection = createModalSelection(product);
     selection = selectModalOption(product, selection, 'Couleur', 'Marron');
@@ -247,7 +246,6 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
 
     // Rendu desktop — même produit, même sélection déjà résolue
     installDesktopDom();
-    window.matchMedia = jest.fn().mockReturnValue({ matches: false }); // desktop
     isDesktop.mockReturnValue(true);
     renderDesktopProductDetail(product, selection);
     const desktopCore = coreTransactionalSnapshot();
@@ -271,7 +269,6 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     // Taille non choisie → aucun SKU résolu
 
     installMobileDom();
-    window.matchMedia = jest.fn().mockReturnValue({ matches: true });
     isDesktop.mockReturnValue(false);
     renderMobileProductDetail(product, selection);
     expect(dom.addCartBtn.disabled).toBe(true);
@@ -279,7 +276,6 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     expect(document.querySelectorAll('.k-buybox-payment-tab')).toHaveLength(0);
 
     installDesktopDom();
-    window.matchMedia = jest.fn().mockReturnValue({ matches: false });
     isDesktop.mockReturnValue(true);
     renderDesktopProductDetail(product, selection);
 
@@ -297,7 +293,6 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     expect(selection.selected_sku_id).toBe(SKU_BEI_L);
 
     installMobileDom();
-    window.matchMedia = jest.fn().mockReturnValue({ matches: true });
     isDesktop.mockReturnValue(false);
     renderMobileProductDetail(product, selection);
     expect(dom.modalPrice.textContent).toBe('13000 KMF');
@@ -305,7 +300,6 @@ describe('Parité métier Mobile/Desktop — même PDC, même sélection, même 
     expect(document.querySelector('.k-modal-subtotal, .k-modal-subtotal--mobile')).toBeNull();
 
     installDesktopDom();
-    window.matchMedia = jest.fn().mockReturnValue({ matches: false });
     isDesktop.mockReturnValue(true);
     renderDesktopProductDetail(product, selection);
     expect(dom.modalPrice.textContent).toBe('13000 KMF');

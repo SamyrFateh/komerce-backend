@@ -23,6 +23,13 @@ jest.mock('../../js/b-modal-product.js', () => ({
 
 jest.mock('../../js/b-modal-image-ux.js', () => ({ setupImageUX: jest.fn() }));
 
+// §4 — mock isDesktop pour le routing viewport
+jest.mock('../../js/b-scroll-owner.js', () => ({
+  isDesktop: jest.fn(() => false), // défaut : mobile
+  getScrollY: jest.fn(() => 0),
+  scrollToPosition: jest.fn(),
+}));
+
 const { state, dom } = require('../../js/b-store.js');
 const { fmtPrice, optimizeImgUrl } = require('../../js/b-utils.js');
 const {
@@ -46,7 +53,7 @@ function installDom({ withBuyNow = true } = {}) {
       <button id="k-qty-minus"></button>
       <button id="k-qty-plus"></button>
     </div>`;
-  window.matchMedia = jest.fn().mockReturnValue({ matches: true });
+  require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(false); // mobile
   dom.modal = document.getElementById('k-modal');
   dom.modalVariants = document.getElementById('k-modal-variants');
   dom.addCartBtn = document.getElementById('k-add-cart-btn');
@@ -327,12 +334,12 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     const detail = richDetail();
     const selection = richSelection();
 
-    window.matchMedia.mockReturnValue({ matches: false });
+    require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(true); // desktop
     dom.modalVariants.innerHTML = '<span data-sentinel="1"></span>';
     renderMobileProductDetail(detail, selection);
     expect(dom.modalVariants.querySelector('[data-sentinel]')).not.toBeNull();
 
-    window.matchMedia.mockReturnValue({ matches: true });
+    require('../../js/b-scroll-owner.js').isDesktop.mockReturnValue(false); // mobile
     dom.modalVariants = null;
     document.getElementById('k-modal-variants').remove();
     expect(() => renderMobileProductDetail(detail, selection)).not.toThrow();

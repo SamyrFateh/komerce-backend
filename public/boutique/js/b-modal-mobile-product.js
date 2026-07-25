@@ -64,11 +64,13 @@ import {
   shouldOfferReadMore,
   CONTENT_LABELS,
 } from './view-models/product-content-model.js';
+import { isDesktop } from './b-scroll-owner.js';
 
 /* ── helpers ──────────────────────────────────────────────────── */
 
+// §4 — isMobileViewport() remplacée par !isDesktop() (unification viewport).
 function isMobileViewport() {
-  return window.matchMedia('(max-width: 899px)').matches;
+  return !isDesktop();
 }
 
 function isPhotoAxis(axis) {
