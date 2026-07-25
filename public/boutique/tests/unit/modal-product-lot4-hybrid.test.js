@@ -18,10 +18,14 @@ describe('modal-product-lot4-hybrid.css - densification zone produit + teaser su
     );
   });
 
-  test('réduit le clamp de hauteur de la zone produit pour permettre le peek des suggestions', () => {
-    expect(css).toMatch(
-      /#k-modal\s+\.k-modal-product-zone\s*\{[^}]*max-height:\s*clamp\(400px,\s*calc\(100vh - 300px\),\s*560px\)/s
-    );
+  test('ne clampe plus la hauteur de la zone produit (RÉF-2026-07h : conflit avec le collage sticky de l\'image)', () => {
+    // Le clamp min/max-height précédent forçait une hauteur artificielle qui
+    // limitait aussi l'espace de collage de l'image sticky pour un produit à
+    // variantes nombreuses. Retiré : la zone fait la hauteur de son contenu
+    // réel (court → peek naturel ; long → scroll, accepté explicitement).
+    const zoneRule = css.match(/#k-modal\s+\.k-modal-product-zone\s*\{([^}]*)\}/s)?.[1] ?? '';
+    expect(zoneRule).not.toMatch(/max-height\s*:\s*clamp/);
+    expect(zoneRule).not.toMatch(/min-height\s*:\s*clamp/);
   });
 
   test('le teaser suggestions desktop est activable au clic/clavier (curseur + focus visible)', () => {

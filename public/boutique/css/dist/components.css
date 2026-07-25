@@ -2460,8 +2460,13 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: grid;
     grid-template-rows: 1fr auto;
     flex: 0 0 auto;
-    min-height: calc(min(880px, 100vh - 56px) - 58px);
     width: 100%;
+    /* RÉF-2026-07h : min-height (calc(min(880px,100vh-56px)-58px), ≈746px
+       à 860px de viewport) retiré. Ce plancher forçait la zone à occuper
+       quasi tout le viewport même pour un produit court, empêchant les
+       suggestions de peeker en dessous sans scroll. Sans plancher, la
+       zone fait la hauteur de son contenu réel (court pour un produit
+       simple, haute pour un produit à variantes nombreuses). */
   }
 
   /* ── Image : col gauche sticky ───────────────────────────── */
@@ -2880,16 +2885,27 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* REF-2026-07 : placement grille 3 pistes + reset sticky du 900px.
      align-self / height / max-height / aspect-ratio / margin sont owned par
      modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —
-     ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard). */
+     ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard).
+     RÉF-2026-07h : min-height:100% retiré. Il forçait la zone à toujours
+     remplir 100% de .k-modal-main même pour un produit court (aucun peek
+     suggestions possible), ET plafonnait indirectement l'espace de collage
+     de l'image sticky pour un produit à variantes nombreuses (pas assez de
+     place pour rester épinglée). Sans cette contrainte, la zone fait
+     naturellement la hauteur de son contenu réel : courte pour un produit
+     simple (suggestions visibles en dessous sans scroll), haute pour un
+     produit à 20 variantes (l'image sticky dispose alors de toute la place
+     nécessaire pour rester épinglée pendant le scroll). */
   #k-modal .k-modal-product-zone {
     align-self: stretch;
-    min-height: 100%;
   }
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     grid-column: 1 / 3;
     grid-row: 1 / 3;
-    position: relative; /* annule sticky hérité du 900px */
-    top: auto;          /* annule top:0 hérité du 900px */
+    /* RÉF-2026-07h : le sticky hérité du 900px est CONSERVÉ ici (plus annulé).
+       Sans le plafond de hauteur retiré ci-dessus sur .k-modal-product-zone,
+       la ligne de grille grandit désormais avec le contenu réel de la
+       colonne détails — l'image dispose donc de toute la place nécessaire
+       pour rester épinglée pendant que les variantes/description défilent. */
   }
   #k-modal .k-modal-product-zone .k-modal-details {
     grid-column: 3;
@@ -5230,23 +5246,16 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-mdm-skeleton-row { animation: none; }
 }
 
-/* ── REF-2026-07 : override modal-media.css (source order) ─────────────────
-   modal-media.css pose align-self:center + aspect-ratio:4/3 + max-height:500px
-   + margin:auto sur .k-modal-img-wrap à ≥900px. Cela centre le container à
-   360px dans la colonne au lieu de le faire remplir toute la hauteur.
-   Ce fichier vient après modal-media dans le bundle → override gagant.
-   À ≥1024px : le container image doit occuper toute la hauteur de la colonne
-   (background visible de haut en bas, cf. référence). L'image à l'intérieur
-   reste centrée par object-fit + margin:auto sur le slide. ──────────────── */
+/* ── RÉF-2026-07h : img-wrap reprend sa taille bornée (modal-media.css) ──
+   Le stretch:100% précédent (RÉF-2026-07) remplissait la colonne pour éviter
+   un vide de fond visible, mais empêchait tout collage sticky : un élément
+   qui remplit déjà 100% de son conteneur n'a nulle part où "coller" pendant
+   le scroll. Choix arbitré le 26/07 : l'image reste épinglée pendant le
+   choix des variantes (prioritaire), quitte à laisser un espace de fond
+   visible sous l'image pour un produit à contenu très court ou très long.
+   modal-media.css (source-order antérieure) reprend la main : aspect-ratio
+   4/3, min 360px, max 500px, align-self:center — aucun override ici. */
 @media (min-width: 1024px) {
-  #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    align-self: stretch; /* override center → remplit la hauteur de colonne   */
-    height: 100%;        /* hérite de la hauteur de la grid-row (stretch)     */
-    max-height: 100%;    /* override 500px de modal-media.css                 */
-    aspect-ratio: unset; /* override 4/3 — c'est la hauteur de grille qui pilote */
-    margin: 0;           /* override margin:auto de modal-media.css            */
-  }
-
   /* REF-2026-07b : slide aligné en haut.
      object-position:center (base) centre le produit dans l'img-wrap pleine
      hauteur → grand vide au-dessus. Spécificité (1,2,0) > base (0,1,0). */
@@ -5275,13 +5284,13 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   #k-modal .k-modal-desc        { margin-top: 10px; line-height: 1.55; }
   #k-modal .k-modal-actions     { margin-top: 22px; }
 
-  /* Suggestions visibles quand l'espace le permet.
-     Avec le contenu enrichi (~549px), zone 560px → 0px vide droite.
-     Peek: 860px viewport → sugg y=646 → peek=214px ≈ 1 carte entière. */
-  #k-modal .k-modal-product-zone {
-    min-height: clamp(400px, calc(100vh - 340px), 520px);
-    max-height: clamp(400px, calc(100vh - 300px), 560px);
-  }
+  /* RÉF-2026-07h : suggestions visibles quand l'espace le permet — SANS
+     plafonner la zone (le clamp précédent limitait aussi l'espace de
+     collage de l'image sticky pour un produit à variantes nombreuses).
+     La zone fait maintenant la hauteur de son contenu réel : un produit
+     simple reste court naturellement (peek visible en dessous), un
+     produit enrichi/à variantes s'étend (scroll requis, cf. accord du
+     26/07 : "si il faut scroller pour voir le reste alors on scrollera"). */
 }
 
 /* ── REF-2026-07b : keyframe scroll hint ────────────────────────────────
