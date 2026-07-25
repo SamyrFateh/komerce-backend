@@ -2223,10 +2223,15 @@ html.k-mobile-premium-v1 .k-chip-label {
      - .k-modal-suggestions  (contenu vertical, doit déborder vers le parent)
      - #k-sug-rail           (idem)
      - .k-sug-section        (idem)
+     - .k-modal-details      (scroll owner unique = .k-modal-main, details doit
+                              déborder librement vers lui — exclu ici depuis
+                              2026-07 après un aller-retour où overflow-x seul
+                              recréait un second scroll owner fantôme ; voir le
+                              commentaire détaillé sur la règle vide plus bas,
+                              marqué "scroll owner unique desktop")
    Pour eux : juste max-width:100%, et on contraint les enfants. */
 #k-modal .k-modal-img-wrap,
 #k-modal .k-modal-carousel,
-#k-modal .k-modal-details,
 #k-modal .k-modal-info,
 #k-modal .k-modal-actions,
 #k-modal .k-modal-topbar,
@@ -2235,6 +2240,9 @@ html.k-mobile-premium-v1 .k-chip-label {
 #k-modal .k-modal-share-row,
 #k-modal .k-modal-specs {
   width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden;
+}
+#k-modal .k-modal-details {
+  width: 100%; max-width: 100%; min-width: 0; /* pas d'overflow-x:hidden — voir exclusion ci-dessus */
 }
 /* Conteneurs verticaux : pas de overflow-x:hidden sinon overflow-y se
    cale automatiquement sur auto et casse le scroll de .k-modal-scroll */
@@ -2804,9 +2812,20 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   /* ── Détails : flux naturel, plus de scroll propre (RÉF-2026-07f) ──
-     padding : owned par modal-product-lot4-hybrid.css (Approche C). */
+     padding : owned par modal-product-lot4-hybrid.css (Approche C).
+     RÉF-2026-07g : AUCUNE déclaration overflow ici (ni overflow-x seul, ni
+     overflow-y explicité). La spec CSS Overflow force à "auto" tout axe
+     resté "visible" dès que l'autre passe à une valeur non-visible — quelle
+     que soit la manière dont cet axe non-visible est déclaré (implicite ou
+     explicite). Il n'existe donc AUCUNE paire {non-visible, visible} qui
+     évite la promotion : la seule sortie propre est de laisser les DEUX axes
+     visibles (hérité de la règle de base .k-modal-details { overflow:visible }
+     dans modal-product.css, non concurrencée ici). Le confinement horizontal
+     est déjà assuré par l'ancêtre .k-modal-main/.k-modal-scroll (overflow-x:
+     hidden + overflow-y:auto, déclarés ENSEMBLE non-visibles — c'est pour ça
+     que CET ancêtre n'a pas le problème). Cette règle vide reste comme
+     marqueur d'ownership documenté — ne pas y réintroduire d'overflow. */
   #k-modal .k-modal-product-zone .k-modal-details {
-    overflow-x: hidden;
   }
 
   /* ── Actions inline : padding géré par .k-modal-details, pas ici ── */
@@ -3301,11 +3320,10 @@ html.k-mobile-premium-v1 .k-chip-label {
    du confinement du shell — retiré, remplacé ici par une géométrie
    intrinsèque indépendante du viewport (aspect-ratio, pas de vh/dvh),
    robuste aux futurs ajustements de grille (T-020).
-   Le confinement du shell (product-zone height:calc(100dvh - 58px),
-   details overflow-y:auto) reste inchangé et continue d'empêcher un
-   contenu droit long d'agrandir la grille ou de déformer la colonne
-   image — cette règle ne fait que borner la taille du hero LUI-MÊME
-   à l'intérieur de cet espace déjà confiné. */
+   Le confinement du shell (product-zone en flux, .k-modal-main seul scroll
+   owner desktop — RÉF-2026-07f, addendum g) reste inchangé et continue
+   d'encadrer horizontalement un contenu droit long — cette règle ne fait
+   que borner la taille du hero LUI-MÊME à l'intérieur de cet espace. */
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     aspect-ratio: 4 / 3;

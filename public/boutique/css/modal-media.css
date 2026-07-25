@@ -288,11 +288,10 @@
    du confinement du shell — retiré, remplacé ici par une géométrie
    intrinsèque indépendante du viewport (aspect-ratio, pas de vh/dvh),
    robuste aux futurs ajustements de grille (T-020).
-   Le confinement du shell (product-zone height:calc(100dvh - 58px),
-   details overflow-y:auto) reste inchangé et continue d'empêcher un
-   contenu droit long d'agrandir la grille ou de déformer la colonne
-   image — cette règle ne fait que borner la taille du hero LUI-MÊME
-   à l'intérieur de cet espace déjà confiné. */
+   Le confinement du shell (product-zone en flux, .k-modal-main seul scroll
+   owner desktop — RÉF-2026-07f, addendum g) reste inchangé et continue
+   d'encadrer horizontalement un contenu droit long — cette règle ne fait
+   que borner la taille du hero LUI-MÊME à l'intérieur de cet espace. */
 @media (min-width: 900px) {
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     aspect-ratio: 4 / 3;
