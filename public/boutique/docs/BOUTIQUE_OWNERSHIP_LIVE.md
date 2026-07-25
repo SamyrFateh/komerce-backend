@@ -17,10 +17,10 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 | **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (18), layout.css (10), hero.css (1) | 3 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
-| **Header** `.k-header*` | layout.css (21), hero.css (2), tokens.css (1) | 3 | 🔴 |
+| **Header** `.k-header*` | layout.css (21), hero.css (2), modal-shell.css (1), tokens.css (1) | 4 | 🔴 |
 | **Hero** `.k-hero*` | hero.css (8), cart.css (1) | 2 | 🔴 |
 | **Chips catégories** `.k-chip*` | categories.css (62), layout.css (2), interactions.css (1) | 3 | 🔴 |
-| **Bottom-nav mobile** `.k-bnav*` | interactions.css (2), layout.css (2) | 2 | 🔴 |
+| **Bottom-nav mobile** `.k-bnav*` | interactions.css (2), layout.css (2), modal-shell.css (1) | 3 | 🔴 |
 
 ---
 
