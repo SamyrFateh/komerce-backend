@@ -1917,6 +1917,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   border-radius: 0; overflow: hidden;
   animation: k-slide-up .3s cubic-bezier(.22,1,.36,1);
   display: flex; flex-direction: column;
+  position: relative; /* §6.1 : contexte de positionnement pour la topbar absolue mobile */
 }
 @keyframes k-slide-up {
   0%   { transform: translateY(100%); opacity: .6; }
@@ -1928,21 +1929,21 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal-topbar {
   box-sizing: border-box; max-width: 100%; /* S2.1 */
   display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 400;
+  /* §6.1 full-bleed : topbar absolue par-dessus le hero, pas de bande opaque.
+     ≥900px remet position:relative via la règle desktop ci-dessous.
+     Le scroll container compense via padding-top (modal-mobile-canonical.css). */
+  position: absolute; top: 0; left: 0; right: 0; z-index: 400;
   padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
-  background: var(--surface-sand-96);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: var(--overlay-black-18); /* voile léger pour lisibilité sur images claires */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border-bottom: none;
   flex-shrink: 0;
-  /* Réactivée sur mobile (OPT précédente : masquée, boutons en overlay sur le
-     hero — abandonné : plus de respiration en haut + panier mal intégré).
-     Version "légère" : moins haute et moins de bordure que le desktop
-     (≥900px ci-dessous reprend une topbar plus dense, min-height 58px). */
 }
 .k-modal-back {
   display: flex; align-items: center; gap: 4px;
-  font-size: 14px; font-weight: 500; color: var(--text);
+  font-size: 14px; font-weight: 500;
+  color: var(--white); /* §6.1 : lisible sur le voile sombre de la topbar absolue */
   background: none; border: none; padding: 6px 10px;
   border-radius: 50px; transition: opacity .15s;
   /* FIX topbar overflow : flex-shrink:1 + min-width:0 permettent au bouton
