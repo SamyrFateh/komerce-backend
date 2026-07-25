@@ -58,7 +58,7 @@ import { buildCarouselSlides, goToSlide } from './b-modal-product.js';
 import { setupImageUX } from './b-modal-image-ux.js';
 import { wireBuyNowButton } from './b-modal-buybox-shared.js';
 import { paintDetailFields } from './b-modal-product-fields.js';
-import { renderTrust } from './b-modal-desktop-product.js';
+import { renderTrust, renderShare } from './b-modal-desktop-product.js';
 import {
   buildProductContentViewModel,
   shouldOfferReadMore,
@@ -658,6 +658,12 @@ export function renderMobileProductDetail(
   // Réassurance transactionnelle — toujours affichée (produit simple ET
   // enrichi), même owner unique que le desktop (voir renderTrust()).
   renderTrust();
+
+  // Partage produit — toujours affiché (produit simple ET enrichi), même
+  // owner unique que le desktop (RÉF-2026-07 doc canonique §3 : Partage =
+  // Oui/Oui). Absent jusqu'ici côté mobile — renderShare() n'était appelée
+  // que depuis renderDesktopProductDetail(), jamais depuis ce renderer.
+  renderShare(detail);
 
   // Clear and rebuild the variants container
   container.innerHTML = '';

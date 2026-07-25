@@ -229,7 +229,7 @@ export function renderTrust() {
  * Partage produit (WhatsApp + copier le lien) — dépend de l'id produit,
  * donc rerendu uniquement quand le produit affiché change.
  */
-function renderShare(detail) {
+export function renderShare(detail) {
   const el = document.getElementById('k-modal-share-row');
   if (!el) return;
   const productId = detail?.product?.id;
