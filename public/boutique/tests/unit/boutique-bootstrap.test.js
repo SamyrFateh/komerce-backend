@@ -247,4 +247,56 @@ describe('syncModalViewportOwner (fix Samsung Internet)', () => {
     expect(modal.style.maxHeight).toBe('');
     expect(modal.style.getPropertyValue('--k-modal-vvh')).toBe('');
   });
+
+  it('resynchronise sur scroll DANS la modale (Samsung Internet : toolbar rétractée sans resize fiable)', () => {
+    // Documenté dans BOUTIQUE_VISUAL_FIXES.md (VIS-6) : Samsung Internet ne
+    // déclenche pas toujours 'resize'/'visualViewport resize' quand sa barre
+    // d'outils se rétracte PENDANT un scroll interne à la modale. Sans ce
+    // resync, --k-modal-vvh reste sous-évaluée après coup, ce qui pousse
+    // #k-modal-suggestions plus bas que l'espace réellement disponible.
+    const rafCallbacks = [];
+    window.requestAnimationFrame = jest.fn((cb) => { rafCallbacks.push(cb); return rafCallbacks.length; });
+
+    const vv = { height: 540, addEventListener: jest.fn() };
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: vv });
+
+    document.body.innerHTML = '<div id="k-modal"><div class="k-modal-scroll"></div></div>';
+
+    jest.isolateModules(() => {
+      require('../../js/boutique.js');
+    });
+
+    const modal = document.getElementById('k-modal');
+    const scrollEl = modal.querySelector('.k-modal-scroll');
+    expect(modal.style.height).toBe('540px');
+
+    // La barre Samsung se rétracte : plus d'espace réel, mais AUCUN resize
+    // n'est émis — seul le scroll interne à la modale a lieu.
+    vv.height = 620;
+    scrollEl.dispatchEvent(new Event('scroll', { bubbles: true }));
+
+    // rAF n'a pas encore tourné : la mesure ne doit pas changer trop tôt
+    // (on laisse le chrome du navigateur se stabiliser avant de lire).
+    expect(modal.style.height).toBe('540px');
+
+    // Exécute le rAF planifié : la resynchronisation doit alors s'appliquer.
+    rafCallbacks.forEach((cb) => cb());
+    expect(modal.style.height).toBe('620px');
+    expect(modal.style.getPropertyValue('--k-modal-vvh')).toBe('620px');
+  });
+
+  it('ignore le scroll hors modale (pas de resync inutile ailleurs sur la page)', () => {
+    window.requestAnimationFrame = jest.fn();
+    const vv = { height: 540, addEventListener: jest.fn() };
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: vv });
+
+    document.body.innerHTML = '<div id="k-modal"></div><div id="outside"></div>';
+
+    jest.isolateModules(() => {
+      require('../../js/boutique.js');
+    });
+
+    document.getElementById('outside').dispatchEvent(new Event('scroll', { bubbles: true }));
+    expect(window.requestAnimationFrame).not.toHaveBeenCalled();
+  });
 });

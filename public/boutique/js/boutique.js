@@ -157,6 +157,35 @@ if (window.visualViewport && typeof window.visualViewport.addEventListener === '
 }
 bus.on('modal:opened', syncModalViewportOwner);
 
+// FIX Samsung Internet (suite) : sur certains appareils, la barre d'outils
+// se rétracte/apparaît PENDANT le scroll à l'intérieur de la modale, sans
+// déclencher ni 'resize' ni 'visualViewport resize' de façon fiable (l'un
+// des deux peut arriver en retard, voire jamais, selon le firmware One UI).
+// La mesure figée à l'ouverture devient alors trop restrictive après coup :
+// --k-modal-vvh sous-évalue l'espace réellement disponible, ce qui pousse
+// #k-modal-suggestions plus bas que nécessaire (aucun "peek" visible même
+// quand la barre s'est rétractée). On resynchronise donc aussi sur scroll,
+// avec un rAF pour ne pas mesurer pendant une frame de transition du chrome
+// navigateur (rAF laisse le layout se stabiliser avant la lecture).
+let _vvhScrollSyncPending = false;
+function scheduleModalViewportResync() {
+  if (window.innerWidth >= 900 || _vvhScrollSyncPending) return;
+  _vvhScrollSyncPending = true;
+  requestAnimationFrame(() => {
+    _vvhScrollSyncPending = false;
+    syncModalViewportOwner();
+  });
+}
+document.addEventListener(
+  'scroll',
+  (event) => {
+    const modal = document.getElementById('k-modal');
+    if (!modal || !modal.contains(event.target)) return;
+    scheduleModalViewportResync();
+  },
+  { capture: true, passive: true }
+);
+
 // ── CONSTANTES KOMERCE ──────────────────────────────────────────────
 const KOMERCE_WA = '33699272526';
 const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
