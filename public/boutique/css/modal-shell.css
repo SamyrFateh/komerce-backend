@@ -24,7 +24,7 @@
   border-radius: 0; overflow: hidden;
   animation: k-slide-up .3s cubic-bezier(.22,1,.36,1);
   display: flex; flex-direction: column;
-  position: relative; /* §6.1 : contexte de positionnement pour la topbar absolue mobile */
+  position: relative; /* contexte de positionnement général (FAB retour-haut, zoom, etc.) */
 }
 @keyframes k-slide-up {
   0%   { transform: translateY(100%); opacity: .6; }
@@ -33,24 +33,38 @@
 }
 
 /* ── TOP BAR ─────────────────────────────────────────────────── */
+/* REF-2026-07e — décision actée : la topbar mobile n'est plus full-bleed.
+   Elle redevient un enfant flex normal de .k-modal (avant .k-modal-scroll),
+   ce qui réserve structurellement l'espace de navigation sans flotter sur
+   le média ni recourir à un padding-top de compensation fragile.
+   --k-modal-mobile-topbar-space porte la respiration visible entre la
+   rangée tactile et le début du média — seule géométrie propriétaire,
+   consommée uniquement ici (aucune valeur magique dupliquée ailleurs). */
 .k-modal-topbar {
+  --k-modal-mobile-topbar-space: 8px;
+
   box-sizing: border-box; max-width: 100%; /* S2.1 */
   display: flex; align-items: center; justify-content: space-between;
-  /* §6.1 full-bleed : topbar absolue par-dessus le hero, pas de bande opaque.
-     ≥900px remet position:relative via la règle desktop ci-dessous.
-     Le scroll container compense via padding-top (modal-mobile-canonical.css). */
-  position: absolute; top: 0; left: 0; right: 0; z-index: 400;
-  padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
-  background: var(--overlay-black-18); /* voile léger pour lisibilité sur images claires */
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  position: relative; z-index: 400;
+  padding: calc(8px + env(safe-area-inset-top)) 12px var(--k-modal-mobile-topbar-space);
+  background: var(--sand); /* fond ivoire naturel du shell — pas de bandeau indépendant */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-bottom: none;
+  box-shadow: none;
   flex-shrink: 0;
+}
+/* État scrollé : seule variante autorisée à recevoir une surface —
+   translucide légère + bordure basse discrète, jamais de fond gris/sombre
+   ni de grosse ombre (cf. règles is-scrolled plus bas pour le contenu). */
+.k-modal.is-scrolled .k-modal-topbar {
+  background: var(--surface-sand-97);
+  border-bottom: 1px solid var(--border-text-08);
 }
 .k-modal-back {
   display: flex; align-items: center; gap: 4px;
   font-size: 14px; font-weight: 500;
-  color: var(--white); /* §6.1 : lisible sur le voile sombre de la topbar absolue */
+  color: var(--text); /* topbar claire au repos désormais — plus de voile sombre à contraster */
   background: none; border: none; padding: 6px 10px;
   border-radius: 50px; transition: opacity .15s;
   /* FIX topbar overflow : flex-shrink:1 + min-width:0 permettent au bouton
@@ -375,19 +389,53 @@
      (b-modal-core.js — VIS-6)
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
-  /* Point 5 : le pager (← N/total →) est désormais activé mobile ET desktop
-     (garde JS window.innerWidth<900 retirée dans b-modal-nav.js). La pill
-     desktop (30px, padding 0 10px, cf. .k-modal-nav-btn base) ferait
-     déborder la topbar sur écrans ≤390px et pousserait la croix ✕ hors
-     cadre — donc version compacte icônes seules ici ; la pill pleine
-     largeur reprend le dessus ≥900px (règle #k-modal #k-modal-nav plus bas,
-     non touchée par ce bloc). */
-  #k-modal-nav { display: flex; align-items: center; gap: 2px; }
-  #k-modal-nav .k-modal-nav-btn {
-    height: 26px; width: 26px; padding: 0; border-radius: 50%;
-    justify-content: center; gap: 0; font-size: 13px;
+  /* REF-2026-07e — pager capsule unique : les trois éléments (précédent /
+     compteur / suivant) rejoignent une seule pastille pill, plus trois
+     boutons ronds indépendants. La pill desktop (cf. .k-modal-nav-btn base,
+     ferait déborder la topbar sur écrans ≤390px, d'où cette version compacte
+     mobile ; le style desktop ≥900px n'est pas touché par ce bloc. */
+  #k-modal-nav {
+    display: flex; align-items: center; gap: 0;
+    background: var(--sand-warm);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: none;
+    padding: 2px;
   }
-  #k-modal-nav .k-modal-nav-counter { font-size: 10px; min-width: 26px; }
+  #k-modal-nav .k-modal-nav-btn {
+    height: 28px; width: 28px; padding: 0; border-radius: 50%;
+    justify-content: center; gap: 0; font-size: 13px;
+    background: transparent; border: none; box-shadow: none;
+  }
+  #k-modal-nav .k-modal-nav-counter { font-size: 10.5px; min-width: 42px; padding: 0 2px; text-align: center; }
+
+  /* Retour / fermeture : même langage visuel, cible tactile 40px,
+     surface claire translucide très légère, bordure fine, sans ombre. */
+  #k-modal .k-modal-back {
+    min-width: 40px; min-height: 40px;
+    padding: 8px;
+    border-radius: 50%;
+    justify-content: center;
+  }
+  #k-modal .k-modal-close {
+    width: 40px; height: 40px;
+    background: var(--surface-white-96);
+    border: 1px solid var(--border);
+    box-shadow: none;
+  }
+
+  /* Panier tressé : conteneur transparent, sans cercle ni halo — seule
+     l'image flotte. Cible tactile conservée via le conteneur (40px),
+     rendu visuel sans disque (background/border/shadow neutralisés). */
+  #k-modal .k-modal-cart-btn {
+    width: 40px; height: 40px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0; /* sans incidence visuelle : plus de fond à arrondir */
+  }
+  #k-modal .k-modal-cart-btn:active { background: transparent; }
+  #k-modal .k-modal-cart-icon { width: 30px; height: 30px; }
 
   #k-modal-overlay {
     position: fixed;

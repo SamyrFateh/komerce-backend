@@ -114,6 +114,10 @@ Barre d'actions sticky
 
 Le mobile n'est pas un desktop rétréci. Le rail de miniatures devient une galerie tactile avec pagination. Le panier latéral disparaît ; son état reste visible dans le header.
 
+> **Topbar mobile (REF-2026-07e)** — Sur mobile, la topbar occupe une zone de respiration distincte du média. Ses contrôles sont légers et ne forment pas de bandeau sombre. Le pager est une capsule unique. Le panier tressé est affiché sans pastille de fond.
+
+La topbar est identique en mobile simple et mobile enrichi : la richesse produit ne change jamais le header. Le média ne se trouve pas sous la topbar au premier affichage — la topbar réserve sa propre place dans le flux (enfant flex du shell, avant le conteneur scrollable), jamais une compensation de padding ou une marge négative. L'état scrollé peut recevoir une surface translucide légère (jamais un fond gris, sombre, ou un overlay).
+
 La barre sticky contient :
 
 - `Ajouter` ;

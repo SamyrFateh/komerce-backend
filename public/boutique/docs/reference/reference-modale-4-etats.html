@@ -101,12 +101,19 @@ pre.tree{margin:0;background:var(--sand-warm);border:1px solid var(--border);bor
 
 /* ── MOBILE MOCK ──────────────────────────────────── */
 .m-frame{width:280px;margin:0 auto;border:1px solid var(--border);border-radius:22px;overflow:hidden;background:var(--sand)}
-.m-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--white);border-bottom:1px solid var(--border);font-size:11px}
-.m-topbar .l{display:flex;align-items:center;gap:8px;color:var(--text)}
-.m-topbar .ctr{color:var(--text-muted)}
-.m-topbar .r{display:flex;align-items:center;gap:10px}
-.m-cart{position:relative}
-.m-cart .b{position:absolute;top:-5px;right:-7px;background:var(--coral);color:#fff;font-size:8px;border-radius:50%;width:13px;height:13px;display:grid;place-items:center}
+/* REF-2026-07e — topbar canonique : zone de respiration distincte du média,
+   fond ivoire naturel (pas de bandeau), pager en capsule unique, panier
+   tressé flottant sans pastille. Identique en simple (état 3) et enrichi
+   (état 4) — la richesse produit ne change jamais ce header. */
+.m-topbar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:9px 10px 8px;background:var(--sand);font-size:11px}
+.m-back,.m-close{width:26px;height:26px;border-radius:50%;background:var(--white);border:1px solid var(--border);display:grid;place-items:center;font-size:12px;color:var(--text);flex:0 0 auto}
+.m-pager{display:flex;align-items:center;gap:2px;background:var(--sand-warm);border:1px solid var(--border);border-radius:999px;padding:3px 5px;color:var(--text-muted);flex:0 0 auto}
+.m-pager .arrow{width:14px;height:14px;display:grid;place-items:center;font-size:9px;color:var(--text-muted)}
+.m-pager .ctr{padding:0 4px;font-size:9.5px;white-space:nowrap}
+.m-r-group{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.m-cart{position:relative;width:26px;height:26px;display:grid;place-items:center;overflow:visible;flex:0 0 auto}
+.m-cart img{width:20px;height:20px;display:block}
+.m-cart .b{position:absolute;top:-3px;right:-4px;background:var(--cta-green);color:#fff;font-size:8px;border-radius:50%;width:13px;height:13px;display:grid;place-items:center;border:1.5px solid var(--sand)}
 .m-media{background:linear-gradient(160deg,#EFE7D8,#E3D9C4);height:190px;display:grid;place-items:center;position:relative}
 .m-media svg{width:48px;height:48px;color:#B9AC8F}
 .m-media .promo{position:absolute;top:10px;left:10px;background:var(--coral);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px}
@@ -311,9 +318,12 @@ pre.tree{margin:0;background:var(--sand-warm);border:1px solid var(--border);bor
     <h2><span class="num">3</span>Mobile — Produit simple</h2>
     <div class="m-frame">
       <div class="m-topbar">
-        <span class="l">&larr;</span>
-        <span class="ctr">101 / 591</span>
-        <span class="r"><span class="m-cart">&#128722;<span class="b">2</span></span><span>&times;</span></span>
+        <span class="m-back" aria-hidden="true">&larr;</span>
+        <span class="m-pager"><span class="arrow">&lsaquo;</span><span class="ctr">101/591</span><span class="arrow">&rsaquo;</span></span>
+        <span class="m-r-group">
+          <span class="m-cart"><img src="/images/panier_tresse.png" alt=""><span class="b">2</span></span>
+          <span class="m-close">&times;</span>
+        </span>
       </div>
       <div class="m-media"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg><span class="fav">&#9825;</span></div>
       <div class="m-info">
@@ -345,9 +355,12 @@ pre.tree{margin:0;background:var(--sand-warm);border:1px solid var(--border);bor
     <h2><span class="num">4</span>Mobile — Produit enrichi <span class="tag-new">NOUVEAU</span></h2>
     <div class="m-frame">
       <div class="m-topbar">
-        <span class="l">&larr;</span>
-        <span class="ctr">101 / 591</span>
-        <span class="r"><span class="m-cart">&#128722;<span class="b">2</span></span><span>&times;</span></span>
+        <span class="m-back" aria-hidden="true">&larr;</span>
+        <span class="m-pager"><span class="arrow">&lsaquo;</span><span class="ctr">101/591</span><span class="arrow">&rsaquo;</span></span>
+        <span class="m-r-group">
+          <span class="m-cart"><img src="/images/panier_tresse.png" alt=""><span class="b">2</span></span>
+          <span class="m-close">&times;</span>
+        </span>
       </div>
       <div class="m-media"><span class="promo">-20%</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18c0-2 2-3 4-3s3 1 5 1 3-2 5-2 4 1 4 3v2H3v-1Z"/><path d="M6 15V9c0-1 1-2 3-2h2"/></svg><span class="fav">&#9825;</span><div class="dots"><i class="on"></i><i></i><i></i></div></div>
       <div class="m-info">
@@ -427,8 +440,22 @@ Décision (REF-2026-07d) : retrait complet, flux vertical ET topbar — pas de
          nouveau point d'entrée recherche dans la modale.</pre>
     <p class="note">Le flux mobile canonique redevient donc exactement §5 du doc de référence, sans écart à documenter : réassurance → partage → suggestions. Code retiré : barre inline, dropdown résultats, recherches récentes, recherche vocale (<code>b-modal-core.js</code>), CSS associé (<code>modal-product.css</code>, <code>modal-shell.css</code>, <code>modal-product-lot4-hybrid.css</code>). Le catalogue reste cherchable via la barre principale hors modale, inchangée.</p>
   </article>
+  <article class="rule">
+    <h2>Décision actée — Topbar mobile (REF-2026-07e)</h2>
+    <pre>Constat : la topbar mobile était en position:absolute par-dessus le média
+         (full-bleed, §6.1 historique), avec un voile overlay-black + blur,
+         et un bouton panier enfermé dans un disque blanc bordé.
+Décision (REF-2026-07e) : la topbar redevient un enfant flex normal du
+         shell, avant le média — espace réservé structurellement, pas de
+         padding de compensation. Fond ivoire au repos (pas de bandeau
+         sombre/gris/flouté), pager fusionné en une capsule unique, panier
+         tressé affiché sans pastille de fond. Surface translucide légère
+         autorisée uniquement à l'état scrollé.</pre>
+    <p class="note">Sur mobile, la topbar occupe une zone de respiration distincte du média. Ses contrôles sont légers et ne forment pas de bandeau sombre. Le pager est une capsule unique. Le panier tressé est affiché sans pastille de fond. Identique en mobile simple et mobile enrichi — la richesse produit ne change jamais le header. Code : <code>css/modal-shell.css</code> (owner unique, bloc mobile <code>@media (max-width: 899px)</code>), oracle <code>tests/unit/modal-topbar-mobile.test.js</code>.</p>
+  </article>
 </section>
 
 <div class="footer">Règle de gouvernance : un nouvel état visuel ne crée jamais un nouveau contrat Product Detail sans justification fonctionnelle explicite. Ce fichier est l'unique référence visuelle v2.1 — toute autre maquette antérieure est superseded.</div>
+
 
 </main></body></html>

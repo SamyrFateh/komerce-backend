@@ -1,7 +1,7 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-25T10:57:58.887Z.
+> Régénéré le 2026-07-25T13:47:39.050Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse

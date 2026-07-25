@@ -56,6 +56,12 @@ RÈGLES VISUELLES
 - Le mobile enrichi est obligatoire.
 - Une seule croix de fermeture.
 - Une section absente disparaît sans vide, séparateur ou message technique.
+- Topbar mobile (REF-2026-07e) : sur mobile, la topbar occupe une zone de respiration
+  distincte du média. Ses contrôles sont légers et ne forment pas de bandeau sombre. Le
+  pager est une capsule unique. Le panier tressé est affiché sans pastille de fond.
+  Identique en mobile simple et enrichi — la richesse produit ne change jamais le header.
+  Le média ne commence pas sous la topbar au premier affichage. L'état scrollé peut
+  recevoir une surface translucide légère, jamais un fond gris/sombre ni un overlay.
 
 SUGGESTIONS
 - « Vous aimerez aussi » existe dans les quatre états quand des recommandations existent.

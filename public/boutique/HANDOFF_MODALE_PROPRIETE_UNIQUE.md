@@ -203,9 +203,14 @@ décision de layout se tranche contre ce fichier, pas à vue.
   jamais des pavés unis. Badge `NEW` sur la variante nouvelle.
 - **Mobile enrichi** : Couleur **et** Taille visibles au-dessus du CTA (choix immédiat). C'est
   l'espace que libère l'optimisation topbar — les deux chantiers se tiennent.
-- **Topbar mobile** : `meta theme-color` = crème (statusbar fondue dans le hero), image
-  full-bleed, header en `position:absolute` par-dessus l'image (plus de bande opaque), barre
-  CTA `position:sticky; bottom:0`. Pas d'overlay redondant (tap image = plein écran natif).
+- **Topbar mobile** — **SUPERSEDED par REF-2026-07e** (cf. `docs/reference/reference-modale-4-etats.html`,
+  section doctrine « Décision actée — Topbar mobile », et `PRODUCT_MODAL_REFERENCE_CANONICAL.md` §5) :
+  l'ancienne décision full-bleed (`position:absolute` par-dessus l'image, voile overlay-black + blur)
+  est remplacée. La topbar est désormais un enfant flex normal du shell, avant le média — espace
+  réservé structurellement, fond ivoire au repos (pas de bandeau sombre), pager en capsule unique,
+  panier tressé sans pastille de fond. Surface translucide légère uniquement à l'état scrollé.
+  Barre CTA `position:sticky`/`fixed; bottom:0` inchangée. Owner : `css/modal-shell.css`
+  (bloc mobile `@media (max-width: 899px)`), oracle `tests/unit/modal-topbar-mobile.test.js`.
 - **Bouton panier ↔ stepper** (micro-interaction) : quantité 0 → bouton « Ajouter au panier » ;
   après ajout → stepper `− N +` qui pilote la quantité ; retour à **0** via le `−` → le stepper
   disparaît, le bouton réapparaît **et l'article est retiré du panier**. Un seul contrôle qui
