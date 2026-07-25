@@ -115,37 +115,6 @@ import './b-cart-stepper-guard.js'; // correctif capture document vs boutons +/-
   window.addEventListener('resize', applyDesktopReset);
 })();
 
-/* ══ SPIKE ROUTE B — scroll document mobile (temporaire, réversible) ══════════
- * Objectif : valider sur appareil réel si sortir la modale du `position:fixed`
- * permet à Samsung Internet de rétracter sa barre d'adresse (~100-150px rendus).
- *
- * Contexte : le site n'a AUCUN scroll de document (catalogue en cage fixe
- * `#k-page-scroll.k-pager-active`, modale en overlay fixed + `.k-modal-scroll`
- * interne). Or les navigateurs mobiles ne rétractent leur barre QUE sur scroll
- * de document. La barre reste donc déployée en permanence.
- *
- * Activation : ajouter ?docscroll=1 à l'URL. Absent = comportement actuel
- * inchangé (risque nul en prod). Permet un A/B sur le même appareil.
- *
- * ⚠ NON VALIDÉ : la rétraction de barre est intestable en Chromium headless
- * (pas de barre d'adresse). Seule la précondition — document réellement
- * scrollable — est vérifiée automatiquement. Le reste exige un test manuel.
- *
- * À SUPPRIMER après arbitrage : ce bloc, la classe CSS `.k-doc-scroll`
- * (modal-shell.css, bloc SPIKE) et le guard dans syncModalViewportOwner().
- * ═══════════════════════════════════════════════════════════════════════════ */
-const DOC_SCROLL_SPIKE = (() => {
-  try {
-    return new URLSearchParams(window.location.search).get('docscroll') === '1';
-  } catch (_) {
-    return false;
-  }
-})();
-
-if (DOC_SCROLL_SPIKE) {
-  document.documentElement.classList.add('k-doc-scroll');
-}
-
 // ── FIX Samsung Internet : le shell mobile suit le viewport réellement visible ──
 // L'overlay fixed peut rester dimensionné sur le layout viewport, qui inclut une zone
 // masquée par les barres du navigateur sur certains Samsung Internet. `height:100%`
@@ -163,17 +132,6 @@ if (DOC_SCROLL_SPIKE) {
 function syncModalViewportOwner() {
   const modal = document.getElementById('k-modal');
   if (!modal) return;
-
-  // SPIKE ROUTE B : en mode scroll-document, la hauteur de la modale est
-  // dictée par son contenu (flux normal), pas par le visual viewport. Forcer
-  // une hauteur en pixels ici annulerait tout le principe et rendrait le
-  // document non scrollable. On nettoie donc les overrides et on sort.
-  if (DOC_SCROLL_SPIKE && window.innerWidth < 900) {
-    modal.style.removeProperty('height');
-    modal.style.removeProperty('max-height');
-    modal.style.removeProperty('--k-modal-vvh');
-    return;
-  }
 
   if (window.innerWidth < 900) {
     const vv = window.visualViewport;
