@@ -2768,43 +2768,44 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* ── Grid : 43 % image · 57 % détails ───────────────────── */
   /* min 380px sur col image : empêche la col droite de réduire
      l'image en dessous d'une largeur viable (fix tronquage sujet). */
-  /* FIX : height fixe sur product-zone ET details pour que la col droite
-     ne puisse pas grandir au-delà du viewport et empiéter sur l'image.
-     min-height seul laissait le grid grandir si le contenu droit est long
-     (ex: thermos avec économie + description + tabs paiement).
-     La col details gère son propre scroll via overflow-y:auto. */
+  /* RÉF-2026-07f — scroll owner unique desktop (remplace le double scroll
+     product-zone/details ci-dessous, superseded) : .k-modal-main (ligne
+     ~538, overflow-y:auto) redevient l'unique conteneur qui scrolle, en
+     conformité avec PRODUCT_MODAL_REFERENCE_CANONICAL.md §9 (« un seul
+     conteneur scrollable par composition »). L'ancien FIX (height fixe sur
+     product-zone + overflow-y:auto propre sur details) empilait deux scroll
+     owners : la col détails scrollait en interne dès que son contenu
+     dépassait la hauteur de l'image, alors même que la col image laissait
+     de l'espace visible en dessous d'elle — deux scrollbars visibles côte à
+     côte pour l'utilisateur, sans gain fonctionnel. La contrainte d'origine
+     (empêcher un contenu droit long d'agrandir/déformer la colonne image)
+     est désormais portée par .k-modal-img-wrap lui-même (aspect-ratio fixe,
+     min/max-height, align-self:center — modal-media.css, D6/T-018) : l'image
+     ne dépend plus de la hauteur de la ligne de grille pour rester bornée,
+     donc le clamp externe ici est devenu redondant et contre-productif.
+     .agent/arbitrations/T-018.md — note de mise à jour ajoutée. */
   /* grid-template-columns : owned par modal-product-lot4-hybrid.css (Approche C). */
   #k-modal .k-modal-product-zone {
-    height: calc(100dvh - 58px);
-    max-height: calc(100dvh - 58px);
-    overflow: hidden;
+    align-items: start;
   }
 
   /* ── Image : géométrie intrinsèque transférée à modal-media.css (D6/T-018) ──
-     Ce bloc reste propriétaire du confinement global (product-zone/details
-     ci-dessus, ci-dessous), mais height:100%/max-height:100% sur l'image
-     ont été retirés d'ici : ils forçaient une hauteur pleine dérivée du
-     confinement du shell (~842px), en conflit avec le critère ratio 4:3 /
-     360-500px. La géométrie intrinsèque du hero (aspect-ratio, bornes de
-     taille, centrage) est désormais définie dans modal-media.css — source
-     de vérité unique pour cette responsabilité (voir arbitrage
-     .agent/arbitrations/T-018.md). overflow/width restent ici : ce sont
-     des propriétés de confinement (empêchent le débordement hors de la
-     colonne). max-width retiré (2026-07) : modal-media.css pose déjà
-     max-width:min(100%, calc(500px*4/3)) — toujours ≤100%, donc cette
-     déclaration était intégralement morte (conflit inutile en cascade,
-     cf. css:guard) sans jamais changer le rendu. */
+     Ce bloc reste propriétaire du confinement horizontal (overflow/width :
+     empêchent le débordement hors de la colonne). La géométrie intrinsèque
+     du hero (aspect-ratio, bornes de taille, centrage) est définie dans
+     modal-media.css — source de vérité unique pour cette responsabilité
+     (voir arbitrage .agent/arbitrations/T-018.md). max-width retiré (2026-07) :
+     modal-media.css pose déjà max-width:min(100%, calc(500px*4/3)) — toujours
+     ≤100%, donc cette déclaration était intégralement morte (conflit inutile
+     en cascade, cf. css:guard) sans jamais changer le rendu. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     overflow: hidden;
     width: 100%;
   }
 
-  /* ── Détails : col droite confinée, scroll interne ── */
-  /* padding : owned par modal-product-lot4-hybrid.css (Approche C). */
+  /* ── Détails : flux naturel, plus de scroll propre (RÉF-2026-07f) ──
+     padding : owned par modal-product-lot4-hybrid.css (Approche C). */
   #k-modal .k-modal-product-zone .k-modal-details {
-    height: 100%;
-    max-height: 100%;
-    overflow-y: auto;
     overflow-x: hidden;
   }
 
