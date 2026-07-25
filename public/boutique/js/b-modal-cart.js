@@ -49,7 +49,7 @@ function paintInCartButton(button, qty) {
 
 function paintAddButton(button) {
   const image = document.createElement('img');
-  image.src = '/images/panier_tresse_vert.png';
+  image.src = '/images/panier_tresse.png';
   image.width = 20;
   image.height = 20;
   image.alt = '';

@@ -245,7 +245,7 @@ function _buildDOM() {
         <span class="kmc__count">0 article</span>
       </div>
       <button class="kmc__cta" aria-label="Voir le panier" type="button">
-        <img class="kmc__cta-img" src="/images/panier_tresse_vert.png" alt="" aria-hidden="true">
+        <img class="kmc__cta-img" src="/images/panier_tresse.png" alt="" aria-hidden="true">
         <span class="kmc__cta-badge" aria-hidden="true"></span>
       </button>
     </div>
