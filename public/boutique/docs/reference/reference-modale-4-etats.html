@@ -424,8 +424,8 @@ pre.tree{margin:0;background:var(--sand-warm);border:1px solid var(--border);bor
     <pre>Matrice §3 (doc canonique) : Partage = Oui / Oui (simple, enrichi)     → confirmé
 Cette référence visuelle (états 3 et 4) : réassurance nowrap 1 ligne
                                             + partage sur la ligne du dessous
-Code prod actuel : partage absent sur mobile (Ct() gardé par d()=desktop) → reste à corriger</pre>
-    <p class="note">Layout tranché : même schéma qu'en desktop — réassurance compactée sur une seule ligne (<code>flex-wrap:nowrap</code>, déjà en prod côté mobile via le fix LOT1 de <code>modal-shell.css</code>), partage en ligne séparée juste en dessous (<code>border-top</code>). Le CSS mobile de <code>.k-modal-share-row</code> le supporte déjà. Seul le JS manque : <code>Ct()</code> (<code>b-modal-desktop-enhancers.js</code>) est gardé par <code>d()</code> (desktop uniquement) — il faut soit la rendre inconditionnelle, soit dupliquer l'injection dans <code>b-modal-mobile-product.js</code>.</p>
+Code prod actuel : partage affiché sur mobile → conforme</pre>
+    <p class="note">Corrigé : <code>renderShare()</code> (<code>b-modal-desktop-product.js</code>) est exportée, importée et appelée par <code>b-modal-mobile-product.js</code>. Layout : réassurance compactée sur une seule ligne (<code>flex-wrap:nowrap</code>, fix LOT1 de <code>modal-shell.css</code>), partage en ligne séparée juste en dessous (<code>border-top</code>) via le CSS mobile de <code>.k-modal-share-row</code>. Verrouillé par <code>tests/unit/modal-mobile-share.test.js</code> (5 tests, vert).</p>
   </article>
   <article class="rule">
     <h2>Décision actée — Recherche interne retirée</h2>
