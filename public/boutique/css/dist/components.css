@@ -3354,6 +3354,13 @@ html.k-mobile-premium-v1 .k-chip-label {
        que le hero (largeur ET hauteur, cf. align-self ci-dessous) */
     margin: auto;
     align-self: center;
+    /* Contour visible (cf. reference-modale-4-etats.html v2.1) : le container
+       image n'avait jamais de border nulle part — flottait sans cadre contre
+       le fond ivoire du shell. background/border-radius NE sont PAS ajoutés
+       ici : déjà owned ailleurs (background: modal-product-lot4-hybrid.css
+       "D6 — Hero desktop en aplat" via --hero-bg ; border-radius:0 volontaire
+       dans modal-shell.css, bloc sticky ≥900px — coins carrés assumés). */
+    border: 1px solid var(--border);
   }
 }
 
@@ -5190,12 +5197,18 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     height: 30px;
     padding: 0 10px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--sand) 78%, var(--white));
-    color: var(--text-muted);
-    border: 1px solid var(--border-text-06);
     box-shadow: none;
     font-size: 12px;
     font-weight: 500;
+  }
+  /* Le bouton WA garde son vert distinctif (modal-shell.css l.719) — la
+     règle groupée ci-dessus ne doit fixer que le gabarit (taille, padding,
+     radius), jamais background/color/border, sinon elle écrase le vert
+     WhatsApp pour les deux boutons de façon identique. */
+  #k-modal .k-modal-share-btn:not(.k-modal-share-btn--wa) {
+    background: color-mix(in srgb, var(--sand) 78%, var(--white));
+    color: var(--text-muted);
+    border: 1px solid var(--border-text-06);
   }
 
   #k-modal .k-modal-share-btn svg { width: 13px; height: 13px; }

@@ -350,12 +350,18 @@
     height: 30px;
     padding: 0 10px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--sand) 78%, var(--white));
-    color: var(--text-muted);
-    border: 1px solid var(--border-text-06);
     box-shadow: none;
     font-size: 12px;
     font-weight: 500;
+  }
+  /* Le bouton WA garde son vert distinctif (modal-shell.css l.719) — la
+     règle groupée ci-dessus ne doit fixer que le gabarit (taille, padding,
+     radius), jamais background/color/border, sinon elle écrase le vert
+     WhatsApp pour les deux boutons de façon identique. */
+  #k-modal .k-modal-share-btn:not(.k-modal-share-btn--wa) {
+    background: color-mix(in srgb, var(--sand) 78%, var(--white));
+    color: var(--text-muted);
+    border: 1px solid var(--border-text-06);
   }
 
   #k-modal .k-modal-share-btn svg { width: 13px; height: 13px; }

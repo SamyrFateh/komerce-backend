@@ -306,6 +306,13 @@
        que le hero (largeur ET hauteur, cf. align-self ci-dessous) */
     margin: auto;
     align-self: center;
+    /* Contour visible (cf. reference-modale-4-etats.html v2.1) : le container
+       image n'avait jamais de border nulle part — flottait sans cadre contre
+       le fond ivoire du shell. background/border-radius NE sont PAS ajoutés
+       ici : déjà owned ailleurs (background: modal-product-lot4-hybrid.css
+       "D6 — Hero desktop en aplat" via --hero-bg ; border-radius:0 volontaire
+       dans modal-shell.css, bloc sticky ≥900px — coins carrés assumés). */
+    border: 1px solid var(--border);
   }
 }
 
