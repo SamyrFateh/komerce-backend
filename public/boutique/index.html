@@ -450,6 +450,12 @@ if('serviceWorker' in navigator){
               <button class="k-modal-fav-btn" id="k-modal-fav-btn" aria-label="Ajouter aux favoris"></button>
             </div>
             <span class="k-modal-sku" id="k-modal-sku"></span>
+            <!-- §6.1 — stock avant prix (ordre canonique PRODUCT_MODAL_REFERENCE_CANONICAL.md §4).
+                 Le renderer JS cible getElementById — insensible à la position DOM. -->
+            <div class="k-modal-meta">
+              <span id="k-modal-cat"></span>
+              <span id="k-modal-stock"></span>
+            </div>
             <div class="k-modal-price-row">
               <span class="k-modal-price" id="k-modal-price"></span>
               <span class="k-modal-old-price" id="k-modal-old-price"></span>
@@ -465,10 +471,6 @@ if('serviceWorker' in navigator){
             <!-- Variant picker (Couleur / Taille / Pointure) — juste après la livraison -->
             <div id="k-modal-variants" class="k-modal-variants"></div>
             <p class="k-modal-desc" id="k-modal-desc"></p>
-            <div class="k-modal-meta">
-              <span id="k-modal-cat"></span>
-              <span id="k-modal-stock"></span>
-            </div>
             <!-- Actions remontées avant la réassurance (référence image 1 : Ajouter/Acheter
                  juste sous les sélecteurs, avant trust + partage). -->
             <div class="k-modal-actions">
