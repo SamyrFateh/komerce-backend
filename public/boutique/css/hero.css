@@ -315,6 +315,31 @@
     object-position: 50% 35%;
   }
 
+  /* ── FIX FLASH HERO 2026-07 (mesuré, Chromium réel) ─────────────────
+     Le ratio 1600/525 ci-dessus s'applique à une image PLEINE LARGEUR
+     tant que .k-hero-media n'est pas passée en grid 50/50 — ce que seule
+     html.k-home-premium-v1 fait. Sans plafond, la hauteur explose :
+
+       viewport   nominal (avec classe)   repli (sans classe)
+        900px          242px                   295px
+       1280px          220px                   420px
+       1440px          224px                   473px   (+111 %)
+       1920px          224px                   505px
+
+     C'est le « hero desktop en gros » visible au rafraîchissement : la
+     classe est posée par un script inline (index.html) et par
+     b-home-premium-v1.js, mais toute fenêtre où elle manque encore —
+     ou tout reload en cascade des scripts SW du <head> — repeint ce
+     repli plein cadre avant que la mise en page réelle n'arrive.
+
+     Plafond scopé au SEUL cas de repli : la branche premium (hauteur
+     pilotée par le contenu, .k-hero { min-height:168px } plus bas) est
+     laissée strictement intacte. object-fit:cover est déjà posé
+     ci-dessus → on recadre, on ne déforme pas. */
+  html:not(.k-home-premium-v1) .k-hero-img {
+    max-height: 240px;
+  }
+
   /* Retire le border-radius et marges mobiles sur desktop */
   .k-hero-media {
     margin: 0;

@@ -2177,7 +2177,12 @@ html.k-mobile-premium-v1 .k-chip-label {
 /* T-027 — badge dédié, masqué (u-hidden) sauf promo_pct > 0 (b-modal-product.js) :
    même logique que .k-modal-promo-badge, conservé coral (exception D-P3 de fait). */
 .k-topbar-price-promo { font-size: 10px; font-weight: 500; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
-.k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); display: none; align-items: center; justify-content: center; z-index: 420; }
+/* .k-modal-back-top : bloc de base retiré (2026-07). Chacune de ses
+   déclarations (position/right/bottom/width/height/border-radius/background/
+   color/border/display/align-items/justify-content/z-index) était redéclarée
+   plus bas dans CE MÊME fichier (§ « Bouton retour en haut dans la modale »,
+   migré depuis interactions.css) — donc 100 % morte, et source de 4 conflits
+   de cascade invariants. Owner unique : le bloc plus bas. */
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }
 
@@ -2474,7 +2479,11 @@ html.k-mobile-premium-v1 .k-chip-label {
      background : owned par modal-product-lot4-hybrid.css (Approche C). */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     grid-column: 1; grid-row: 1 / 3;
-    position: sticky; top: 0; align-self: start;
+    /* align-self : NE PAS redéclarer ici. Owner unique = modal-media.css
+       (§ FIX STICKY 2026-07), qui vient après dans le bundle et gagnait
+       silencieusement la cascade avec `center` — c'est ce qui neutralisait
+       le position:sticky ci-dessous. Voir le commentaire détaillé là-bas. */
+    position: sticky; top: 0;
     border-radius: 0; margin: 0; max-height: none;
   }
   #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: zoom-in; }
@@ -2926,9 +2935,19 @@ html.k-mobile-premium-v1 .k-chip-label {
 /* ── Scroll fluide (ex interactions.css) ─────────────────────── */
 .k-modal-scroll { scroll-behavior: smooth; }
 
-/* ── Bouton retour en haut dans la modale (ex interactions.css) ── */
-.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--text); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:10; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
-.k-modal-back-top.show { opacity:1; pointer-events:auto; transform:translateY(0); }
+/* ── Bouton retour en haut dans la modale (ex interactions.css) ──
+   FIX 2026-07 — deux défauts empilés rendaient ce bouton totalement mort :
+     1. z-index:10 alors que .k-modal-overlay est à 300 et .k-modal à 400.
+        Mesuré : document.elementFromPoint() au centre du bouton renvoyait
+        #k-modal-overlay — le clic atterrissait sur l'overlay (donc fermait
+        la modale) au lieu d'atteindre le bouton. → 420, au-dessus de .k-modal.
+     2. La règle de révélation ciblait `.show`, alors que le seul writer
+        (b-modal-product.js, IntersectionObserver sur .k-modal-img-wrap)
+        pose `.visible`. opacity restait donc à 0 et pointer-events à none
+        en permanence, quel que soit le scroll. → sélecteur aligné sur .visible.
+   Owner unique de .k-modal-back-top (le bloc de base plus haut a été retiré). */
+.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--text); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:420; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
+.k-modal-back-top.visible { opacity:1; pointer-events:auto; transform:translateY(0); }
 
 /* ── Topbar produit — infos compactes (ex interactions.css) ───── */
 .k-modal-topbar-product-name  { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -3350,10 +3369,29 @@ html.k-mobile-premium-v1 .k-chip-label {
     max-width: min(100%, calc(500px * 4 / 3));
     width: 100%;
     height: auto;
-    /* centre le bloc dans sa colonne quand celle-ci est plus grande
-       que le hero (largeur ET hauteur, cf. align-self ci-dessous) */
-    margin: auto;
-    align-self: center;
+    /* ── FIX STICKY 2026-07 (mesuré, Chromium réel) ────────────────────
+       Centrage HORIZONTAL uniquement. Le centrage VERTICAL est retiré :
+       il neutralisait le position:sticky posé par modal-shell.css:584.
+
+       Preuve : zone=1397px, img-wrap=380px → top mesuré 509px = (1397-380)/2.
+       L'item était centré dans sa zone de grille, donc sans marge de collage :
+       il défilait 1:1 avec le scroll (tops [509,409,309,209] à scroll
+       [0,100,200,300]) alors que position:sticky était bien calculé.
+
+       ATTENTION — piège à deux variables : `margin: auto` (axe bloc) ET
+       `align-self: center` centraient CHACUN indépendamment. Neutraliser
+       une seule des deux ne change RIEN de mesurable (vérifié : les deux
+       correctifs partiels donnent exactement [509,409,309,209]). C'est ce
+       qui a fait conclure à tort, lors d'une traque précédente, à un bug
+       Chromium sur position:sticky + item de grille. Il n'y en a pas.
+       Les DEUX doivent tomber ensemble → tops [22,0,0,0] = collé.
+
+       Contrepartie assumée : pour un produit court, le hero est calé en
+       haut de sa colonne au lieu d'être centré. C'est inhérent au sticky
+       (un item centré n'a par définition aucune amplitude de collage). */
+    margin-inline: auto;
+    margin-block: 0;
+    align-self: start;
     /* Contour visible (cf. reference-modale-4-etats.html v2.1) : le container
        image n'avait jamais de border nulle part — flottait sans cadre contre
        le fond ivoire du shell. background/border-radius NE sont PAS ajoutés

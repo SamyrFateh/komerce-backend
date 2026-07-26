@@ -53,7 +53,7 @@ const ROOT      = path.resolve(__dirname, '..');
 const CSS_DIR   = path.join(ROOT, 'css', 'dist');
 const JS_DIR    = path.join(ROOT, 'js');
 const BASELINE  = path.join(__dirname, '.css-specificity-guard-baseline.json');
-const DIST_FILES = ['base.css', 'components.css', 'desktop.css', 'event.css'];
+const DIST_FILES = ['base.css', 'components.css', 'desktop.css'];
 
 const args        = process.argv.slice(2);
 const strict      = args.includes('--strict');

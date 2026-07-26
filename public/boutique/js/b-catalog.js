@@ -727,17 +727,35 @@ function setupCatSwipeNav() {
   // Conservé comme no-op pour ne pas casser les imports.
 }
 
+/**
+ * Restaure state.filtered à la vitrine de la catégorie active (pas tout le
+ * catalogue) et re-rend la grille.
+ *
+ * ── Pourquoi ce helper existe (bug « plus aucune carte après une recherche ») ──
+ * `_searching` (renderGrid, ~L399) est dérivé de dom.searchInput.value, alors
+ * que la liste rendue vit dans state.filtered. Ces deux sources DOIVENT être
+ * remises à zéro ensemble. Le clic sur un résultat du dropdown vidait l'input
+ * sans restaurer state.filtered ni re-rendre : au rendu suivant (fermeture de
+ * modale, clic catégorie, événement bus), `_searching` repassait à false et
+ * _balancedPick() s'appliquait à la liste étroite laissée par la recherche.
+ * Or _balancedPick jette toute section < MIN_PER_SECTION (4) et tout reliquat
+ * impair → grille VIDE, rafraîchissement obligatoire.
+ * Un seul point de restauration, appelé partout où la recherche se termine.
+ */
+function _resetSearchFilter() {
+  state.filtered = (state.activeCat && state.activeCat !== 'all' && isDesktop())
+    ? state.products.filter(p => _normalizeCat(p.category) === state.activeCat)
+    : [...state.products];
+  renderGrid();
+}
+
 function setupSearch() {
   dom.searchInput.addEventListener('input', () => {
     clearTimeout(state.searchTimeout);
     const q = dom.searchInput.value.trim().toLowerCase();
     if (q.length < 2) {
       dom.searchDrop.classList.remove('open');
-      // Fix: restaurer les produits de la catégorie active (pas tout le catalogue)
-      state.filtered = (state.activeCat && state.activeCat !== 'all' && isDesktop())
-        ? state.products.filter(p => _normalizeCat(p.category) === state.activeCat)
-        : [...state.products];
-      renderGrid();
+      _resetSearchFilter();
       return;
     }
     state.searchTimeout = setTimeout(() => {
@@ -781,6 +799,11 @@ function renderSearchDropdown(results) {
       openModal(item.dataset.id);
       dom.searchDrop.classList.remove('open');
       dom.searchInput.value = '';
+      // Vider l'input NE SUFFIT PAS : state.filtered contient encore les seuls
+      // résultats de la recherche. Sans cette restauration, le prochain rendu
+      // voit _searching=false (input vide) et applique _balancedPick() à cette
+      // liste étroite → 0 carte. Cf. _resetSearchFilter().
+      _resetSearchFilter();
     });
   });
 }

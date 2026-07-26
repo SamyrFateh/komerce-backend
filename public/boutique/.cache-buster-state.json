@@ -1,19 +1,18 @@
 {
   "versions": {
-    "base.css": 138,
-    "components.css": 266,
-    "desktop.css": 73,
-    "event.css": 32,
-    "main.js": 353,
-    "modal-product.css": 1
+    "base.css": 144,
+    "components.css": 278,
+    "desktop.css": 77
   },
   "hashes": {
-    "base.css": "26e8d2c6e9e6",
-    "components.css": "9ddb12df6ac2",
+    "base.css": "f009c5b98d1f",
+    "components.css": "747d9236ae8b",
     "desktop.css": "db7ca53133cd"
   },
-  "updatedAt": "2026-07-25T23:11:38.537Z",
+  "updatedAt": "2026-07-26T01:36:59.794Z",
   "changedBundles": [
-    "components.css"
+    "base.css",
+    "components.css",
+    "desktop.css"
   ]
 }

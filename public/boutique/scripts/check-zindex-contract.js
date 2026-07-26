@@ -75,6 +75,31 @@ function loadManifest() {
   return JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
 }
 
+/**
+ * Neutralise le CONTENU des commentaires en préservant longueur et sauts de
+ * ligne — donc index et numéros de ligne restent exacts.
+ *
+ * FIX 2026-07 : findZIndexesForSelector scannait la source brute. Un simple
+ * commentaire citant un sélecteur de couche (« … alors que .k-modal-overlay
+ * est à 300 … ») était pris pour une vraie occurrence : le matcher sautait
+ * ensuite à la première `{` suivante — celle d'une règle sans rapport — et
+ * lui attribuait le z-index de cette règle. Résultat : erreur fantôme, ou
+ * pire, une occurrence inventée qui pollue les bornes d'une couche.
+ * Même angle mort que celui corrigé dans css-guard.js (parser aveugle aux
+ * commentaires) : documenter du CSS dans un commentaire ne doit jamais
+ * modifier ce que les gates mesurent.
+ */
+function stripCssComments(src) {
+  let out = '', i = 0, inC = false;
+  while (i < src.length) {
+    if (!inC && src[i] === '/' && src[i + 1] === '*') { inC = true; out += '  '; i += 2; continue; }
+    if (inC && src[i] === '*' && src[i + 1] === '/') { inC = false; out += '  '; i += 2; continue; }
+    out += inC ? (src[i] === '\n' ? '\n' : ' ') : src[i];
+    i++;
+  }
+  return out;
+}
+
 // ── Trouve tous les z-index réels déclarés pour un sélecteur littéral donné.
 // Recherche par sélecteur EXACT (ex. ".k-modal-overlay" ou "#k-cart-drawer"),
 // y compris dans les blocs CSS minifiés sur une seule ligne (css/dist/*.css).
@@ -87,7 +112,7 @@ function findZIndexesForSelector(cssFiles, selector) {
   const SEL_RE = new RegExp(`(^|[\\s,}])${escaped}(?=[\\s,{.:\\[#]|$)`, 'g');
 
   for (const file of cssFiles) {
-    const src = fs.readFileSync(file, 'utf8');
+    const src = stripCssComments(fs.readFileSync(file, 'utf8'));
     let m;
     while ((m = SEL_RE.exec(src))) {
       // Chercher la 1ère accolade ouvrante après la position du sélecteur.

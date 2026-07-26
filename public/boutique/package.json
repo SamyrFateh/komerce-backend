@@ -75,7 +75,7 @@
     "check:zindex": "node scripts/check-zindex-contract.js --strict",
     "check:keyframes": "node scripts/check-keyframes.js",
     "check:dom-contract": "node scripts/check-dom-contract.js",
-    "check:visual-lock": "npm run check:css-vars && npm run check:zindex && npm run check:keyframes",
+    "check:visual-lock": "npm run check:css-vars && npm run check:zindex && npm run check:keyframes && npm run check:sticky",
     "deploy:css": "node scripts/deploy-css.js",
     "deploy:css:sw": "node scripts/deploy-css.js --sw-bump",
     "quality:gate": "node scripts/code-quality-gate.js --strict",
@@ -86,7 +86,8 @@
     "audit:gate:report": "node scripts/audit-gate.js",
     "audit:gate:accept": "node scripts/audit-gate.js --accept",
     "audit:gate:json": "node scripts/audit-gate.js --json",
-    "audit:modal-layout": "node scripts/audit-modal-layout.js"
+    "audit:modal-layout": "node scripts/audit-modal-layout.js",
+    "check:sticky": "node scripts/check-sticky-integrity.js --strict"
   },
   "keywords": [],
   "author": "",

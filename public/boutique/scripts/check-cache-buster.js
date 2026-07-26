@@ -55,7 +55,7 @@ const INDEX_HTML = path.join(ROOT, 'index.html');
 const STATE_FILE = path.join(ROOT, '.cache-buster-state.json');
 
 /** Les 4 bundles produits par bundle-css.js, dans l'ordre de index.html */
-const BUNDLES = ['base.css', 'components.css', 'desktop.css', 'event.css'];
+const BUNDLES = ['base.css', 'components.css', 'desktop.css'];
 
 /** Taille du hash SHA-1 tronqué stocké dans le state */
 const HASH_LENGTH = 12;

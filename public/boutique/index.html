@@ -91,10 +91,15 @@ if('serviceWorker' in navigator){
 <script>/* Anti-FOUC premium desktop — doit s'exécuter AVANT tout CSS rendu */
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=138">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=266">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=73">
-<link rel="stylesheet" href="/boutique/css/dist/event.css?v=32">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=144">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=278">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=77">
+<!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
+     embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
+     cascade, alors que deploy-css.js ne le régénérait jamais (absent de
+     BUNDLES dans scripts/css-bundles.js). Vérifié : tout changement de token
+     dans tokens.css était silencieusement réimposé à son ancienne valeur par
+     ce fichier. Aucune page /event/* n'existe dans le repo ni dans les routes. -->
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>

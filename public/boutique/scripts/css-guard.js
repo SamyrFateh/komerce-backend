@@ -34,7 +34,7 @@ const ROOT     = path.resolve(__dirname, '..');
 const CSS_DIR  = path.join(ROOT, 'css', 'dist');
 const BASELINE = path.join(__dirname, '.css-guard-baseline.json');
 
-const DIST_FILES = ['base.css', 'components.css', 'desktop.css', 'event.css'];
+const DIST_FILES = ['base.css', 'components.css', 'desktop.css'];
 
 const args   = process.argv.slice(2);
 const strict = args.includes('--strict');
@@ -68,9 +68,79 @@ const WHITELIST = new Set([
 // règle du MÊME sélecteur dans le MÊME @media — un override responsive
 // desktop n'est jamais un conflit avec sa base mobile.)
 
+/**
+ * Découpe un fragment de bloc CSS en déclarations et les pousse dans `props`.
+ *
+ * FIX 2026-07 — deux angles morts du parser d'origine, tous deux prouvés :
+ *   1. `s.indexOf(':')` ne prenait QUE la première déclaration d'une ligne,
+ *      et lui affectait tout le reste comme valeur. Sur
+ *      `position: sticky; top: 0; align-self: start;` il enregistrait
+ *      { position: "sticky; top: 0; align-self: start" } — `top` et
+ *      `align-self` n'existaient tout simplement pas pour le détecteur.
+ *   2. Les règles mono-ligne ressortaient avec props:{} (cf. parseCSS).
+ *
+ * Conséquence concrète : le conflit réel `align-self: start` (modal-shell.css)
+ * vs `align-self: center` (modal-media.css), même sélecteur et même @media —
+ * cause racine du hero sticky cassé en modale desktop — n'a jamais pu être
+ * signalé, alors que ce gate existe précisément pour ça.
+ *
+ * Le découpage ignore les `;` internes aux parenthèses et aux chaînes
+ * (url(data:image/svg+xml;base64,…), content: "a;b") — sinon on fabriquerait
+ * des déclarations fantômes.
+ */
+function addDecls(chunk, props) {
+  if (!chunk) return;
+  const parts = [];
+  let buf = '', depth = 0, quote = null;
+  for (const ch of chunk) {
+    if (quote) { buf += ch; if (ch === quote) quote = null; continue; }
+    if (ch === '"' || ch === "'") { quote = ch; buf += ch; continue; }
+    if (ch === '(') depth++;
+    if (ch === ')') depth--;
+    if (ch === ';' && depth === 0) { parts.push(buf); buf = ''; continue; }
+    buf += ch;
+  }
+  parts.push(buf);
+
+  for (const raw of parts) {
+    const d = raw.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+    if (!d) continue;
+    const ci = d.indexOf(':');
+    if (ci < 0) continue;
+    const k = d.slice(0, ci).trim();
+    const v = d.slice(ci + 1).trim();
+    // Un sélecteur résiduel (`a:hover`) n'est pas une déclaration : une
+    // propriété CSS ne contient que [a-z-] (et jamais d'espace).
+    if (!k || k.startsWith('--') || !/^-?[a-zA-Z][a-zA-Z0-9-]*$/.test(k)) continue;
+    props[k] = v;
+  }
+}
+
+/**
+ * Remplace le CONTENU des commentaires /* … *​/ par des espaces, en préservant
+ * les sauts de ligne (donc la numérotation reste exacte).
+ *
+ * Nécessaire depuis le fix du découpage par `;` : le parser d'origine ne
+ * filtrait que les lignes COMMENÇANT par `/*`, jamais les lignes de suite
+ * d'un commentaire de bloc. Or la prose des commentaires de ce dépôt cite
+ * couramment du CSS ("border-radius:0 volontaire", "… ; align-self:center …"),
+ * ce qui fabriquait des déclarations fantômes et donc de faux conflits.
+ * Un gate bruyant est un gate ignoré — cette passe garde le signal propre.
+ */
+function stripComments(content) {
+  let out = '', i = 0, inC = false;
+  while (i < content.length) {
+    if (!inC && content[i] === '/' && content[i + 1] === '*') { inC = true; out += '  '; i += 2; continue; }
+    if (inC && content[i] === '*' && content[i + 1] === '/') { inC = false; out += '  '; i += 2; continue; }
+    out += inC ? (content[i] === '\n' ? '\n' : ' ') : content[i];
+    i++;
+  }
+  return out;
+}
+
 function parseCSS(content, filename) {
   const rules = [];
-  const lines = content.split('\n');
+  const lines = stripComments(content).split('\n');
   let depth = 0;
   const mediaAt = {};
   let inKF = false, kfBase = -1;
@@ -103,12 +173,15 @@ function parseCSS(content, filename) {
       const cand = s.split('{')[0].trim();
       if (cand && !/^[\d]+%/.test(cand) && cand !== 'from' && cand !== 'to') {
         sel = cand; sline = ln; props = {};
+        // FIX 2026-07 : les déclarations posées SUR la ligne d'ouverture
+        // (`.x { color: red; }`, style compact omniprésent dans
+        // modal-shell.css) étaient intégralement perdues — la branche
+        // `else if` ne pouvait jamais les voir. Une règle mono-ligne
+        // ressortait donc avec props:{}, invisible au détecteur.
+        addDecls(s.slice(s.indexOf('{') + 1).split('}')[0], props);
       }
     } else if (sel && s.includes(':') && !s.startsWith('/*') && !s.startsWith('//')) {
-      const ci = s.indexOf(':');
-      const k = s.slice(0, ci).trim();
-      const v = s.slice(ci + 1).replace(/;$/, '').trim();
-      if (k && !k.startsWith('--')) props[k] = v;
+      addDecls(s, props);
     }
 
     if (c > 0 && sel) {

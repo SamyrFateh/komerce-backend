@@ -1,0 +1,115 @@
+<!DOCTYPE html><html lang=fr class="k-home-premium-v1"><head><meta charset=utf-8>
+<link rel=stylesheet href=/boutique/css/dist/base.css>
+<link rel=stylesheet href=/boutique/css/dist/components.css>
+<link rel=stylesheet href=/boutique/css/dist/desktop.css>
+</head><body class="modal-open">
+<div class="k-modal-overlay" id="k-modal-overlay">
+  <div class="k-modal" id="k-modal">
+    <div class="k-modal-topbar">
+      <button class="k-modal-back" id="k-modal-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        <span id="k-modal-back-label">Catalogue</span>
+      </button>
+      <div class="k-modal-topbar-right">
+        <button class="k-modal-cart-btn" id="k-modal-cart-btn" aria-label="Panier">
+          <img src="/images/panier_tresse.png" class="k-modal-cart-icon" width="20" height="20" alt="" aria-hidden="true">
+          <span class="k-modal-cart-badge" id="k-modal-cart-badge"></span>
+        </button>
+        <button class="k-modal-close" id="k-modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      </div>
+    </div>
+    <!-- k-modal-body : coque desktop — colonne principale (.k-modal-scroll,
+         scroll owner inchangé, mobile ET desktop) + slot panier latéral
+         (.k-modal-cart-slot, reçoit #k-side-cart par reparentage JS desktop
+         uniquement — cf. b-modal-core.js). Transparent sur mobile
+         (display:contents), grille 2 colonnes ≥900px (modal-shell.css). -->
+    <div class="k-modal-body">
+    <div class="k-modal-scroll k-modal-main">
+      <!-- Zone produit : 2 colonnes image | détails 900-1023px,
+           3 pistes rail miniatures | média | détails ≥1024px (desktop) -->
+      <div class="k-modal-product-zone">
+        <div class="k-modal-img-wrap">
+          <div class="k-modal-carousel" id="k-modal-carousel">
+            <div class="k-modal-carousel-track" id="k-modal-carousel-track">
+              <img id="k-modal-img" src="" alt="" class="k-modal-slide">
+            </div>
+          </div>
+          <div class="k-modal-dots" id="k-modal-dots"></div>
+          <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
+        </div>
+        <div class="k-modal-details" id="k-modal-details">
+          <div class="k-modal-info">
+            <div class="k-modal-name-row">
+              <h2 id="k-modal-name"></h2>
+              <button class="k-modal-fav-btn" id="k-modal-fav-btn" aria-label="Ajouter aux favoris"></button>
+            </div>
+            <span class="k-modal-sku" id="k-modal-sku"></span>
+            <!-- §6.1 — stock avant prix (ordre canonique PRODUCT_MODAL_REFERENCE_CANONICAL.md §4).
+                 Le renderer JS cible getElementById — insensible à la position DOM. -->
+            <div class="k-modal-meta">
+              <span id="k-modal-cat"></span>
+              <span id="k-modal-stock"></span>
+            </div>
+            <div class="k-modal-price-row">
+              <span class="k-modal-price" id="k-modal-price"></span>
+              <span class="k-modal-old-price" id="k-modal-old-price"></span>
+            </div>
+            <!-- ── Zones desktop enrichies — peuplées par b-modal-desktop-enhancers.js ── -->
+            <!-- Masquées mobile (display:none par défaut) · révélées ≥900px via modal.css -->
+            <div id="k-modal-aed-price" class="k-modal-aed-price"></div>
+            <div id="k-modal-stock-bar" class="k-modal-stock-bar"></div>
+            <!-- REF-2026-07 : Livraison avant les variants (référence image 1).
+                 ID stable — le renderer JS (getElementById) est insensible à la position DOM.
+                 Mobile : peuplé par b-modal-mobile-product.js, position neutre dans le flux. -->
+            <div id="k-modal-delivery" class="k-modal-delivery"></div>
+            <!-- Variant picker (Couleur / Taille / Pointure) — juste après la livraison -->
+            <div id="k-modal-variants" class="k-modal-variants"></div>
+            <p class="k-modal-desc" id="k-modal-desc"></p>
+            <!-- Actions remontées avant la réassurance (référence image 1 : Ajouter/Acheter
+                 juste sous les sélecteurs, avant trust + partage). -->
+            <div class="k-modal-actions">
+              <div class="k-qty">
+                <button class="k-qty-btn" id="k-qty-minus">−</button>
+                <span class="k-qty-val" id="k-qty-val">1</span>
+                <button class="k-qty-btn" id="k-qty-plus">+</button>
+              </div>
+              <button class="k-add-cart-btn" id="k-add-cart-btn">
+                <img src="/images/panier_tresse.png" width="20" height="20" alt="" aria-hidden="true">
+                Ajouter au panier
+              </button>
+              <button class="k-buy-now-btn" id="k-buy-now-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Acheter maintenant</button>
+            </div>
+            <!-- Réassurance + partage — après les actions (référence image 1) -->
+            <div id="k-modal-trust" class="k-modal-trust"></div>
+            <div id="k-modal-share-row" class="k-modal-share-row"></div>
+            <div id="k-modal-payment" class="k-modal-payment"></div>
+          </div><!-- end .k-modal-info -->
+        </div><!-- end .k-modal-details -->
+      </div><!-- end .k-modal-product-zone -->
+      <!-- Contenu enrichi (Lot Content) — sous la zone transactionnelle, peuplé
+           par b-modal-desktop-product.js / renderEnrichedContent(). Masqué mobile
+           (display:none par défaut) · révélé ≥900px via modal-enriched-content.css.
+           Vide/hidden pour un produit sans matière enrichie (aucun bloc fantôme). -->
+      <div id="k-modal-enriched-content" class="k-modal-enriched-content" hidden></div>
+      <!-- Suggestions : pleine largeur desktop, dans le scroll mobile -->
+      <div class="k-modal-suggestions" id="k-modal-suggestions">
+        <h3>Vous aimerez aussi</h3>
+        <div class="k-sug-rail" id="k-sug-rail"></div>
+      </div>
+    </div>
+    <!-- Slot panier latéral desktop — vide au chargement, #k-side-cart y est
+         reparenté par mountSideCartInModal() (b-modal-core.js) à l'ouverture
+         desktop de la modale, et restauré à sa position d'origine (hors
+         overlay) à la fermeture / au passage mobile. Reste vide (masqué par
+         display:contents côté mobile, cf. modal-shell.css §COQUE CANONIQUE) -->
+    <div id="k-modal-cart-slot" class="k-modal-cart-slot"></div>
+  </div>
+  </div>
+</div><!-- /#k-modal-overlay — FIX T-030 desktop modal nesting -->
+
+
+<script>
+document.getElementById('k-modal-overlay').classList.add('open');
+document.getElementById('k-modal-name').textContent='Produit de test';
+document.getElementById('k-modal-price').textContent='24 500 KMF';
+</script></body></html>
