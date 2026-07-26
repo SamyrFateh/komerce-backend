@@ -148,7 +148,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 9
 - docs: 4
 - routes: 5
-- boutique: 39
+- boutique: 38
 - dash: 4
 - tests: 37
 - tables owned (lifecycle): 8 — `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `product_content_profile`, `product_content_sections`, `product_attributes`, `supplier_catalog_imports`
@@ -1279,9 +1279,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ## Drifts
 
-### ERROR (1)
+### ERROR (0)
 
-- **[FILE-DECLARED-INEXISTANT]** catalog / public/boutique/js/b-modal-approche-c-hybrid.js — catalog.files.boutique déclare "js/b-modal-approche-c-hybrid.js" -> "public/boutique/js/b-modal-approche-c-hybrid.js", introuvable sur disque
+- none
 
 ### WARN / DEBT (133)
 

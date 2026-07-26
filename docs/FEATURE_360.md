@@ -8,12 +8,12 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **5**
 - Attention : **23**
 - Blocked : **0**
-- Business dependencies : **92**
+- Business dependencies : **93**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **69**
 - Ontology gaps : **0**
-- Debt items (total) : **125**
+- Debt items (total) : **124**
 
 ## Features
 
@@ -22,7 +22,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | admin-dashboard | projection | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | sourcing | _aucune_ | 0 |
 | auth | technical-transversal | 🟡 ATTENTION | 🟡 ATTENTION | _aucune_ | _aucune_ | catalog, customs, dashboard, documents, economic-engine, infrastructure, inventory, logistics, orders, purchasing, shared-cart, sourcing, unsold-resolution | 4 |
 | auth-identity | technical-transversal | 🟢 HEALTHY | 🟡 ATTENTION | otp_codes | notifications | payments, shared-cart, wallet | 1 |
-| catalog | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, product_attributes, product_content_profile, product_content_sections, supplier_catalog_imports | auth, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, sourcing | 9 |
+| catalog | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, product_attributes, product_content_profile, product_content_sections, supplier_catalog_imports | auth, economic-engine, logistics, shared-cart | economic-engine, infrastructure, logistics, orders, recommendations, sourcing | 9 |
 | customs | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | customs_categories, customs_shipment_parcels, customs_shipments | auth, documents, economic-engine | dashboard, infrastructure, orders, shared-cart | 3 |
 | dashboard | business-transversal | 🟡 ATTENTION | 🟡 ATTENTION | order_incidents, partners | auth, customs, decision-signals, documents, economic-engine, logistics, orders, purchasing | economic-engine, infrastructure | 13 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | logistics | dashboard, notifications | 0 |
@@ -40,7 +40,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | 🟢 HEALTHY | 🟡 ATTENTION | fabrics, garment_models, parcel_items, parcels, scans, store_credits | economic-engine, logistics, orders | _aucune_ | 2 |
 | purchasing | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | product_suppliers, purchase_orders, suppliers | auth, logistics, notifications, orders | dashboard, logistics, payments | 3 |
-| recommendations | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | _aucune_ | infrastructure | 3 |
+| recommendations | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog | infrastructure | 2 |
 | refunds | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | refunds | documents, wallet | logistics, orders, payments, shared-cart | 2 |
 | shared-cart | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | basket_items, baskets, cart_contributions, cart_shares, collective_payment_sessions, collective_payment_tokens, collective_stock_reservations, collective_workspace_contributions, collective_workspace_events, collective_workspace_items, collective_workspaces, order_items, recipients, shared_cart_contributions, shared_cart_estimations, shared_cart_events, shared_cart_items, shared_carts, stripe_events_processed | auth, auth-identity, customs, documents, logistics, loyalty, notifications, orders, payments, refunds | catalog, infrastructure | 5 |
 | sourcing | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | _aucune_ | auth, catalog, economic-engine | admin-dashboard | 7 |
@@ -221,7 +221,6 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - mobile et desktop chargent le meme contrat detail et consomment le meme etat de selection SKU
 - un seul owner derive disponibilite et media courants ; les renderers responsive ne font que composer
 - b-modal-desktop-enhancers ne calcule ni prix ni stock ni livraison ni sous-total
-- b-modal-approche-c-hybrid ne rend ni livraison produit ni sous-total produit
 - le prompt d enrichissement est du code : versionne dans le depot, chaque run trace, un echec IA ne bloque jamais un import
 - la modal produit affiche le catalogue vivant et ne doit pas servir de fiche snapshot panier partage
 - le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css
@@ -233,7 +232,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 0 internal API(s), 31 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
-**Consumed by** : economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
+**Consumed by** : economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
 
 **Projections** : admin-dashboard
 
@@ -253,8 +252,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidate_events — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 128 fichier(s) déclaré(s), boutique: 24 fichier(s)
-  - boutique : 39
+**Implementation** : 127 fichier(s) déclaré(s), boutique: 30 fichier(s)
+  - boutique : 38
   - dash : 4
   - docs : 4
   - migrations : 9
@@ -372,8 +371,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "recommendations" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 142 fichier(s) déclaré(s)
-  - dash : 80
+**Implementation** : 145 fichier(s) déclaré(s)
+  - dash : 83
   - migrations : 1
   - routes : 17
   - services : 11
@@ -657,10 +656,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `UNRESOLVED_INTERNAL_API` (medium) — utils/rules.js — moteur de règles métier centralisé (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — validators/index.js — barrel des schémas Joi (null) — statut: undeclared-in-graph
 
-**Implementation** : 382 fichier(s) déclaré(s)
+**Implementation** : 385 fichier(s) déclaré(s)
   - assets : 37
   - bootstrap : 8
-  - ci : 23
+  - ci : 26
   - config : 11
   - db : 16
   - docs : 167
@@ -1216,19 +1215,18 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Exposes** : 0 internal API(s), 1 HTTP interface(s)
 
-**Consumes** : _aucune_
+**Consumes** : catalog (DECLARED_AND_OBSERVED)
 **Consumed by** : infrastructure (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
 **Technical context** : 1 primitive dependencies, 0 test-only, 0 composition-root
 
-**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 3
+**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 2
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
 
-**Architectural debt** (3) :
+**Architectural debt** (2) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
-- `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "catalog" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "logistics" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
 **Implementation** : 4 fichier(s) déclaré(s), boutique: 2 fichier(s)

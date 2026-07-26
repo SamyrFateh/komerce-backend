@@ -1293,13 +1293,6 @@
       {
         "feature": "catalog",
         "category": "boutique",
-        "declared": "js/b-modal-approche-c-hybrid.js",
-        "resolvedPath": "public/boutique/js/b-modal-approche-c-hybrid.js",
-        "status": "missing-on-disk"
-      },
-      {
-        "feature": "catalog",
-        "category": "boutique",
         "declared": "js/b-pdp-curation-suggestions.js",
         "resolvedPath": "public/boutique/js/b-pdp-curation-suggestions.js",
         "status": "resolved-in-technical-graph"
@@ -25167,13 +25160,7 @@
     "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation=\"external-path-scope\" ci-dessus pour le scope concerné."
   },
   "drifts": {
-    "error": [
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "catalog / public/boutique/js/b-modal-approche-c-hybrid.js",
-        "msg": "catalog.files.boutique déclare \"js/b-modal-approche-c-hybrid.js\" -> \"public/boutique/js/b-modal-approche-c-hybrid.js\", introuvable sur disque"
-      }
-    ],
+    "error": [],
     "warn": [
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",

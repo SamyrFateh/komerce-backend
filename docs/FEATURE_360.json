@@ -44,12 +44,12 @@
     "healthy": 5,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 92,
+    "businessDependencies": 93,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 69,
     "ontologyGaps": 0,
-    "debtItemsTotal": 125
+    "debtItemsTotal": 124
   },
   "features": [
     {
@@ -1109,7 +1109,6 @@
         "mobile et desktop chargent le meme contrat detail et consomment le meme etat de selection SKU",
         "un seul owner derive disponibilite et media courants ; les renderers responsive ne font que composer",
         "b-modal-desktop-enhancers ne calcule ni prix ni stock ni livraison ni sous-total",
-        "b-modal-approche-c-hybrid ne rend ni livraison produit ni sous-total produit",
         "le prompt d enrichissement est du code : versionne dans le depot, chaque run trace, un echec IA ne bloque jamais un import",
         "la modal produit affiche le catalogue vivant et ne doit pas servir de fiche snapshot panier partage",
         "le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css",
@@ -1118,7 +1117,7 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 39,
+            "count": 38,
             "files": [
               {
                 "declared": "css/categories.css",
@@ -1178,11 +1177,6 @@
               {
                 "declared": "js/b-catalog.js",
                 "resolvedPath": "public/boutique/js/b-catalog.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "js/b-modal-approche-c-hybrid.js",
-                "resolvedPath": "public/boutique/js/b-modal-approche-c-hybrid.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -1803,15 +1797,22 @@
             ]
           }
         },
-        "totalFiles": 128,
+        "totalFiles": 127,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 24,
+          "count": 30,
           "files": [
             {
               "declared": "../css/dist/components.css",
               "resolvedPath": "public/boutique/css/dist/components.css",
               "category": "dist",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-cart-sku-guard.css",
+              "resolvedPath": "public/boutique/css/modal-cart-sku-guard.css",
+              "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
             },
@@ -1825,6 +1826,13 @@
             {
               "declared": "../css/modal-mobile-canonical.css",
               "resolvedPath": "public/boutique/css/modal-mobile-canonical.css",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-mobile-suggestion-actions.css",
+              "resolvedPath": "public/boutique/css/modal-mobile-suggestion-actions.css",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1846,13 +1854,6 @@
             {
               "declared": "../css/modal-shell.css",
               "resolvedPath": "public/boutique/css/modal-shell.css",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../js/b-modal-approche-c-hybrid.js",
-              "resolvedPath": "public/boutique/js/b-modal-approche-c-hybrid.js",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -1893,6 +1894,27 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../js/b-modal-product-fields.js",
+              "resolvedPath": "public/boutique/js/b-modal-product-fields.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/view-models/delivery-mode-model.js",
+              "resolvedPath": "public/boutique/js/view-models/delivery-mode-model.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../js/view-models/modal-cart-product-model.js",
+              "resolvedPath": "public/boutique/js/view-models/modal-cart-product-model.js",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../js/view-models/modal-selection-model.js",
               "resolvedPath": "public/boutique/js/view-models/modal-selection-model.js",
               "category": "boutique",
@@ -1903,13 +1925,6 @@
               "declared": "../js/view-models/product-content-model.js",
               "resolvedPath": "public/boutique/js/view-models/product-content-model.js",
               "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-approche-c-hybrid.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-approche-c-hybrid.test.js",
-              "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
             },
@@ -1949,8 +1964,29 @@
               "status": "resolved-on-disk"
             },
             {
+              "declared": "../tests/unit/modal-cart-product-model.test.js",
+              "resolvedPath": "public/boutique/tests/unit/modal-cart-product-model.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/modal-mobile-canonical.test.js",
+              "resolvedPath": "public/boutique/tests/unit/modal-mobile-canonical.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
               "declared": "../tests/unit/modal-mobile-desktop-parity.test.js",
               "resolvedPath": "public/boutique/tests/unit/modal-mobile-desktop-parity.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/modal-mobile-suggestion-actions.test.js",
+              "resolvedPath": "public/boutique/tests/unit/modal-mobile-suggestion-actions.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -2355,6 +2391,13 @@
         },
         {
           "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -2920,7 +2963,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 80,
+            "count": 83,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -3288,8 +3331,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "hub/js/hub.js",
+                "resolvedPath": "public/hub/js/hub.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "js/auth-guard.js",
                 "resolvedPath": "public/js/auth-guard.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "js/login.js",
+                "resolvedPath": "public/js/login.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3315,6 +3368,11 @@
               {
                 "declared": "relais/index.html",
                 "resolvedPath": "public/relais/index.html",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "relais/js/relais.js",
+                "resolvedPath": "public/relais/js/relais.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3655,7 +3713,7 @@
             ]
           }
         },
-        "totalFiles": 142,
+        "totalFiles": 145,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6701,7 +6759,7 @@
             ]
           },
           "ci": {
-            "count": 23,
+            "count": 26,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -6774,6 +6832,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": ".github/workflows/e2e-boutique.yml",
+                "resolvedPath": ".github/workflows/e2e-boutique.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/e2e.yml",
+                "resolvedPath": ".github/workflows/e2e.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": ".github/workflows/enrich-komerce-arch-db-fields-once.yml",
                 "resolvedPath": ".github/workflows/enrich-komerce-arch-db-fields-once.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6801,6 +6869,11 @@
               {
                 "declared": ".github/workflows/impact-check.yml",
                 "resolvedPath": ".github/workflows/impact-check.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/pr-governance.yml",
+                "resolvedPath": ".github/workflows/pr-governance.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8436,7 +8509,7 @@
             ]
           }
         },
-        "totalFiles": 382,
+        "totalFiles": 385,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -13892,7 +13965,15 @@
           "count": 1
         }
       },
-      "businessDependencies": [],
+      "businessDependencies": [
+        {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "consumedBy": [
         {
           "consumer": "infrastructure",
@@ -13921,10 +14002,9 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 3,
+        "declaredNotObserved": 2,
         "declaredNotObservedEvidence": [
           "auth",
-          "catalog",
           "logistics"
         ]
       },
@@ -13939,17 +14019,12 @@
         "ambiguousOwnershipCount": 0
       },
       "architecturalDebt": {
-        "debtCount": 3,
+        "debtCount": 2,
         "debtItems": [
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
             "evidence": "contract.consumes déclare \"auth\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"catalog\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
           },
           {
             "type": "DECLARED_NOT_OBSERVED",
