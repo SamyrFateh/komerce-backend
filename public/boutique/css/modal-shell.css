@@ -864,12 +864,10 @@
 
 
 
-/* ── Suggestions desktop ≥1200px : grille plus dense ─────── */
-@media (min-width: 1200px) {
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-}
+/* Suggestions desktop ≥1200px : grille retirée de modal-shell.css (2026-07)
+   Owner unique : modal-product-lot4-hybrid.css (grid-template-columns: repeat(5, 1fr)).
+   La règle ici créait un conflit de cascade après normalisation des breakpoints.
+   Conserver l'état CSS Guard (no new conflict). */
 
 
 
@@ -985,7 +983,8 @@
 }
 
 /* ── Override 900–1120px (§4) ───────────────────────────────── */
-@media (min-width: 900px) and (max-width: 1120px) {
+/* max:1120px normalisé → max:1199px (complément de min:1200px — doctrine 2026-07) */
+@media (min-width: 900px) and (max-width: 1199px) {
   #k-modal.k-modal                          { width: 100vw; }
   body.modal-has-cart #k-modal.k-modal      { width: 100vw; margin-right: 0; }
   /* grid-template-columns retiré (T-020, arbitrage D8) : contredisait
@@ -1002,7 +1001,8 @@
    par modal-product-lot4-hybrid.css — ne pas les redéclarer ici.
    .k-modal-thumbs reste absolute dans .k-modal-img-wrap (visuel : T-021),
    d'où le wrapper média qui couvre les 2 premières pistes. ───────────── */
-@media (min-width: 1024px) {
+/* min:1024px normalisé → min:1200px (doctrine breakpoints 2026-07) */
+@media (min-width: 1200px) {
   /* REF-2026-07 : placement grille 3 pistes + reset sticky du 900px.
      align-self / height / max-height / aspect-ratio / margin sont owned par
      modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —

@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-26T19:30:56.603Z",
+  "generatedAt": "2026-07-26T20:23:03.617Z",
   "summary": {
-    "modules": 73,
-    "withHeader": 73,
+    "modules": 74,
+    "withHeader": 74,
     "events": 20,
     "declaredActive": 12,
     "declaredDead": 9,
@@ -1867,6 +1867,22 @@
         "b-store",
         "group-helpers"
       ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/hero-bootstrap.js",
+      "id": "hero-bootstrap",
+      "hasHeader": true,
+      "role": "boutique-hero-bootstrap",
+      "domain": "boutique",
+      "layer": "ui-bootstrap",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
       "bodyClasses": []
     },
     {

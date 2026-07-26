@@ -2757,12 +2757,10 @@ html.k-mobile-premium-v1 .k-chip-label {
 
 
 
-/* ── Suggestions desktop ≥1200px : grille plus dense ─────── */
-@media (min-width: 1200px) {
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-}
+/* Suggestions desktop ≥1200px : grille retirée de modal-shell.css (2026-07)
+   Owner unique : modal-product-lot4-hybrid.css (grid-template-columns: repeat(5, 1fr)).
+   La règle ici créait un conflit de cascade après normalisation des breakpoints.
+   Conserver l'état CSS Guard (no new conflict). */
 
 
 
@@ -2878,7 +2876,8 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 /* ── Override 900–1120px (§4) ───────────────────────────────── */
-@media (min-width: 900px) and (max-width: 1120px) {
+/* max:1120px normalisé → max:1199px (complément de min:1200px — doctrine 2026-07) */
+@media (min-width: 900px) and (max-width: 1199px) {
   #k-modal.k-modal                          { width: 100vw; }
   body.modal-has-cart #k-modal.k-modal      { width: 100vw; margin-right: 0; }
   /* grid-template-columns retiré (T-020, arbitrage D8) : contredisait
@@ -2895,7 +2894,8 @@ html.k-mobile-premium-v1 .k-chip-label {
    par modal-product-lot4-hybrid.css — ne pas les redéclarer ici.
    .k-modal-thumbs reste absolute dans .k-modal-img-wrap (visuel : T-021),
    d'où le wrapper média qui couvre les 2 premières pistes. ───────────── */
-@media (min-width: 1024px) {
+/* min:1024px normalisé → min:1200px (doctrine breakpoints 2026-07) */
+@media (min-width: 1200px) {
   /* REF-2026-07 : placement grille 3 pistes + reset sticky du 900px.
      align-self / height / max-height / aspect-ratio / margin sont owned par
      modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —
@@ -4941,30 +4941,15 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     background: var(--page-bg);
   }
 
-  /* ── Composition 3 pistes ≥1024px (T-020, arbitrage D8) ──────────────
+  /* ── Composition 3 pistes ≥1200px (T-020, arbitrage D8) ──────────────
      rail miniatures | média principal | détails.
      grid-template-columns/gap/padding de .k-modal-product-zone : seul
-     propriétaire ce fichier. Le placement des enfants (grid-column/
-     grid-row) est owned exclusivement par modal-shell.css — ne pas le
-     redéclarer ici (cf. .agent/arbitrations/T-020.md). ─────────────── */
-  @media (min-width: 1024px) {
-    #k-modal .k-modal-product-zone {
-      /* P1-fix : 310px → 380px — colonne droite trop étroite tronquait les chips taille et les CTA.
-         REFONTE COQUE — 380px fixe → minmax(280px, 380px) : depuis le reparentage du panier dans
-         .k-modal-cart-slot, .k-modal-main dispose de moins de largeur que le viewport (cf.
-         PROMPT_REFONTE_MODALE_DESKTOP_KOMERCE). Une piste fixe provoquait un overflow silencieux
-         (clipping badges/CTA, cf. capture) car le breakpoint reste basé sur le viewport, pas sur
-         la largeur réellement disponible. minmax() permet à cette piste de servir d'absorbeur
-         d'espace (280→380) plutôt qu'à .k-modal-product-zone de déborder de son conteneur. */
-      /* REF-2026-07 : image bornée (max 380px), détails en 1fr — évite que
-         l'image monopolise l'espace sur grands écrans (cf. référence image 1). */
-      grid-template-columns: 60px minmax(240px, 380px) minmax(300px, 1fr);
-      gap: 18px;
-      padding: 18px;
-    }
-  }
-
-  @media (min-width: 1440px) {
+     propriétaire ce fichier.
+     Normalisé 1024px → 1200px et 1440px → 1200px (doctrine 2026-07) :
+     les deux breakpoints fusionnés en un seul, valeurs ex-1440 retenues
+     (pistes plus généreuses, adaptées dès 1200px avec .k-modal-cart-slot).
+     ─────────────────────────────────────────────────────────────────── */
+@media (min-width: 1200px) {
     #k-modal .k-modal-product-zone {
       /* P1-fix : 340px → 420px.
          REFONTE COQUE — même raison qu'au breakpoint 1024px ci-dessus : piste fixe →
@@ -5322,20 +5307,12 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     gap: 18px;
   }
 
-  /* D10 — grille stable 4 colonnes dès 1024px (remplace la densité
-     auto-fill 1200px précédente, cf. modal-shell.css). */
-  @media (min-width: 1024px) {
-    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
-    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
-    #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  /* D10 — 5 colonnes sur large si la largeur le permet.
-     Seuil 1440px réutilisé (déjà baseliné T-020) — pas de nouveau
-     breakpoint hors garde-fou (900/1200) ni de régression ratchet. */
-  @media (min-width: 1440px) {
+  /* D10 — grille suggestions : 5 colonnes dès 1200px.
+     Normalisé : 1024px (4 col) et 1440px (5 col) fusionnés à 1200px
+     (doctrine 2026-07). La valeur 5 colonnes retenue — plus généreuse,
+     fonctionnelle dès 1200px avec le panier latéral. */
+  /* min:1024px + min:1440px → min:1200px (doctrine 2026-07) */
+@media (min-width: 1200px) {
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
     #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
@@ -5394,7 +5371,8 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
    visible sous l'image pour un produit à contenu très court ou très long.
    modal-media.css (source-order antérieure) reprend la main : aspect-ratio
    4/3, min 360px, max 500px, align-self:center — aucun override ici. */
-@media (min-width: 1024px) {
+/* min:1024px → min:1200px (doctrine 2026-07) */
+@media (min-width: 1200px) {
   /* REF-2026-07b : slide aligné en haut.
      object-position:center (base) centre le produit dans l'img-wrap pleine
      hauteur → grand vide au-dessus. Spécificité (1,2,0) > base (0,1,0). */
@@ -9812,7 +9790,8 @@ body.cart-open  #k-section-index { display:none; }
   align-items: stretch;
 }
 .k-group-actions-row .k-group-btn { width: 100%; }
-@media (max-width: 380px) {
+/* max:380px → max:899px : écrans très petits n'existent qu'en mobile (doctrine 900px/1200px) */
+@media (max-width: 899px) {
   .k-group-actions-row {
     grid-template-columns: 1fr;
   }
@@ -10826,7 +10805,8 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 /* ── Condensation mobile ───────────────────────────────────────── */
-@media (max-width: 380px) {
+/* max:380px → max:899px (doctrine 900px/1200px) */
+@media (max-width: 899px) {
   .k-group-financial-stats {
     grid-template-columns: 1fr 1fr;   /* 2×2 — lisible sur petits écrans */
   }

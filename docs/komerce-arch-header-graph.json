@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 379,
+    "scannedCodeFiles": 380,
     "filesWithFullHeaders": 352,
-    "filesWithLiteHeaders": 27,
-    "filesWithAnyHeaders": 379,
+    "filesWithLiteHeaders": 28,
+    "filesWithAnyHeaders": 380,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 778,
-    "edges": 4369,
+    "graphNodes": 779,
+    "edges": 4374,
     "dbTables": 116,
     "doctrines": 154,
     "impactAreas": 129,
@@ -34,7 +34,7 @@
     "notification": 16,
     "auth": 8,
     "logistics": 35,
-    "boutique": 35,
+    "boutique": 36,
     "catalog": 55,
     "checkout": 2,
     "shared-cart": 42,
@@ -65,7 +65,7 @@
     "cron": 1,
     "manual-test": 1,
     "middleware": 11,
-    "ui-bootstrap": 1,
+    "ui-bootstrap": 2,
     "ui-component": 36,
     "ui-enhancer": 3,
     "ui-renderer": 9,
@@ -96,7 +96,7 @@
     "critical": 76,
     "medium": 104,
     "high": 165,
-    "low": 34
+    "low": 35
   },
   "nodes": [
     {
@@ -3439,6 +3439,34 @@
         "shared-cart"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/hero-bootstrap.js",
+      "file": "public/boutique/js/hero-bootstrap.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "boutique-hero-bootstrap",
+      "domain": "boutique",
+      "layer": "ui-bootstrap",
+      "criticality": "low",
+      "owner": "public/boutique/js/b-home-premium-v1.js",
+      "purpose": "Hero sticky mobile (scroll.style.top), sticky bar desktop (IntersectionObserver),",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "boutique",
+        "hero",
+        "mobile",
+        "desktop"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/komerce-api.js",
@@ -24771,6 +24799,36 @@
       "to": "impact:shared-cart",
       "type": "impact",
       "label": "shared-cart"
+    },
+    {
+      "from": "public/boutique/js/hero-bootstrap.js",
+      "to": "public/boutique/js/b-home-premium-v1.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/b-home-premium-v1.js"
+    },
+    {
+      "from": "public/boutique/js/hero-bootstrap.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/hero-bootstrap.js",
+      "to": "impact:hero",
+      "type": "impact",
+      "label": "hero"
+    },
+    {
+      "from": "public/boutique/js/hero-bootstrap.js",
+      "to": "impact:mobile",
+      "type": "impact",
+      "label": "mobile"
+    },
+    {
+      "from": "public/boutique/js/hero-bootstrap.js",
+      "to": "impact:desktop",
+      "type": "impact",
+      "label": "desktop"
     },
     {
       "from": "public/boutique/js/komerce-api.js",
@@ -47980,7 +48038,8 @@
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
-        "public/boutique/js/anti-fouc.js"
+        "public/boutique/js/anti-fouc.js",
+        "public/boutique/js/hero-bootstrap.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -47993,7 +48052,8 @@
         "impact:boutique",
         "public/boutique/js/anti-fouc.js",
         "public/boutique/js/b-bus.js",
-        "public/boutique/js/b-catalog.js"
+        "public/boutique/js/b-catalog.js",
+        "public/boutique/js/hero-bootstrap.js"
       ]
     },
     "public/boutique/js/b-identity.js": {
@@ -49642,6 +49702,34 @@
         "impact:shared-cart",
         "public/boutique/js/b-group-view.js",
         "public/boutique/js/group/group-render-creator.js"
+      ]
+    },
+    "public/boutique/js/hero-bootstrap.js": {
+      "role": "boutique-hero-bootstrap",
+      "domain": "boutique",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/b-home-premium-v1.js",
+      "purpose": "Hero sticky mobile (scroll.style.top), sticky bar desktop (IntersectionObserver),",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "boutique",
+        "hero",
+        "mobile",
+        "desktop"
+      ],
+      "mustCheck": [
+        "impact:boutique",
+        "impact:desktop",
+        "impact:hero",
+        "impact:mobile",
+        "public/boutique/js/b-home-premium-v1.js"
       ]
     },
     "public/boutique/js/komerce-api.js": {

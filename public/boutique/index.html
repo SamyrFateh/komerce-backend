@@ -3,36 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <script>
-/* Nuclear SW reset v334 — runs ONCE to clear all old caches */
-(function(){
-  if(localStorage.getItem('sw_reset_v334'))return;
-  localStorage.setItem('sw_reset_v334','1');
-  if(!('serviceWorker' in navigator))return;
-  navigator.serviceWorker.getRegistrations().then(function(regs){
-    Promise.all(regs.map(function(r){return r.unregister();})).then(function(){
-      return caches.keys();
-    }).then(function(keys){
-      return Promise.all(keys.map(function(k){return caches.delete(k);})).then(function(){
-        return keys;
-      });
-    }).then(function(keys){
-      /* FIX flash hero : ne reload QUE s'il y avait vraiment quelque chose
-         à nettoyer (regs ou keys non vides). Sans ce garde, ce script
-         rechargeait la page à chaque premier chargement dans un contexte
-         sans le flag localStorage (fenêtre privée, cache vidé, nouveau
-         profil) — même quand il n'y avait rien à unregister — provoquant
-         le flash du hero (plus gros élément visible) à chaque reload en
-         cascade. La migration légitime (cache/SW legacy réellement présent)
-         continue de recharger normalement. */
-      if (regs.length || keys.length) {
-        console.log('[RESET v334] All SWs unregistered, all caches cleared. Reloading...');
-        location.reload();
-      }
-    });
-  });
-})();
-</script>
-<script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(function(regs){
     regs.forEach(function(r){r.update();});
@@ -95,9 +65,9 @@ if('serviceWorker' in navigator){
      Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=149">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=289">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=80">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=154">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=294">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=83">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
      cascade, alors que deploy-css.js ne le régénérait jamais (absent de
@@ -688,147 +658,7 @@ if('serviceWorker' in navigator){
 
 <!-- side cart déplacé dans #k-desktop-catalog-wrap -->
 
-<script>
-// Hero sticky logic: fixed wrap on mobile, IntersectionObserver on desktop
-(function(){
-  var spacer = document.getElementById('k-bar-spacer');
-  if (!spacer) return;
-
-  function isMobile(){ return window.innerWidth <= 899; }
-
-  // ── MOBILE : tout le wrap est fixe, on mesure sa hauteur ──
-  function setupMobile(){
-    if (!isMobile()) return;   // desktop : ne pas poser style.top
-    var wrap = document.getElementById('k-hero-fixed-wrap');
-    if (!wrap) return;
-    function update(){
-      if (!isMobile()) {
-        // Desktop : remettre à zéro les styles inline posés par mobile
-        var scroll = document.getElementById('k-page-scroll');
-        if (scroll) { scroll.style.top = ''; scroll.style.position = ''; }
-        return;
-      }
-      var h = wrap.offsetHeight;
-      spacer.style.display = 'none'; // spacer not needed with fixed scroll
-      var scroll = document.getElementById('k-page-scroll');
-      if (scroll && !scroll.classList.contains('k-pager-active')) {
-        var headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 44;
-        scroll.style.top = (h + headerH) + 'px'; // header height lu depuis --header-h (cf. b-store.js)
-      }
-    }
-    update();
-    // Re-mesure après chargement de l'image hero
-    var img = wrap.querySelector('.k-hero-img');
-    if (img && !img.complete) img.addEventListener('load', update);
-    window.addEventListener('resize', update);
-  }
-
-  // ── DESKTOP : IntersectionObserver sticky bar ──
-  function setupDesktop(){
-    var sentinel = document.getElementById('k-bar-sentinel');
-    var bar = document.getElementById('k-sticky-bar');
-    if(!sentinel || !bar) return;
-    spacer.style.height = bar.offsetHeight + 'px';
-    var observer = new IntersectionObserver(function(entries){
-      if(entries[0].isIntersecting){
-        bar.classList.remove('is-stuck');
-        spacer.style.display = 'none';
-      } else {
-        bar.classList.add('is-stuck');
-        spacer.style.display = 'block';
-      }
-    }, { rootMargin: '-44px 0px 0px 0px' });
-    observer.observe(sentinel);
-    window.addEventListener('resize', function(){
-      spacer.style.height = bar.offsetHeight + 'px';
-    });
-  }
-
-  // Bouton "Découvrir le catalogue" : scroll vers le catalogue (mobile ET desktop).
-  // Note : le listener desktop ci-dessous (dans le bloc else) cible #k-catalog-section
-  // en priorité. Ce listener universel assure le fonctionnement mobile.
-  (function() {
-    var ctaP = document.querySelector('.k-hero-cta-primary');
-    if (ctaP) {
-      ctaP.addEventListener('click', function() {
-        var target = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-  })();
-
-  if (isMobile()) {
-    setupMobile();
-  } else {
-    setupDesktop();
-    // Desktop : brancher les boutons hero CTA
-    var ctaPrimary = document.querySelector('.k-hero-cta-primary');
-    if (ctaPrimary) {
-      ctaPrimary.addEventListener('click', function() {
-        var catalog = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
-        if (catalog) catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-    // .k-hero-cta-ghost a aussi class k-header-nav-btn → déjà géré par setupBnav().
-    // Pas de listener supplémentaire ici pour éviter le doublon (switchView 2×).
-  }
-
-  // ── Proxy window.scrollY/scrollTo supprimé (Sprint 3) ─────────────────
-  // Remplacé par getScrollY() / scrollToPosition() / scrollPageToTop()
-  // dans b-scroll-owner.js — importé par chaque module JS concerné.
-  // Stripe.js, analytics et libs tierces retrouvent window.scrollY natif.
-})();
-
-  /* ══ Proverbe africain rotatif ══ */
-  (function() {
-    var proverbes = [
-      /* ðŸŒ Afrique de l'Est / Swahili */
-      "« Haba na haba hujaza kibaba. » — Grain à grain, on remplit la mesure. (Swahili)",
-      "« Haraka haraka haina baraka. » — La précipitation n'apporte pas de bénédiction. (Swahili)",
-      "« Akili ni nywele, kila mtu ana zake. » — L'intelligence est comme les cheveux, chacun a les siennes. (Swahili)",
-      "« Umoja ni nguvu, utengano ni udhaifu. » — L'union est force, la division est faiblesse. (Swahili)",
-      "« Asiyekuwepo na lake halipo. » — Celui qui n'est pas là , ses affaires n'avancent pas. (Swahili)",
-      "« Mchagua jembe si mkulima. » — Celui qui choisit sa houe n'est pas cultivateur. (Swahili)",
-
-      /* ðŸŒ Afrique de l'Ouest */
-      "« Si tu veux aller vite, marche seul. Si tu veux aller loin, marche ensemble. » — Proverbe africain",
-      "« La forêt serait silencieuse si aucun oiseau ne chantait que le mieux. » — Proverbe africain",
-      "« L'enfant qui n'est pas élevé par son village brûlera ce village pour se réchauffer. » — Proverbe africain",
-      "« Jusqu'à ce que le lion apprenne à écrire, les histoires de chasse glorifieront toujours le chasseur. » — Proverbe africain",
-      "« Une seule main ne peut pas applaudir. » — Proverbe peul",
-      "« La pluie ne tombe pas sur un seul toit. » — Proverbe camerounais",
-      "« Celui qui pose des questions ne se perd jamais. » — Proverbe haoussa",
-
-      /* ðŸŒ Afrique du Nord / Comores */
-      "« Saba'u 'ilm — walau ilâ s-sîn. » — Cherche le savoir, même jusqu'en Chine. (Arabe / Islam)",
-      "« Man sabara zafira. » — Celui qui patiente réussit. (Arabe)",
-      "« Al-waqt ka-s-sayf, in lam taqta'hu qata'ak. » — Le temps est comme une épée : si tu ne le coupes pas, il te coupe. (Arabe)",
-
-      /* ðŸŒ Asie */
-      "« Une crise est une occasion qui se présente à cheval. » — Proverbe chinois",
-      "« La meilleure heure pour planter un arbre, c'était il y a 20 ans. La deuxième meilleure, c'est maintenant. » — Proverbe chinois",
-      "« Tombe sept fois, relève-toi huit. » — Proverbe japonais (Nana korobi ya oki)",
-      "« Même un voyage de mille lieues commence par un premier pas. » — Lao Tseu",
-      "« Mieux vaut allumer une bougie que maudire l'obscurité. » — Proverbe chinois",
-      "« L'eau qui coule doucement creuse la roche. » — Proverbe japonais",
-
-      /* ðŸŒŽ Amériques / Europe */
-      "« Vouloir, c'est pouvoir. » — Proverbe latin",
-      "« Chaque saint a son passé, chaque pécheur a son avenir. » — Oscar Wilde",
-      "« La vie, c'est ce qui arrive pendant qu'on fait d'autres projets. » — John Lennon",
-      "« Le bonheur n'est pas quelque chose de tout fait. Il vient de vos propres actions. » — Dalai Lama",
-
-      /* ✨ Citations inspirantes */
-      "« Le succès c'est d'aller d'échec en échec sans perdre son enthousiasme. » — Churchill",
-      "« Commence là où tu es. Utilise ce que tu as. Fais ce que tu peux. » — Arthur Ashe",
-      "« La seule façon de faire du bon travail, c'est d'aimer ce que vous faites. » — Steve Jobs",
-    ];
-    var el = document.getElementById('k-proverb-text');
-    if (!el) return;
-    var idx = Math.floor(Math.random() * proverbes.length);
-    el.textContent = proverbes[idx];
-  })();
-</script>
+<script defer src="/boutique/js/hero-bootstrap.js"></script>
 <!-- ⚠️ DEV ONLY — Données de test (supprimer en production) -->
 <!-- <script src="/boutique/js/mock-data.js"></script> -->
 <script src="/boutique/js/komerce-api.js?v=339"></script>

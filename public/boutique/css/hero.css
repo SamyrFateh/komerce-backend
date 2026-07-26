@@ -993,3 +993,29 @@
   }
 }
 /* ══ FIN correctif clip héro ═══════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════
+   PROVERBE + COLONNE DROITE HERO — tablette & desktop (≥ 900px)
+   Activé 2026-07 : .k-hero-right-col et .k-hero-proverb-inline
+   étaient dans le markup mais masqués partout.
+   Mobile (< 900px) : pas de place — reste masqué.
+   Seuil aligné sur la frontière système (doctrine breakpoints : 900px / 1200px).
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  .k-hero-right-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 16px;
+  }
+
+  .k-hero-proverb-inline {
+    display: block;
+    font-size: clamp(11px, 1.1vw, 13px);
+    font-style: italic;
+    color: var(--text-muted);
+    line-height: 1.45;
+    max-width: 320px;
+  }
+}

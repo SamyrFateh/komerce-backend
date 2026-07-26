@@ -23,12 +23,19 @@ Mis à jour : 2026-07-26
                                           modal-shell.css : 1fr auto auto + grid-row 1/-1
                                           13 cas verts jusqu'au plafond contrat (session courante)
 
-[ESCALATED] P0-B couverture SKU        — Classe C (choix contrat API)
+[MEASURED]  P0-B couverture SKU        — Classe C (décision migration en attente)
               Décision actée : DECISION_MODELE_STOCK_SKU.md (Option A, 2026-07-12)
-              Outil vérifié : check-sku-coverage.js (13 tests unitaires verts, DB mockée)
-              Mesure prod BLOQUÉE : pas d'accès DB depuis ce sandbox
-              → Commande à lancer en prod : node scripts/check-sku-coverage.js --json
-              → Puis : node scripts/check-sku-coverage.js --backfill --apply --switch-ready
+              Mesure prod (2026-07-26) :
+                total_active_products : 591
+                already_sku           : 1  (0,2 %)
+                ready_not_switched    : 0
+                not_ready             : 590
+                fallback_removable    : false
+              État : entre Lot 0 (schéma) et Lot 1 (préparation SKU admin)
+              Prochaines étapes (Classe C — décision métier) :
+                1. node scripts/check-sku-coverage.js --backfill  (dry-run : produits sans variantes migrables)
+                2. Interface admin : déclarer combinaisons + stock réel pour produits avec variantes
+                3. node scripts/check-sku-coverage.js --backfill --apply --switch-ready  (quand prêt)
 
 ## Bloc B — Gouvernance exécutable
 

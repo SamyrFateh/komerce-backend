@@ -1364,10 +1364,9 @@ body:has(#k-page-scroll.k-pager-active) {
    Sans correction : body pose padding-right:240px → le wrap colle
    au bord gauche, les cartes ne sont pas centrées dans l'espace utile.
    Fix : padding-left = sc-reserve-w / 2 pour rééquilibrer visuellement.
-   Cappé à @min-width:1100px pour éviter un débordement sur les petits
-   écrans desktop (900–1099px) où chaque pixel compte.
+   Normalisé 1100px → 900px (doctrine breakpoints 2026-07).
    ──────────────────────────────────────────────────────────────── */
-@media (min-width: 1100px) {
+@media (min-width: 900px) {
   body:has(.k-side-cart.has-items) #k-desktop-catalog-wrap,
   body.sc-reserve #k-desktop-catalog-wrap {
     padding-left: calc(var(--sc-reserve-w, 240px) / 2);
@@ -2773,3 +2772,29 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 }
 /* ══ FIN correctif clip héro ═══════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════
+   PROVERBE + COLONNE DROITE HERO — tablette & desktop (≥ 900px)
+   Activé 2026-07 : .k-hero-right-col et .k-hero-proverb-inline
+   étaient dans le markup mais masqués partout.
+   Mobile (< 900px) : pas de place — reste masqué.
+   Seuil aligné sur la frontière système (doctrine breakpoints : 900px / 1200px).
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  .k-hero-right-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 16px;
+  }
+
+  .k-hero-proverb-inline {
+    display: block;
+    font-size: clamp(11px, 1.1vw, 13px);
+    font-style: italic;
+    color: var(--text-muted);
+    line-height: 1.45;
+    max-width: 320px;
+  }
+}

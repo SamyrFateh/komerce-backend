@@ -865,7 +865,8 @@
   align-items: stretch;
 }
 .k-group-actions-row .k-group-btn { width: 100%; }
-@media (max-width: 380px) {
+/* max:380px → max:899px : écrans très petits n'existent qu'en mobile (doctrine 900px/1200px) */
+@media (max-width: 899px) {
   .k-group-actions-row {
     grid-template-columns: 1fr;
   }
@@ -1879,7 +1880,8 @@
 }
 
 /* ── Condensation mobile ───────────────────────────────────────── */
-@media (max-width: 380px) {
+/* max:380px → max:899px (doctrine 900px/1200px) */
+@media (max-width: 899px) {
   .k-group-financial-stats {
     grid-template-columns: 1fr 1fr;   /* 2×2 — lisible sur petits écrans */
   }
