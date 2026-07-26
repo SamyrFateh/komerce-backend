@@ -93,6 +93,8 @@
     "test:gates": "jest --config jest.gates.config.js --runInBand",
     "test:gates:verbose": "jest --config jest.gates.config.js --runInBand --verbose",
     "gate:detect": "jest --config jest.gates.config.js --runInBand",
+    "gates:coverage": "node scripts/gates-coverage.js --strict",
+    "gates:coverage:report": "node scripts/gates-coverage.js --report",
     "gate:detect:verbose": "jest --config jest.gates.config.js --runInBand --verbose"
   },
   "keywords": [],

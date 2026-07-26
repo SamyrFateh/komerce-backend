@@ -76,14 +76,28 @@ Mis à jour : 2026-07-26
                 quality:gate, audit:registry, audit:arch, check:imports
               5 non testables isolément (agrégateurs/env) documentés
               R2 intégré dans chaque test (violation → exit 1 pour la bonne raison)
-[DONE] P2 gates restants — 7/7 gates ajoutés (session courante) :
-              audit:modal-layout, audit:modal-ownership, check:group-wording,
-              check:assets, feature:guard:strict, check:cache,
-              check:css-specificity-guard
-              → 19/19 gates couverts, gates-detect.test.js (38 tests, 38 verts)
-              R2 : npm run gate:detect x8 verts + bloc css-specificity-guard
-              isolé x15 verts — preuve : .agent/evidence/P2/
-              css-specificity-guard-stdout-truncation.txt
+[DONE] P2 gates restants — CLÔTURE avec mesure objective.
+              scripts/gates-coverage.js (créé session précédente) : 25/25 gates
+              applicables couverts + 1 exclusion documentée (audit:gate —
+              dépend de npm audit réel, 0 vuln. high/critical dans
+              l'environnement, non testable par injection fiable).
+              6 blocs ajoutés cette session : check:css-vars, check:zindex,
+              check:keyframes, check:inline-scripts, audit:arch:live,
+              audit:ownership — gates-detect.test.js passe à 25 describe /
+              50 tests.
+              Nuance câblage réel respectée : check:inline-scripts est appelé
+              SANS --strict dans check:all (2 scripts morts déjà acceptés,
+              Classe C P0-D) — le test vérifie le nommage de toute nouvelle
+              violation dans le rapport, pas un changement de code retour.
+              audit:arch:live / audit:ownership sont des générateurs purs
+              (jamais de blocage volontaire) — testés sur leur capacité RÉELLE
+              de détection (orphelin CSS / breakpoint hors charte) plutôt que
+              sur un code de sortie qui n'existe pas.
+              R2 : npm run gate:detect x5 verts (50/50) + isolation individuelle
+              des 6 nouveaux blocs x1 chacun, verts, aucune fuite d'état entre
+              tests (fichiers temporaires nettoyés, vérifié par grep post-run).
+              P2 est maintenant réellement clos : 0 gate de check:all sans
+              test de détection ni exclusion documentée.
 [DONE] P2 bug réel trouvé hors périmètre — check:css-specificity-guard
               lui-même était non déterministe (49/29/30/34/38 findings sur
               contenu identique) à cause d'un process.exit() tronquant

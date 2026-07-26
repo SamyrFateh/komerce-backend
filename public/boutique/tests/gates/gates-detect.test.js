@@ -514,3 +514,161 @@ html.k-home-premium-v1 .k-r2-detect-target {
     rebuild();
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════
+// 20. check:css-vars — var(--x) sans fallback, jamais défini
+// ══════════════════════════════════════════════════════════════════════
+describe('gate check:css-vars', () => {
+  const TARGET = path.join(ROOT, 'css', 'hero.css');
+
+  test('état initial → exit 0', () => {
+    const r = runGate('check-css-vars.js', ['--strict']);
+    expect(r.code).toBe(0);
+  });
+
+  test('var(--x) orpheline sans fallback → exit 1 + nom ciblé', () => {
+    backup(TARGET);
+    fs.appendFileSync(TARGET, '\n.k-r2-detect { color: var(--k-r2-detect-orphan); }\n');
+    const r = runGate('check-css-vars.js', ['--strict']);
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/--k-r2-detect-orphan/);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 21. check:zindex — couche hors bornes déclarées (governance/zindex-contract.json)
+// ══════════════════════════════════════════════════════════════════════
+describe('gate check:zindex', () => {
+  const TARGET = path.join(ROOT, 'css', 'layout.css');
+
+  test('état initial → exit 0', () => {
+    const r = runGate('check-zindex-contract.js', ['--strict']);
+    expect(r.code).toBe(0);
+  });
+
+  test("z-index de '.k-bnav' hors bornes [80,100] → exit 1 + couche ciblée", () => {
+    backup(TARGET);
+    fs.appendFileSync(TARGET, '\n.k-bnav { z-index: 9999; }\n');
+    const r = runGate('check-zindex-contract.js', ['--strict']);
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/chrome-bottom/);
+    expect(r.stdout + r.stderr).toMatch(/9999/);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 22. check:keyframes — animation référencée sans @keyframes correspondant
+// ══════════════════════════════════════════════════════════════════════
+describe('gate check:keyframes', () => {
+  const TARGET = path.join(ROOT, 'css', 'hero.css');
+
+  test('état initial → exit 0', () => {
+    const r = runGate('check-keyframes.js');
+    expect(r.code).toBe(0);
+  });
+
+  test('animation sans @keyframes correspondant → exit 1 + nom ciblé', () => {
+    backup(TARGET);
+    fs.appendFileSync(TARGET, '\n.k-r2-detect { animation: k-r2-detect-missing-anim 1s ease; }\n');
+    const r = runGate('check-keyframes.js');
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/k-r2-detect-missing-anim/);
+    restore(TARGET);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 23. check:inline-scripts — script inline mort sous la CSP en vigueur
+//     Câblé SANS --strict dans check:visual-lock/check:all : 2 scripts morts
+//     déjà connus et volontairement acceptés (Classe C, P0-D — cf. LEDGER.md,
+//     "location.reload() mort = actuellement protecteur"). L'état initial
+//     réel est donc exit 0 même avec ces 2 violations connues ; le test
+//     vérifie que le gate continue de NOMMER toute violation nouvelle dans
+//     son rapport (le vrai rôle utile du gate ici), pas un changement de
+//     code de sortie.
+// ══════════════════════════════════════════════════════════════════════
+describe('gate check:inline-scripts', () => {
+  const TARGET = path.join(ROOT, '..', 'hub', 'index.html');
+
+  test('état initial → exit 0 (invocation réelle, sans --strict)', () => {
+    const r = runGate('check-inline-scripts.js');
+    expect(r.code).toBe(0);
+  });
+
+  test('nouveau script inline mort sur une page auparavant propre → nommé dans le rapport', () => {
+    backup(TARGET);
+    const src = fs.readFileSync(TARGET, 'utf8');
+    fs.writeFileSync(TARGET, src.replace('</body>', '<script>window.__r2DetectHubInline = true;</script>\n</body>'));
+    const r = runGate('check-inline-scripts.js', ['--strict']);
+    expect(r.stdout + r.stderr).toMatch(/hub[\\/]index\.html/);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 24. audit:arch:live — génération docs/BOUTIQUE_ARCHITECTURE_LIVE.md
+//     Générateur pur (pas de --strict, ne bloque jamais volontairement) :
+//     le test vérifie sa capacité RÉELLE de détection — un fichier CSS
+//     orphelin (non référencé par bundle-css.js) doit apparaître marqué
+//     🔴 ORPHELIN dans le document généré.
+// ══════════════════════════════════════════════════════════════════════
+describe('gate audit:arch:live', () => {
+  const TARGET = path.join(ROOT, 'css', 'k-r2-detect-orphan.css');
+  const OUT    = path.join(ROOT, 'docs', 'BOUTIQUE_ARCHITECTURE_LIVE.md');
+
+  test('état initial → exit 0, document généré', () => {
+    const r = runGate('gen-boutique-arch-live.js');
+    expect(r.code).toBe(0);
+    expect(fs.existsSync(OUT)).toBe(true);
+  });
+
+  test('nouveau fichier CSS hors bundle → marqué ORPHELIN dans le document généré', () => {
+    fs.writeFileSync(TARGET, '.k-r2-detect-orphan { color: red; }\n');
+    const r = runGate('gen-boutique-arch-live.js');
+    expect(r.code).toBe(0);
+    const doc = fs.readFileSync(OUT, 'utf8');
+    expect(doc).toMatch(/k-r2-detect-orphan\.css.*ORPHELIN/);
+    fs.unlinkSync(TARGET);
+    runGate('gen-boutique-arch-live.js'); // régénère le document sans le fichier temporaire
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 25. audit:ownership — génération docs/BOUTIQUE_OWNERSHIP_LIVE.md
+//     Générateur pur, même famille que audit:arch:live : le test vérifie
+//     qu'un breakpoint hors charte (ni 900px ni 1200px) injecté dans une
+//     feuille CSS est bien signalé 🔴 pour ce fichier précis.
+// ══════════════════════════════════════════════════════════════════════
+describe('gate audit:ownership', () => {
+  const TARGET = path.join(ROOT, 'css', 'hero.css');
+  const OUT    = path.join(ROOT, 'docs', 'BOUTIQUE_OWNERSHIP_LIVE.md');
+
+  test('état initial → exit 0, document généré', () => {
+    const r = runGate('gen-ownership.js');
+    expect(r.code).toBe(0);
+    expect(fs.existsSync(OUT)).toBe(true);
+  });
+
+  test('breakpoint hors charte (768px) → signalé 🔴 pour le fichier ciblé', () => {
+    backup(TARGET);
+    fs.appendFileSync(TARGET, '\n@media (max-width: 768px) { .k-r2-detect { color: red; } }\n');
+    const r = runGate('gen-ownership.js');
+    expect(r.code).toBe(0);
+    const doc = fs.readFileSync(OUT, 'utf8');
+    expect(doc).toMatch(/hero\.css.*768px/);
+    restore(TARGET);
+    runGate('gen-ownership.js'); // régénère le document sans l'injection
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// audit:gate — NON TESTABLE ISOLÉMENT (même famille que les 5 exceptions
+//   documentées lors du premier lot de 12 gates).
+//   Dépend de `npm audit` réel sur node_modules installés : l'environnement
+//   courant a 0 vulnérabilité high/critical (vérifié 2026-07-26). Injecter
+//   une fausse vulnérabilité nécessiterait d'installer un paquet réellement
+//   vulnérable — fragile, dépendant du registre à un instant T, et non
+//   reproductible dans le temps (la base d'advisories change). La logique
+//   de cliquet elle-même (baseline accept/nouveau) est vérifiable par
+//   lecture de code, pas par un test d'injection fiable. Documenté dans
+//   gates-coverage.js comme exclusion connue plutôt que testé pour de faux.
+// ══════════════════════════════════════════════════════════════════════
