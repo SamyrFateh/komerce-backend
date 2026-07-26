@@ -7,7 +7,7 @@
 'use strict';
 const { test, expect } = require('@playwright/test');
 const {
-  BASE_URL, IS_REMOTE, waitForGrid, waitForModalOpen,
+  BASE_URL, IS_REMOTE, waitForGrid, waitForModalOpen, closeModal, cardCount,
 } = require('./helpers/boutique.helpers');
 
 test.describe('E-SEARCH — Recherche catalogue', () => {
@@ -54,6 +54,31 @@ test.describe('E-SEARCH — Recherche catalogue', () => {
     await waitForModalOpen(page);
 
     await expect(page.locator('#k-modal-name')).not.toBeEmpty();
+  });
+
+  // P0-A #2 — verrouille le correctif « grille vide après recherche + clic modal ».
+  // Bug : _resetSearchFilter() n'était pas appelé au clic sur un résultat ;
+  // state.filtered restait la liste étroite et _balancedPick() produisait 0 carte.
+  test('E20c-bis — grille toujours peuplée après fermeture modale ouverte via recherche', async ({ page }) => {
+    const input = page.locator('#k-search-input');
+    const dropdown = page.locator('#k-search-dropdown');
+
+    const firstCardName = await page.locator('#k-grid .k-promo-card .k-card-name, #k-grid .k-card .k-card-name').first().textContent();
+    const searchTerm = firstCardName.trim().split(/\s+/)[0];
+
+    await input.fill(searchTerm);
+    await expect(dropdown).toHaveClass(/open/, { timeout: 5_000 });
+    await dropdown.locator('.k-search-item').first().click();
+    await waitForModalOpen(page);
+
+    // Fermer la modale
+    await closeModal(page);
+    await expect(page.locator('#k-modal-overlay')).not.toHaveClass(/open/, { timeout: 5_000 });
+
+    // La grille DOIT être peuplée — jamais vide après ce parcours
+    await waitForGrid(page);
+    const count = await cardCount(page);
+    expect(count).toBeGreaterThan(0);
   });
 
   test('E20d — Terme sans résultat → message "Aucun résultat"', async ({ page }) => {
