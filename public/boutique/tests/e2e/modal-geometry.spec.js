@@ -103,6 +103,20 @@ test.describe('Modale produit — géométrie réelle (volet 3.2)', () => {
     });
     expect(wrapTopBefore).not.toBeNull();
 
+    // [P0-A #1 — FIX 2026-07] .k-modal-scroll porte `scroll-behavior: smooth`
+    // (modal-shell.css:1048). Sans neutralisation, `scrollTop = y` déclenche
+    // une animation et le waitForTimeout(120) fixe capture parfois une frame
+    // intermédiaire de cette animation plutôt que la position stabilisée —
+    // mesuré : 3 runs identiques sur 3 donnent [104,96,86,86] (3 valeurs
+    // distinctes) au lieu de la position collée réelle, un artefact de
+    // mesure et non un bug du sticky. Le gabarit de référence
+    // (harnais/geometry/verify-sticky.js) neutralise déjà ce point ; ce
+    // spec ne le faisait pas. Voir R2 : la mesure, pas le produit, était en
+    // cause.
+    await page.evaluate(() => {
+      document.querySelector('.k-modal-scroll').style.scrollBehavior = 'auto';
+    });
+
     const thresholds = [0, 100, 200, 400];
     const tops = [];
     for (const y of thresholds) {

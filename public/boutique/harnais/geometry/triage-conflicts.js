@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 
-const ROOT = path.resolve(__dirname, '..', 'public');
+const ROOT = path.resolve(__dirname, '..', '..', '..'); // FIX 2026-07 (P0-A) : geometry/ est 3 niveaux sous public/, pas 1
 const MIME = { '.css': 'text/css', '.html': 'text/html' };
 const server = http.createServer((req, res) => {
   const p = req.url.split('?')[0];

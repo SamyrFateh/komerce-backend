@@ -180,7 +180,7 @@ module.exports = defineConfig({
     // (volet 3.3) sans rien gagner (volet 3.2 ne teste que du layout/CSS).
     {
       name: 'Chromium Local-Only',
-      testMatch: ['**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
+      testMatch: ['**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js', '**/hero-geometry.spec.js', '**/modal-backtop-zindex.spec.js'],
       use: {
         ...devices['Desktop Chrome'],
         locale: 'fr-FR',
@@ -195,7 +195,7 @@ module.exports = defineConfig({
     // explicitement ici pour ne pas les rejouer en double, sans session.
     {
       name: 'Desktop Chrome',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js', '**/hero-geometry.spec.js', '**/modal-backtop-zindex.spec.js'],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
@@ -204,7 +204,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Desktop Firefox',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js', '**/hero-geometry.spec.js', '**/modal-backtop-zindex.spec.js'],
       use: {
         ...devices['Desktop Firefox'],
         viewport: { width: 1280, height: 800 },
@@ -213,7 +213,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Desktop Safari',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js', '**/hero-geometry.spec.js', '**/modal-backtop-zindex.spec.js'],
       use: {
         ...devices['Desktop Safari'],
         viewport: { width: 1280, height: 800 },
@@ -224,7 +224,7 @@ module.exports = defineConfig({
     // ── Mobile (la boutique est mobile-first — diaspora comorienne) ─────────
     {
       name: 'Mobile Chrome',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js', '**/hero-geometry.spec.js', '**/modal-backtop-zindex.spec.js'],
       use: {
         ...devices['Pixel 7'],
         locale: 'fr-FR',
@@ -232,7 +232,7 @@ module.exports = defineConfig({
     },
     {
       name: 'Mobile Safari',
-      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js'],
+      testIgnore: ['**/authenticated/**', '**/modal-mdm9-gallery-layout.spec.js', '**/modal-geometry.spec.js', '**/modal-visual-regression.spec.js', '**/hero-geometry.spec.js', '**/modal-backtop-zindex.spec.js'],
       use: {
         ...devices['iPhone 14'],
         locale: 'fr-FR',

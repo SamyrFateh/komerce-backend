@@ -381,6 +381,49 @@ describe('b-catalog — navigation et recherche', () => {
     expect(mockDom.searchInput.value).toBe('');
     expect(mockDom.searchDrop.classList.contains('open')).toBe(false);
   });
+
+  // [P0-A #2] Verrouille le correctif « grille vide après recherche »
+  // (cf. js/b-catalog.js — _resetSearchFilter, L745). Sans cette
+  // restauration, un clic sur un résultat de recherche laisse
+  // state.filtered narrow : le rendu suivant applique _balancedPick() à
+  // cette liste étroite et produit 0 carte pour 1, 2 ou 3 résultats
+  // (MIN_PER_SECTION=4, rejet du reliquat impair). Ce test échoue si
+  // _resetSearchFilter() est retiré de l'écouteur de clic du dropdown.
+  test.each([1, 2, 3])(
+    'clic sur un résultat de recherche (%i correspondance(s)) : la grille se re-rend non vide',
+    (hitCount) => {
+      jest.useFakeTimers();
+      mockState.activeCat = 'all';
+      // 3 catégories × 5 produits — de quoi survivre à _balancedPick une
+      // fois state.filtered restauré au catalogue complet.
+      mockState.products = [
+        ...Array.from({ length: 5 }, (_, i) => product(`tech-${i}`, 'Tech')),
+        ...Array.from({ length: 5 }, (_, i) => product(`mode-${i}`, 'Mode')),
+        ...Array.from({ length: 5 }, (_, i) => product(`maison-${i}`, 'Maison')),
+      ];
+      // Marque exactement `hitCount` produits avec un terme unique cherché.
+      for (let i = 0; i < hitCount; i++) mockState.products[i].name = `Zorglub ${i}`;
+      mockState.filtered = [...mockState.products];
+      catalog.setupSearch();
+
+      mockDom.searchInput.value = 'zorglub';
+      mockDom.searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      jest.advanceTimersByTime(250);
+      expect(mockState.filtered).toHaveLength(hitCount);
+      expect(mockDom.searchDrop.querySelectorAll('.k-search-item')).toHaveLength(hitCount);
+
+      mockRenderHomeSections.mockClear();
+      mockDom.searchDrop.querySelector('.k-search-item').click();
+
+      // La restauration doit repasser sur le catalogue complet, pas rester
+      // sur les `hitCount` résultats de recherche.
+      expect(mockState.filtered).toHaveLength(mockState.products.length);
+      // Le dernier appel de rendu doit recevoir des items à afficher —
+      // c'est la mesure qui distingue « grille vide » de « grille rendue ».
+      const lastCall = mockRenderHomeSections.mock.calls.at(-1)[0];
+      expect(lastCall.items.length).toBeGreaterThan(0);
+    }
+  );
 });
 
 describe('b-catalog — chargement produits', () => {
