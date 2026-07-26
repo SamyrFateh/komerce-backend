@@ -27,8 +27,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 4
 - bootstrap: 1
-- boutique: 36
-- catalog: 55
+- boutique: 21
+- catalog: 61
 - checkout: 2
 - customs: 6
 - dashboard: 28
@@ -47,7 +47,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - purchasing: 7
 - recommendations: 4
 - refunds: 2
-- shared-cart: 42
+- shared-cart: 44
+- shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
 - unsold-resolution: 1
@@ -176,12 +177,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-checkout-render.js — checkout-dom-renderer (checkout, high, full)
 - public/boutique/js/b-identity.js — boutique-client-identity (auth, high, full)
 - public/boutique/js/b-modal-buybox-shared.js — product-modal-buybox-shared-logic (catalog, high, full)
-- public/boutique/js/b-modal-core.js — product-modal-orchestrator (boutique, high, full)
+- public/boutique/js/b-modal-core.js — product-modal-orchestrator (shared-cart-modal, high, full)
 - public/boutique/js/b-modal-desktop-product.js — desktop-product-modal-renderer (catalog, high, full)
 - public/boutique/js/b-modal-mobile-product.js — mobile-product-modal-renderer (catalog, high, full)
 - public/boutique/js/b-modal-product-detail-bootstrap.js — product-detail-modal-orchestrator (catalog, high, full)
 - public/boutique/js/b-modal-product-fields.js — modal-product-scalar-fields-owner (catalog, high, full)
-- public/boutique/js/b-modal-product.js — product-modal-content-renderer (boutique, high, full)
+- public/boutique/js/b-modal-product.js — product-modal-content-renderer (shared-cart-modal, high, full)
 - public/boutique/js/b-modal-suggestions.js — product-modal-suggestions (recommendations, high, full)
 - public/boutique/js/b-nav.js — boutique-nav (boutique, high, full)
 - public/boutique/js/b-pager.js — mobile-category-pager (catalog, high, full)

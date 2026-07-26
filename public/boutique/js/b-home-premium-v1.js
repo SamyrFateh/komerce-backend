@@ -1,7 +1,7 @@
-/**
+﻿/**
  * @komerce-arch-lite
  * @role          boutique-b-home-premium-v1
- * @domain        boutique
+ * @domain        catalog
  * @layer         ui-component
  * @owner         public/boutique/js/b-catalog.js
  * @purpose       supports public/boutique/js/b-catalog.js
@@ -14,12 +14,12 @@
  * @module b-home-premium-v1
  * @brief Couche premium desktop pour la page d'accueil Komerce.
  *
- * Objectif : transformer l'entrée catalogue en vitrine curatée sans casser
+ * Objectif : transformer l'entrÃ©e catalogue en vitrine curatÃ©e sans casser
  * l'architecture existante ni le mobile. Module additif : il enrichit le hero,
- * les catégories et insère des bandes éditoriales avant la grille produits.
+ * les catÃ©gories et insÃ¨re des bandes Ã©ditoriales avant la grille produits.
  *
- * Note audit : la classe d'activation est posée sur <html>, pas sur <body>,
- * pour ne pas créer d'état body permanent que check:body-classes considère bloquant.
+ * Note audit : la classe d'activation est posÃ©e sur <html>, pas sur <body>,
+ * pour ne pas crÃ©er d'Ã©tat body permanent que check:body-classes considÃ¨re bloquant.
  */
 
 import { bus } from './b-bus.js';
@@ -32,12 +32,12 @@ let _styleInjected = false;
 let _blocksInjected = false;
 
 function injectStyles() {
-  // Lot 3 — Tout le CSS a été rapatrié dans les owners :
-  //   catégories (.k-cats, .k-chip, .k-chip-label) → categories.css
-  //   hero (.k-hero-*, #k-hero-fixed-wrap)          → hero.css
-  //   header / search / catalog                      → layout.css
-  //   side-cart + blocs éditoriaux                   → boutique-desktop.css
-  // Le JS ne possède plus aucun style. _styleInjected conservé pour compatibilité appelants.
+  // Lot 3 â€” Tout le CSS a Ã©tÃ© rapatriÃ© dans les owners :
+  //   catÃ©gories (.k-cats, .k-chip, .k-chip-label) â†’ categories.css
+  //   hero (.k-hero-*, #k-hero-fixed-wrap)          â†’ hero.css
+  //   header / search / catalog                      â†’ layout.css
+  //   side-cart + blocs Ã©ditoriaux                   â†’ boutique-desktop.css
+  // Le JS ne possÃ¨de plus aucun style. _styleInjected conservÃ© pour compatibilitÃ© appelants.
   _styleInjected = true;
   return;
 }
@@ -49,9 +49,9 @@ function makeEl(tag, className, text) {
   return el;
 }
 
-// Visibilité contextuelle de la bande promesse :
-// elle n'a de sens que sur l'ACCUEIL (univers « Tout ») et la vue shop.
-// Dès qu'un univers/filtre est actif, elle parasite la navigation produit → masquée.
+// VisibilitÃ© contextuelle de la bande promesse :
+// elle n'a de sens que sur l'ACCUEIL (univers Â« Tout Â») et la vue shop.
+// DÃ¨s qu'un univers/filtre est actif, elle parasite la navigation produit â†’ masquÃ©e.
 let _currentTab = 'shop';
 let _currentCat = 'all';
 
@@ -73,18 +73,18 @@ function injectHomeBlocks() {
   _blocksInjected = true;
   document.documentElement.classList.add('k-home-premium-v1');
 
-  // Bande promesse (slogan « Achetez pour vous… » + chips réassurance)
-  // DÉSACTIVÉE : elle retardait l'arrivée des produits, sur l'accueil comme en
+  // Bande promesse (slogan Â« Achetez pour vousâ€¦ Â» + chips rÃ©assurance)
+  // DÃ‰SACTIVÃ‰E : elle retardait l'arrivÃ©e des produits, sur l'accueil comme en
   // navigation. On conserve la classe k-home-premium-v1 (elle pilote tout le
   // style desktop premium) mais on n'injecte plus la section.
-  // → repasser SHOW_CURATION à true pour la rétablir (visibilité contextuelle
-  //   gérée par applyHomeCurationVisibility / les listeners bus ci-dessous).
+  // â†’ repasser SHOW_CURATION Ã  true pour la rÃ©tablir (visibilitÃ© contextuelle
+  //   gÃ©rÃ©e par applyHomeCurationVisibility / les listeners bus ci-dessous).
   const SHOW_CURATION = false;
   if (!SHOW_CURATION) return;
 
-  // Bloc allégé : une ligne sobre (citation Brand Truth §Vérité de marque)
-  // + chips de promesse en pilule, centrés. Aucun titre serif, aucun
-  // bloc éditorial lourd — la doctrine BRAND_TRUTH §Règle de simplicité
+  // Bloc allÃ©gÃ© : une ligne sobre (citation Brand Truth Â§VÃ©ritÃ© de marque)
+  // + chips de promesse en pilule, centrÃ©s. Aucun titre serif, aucun
+  // bloc Ã©ditorial lourd â€” la doctrine BRAND_TRUTH Â§RÃ¨gle de simplicitÃ©
   // linguistique impose visuel > texte, court > exhaustif.
   const section = makeEl('section', 'k-home-curation');
   section.setAttribute('aria-label', 'Promesse Komerce');
@@ -96,9 +96,9 @@ function injectHomeBlocks() {
   const chips = makeEl('div', 'k-home-promise-list');
   [
     'Retrait relais',
-    'Paiement sécurisé',
-    'Suivi en 9 étapes',
-    'Panier partagé',
+    'Paiement sÃ©curisÃ©',
+    'Suivi en 9 Ã©tapes',
+    'Panier partagÃ©',
     'Prix en KMF',
     'Livraison incluse aux Comores',
   ].forEach(function(label) {

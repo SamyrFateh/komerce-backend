@@ -1,7 +1,7 @@
-/**
+﻿/**
  * @komerce-arch
  * @role          product-modal-image-ux
- * @domain        boutique
+ * @domain        shared-cart-modal
  * @layer         ui-enhancer
  * @criticality   medium
  * @inputs        product_images, modal_media_state, pointer_events
@@ -16,26 +16,26 @@
 
 /**
  * @module b-modal-image-ux
- * @brief Expérience image de la modal produit — compteur 1/N et lightbox mobile.
+ * @brief ExpÃ©rience image de la modal produit â€” compteur 1/N et lightbox mobile.
  *
  * Compteur 1/N :
- *   Ancien parcours : affiché quand le produit a > 5 images.
- *   Product Detail mobile PDC-4 : affiché dès qu'il existe > 1 média, pour que
- *   le swipe et la position dans les mises en scène soient immédiatement lisibles.
+ *   Ancien parcours : affichÃ© quand le produit a > 5 images.
+ *   Product Detail mobile PDC-4 : affichÃ© dÃ¨s qu'il existe > 1 mÃ©dia, pour que
+ *   le swipe et la position dans les mises en scÃ¨ne soient immÃ©diatement lisibles.
  *
- * Lightbox plein écran :
- *   Tap sur l'image ou "Voir en grand" → .k-modal-fullscreen
+ * Lightbox plein Ã©cran :
+ *   Tap sur l'image ou "Voir en grand" â†’ .k-modal-fullscreen
  *   avec swipe horizontal et pinch-zoom natif (touch-action: pinch-zoom).
- *   Mobile uniquement — désactivé sur desktop (zoom loupe géré par setupZoom).
+ *   Mobile uniquement â€” dÃ©sactivÃ© sur desktop (zoom loupe gÃ©rÃ© par setupZoom).
  *
  * Bouton "Voir en grand" :
- *   Injecté dynamiquement dans .k-modal-img-wrap par ce module.
- *   Retiré sur desktop via CSS.
+ *   InjectÃ© dynamiquement dans .k-modal-img-wrap par ce module.
+ *   RetirÃ© sur desktop via CSS.
  *
- * Point d'entrée : setupImageUX().
- * À appeler depuis bus.on('modal:opened') ou après une reconstruction média PDC-4.
+ * Point d'entrÃ©e : setupImageUX().
+ * Ã€ appeler depuis bus.on('modal:opened') ou aprÃ¨s une reconstruction mÃ©dia PDC-4.
  *
- * Dépendances : b-bus.js, b-store.js
+ * DÃ©pendances : b-bus.js, b-store.js
  */
 
 import { bus }        from './b-bus.js';
@@ -54,9 +54,9 @@ let _fsTrack     = null;
 let _fsCounter   = null;
 let _installed   = false;
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  HELPERS
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function _getSlides() {
   let track = modalZone('.k-modal-carousel-track');
@@ -69,9 +69,9 @@ function _isEnrichedMobileDetail() {
     && window.matchMedia('(max-width: 899px)').matches;
 }
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  COMPTEUR 1/N
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function _refreshCounter(idx) {
   let counterEl = modalZone('.k-modal-counter');
@@ -92,9 +92,9 @@ function _refreshCounter(idx) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  BOUTON "VOIR EN GRAND" — injecté dans .k-modal-img-wrap
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  BOUTON "VOIR EN GRAND" â€” injectÃ© dans .k-modal-img-wrap
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function _injectViewFullBtn() {
   let imgWrap = modalZone('.k-modal-img-wrap');
@@ -121,9 +121,9 @@ function _injectViewFullBtn() {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  FULLSCREEN LIGHTBOX
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function _buildFsSlides() {
   if (!_fsTrack) return;
@@ -201,9 +201,9 @@ function _setupFsHandlers() {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  TAP SUR L'IMAGE PRINCIPALE → lightbox (mobile uniquement)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  TAP SUR L'IMAGE PRINCIPALE â†’ lightbox (mobile uniquement)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function _setupCarouselTap() {
   let carousel = modalZone('.k-modal-carousel');
@@ -215,9 +215,9 @@ function _setupCarouselTap() {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  SYNC AVEC LE CAROUSEL MODAL
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function _setupCarouselSync() {
   bus.on('carousel:changed', function(idx) {
@@ -225,14 +225,14 @@ function _setupCarouselSync() {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  ENTRY POINT
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 /**
  * setupImageUX()
- * Idempotent : les handlers globaux ne sont installés qu'une seule fois ; les
- * images fullscreen et le compteur sont relus à chaque appel.
+ * Idempotent : les handlers globaux ne sont installÃ©s qu'une seule fois ; les
+ * images fullscreen et le compteur sont relus Ã  chaque appel.
  */
 export function setupImageUX() {
   requestAnimationFrame(function() {

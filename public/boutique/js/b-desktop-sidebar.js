@@ -1,7 +1,7 @@
-/**
+﻿/**
  * @komerce-arch-lite
  * @role          boutique-b-desktop-sidebar
- * @domain        boutique
+ * @domain        catalog
  * @layer         ui-component
  * @owner         public/boutique/js/b-catalog.js
  * @purpose       supports public/boutique/js/b-catalog.js
@@ -11,13 +11,13 @@
 'use strict';
 
 /**
- * b-desktop-sidebar.js — Sidebar catégories Temu-style (≥ 900px uniquement)
+ * b-desktop-sidebar.js â€” Sidebar catÃ©gories Temu-style (â‰¥ 900px uniquement)
  *
- * Principe : zéro logique parallèle.
- *   - Lecture catégories → shop-schema.js (source unique de vérité)
- *   - Sélection catégorie → state.activeCat + renderGrid() de b-catalog.js
- *   - Sync chip rail → syncRailActiveState() de home-controller.js
- *   - Sync sidebar active → listener délégué sur .k-chip (chip clicks)
+ * Principe : zÃ©ro logique parallÃ¨le.
+ *   - Lecture catÃ©gories â†’ shop-schema.js (source unique de vÃ©ritÃ©)
+ *   - SÃ©lection catÃ©gorie â†’ state.activeCat + renderGrid() de b-catalog.js
+ *   - Sync chip rail â†’ syncRailActiveState() de home-controller.js
+ *   - Sync sidebar active â†’ listener dÃ©lÃ©guÃ© sur .k-chip (chip clicks)
  */
 
 import { state }                             from './b-store.js';
@@ -32,16 +32,16 @@ import {
 
 'use strict';
 
-// ── DOM ref ─────────────────────────────────────────────────────────
+// â”€â”€ DOM ref â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _sidebarEl = null;
 
-// ── Helpers ─────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
- * Retourne la liste complète : "Tout" + catégories du rail.
+ * Retourne la liste complÃ¨te : "Tout" + catÃ©gories du rail.
  */
 function _buildCatList() {
-  const allEntry = { key: 'all', label: 'Tout voir', emoji: '🏪' };
+  const allEntry = { key: 'all', label: 'Tout voir', emoji: 'ðŸª' };
   const cats = getRailCategories().map(c => ({
     key: c.key,
     label: c.shortLabel || c.label,
@@ -57,8 +57,8 @@ function _buildSidebar(el) {
   const cats = _buildCatList();
 
   el.innerHTML = `
-    <nav class="k-sidebar-nav" aria-label="Filtrer par catégorie">
-      <div class="k-sidebar-title">Catégories</div>
+    <nav class="k-sidebar-nav" aria-label="Filtrer par catÃ©gorie">
+      <div class="k-sidebar-title">CatÃ©gories</div>
       <ul class="k-sidebar-cats">
         ${cats.map(c => `
           <li class="k-sidebar-cat${state.activeCat === c.key ? ' is-active' : ''}"
@@ -88,11 +88,11 @@ function _buildSidebar(el) {
     item.addEventListener('click', activate);
     item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
   });
-  // ORPHELIN F supprimé — bus.emit('sidebar:built') n'avait aucun listener dans la codebase.
+  // ORPHELIN F supprimÃ© â€” bus.emit('sidebar:built') n'avait aucun listener dans la codebase.
 }
 
 /**
- * Met à jour l'état actif des items sidebar selon state.activeCat.
+ * Met Ã  jour l'Ã©tat actif des items sidebar selon state.activeCat.
  */
 function _syncSidebarActive(el) {
   if (!el) return;
@@ -101,10 +101,10 @@ function _syncSidebarActive(el) {
   });
 }
 
-// ── Point d'entrée ──────────────────────────────────────────────────
+// â”€â”€ Point d'entrÃ©e â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
- * Initialise la sidebar desktop. Appelé une seule fois depuis boutique.js init().
+ * Initialise la sidebar desktop. AppelÃ© une seule fois depuis boutique.js init().
  * No-op si < 900px.
  */
 export function setupDesktopSidebar() {
@@ -122,7 +122,7 @@ export function setupDesktopSidebar() {
     requestAnimationFrame(() => _syncSidebarActive(_sidebarEl));
   }, { passive: true });
 
-  // Sync au resize (si on repasse > 900px après un redimensionnement)
+  // Sync au resize (si on repasse > 900px aprÃ¨s un redimensionnement)
   window.addEventListener('resize', function() {
     if (isDesktop() && _sidebarEl) {
       _syncSidebarActive(_sidebarEl);
@@ -131,7 +131,7 @@ export function setupDesktopSidebar() {
 }
 
 /**
- * Expose pour sync externe (ex: après renderGrid depuis autre module).
+ * Expose pour sync externe (ex: aprÃ¨s renderGrid depuis autre module).
  */
 export function syncDesktopSidebar() {
   if (_sidebarEl) _syncSidebarActive(_sidebarEl);

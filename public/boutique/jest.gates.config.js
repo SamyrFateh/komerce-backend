@@ -1,12 +1,14 @@
-/**
- * jest.gates.config.js — config Jest pour les tests de détection des gates.
+﻿/**
+ * jest.gates.config.js â€” config Jest pour les tests de dÃ©tection des gates.
  *
- * Séparé de jest.config.js (qui cible tests/unit/ avec jsdom) parce que :
- *   1. Les tests de détection nécessitent l'environnement node (ils exécutent
+ * SÃ©parÃ© de jest.config.js (qui cible tests/unit/ avec jsdom) parce que :
+ *   1. Les tests de dÃ©tection nÃ©cessitent l'environnement node (ils exÃ©cutent
  *      des scripts via spawnSync, pas du code navigateur).
  *   2. Ils sont lents (chaque test lance un script node + parfois deploy-css)
- *      et doivent tourner en série (--runInBand) pour éviter les conflits d'accès
- *      aux mêmes fichiers sources.
+ *      et doivent tourner en sÃ©rie pour Ã©viter les conflits d'accÃ¨s aux mÃªmes
+ *      fichiers sources. La sÃ©rialisation est assurÃ©e par --runInBand en CLI
+ *      (voir package.json, scripts test:gates*) + maxWorkers: 1 ci-dessous ;
+ *      --runInBand n'est pas une clÃ© de config valide, seulement un flag CLI.
  *   3. Aucun setup jsdom, aucun babel-jest (scripts node pur).
  *
  * Usage :
@@ -19,8 +21,7 @@ module.exports = {
   testEnvironment: 'node',
   testMatch:       ['**/tests/gates/**/*.test.js'],
   testTimeout:     90_000,      // les tests avec deploy-css peuvent prendre 30-40s
-  runInBand:       true,        // accès concurrent aux mêmes fichiers source → série
-  maxWorkers:      1,
-  // Pas de coverage : ces tests détectent des violations, pas des branches de code
+  maxWorkers:      1,           // accÃ¨s concurrent aux mÃªmes fichiers source â†’ sÃ©rie
+  // Pas de coverage : ces tests dÃ©tectent des violations, pas des branches de code
   collectCoverage: false,
 };

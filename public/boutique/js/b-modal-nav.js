@@ -1,7 +1,7 @@
-/**
+﻿/**
  * @komerce-arch-lite
  * @role          boutique-b-modal-nav
- * @domain        boutique
+ * @domain        shared-cart-modal
  * @layer         ui-component
  * @owner         public/boutique/js/b-modal-core.js
  * @purpose       supports public/boutique/js/b-modal-core.js
@@ -12,29 +12,29 @@
 
 /**
  * @module b-modal-nav
- * @brief Navigation prev/next entre produits dans la modal — extrait de b-modal.js (ARCH-2, PR3).
+ * @brief Navigation prev/next entre produits dans la modal â€” extrait de b-modal.js (ARCH-2, PR3).
  *
- * Périmètre :
- *   - navigateModal(direction) : produit suivant/précédent (avec transition animée).
- *   - updateModalNavArrows(list, idx) : flèches ←/→ + compteur dans la topbar (desktop).
+ * PÃ©rimÃ¨tre :
+ *   - navigateModal(direction) : produit suivant/prÃ©cÃ©dent (avec transition animÃ©e).
+ *   - updateModalNavArrows(list, idx) : flÃ¨ches â†/â†’ + compteur dans la topbar (desktop).
  *
- * Note de découpage (ARCH-2) : la responsabilité « historique / retour catalogue »
+ * Note de dÃ©coupage (ARCH-2) : la responsabilitÃ© Â« historique / retour catalogue Â»
  *   reste partiellement dans b-modal.js pour cette PR. Les flags _modalHistoryPushed /
- *   _closingFromPopstate et le handler popstate sont MUTÉS par openModal/closeModal
- *   (un binding importé n'est pas réassignable entre modules), et modalGoBack appelle
- *   closeModal en direct (même sémantique que le bouton X — passer par bus.emit('modal:close')
- *   déclencherait des listeners tiers absents du chemin direct). Ces éléments migreront
- *   avec le core en PR5, où ils redeviennent intra-module.
+ *   _closingFromPopstate et le handler popstate sont MUTÃ‰S par openModal/closeModal
+ *   (un binding importÃ© n'est pas rÃ©assignable entre modules), et modalGoBack appelle
+ *   closeModal en direct (mÃªme sÃ©mantique que le bouton X â€” passer par bus.emit('modal:close')
+ *   dÃ©clencherait des listeners tiers absents du chemin direct). Ces Ã©lÃ©ments migreront
+ *   avec le core en PR5, oÃ¹ ils redeviennent intra-module.
  *
- * Découplage cycle : navigateModal ouvre via bus.emit('modal:open', { id, pushHistory:false })
- *   au lieu d'appeler openModal directement → ce module n'importe RIEN de b-modal.js.
- *   Le pushHistory:false (pas de nouvelle entrée d'historique sur prev/next) est préservé
- *   par le handler bus.on('modal:open') de b-modal.js, étendu pour relayer pushHistory.
+ * DÃ©couplage cycle : navigateModal ouvre via bus.emit('modal:open', { id, pushHistory:false })
+ *   au lieu d'appeler openModal directement â†’ ce module n'importe RIEN de b-modal.js.
+ *   Le pushHistory:false (pas de nouvelle entrÃ©e d'historique sur prev/next) est prÃ©servÃ©
+ *   par le handler bus.on('modal:open') de b-modal.js, Ã©tendu pour relayer pushHistory.
  *
- * Consommateurs : b-modal.js (openModal appelle updateModalNavArrows ; setupModal câble
- *   navigateModal au clavier ←/→ ; navigateModal est ré-exporté pour la surface publique).
+ * Consommateurs : b-modal.js (openModal appelle updateModalNavArrows ; setupModal cÃ¢ble
+ *   navigateModal au clavier â†/â†’ ; navigateModal est rÃ©-exportÃ© pour la surface publique).
  *
- * Dépendances : b-bus.js, b-store.js
+ * DÃ©pendances : b-bus.js, b-store.js
  */
 
 import { bus }        from './b-bus.js';
@@ -42,9 +42,9 @@ import { state, dom } from './b-store.js';
 
 'use strict';
 
-  // ── Boutons ← → dans la topbar de la modal
+  // â”€â”€ Boutons â† â†’ dans la topbar de la modal
   /**
-   * Met à jour les flèches de navigation produit suivant/précédent.
+   * Met Ã  jour les flÃ¨ches de navigation produit suivant/prÃ©cÃ©dent.
    * Visible mobile ET desktop (mobile : version compacte, cf. modal-shell.css).
    * @param {number} currentIndex - Index produit dans la liste
    * @param {number} total - Total produits disponibles
@@ -59,24 +59,24 @@ import { state, dom } from './b-store.js';
       const prevBtn = document.createElement('button');
       prevBtn.id = 'k-modal-prev';
       prevBtn.className = 'k-modal-nav-btn';
-      prevBtn.innerHTML = '←';
+      prevBtn.innerHTML = 'â†';
       prevBtn.addEventListener('click', () => navigateModal(-1));
 
       const counter = document.createElement('span');
-      counter.id = 'k-modal-nav-pos';      // renommé — évite conflit avec #k-modal-counter (compteur image)
+      counter.id = 'k-modal-nav-pos';      // renommÃ© â€” Ã©vite conflit avec #k-modal-counter (compteur image)
       counter.className = 'k-modal-nav-counter';
 
       const nextBtn = document.createElement('button');
       nextBtn.id = 'k-modal-next';
       nextBtn.className = 'k-modal-nav-btn';
-      nextBtn.innerHTML = '→';
+      nextBtn.innerHTML = 'â†’';
       nextBtn.addEventListener('click', () => navigateModal(1));
 
       navEl.appendChild(prevBtn);
       navEl.appendChild(counter);
       navEl.appendChild(nextBtn);
 
-      // Insérer dans la topbar à droite du bouton back
+      // InsÃ©rer dans la topbar Ã  droite du bouton back
       const topbar = dom.modal.querySelector('.k-modal-topbar');
       if (topbar) {
         const right = topbar.querySelector('.k-modal-topbar-right');
@@ -84,7 +84,7 @@ import { state, dom } from './b-store.js';
       }
     }
 
-    const counter = document.getElementById('k-modal-nav-pos'); // renommé
+    const counter = document.getElementById('k-modal-nav-pos'); // renommÃ©
     const prevBtn = document.getElementById('k-modal-prev');
     const nextBtn = document.getElementById('k-modal-next');
 
@@ -94,9 +94,9 @@ import { state, dom } from './b-store.js';
   }
 
   /**
-   * Navigue vers le produit suivant/précédent dans le modal.
+   * Navigue vers le produit suivant/prÃ©cÃ©dent dans le modal.
    * Maintient une pile d'historique pour le bouton retour.
-   * @param {number} direction - +1 (suivant) ou -1 (précédent)
+   * @param {number} direction - +1 (suivant) ou -1 (prÃ©cÃ©dent)
    */
   function navigateModal(direction) {
     if (!state.modalProduct) return;

@@ -1,7 +1,7 @@
-/**
+﻿/**
  * @komerce-arch-lite
  * @role          boutique-b-modal-social-proof
- * @domain        boutique
+ * @domain        shared-cart-modal
  * @layer         ui-component
  * @owner         public/boutique/js/b-modal-core.js
  * @purpose       supports public/boutique/js/b-modal-core.js
@@ -12,44 +12,44 @@
 
 /**
  * @module b-modal-social-proof
- * @brief Ligne preuve sociale dans la modal produit — vendus, note, rang.
+ * @brief Ligne preuve sociale dans la modal produit â€” vendus, note, rang.
  *
- * Principe Komerce : aucun chiffre inventé.
- * Chaque élément n'est affiché que si la donnée backend est présente et non nulle :
- *   - product.rank        → "#N Bestseller"  (badge coral)
- *   - product.sold_count  → "N vendus"
- *   - product.rating      → "★ N,N · N avis"  (+ product.review_count si dispo)
+ * Principe Komerce : aucun chiffre inventÃ©.
+ * Chaque Ã©lÃ©ment n'est affichÃ© que si la donnÃ©e backend est prÃ©sente et non nulle :
+ *   - product.rank        â†’ "#N Bestseller"  (badge coral)
+ *   - product.sold_count  â†’ "N vendus"
+ *   - product.rating      â†’ "â˜… N,N Â· N avis"  (+ product.review_count si dispo)
  *
- * Si aucune de ces données n'existe, .k-modal-meta reste vide et
- * disparaît via CSS (.k-modal-meta:empty { display: none }).
+ * Si aucune de ces donnÃ©es n'existe, .k-modal-meta reste vide et
+ * disparaÃ®t via CSS (.k-modal-meta:empty { display: none }).
  *
  * Mobile + desktop : pas de garde isDesktop().
  *
- * Point d'entrée : setupSocialProof().
- * À appeler depuis bus.on('modal:opened') dans le bootstrap.
+ * Point d'entrÃ©e : setupSocialProof().
+ * Ã€ appeler depuis bus.on('modal:opened') dans le bootstrap.
  */
 
 import { bus }       from './b-bus.js';
 import { state }     from './b-store.js';
-import { modalZone } from './b-store.js';           // S5 — hook DOM centralisé
+import { modalZone } from './b-store.js';           // S5 â€” hook DOM centralisÃ©
 
 'use strict';
 
-// ── Helpers ───────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function _fmtRating(r) {
-  // "4.8" → "4,8"  (format FR)
+  // "4.8" â†’ "4,8"  (format FR)
   return Number(r).toFixed(1).replace('.', ',');
 }
 
 function _fmtCount(n) {
-  // séparateur milliers FR : 1432 → "1 432"
+  // sÃ©parateur milliers FR : 1432 â†’ "1 432"
   return Math.round(n).toLocaleString('fr-FR');
 }
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  INJECT
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function injectSocialProof() {
   let meta = modalZone('.k-modal-meta');
@@ -60,7 +60,7 @@ function injectSocialProof() {
 
   if (!product) return;
 
-  // ── Rang Bestseller ───────────────────────────────────────
+  // â”€â”€ Rang Bestseller â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (product.rank) {
     let rankEl = document.createElement('span');
     rankEl.className = 'k-modal-meta-rank';
@@ -68,7 +68,7 @@ function injectSocialProof() {
     meta.appendChild(rankEl);
   }
 
-  // ── Vendus ────────────────────────────────────────────────
+  // â”€â”€ Vendus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (product.sold_count && product.sold_count > 0) {
     let soldEl = document.createElement('span');
     soldEl.innerHTML =
@@ -81,7 +81,7 @@ function injectSocialProof() {
     meta.appendChild(soldEl);
   }
 
-  // ── Note + avis ───────────────────────────────────────────
+  // â”€â”€ Note + avis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (product.rating && product.rating > 0) {
     let ratingEl = document.createElement('span');
     let reviewPart = product.review_count
@@ -100,9 +100,9 @@ function injectSocialProof() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  ENTRY POINT
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 let _installed = false;
 
@@ -111,7 +111,7 @@ export function setupSocialProof() {
 
   if (!_installed) {
     _installed = true;
-    // Réinjecter si le produit change sans fermer la modal (navigation nav-btn)
+    // RÃ©injecter si le produit change sans fermer la modal (navigation nav-btn)
     bus.on('modal:product-changed', injectSocialProof);
   }
 }

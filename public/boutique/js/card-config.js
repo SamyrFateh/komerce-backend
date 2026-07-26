@@ -1,7 +1,7 @@
-/**
+﻿/**
  * @komerce-arch-lite
  * @role          boutique-card-config
- * @domain        boutique
+ * @domain        catalog
  * @layer         ui-component
  * @owner         public/boutique/js/b-catalog.js
  * @purpose       supports public/boutique/js/b-catalog.js
@@ -12,22 +12,22 @@
 
 /**
  * @module card-config
- * @brief Configuration déclarative du rendu des cartes produit Komerce.
+ * @brief Configuration dÃ©clarative du rendu des cartes produit Komerce.
  *
- * Ce fichier est la SOURCE DE VÉRITÉ pour la logique "quelle donnée va où"
+ * Ce fichier est la SOURCE DE VÃ‰RITÃ‰ pour la logique "quelle donnÃ©e va oÃ¹"
  * sur une carte produit. Il pilote :
  *   - la preview admin (ProductsView.js)
- *   - à terme : la carte boutique publique via resolveProductCardModel()
+ *   - Ã  terme : la carte boutique publique via resolveProductCardModel()
  *
- * RÈGLES STRICTES :
+ * RÃˆGLES STRICTES :
  *   - Pas de HTML ici.
  *   - Pas de JS dynamique (eval, new Function, expression libre).
- *   - Sources limitées à ALLOWED_SOURCES (whitelist).
- *   - Conditions limitées à ALLOWED_CONDITIONS.
- *   - Toujours un fallback si config absente, invalide ou incomplète.
+ *   - Sources limitÃ©es Ã  ALLOWED_SOURCES (whitelist).
+ *   - Conditions limitÃ©es Ã  ALLOWED_CONDITIONS.
+ *   - Toujours un fallback si config absente, invalide ou incomplÃ¨te.
  *
- * Pour brancher une config DB à l'avenir : remplacer DEFAULT_CARD_CONFIG
- * par la valeur retournée par /api/card-config, en passant par validateCardConfig().
+ * Pour brancher une config DB Ã  l'avenir : remplacer DEFAULT_CARD_CONFIG
+ * par la valeur retournÃ©e par /api/card-config, en passant par validateCardConfig().
  *
  * @version 1
  * @owner card-config.js
@@ -35,7 +35,7 @@
 
 'use strict';
 
-// ─── Whitelist des sources autorisées ────────────────────────────────────────
+// â”€â”€â”€ Whitelist des sources autorisÃ©es â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const ALLOWED_SOURCES = new Set([
   'product.name',
@@ -53,7 +53,7 @@ export const ALLOWED_SOURCES = new Set([
   'category.accent_token',
 ]);
 
-// ─── Whitelist des conditions autorisées ─────────────────────────────────────
+// â”€â”€â”€ Whitelist des conditions autorisÃ©es â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const ALLOWED_CONDITIONS = new Set([
   'always',
@@ -63,7 +63,7 @@ export const ALLOWED_CONDITIONS = new Set([
   'is_false',
 ]);
 
-// ─── Config par défaut versionnée ────────────────────────────────────────────
+// â”€â”€â”€ Config par dÃ©faut versionnÃ©e â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /** @type {CardConfig} */
 export const DEFAULT_CARD_CONFIG = {
@@ -124,7 +124,7 @@ export const DEFAULT_CARD_CONFIG = {
   },
 };
 
-// ─── Validation de config externe (future DB) ─────────────────────────────────
+// â”€â”€â”€ Validation de config externe (future DB) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Valide une config issue d'une source externe (DB, API).
@@ -139,7 +139,7 @@ export function validateCardConfig(config) {
     if (config.version !== 1) return DEFAULT_CARD_CONFIG;
     if (typeof config.template !== 'string') return DEFAULT_CARD_CONFIG;
 
-    // Vérifier les sources déclarées
+    // VÃ©rifier les sources dÃ©clarÃ©es
     const sourcesToCheck = [];
     if (config.image?.source)    sourcesToCheck.push(config.image.source);
     if (config.title?.source)    sourcesToCheck.push(config.title.source);
@@ -150,20 +150,20 @@ export function validateCardConfig(config) {
       config.badges.forEach(b => {
         if (b?.source) sourcesToCheck.push(b.source);
         if (b?.condition && !ALLOWED_CONDITIONS.has(b.condition)) {
-          throw new Error(`Condition non autorisée : ${b.condition}`);
+          throw new Error(`Condition non autorisÃ©e : ${b.condition}`);
         }
       });
     }
 
     for (const src of sourcesToCheck) {
       if (src && !ALLOWED_SOURCES.has(src)) {
-        throw new Error(`Source non autorisée : ${src}`);
+        throw new Error(`Source non autorisÃ©e : ${src}`);
       }
     }
 
     return config;
   } catch (e) {
-    console.warn('[card-config] Config invalide, fallback par défaut :', e.message);
+    console.warn('[card-config] Config invalide, fallback par dÃ©faut :', e.message);
     return DEFAULT_CARD_CONFIG;
   }
 }

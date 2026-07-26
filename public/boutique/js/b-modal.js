@@ -1,7 +1,7 @@
-/**
+﻿/**
  * @komerce-arch-lite
  * @role          boutique-b-modal
- * @domain        boutique
+ * @domain        shared-cart-modal
  * @layer         ui-component
  * @owner         public/boutique/js/b-modal-core.js
  * @purpose       supports public/boutique/js/b-modal-core.js
@@ -11,14 +11,14 @@
 'use strict';
 
 /**
- * b-modal.js — Façade (ARCH-2 complet, PR5).
+ * b-modal.js â€” FaÃ§ade (ARCH-2 complet, PR5).
  *
- * Ce fichier est désormais une façade pure : il ré-exporte la surface publique
+ * Ce fichier est dÃ©sormais une faÃ§ade pure : il rÃ©-exporte la surface publique
  * de la modal sans contenir de logique. Tous les consommateurs existants
  * (b-catalog, b-favs, b-subcat, b-product-open-contract, boutique.js) continuent
- * d'importer depuis ce chemin — aucun changement côté consommateurs.
+ * d'importer depuis ce chemin â€” aucun changement cÃ´tÃ© consommateurs.
  *
- * Implémentation → b-modal-core.js (cycle open/close, state, overlay, body-lock,
+ * ImplÃ©mentation â†’ b-modal-core.js (cycle open/close, state, overlay, body-lock,
  * historique, setupModal) + les 4 sous-modules ARCH-2.
  */
 
