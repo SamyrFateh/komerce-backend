@@ -1295,7 +1295,7 @@
         "category": "boutique",
         "declared": "js/b-modal-approche-c-hybrid.js",
         "resolvedPath": "public/boutique/js/b-modal-approche-c-hybrid.js",
-        "status": "resolved-in-technical-graph"
+        "status": "missing-on-disk"
       },
       {
         "feature": "catalog",
@@ -2070,8 +2070,22 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "hub/js/hub.js",
+        "resolvedPath": "public/hub/js/hub.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "relais/index.html",
         "resolvedPath": "public/relais/index.html",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "relais/js/relais.js",
+        "resolvedPath": "public/relais/js/relais.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2569,6 +2583,13 @@
         "category": "dash",
         "declared": "login.html",
         "resolvedPath": "public/login.html",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "js/login.js",
+        "resolvedPath": "public/js/login.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5822,6 +5843,20 @@
       {
         "feature": "infrastructure",
         "category": "ci",
+        "declared": ".github/workflows/e2e-boutique.yml",
+        "resolvedPath": ".github/workflows/e2e-boutique.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows/e2e.yml",
+        "resolvedPath": ".github/workflows/e2e.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
         "declared": ".github/workflows/enrich-komerce-arch-db-fields-once.yml",
         "resolvedPath": ".github/workflows/enrich-komerce-arch-db-fields-once.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5859,6 +5894,13 @@
         "category": "ci",
         "declared": ".github/workflows/impact-check.yml",
         "resolvedPath": ".github/workflows/impact-check.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "ci",
+        "declared": ".github/workflows/pr-governance.yml",
+        "resolvedPath": ".github/workflows/pr-governance.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14638,6 +14680,14 @@
       {
         "boutiqueManifest": "boutique",
         "category": "js",
+        "declared": "../js/cart-product-summary.js",
+        "resolvedPath": "public/boutique/js/cart-product-summary.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
         "declared": "../js/b-desktop-global-cart-access.js",
         "resolvedPath": "public/boutique/js/b-desktop-global-cart-access.js",
         "exists": true,
@@ -14656,6 +14706,14 @@
         "category": "js",
         "declared": "../js/b-desktop-upgrade.js",
         "resolvedPath": "public/boutique/js/b-desktop-upgrade.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/anti-fouc.js",
+        "resolvedPath": "public/boutique/js/anti-fouc.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14704,22 +14762,6 @@
         "category": "js",
         "declared": "../js/b-mini-cart.js",
         "resolvedPath": "public/boutique/js/b-mini-cart.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "boutique",
-        "category": "js",
-        "declared": "../js/b-mobile-modal-v1.js",
-        "resolvedPath": "public/boutique/js/b-mobile-modal-v1.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "boutique",
-        "category": "js",
-        "declared": "../js/b-mobile-premium-v1.js",
-        "resolvedPath": "public/boutique/js/b-mobile-premium-v1.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14998,16 +15040,16 @@
       {
         "boutiqueManifest": "boutique",
         "category": "tests",
-        "declared": "../tests/unit/b-friendly-group-redirect.test.js",
-        "resolvedPath": "public/boutique/tests/unit/b-friendly-group-redirect.test.js",
+        "declared": "../tests/unit/b-bus.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-bus.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "boutique",
         "category": "tests",
-        "declared": "../tests/unit/b-mobile-modal-v1.test.js",
-        "resolvedPath": "public/boutique/tests/unit/b-mobile-modal-v1.test.js",
+        "declared": "../tests/unit/b-friendly-group-redirect.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-friendly-group-redirect.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15214,8 +15256,24 @@
       {
         "boutiqueManifest": "modal-product",
         "category": "boutique",
+        "declared": "../js/view-models/modal-cart-product-model.js",
+        "resolvedPath": "public/boutique/js/view-models/modal-cart-product-model.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
         "declared": "../js/view-models/product-content-model.js",
         "resolvedPath": "public/boutique/js/view-models/product-content-model.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
+        "declared": "../js/view-models/delivery-mode-model.js",
+        "resolvedPath": "public/boutique/js/view-models/delivery-mode-model.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15254,16 +15312,16 @@
       {
         "boutiqueManifest": "modal-product",
         "category": "boutique",
-        "declared": "../js/b-modal-desktop-enhancers.js",
-        "resolvedPath": "public/boutique/js/b-modal-desktop-enhancers.js",
+        "declared": "../js/b-modal-product-fields.js",
+        "resolvedPath": "public/boutique/js/b-modal-product-fields.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "modal-product",
         "category": "boutique",
-        "declared": "../js/b-modal-approche-c-hybrid.js",
-        "resolvedPath": "public/boutique/js/b-modal-approche-c-hybrid.js",
+        "declared": "../js/b-modal-desktop-enhancers.js",
+        "resolvedPath": "public/boutique/js/b-modal-desktop-enhancers.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15302,8 +15360,24 @@
       {
         "boutiqueManifest": "modal-product",
         "category": "boutique",
+        "declared": "../css/modal-mobile-suggestion-actions.css",
+        "resolvedPath": "public/boutique/css/modal-mobile-suggestion-actions.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
         "declared": "../css/modal-enriched-content.css",
         "resolvedPath": "public/boutique/css/modal-enriched-content.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "boutique",
+        "declared": "../css/modal-cart-sku-guard.css",
+        "resolvedPath": "public/boutique/css/modal-cart-sku-guard.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15320,6 +15394,14 @@
         "category": "tests",
         "declared": "../tests/unit/modal-selection-model.test.js",
         "resolvedPath": "public/boutique/tests/unit/modal-selection-model.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "tests",
+        "declared": "../tests/unit/modal-cart-product-model.test.js",
+        "resolvedPath": "public/boutique/tests/unit/modal-cart-product-model.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15374,16 +15456,24 @@
       {
         "boutiqueManifest": "modal-product",
         "category": "tests",
-        "declared": "../tests/unit/b-modal-desktop-enhancers.test.js",
-        "resolvedPath": "public/boutique/tests/unit/b-modal-desktop-enhancers.test.js",
+        "declared": "../tests/unit/modal-mobile-suggestion-actions.test.js",
+        "resolvedPath": "public/boutique/tests/unit/modal-mobile-suggestion-actions.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
       {
         "boutiqueManifest": "modal-product",
         "category": "tests",
-        "declared": "../tests/unit/b-modal-approche-c-hybrid.test.js",
-        "resolvedPath": "public/boutique/tests/unit/b-modal-approche-c-hybrid.test.js",
+        "declared": "../tests/unit/modal-mobile-canonical.test.js",
+        "resolvedPath": "public/boutique/tests/unit/modal-mobile-canonical.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "tests",
+        "declared": "../tests/unit/b-modal-desktop-enhancers.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-modal-desktop-enhancers.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16504,10 +16594,6 @@
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-modal-buybox-shared.test.js",
-                "targetFile": "public/boutique/js/b-share-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/tests/unit/b-modal-approche-c-hybrid.test.js",
                 "targetFile": "public/boutique/js/b-share-cart.js"
               }
             ]
@@ -20822,6 +20908,22 @@
       },
       {
         "from": "recommendations",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/b-modal-suggestions.js",
+                "targetFile": "public/boutique/js/render/render-product-card.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "recommendations",
         "to": "infrastructure",
         "channels": [
           {
@@ -21698,8 +21800,22 @@
       {
         "consumerManifest": "boutique",
         "sourceFileId": "public/boutique/js/b-modal-core.js",
+        "targetFile": "public/boutique/js/b-modal-product-fields.js",
+        "providerFeature": "catalog",
+        "channel": "static-code"
+      },
+      {
+        "consumerManifest": "boutique",
+        "sourceFileId": "public/boutique/js/b-modal-core.js",
         "targetFile": "public/boutique/js/b-modal-suggestions.js",
         "providerFeature": "recommendations",
+        "channel": "static-code"
+      },
+      {
+        "consumerManifest": "boutique",
+        "sourceFileId": "public/boutique/js/b-modal-cart.js",
+        "targetFile": "public/boutique/js/view-models/modal-cart-product-model.js",
+        "providerFeature": "catalog",
         "channel": "static-code"
       },
       {
@@ -21720,13 +21836,6 @@
         "consumerManifest": "boutique",
         "sourceFileId": "public/boutique/js/main.js",
         "targetFile": "public/boutique/js/b-cart-product-open-style.js",
-        "providerFeature": "catalog",
-        "channel": "static-code"
-      },
-      {
-        "consumerManifest": "boutique",
-        "sourceFileId": "public/boutique/js/main.js",
-        "targetFile": "public/boutique/js/b-modal-approche-c-hybrid.js",
         "providerFeature": "catalog",
         "channel": "static-code"
       },
@@ -21767,6 +21876,13 @@
       },
       {
         "consumerManifest": "boutique",
+        "sourceFileId": "public/boutique/js/b-cart.js",
+        "targetFile": "public/boutique/js/render/render-product-card.js",
+        "providerFeature": "catalog",
+        "channel": "static-code"
+      },
+      {
+        "consumerManifest": "boutique",
         "sourceFileId": "public/boutique/js/b-desktop-sidebar.js",
         "targetFile": "public/boutique/js/b-catalog.js",
         "providerFeature": "catalog",
@@ -21797,6 +21913,13 @@
         "consumerManifest": "boutique",
         "sourceFileId": "public/boutique/js/b-desktop-upgrade.js",
         "targetFile": "public/boutique/js/b-modal-desktop-enhancers.js",
+        "providerFeature": "catalog",
+        "channel": "static-code"
+      },
+      {
+        "consumerManifest": "boutique",
+        "sourceFileId": "public/boutique/js/b-favs.js",
+        "targetFile": "public/boutique/js/render/render-product-card.js",
         "providerFeature": "catalog",
         "channel": "static-code"
       },
@@ -22139,10 +22262,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 800
+        "filesObserved": 803
       },
       "boutique": {
-        "filesObserved": 106,
+        "filesObserved": 110,
         "nonCanonicalManifestFiles": 60
       },
       "dash": {
@@ -24965,8 +25088,8 @@
       "boutique": {
         "manifestsDiscovered": 10,
         "manifestsConnected": 10,
-        "technicalNodesTotal": 72,
-        "technicalNodesOwned": 72,
+        "technicalNodesTotal": 74,
+        "technicalNodesOwned": 74,
         "technicalOrphans": 0
       }
     },
@@ -25044,7 +25167,13 @@
     "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation=\"external-path-scope\" ci-dessus pour le scope concerné."
   },
   "drifts": {
-    "error": [],
+    "error": [
+      {
+        "type": "FILE-DECLARED-INEXISTANT",
+        "ref": "catalog / public/boutique/js/b-modal-approche-c-hybrid.js",
+        "msg": "catalog.files.boutique déclare \"js/b-modal-approche-c-hybrid.js\" -> \"public/boutique/js/b-modal-approche-c-hybrid.js\", introuvable sur disque"
+      }
+    ],
     "warn": [
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",

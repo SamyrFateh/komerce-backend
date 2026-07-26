@@ -311,7 +311,9 @@ module.exports = {
       'dashboards/admin/portal-pilotage.html',
       'dashboards/admin/portal-pilotage.js',
       'hub/index.html',
+      'hub/js/hub.js',
       'relais/index.html',
+      'relais/js/relais.js',
       'js/auth-guard.js',
       'js/parcel-components.js',
       'js/qr-viewer.js',
@@ -394,6 +396,7 @@ module.exports = {
 
       // ── Racine public/ ────────────────────────────────────────────
       'login.html',
+      'js/login.js',
       'manifest.json',
       'sw.js',
       'chart.umd.min.js',

@@ -74,7 +74,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 |---|---|---|---|---|---|
 | backend | 24 | 24 | 305 | 305 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 10 | 10 | 72 | 72 | 0 |
+| boutique | 10 | 10 | 74 | 74 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -181,7 +181,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 11
 - routes: 17
 - migrations: 1
-- dash: 80
+- dash: 83
 - tests: 33
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 22
@@ -261,7 +261,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 6
 - scripts: 85
 - docs: 167
-- ci: 23
+- ci: 26
 - assets: 37
 - db: 16
 - config: 11
@@ -1279,9 +1279,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 ## Drifts
 
-### ERROR (0)
+### ERROR (1)
 
-- none
+- **[FILE-DECLARED-INEXISTANT]** catalog / public/boutique/js/b-modal-approche-c-hybrid.js — catalog.files.boutique déclare "js/b-modal-approche-c-hybrid.js" -> "public/boutique/js/b-modal-approche-c-hybrid.js", introuvable sur disque
 
 ### WARN / DEBT (133)
 
@@ -1433,8 +1433,8 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 800 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 106 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
+- backend : 803 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 110 fichier(s) observés, dont 60 sous manifest non-canonique (canonicalFeature=null)
 - dash : 83 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -1465,7 +1465,7 @@ Meta Graph monté : oui.
 | catalog | economic-engine | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | infrastructure | static-code | 42 | **OBSERVED_UNDECLARED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| catalog | shared-cart | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| catalog | shared-cart | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | customs | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -1568,6 +1568,7 @@ Meta Graph monté : oui.
 | purchasing | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 2 | **OBSERVED_UNDECLARED** |
 | purchasing | orders | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| recommendations | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | recommendations | infrastructure | static-code | 1 | **OBSERVED_UNDECLARED** |
 | refunds | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | refunds | infrastructure | static-code | 3 | **OBSERVED_UNDECLARED** |
@@ -1694,7 +1695,6 @@ Meta Graph monté : oui.
 - `loyalty` → `wallet` (déclaré : `wallet (aucune écriture — v_loyalty_summary et le calcul de palier ne lisent pas les tables wallet)`)
 - `orders` → `purchasing` (déclaré : `purchasing (lecture — engagement fournisseur déclenché par une commande ; scindée d'orders au Lot O1.4)`)
 - `orders` → `dashboard` (déclaré : `dashboard`)
-- `recommendations` → `catalog` (déclaré : `catalog (lecture produit)`)
 - `recommendations` → `auth` (déclaré : `auth`)
 - `recommendations` → `logistics` (déclaré : `logistics`)
 - `refunds` → `orders` (déclaré : `orders (commande source)`)

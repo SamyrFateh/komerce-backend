@@ -11,13 +11,13 @@
  *                sont SILENCIEUSEMENT MORTS en production : aucune erreur
  *                serveur, aucun test unitaire en échec, juste une fonctionnalité
  *                qui n'existe pas.
- * @impact-areas  csp, boutique, hero, service-worker
+ * @impact-areas  csp, boutique, dashboard, hub, relais, hero, service-worker
  *
  * ── Pourquoi ce gate existe ────────────────────────────────────────────────
  * Le durcissement FRESH-030 / AUD-04 a retiré 'unsafe-inline' de `script-src`
- * dans bootstrap/security.js. Quatre <script> inline d'index.html sont restés
- * en place et ont cessé de s'exécuter en production, sans que rien ne le
- * signale pendant des semaines :
+ * dans bootstrap/security.js. Plusieurs <script> inline sont restés en place
+ * et ont cessé de s'exécuter en production, sans que rien ne le signale
+ * pendant des semaines. Sur `boutique/index.html` (audit initial) :
  *
  *   (index):5    réinitialisation « nucléaire » du service worker    → morte
  *   (index):35   gestion de la mise à jour du service worker         → morte
@@ -28,6 +28,15 @@
  * classe posée avant le CSS, `.k-hero-media` restait en `display:block` et
  * l'image hero s'affichait sur 1440px au lieu de 648px, jusqu'à ce qu'un
  * script externe finisse par poser la classe.
+ *
+ * P0-D (audit des coutures, AUDIT_COUTURES_COUCHES.md) a mesuré la même
+ * cause racine sur trois AUTRES fronts, hors du périmètre initial de ce
+ * gate : `/hub/`, `/relais/` et `/login.html` — chacun un mono-fichier avec
+ * toute sa logique dans un unique <script> inline, donc entièrement mort en
+ * production (squelette HTML peint, application jamais démarrée). Ce gate
+ * scannait uniquement `public/boutique/` et ne pouvait donc pas les voir :
+ * son périmètre est étendu à tout `public/` pour que ce point mort ne se
+ * reproduise pas ailleurs dans le dépôt.
  *
  * Aucun test local ne pouvait le voir : la CSP vient d'un en-tête HTTP servi
  * par l'application, pas du HTML. Un serveur de fichiers statique ne l'envoie
@@ -43,6 +52,7 @@ const path = require('path');
 
 const BOUTIQUE = path.resolve(__dirname, '..');
 const REPO = path.resolve(BOUTIQUE, '..', '..');
+const PUBLIC = path.resolve(REPO, 'public');
 const SECURITY = path.join(REPO, 'bootstrap', 'security.js');
 const strict = process.argv.includes('--strict');
 
@@ -93,7 +103,7 @@ function pagesHtml(dir, acc = []) {
 let total = 0;
 const parFichier = [];
 
-for (const f of pagesHtml(BOUTIQUE)) {
+for (const f of pagesHtml(PUBLIC)) {
   const src = fs.readFileSync(f, 'utf8');
   const lignes = src.split('\n');
   const trouves = [];
