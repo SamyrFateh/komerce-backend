@@ -109,7 +109,9 @@
     "predeploy:report": "node scripts/predeploy-gate.js --report",
     "predeploy:skip-tests": "node scripts/predeploy-gate.js --skip-tests",
     "prepare": "node -e \"if (!process.env.CI) require('child_process').execFileSync('bash',['scripts/setup-hooks.sh'],{stdio:'inherit'})\"",
-    "hooks:install": "bash scripts/setup-hooks.sh"
+    "hooks:install": "bash scripts/setup-hooks.sh",
+    "feature:invariant:check": "node scripts/feature-invariant-check.js",
+    "feature:invariant:check:strict": "node scripts/feature-invariant-check.js --strict"
   },
   "dependencies": {
     "ajv": "^8.20.0",

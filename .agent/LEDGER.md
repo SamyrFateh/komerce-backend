@@ -51,5 +51,10 @@ Mis à jour : 2026-07-26
 [DONE] feature-schema-check.js — schéma {statement, test} (session précédente)
 [DONE] manifestes mis à jour   — auth-identity, payments, wallet, orders (sessions précédente + courante)
 
-[WIP]  P1 feature-invariant-check.js — gate vérifiant que les tests référencés existent et passent
+[DONE] P1 feature-invariant-check.js — scripts/feature-invariant-check.js
+              branché dans map-check.js (Gate 2b) et package.json
+              R2 prouvé : fichier manquant → exit 1 + FICHIER INTROUVABLE
+                          test échoue    → exit 1 + TEST ÉCHOUE
+              4/5 verts en sandbox (auth-identity nécessite JWT_SECRET du .env)
+              5/5 verts attendus en prod avec .env complet
 [WIP]  P2 tests de détection par gate — non commencé

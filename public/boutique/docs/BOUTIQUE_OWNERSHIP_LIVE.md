@@ -55,6 +55,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `boutique.js` | 0 | 11 | 3/0 | Modal produit, Grille produits, Chips catégories |
 | `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/2 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
+| `hero-bootstrap.js` | 0 | 9 | 0/0 | Grille produits, Hero, Section catalogue |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
 | `b-modal-suggestions.js` | 6 | 0 | 1/3 | Modal produit |
 | `b-nav.js` | 5 | 1 | 2/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
@@ -78,27 +79,27 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 
 Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste est une violation.
 
-**Breakpoints distincts trouvés (9)** : 140px, 380px, 400px, 899px, 900px, 1024px, 1100px, 1200px, 1440px
+**Breakpoints distincts trouvés (5)** : 140px, 400px, 899px, 900px, 1200px
 
 | Fichier CSS | Breakpoints utilisés | Violations |
 |-------------|----------------------|:----------:|
 | hero.css | 140px, 899px, 900px | 🔴 140px, 899px |
-| layout.css | 899px, 900px, 1200px, 1100px | 🔴 899px, 1100px |
-| modal-product-lot4-hybrid.css | 900px, 1024px, 1440px | 🔴 1024px, 1440px |
-| modal-shell.css | 900px, 899px, 1200px, 1024px | 🔴 899px, 1024px |
 | cart.css | 900px, 899px | 🔴 899px |
 | categories.css | 900px, 1200px, 899px | 🔴 899px |
-| group-cart-flow.css | 900px, 1200px, 380px | 🔴 380px |
+| group-cart-flow.css | 900px, 1200px, 899px | 🔴 899px |
 | interactions.css | 899px | 🔴 899px |
+| layout.css | 899px, 900px, 1200px | 🔴 899px |
 | modal-enriched-content.css | 900px, 899px | 🔴 899px |
 | modal-media.css | 400px, 900px | 🔴 400px |
 | modal-mobile-canonical.css | 899px | 🔴 899px |
 | modal-mobile-suggestion-actions.css | 899px | 🔴 899px |
 | modal-product.css | 900px, 899px | 🔴 899px |
+| modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
 | products.css | 900px, 1200px, 899px | 🔴 899px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
 | hero-cart-proxy.css | 900px | ✅ |
 | identity.css | 900px | ✅ |
+| modal-product-lot4-hybrid.css | 900px, 1200px | ✅ |
 | reset.css | 900px | ✅ |
 | share-cart.css | 900px | ✅ |
 | shared-followup.css | 900px, 1200px | ✅ |
@@ -135,8 +136,8 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
 | Modules JS écrivant le DOM | 36 | ≤ 5 |
-| Breakpoints distincts | 9 | ≤ 2 |
-| Violations breakpoint | 18 | 0 |
+| Breakpoints distincts | 5 | ≤ 2 |
+| Violations breakpoint | 14 | 0 |
 | `!important` | 22 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

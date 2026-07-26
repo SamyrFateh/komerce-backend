@@ -158,7 +158,10 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    'toute route mutante passe par un middleware d\'auth declare — jamais d\'acces direct sans garde',
+    {
+      statement: 'toute route mutante passe par un middleware d\'auth declare — jamais d\'acces direct sans garde',
+      test: 'tests/invariants/auth-identity.mutating-routes-guarded.test.js',
+    },
     'les routes de ce manifeste s\'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc',
   ],
 

@@ -95,6 +95,17 @@ const STEPS = [
     cmd:      'node scripts/feature-schema-check.js --strict',
   },
 
+  // ── Gate 2b : invariants exécutables (P1 Bloc B) ──────────────────────
+  // Vérifie que tout invariant déclaré sous forme { statement, test }
+  // référence un fichier existant ET que ce test passe.
+  // Mode --strict : exit 1 si un invariant est rouge.
+  // env JWT_SECRET requis pour le test auth-identity (gen-security-360).
+  {
+    label:    'Gate 2b — Invariants exécutables (feature-invariant-check)',
+    category: 'gate',
+    cmd:      'node scripts/feature-invariant-check.js --strict',
+  },
+
   // ── Reconstruction architecture ────────────────────────────────────────
   {
     label:     'Arch gate (headers + graphe + schema drift)',
