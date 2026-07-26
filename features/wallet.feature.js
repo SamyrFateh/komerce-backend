@@ -139,7 +139,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    'application wallet une seule fois par evenement source',
+    { statement: 'application wallet une seule fois par evenement source',
+      test: 'tests/invariants/wallet.single-application-per-event.test.js' },
     'solde jamais negatif sans flag explicite admin',
   ],
 

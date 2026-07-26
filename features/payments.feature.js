@@ -200,9 +200,11 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    'idempotence stricte sur tout webhook (Stripe, PayPal)',
+    { statement: 'idempotence stricte sur tout webhook (Stripe, PayPal)',
+      test: 'tests/invariants/payments.webhook-idempotency.test.js' },
     'aucun secret de paiement en dur dans le code',
-    'un paiement confirme ne peut etre confirme deux fois',
+    { statement: 'un paiement confirme ne peut etre confirme deux fois',
+      test: 'tests/invariants/payments.no-double-confirm.test.js' },
   ],
 
 };

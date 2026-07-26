@@ -257,7 +257,8 @@ module.exports = {
   invariants: [
     'annulation libre et 100% avant ordered (plancher 24h) ; commande ferme des ordered — demande wallet-only ensuite (DOCTRINE_ANNULATION)',
     'le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait',
-    'tout remboursement retourne au payeur, jamais au destinataire',
+    { statement: 'tout remboursement retourne au payeur, jamais au destinataire',
+      test: 'tests/invariants/orders.refund-to-payer.test.js' },
     'reference de commande lisible et unique',
     'snapshot de cout figure a la creation, jamais recalcule retroactivement',
     'transition de statut uniquement via order-status-machine.js',
