@@ -57,4 +57,15 @@ Mis à jour : 2026-07-26
                           test échoue    → exit 1 + TEST ÉCHOUE
               4/5 verts en sandbox (auth-identity nécessite JWT_SECRET du .env)
               5/5 verts attendus en prod avec .env complet
-[WIP]  P2 tests de détection par gate — non commencé
+[DONE] P2 tests de détection par gate
+              public/boutique/tests/gates/gates-detect.test.js (24 tests, 24 verts)
+              jest.gates.config.js + npm run gate:detect
+              12 gates couverts : check:important, check:breakpoints,
+                check:no-injection, check:body-classes, check:css-dist-only,
+                check:css-guard, check:sticky (gabarit), check:html,
+                quality:gate, audit:registry, audit:arch, check:imports
+              5 non testables isolément (agrégateurs/env) documentés
+              R2 intégré dans chaque test (violation → exit 1 pour la bonne raison)
+[WIP]  P2 gates restants — 7 gates de génération/arch validés exit 0
+              à compléter : audit:modal-layout, audit:modal-ownership,
+              feature:guard:strict, check:group-wording, check:assets

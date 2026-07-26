@@ -89,7 +89,11 @@
     "audit:modal-layout": "node scripts/audit-modal-layout.js",
     "check:sticky": "node scripts/check-sticky-integrity.js --strict",
     "check:inline-scripts": "node scripts/check-inline-scripts.js",
-    "check:inline-scripts:strict": "node scripts/check-inline-scripts.js --strict"
+    "check:inline-scripts:strict": "node scripts/check-inline-scripts.js --strict",
+    "test:gates": "jest --config jest.gates.config.js --runInBand",
+    "test:gates:verbose": "jest --config jest.gates.config.js --runInBand --verbose",
+    "gate:detect": "jest --config jest.gates.config.js --runInBand",
+    "gate:detect:verbose": "jest --config jest.gates.config.js --runInBand --verbose"
   },
   "keywords": [],
   "author": "",
