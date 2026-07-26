@@ -1,0 +1,59 @@
+P2 — check:css-specificity-guard (bloc 19/19) — bug de flakiness du gate lui-même
+====================================================================================
+
+SYMPTÔME
+--------
+Le test de détection (bloc 19, gates-detect.test.js) échouait de façon non
+déterministe : nombre de "findings" variable (49 / 29 / 30 / 34 / 38...) sur
+un contenu CSS strictement identique, uniquement quand rebuild()+guard()
+étaient rejoués en boucle depuis un même process Node parent (spawnSync
+répété) — ce qui est exactement le mode d'exécution de jest/check:all.
+
+ÉLIMINÉ (ordre chronologique de la traque)
+-------------------------------------------
+- jest / runInBand              → non : reproductible hors jest
+- ordre de lecture de js/*.js   → non : readdirSync stable (10 process séparés)
+- contenu de css/dist/*.css     → non : md5 identique à chaque rebuild (5x)
+- discoverGlobalClasses()       → non : toujours les 9 mêmes classes, isolée
+- logique de scan()/parseCSS()  → non : DBG_FINDINGS = 49 sur les 20 itérations
+                                    internes, sans exception — la valeur calculée
+                                    est stable, seule la sortie capturée varie
+
+ROOT CAUSE
+----------
+scripts/css-specificity-guard.js appelait process.exit(code) immédiatement
+après un gros volume de console.log(). En sortie non-TTY (pipe — le cas
+systématique quand ce script est spawné par un parent : npm, jest,
+check:all), process.exit() peut terminer le process AVANT que Node ait fini
+de vider le buffer stdout vers le pipe. Résultat : sortie tronquée côté
+lecteur, de façon non déterministe selon la charge du process parent —
+piège Node.js classique (stdout asynchrone sur pipe + high-volume + exit
+immédiat = perte de sortie).
+
+CORRECTIF
+---------
+Remplacement des 6 points de sortie process.exit(n) par process.exitCode = n
++ return, le tout encapsulé dans une fonction main() appelée en fin de
+fichier. Comportement logique inchangé (mêmes codes de sortie dans les mêmes
+cas) ; seul le mécanisme de terminaison change, laissant Node vider stdout
+naturellement avant la fin réelle du process.
+
+VALIDATION R2 (cette session)
+------------------------------
+1. Application des fichiers corrigés (css-specificity-guard.js sans
+   process.exit(), gates-detect.test.js sans instrumentation de debug
+   temporaire) sur la copie de travail du dépôt.
+2. npm run gate:detect — suite complète (19 gates / 38 tests) : 8 exécutions
+   consécutives, 38/38 tests verts à chaque fois, exit 0 à chaque fois.
+3. Isolation du bloc 19 seul (jest -t "css-specificity-guard") : 15 exécutions
+   consécutives, 2/2 tests verts à chaque fois — aucune trace de la
+   variance 49/29/30/34/38 observée avant correctif.
+4. Vérification qu'aucun process.exit() réel ne subsiste dans le script
+   (seule occurrence : la mention dans le commentaire explicatif).
+5. Aucun fichier de backup orphelin, aucune instrumentation de debug
+   (DBG_FINDINGS, dump temporaire) résiduelle dans le test ou le script.
+
+CONCLUSION
+----------
+check:css-specificity-guard est maintenant fiable. Les 19/19 gates du
+harnais de détection sont couverts et stables. P2 est complet.

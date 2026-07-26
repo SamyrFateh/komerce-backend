@@ -37,6 +37,16 @@ Mis à jour : 2026-07-26
                 2. Interface admin : déclarer combinaisons + stock réel pour produits avec variantes
                 3. node scripts/check-sku-coverage.js --backfill --apply --switch-ready  (quand prêt)
 
+[REVIEW] P2 scan repo-wide — pattern process.exit()+high-volume console.log
+              retrouvé dans ~90 autres scripts de scripts/, public/boutique/scripts/,
+              public/dashboards/scripts/ et public/scripts/ (grep console.log>5 +
+              process.exit présent). Le gabarit de correctif est le même
+              (process.exitCode + return dans main()) mais l'ampleur (repo entier)
+              et la priorité ne se décident pas d'office ici — décision de
+              périmètre à prendre, pas encore appliqué ailleurs que
+              css-specificity-guard.js. Liste complète non archivée pour
+              économie de tokens ; regénérable via le même grep si besoin.
+
 ## Bloc B — Gouvernance exécutable
 
 [DONE] P1 invariant #1 auth-identity — tests/invariants/auth-identity.mutating-routes-guarded.test.js
@@ -66,6 +76,21 @@ Mis à jour : 2026-07-26
                 quality:gate, audit:registry, audit:arch, check:imports
               5 non testables isolément (agrégateurs/env) documentés
               R2 intégré dans chaque test (violation → exit 1 pour la bonne raison)
-[WIP]  P2 gates restants — 7 gates de génération/arch validés exit 0
-              à compléter : audit:modal-layout, audit:modal-ownership,
-              feature:guard:strict, check:group-wording, check:assets
+[DONE] P2 gates restants — 7/7 gates ajoutés (session courante) :
+              audit:modal-layout, audit:modal-ownership, check:group-wording,
+              check:assets, feature:guard:strict, check:cache,
+              check:css-specificity-guard
+              → 19/19 gates couverts, gates-detect.test.js (38 tests, 38 verts)
+              R2 : npm run gate:detect x8 verts + bloc css-specificity-guard
+              isolé x15 verts — preuve : .agent/evidence/P2/
+              css-specificity-guard-stdout-truncation.txt
+[DONE] P2 bug réel trouvé hors périmètre — check:css-specificity-guard
+              lui-même était non déterministe (49/29/30/34/38 findings sur
+              contenu identique) à cause d'un process.exit() tronquant
+              stdout avant vidage complet du buffer (pipe non-TTY, high
+              volume). Root cause isolée par élimination successive
+              (jest/ordre fichiers/contenu CSS/logique de scan éliminés un
+              par un). Correctif : process.exitCode + return dans main(),
+              6 points de sortie remplacés. R2 : 25 spawns rapides stables
+              avant, 8+15 exécutions stables après (session courante) —
+              preuve : .agent/evidence/P2/css-specificity-guard-stdout-truncation.txt

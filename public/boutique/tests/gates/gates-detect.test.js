@@ -320,3 +320,197 @@ describe('gate check:imports', () => {
     expect(r.stdout + r.stderr).toMatch(/inexistant|not found|import|r2-detect/i);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════
+// 13. audit:modal-layout — hauteur fixe px sur une zone de flux
+// ══════════════════════════════════════════════════════════════════════
+describe('gate audit:modal-layout', () => {
+  const TARGET = path.join(ROOT, 'css', 'modal-media.css');
+
+  test('état initial → exit 0', () => {
+    const r = runGate('audit-modal-layout.js');
+    expect(r.code).toBe(0);
+  });
+
+  test('height fixe px sur zone de flux → exit 1 + zone ciblée', () => {
+    backup(TARGET);
+    fs.appendFileSync(TARGET, '\n/* R2 */ .k-modal-scroll { height: 320px; }\n');
+    const r = runGate('audit-modal-layout.js');
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/k-modal-scroll/);
+    expect(r.stdout + r.stderr).toMatch(/height:320px|320px/);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 14. audit:modal-ownership — écrivain non déclaré sur une zone
+// ══════════════════════════════════════════════════════════════════════
+describe('gate audit:modal-ownership', () => {
+  // k-modal-name : owner unique déclaré = b-modal-product-fields.js, allow: []
+  const TARGET = path.join(ROOT, 'js', 'b-modal-suggestions.js');
+
+  test('état initial → exit 0', () => {
+    const r = runGate('audit-modal-ownership.js');
+    expect(r.code).toBe(0);
+  });
+
+  test('écrivain non déclaré sur k-modal-name → exit 1 + zone ciblée', () => {
+    backup(TARGET);
+    const src = fs.readFileSync(TARGET, 'utf8');
+    fs.writeFileSync(
+      TARGET,
+      "document.getElementById('k-modal-name').textContent = 'R2-detect';\n" + src
+    );
+    const r = runGate('audit-modal-ownership.js');
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/k-modal-name/);
+    expect(r.stdout + r.stderr).toMatch(/b-modal-suggestions\.js/);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 15. check:group-wording — libellé interdit réintroduit
+// ══════════════════════════════════════════════════════════════════════
+describe('gate check:group-wording', () => {
+  const TARGET = path.join(ROOT, 'js', 'anti-fouc.js');
+
+  test('état initial → exit 0', () => {
+    const r = runGate('check-group-wording.js');
+    expect(r.code).toBe(0);
+  });
+
+  test('libellé interdit injecté → exit 1 + libellé ciblé', () => {
+    backup(TARGET);
+    fs.appendFileSync(TARGET, "\n// R2 detect: 'Enregistrer ma participation'\n");
+    const r = runGate('check-group-wording.js');
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/Enregistrer ma participation/);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 16. check:assets — nouvelle référence d'asset manquant sur disque
+// ══════════════════════════════════════════════════════════════════════
+describe('gate check:assets', () => {
+  const TARGET = path.join(ROOT, 'index.html');
+
+  test('état initial → exit 0 (baseline gelée, 0 nouvelle régression)', () => {
+    const r = runGate('check-assets.js', ['--strict']);
+    expect(r.code).toBe(0);
+  });
+
+  test('nouvelle référence manquante hors baseline → exit 1 + asset ciblé', () => {
+    backup(TARGET);
+    const src = fs.readFileSync(TARGET, 'utf8');
+    fs.writeFileSync(TARGET, src + '\n<!-- R2 --><img src="/images/r2-detect-missing.png">\n');
+    const r = runGate('check-assets.js', ['--strict']);
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/r2-detect-missing\.png/);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 17. feature:guard:strict — fichier déclaré absent du disque
+//     (gate boutique : public/boutique/scripts/feature-guard.js — distinct
+//      du gate backend homonyme scripts/feature-guard.js à la racine repo ;
+//      check:all du package.json boutique appelle bien le premier)
+// ══════════════════════════════════════════════════════════════════════
+describe('gate feature:guard:strict', () => {
+  const TARGET = path.join(ROOT, 'features', 'modal-product.feature.js');
+
+  test('état initial → exit 0', () => {
+    const r = runGate('feature-guard.js', ['--strict', '--feature', 'modal-product']);
+    expect(r.code).toBe(0);
+  });
+
+  test("fichier déclaré absent du disque → exit 1 + chemin ciblé", () => {
+    backup(TARGET);
+    const src = fs.readFileSync(TARGET, 'utf8');
+    const injected = src.replace(
+      "'../js/view-models/modal-selection-model.js',",
+      "'../js/view-models/modal-selection-model.js',\n      '../js/view-models/r2-detect-inexistant.js',"
+    );
+    expect(injected).not.toBe(src); // garde-fou : l'ancrage doit avoir matché
+    fs.writeFileSync(TARGET, injected);
+    const r = runGate('feature-guard.js', ['--strict', '--feature', 'modal-product']);
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/r2-detect-inexistant\.js/);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 18. check:cache — dist périmé vs sources (deploy-css.js --dry)
+//     Lit css/dist/*.css comme check:css-guard et check:sticky (blocs 6-7,
+//     plus haut dans ce fichier) : on rebuild explicitement AVANT l'état
+//     initial pour ne pas hériter d'un dist resté sale d'un bloc précédent
+//     (même risque que documenté par la session P2 précédente).
+// ══════════════════════════════════════════════════════════════════════
+describe('gate check:cache', () => {
+  const TARGET = path.join(ROOT, 'css', 'modal-media.css');
+
+  function rebuild() {
+    spawnSync('node', [path.join(ROOT, 'scripts', 'deploy-css.js')],
+      { cwd: ROOT, encoding: 'utf8', timeout: 30_000 });
+  }
+
+  test('état initial → exit 0 (dist synchronisé avec les sources)', () => {
+    rebuild(); // neutralise un dist sale hérité des blocs css-guard/sticky précédents
+    const r = runGate('deploy-css.js', ['--dry']);
+    expect(r.code).toBe(0);
+  });
+
+  test('source modifiée sans rebuild → dist périmé → exit 1', () => {
+    backup(TARGET);
+    fs.appendFileSync(TARGET, '\n/* R2 */ .k-r2-detect-cache { color: red; }\n');
+    // volontairement PAS de rebuild ici : --dry doit détecter l'écart
+    const r = runGate('deploy-css.js', ['--dry']);
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/périmé|components\.css|bundle/i);
+    // restaure et re-synchronise tout de suite (au lieu de compter sur l'afterEach
+    // global, qui ne touche que la source, jamais le dist généré)
+    restore(TARGET);
+    rebuild();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════
+// 19. check:css-specificity-guard — override silencieux via classe globale
+// ══════════════════════════════════════════════════════════════════════
+describe('gate check:css-specificity-guard', () => {
+  const TARGET = path.join(ROOT, 'css', 'modal-media.css');
+
+  function rebuild() {
+    spawnSync('node', [path.join(ROOT, 'scripts', 'deploy-css.js')],
+      { cwd: ROOT, encoding: 'utf8', timeout: 30_000 });
+  }
+
+  test('état initial → exit 0 (pas de hausse hors baseline)', () => {
+    rebuild();
+    const r = runGate('css-specificity-guard.js', ['--strict']);
+    expect(r.code).toBe(0);
+  });
+
+  test('nouvel override via classe globale connue (k-home-premium-v1) → exit 1', () => {
+    backup(TARGET);
+    // .k-home-premium-v1 est une classe globale déjà posée sur <html> ailleurs
+    // dans le code (détectée par discoverGlobalClasses) — on réutilise ce vrai
+    // signal plutôt que d'en inventer un nouveau, pour rester dans le périmètre
+    // exact que le gate surveille.
+    fs.appendFileSync(TARGET, `
+/* R2 */
+.k-r2-detect-target {
+  color: blue;
+}
+html.k-home-premium-v1 .k-r2-detect-target {
+  color: red;
+}
+`);
+    rebuild();
+    const r = runGate('css-specificity-guard.js', ['--strict']);
+    expect(r.code).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/k-r2-detect-target/);
+    expect(r.stdout + r.stderr).toMatch(/k-home-premium-v1/);
+    restore(TARGET);
+    rebuild();
+  });
+});

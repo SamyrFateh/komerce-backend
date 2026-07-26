@@ -241,6 +241,19 @@ function loadBaseline() {
 }
 
 /* ── Exécution ───────────────────────────────────────────────────────── */
+//
+// NOTE : on utilise `return` dans main() + `process.exitCode`, jamais
+// `process.exit()`, volontairement. `process.exit()` peut terminer le
+// process AVANT que le buffer stdout (pipe non-TTY, ce qui est le cas
+// systématique quand ce script est spawné par un parent — npm, jest,
+// check:all) soit entièrement vidé quand la sortie est volumineuse.
+// Conséquence observée : sortie tronquée de façon non déterministe côté
+// process appelant (findings réellement calculés stables, mais
+// partiellement absents du stdout capturé). Root-cause isolée en session
+// R2 sur check:css-specificity-guard — voir .agent/evidence/P2/
+// css-specificity-guard-stdout-truncation.txt.
+
+function main() {
 
 const globalClasses = discoverGlobalClasses();
 
@@ -248,13 +261,14 @@ console.log(`${BLD}CSS Specificity Guard — classes d'état globales détectée
 [...globalClasses].sort().forEach(c => console.log(`  ${DIM}.${c}${R}`));
 console.log('');
 
-if (classesOnly) process.exit(0);
+if (classesOnly) { process.exitCode = 0; return; }
 
 const findings = scan(globalClasses);
 
 if (findings.length === 0) {
   console.log(`${GRN}${BLD}✔ Aucun override de spécificité via classe globale détecté.${R}`);
-  process.exit(0);
+  process.exitCode = 0;
+  return;
 }
 
 console.log(`${BLD}Overrides silencieux détectés (invisibles pour css-guard.js) :${R}\n`);
@@ -272,23 +286,29 @@ if (save) {
   const keys = findings.map(keyOf).sort();
   fs.writeFileSync(BASELINE, JSON.stringify({ total: keys.length, keys, savedAt: new Date().toISOString() }, null, 2));
   console.log(`${GRN}${BLD}✔ Baseline figée à ${keys.length} override(s).${R}`);
-  process.exit(0);
+  process.exitCode = 0;
+  return;
 }
 
-if (!strict) process.exit(0);
+if (!strict) { process.exitCode = 0; return; }
 
 const baseline = loadBaseline();
 if (!baseline) {
   console.error(`${RED}${BLD}✖ Aucune baseline css-specificity-guard.${R} Lance d'abord : node scripts/css-specificity-guard.js --save`);
-  process.exit(1);
+  process.exitCode = 1;
+  return;
 }
 const known = new Set(baseline.keys || []);
 const regressions = findings.map(f => ({ f, k: keyOf(f) })).filter(x => !known.has(x.k));
 
 if (regressions.length === 0) {
   console.log(`\n${GRN}${BLD}✔ Aucune hausse hors baseline.${R}`);
-  process.exit(0);
+  process.exitCode = 0;
+  return;
 }
 
 console.log(`\n${RED}${BLD}✖ ${regressions.length} nouvel/nouveaux override(s) hors baseline.${R}`);
-process.exit(1);
+process.exitCode = 1;
+}
+
+main();
