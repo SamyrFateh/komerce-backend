@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-26T01:47:31.880Z",
+  "generatedAt": "2026-07-26T08:04:02.275Z",
   "summary": {
-    "modules": 72,
-    "withHeader": 72,
+    "modules": 73,
+    "withHeader": 73,
     "events": 20,
     "declaredActive": 12,
     "declaredDead": 9,
@@ -16,6 +16,22 @@
     "dynamicEndpoints": 24
   },
   "modules": [
+    {
+      "file": "public/boutique/js/anti-fouc.js",
+      "id": "anti-fouc",
+      "hasHeader": true,
+      "role": "boutique-anti-fouc",
+      "domain": "boutique",
+      "layer": "ui-bootstrap",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
     {
       "file": "public/boutique/js/b-boutique-wow-style.js",
       "id": "b-boutique-wow-style",

@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 378
+- Scanned code files: 379
 - Files with full headers: 352
-- Files with lite headers: 26
-- Files with any headers: 378
+- Files with lite headers: 27
+- Files with any headers: 379
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 775
-- Edges: 4365
+- Graph nodes: 778
+- Edges: 4369
 - DB tables: 116
 - Doctrines: 154
-- Impact areas: 127
+- Impact areas: 129
 - Unresolved code edges: 420
 - Tables multi-écrivains directs (>=2): 67
 - Avertissements db-write / db-write-via en chevauchement: 0
@@ -27,7 +27,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 4
 - bootstrap: 1
-- boutique: 34
+- boutique: 35
 - catalog: 55
 - checkout: 2
 - customs: 6
@@ -73,6 +73,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - service: 154
 - state: 1
 - state-store: 1
+- ui-bootstrap: 1
 - ui-component: 36
 - ui-controller: 1
 - ui-enhancer: 3
@@ -332,6 +333,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Lite Aggregated Files
 
+- public/boutique/js/anti-fouc.js -> owner public/boutique/js/b-home-premium-v1.js (boutique-anti-fouc)
 - public/boutique/js/b-boutique-wow-style.js -> owner public/boutique/js/boutique.js (boutique-b-boutique-wow-style)
 - public/boutique/js/b-cart-product-open-style.js -> owner public/boutique/js/b-modal-core.js (catalog-b-cart-product-open-style)
 - public/boutique/js/b-desktop-global-cart-access.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-global-cart-access)

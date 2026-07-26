@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 378,
+    "scannedCodeFiles": 379,
     "filesWithFullHeaders": 352,
-    "filesWithLiteHeaders": 26,
-    "filesWithAnyHeaders": 378,
+    "filesWithLiteHeaders": 27,
+    "filesWithAnyHeaders": 379,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 775,
-    "edges": 4365,
+    "graphNodes": 778,
+    "edges": 4369,
     "dbTables": 116,
     "doctrines": 154,
-    "impactAreas": 127,
+    "impactAreas": 129,
     "unresolvedCodeEdges": 420,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 67
@@ -34,7 +34,7 @@
     "notification": 16,
     "auth": 8,
     "logistics": 35,
-    "boutique": 34,
+    "boutique": 35,
     "catalog": 55,
     "checkout": 2,
     "shared-cart": 42,
@@ -65,6 +65,7 @@
     "cron": 1,
     "manual-test": 1,
     "middleware": 11,
+    "ui-bootstrap": 1,
     "ui-component": 36,
     "ui-enhancer": 3,
     "ui-renderer": 9,
@@ -95,7 +96,7 @@
     "critical": 76,
     "medium": 104,
     "high": 165,
-    "low": 33
+    "low": 34
   },
   "nodes": [
     {
@@ -993,6 +994,33 @@
         "auth"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/anti-fouc.js",
+      "file": "public/boutique/js/anti-fouc.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "boutique-anti-fouc",
+      "domain": "boutique",
+      "layer": "ui-bootstrap",
+      "criticality": "low",
+      "owner": "public/boutique/js/b-home-premium-v1.js",
+      "purpose": "pose k-home-premium-v1 avant application du CSS (owner de la classe : b-home-premium-v1.js)",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "boutique",
+        "hero",
+        "csp"
+      ],
+      "version": "2026-07"
     },
     {
       "id": "public/boutique/js/b-boutique-wow-style.js",
@@ -19232,6 +19260,16 @@
       "area": "quality"
     },
     {
+      "id": "impact:hero",
+      "type": "impact-area",
+      "area": "hero"
+    },
+    {
+      "id": "impact:csp",
+      "type": "impact-area",
+      "area": "csp"
+    },
+    {
       "id": "impact:cart",
       "type": "impact-area",
       "area": "cart"
@@ -21181,6 +21219,30 @@
       "to": "impact:auth",
       "type": "impact",
       "label": "auth"
+    },
+    {
+      "from": "public/boutique/js/anti-fouc.js",
+      "to": "public/boutique/js/b-home-premium-v1.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/b-home-premium-v1.js"
+    },
+    {
+      "from": "public/boutique/js/anti-fouc.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/anti-fouc.js",
+      "to": "impact:hero",
+      "type": "impact",
+      "label": "hero"
+    },
+    {
+      "from": "public/boutique/js/anti-fouc.js",
+      "to": "impact:csp",
+      "type": "impact",
+      "label": "csp"
     },
     {
       "from": "public/boutique/js/b-boutique-wow-style.js",
@@ -47010,6 +47072,32 @@
         "utils/logger.js"
       ]
     },
+    "public/boutique/js/anti-fouc.js": {
+      "role": "boutique-anti-fouc",
+      "domain": "boutique",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/b-home-premium-v1.js",
+      "purpose": "pose k-home-premium-v1 avant application du CSS (owner de la classe : b-home-premium-v1.js)",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "boutique",
+        "hero",
+        "csp"
+      ],
+      "mustCheck": [
+        "impact:boutique",
+        "impact:csp",
+        "impact:hero",
+        "public/boutique/js/b-home-premium-v1.js"
+      ]
+    },
     "public/boutique/js/b-boutique-wow-style.js": {
       "role": "boutique-b-boutique-wow-style",
       "domain": "boutique",
@@ -47891,7 +47979,9 @@
       "purpose": "supports public/boutique/js/b-catalog.js",
       "directDependsOn": [],
       "directUsedBy": [],
-      "ownedFiles": [],
+      "ownedFiles": [
+        "public/boutique/js/anti-fouc.js"
+      ],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -47901,6 +47991,7 @@
       ],
       "mustCheck": [
         "impact:boutique",
+        "public/boutique/js/anti-fouc.js",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-catalog.js"
       ]

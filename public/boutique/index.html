@@ -88,12 +88,16 @@ if('serviceWorker' in navigator){
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
 <!-- desktop = boutique-desktop -->
 <!-- event   = chargé sur toutes les pages pour l'instant (à isoler sur /event/*) -->
-<script>/* Anti-FOUC premium desktop — doit s'exécuter AVANT tout CSS rendu */
-(function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
-</script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=144">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=278">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=77">
+<!-- Anti-FOUC premium desktop — DOIT s'exécuter avant tout CSS rendu.
+     Externalisé (2026-07) : la CSP de bootstrap/security.js pose
+     script-src 'self' sans 'unsafe-inline' (FRESH-030 / AUD-04), ce script
+     était donc BLOQUÉ en production — cause racine du flash du hero.
+     Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
+     déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
+<script src="/boutique/js/anti-fouc.js"></script>
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=146">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=282">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=79">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
      cascade, alors que deploy-css.js ne le régénérait jamais (absent de

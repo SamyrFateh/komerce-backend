@@ -53,6 +53,7 @@ module.exports = {
       '../js/b-desktop-global-cart-access.js',
       '../js/b-desktop-sidebar.js',
       '../js/b-desktop-upgrade.js',
+      '../js/anti-fouc.js',
       '../js/b-favs.js',
       '../js/b-friendly-group-redirect.js',
       '../js/b-greeting.js',
