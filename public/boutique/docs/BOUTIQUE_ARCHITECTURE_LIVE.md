@@ -44,9 +44,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=144
- 2. /boutique/css/dist/components.css?v=278
- 3. /boutique/css/dist/desktop.css?v=77
+ 1. /boutique/css/dist/base.css?v=146
+ 2. /boutique/css/dist/components.css?v=282
+ 3. /boutique/css/dist/desktop.css?v=79
 ```
 
 ## 3. Cartographie des sélecteurs critiques

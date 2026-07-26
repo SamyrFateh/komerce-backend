@@ -95,9 +95,9 @@ if('serviceWorker' in navigator){
      Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=146">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=282">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=79">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=147">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=285">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=80">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
      cascade, alors que deploy-css.js ne le régénérait jamais (absent de
@@ -500,17 +500,24 @@ if('serviceWorker' in navigator){
             <div id="k-modal-payment" class="k-modal-payment"></div>
           </div><!-- end .k-modal-info -->
         </div><!-- end .k-modal-details -->
+        <!-- REF-2026-07 — CONFORMITÉ RÉFÉRENCE CANONIQUE §4 « Composition desktop » :
+               médias | informations produit | panier
+               suggestions sur médias + informations | panier
+             Ces deux blocs étaient SŒURS de .k-modal-product-zone. Conséquence
+             mesurée : la rangée 2 de la grille (grid-template-rows: 1fr auto)
+             restait à 0px, donc le hero en grid-row:1/-1 n'avait aucune course
+             au-delà de la zone — il décrochait dès l'entrée dans les suggestions
+             (42 variantes + 6 suggestions : collé jusqu'à scroll 400, décroché
+             à 600). Rapatriés DANS la grille, la rangée 2 passe de 0px à 1057px
+             et le hero reste épinglé sur toute l'amplitude (1201px).
+             Sur mobile .k-modal-product-zone est en display:contents : ces blocs
+             restent dans le flux vertical, à la même place. Aucun impact. -->
+        <div id="k-modal-enriched-content" class="k-modal-enriched-content" hidden></div>
+        <div class="k-modal-suggestions" id="k-modal-suggestions">
+          <h3>Vous aimerez aussi</h3>
+          <div class="k-sug-rail" id="k-sug-rail"></div>
+        </div>
       </div><!-- end .k-modal-product-zone -->
-      <!-- Contenu enrichi (Lot Content) — sous la zone transactionnelle, peuplé
-           par b-modal-desktop-product.js / renderEnrichedContent(). Masqué mobile
-           (display:none par défaut) · révélé ≥900px via modal-enriched-content.css.
-           Vide/hidden pour un produit sans matière enrichie (aucun bloc fantôme). -->
-      <div id="k-modal-enriched-content" class="k-modal-enriched-content" hidden></div>
-      <!-- Suggestions : pleine largeur desktop, dans le scroll mobile -->
-      <div class="k-modal-suggestions" id="k-modal-suggestions">
-        <h3>Vous aimerez aussi</h3>
-        <div class="k-sug-rail" id="k-sug-rail"></div>
-      </div>
     </div>
     <!-- Slot panier latéral desktop — vide au chargement, #k-side-cart y est
          reparenté par mountSideCartInModal() (b-modal-core.js) à l'ouverture
