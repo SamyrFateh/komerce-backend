@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main, master ]
 
+permissions:
+  contents: write
+
 concurrency:
   group: carte-first-${{ github.ref }}
   cancel-in-progress: true
@@ -46,7 +49,6 @@ jobs:
         if: github.event_name == 'pull_request'
         run: npm run gate:touched-files
 
-      # ── Gate : body PR contient un plan d'attaque structuré ──────────────
       - name: Plan d'attaque PR (body)
         if: github.event_name == 'pull_request'
         env:
@@ -55,12 +57,6 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node scripts/pr-governance-check.js
 
-      # ── Gate : fichiers applicatifs touchés ↔ signal test ───────────────
-      # --strict active la règle de complétion au contact (QUALITY_PYRAMID_DOCTRINE.md
-      # Niveau 3.1) : si un fichier ET son test sont touchés, la couverture doit
-      # atteindre le seuil cible (governance/coverage-thresholds.json), pas juste
-      # "un test existe". Le gate sélectionne le Jest du workspace concerné
-      # (backend racine ou public/boutique) — d'où l'install boutique ci-dessus.
       - name: Code touché ↔ signal test (touched-tests, strict)
         if: github.event_name == 'pull_request'
         env:
@@ -80,3 +76,66 @@ jobs:
 
       - name: Map reconstruction
         run: npm run map:check
+
+  p3b-closure:
+    name: P3b closure 18/18
+    if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[p3b-generated]')
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix public/boutique ci
+
+      - name: Generate Feature 360
+        run: npm run feature:360:gen 2>&1 | tee p3b-feature-gen.log
+
+      - name: Verify Feature 360
+        run: npm run feature:360:check 2>&1 | tee p3b-feature-check.log
+
+      - name: Verify full governance map
+        run: npm run map:check 2>&1 | tee p3b-map-check.log
+
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3b-closure-logs-${{ github.run_id }}
+          path: p3b-*.log
+          if-no-files-found: warn
+          retention-days: 1
+
+      - name: Commit generated artifacts
+        if: success()
+        run: |
+          rm -f p3b-*.log
+          git config user.name "Komerce Governance Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/GATE_FINDINGS.json docs/FEATURE_360.json docs/FEATURE_360.md docs/BUSINESS_FEATURE_GRAPH.json docs/BUSINESS_FEATURE_GRAPH.md docs/BOUTIQUE_360.json docs/BOUTIQUE_360.md docs/META_GRAPH.json docs/META_GRAPH.md
+          if git diff --cached --quiet; then
+            echo "No generated delta"
+          else
+            git commit -m "chore(p3b): regenerate closure artifacts [p3b-generated]"
+            git push origin HEAD:main
+          fi
