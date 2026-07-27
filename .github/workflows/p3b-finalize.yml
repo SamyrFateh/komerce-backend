@@ -39,6 +39,9 @@ jobs:
           npm ci
           npm --prefix public/boutique ci
 
+      - name: Remove one-shot workflow from the checked tree
+        run: rm .github/workflows/p3b-finalize.yml
+
       - name: Apply deterministic source reconciliation
         run: |
           node <<'NODE'
