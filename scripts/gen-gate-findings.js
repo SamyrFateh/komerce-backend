@@ -9,7 +9,7 @@ const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const BOUTIQUE = path.join(ROOT, 'public', 'boutique');
 const OUT = path.join(ROOT, 'docs', 'GATE_FINDINGS.json');
-const VERSION = 'GF-2.0';
+const VERSION = 'GF-2.1';
 const MIN = 18;
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
@@ -17,7 +17,7 @@ const JSON_SOURCES = [
   ['gate:feature-registry-check', 'root', 'root', 'scripts/feature-registry-check.js', null],
   ['gate:feature-registry-check', 'boutique', 'boutique', 'public/boutique/scripts/feature-registry-check.js', 'js'],
   ['gate:feature-classification-check', 'root', 'root', 'scripts/feature-classification-check.js', null],
-  ['gate:feature-guard', 'boutique', 'guard', 'public/boutique/scripts/feature-guard.js', 'manifests'],
+  ['gate:feature-guard', 'boutique', 'guard', 'public/boutique/scripts/feature-guard.js', null],
 ].map(([gate, scope, kind, script, coverage]) => ({ gate, scope, kind, script, coverage }));
 
 const TEXT_SOURCES = [
@@ -33,12 +33,12 @@ const SOURCES = [...JSON_SOURCES, ...TEXT_SOURCES];
 
 const norm = p => String(p || '').replace(/\\/g, '/').replace(/^\.\//, '');
 const stripAnsi = s => String(s || '').replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, '');
-const addOwner = (index, file, feature) => {
+function addOwner(index, file, feature) {
   file = norm(file);
   if (!file || !feature) return;
   if (!index.has(file)) index.set(file, new Set());
   index.get(file).add(feature);
-};
+}
 
 function loadManifests(dir) {
   const map = new Map();
@@ -51,6 +51,11 @@ function loadManifests(dir) {
   return map;
 }
 
+/**
+ * Root manifests provide a fallback. For public/boutique files, a local
+ * boutique manifest is the more precise authority and replaces the historical
+ * root backfill. Multiple local claims remain visible and block projection.
+ */
 function buildCanonicalFileIndex(rootFeatures, boutiqueManifests) {
   const index = new Map();
   for (const feature of rootFeatures.values()) {
@@ -62,16 +67,19 @@ function buildCanonicalFileIndex(rootFeatures, boutiqueManifests) {
       }
     }
   }
+
+  const local = new Map();
   const dir = path.join(BOUTIQUE, 'features');
   for (const manifest of boutiqueManifests.values()) {
     if (!manifest.canonicalFeature) continue;
     for (const files of Object.values(manifest.files || {})) {
       for (const raw of files || []) {
         const rel = norm(path.relative(ROOT, path.resolve(dir, raw)));
-        if (rel.startsWith('public/boutique/')) addOwner(index, rel, manifest.canonicalFeature);
+        if (rel.startsWith('public/boutique/')) addOwner(local, rel, manifest.canonicalFeature);
       }
     }
   }
+  for (const [file, owners] of local) index.set(file, owners);
   return index;
 }
 
@@ -109,7 +117,7 @@ function assessCoverage(files, index) {
 }
 
 function normalizeFile(raw) {
-  let file = norm(raw).replace(/^['"`([{]+|['"`\])},;:]+$/g, '');
+  const file = norm(raw).replace(/^['"`([{]+|['"`\])},;:]+$/g, '');
   const i = file.indexOf('public/boutique/');
   if (i >= 0) return file.slice(i);
   if (/^(js|css|features|scripts)\//.test(file)) return `public/boutique/${file}`;
@@ -142,7 +150,8 @@ function parseTextFindings(gate, output, exitCode) {
 }
 
 function run(command, args, cwd = ROOT) {
-  const r = spawnSync(command, args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' } });
+  const r = spawnSync(command, args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+    env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' } });
   return { exitCode: r.status ?? 1, output: [r.stdout, r.stderr].filter(Boolean).join('\n'), error: r.error?.message || null };
 }
 
@@ -163,15 +172,19 @@ function normalizeJson(src, json, local) {
   if (src.kind === 'guard') {
     return (json.results || []).flatMap(result => {
       const feature = local.get(result.name)?.canonicalFeature || null;
-      return [...(result.errors || []).map(message => ({ verdict: 'fail', message })), ...(result.warnings || []).map(message => ({ verdict: 'warn', message }))]
-        .map(x => ({ gate: src.gate, scope: src.scope, type: 'FEATURE-GUARD', feature, file: null, message: String(x.message), verdict: x.verdict }));
+      return [...(result.errors || []).map(message => ({ verdict: 'fail', message })),
+        ...(result.warnings || []).map(message => ({ verdict: 'warn', message }))]
+        .map(x => ({ gate: src.gate, scope: src.scope, type: 'FEATURE-GUARD', feature, file: null,
+          message: String(x.message), verdict: x.verdict }));
     });
   }
   const convert = (entry, verdict) => {
-    const localFeature = entry.feature != null ? local.get(String(entry.feature)) : null;
+    const rawFeature = entry.feature ?? entry.manifest ?? entry.owner ?? null;
+    const localFeature = rawFeature != null ? local.get(String(rawFeature)) : null;
+    const rawFile = entry.file ?? entry.path ?? entry.ref ?? null;
     return { gate: src.gate, scope: src.scope, type: entry.type || 'UNKNOWN', verdict,
-      feature: localFeature ? localFeature.canonicalFeature : (entry.feature != null ? String(entry.feature) : null),
-      file: entry.file != null ? normalizeFile(entry.file) : null,
+      feature: localFeature ? localFeature.canonicalFeature : (rawFeature != null ? String(rawFeature) : null),
+      file: rawFile != null ? normalizeFile(rawFile) : null,
       message: entry.msg != null ? String(entry.msg) : String(entry.message || '') };
   };
   return [...(json.errors || []).map(e => convert(e, 'fail')), ...(json.warnings || []).map(w => convert(w, 'warn'))];
@@ -187,6 +200,21 @@ function selfCheck() {
   const make = n => Array.from({ length: n }, () => ({ status: 'ok', unprojectableCount: 0, multiProjectedCount: 0 }));
   if (validateSourceContract(make(17)).ok || !validateSourceContract(make(18)).ok) throw new Error('P3b source threshold self-check failed');
   if (assessCoverage(['public/boutique/js/a.js'], new Map()).unprojectable.length !== 1) throw new Error('P3b coverage self-check failed');
+  const root = new Map([['catalog', { name: 'catalog', files: { boutique: ['js/x.js'] } }]]);
+  const local = new Map([['orders-client', { canonicalFeature: 'orders', files: { boutique: ['../js/x.js'] } }]]);
+  const owners = buildCanonicalFileIndex(root, local).get('public/boutique/js/x.js');
+  if (!owners || [...owners].join(',') !== 'orders') throw new Error('P3b local ownership precedence self-check failed');
+}
+
+function sourceRecord(src, result, raw, attribution, coverage, extraError) {
+  const failed = result.error || extraError || attribution.unattributed.length || coverage.unprojectable.length || coverage.multiProjected.length;
+  return { gate: src.gate, scope: src.scope || 'boutique', script: src.script || `npm --prefix public/boutique run ${src.npmScript}`,
+    status: failed ? 'failed' : 'ok', exitCode: result.exitCode,
+    error: result.error || extraError || (attribution.unattributed.length ? `${attribution.unattributed.length} finding(s) sans attribution canonique` : undefined),
+    errorCount: raw.filter(f => f.verdict === 'fail').length, warningCount: raw.filter(f => f.verdict === 'warn').length,
+    coverageCount: coverage.files.length, unprojectableCount: coverage.unprojectable.length, multiProjectedCount: coverage.multiProjected.length,
+    unprojectableFiles: coverage.unprojectable, multiProjectedFiles: coverage.multiProjected,
+    unattributedFindings: attribution.unattributed };
 }
 
 function main() {
@@ -205,12 +233,7 @@ function main() {
     catch (e) { parseError = e.message; }
     const attribution = resolveFindings(raw, canonicalNames, index);
     findings.push(...attribution.resolved);
-    const failed = result.error || parseError || attribution.unattributed.length || coverage.unprojectable.length || coverage.multiProjected.length;
-    sources.push({ gate: src.gate, scope: src.scope, script: src.script, status: failed ? 'failed' : 'ok', exitCode: result.exitCode,
-      error: result.error || parseError || (attribution.unattributed.length ? `${attribution.unattributed.length} finding(s) sans attribution canonique` : undefined),
-      errorCount: raw.filter(f => f.verdict === 'fail').length, warningCount: raw.filter(f => f.verdict === 'warn').length,
-      coverageCount: coverage.files.length, unprojectableCount: coverage.unprojectable.length, multiProjectedCount: coverage.multiProjected.length,
-      unprojectableFiles: coverage.unprojectable, multiProjectedFiles: coverage.multiProjected });
+    sources.push(sourceRecord(src, result, raw, attribution, coverage, parseError));
   }
 
   for (const src of TEXT_SOURCES) {
@@ -219,19 +242,15 @@ function main() {
     const raw = parseTextFindings(src.gate, result.output, result.exitCode);
     const attribution = resolveFindings(raw, canonicalNames, index);
     findings.push(...attribution.resolved);
-    const noDiagnostic = result.exitCode !== 0 && raw.length === 0;
-    const failed = result.error || noDiagnostic || attribution.unattributed.length || coverage.unprojectable.length || coverage.multiProjected.length;
-    sources.push({ gate: src.gate, scope: 'boutique', script: `npm --prefix public/boutique run ${src.npmScript}`, status: failed ? 'failed' : 'ok', exitCode: result.exitCode,
-      error: result.error || (noDiagnostic ? 'sortie non nulle sans diagnostic attribuable' : undefined),
-      errorCount: raw.filter(f => f.verdict === 'fail').length, warningCount: raw.filter(f => f.verdict === 'warn').length,
-      coverageCount: coverage.files.length, unprojectableCount: coverage.unprojectable.length, multiProjectedCount: coverage.multiProjected.length,
-      unprojectableFiles: coverage.unprojectable, multiProjectedFiles: coverage.multiProjected });
+    const noDiagnostic = result.exitCode !== 0 && raw.length === 0 ? 'sortie non nulle sans diagnostic attribuable' : null;
+    sources.push(sourceRecord({ ...src, scope: 'boutique' }, result, raw, attribution, coverage, noDiagnostic));
   }
 
   findings.sort((a, b) => `${a.gate}::${a.sourceFile || ''}::${a.message}`.localeCompare(`${b.gate}::${b.sourceFile || ''}::${b.message}`));
   const contract = validateSourceContract(sources);
   const model = { version: VERSION, generatedAt: new Date().toISOString().slice(0, 10), contract: {
-    minimumAttributableSources: MIN, configuredSources: SOURCES.length, attributableSources: contract.attributable, coverageBeforeViolations: true,
+    minimumAttributableSources: MIN, configuredSources: SOURCES.length, attributableSources: contract.attributable,
+    coverageBeforeViolations: true,
   }, sources, findings };
   fs.writeFileSync(OUT, JSON.stringify(model, null, 2) + '\n');
   console.log(`docs/GATE_FINDINGS.json : ${contract.attributable}/${SOURCES.length} source(s) attribuable(s), ${findings.length} finding(s)`);
@@ -239,6 +258,7 @@ function main() {
     console.log(`  ${s.status === 'ok' ? '✔' : '✖'} ${s.gate} (${s.scope}) — couverture ${s.coverageCount}, ${s.errorCount || 0} fail, ${s.warningCount || 0} warn${s.error ? ` — ${s.error}` : ''}`);
     for (const f of s.unprojectableFiles || []) console.log(`      [UNPROJECTABLE] ${f}`);
     for (const m of s.multiProjectedFiles || []) console.log(`      [MULTI] ${m.file} -> ${m.features.join(', ')}`);
+    for (const f of s.unattributedFindings || []) console.log(`      [UNATTRIBUTED] ${f.type}: ${f.message} (${f.feature || f.file || 'sans cible'})`);
   }
   if (!contract.ok) {
     console.error(`P3b non clos : ${contract.attributable}/${MIN} sources attribuables ; ${contract.failed.length} source(s) en échec.`);
@@ -247,4 +267,5 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { main, SOURCES, MIN, norm, extractRepoFile, parseTextFindings, buildCanonicalFileIndex, assessCoverage, resolveFindings, validateSourceContract };
+module.exports = { main, SOURCES, MIN, norm, extractRepoFile, parseTextFindings, buildCanonicalFileIndex,
+  assessCoverage, resolveFindings, validateSourceContract };
