@@ -1,105 +1,63 @@
-# Gouvernance agents — Chantier PDP intégré
+# `.agent` — contexte actif minimal
 
-## Instruction unique
-
-> Lire d’abord `.agent/START-HERE.md`, synchroniser le worktree sur
-> `origin/agent/lane-mobile-renderer`, puis exécuter uniquement l’action courante indiquée
-> par la lane et les states de cette ref.
+Ce dossier ne pilote plus un runtime de tâches, de lanes ou de branches.
 
 ## Source de vérité
 
-La branche durable unique du chantier est :
+- Branche unique : `main`.
+- Instruction racine : `AGENTS.md`.
+- Entrée documentaire : `docs/CARTE_FIRST_INDEX.md`.
+- Intention métier : cartes `features/*.feature.js` et manifestes frontend concernés.
+- Chantier courant : `.agent/LEDGER.md`.
 
-```text
-agent/lane-mobile-renderer
-```
+Aucun ancien state, worklog, audit, handoff, compteur ou statut de tâche ne peut rouvrir un travail déjà présent dans le code ou déclaré clos dans le ledger courant.
 
-`main` reste volontairement en retard jusqu’à la PR finale. Les labels de lane sont des
-classifications de sujet, pas des branches séparées dans cette exécution.
+## Lecture économe
 
-Ne jamais déterminer l’avancement depuis :
+Pour une intervention :
 
-- les states de `main` ;
-- un worktree non synchronisé ;
-- les compteurs de `.agent/TASK-INDEX.json` ;
-- l’ordre numérique des tâches sans consulter `.agent/EXECUTION_MAP.md`.
+1. lire `AGENTS.md` ;
+2. lire `docs/CARTE_FIRST_INDEX.md` ;
+3. lire la carte de la feature concernée ;
+4. lire uniquement la section pertinente de `.agent/LEDGER.md` ;
+5. rechercher les symboles et fichiers directement concernés.
 
-## Parcours obligatoire
+Ne pas parcourir par défaut :
 
-```text
-START-HERE
-→ fetch origin
-→ vérification du worktree
-→ switch/pull agent/lane-mobile-renderer
-→ MANIFEST
-→ CHECKPOINT-PROTOCOL
-→ EXECUTION_MAP
-→ lane state
-→ STATUS
-→ state de la tâche courante
-→ tâche / worklog / arbitrage / preuves
-→ petit lot cohérent
-→ commit + push immédiat
-→ vérification du SHA distant
-→ lot suivant uniquement après CHECKPOINT_DISTANT
-```
+- anciennes tâches `T-*` ;
+- worklogs, states, handoffs et audits historiques ;
+- preuves brutes de suites de tests ;
+- prompts historiques ;
+- `docs/_archive/` ;
+- JSON et Markdown générés volumineux, sauf échec du générateur correspondant.
 
-## Checkpoints anti-perte
+## Écriture économe
 
-La norme complète est `.agent/CHECKPOINT-PROTOCOL.md`.
+- Modifier le document canonique existant au lieu d'en créer un nouveau.
+- Ne pas créer de prompt bis, rapport daté, ZIP ou patch dans le dépôt.
+- Une preuve reproductible se résume par la commande, le résultat et le commit ; son log brut reste hors Git.
+- Les rapports de palier restent courts : avant, modification, après, test de détection, dette restante.
+- Aucun compte rendu ne doit recopier intégralement du code, un log ou une sortie générée.
 
-Un checkpoint signifie obligatoirement :
+## Travail actif
 
-```text
-commit atomique + push immédiat + SHA distant confirmé
-```
+Le chantier de clôture porte uniquement sur :
 
-Utiliser :
+1. P3b — terminer la projection `gateHealth` prévue par l'audit ;
+2. P3/P3b — réparer le mojibake introduit lors du split et le libellé `propriétaire: undefined` ;
+3. P5 — fermer les règles de remboursement, l'émission QR et l'idempotence wallet ;
+4. documentation — réconcilier les rapports et la roadmap avec le code réel ;
+5. nettoyage dépôt — supprimer les anciennes mécaniques `.agent`, preuves brutes, patches et documents redondants après vérification de leurs références.
 
-```bash
-node scripts/agent-checkpoint.mjs \
-  --message "type(t-xxx): résultat atomique" \
-  -- chemin/du/fichier-1 chemin/du/fichier-2
-```
+P6, P7 et P8 restent hors périmètre.
 
-Un commit local seul n’est pas une sauvegarde. Il est interdit d’accumuler plusieurs
-commits locaux avant un push groupé ou de commencer un second lot avant l’affichage de
-`CHECKPOINT_DISTANT=<sha>`.
+## Règle de suppression
 
-Créer un checkpoint distant avant toute commande longue, génération de captures,
-opération risquée, arbitrage, pause ou réponse finale.
+Un fichier peut être supprimé lorsqu'il est :
 
-Au premier `non-fast-forward`, arrêter sans merge, rebase, cherry-pick, reset, stash ou
-force-push automatique.
+- remplacé par une source canonique active ;
+- non référencé par le code, les scripts, les gates ou l'index documentaire ;
+- historique et reproductible depuis Git ;
+- un artefact brut, un doublon ou une consigne de branche désormais fausse.
 
-## État opérationnel
-
-La lane intégrée indique la tâche à reprendre et la prochaine nouvelle implémentation.
-Une tâche `DONE` ou `REVIEW` sur la ref autoritative ne doit jamais être recréée.
-Une tâche `BLOCKED` pour preuve visuelle doit être reprise dès qu’un navigateur compatible
-est disponible, sans rouvrir le code fonctionnel sauf défaut réel.
-
-## Runtime
-
-Les commandes `start`, `resume` et `finish` de `scripts/agent.mjs` restent interdites dans
-le mode intégré. Les changements de state sont explicites et chaque lot est sauvegardé avec
-`scripts/agent-checkpoint.mjs`.
-
-Les commandes de diagnostic sans mutation peuvent être utilisées uniquement après le
-préflight et après vérification de leur sortie.
-
-## Interdictions
-
-- pousser un checkpoint sur `main` ;
-- créer une branche par tâche ou par label de lane ;
-- recommencer une tâche déjà terminée ;
-- accumuler des commits locaux non poussés ;
-- commencer un lot avec un checkpoint précédent non confirmé à distance ;
-- reset ou suppression en présence de modifications locales inconnues ;
-- fabriquer une capture ou une preuve ;
-- utiliser `TASK-INDEX.json` comme tableau d’avancement.
-
-## Livraison
-
-Checkpoints distants petits et fréquents, une seule PR finale depuis
-`agent/lane-mobile-renderer` vers `main`.
+En cas de valeur historique réelle mais non opérationnelle, déplacer sous `docs/_archive/` seulement si cette conservation apporte une information introuvable dans Git. Sinon, supprimer.

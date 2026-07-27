@@ -122,7 +122,19 @@ npm run map:check
 8. Sorties générées à jour
 9. Archives
 
-## 7. Règles techniques non négociables
+## 7. Contexte agent, branche et économie de tokens
+
+- `main` est l'unique branche de travail active. Ne pas créer, rechercher ou réactiver une ancienne branche `agent/*` sauf demande humaine explicite.
+- `.agent/README.md` est la seule instruction active sous `.agent/`.
+- `.agent/LEDGER.md` contient uniquement le chantier courant et les prochains actes décidés. Un palier clos n'est jamais rouvert à cause d'un ancien state, worklog, audit ou compteur.
+- Lecture minimale obligatoire : `AGENTS.md` → `docs/CARTE_FIRST_INDEX.md` → carte de la feature concernée → `.agent/LEDGER.md`. Ne lire ensuite que les fichiers directement utiles au changement.
+- Ne pas scanner par défaut les archives, rapports datés, preuves brutes, anciens prompts, sorties générées volumineuses ou historiques de tâches. Les ouvrir seulement lorsqu'un fichier actif les référence précisément ou qu'une preuve ne peut pas être régénérée.
+- Préférer les recherches ciblées et les extraits courts. Ne pas recopier des fichiers entiers dans les rapports ou réponses.
+- Ne pas créer de document horodaté, prompt bis, ZIP, patch ou rapport parallèle lorsqu'un document canonique existe déjà.
+- Les preuves reproductibles sont des commandes et des tests. Ne pas committer leurs logs bruts ; consigner un résumé et la commande, sauf preuve externe non régénérable et compacte.
+- Toute nouvelle instruction d'agent doit remplacer une instruction obsolète, jamais s'empiler avec elle.
+
+## 8. Règles techniques non négociables
 
 - Statuts commande : `services/order-status-machine.js`.
 - Paiements Stripe/cash/wallet/shared-cart : services propriétaires.
@@ -135,6 +147,6 @@ npm run map:check
   défaut) — pas de retouche partielle qui laisse le fichier aussi peu couvert
   qu'avant. Voir `docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md`, Niveau 3.1.
 
-## 8. Divergence
+## 9. Divergence
 
 Si code, DB, cartes et docs divergent : ne pas corriger silencieusement. Noter la divergence, corriger dans la même PR ou créer une dette explicite.
