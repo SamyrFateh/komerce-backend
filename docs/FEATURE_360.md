@@ -6,14 +6,14 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 
 - Features : **28**
 - Healthy : **5**
-- Attention : **23**
-- Blocked : **0**
-- Business dependencies : **93**
-- Direct cross-feature imports : **0**
+- Attention : **22**
+- Blocked : **1**
+- Business dependencies : **94**
+- Direct cross-feature imports : **1**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **69**
 - Ontology gaps : **0**
-- Debt items (total) : **124**
+- Debt items (total) : **125**
 
 ## Features
 
@@ -40,9 +40,9 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | 🟢 HEALTHY | 🟡 ATTENTION | fabrics, garment_models, parcel_items, parcels, scans, store_credits | economic-engine, logistics, orders | _aucune_ | 2 |
 | purchasing | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | product_suppliers, purchase_orders, suppliers | auth, logistics, notifications, orders | dashboard, logistics, payments | 3 |
-| recommendations | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog | infrastructure | 2 |
+| recommendations | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog | infrastructure, shared-cart | 2 |
 | refunds | business-transversal | 🟡 ATTENTION | 🟢 HEALTHY | refunds | documents, wallet | logistics, orders, payments, shared-cart | 2 |
-| shared-cart | business-feature | 🟡 ATTENTION | 🟡 ATTENTION | basket_items, baskets, cart_contributions, cart_shares, collective_payment_sessions, collective_payment_tokens, collective_stock_reservations, collective_workspace_contributions, collective_workspace_events, collective_workspace_items, collective_workspaces, order_items, recipients, shared_cart_contributions, shared_cart_estimations, shared_cart_events, shared_cart_items, shared_carts, stripe_events_processed | auth, auth-identity, customs, documents, logistics, loyalty, notifications, orders, payments, refunds | catalog, infrastructure | 5 |
+| shared-cart | business-feature | 🔴 BLOCKED | 🟡 ATTENTION | basket_items, baskets, cart_contributions, cart_shares, collective_payment_sessions, collective_payment_tokens, collective_stock_reservations, collective_workspace_contributions, collective_workspace_events, collective_workspace_items, collective_workspaces, order_items, recipients, shared_cart_contributions, shared_cart_estimations, shared_cart_events, shared_cart_items, shared_carts, stripe_events_processed | auth, auth-identity, customs, documents, logistics, loyalty, notifications, orders, payments, recommendations, refunds | catalog, infrastructure | 6 |
 | sourcing | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | _aucune_ | auth, catalog, economic-engine | admin-dashboard | 7 |
 | unsold-resolution | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | unsold_items | auth | _aucune_ | 2 |
 | wallet | business-feature | 🟢 HEALTHY | 🟡 ATTENTION | wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets | auth-identity, documents, payments | infrastructure, orders, payments, refunds | 1 |
@@ -169,7 +169,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table revoked_tokens — écrite par auth-identity (W), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 11 fichier(s) déclaré(s), boutique: 4 fichier(s)
+**Implementation** : 11 fichier(s) déclaré(s), boutique: 5 fichier(s)
   - boutique : 3
   - routes : 3
   - services : 1
@@ -236,7 +236,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : admin-dashboard
 
-**Technical context** : 1 primitive dependencies, 0 test-only, 0 composition-root
+**Technical context** : 2 primitive dependencies, 0 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 9, ontology gaps: 0
@@ -252,7 +252,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidate_events — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 127 fichier(s) déclaré(s), boutique: 30 fichier(s)
+**Implementation** : 127 fichier(s) déclaré(s), boutique: 31 fichier(s)
   - boutique : 38
   - dash : 4
   - docs : 4
@@ -989,9 +989,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "dashboard" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "purchasing" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 49 fichier(s) déclaré(s)
+**Implementation** : 50 fichier(s) déclaré(s)
   - routes : 13
-  - services : 9
+  - services : 10
   - tests : 26
   - utils : 1
 
@@ -1043,11 +1043,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table incidents — écrite par payments (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par payments (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 37 fichier(s) déclaré(s), boutique: 2 fichier(s)
+**Implementation** : 38 fichier(s) déclaré(s), boutique: 3 fichier(s)
   - boutique : 4
   - migrations : 1
   - routes : 4
-  - services : 11
+  - services : 12
   - tests : 17
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="payments"]_
@@ -1216,7 +1216,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 0 internal API(s), 1 HTTP interface(s)
 
 **Consumes** : catalog (DECLARED_AND_OBSERVED)
-**Consumed by** : infrastructure (DECLARED_AND_OBSERVED)
+**Consumed by** : infrastructure (DECLARED_AND_OBSERVED), shared-cart (BUSINESS_FEATURE_INTERFACE)
 
 **Projections** : _aucune_
 
@@ -1312,24 +1312,25 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Exposes** : 0 internal API(s), 33 HTTP interface(s)
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (BUSINESS_TRANSVERSAL_SERVICE), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), refunds (BUSINESS_TRANSVERSAL_SERVICE)
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), notifications (BUSINESS_TRANSVERSAL_SERVICE), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), recommendations (BUSINESS_FEATURE_INTERFACE), refunds (BUSINESS_TRANSVERSAL_SERVICE)
 **Consumed by** : catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
 **Technical context** : 1 primitive dependencies, 0 test-only, 0 composition-root
 
-**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
+**Boundary health** : 🔴 BLOCKED — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 2, ontology gaps: 0
 
-**Architectural debt** (5) :
+**Architectural debt** (6) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table alerts — écrite par shared-cart (W), aucun lifecycle owner résolu (multi-writer non classifié)
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par shared-cart (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification" — ne correspond à aucun nom de feature connu
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "products" — ne correspond à aucun nom de feature connu
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "wallet" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+- `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 106 fichier(s) déclaré(s), boutique: 8 fichier(s)
+**Implementation** : 106 fichier(s) déclaré(s), boutique: 17 fichier(s)
   - boutique : 14
   - dash : 2
   - migrations : 14
@@ -1485,7 +1486,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table orders — écrite par wallet (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 
-**Implementation** : 10 fichier(s) déclaré(s), boutique: 2 fichier(s)
+**Implementation** : 10 fichier(s) déclaré(s), boutique: 3 fichier(s)
   - boutique : 2
   - migrations : 2
   - routes : 1

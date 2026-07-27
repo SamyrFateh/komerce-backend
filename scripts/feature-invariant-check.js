@@ -114,6 +114,7 @@ for (const inv of collected) {
       encoding: 'utf8',
       timeout: 60_000,
       stdio: verbose ? 'inherit' : 'pipe',
+      shell: true, // npx est npx.cmd sous Windows — sans shell, execFileSync échoue en ENOENT avant même de lancer jest
     });
     console.log(`${GRN}✔${R}  ${label}`);
     console.log(`   ${DIM}test : ${inv.testFile}${R}`);
@@ -126,6 +127,10 @@ for (const inv of collected) {
         .filter(l => /●|FAIL|expect|received|Cannot/.test(l))
         .slice(0, 6);
       lines.forEach(l => console.log(`   ${RED}${l}${R}`));
+    } else if (!e.stdout) {
+      // Le process jest n'a jamais démarré (ex. ENOENT) — sans ça, l'échec est
+      // muet et indiscernable d'un vrai test rouge. Toujours afficher la cause.
+      console.log(`   ${RED}${DIM}spawn error : ${e.message}${R}`);
     }
     errors++;
   }

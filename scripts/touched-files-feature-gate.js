@@ -51,6 +51,21 @@ function loadCards() {
   return cards;
 }
 
+// Piloting capabilities (docs/doctrine/PILOTING_CAPABILITY_DOCTRINE.md) — même
+// mécanique de propriété que les cartes feature, déjà reconnue par
+// feature-registry-check.js (Lot O1). Sans ce chargement, un fichier retiré
+// d'une feature pour être gouverné comme capability redevient "orphelin" ici.
+function loadCapabilities() {
+  const caps = [];
+  const abs = path.join(ROOT, 'capabilities');
+  if (!fs.existsSync(abs)) return caps;
+  for (const f of fs.readdirSync(abs)) {
+    if (!f.endsWith('.capability.js')) continue;
+    try { const m = require(path.join(abs, f)); m.__base = abs; caps.push(m); } catch {}
+  }
+  return caps;
+}
+
 function repoRel(abs) {
   return path.relative(ROOT, abs).replace(/\\/g, '/');
 }
@@ -81,8 +96,8 @@ function declaredPath(cardBase, rel, category) {
 }
 
 // repo-relative file set + owner index
-function ownershipIndex(cards) {
-  const owner = {};                  // repoRelPath -> feature name
+function ownershipIndex(cards, capabilities) {
+  const owner = {};                  // repoRelPath -> feature/capability name
   const transversalCards = [];
   for (const m of cards) {
     for (const [category, files] of Object.entries(m.files || {})) {
@@ -92,6 +107,14 @@ function ownershipIndex(cards) {
       }
     }
     if (m.type === 'transversal') transversalCards.push(m.name);
+  }
+  for (const m of (capabilities || [])) {
+    for (const [category, files] of Object.entries(m.files || {})) {
+      for (const rel of (files || [])) {
+        const repoRelPath = declaredPath(m.__base, rel, category);
+        if (repoRelPath && !owner[repoRelPath]) owner[repoRelPath] = `capability:${m.name}`;
+      }
+    }
   }
   return { owner, transversalCards };
 }
@@ -125,7 +148,8 @@ function touched() {
 }
 
 const cards = loadCards();
-const { owner, transversalCards } = ownershipIndex(cards);
+const capabilities = loadCapabilities();
+const { owner, transversalCards } = ownershipIndex(cards, capabilities);
 const transversalGlobs = loadTransversalGlobs();
 const changed = touched().map(f => f.replace(/\\/g, '/'));
 
