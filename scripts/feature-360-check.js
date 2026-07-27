@@ -16,6 +16,7 @@
  *     - internal APIs projetées correctement (statut résolu depuis le graphe)
  *     - health déterministe (recalcul == valeur stockée)
  *     - chaque debt item relié à un signal source réel (pas de dette inventée)
+ *     - contrat P3b : au moins 18 sources de gates attribuables, aucune source échouée
  *
  * Usage : node scripts/feature-360-check.js
  * Intégration package.json : "feature:360:check": "node scripts/feature-360-check.js"
@@ -29,6 +30,7 @@ const { renderMd } = require('./lib/feature-360-render.js');
 const ROOT = path.resolve(__dirname, '..');
 const OUT_JSON = path.join(ROOT, 'docs', 'FEATURE_360.json');
 const OUT_MD = path.join(ROOT, 'docs', 'FEATURE_360.md');
+const MIN_GATE_SOURCES = 18;
 
 const C = { r: '\x1b[0m', red: '\x1b[31m', grn: '\x1b[32m', ylw: '\x1b[33m', bld: '\x1b[1m', dim: '\x1b[2m' };
 const errors = [];
@@ -147,6 +149,12 @@ for (const f of model.features) {
   }
 }
 const pi = model.projectionIntegrity;
+if (!pi || pi.gateSourcesTotal < MIN_GATE_SOURCES) {
+  fail('GATE_SOURCE_COVERAGE_BELOW_CONTRACT', `${pi?.gateSourcesTotal || 0}/${MIN_GATE_SOURCES} sources attribuables`);
+}
+if (pi && pi.gateSourcesFailed > 0) {
+  fail('GATE_SOURCE_FAILED', `${pi.gateSourcesFailed} source(s) de gate en échec`);
+}
 if (pi.unprojectableFiles.length) {
   fail('GATE_FINDING_FILE_UNPROJECTABLE', pi.unprojectableFiles.join(', '));
 }
