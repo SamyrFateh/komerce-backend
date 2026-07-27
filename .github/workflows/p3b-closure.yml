@@ -1,0 +1,89 @@
+name: P3b Closure One Shot
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  statuses: write
+
+env:
+  NODE_ENV: test
+  JWT_SECRET: ci-test-secret-not-for-prod
+  ADMIN_PASSWORD: ci-test-admin
+  STRIPE_SECRET_KEY: sk_test_dummy
+  STRIPE_WEBHOOK_SECRET: whsec_dummy
+  QR_SECRET: ci-test-qr-secret
+  AUTHKEY_API_KEY: ci-dummy
+  PAYPAL_CLIENT_ID: ci-dummy
+  PAYPAL_CLIENT_SECRET: ci-dummy
+  PAYPAL_WEBHOOK_ID: ci-dummy
+  META_WA_APP_SECRET: ci-dummy
+
+jobs:
+  close-p3b:
+    if: ${{ !contains(github.event.head_commit.message, '[p3b-generated]') && !contains(github.event.head_commit.message, '[p3b-remove]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix public/boutique ci
+
+      - name: Generate and verify P3b
+        id: verify
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run feature:360:gen 2>&1 | tee p3b-feature-gen.log
+          npm run feature:360:check 2>&1 | tee p3b-feature-check.log
+          npm run map:check 2>&1 | tee p3b-map-check.log
+
+      - name: Publish failure status
+        if: steps.verify.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -sS -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"failure\",\"context\":\"p3b-closure\",\"description\":\"P3b generation or map-check failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+          exit 1
+
+      - name: Commit generated artifacts
+        if: steps.verify.outcome == 'success'
+        run: |
+          rm -f p3b-*.log
+          git config user.name "Komerce Governance Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No generated delta"
+          else
+            git commit -m "chore(p3b): regenerate closure artifacts [p3b-generated]"
+            git push origin HEAD:main
+          fi
+
+      - name: Publish success status
+        if: steps.verify.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -sS -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"success\",\"context\":\"p3b-closure\",\"description\":\"18/18 gate sources and map-check passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
