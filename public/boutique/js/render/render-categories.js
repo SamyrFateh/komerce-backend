@@ -1,7 +1,7 @@
 /**
  * @komerce-arch-lite
  * @role          boutique-render-categories
- * @domain        boutique
+ * @domain        catalog
  * @layer         ui-renderer
  * @owner         public/boutique/js/b-catalog.js
  * @purpose       supports public/boutique/js/b-catalog.js
@@ -63,4 +63,3 @@ export function renderCategoryRailMarkup(activeCategoryKey) {
     </button>
   `).join('');
 }
-
