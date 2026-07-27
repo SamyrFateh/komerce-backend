@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @komerce-arch-lite
  * @role          boutique-b-desktop-global-cart-access
  * @domain        catalog
@@ -12,12 +12,12 @@
 
 /**
  * @module b-desktop-global-cart-access
- * @brief Sur desktop, la petite dame reste l'accÃ¨s global au vrai panier.
+ * @brief Sur desktop, la petite dame reste l'accès global au vrai panier.
  *
  * Mobile : pas de pilule/petite dame flottante. Le panier mobile passe par
  * la bottom nav, qui est plus claire et ne parasite pas le catalogue.
  *
- * Si le side-cart n'est pas rÃ©ellement visible dans la vue courante
+ * Si le side-cart n'est pas réellement visible dans la vue courante
  * (favoris, suivi, groupes, etc.), on force le drawer panier comme fallback.
  */
 
@@ -32,8 +32,8 @@ function applyMobileCartAccessVisibility() {
   if (!cartBtn) return;
 
   // L'avatar header est toujours visible (mobile et desktop).
-  // hero-cart-proxy.css gÃ¨re la visibilitÃ© via CSS â€” on ne masque jamais
-  // le bouton en JS pour ne pas Ã©craser les rÃ¨gles CSS avec un style inline.
+  // hero-cart-proxy.css gère la visibilité via CSS — on ne masque jamais
+  // le bouton en JS pour ne pas écraser les règles CSS avec un style inline.
   cartBtn.style.removeProperty('display');
   cartBtn.removeAttribute('aria-hidden');
   cartBtn.removeAttribute('tabindex');
@@ -53,10 +53,10 @@ function isCartTrigger(target) {
 }
 
 function openDrawerFallback() {
-  // FIX scroll bloquÃ© : si le panier est VIDE, ne pas ouvrir le drawer.
-  // checkoutCart() a dÃ©jÃ  affichÃ© le toast Â« Votre panier est vide Â» et s'est
-  // arrÃªtÃ©. Sans ce garde-fou, le fallback ouvrait quand mÃªme overlay + drawer
-  // + body.cart-open pour un panier vide â†’ l'overlay restait posÃ© par-dessus la
+  // FIX scroll bloqué : si le panier est VIDE, ne pas ouvrir le drawer.
+  // checkoutCart() a déjà affiché le toast « Votre panier est vide » et s'est
+  // arrêté. Sans ce garde-fou, le fallback ouvrait quand même overlay + drawer
+  // + body.cart-open pour un panier vide → l'overlay restait posé par-dessus la
   // page et captait le scroll (molette/tactile KO, seul l'ascenseur marchait).
   const cartBtn = document.getElementById('k-cart-btn');
   if (cartBtn && cartBtn.classList.contains('is-empty')) return;

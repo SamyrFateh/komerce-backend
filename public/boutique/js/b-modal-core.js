@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @komerce-arch
  * @role          product-modal-orchestrator
  * @domain        shared-cart-modal
@@ -17,27 +17,27 @@
 /**
  * @module b-modal-core
  * @brief Cycle open/close, state, overlay, body-lock, historique, setupModal
- *        â€” extrait de b-modal.js (ARCH-2, PR5 â€” extraction finale).
+ *        — extrait de b-modal.js (ARCH-2, PR5 — extraction finale).
  *
- * PÃ©rimÃ¨tre : tout ce qui constitue le cycle de vie de la modal produit :
+ * Périmètre : tout ce qui constitue le cycle de vie de la modal produit :
  *   - openModal / closeModal : ouverture, rendu, overlay, body-lock, scroll.
  *   - modalGoBack : retour dans la pile d'historique modal.
- *   - setupModal : cÃ¢blage complet (listeners, search inline, clavier,
- *     buyNowBtn, modalCartBtn, image-zone, â€¦).
+ *   - setupModal : câblage complet (listeners, search inline, clavier,
+ *     buyNowBtn, modalCartBtn, image-zone, …).
  *   - Gestion de l'historique navigateur (_modalHistoryPushed, _closingFromPopstate,
- *     _pendingHistoryBack, handler popstate) â€” flags mutables, intra-module, non exportables.
+ *     _pendingHistoryBack, handler popstate) — flags mutables, intra-module, non exportables.
  *   - Image-zone : setupImageZoneDesktopClick, setupImageZoneTouch, openImageFullscreen.
  *   - Handlers bus modal:open / modal:close (openModal/closeModal accessibles
  *     directement ici, sans typeof-guard).
  *
- * FaÃ§ade : b-modal.js est dÃ©sormais une faÃ§ade pure qui rÃ©-exporte la surface
- *   publique inchangÃ©e (11 noms). Aucun consommateur externe n'a Ã  changer.
+ * Façade : b-modal.js est désormais une façade pure qui ré-exporte la surface
+ *   publique inchangée (11 noms). Aucun consommateur externe n'a à changer.
  *
  * Acyclique : b-modal-core.js importe les 4 sous-modules ARCH-2 (product,
- *   suggestions, nav, cart) mais jamais b-modal.js â†’ pas de cycle
+ *   suggestions, nav, cart) mais jamais b-modal.js → pas de cycle
  *   (garde-fou check:imports I-2).
  *
- * DÃ©pendances : b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js,
+ * Dépendances : b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js,
  *   shop-schema.js, b-scroll-owner.js, b-modal-image-ux.js,
  *   b-modal-social-proof.js, b-modal-product.js, b-modal-suggestions.js,
  *   b-modal-nav.js, b-modal-cart.js.
@@ -76,22 +76,22 @@ import { _syncModalQtyUI, setupModalCart, resetAddCartButtonState }   from './b-
 
 'use strict';
 
-// Receive close-modal signal from external modules (b-cart, b-checkout, â€¦)
+// Receive close-modal signal from external modules (b-cart, b-checkout, …)
 bus.on('modal:close', function() { closeModal(); });
 
 // Receive open-modal signal; relays pushHistory so navigateModal(false) is preserved
 bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushHistory); });
 
 
-  // â•‘  Â§9 Â· MODAL â€” Fiche produit, carousel, suggestions, subcat       â•‘
-  // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  //  â†’ Futur module: b-modal.js
+  // ║  §9 · MODAL — Fiche produit, carousel, suggestions, subcat       ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-modal.js
 
 
 
   /**
-   * @brief openModal â€” Ouvre la fiche produit (modal Shein-style)
-   * MÃ©morise scrollY du catalogue pour restauration Ã  la fermeture
+   * @brief openModal — Ouvre la fiche produit (modal Shein-style)
+   * Mémorise scrollY du catalogue pour restauration à la fermeture
    * Charge carousel images + suggestions + subcats filtrants
    * @param {string|number} id - ID du produit
    * @param {boolean} [pushHistory] - Pousser dans l'historique navigateur (retour natif)
@@ -99,8 +99,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
 
   /**
-   * RANK-01 â€” Appelle GET /api/boutique/suggestions et dÃ©lÃ¨gue l'affichage
-   * Ã  renderSuggestions (surface passive). Fallback local si rÃ©seau KO.
+   * RANK-01 — Appelle GET /api/boutique/suggestions et délègue l'affichage
+   * à renderSuggestions (surface passive). Fallback local si réseau KO.
    * @param {Object} product - Produit actif (modalProduct)
    */
   function _fetchAndRenderSuggestions(product) {
@@ -122,10 +122,10 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(payload => {
         // FIX : la route renvoie un OBJET { count, suggestions, ... }, pas un tableau.
-        // items.filter() levait une TypeError -> catch -> fallback systÃ©matique.
+        // items.filter() levait une TypeError -> catch -> fallback systématique.
         const items = Array.isArray(payload) ? payload : (payload && payload.suggestions) || [];
         if (!items.length) throw new Error('empty-suggestions');
-        // Reconstruire sameCat / otherCat depuis la rÃ©ponse enrichie (reason_label inclus)
+        // Reconstruire sameCat / otherCat depuis la réponse enrichie (reason_label inclus)
         const sameCat = items
           .filter(s => s.category === product.category)
           .map(s => Object.assign({}, state.products.find(p => String(p.id) === String(s.product_id)) || {}, s))
@@ -137,7 +137,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         renderSuggestions(sameCat, otherCat, product.category);
       })
       .catch(() => {
-        // Fallback Ã©ditorial si API indisponible â€” pas de Math.random()
+        // Fallback éditorial si API indisponible — pas de Math.random()
         const sameCat = state.products
           .filter(p => p.category === product.category && p.id !== product.id)
           .slice(0, 20);
@@ -148,22 +148,22 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       });
   }
 
-  /* â”€â”€ FIX: Back button = fermer modal au lieu de quitter le site â”€â”€ */
+  /* ── FIX: Back button = fermer modal au lieu de quitter le site ── */
   let _modalHistoryPushed = false;
-  // BUG-02 â€” garde contre la boucle popstate â†’ closeModal â†’ history.back() â†’ popstate
-  // Sur Chrome Android / Samsung Internet, history.back() peut dÃ©clencher popstate
-  // de faÃ§on synchrone dans la mÃªme pile, rappelant closeModal() une seconde fois
+  // BUG-02 — garde contre la boucle popstate → closeModal → history.back() → popstate
+  // Sur Chrome Android / Samsung Internet, history.back() peut déclencher popstate
+  // de façon synchrone dans la même pile, rappelant closeModal() une seconde fois
   // (double scroll-restore, saut visuel). Le flag _closingFromPopstate coupe court.
   let _closingFromPopstate = false;
-  // BUG-03 â€” race condition mobile : rÃ©-ouverture rapide aprÃ¨s fermeture
-  // ScÃ©nario : closeModal() appelle history.back() [asynchrone]. Si l'utilisateur
-  // retouche un produit avant que le popstate arrive, openModal() a dÃ©jÃ  posÃ© un
-  // nouveau pushState + _modalHistoryPushed=true. Quand le popstate "retardÃ©" de
-  // la fermeture prÃ©cÃ©dente arrive, la modal est Ã  nouveau open â†’ closeModal() la
-  // ferme immÃ©diatement. Sur mobile le dÃ©lai est variable (50â€“300ms) selon le
-  // thread de navigation â†’ le bug est intermittent mais frÃ©quent.
+  // BUG-03 — race condition mobile : ré-ouverture rapide après fermeture
+  // Scénario : closeModal() appelle history.back() [asynchrone]. Si l'utilisateur
+  // retouche un produit avant que le popstate arrive, openModal() a déjà posé un
+  // nouveau pushState + _modalHistoryPushed=true. Quand le popstate "retardé" de
+  // la fermeture précédente arrive, la modal est à nouveau open → closeModal() la
+  // ferme immédiatement. Sur mobile le délai est variable (50–300ms) selon le
+  // thread de navigation → le bug est intermittent mais fréquent.
   //
-  // Solution : _pendingHistoryBack est posÃ© juste avant history.back() programmatique
+  // Solution : _pendingHistoryBack est posé juste avant history.back() programmatique
   // (dans closeModal). Dans le popstate handler :
   //   - _pendingHistoryBack=true  + _modalHistoryPushed=true
   //     => une nouvelle modal a rouvert entre le back() et ce popstate => ignorer
@@ -193,7 +193,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     const product = state.products.find(p => String(p.id) === String(id));
     if (!product) return;
 
-    // MÃ©moriser la position de scroll du catalogue pour y revenir Ã  la fermeture
+    // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
     if (!dom.modalOverlay.classList.contains('open')) {
       state._savedCatalogScrollY = getScrollY();
       // FIX: Push history state so browser back button closes modal
@@ -209,38 +209,38 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
     state.modalProduct = product;
 
-    // FIX: Stepper = panier direct. Affiche la quantitÃ© dÃ©jÃ  dans le panier.
+    // FIX: Stepper = panier direct. Affiche la quantité déjà dans le panier.
     const _cartItem = state.cart.find(i => String(i.product?.id ?? i.id) === String(product.id));
-    state.modalQty = _cartItem ? _cartItem.qty : 1; /* BUGFIX: dÃ©faut 1 â†’ cohÃ©rent avec _syncModalQtyUI */
+    state.modalQty = _cartItem ? _cartItem.qty : 1; /* BUGFIX: défaut 1 → cohérent avec _syncModalQtyUI */
 
-    // MDP-PROP1 : reset Ã©tat bouton "Ajouter" â€” owner b-modal-cart.js
+    // MDP-PROP1 : reset état bouton "Ajouter" — owner b-modal-cart.js
     resetAddCartButtonState();
     // Sync stepper display with cart qty
     _syncModalQtyUI();
 
     buildCarouselSlides(product);
 
-    // PDC-6 : le fetch legacy /api/products/:id + _renderVariants est supprimÃ©.
-    // La vÃ©ritÃ© variantes/disponibilitÃ© vient dÃ©sormais exclusivement du
+    // PDC-6 : le fetch legacy /api/products/:id + _renderVariants est supprimé.
+    // La vérité variantes/disponibilité vient désormais exclusivement du
     // Product Detail Contract (b-modal-product-detail-bootstrap.js) via
-    // state.modalSelection. #k-modal-variants reste nettoyÃ© Ã  l'ouverture par
-    // hygiÃ¨ne gÃ©nÃ©rique (ancien conteneur DOM), sans lien avec ce fetch.
-    // MDP-PROP1 : le clear de #k-modal-variants est dÃ©jÃ  fait par les renderers PDC
-    // (b-modal-desktop-product.js / b-modal-mobile-product.js) â€” ne plus le dupliquer ici.
-    state.modalVariantCombo = {}; // Lot 2 â€” reset Ã  chaque ouverture (couture de transport, cf. Ã©tape 7)
+    // state.modalSelection. #k-modal-variants reste nettoyé à l'ouverture par
+    // hygiène générique (ancien conteneur DOM), sans lien avec ce fetch.
+    // MDP-PROP1 : le clear de #k-modal-variants est déjà fait par les renderers PDC
+    // (b-modal-desktop-product.js / b-modal-mobile-product.js) — ne plus le dupliquer ici.
+    state.modalVariantCombo = {}; // Lot 2 — reset à chaque ouverture (couture de transport, cf. étape 7)
 
-    // MDP-PROP1 : contenu produit scalaire dÃ©lÃ©guÃ© Ã  l'owner unique
+    // MDP-PROP1 : contenu produit scalaire délégué à l'owner unique
     // (b-modal-product-fields.js). Voir gate scripts/audit-modal-ownership.js.
     paintProvisionalFields(product);
-    // MDP-PROP1 : #k-modal-qty-val â€” Ã©criture conservÃ©e ICI (pas seulement dans
-    // _syncModalQtyUI). TentÃ© en suppression pure (redondance apparente avec
-    // _syncModalQtyUI, appelÃ©e juste au-dessus) : casse tests/unit/b-modal-core.test.js
-    // (2 tests), qui mocke intÃ©gralement b-modal-cart.js â€” _syncModalQtyUI y est un
-    // no-op, donc cette ligne est la seule Ã  renseigner #k-modal-qty-val dans ce test.
-    // Redondant en prod, nÃ©cessaire en isolation testÃ©e : on garde les deux Ã©critures.
+    // MDP-PROP1 : #k-modal-qty-val — écriture conservée ICI (pas seulement dans
+    // _syncModalQtyUI). Tenté en suppression pure (redondance apparente avec
+    // _syncModalQtyUI, appelée juste au-dessus) : casse tests/unit/b-modal-core.test.js
+    // (2 tests), qui mocke intégralement b-modal-cart.js — _syncModalQtyUI y est un
+    // no-op, donc cette ligne est la seule à renseigner #k-modal-qty-val dans ce test.
+    // Redondant en prod, nécessaire en isolation testée : on garde les deux écritures.
     if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
 
-    // FIX #1 â€” Bouton favori dans la modal (concern favoris, hors contenu produit)
+    // FIX #1 — Bouton favori dans la modal (concern favoris, hors contenu produit)
     const modalFavBtn = document.getElementById('k-modal-fav-btn');
     if (modalFavBtn) {
       const favState = state.favs.includes(product.id);
@@ -251,23 +251,23 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
     updateCartBadge();
 
-    // Compteur de position dans la liste + boutons â† â†’
+    // Compteur de position dans la liste + boutons ← →
     const list = state.filtered.length ? state.filtered : state.products;
     const currentIdx = list.findIndex(p => p.id === product.id);
     updateModalNavArrows(list, currentIdx);
 
-    // RANK-01 : appel API ranking â€” surface passive, pas de tri local
+    // RANK-01 : appel API ranking — surface passive, pas de tri local
     state.modalSubcatFilter = null; // Reset subcategory filter for new product
     _fetchAndRenderSuggestions(product);
 
     dom.modalOverlay.classList.add('open');
 
-    // FIX SCROLL-TO-TOP : scrollTop = 0 doit Ãªtre posÃ© APRÃˆS classList.add('open').
-    // Quand l'overlay est display:none (fermÃ©), le browser ignore scrollTop sur les
-    // Ã©lÃ©ments descendants â€” la valeur ne s'applique pas sur un noeud non-rendu.
-    // On reset donc APRÃˆS que l'overlay soit display:flex, dans un rAF pour laisser
+    // FIX SCROLL-TO-TOP : scrollTop = 0 doit être posé APRÈS classList.add('open').
+    // Quand l'overlay est display:none (fermé), le browser ignore scrollTop sur les
+    // éléments descendants — la valeur ne s'applique pas sur un noeud non-rendu.
+    // On reset donc APRÈS que l'overlay soit display:flex, dans un rAF pour laisser
     // le browser calculer le reflow. Belt+suspenders : on tente aussi avant pour
-    // les cas oÃ¹ le modal Ã©tait dÃ©jÃ  ouvert (navigation suggestion â†’ suggestion).
+    // les cas où le modal était déjà ouvert (navigation suggestion → suggestion).
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
     const _scrollEl = document.querySelector('.k-modal-scroll');
     if (_scrollEl) _scrollEl.scrollTop = 0;
@@ -277,33 +277,33 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       if (_sEl) _sEl.scrollTop = 0;
     });
 
-    // PR-D 2.3 : historique des produits vus (persistÃ© localStorage).
-    // On retire d'abord toute occurrence de l'id courant (dÃ©duplication),
-    // puis on push Ã  la fin pour que "le plus rÃ©cent" reste en queue.
-    // LimitÃ© Ã  30 entrÃ©es pour Ã©viter l'inflation localStorage.
+    // PR-D 2.3 : historique des produits vus (persisté localStorage).
+    // On retire d'abord toute occurrence de l'id courant (déduplication),
+    // puis on push à la fin pour que "le plus récent" reste en queue.
+    // Limité à 30 entrées pour éviter l'inflation localStorage.
     try {
       let vh = state.viewedHistory.filter(function(x) { return x !== product.id; });
       vh.push(product.id);
       if (vh.length > 30) vh = vh.slice(-30);
       state.viewedHistory = vh;
       localStorage.setItem('k_viewed_history', JSON.stringify(vh));
-    } catch (_) { /* localStorage indispo : ignorÃ© */ }
+    } catch (_) { /* localStorage indispo : ignoré */ }
 
     // FIX scroll auto post-modal : la garde state.modalOpen dans b-pager.js
-    // n'avait jamais Ã©tÃ© posÃ©e. On l'Ã©crit AVANT d'Ã©mettre le bus pour que
-    // tout listener qui purgerait les timers le voie dÃ©jÃ  Ã  true.
+    // n'avait jamais été posée. On l'écrit AVANT d'émettre le bus pour que
+    // tout listener qui purgerait les timers le voie déjà à true.
     state.modalOpen = true;
 
     // LOT 12: notify desktop-upgrade module
     bus.emit('modal:opened', product);
-    // PR-3 / PR-4 â€” modules image UX + social proof
+    // PR-3 / PR-4 — modules image UX + social proof
     setupImageUX();
     setupSocialProof();
-    // PDC-6 : l'encart livraison n'est plus injectÃ© ici en dur depuis
-    // product.delivery_delay. Les options de livraison viennent dÃ©sormais
-    // exclusivement du contrat dÃ©tail (delivery_options), rendues par le
-    // renderer PDC aprÃ¨s le fetch /detail.
-    // Lock body scroll â€” CSS handles layout via body.modal-open
+    // PDC-6 : l'encart livraison n'est plus injecté ici en dur depuis
+    // product.delivery_delay. Les options de livraison viennent désormais
+    // exclusivement du contrat détail (delivery_options), rendues par le
+    // renderer PDC après le fetch /detail.
+    // Lock body scroll — CSS handles layout via body.modal-open
     state._savedCatalogScrollY = getScrollY();
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
     document.body.classList.add('modal-open');
@@ -312,18 +312,18 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       document.body.classList.add('modal-has-cart');
     }
 
-    // REFONTE COQUE DESKTOP â€” reparentage #k-side-cart dans .k-modal-cart-slot.
-    // Pas de clone : le mÃªme noeud DOM change de parent, ses listeners
-    // (dÃ©lÃ©gation sur #k-sc-items + IDs individuels) survivent intacts.
-    // RestaurÃ© Ã  sa position d'origine dans closeModal() / au passage mobile
-    // (reconcileComposition / resize) â€” voir _cartHome ci-dessous.
+    // REFONTE COQUE DESKTOP — reparentage #k-side-cart dans .k-modal-cart-slot.
+    // Pas de clone : le même noeud DOM change de parent, ses listeners
+    // (délégation sur #k-sc-items + IDs individuels) survivent intacts.
+    // Restauré à sa position d'origine dans closeModal() / au passage mobile
+    // (reconcileComposition / resize) — voir _cartHome ci-dessous.
     mountSideCartInModal();
 
-    // MOBILE SCROLL FIX â€” neutralise les styles inline posÃ©s par le pager
-    // (#k-page-scroll.k-pager-active = position:fixed + overflow:hidden crÃ©e un
+    // MOBILE SCROLL FIX — neutralise les styles inline posés par le pager
+    // (#k-page-scroll.k-pager-active = position:fixed + overflow:hidden crée un
     // stacking context sur Chrome Android qui bride le scroll de .k-modal-scroll).
-    // On garde la classe k-pager-active intacte (Ã©tat logique) mais on efface
-    // les propriÃ©tÃ©s physiques bloquantes pour la durÃ©e de la modal.
+    // On garde la classe k-pager-active intacte (état logique) mais on efface
+    // les propriétés physiques bloquantes pour la durée de la modal.
     if (window.innerWidth < 900) {
       let _ps = dom.pageScroll;
       if (_ps) {
@@ -352,17 +352,17 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       }
     }
 
-    // VIS-6 â€” voir docs/BOUTIQUE_VISUAL_FIXES.md. Figer scrollLeft du grid pendant la modal.
+    // VIS-6 — voir docs/BOUTIQUE_VISUAL_FIXES.md. Figer scrollLeft du grid pendant la modal.
     // Le grid #k-grid.k-grid-flat-subcat est un container overflow-x:auto +
     // scroll-snap dont le scrollLeft persiste. Si la modal laisse passer
-    // un pixel Ã  droite (Samsung Edge Panels / 100vw < viewport visuel),
-    // on voit la page 2 du pager horizontal en arriÃ¨re-plan. On le ramÃ¨ne
-    // Ã  0 pour la durÃ©e de la modal, on restaure dans closeModal.
+    // un pixel à droite (Samsung Edge Panels / 100vw < viewport visuel),
+    // on voit la page 2 du pager horizontal en arrière-plan. On le ramène
+    // à 0 pour la durée de la modal, on restaure dans closeModal.
     if (window.innerWidth < 900) {
       let _grid = document.getElementById('k-grid');
       if (_grid && _grid.classList.contains('k-grid-flat-subcat')) {
         state._savedGridScrollLeft = _grid.scrollLeft;
-        _grid.style.scrollSnapType = 'none'; // Ã©vite l'animation de snap visible
+        _grid.style.scrollSnapType = 'none'; // évite l'animation de snap visible
         _grid.scrollLeft = 0;
       }
     }
@@ -378,8 +378,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
 
   /**
-   * Retour arriÃ¨re dans l'historique modal (produit prÃ©cÃ©dent dans la pile).
-   * UtilisÃ© par le bouton â† dans le topbar modal.
+   * Retour arrière dans l'historique modal (produit précédent dans la pile).
+   * Utilisé par le bouton ← dans le topbar modal.
    */
   function modalGoBack() {
     if (state.modalHistory.length === 0) { closeModal(); return; }
@@ -388,15 +388,15 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
   }
 
   /**
-   * @brief closeModal â€” Ferme la fiche produit et restaure l'Ã©tat catalogue
-   * Restaure le scroll Y du catalogue sauvegardÃ© dans state._savedCatalogScrollY
+   * @brief closeModal — Ferme la fiche produit et restaure l'état catalogue
+   * Restaure le scroll Y du catalogue sauvegardé dans state._savedCatalogScrollY
    * Reset les subcats modal + suggestions
    */
     function closeModal() {
     hideModalFAB();
     // FIX: Pop history entry if we pushed one (don't pop if back button already did)
-    // BUG-02 â€” si on est dÃ©jÃ  dans le handler popstate (_closingFromPopstate), ne pas
-    // rappeler history.back() : c'est le popstate lui-mÃªme qui a dÃ©jÃ  consommÃ© l'entrÃ©e.
+    // BUG-02 — si on est déjà dans le handler popstate (_closingFromPopstate), ne pas
+    // rappeler history.back() : c'est le popstate lui-même qui a déjà consommé l'entrée.
     if (_modalHistoryPushed && !_closingFromPopstate) {
       _modalHistoryPushed = false;
       _pendingHistoryBack = true; // BUG-03 : signale au handler popstate que ce back() est programmatique
@@ -405,19 +405,19 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       _modalHistoryPushed = false;
     }
     dom.modalOverlay.classList.remove('open');
-    // Unlock body scroll â€” CSS class drives layout
+    // Unlock body scroll — CSS class drives layout
     const scrollY = state._savedCatalogScrollY || 0;
     document.body.classList.remove('modal-open');
     document.body.classList.remove('modal-has-cart');
     document.body.style.removeProperty('--modal-scroll-y');
 
-    // REFONTE COQUE DESKTOP â€” restaurer #k-side-cart Ã  sa position d'origine
-    // (hors overlay). Sans Ã§a il resterait piÃ©gÃ© dans .k-modal-cart-slot,
+    // REFONTE COQUE DESKTOP — restaurer #k-side-cart à sa position d'origine
+    // (hors overlay). Sans ça il resterait piégé dans .k-modal-cart-slot,
     // display:none via .k-modal-overlay { display:none } et invisible au
     // prochain rendu catalogue.
     restoreSideCartHome();
 
-    // MOBILE SCROLL FIX â€” restaurer les styles inline du pager
+    // MOBILE SCROLL FIX — restaurer les styles inline du pager
     if (window.innerWidth < 900 && state._savedPagerInlineStyles) {
       let _ps = dom.pageScroll;
       if (_ps) {
@@ -436,9 +436,9 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       state._savedPagerInlineStyles = null;
     }
 
-    // VIS-6 â€” restaurer le scrollLeft du grid (voir docs/BOUTIQUE_VISUAL_FIXES.md).
+    // VIS-6 — restaurer le scrollLeft du grid (voir docs/BOUTIQUE_VISUAL_FIXES.md).
     // rAF : on laisse le browser repeindre l'overlay disparu AVANT de scroller,
-    // sinon flash visuel du dÃ©calage.
+    // sinon flash visuel du décalage.
     if (window.innerWidth < 900 && typeof state._savedGridScrollLeft === 'number') {
       let _gridRestore = document.getElementById('k-grid');
       if (_gridRestore && _gridRestore.classList.contains('k-grid-flat-subcat')) {
@@ -452,18 +452,18 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     }
 
     // FIX scroll auto post-modal : on ferme le flag AVANT le window.scrollTo
-    // qui va dÃ©clencher un Ã©vÃ©nement scroll sur la page interne du pager.
-    // Sans Ã§a, le bounce vertical s'arme Ã  la frame suivante alors que
-    // l'utilisateur n'a rien fait â†’ page suivante en horizontal.
+    // qui va déclencher un événement scroll sur la page interne du pager.
+    // Sans ça, le bounce vertical s'arme à la frame suivante alors que
+    // l'utilisateur n'a rien fait → page suivante en horizontal.
     state.modalOpen = false;
     // Notifier le pager pour qu'il purge ses timers de bounce en cours
-    // (un setTimeout(_, 350) peut Ãªtre armÃ© juste avant l'ouverture).
+    // (un setTimeout(_, 350) peut être armé juste avant l'ouverture).
     bus.emit('modal:closed');
 
     scrollToPosition(scrollY);
     state.modalProduct = null;
     state.modalHistory = [];
-    // RÃ©initialiser le choix de livraison â€” ne pas conserver entre deux produits
+    // Réinitialiser le choix de livraison — ne pas conserver entre deux produits
     state.modalDeliverySelection = { requested_transport_rail: null };
   }
 
@@ -478,39 +478,39 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
   // Solution: deplacer .k-modal-actions en enfant flex direct de #k-modal
   // (display:flex flex-direction:column). Flex l'ancre en bas sans position:fixed.
   //
-  // [MDM-8 phase 2] Auparavant exÃ©cutÃ© une seule fois au DOMContentLoaded,
-  // figÃ© sur window.innerWidth *Ã  cet instant prÃ©cis* : un chargement en
+  // [MDM-8 phase 2] Auparavant exécuté une seule fois au DOMContentLoaded,
+  // figé sur window.innerWidth *à cet instant précis* : un chargement en
   // largeur desktop suivi d'un resize/rotation vers mobile (ou l'inverse)
   // laissait .k-modal-actions dans le mauvais parent, avec --k-modal-cta-h
-  // dÃ©synchronisÃ©. Extrait en fonction idempotente, appelÃ©e Ã  l'ouverture
-  // ET rebranchÃ©e sur le mÃªme signal de resize que le reste du PDC
-  // (bus 'modal:composition-synced', Ã©mis par
-  // b-modal-product-detail-bootstrap.js::syncResponsiveComposition) plutÃ´t
+  // désynchronisé. Extrait en fonction idempotente, appelée à l'ouverture
+  // ET rebranchée sur le même signal de resize que le reste du PDC
+  // (bus 'modal:composition-synced', émis par
+  // b-modal-product-detail-bootstrap.js::syncResponsiveComposition) plutôt
   // que de dupliquer un second listener resize/debounce.
   function reorderActionsForViewport() {
     if (!dom.modal) return;
     const act = dom.modal.querySelector('.k-modal-actions');
     if (!act) return;
-    // Cette fonction ne gÃ¨re QUE le cas mobile (reparentage flex statique en
-    // enfant direct de #k-modal). Le retour desktop est dÃ©jÃ  entiÃ¨rement pris
-    // en charge, de faÃ§on idempotente, par b-modal-approche-c-hybrid.js ::
-    // restoreActionsHome() sur ce mÃªme Ã©vÃ©nement modal:composition-synced â€”
-    // ne pas dupliquer cette doctrine ici (cf audit MDM8_AUDIT_PHASE1.md Â§1.2,
-    // point 3 : hors pÃ©rimÃ¨tre MDM-8, ne pas toucher).
+    // Cette fonction ne gère QUE le cas mobile (reparentage flex statique en
+    // enfant direct de #k-modal). Le retour desktop est déjà entièrement pris
+    // en charge, de façon idempotente, par b-modal-approche-c-hybrid.js ::
+    // restoreActionsHome() sur ce même événement modal:composition-synced —
+    // ne pas dupliquer cette doctrine ici (cf audit MDM8_AUDIT_PHASE1.md §1.2,
+    // point 3 : hors périmètre MDM-8, ne pas toucher).
     if (window.innerWidth < 900 && act.parentNode !== dom.modal) {
       dom.modal.appendChild(act);
     }
-    // --k-modal-cta-h dÃ©pend de act.parentNode (isStatic) : la resynchroniser
-    // Ã  chaque reparentage, pas seulement au ResizeObserver de hauteur.
+    // --k-modal-cta-h dépend de act.parentNode (isStatic) : la resynchroniser
+    // à chaque reparentage, pas seulement au ResizeObserver de hauteur.
     _syncScrollPadding();
   }
 
   bus.on('modal:composition-synced', reorderActionsForViewport);
 
-  // â”€â”€ REFONTE COQUE DESKTOP â€” reparentage #k-side-cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // _cartHome mÃ©morise la position d'origine (parent + nextSibling) pour un
-  // reparentage rÃ©versible, sans clone. Idempotent : appelable plusieurs
-  // fois sans effet si dÃ©jÃ  dans le bon Ã©tat (mÃªme doctrine que
+  // ── REFONTE COQUE DESKTOP — reparentage #k-side-cart ────────────────────
+  // _cartHome mémorise la position d'origine (parent + nextSibling) pour un
+  // reparentage réversible, sans clone. Idempotent : appelable plusieurs
+  // fois sans effet si déjà dans le bon état (même doctrine que
   // reorderActionsForViewport/restoreActionsHome ci-dessus/dans le hybrid).
   let _cartHome = null;
 
@@ -537,8 +537,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     _cartHome = null;
   }
 
-  // Switch desktopâ†”mobile pendant que la modale reste ouverte (resize/rotation) :
-  // mÃªme signal que reorderActionsForViewport, cohÃ©rent avec le reste du PDC.
+  // Switch desktop↔mobile pendant que la modale reste ouverte (resize/rotation) :
+  // même signal que reorderActionsForViewport, cohérent avec le reste du PDC.
   function reconcileSideCartComposition() {
     if (!dom.modalOverlay.classList.contains('open')) return;
     if (isDesktop()) {
@@ -552,7 +552,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
   /**
    * Initialise le modal produit complet (carousel, topbar, suggestions, swipe).
-   * Point d'entrÃ©e appelÃ© une seule fois au DOMContentLoaded.
+   * Point d'entrée appelé une seule fois au DOMContentLoaded.
    * Doctrine : structure HTML + CSS, JS = comportements uniquement.
    */
   function setupModal() {
@@ -571,14 +571,14 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
     setupModalCart();
 
-    // â”€â”€ FIX #1 : Bouton favori dans la modal â”€â”€
+    // ── FIX #1 : Bouton favori dans la modal ──
     const modalFavBtn = document.getElementById('k-modal-fav-btn');
     if (modalFavBtn) {
       modalFavBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (!state.modalProduct) return;
         toggleFav(state.modalProduct.id, modalFavBtn);
-        // Aussi mettre Ã  jour le cÅ“ur sur la carte grille correspondante
+        // Aussi mettre à jour le cœur sur la carte grille correspondante
         const gridFavBtn = dom.grid
           ? dom.grid.querySelector(`.k-card-fav[data-fav="${state.modalProduct.id}"]`)
           : null;
@@ -590,8 +590,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       });
     }
 
-    // â”€â”€ FIX #3 : Bloquer scroll passthrough sur la barre d'actions â”€â”€
-    // passive:false + preventDefault() empÃªche le browser de scroller
+    // ── FIX #3 : Bloquer scroll passthrough sur la barre d'actions ──
+    // passive:false + preventDefault() empêche le browser de scroller
     // quand le doigt touche la barre sticky Ajouter/Acheter.
     const actionsBar = dom.modal.querySelector('.k-modal-actions');
     if (actionsBar) {
@@ -601,19 +601,19 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       }, { passive: false });
     }
 
-    // MDP-PROP1 : le cÃ¢blage du bouton "âš¡ Acheter" (#k-buy-now-btn) est
-    // dÃ©sormais dans b-modal-buybox-shared.js (`wireBuyNowButton`, appelÃ©
-    // depuis `renderActions()` des deux renderers PDC) â€” core ne gÃ¨re plus
+    // MDP-PROP1 : le câblage du bouton "⚡ Acheter" (#k-buy-now-btn) est
+    // désormais dans b-modal-buybox-shared.js (`wireBuyNowButton`, appelé
+    // depuis `renderActions()` des deux renderers PDC) — core ne gère plus
     // que le cycle de vie de la modale.
 
-    // â”€â”€ Image zone: carousel swipe + pull-to-close (Temu-style)
+    // ── Image zone: carousel swipe + pull-to-close (Temu-style)
     setupImageZoneTouch();
 
-    // â”€â”€ Image zone desktop : click gauche/droite pour naviguer dans le carousel
+    // ── Image zone desktop : click gauche/droite pour naviguer dans le carousel
     setupImageZoneDesktopClick();
 
-    // â”€â”€ Navigation clavier â† â†’ entre produits (desktop)
-    // Hint visuel injectÃ© une seule fois dans la topbar
+    // ── Navigation clavier ← → entre produits (desktop)
+    // Hint visuel injecté une seule fois dans la topbar
     (function setupKeyboardNavHint() {
       if (window.innerWidth < 900) return;
       if (document.getElementById('k-modal-keyboard-hint')) return;
@@ -623,8 +623,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       hint.id = 'k-modal-keyboard-hint';
       hint.className = 'k-modal-keyboard-hint';
       hint.innerHTML =
-        '<kbd>â†</kbd><span>produit prÃ©cÃ©dent</span>' +
-        '<kbd>â†’</kbd><span>produit suivant</span>';
+        '<kbd>←</kbd><span>produit précédent</span>' +
+        '<kbd>→</kbd><span>produit suivant</span>';
       let right = topbar.querySelector('.k-modal-topbar-right');
       if (right) topbar.insertBefore(hint, right);
       else topbar.appendChild(hint);
@@ -640,7 +640,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
   /**
    * Desktop uniquement : zones cliquables gauche/droite sur l'image du modal
-   * pour naviguer dans le carousel sans devoir viser une miniature prÃ©cise.
+   * pour naviguer dans le carousel sans devoir viser une miniature précise.
    * Reste discret (cursor change, pas de bouton visible) pour ne pas casser
    * le zoom-on-hover existant.
    */
@@ -661,7 +661,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       if (_isImageZoneInteractiveTarget(e.target)) return;
       if (window.innerWidth < 900) return;
       if (state.carouselCount <= 1) return;
-      // Ã‰vite de tirer si le click est sur une miniature ou sur le zoom preview
+      // Évite de tirer si le click est sur une miniature ou sur le zoom preview
       if (e.target.closest('.k-modal-thumb, .k-modal-zoom-preview, .k-modal-zoom-lens')) return;
       let rect = imgWrap.getBoundingClientRect();
       let clickedLeft = (e.clientX - rect.left) < rect.width / 2;
@@ -673,12 +673,12 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     });
   }
 
-  // â”€â”€ Image zone: swipe â†” carousel + swipe â†“ close (Temu-style) â”€â”€
-  // Details zone: native â†• scroll only â€” no gesture interference
+  // ── Image zone: swipe ↔ carousel + swipe ↓ close (Temu-style) ──
+  // Details zone: native ↕ scroll only — no gesture interference
   /**
-   * Active le swipe â†” sur la zone image du modal (carousel).
+   * Active le swipe ↔ sur la zone image du modal (carousel).
    * scroll-snap-type: x mandatory sur .k-card-carousel.
-   * @param {HTMLElement} carousel - Ã‰lÃ©ment carousel
+   * @param {HTMLElement} carousel - Élément carousel
    */
   function setupImageZoneTouch() {
     let imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
@@ -708,14 +708,14 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         direction = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
       }
 
-      // Horizontal â†’ carousel (only if multi-image)
+      // Horizontal → carousel (only if multi-image)
       if (direction === 'h' && state.carouselCount > 1) {
         e.preventDefault();
         track.style.transition = 'none';
         let offset = -state.carouselIndex * 100 + (dx / imgWrap.offsetWidth) * 100;
         track.style.transform = 'translateX(' + offset + '%)';
       }
-      // Vertical down â†’ pull-to-close
+      // Vertical down → pull-to-close
       else if (direction === 'v' && dy > 0) {
         modal.style.transform = 'translateY(' + (dy * 0.4) + 'px)';
         modal.style.transition = 'none';
@@ -753,17 +753,17 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
           modal.style.transform = '';
         }
       } else if (direction === null) {
-        // TAP court (pas de mouvement significatif) â†’ fullscreen image avec pinch-zoom natif
+        // TAP court (pas de mouvement significatif) → fullscreen image avec pinch-zoom natif
         openImageFullscreen(state.carouselIndex);
       }
     });
   }
 
   /**
-   * Ouvre une image en plein Ã©cran (mobile).
-   * Le navigateur gÃ¨re nativement le pinch-to-zoom grÃ¢ce Ã  touch-action.
+   * Ouvre une image en plein écran (mobile).
+   * Le navigateur gère nativement le pinch-to-zoom grâce à touch-action.
    * Tap simple ou bouton retour ferme le fullscreen.
-   * @param {number} startIndex - Index de l'image Ã  afficher en premier
+   * @param {number} startIndex - Index de l'image à afficher en premier
    */
   function openImageFullscreen(startIndex) {
     if (!state.modalProduct) return;
@@ -771,7 +771,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     images = images.filter(Boolean);
     if (!images.length) return;
 
-    // RÃ©utilise un overlay existant si prÃ©sent
+    // Réutilise un overlay existant si présent
     let overlay = document.getElementById('k-modal-fullscreen');
     if (overlay) overlay.remove();
 
@@ -811,7 +811,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     track.style.transform = 'translateX(-' + (idx * 100) + '%)';
     setTimeout(function() { updateCounter(); }, 0);
 
-    // Ouverture animÃ©e
+    // Ouverture animée
     requestAnimationFrame(function() { overlay.classList.add('is-open'); });
 
     // Fermeture
@@ -840,7 +840,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       let dx = (e.changedTouches[0] || {}).clientX != null
         ? e.changedTouches[0].clientX - fsStartX : 0;
       if (!fsMoved) {
-        // tap simple â†’ ferme
+        // tap simple → ferme
         close();
       } else if (images.length > 1) {
         if (dx < -50) snapTo(idx + 1);
@@ -850,17 +850,17 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     });
   }
 
-  // â”€â”€ Navigation â† â†’ entre produits dans la modal
+  // ── Navigation ← → entre produits dans la modal
 
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     CART DRAWER â€” Full mechanism
-     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+  /* ══════════════════════════════════════════════════════════
+     CART DRAWER — Full mechanism
+     ══════════════════════════════════════════════════════════ */
 
 
-// setupImageZoneTouch est rÃ©-exportÃ© par la faÃ§ade b-modal.js (surface publique inchangÃ©e).
+// setupImageZoneTouch est ré-exporté par la façade b-modal.js (surface publique inchangée).
 
-// modalZone() â†’ b-store.js (S5 â€” Ã©vite les cycles core â†” enhancers)
+// modalZone() → b-store.js (S5 — évite les cycles core ↔ enhancers)
 export {
   openModal, closeModal, modalGoBack, setupModal,
   setupImageZoneTouch,

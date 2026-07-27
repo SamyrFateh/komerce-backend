@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @feature       catalog
  * @type          feature
  * @domain        catalog
@@ -32,7 +32,7 @@ module.exports = {
   canonicalFeature: 'catalog',
   sliceKind: 'frontend-slice',
 
-  service: "Navigation et affichage catalogue (listing, sous-categories, fiches produit, rendu cartes) â€” tout ce qui touche au parcours de decouverte des produits.",
+  service: "Navigation et affichage catalogue (listing, sous-categories, fiches produit, rendu cartes) — tout ce qui touche au parcours de decouverte des produits.",
 
   perimeter: {
     in:  [
@@ -53,9 +53,9 @@ module.exports = {
       '../js/b-pager.js',
       '../js/b-product-open-contract.js',
       '../js/b-subcat.js',
-      // P3 (2026-07-27) : rapatriÃ©s depuis boutique.feature.js â€” header
-      // @purpose de chacun dÃ©clarait dÃ©jÃ  "supports b-catalog.js" avant ce
-      // dÃ©placement ; ownership rÃ©el confirmÃ©, pas une dÃ©composition inventÃ©e.
+      // P3 (2026-07-27) : rapatriés depuis boutique.feature.js — header
+      // @purpose de chacun déclarait déjà "supports b-catalog.js" avant ce
+      // déplacement ; ownership réel confirmé, pas une décomposition inventée.
       '../js/b-desktop-global-cart-access.js',
       '../js/b-desktop-sidebar.js',
       '../js/b-desktop-upgrade.js',
@@ -106,13 +106,13 @@ module.exports = {
       'b-modal-desktop-product.js / renderDesktopProductDetail',
     ],
     consumes: [
-      'boutique â€” b-catalog.js, b-pager.js, b-subcat.js, b-product-open-contract.js importent b-bus.js, b-store.js, b-utils.js, b-scroll-owner.js, b-cart-core.js, b-cart.js, b-modal.js',
-      'catalog (backend) â€” shop-schema.js appelle GET /api/categories',
-      'catalog (backend) â€” b-modal-product-detail-bootstrap.js appelle GET /api/products/:id/detail une seule fois par ouverture produit',
+      'boutique — b-catalog.js, b-pager.js, b-subcat.js, b-product-open-contract.js importent b-bus.js, b-store.js, b-utils.js, b-scroll-owner.js, b-cart-core.js, b-cart.js, b-modal.js',
+      'catalog (backend) — shop-schema.js appelle GET /api/categories',
+      'catalog (backend) — b-modal-product-detail-bootstrap.js appelle GET /api/products/:id/detail une seule fois par ouverture produit',
     ],
   },
 
-  authority: 'boutique â€” modal-selection-model.js reste l owner unique de l etat de selection SKU ; b-modal-product-detail-bootstrap.js possede le chargement du contrat detail pour les deux viewports.',
+  authority: 'boutique — modal-selection-model.js reste l owner unique de l etat de selection SKU ; b-modal-product-detail-bootstrap.js possede le chargement du contrat detail pour les deux viewports.',
 
   invariants: [
     'tout fichier js/* portant @domain catalog doit etre liste dans files.js de ce manifeste',

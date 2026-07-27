@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @komerce-arch-lite
  * @role          boutique-b-friendly-group-redirect
  * @domain        shared-cart
@@ -12,10 +12,10 @@
 
 /**
  * @module b-friendly-group-redirect
- * @brief CompatibilitÃ© lien public court /g/:token.
+ * @brief Compatibilité lien public court /g/:token.
  *
- * Tant que server.js ne sert pas directement /g/:token vers la page Ã©vÃ©nement,
- * le fallback SPA renvoie la boutique. Ce module redirige alors immÃ©diatement
+ * Tant que server.js ne sert pas directement /g/:token vers la page événement,
+ * le fallback SPA renvoie la boutique. Ce module redirige alors immédiatement
  * vers la page publique collective existante /event/w/:token.
  */
 

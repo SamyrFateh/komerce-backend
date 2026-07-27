@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @komerce-arch-lite
  * @role          boutique-b-desktop-upgrade
  * @domain        catalog
@@ -11,21 +11,21 @@
 'use strict';
 
 /**
- * b-desktop-upgrade.js â€” Orchestrateur des enrichissements desktop â‰¥ 900px.
+ * b-desktop-upgrade.js — Orchestrateur des enrichissements desktop ≥ 900px.
  *
  * Ce module ne fait que :
- *   1. Importer les deux modules d'enhancers thÃ©matiques :
+ *   1. Importer les deux modules d'enhancers thématiques :
  *        - b-catalog-desktop-enhancers : mega-menu, promo strip, homepage merch,
  *          card hover overlay, hero search bar, view:changed guard.
  *        - b-modal-desktop-enhancers   : zoom, breadcrumb, share, specs, trust,
  *          subtotal, recently-viewed.
  *   2. Installer deux glues locales :
  *        - setupScrollToTop          : bouton retour en haut.
- *        - setupSideCartFooterGuard  : masque le side-cart prÃ¨s du footer.
+ *        - setupSideCartFooterGuard  : masque le side-cart près du footer.
  *
- * Mobile (< 900px) : aucun effet â€” toutes les fonctions sortent sur !isDesktop().
+ * Mobile (< 900px) : aucun effet — toutes les fonctions sortent sur !isDesktop().
  *
- * Point d'entrÃ©e unique : setupDesktopUpgrade(), appelÃ© depuis main.js.
+ * Point d'entrée unique : setupDesktopUpgrade(), appelé depuis main.js.
  */
 
 import { isDesktop, getScrollY, scrollPageToTop } from './b-scroll-owner.js';
@@ -34,9 +34,9 @@ import { setupModalDesktopEnhancers }   from './b-modal-desktop-enhancers.js';
 
 'use strict';
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 //  SCROLL-TO-TOP BUTTON
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 
 function setupScrollToTop() {
   if (!isDesktop()) return;
@@ -64,25 +64,25 @@ function setupScrollToTop() {
   }, { passive: true });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 //  SIDE-CART FOOTER GUARD
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 
 /**
- * setupSideCartFooterGuard â€” masque le side-cart quand le footer entre dans le viewport.
+ * setupSideCartFooterGuard — masque le side-cart quand le footer entre dans le viewport.
  *
- * DÃ‰SACTIVÃ‰ depuis PR-SC2 v3.2 (passage en position:fixed) â€” voir docs/PR-SC2.
+ * DÉSACTIVÉ depuis PR-SC2 v3.2 (passage en position:fixed) — voir docs/PR-SC2.
  *
- * Historique : posÃ©e Ã  l'Ã©poque oÃ¹ .k-side-cart Ã©tait en position:sticky.
+ * Historique : posée à l'époque où .k-side-cart était en position:sticky.
  * Sans guard, le sticky chevauchait visuellement le footer au bas de page.
  *
- * Pourquoi dÃ©sactivÃ©e maintenant : le pattern actuel est position:fixed +
+ * Pourquoi désactivée maintenant : le pattern actuel est position:fixed +
  * body { padding-right: 240px } sur body:has(.k-side-cart.has-items) /
- * body.sc-reserve. Le footer respecte donc dÃ©jÃ  les 240px en bordure
- * droite, le side-cart n'a plus Ã  se cacher pour libÃ©rer le footer.
+ * body.sc-reserve. Le footer respecte donc déjà les 240px en bordure
+ * droite, le side-cart n'a plus à se cacher pour libérer le footer.
  *
- * Pour rÃ©activer (en cas de retour Ã  sticky), supprimer le `return` en
- * tÃªte de fonction.
+ * Pour réactiver (en cas de retour à sticky), supprimer le `return` en
+ * tête de fonction.
  */
 function setupSideCartFooterGuard() {
   // No-op : voir docstring ci-dessus.
@@ -100,7 +100,7 @@ function setupSideCartFooterGuard() {
     sc.style.pointerEvents = footerVisible ? 'none' : '';
     sc.style.transform  = footerVisible ? 'translateY(8px)' : '';
   }, {
-    // DÃ©clencher un peu avant que le footer soit complÃ¨tement visible
+    // Déclencher un peu avant que le footer soit complètement visible
     rootMargin: '0px 0px -20px 0px',
     threshold: 0,
   });
@@ -108,9 +108,9 @@ function setupSideCartFooterGuard() {
   observer.observe(footer);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 //  ENTRY POINT
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 
 export function setupDesktopUpgrade() {
   if (!isDesktop()) return;

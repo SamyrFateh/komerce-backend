@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @komerce-arch-lite
  * @role          boutique-b-greeting
  * @domain        catalog
@@ -12,18 +12,18 @@
 
 /**
  * @module b-greeting
- * @brief Salutation furtive â€” affiche un chip de bienvenue si l'utilisateur
+ * @brief Salutation furtive — affiche un chip de bienvenue si l'utilisateur
  *        est reconnu (session active via cookie httpOnly).
  *
  * Comportement :
  *   - Appelle GET /api/auth/me (best-effort, sans bloquer le boot).
- *   - Si l'utilisateur est identifiÃ©, affiche un petit chip "Kwezi Fatima ðŸ˜Š"
- *     en haut Ã  droite, fond clair, pendant 4 s puis disparaÃ®t.
- *   - Ne bloque rien, n'utilise pas le toast gÃ©nÃ©ral.
+ *   - Si l'utilisateur est identifié, affiche un petit chip "Kwezi Fatima 😊"
+ *     en haut à droite, fond clair, pendant 4 s puis disparaît.
+ *   - Ne bloque rien, n'utilise pas le toast général.
  *   - Ne s'affiche qu'une fois par session (sessionStorage guard).
- *   - Aucune erreur rÃ©seau ne remonte Ã  l'utilisateur.
+ *   - Aucune erreur réseau ne remonte à l'utilisateur.
  *
- * IntÃ©gration : importÃ© dans main.js, appelÃ© dans setupBoutiqueRuntime().
+ * Intégration : importé dans main.js, appelé dans setupBoutiqueRuntime().
  */
 
 const GREETING_KEY = 'kmrc_greeted';
@@ -31,9 +31,9 @@ const STYLE_ID     = 'k-greeting-styles';
 const CHIP_ID      = 'k-greeting-chip';
 const DURATION     = 4000; // ms avant disparition
 
-// FIX BUG-L3 : styles migrÃ©s vers css/interactions.css (bundle components).
-// La fonction ensureStyles() est supprimÃ©e â€” plus d'injection CSS depuis le JS.
-function ensureStyles() { /* no-op â€” styles dans interactions.css */ }
+// FIX BUG-L3 : styles migrés vers css/interactions.css (bundle components).
+// La fonction ensureStyles() est supprimée — plus d'injection CSS depuis le JS.
+function ensureStyles() { /* no-op — styles dans interactions.css */ }
 
 function firstName(fullName) {
   return (fullName || '').trim().split(/\s+/)[0] || '';
@@ -50,7 +50,7 @@ function buildLabel(user) {
 function showGreetingChip(label) {
   ensureStyles();
 
-  // Nettoyer un Ã©ventuel chip rÃ©siduel
+  // Nettoyer un éventuel chip résiduel
   document.getElementById(CHIP_ID)?.remove();
 
   const chip = document.createElement('div');
@@ -59,7 +59,7 @@ function showGreetingChip(label) {
   chip.textContent = label;
   document.body.appendChild(chip);
 
-  // EntrÃ©e
+  // Entrée
   requestAnimationFrame(() => {
     requestAnimationFrame(() => chip.classList.add('k-greeting-chip--visible'));
   });
@@ -73,8 +73,8 @@ function showGreetingChip(label) {
 }
 
 /**
- * Tente de rÃ©cupÃ©rer la session et affiche le chip de bienvenue.
- * Silencieux en cas d'Ã©chec (utilisateur non connectÃ© ou rÃ©seau indisponible).
+ * Tente de récupérer la session et affiche le chip de bienvenue.
+ * Silencieux en cas d'échec (utilisateur non connecté ou réseau indisponible).
  */
 export async function greetIfKnown() {
   if (sessionStorage.getItem(GREETING_KEY)) return;
@@ -93,6 +93,6 @@ export async function greetIfKnown() {
     sessionStorage.setItem(GREETING_KEY, '1');
     showGreetingChip(buildLabel(user));
   } catch (_) {
-    // rÃ©seau indisponible ou cookie expirÃ© â†’ silencieux
+    // réseau indisponible ou cookie expiré → silencieux
   }
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @komerce-arch-lite
  * @role          boutique-b-modal-cart
  * @domain        shared-cart-modal
@@ -43,7 +43,7 @@ function itemSkuId(item) {
 }
 
 function paintInCartButton(button, qty) {
-  button.replaceChildren(document.createTextNode(`ðŸ§º Dans le panier (${qty})`));
+  button.replaceChildren(document.createTextNode(`🧺 Dans le panier (${qty})`));
 }
 
 function paintAddButton(button) {
@@ -58,9 +58,9 @@ function paintAddButton(button) {
 }
 
 /**
- * Retourne uniquement la ligne correspondant Ã  la sÃ©lection courante. Un produit
- * SKU ne doit jamais rÃ©utiliser la premiÃ¨re ligne du mÃªme product.id : deux
- * couleurs/tailles du mÃªme produit sont deux intentions panier distinctes.
+ * Retourne uniquement la ligne correspondant à la sélection courante. Un produit
+ * SKU ne doit jamais réutiliser la première ligne du même product.id : deux
+ * couleurs/tailles du même produit sont deux intentions panier distinctes.
  */
 function currentModalCartItem() {
   if (!state.modalProduct) return null;
@@ -91,7 +91,7 @@ function currentModalCartItem() {
   ) || null;
 }
 
-/* Reset de l'Ã©tat transitoire du bouton Ajouter Ã  chaque ouverture produit. */
+/* Reset de l'état transitoire du bouton Ajouter à chaque ouverture produit. */
 function resetAddCartButtonState() {
   if (!dom.addCartBtn) return;
   dom.addCartBtn.disabled = false;
@@ -99,7 +99,7 @@ function resetAddCartButtonState() {
   dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
 }
 
-/** Synchronise quantitÃ©, Ã©tat SKU et reprÃ©sentation bouton/stepper. */
+/** Synchronise quantité, état SKU et représentation bouton/stepper. */
 function _syncModalQtyUI() {
   if (!state.modalProduct) return;
 
@@ -109,7 +109,7 @@ function _syncModalQtyUI() {
   const canUseProductStepper = Boolean(inventoryModel) && !isSku;
 
   // Pour un SKU, le stepper est interdit : l'intention d'un clic CTA reste donc
-  // toujours une unitÃ©. Avant rÃ©solution du contrat, le chemin reste fail-closed.
+  // toujours une unité. Avant résolution du contrat, le chemin reste fail-closed.
   state.modalQty = isSku ? 1 : (item ? item.qty : 1);
   if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
 
@@ -138,9 +138,9 @@ function _syncModalQtyUI() {
 
 /**
  * Les renderers PDC rerendent directement leur composition lors d'un clic sur
- * une option et ne repassent pas par le bootstrap. Cette dÃ©lÃ©gation document
- * rÃ©concilie l'owner panier juste aprÃ¨s le handler du renderer, y compris quand
- * le bouton cliquÃ© a Ã©tÃ© remplacÃ© par le rerender.
+ * une option et ne repassent pas par le bootstrap. Cette délégation document
+ * réconcilie l'owner panier juste après le handler du renderer, y compris quand
+ * le bouton cliqué a été remplacé par le rerender.
  */
 function installSelectionReconcile() {
   if (_selectionReconcileInstalled) return;

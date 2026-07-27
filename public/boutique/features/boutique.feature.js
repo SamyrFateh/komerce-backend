@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @feature       boutique
  * @type          feature
  * @domain        boutique
@@ -8,8 +8,8 @@
  * @registry      scripts/feature-registry-check.js
  *
  * Manifeste niveau 0 (gouvernance fichiers) pour le domaine frontend
- * "boutique". GÃ©nÃ©rÃ© pour rattacher les modules JS existants (dÃ©jÃ  annotÃ©s
- * @domain boutique dans leur header) Ã  un manifest rÃ©el, afin que
+ * "boutique". Généré pour rattacher les modules JS existants (déjà annotés
+ * @domain boutique dans leur header) à un manifest réel, afin que
  * scripts/feature-registry-check.js cesse de les compter en orphelins.
  */
 'use strict';
@@ -25,20 +25,20 @@ module.exports = {
 
   // Lot O4 (cross-repo feature coverage) : ce manifeste couvre par nature un
   // socle transversal (bus, panier de base, utilitaires, orchestration UI)
-  // sans identite metier unique â€” l'equivalent frontend du manifeste dash
+  // sans identite metier unique — l'equivalent frontend du manifeste dash
   // `platform` (type frontend-transversal). Ne pas rattacher a un
   // canonicalFeature unique : ce serait un rattachement arbitraire, pas une
   // identite metier verifiee. ~19 fichiers catalog/shared-cart mal ranges ici
   // restent une dette connue et documentee (docs/BUSINESS_FEATURE_GRAPH.md
-  // Â§O4), hors perimetre de deplacement de fichiers pour ce lot.
+  // §O4), hors perimetre de deplacement de fichiers pour ce lot.
   canonicalFeature: null,
   sliceKind: 'frontend-transversal',
 
-  service: "Coeur transversal de la boutique (orchestration UI, Ã©tat partagÃ©, panier/modal de base, utilitaires) â€” tout ce qui ne relÃ¨ve pas d'un domaine mÃ©tier dÃ©diÃ©.",
+  service: "Coeur transversal de la boutique (orchestration UI, état partagé, panier/modal de base, utilitaires) — tout ce qui ne relève pas d'un domaine métier dédié.",
 
   perimeter: {
-    in:  ['fichiers js/* annotÃ©s @domain boutique'],
-    out: ['logique backend Ã©quivalente (repo komerce-backend)'],
+    in:  ['fichiers js/* annotés @domain boutique'],
+    out: ['logique backend équivalente (repo komerce-backend)'],
   },
 
   files: {
@@ -87,9 +87,9 @@ module.exports = {
       '../tests/e2e/render-integrity.spec.js',
       '../tests/contracts.spec.js',
       '../tests/unit/b-bus.test.js',
-      // b-modal-cart.test.js reste ici : son require() rÃ©el cible b-cart.js
+      // b-modal-cart.test.js reste ici : son require() réel cible b-cart.js
       // (reste transversal), pas b-modal-cart.js (parti en shared-cart-modal)
-      // â€” nom de fichier trompeur, vÃ©rifiÃ© avant classement, non renommÃ©.
+      // — nom de fichier trompeur, vérifié avant classement, non renommé.
       '../tests/unit/b-modal-cart.test.js',
       '../tests/unit/boutique-core.unit.test.js',
       '../tests/unit/render-categories.test.js',
@@ -133,8 +133,8 @@ module.exports = {
 
   contract: {
     exposes: [],
-    // MigrÃ© depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : socle technique
-    // transverse â€” exports JS internes, pas des routes HTTP.
+    // Migré depuis exposes (audit 2026-07-06, lot UNPARSEABLE) : socle technique
+    // transverse — exports JS internes, pas des routes HTTP.
     internalApi: [
       'bus (b-bus.js)',
       'store / dom / state (b-store.js)',
@@ -146,20 +146,20 @@ module.exports = {
       'modal / openModal (b-modal.js)',
     ],
     consumes: [
-      'auth â€” b-greeting.js appelle /api/auth/me',
-      'catalog â€” b-cart.js, b-desktop-sidebar.js, b-nav.js, boutique.js importent b-catalog.js, shop-schema.js, b-pager.js, b-subcat.js, home-controller.js',
-      'checkout â€” b-nav.js, boutique.js importent b-checkout.js',
-      'modal-product â€” b-modal-core.js, b-modal.js importent b-modal-suggestions.js',
-      'tracking â€” b-nav.js, boutique.js importent b-tracking.js',
-      'wallet â€” b-nav.js importe b-wallet.js',
+      'auth — b-greeting.js appelle /api/auth/me',
+      'catalog — b-cart.js, b-desktop-sidebar.js, b-nav.js, boutique.js importent b-catalog.js, shop-schema.js, b-pager.js, b-subcat.js, home-controller.js',
+      'checkout — b-nav.js, boutique.js importent b-checkout.js',
+      'modal-product — b-modal-core.js, b-modal.js importent b-modal-suggestions.js',
+      'tracking — b-nav.js, boutique.js importent b-tracking.js',
+      'wallet — b-nav.js importe b-wallet.js',
     ],
   },
 
-  authority: 'boutique â€” tout changement de pÃ©rimÃ¨tre de ce domaine doit Ãªtre reflÃ©tÃ© ici.',
+  authority: 'boutique — tout changement de périmètre de ce domaine doit être reflété ici.',
 
   invariants: [
-    'tout fichier js/* portant @domain boutique doit Ãªtre listÃ© dans files.js de ce manifeste',
-    'tout CSS transversal (tokens/reset/layout) ou gÃ©nÃ©rique boutique (cart/desktop/interactions) doit Ãªtre listÃ© dans files.css',
-    'tout test unitaire/spec couvrant un fichier files.js de ce manifeste doit Ãªtre listÃ© dans files.tests',
+    'tout fichier js/* portant @domain boutique doit être listé dans files.js de ce manifeste',
+    'tout CSS transversal (tokens/reset/layout) ou générique boutique (cart/desktop/interactions) doit être listé dans files.css',
+    'tout test unitaire/spec couvrant un fichier files.js de ce manifeste doit être listé dans files.tests',
   ],
 };
