@@ -96,4 +96,38 @@ describe('P3-A.1 confirmCashAndCreateParcel → payment-service', () => {
     const sqls = client.calls.map(c => String(c.sql).trim());
     expect(sqls).toContain('ROLLBACK');
   });
+
+  test('P5-N2/N3 : rolls back and does NOT create a parcel when payment_status is refunded (markPaid no-op)', async () => {
+    // Angle mort corrigé : avant, seul payment_status==='paid' était exclu en
+    // amont ; une commande 'refunded' ou 'failed' passait le garde-fou du
+    // début de fonction, puis markPaid() faisait un no-op silencieux (garde
+    // du validateur), et confirmCashAndCreateParcel continuait quand même
+    // vers transitionOrderStatus + autoCreateParcel sur un paiement jamais
+    // réellement acté.
+    const order = {
+      id: 'order-3',
+      reference: 'KM-3',
+      status: 'cancelled',
+      payment_mode: 'cash_relais',
+      payment_status: 'refunded',
+      total_kmf: 5000,
+      user_id: 'user-3',
+    };
+
+    const client = makeClient([
+      { rows: [order] },       // 1. SELECT order
+      { rows: [], rowCount: 0 }, // 2. markPaid → no-op (refunded n'est pas une source autorisée sans paymentEvent)
+    ]);
+    mockDb.getClient.mockResolvedValue(client);
+
+    const { confirmCashAndCreateParcel } = require('../../services/parcel-auto-create-service');
+
+    await expect(
+      confirmCashAndCreateParcel('KM-3', { id: 'agent-1', role: 'agent_relais' })
+    ).rejects.toMatchObject({ status: 409 });
+
+    expect(mockTransitionOrderStatus).not.toHaveBeenCalled();
+    const sqls = client.calls.map(c => String(c.sql).trim());
+    expect(sqls).toContain('ROLLBACK');
+  });
 });

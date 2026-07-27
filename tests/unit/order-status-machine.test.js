@@ -376,7 +376,7 @@ describe('transitionOrderStatus() — sources paiement (no-op gracieux)', () => 
     expect(result.success).toBe(true);
     expect(result.noop).toBeUndefined();
     expect(mockQuery).toHaveBeenNthCalledWith(3,
-      `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
+      `UPDATE orders SET payment_status = 'paid' WHERE id = $1 AND payment_status = 'pending'`,
       [mockOrder.id]
     );
   });

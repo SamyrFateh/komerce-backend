@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 380,
-    "filesWithFullHeaders": 352,
+    "scannedCodeFiles": 381,
+    "filesWithFullHeaders": 353,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 380,
+    "filesWithAnyHeaders": 381,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 779,
-    "edges": 4374,
+    "graphNodes": 782,
+    "edges": 4381,
     "dbTables": 116,
-    "doctrines": 154,
+    "doctrines": 156,
     "impactAreas": 129,
-    "unresolvedCodeEdges": 420,
+    "unresolvedCodeEdges": 422,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 67
   },
@@ -40,7 +40,7 @@
     "shared-cart": 44,
     "shared-cart-modal": 7,
     "recommendations": 4,
-    "payment": 16,
+    "payment": 17,
     "tracking": 1,
     "wallet": 4,
     "economic-engine": 38,
@@ -86,7 +86,7 @@
     "schema": 1,
     "route": 100,
     "entrypoint": 1,
-    "service": 154,
+    "service": 155,
     "external-adapter": 2,
     "machine": 2,
     "policy": 1,
@@ -94,7 +94,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 76,
+    "critical": 77,
     "medium": 104,
     "high": 165,
     "low": 35
@@ -13383,14 +13383,54 @@
       ],
       "doctrine": [
         "resolve_before_behavior_change",
-        "payment_status_single_entry"
+        "payment_status_single_entry",
+        "payment_status_transition_matrix"
       ],
       "impactAreas": [
         "payments",
         "orders",
         "dashboards"
       ],
-      "version": "2026-06"
+      "version": "2026-07"
+    },
+    {
+      "id": "services/payment-status-validator.js",
+      "file": "services/payment-status-validator.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "payment-status-transition-validator",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "from",
+        "to",
+        "options { paymentEvent }"
+      ],
+      "outputs": [
+        "{allowed",
+        "reason} | source-status arrays for SQL guards"
+      ],
+      "depends": [
+        "(aucune — pure logique",
+        "pas de DB)"
+      ],
+      "usedBy": [
+        "services/payment-service.js",
+        "services/order-status-machine.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "payment_status_single_entry",
+        "payment_status_transition_matrix (P5-N2/N3)"
+      ],
+      "impactAreas": [],
+      "version": "2026-07"
     },
     {
       "id": "services/payment-stripe.js",
@@ -19057,6 +19097,16 @@
       "id": "doctrine:payment_status_single_entry",
       "type": "doctrine",
       "doctrine": "payment_status_single_entry"
+    },
+    {
+      "id": "doctrine:payment_status_transition_matrix",
+      "type": "doctrine",
+      "doctrine": "payment_status_transition_matrix"
+    },
+    {
+      "id": "doctrine:payment_status_transition_matrix (P5-N2/N3)",
+      "type": "doctrine",
+      "doctrine": "payment_status_transition_matrix (P5-N2/N3)"
     },
     {
       "id": "doctrine:wallet_non_modifie_ici",
@@ -39028,6 +39078,12 @@
     },
     {
       "from": "services/payment-service.js",
+      "to": "doctrine:payment_status_transition_matrix",
+      "type": "doctrine",
+      "label": "payment_status_transition_matrix"
+    },
+    {
+      "from": "services/payment-service.js",
       "to": "impact:payments",
       "type": "impact",
       "label": "payments"
@@ -39043,6 +39099,42 @@
       "to": "impact:dashboards",
       "type": "impact",
       "label": "dashboards"
+    },
+    {
+      "from": "services/payment-status-validator.js",
+      "to": "(aucune — pure logique",
+      "type": "depends",
+      "label": "(aucune — pure logique"
+    },
+    {
+      "from": "services/payment-status-validator.js",
+      "to": "pas de DB)",
+      "type": "depends",
+      "label": "pas de DB)"
+    },
+    {
+      "from": "services/payment-service.js",
+      "to": "services/payment-status-validator.js",
+      "type": "uses",
+      "label": "services/payment-service.js"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "services/payment-status-validator.js",
+      "type": "uses",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/payment-status-validator.js",
+      "to": "doctrine:payment_status_single_entry",
+      "type": "doctrine",
+      "label": "payment_status_single_entry"
+    },
+    {
+      "from": "services/payment-status-validator.js",
+      "to": "doctrine:payment_status_transition_matrix (P5-N2/N3)",
+      "type": "doctrine",
+      "label": "payment_status_transition_matrix (P5-N2/N3)"
     },
     {
       "from": "services/payment-stripe.js",
@@ -58671,6 +58763,7 @@
         "services/order-payment-confirmation.js",
         "services/parcel-auto-create-service.js",
         "services/parcel-operations.js",
+        "services/payment-status-validator.js",
         "services/pickup-secret-service.js",
         "services/purchasing-receive-service.js",
         "services/receive-purchase-order.js",
@@ -59192,7 +59285,8 @@
       "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change",
-        "payment_status_single_entry"
+        "payment_status_single_entry",
+        "payment_status_transition_matrix"
       ],
       "impactAreas": [
         "payments",
@@ -59202,6 +59296,7 @@
       "mustCheck": [
         "db:orders",
         "doctrine:payment_status_single_entry",
+        "doctrine:payment_status_transition_matrix",
         "doctrine:resolve_before_behavior_change",
         "impact:dashboards",
         "impact:orders",
@@ -59209,7 +59304,39 @@
         "services/admin-order-refund.js",
         "services/parcel-auto-create-service.js",
         "services/payment-paypal.js",
+        "services/payment-status-validator.js",
         "services/payment-stripe.js"
+      ]
+    },
+    "services/payment-status-validator.js": {
+      "role": "payment-status-transition-validator",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "(aucune — pure logique",
+        "pas de DB)"
+      ],
+      "directUsedBy": [
+        "services/payment-service.js",
+        "services/order-status-machine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "payment_status_single_entry",
+        "payment_status_transition_matrix (P5-N2/N3)"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "doctrine:payment_status_single_entry",
+        "doctrine:payment_status_transition_matrix (P5-N2/N3)",
+        "services/order-status-machine.js",
+        "services/payment-service.js"
       ]
     },
     "services/payment-stripe.js": {
@@ -66351,6 +66478,18 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/payment-status-validator.js",
+      "to": "(aucune — pure logique",
+      "type": "depends",
+      "label": "(aucune — pure logique"
+    },
+    {
+      "from": "services/payment-status-validator.js",
+      "to": "pas de DB)",
+      "type": "depends",
+      "label": "pas de DB)"
     },
     {
       "from": "stripe_webhooks",

@@ -265,7 +265,20 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
     [max, orderId]
   );
   if (remainingToPay <= 0) {
-    await markPaid(orderId, { client });
+    const markPaidResult = await markPaid(orderId, { client });
+    if (!markPaidResult.changed) {
+      // Le débit wallet et wallet_applied_kmf ci-dessus sont déjà écrits dans
+      // CETTE transaction (non commités) — l'appelant (routes/wallet.js) fait
+      // un ROLLBACK sur toute exception, donc jeter ici annule proprement le
+      // débit plutôt que de laisser payment_status désynchronisé de
+      // wallet_applied_kmf. Cause : order.payment_status n'était ni 'pending'
+      // ni débloqué par un paymentEvent (ex. 'refunded'/'failed' concurrent
+      // au checkout) — cf. payment-status-validator.
+      throw Object.assign(
+        new Error(`Application wallet impossible : payment_status de la commande n'autorise pas 'paid'`),
+        { statusCode: 409 }
+      );
+    }
   }
 
   return { ...result, applied_kmf: max, remaining_to_pay: remainingToPay };

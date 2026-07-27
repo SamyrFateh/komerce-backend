@@ -34,21 +34,47 @@ describe('payment-service', () => {
     expect(c.calls[0].params).toEqual([7]);
   });
 
-  test('markFailed : garde payment_status=pending par défaut', async () => {
+  test('markFailed : garde payment_status=pending, non contournable', async () => {
     const c = fakeClient();
     await svc.markFailed(9, { client: c });
     expect(c.calls[0].text).toMatch(/AND payment_status = 'pending'/);
   });
 
-  test('markFailed guardPending=false : supprime la garde', async () => {
+  test('markFailed : aucune option ne permet de contourner la garde (guardPending retiré)', async () => {
     const c = fakeClient();
     await svc.markFailed(9, { client: c, guardPending: false });
-    expect(c.calls[0].text).not.toMatch(/AND payment_status/);
+    // guardPending n'existe plus dans la signature : ce paramètre est ignoré,
+    // la garde reste posée.
+    expect(c.calls[0].text).toMatch(/AND payment_status = 'pending'/);
   });
 
   test('retourne { changed, rowCount }', async () => {
     const c = fakeClient();
     const r = await svc.markFailed(9, { client: c });
     expect(r).toEqual({ changed: true, rowCount: 1 });
+  });
+
+  test('markPaid : sans paymentEvent, ne débloque que pending (pas failed)', async () => {
+    const c = fakeClient();
+    await svc.markPaid(42, { client: c });
+    expect(c.calls[0].text).toMatch(/AND payment_status = 'pending'/);
+  });
+
+  test('markPaid : avec paymentEvent identifiable, débloque aussi failed→paid', async () => {
+    const c = fakeClient();
+    await svc.markPaid(42, { client: c, paymentEvent: { type: 'stripe_retry', externalId: 'pi_123' } });
+    expect(c.calls[0].text).toMatch(/AND payment_status IN \('pending', 'failed'\)/);
+  });
+
+  test('markPaid : paymentEvent incomplet (sans externalId) ne débloque rien de plus', async () => {
+    const c = fakeClient();
+    await svc.markPaid(42, { client: c, paymentEvent: { type: 'stripe_retry' } });
+    expect(c.calls[0].text).toMatch(/AND payment_status = 'pending'/);
+  });
+
+  test('markRefunded : garde source ∈ {pending, paid, failed} — refunded→refunded exclu', async () => {
+    const c = fakeClient();
+    await svc.markRefunded(7, { client: c });
+    expect(c.calls[0].text).toMatch(/AND payment_status IN \('pending', 'paid', 'failed'\)/);
   });
 });

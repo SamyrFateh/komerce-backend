@@ -251,7 +251,19 @@ async function confirmCashAndCreateParcel(ref, actor) {
       const err = new Error('Paiement déjà confirmé'); err.status = 400; throw err;
     }
 
-    await markPaid(order.id, { client, cashPaidAt: true });
+    const markPaidResult = await markPaid(order.id, { client, cashPaidAt: true });
+    if (!markPaidResult.changed) {
+      // La commande n'était ni 'paid' (déjà exclu ci-dessus) ni 'pending' —
+      // ex. 'refunded' ou 'failed'. markPaid a fait un no-op (cf.
+      // payment-status-validator) : ne PAS continuer vers confirmed/parcel
+      // sur un paiement qui n'a pas réellement été acté.
+      await client.query('ROLLBACK');
+      const err = new Error(
+        `Confirmation cash impossible : payment_status actuel ('${order.payment_status}') n'autorise pas la transition vers 'paid'`
+      );
+      err.status = 409;
+      throw err;
+    }
 
     const dbActor = { id: actor.id || null, role: actor.role || 'system' };
     const _confirmResult = await transitionOrderStatus({

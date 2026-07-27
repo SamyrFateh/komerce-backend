@@ -52,6 +52,7 @@ const db = require('../db');
 const log = require('../utils/logger').child({ module: 'order-status-machine' });
 const { randomBytes } = require('crypto');
 const { adjustStock } = require('./product-admin-service');
+const { sourceStatusesFor, sqlGuard } = require('./payment-status-validator');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -303,9 +304,14 @@ async function transitionOrderStatus({
 
   // ── 5. Special: confirmed (paiement reçu) → set payment_status = 'paid' ──
   // Ceci remplace la logique qui était dans payments.js
+  // Garde alignée sur payment-status-validator.js (P5-N2/N3, 2026-07) : ce
+  // bloc ne s'exécute déjà que si previousStatus === 'pending' (variable en
+  // mémoire) — la clause WHERE ajoute la même garantie côté DB, en défense
+  // en profondeur contre une course avec une autre transition concurrente.
   if (newStatus === 'confirmed' && previousStatus === 'pending' && ['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'shared_cart_full_payment', 'paypal_capture', 'system'].includes(source)) {
+    const paidGuard = sqlGuard(sourceStatusesFor('paid'));
     await q.query(
-      `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
+      `UPDATE orders SET payment_status = 'paid' WHERE id = $1 AND ${paidGuard}`,
       [orderId]
     );
   }

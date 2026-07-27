@@ -356,7 +356,7 @@ describe('applyToOrder()', () => {
       // applyToOrder(): UPDATE orders (wallet_applied_kmf)
       .mockResolvedValueOnce({ rows: [{}] })
       // markPaid(): UPDATE orders (payment_status via payment-service.js)
-      .mockResolvedValueOnce({ rows: [{}] });
+      .mockResolvedValueOnce({ rows: [{}], rowCount: 1 });
 
     const result = await walletService.applyToOrder(mockClient, {
       userId: 'user-1', orderId: 'order-1', amountKmf: 3000,
@@ -364,6 +364,28 @@ describe('applyToOrder()', () => {
 
     expect(result.applied_kmf).toBe(3000);
     expect(result.remaining_to_pay).toBe(0);
+  });
+
+  test('P5-N2/N3 : abandonne (throw) si markPaid ne peut pas passer payment_status à paid', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', user_id: 'user-1', total_kmf: 3000, reference: 'KMC-001' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 5000 }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 5000 }] })
+      .mockResolvedValueOnce({ rows: [{ balance_kmf: 2000 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'tx-1', type: 'debit' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'lot-1', remaining_kmf: 3000, created_at: '2026-01-01' }] })
+      .mockResolvedValueOnce({ rows: [{}] })
+      .mockResolvedValueOnce({ rows: [{ id: 'cons-1', amount_kmf: 3000 }] })
+      // applyToOrder(): UPDATE orders (wallet_applied_kmf)
+      .mockResolvedValueOnce({ rows: [{}] })
+      // markPaid(): no-op — la garde du validateur a bloqué la transition
+      // (ex. commande passée 'refunded'/'failed' entre-temps) : rowCount=0.
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+    await expect(
+      walletService.applyToOrder(mockClient, { userId: 'user-1', orderId: 'order-1', amountKmf: 3000 })
+    ).rejects.toThrow(/payment_status/);
   });
 
   test('throws when order not found', async () => {

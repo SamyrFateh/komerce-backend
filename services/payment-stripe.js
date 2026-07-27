@@ -349,7 +349,7 @@ async function handleStripePaymentFailed(event, intent, db) {
     return;
   }
 
-  const upd = await markFailed(orderId, { client: db, guardPending: true });
+  const upd = await markFailed(orderId, { client: db });
   if (!upd.changed) {
     log.warn(`[STRIPE-WEBHOOK] payment_failed ignored (already paid or unknown): ${intent.metadata?.order_reference}`);
   } else {

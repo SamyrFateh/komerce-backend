@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 380
-- Files with full headers: 352
+- Scanned code files: 381
+- Files with full headers: 353
 - Files with lite headers: 28
-- Files with any headers: 380
+- Files with any headers: 381
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 779
-- Edges: 4374
+- Graph nodes: 782
+- Edges: 4381
 - DB tables: 116
-- Doctrines: 154
+- Doctrines: 156
 - Impact areas: 129
-- Unresolved code edges: 420
+- Unresolved code edges: 422
 - Tables multi-écrivains directs (>=2): 67
 - Avertissements db-write / db-write-via en chevauchement: 0
 
@@ -43,7 +43,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - notification: 16
 - operations: 11
 - orders: 23
-- payment: 16
+- payment: 17
 - purchasing: 7
 - recommendations: 4
 - refunds: 2
@@ -71,7 +71,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 100
 - route-manifest: 1
 - schema: 1
-- service: 154
+- service: 155
 - state: 1
 - state-store: 1
 - ui-bootstrap: 2
@@ -148,6 +148,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/payment-paypal-events.js — payment-payment-paypal-events (payment, critical, full)
 - services/payment-paypal.js — payment-paypal (payment, critical, full)
 - services/payment-service.js — payment-status-owner (payment, critical, full)
+- services/payment-status-validator.js — payment-status-transition-validator (payment, critical, full)
 - services/payment-stripe.js — stripe-payment-service (payment, critical, full)
 - services/paypal-client.js — payment-paypal-client (payment, critical, full)
 - services/receive-purchase-order.js — orders-receive-purchase-order (purchasing, critical, full)
