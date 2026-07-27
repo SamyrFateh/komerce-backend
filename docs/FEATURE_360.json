@@ -42,14 +42,14 @@
   "summary": {
     "features": 28,
     "healthy": 5,
-    "attention": 22,
-    "blocked": 1,
-    "businessDependencies": 94,
-    "directCrossFeatureImports": 1,
+    "attention": 23,
+    "blocked": 0,
+    "businessDependencies": 93,
+    "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 69,
     "ontologyGaps": 0,
-    "debtItemsTotal": 125
+    "debtItemsTotal": 124
   },
   "features": [
     {
@@ -813,15 +813,8 @@
         "totalFiles": 11,
         "boutiqueManifest": "auth",
         "boutiqueFiles": {
-          "count": 5,
+          "count": 4,
           "files": [
-            {
-              "declared": "../css/identity.css",
-              "resolvedPath": "public/boutique/css/identity.css",
-              "category": "css",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
             {
               "declared": "../js/b-identity.js",
               "resolvedPath": "public/boutique/js/b-identity.js",
@@ -1810,7 +1803,7 @@
         "totalFiles": 127,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 31,
+          "count": 30,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -1829,13 +1822,6 @@
             {
               "declared": "../css/modal-enriched-content.css",
               "resolvedPath": "public/boutique/css/modal-enriched-content.css",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../css/modal-media.css",
-              "resolvedPath": "public/boutique/css/modal-media.css",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -2434,14 +2420,10 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 1,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
         "details": [
-          {
-            "to": "auth-identity",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
           {
             "to": "infrastructure",
             "family": "TECHNICAL_PRIMITIVE"
@@ -11459,7 +11441,7 @@
             ]
           },
           "services": {
-            "count": 10,
+            "count": 9,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -11499,11 +11481,6 @@
               {
                 "declared": "services/order-status-machine.js",
                 "resolvedPath": "services/order-status-machine.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/qr-collection-core.js",
-                "resolvedPath": "services/qr-collection-core.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -11659,7 +11636,7 @@
             ]
           }
         },
-        "totalFiles": 50,
+        "totalFiles": 49,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12276,7 +12253,7 @@
             ]
           },
           "services": {
-            "count": 12,
+            "count": 11,
             "files": [
               {
                 "declared": "services/cash-operations.js",
@@ -12316,11 +12293,6 @@
               {
                 "declared": "services/payment-service.js",
                 "resolvedPath": "services/payment-service.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/payment-status-validator.js",
-                "resolvedPath": "services/payment-status-validator.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -12431,18 +12403,11 @@
             ]
           }
         },
-        "totalFiles": 38,
+        "totalFiles": 37,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
-          "count": 3,
+          "count": 2,
           "files": [
-            {
-              "declared": "../css/paypal.css",
-              "resolvedPath": "public/boutique/css/paypal.css",
-              "category": "css",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
             {
               "declared": "../js/b-paypal.js",
               "resolvedPath": "public/boutique/js/b-paypal.js",
@@ -14028,14 +13993,6 @@
           "channels": [
             "static-code"
           ]
-        },
-        {
-          "consumer": "shared-cart",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
-          "channels": [
-            "interface",
-            "static-code"
-          ]
         }
       ],
       "projections": {
@@ -14931,125 +14888,62 @@
           }
         },
         "totalFiles": 106,
-        "boutiqueManifest": "shared-cart-modal",
+        "boutiqueManifest": "shared-cart",
         "boutiqueFiles": {
-          "count": 17,
+          "count": 8,
           "files": [
             {
-              "declared": "../js/b-modal-cart.js",
-              "resolvedPath": "public/boutique/js/b-modal-cart.js",
+              "declared": "../js/b-group-banner.js",
+              "resolvedPath": "public/boutique/js/b-group-banner.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/b-modal-core.js",
-              "resolvedPath": "public/boutique/js/b-modal-core.js",
+              "declared": "../js/b-group-view.js",
+              "resolvedPath": "public/boutique/js/b-group-view.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/b-modal-image-ux.js",
-              "resolvedPath": "public/boutique/js/b-modal-image-ux.js",
+              "declared": "../js/b-share-cart.js",
+              "resolvedPath": "public/boutique/js/b-share-cart.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/b-modal-nav.js",
-              "resolvedPath": "public/boutique/js/b-modal-nav.js",
+              "declared": "../js/group/group-api.js",
+              "resolvedPath": "public/boutique/js/group/group-api.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/b-modal-product.js",
-              "resolvedPath": "public/boutique/js/b-modal-product.js",
+              "declared": "../js/group/group-helpers.js",
+              "resolvedPath": "public/boutique/js/group/group-helpers.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/b-modal-social-proof.js",
-              "resolvedPath": "public/boutique/js/b-modal-social-proof.js",
+              "declared": "../js/group/group-render-creator.js",
+              "resolvedPath": "public/boutique/js/group/group-render-creator.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/b-modal.js",
-              "resolvedPath": "public/boutique/js/b-modal.js",
+              "declared": "../js/group/group-state.js",
+              "resolvedPath": "public/boutique/js/group/group-state.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../tests/unit/b-modal-core-active-flows.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-core-active-flows.test.js",
-              "category": "tests",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-core-desktop-click.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-core-desktop-click.test.js",
-              "category": "tests",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-core-pdc6-baseline.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-core-pdc6-baseline.test.js",
-              "category": "tests",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-core-pdc6-coverage.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-core-pdc6-coverage.test.js",
-              "category": "tests",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-core.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-core.test.js",
-              "category": "tests",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-image-ux.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-image-ux.test.js",
-              "category": "tests",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-nav.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-nav.test.js",
-              "category": "tests",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-product-mdm9.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-product-mdm9.test.js",
-              "category": "tests",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-product.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-product.test.js",
-              "category": "tests",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../tests/unit/b-modal-social-proof.test.js",
-              "resolvedPath": "public/boutique/tests/unit/b-modal-social-proof.test.js",
+              "declared": "../tests/unit/group-render-creator.test.js",
+              "resolvedPath": "public/boutique/tests/unit/group-render-creator.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -15580,14 +15474,6 @@
           ]
         },
         {
-          "provider": "recommendations",
-          "disposition": "BUSINESS_FEATURE_INTERFACE",
-          "channels": [
-            "interface",
-            "static-code"
-          ]
-        },
-        {
           "provider": "refunds",
           "disposition": "BUSINESS_TRANSVERSAL_SERVICE",
           "channels": [
@@ -15626,8 +15512,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 1,
+        "status": "ATTENTION",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 1,
@@ -15646,7 +15532,7 @@
         "ambiguousOwnershipCount": 2
       },
       "architecturalDebt": {
-        "debtCount": 6,
+        "debtCount": 5,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -15672,11 +15558,6 @@
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
             "evidence": "contract.consumes déclare \"wallet\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -16309,15 +16190,8 @@
         "totalFiles": 10,
         "boutiqueManifest": "wallet",
         "boutiqueFiles": {
-          "count": 3,
+          "count": 2,
           "files": [
-            {
-              "declared": "../css/wallet.css",
-              "resolvedPath": "public/boutique/css/wallet.css",
-              "category": "css",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
             {
               "declared": "../js/b-wallet.js",
               "resolvedPath": "public/boutique/js/b-wallet.js",

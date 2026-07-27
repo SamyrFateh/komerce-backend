@@ -46,18 +46,36 @@ describe('I-SWEEP invariants regression net', () => {
   });
 
   test('I-03/I-09: QR verify performs order transition, scan insert and parcel sync before commit', () => {
+    // P5-L5 (2026-07) : la validation + transition + invalidation QR + scan +
+    // parcelSync ont été extraites dans services/qr-collection-core.js,
+    // partagé avec scan-operations.js (verifyQr). verify-qr-collection.js ne
+    // fait plus que déléguer à ce noyau puis exécuter son propre COMMIT — le
+    // test doit donc vérifier chaque moitié de l'invariant dans le bon fichier.
     const service = read('services/verify-qr-collection.js');
+    const core = read('services/qr-collection-core.js');
 
-    expect(service).toContain('transitionOrderStatus');
-    expect(service).toContain("newStatus: 'collected'");
-    expect(service).toContain('safeSyncScanToParcels');
-    expect(service).toContain('Retrait client via QR Code');
+    expect(core).toContain('transitionOrderStatus');
+    expect(core).toContain("newStatus: 'collected'");
+    expect(core).toContain('safeSyncScanToParcels');
+    expect(core).toContain('Retrait client via QR Code');
+    expect(service).toContain('resolveQrCollection');
 
-    const syncIndex = service.indexOf('safeSyncScanToParcels');
-    const commitIndex = service.indexOf("client.query('COMMIT')");
+    // Le noyau exécute transition puis scan+parcelSync avant de renvoyer ok:true
+    const transitionIndex = core.indexOf('transitionOrderStatus({');
+    const syncIndex = core.indexOf('safeSyncScanToParcels');
+    const okTrueIndex = core.indexOf('return { ok: true');
+    expect(transitionIndex).toBeGreaterThan(-1);
     expect(syncIndex).toBeGreaterThan(-1);
+    expect(okTrueIndex).toBeGreaterThan(-1);
+    expect(transitionIndex).toBeLessThan(syncIndex);
+    expect(syncIndex).toBeLessThan(okTrueIndex);
+
+    // L'appelant ne COMMIT qu'après avoir attendu le résultat du noyau
+    const resolveCallIndex = service.indexOf('await resolveQrCollection(');
+    const commitIndex = service.indexOf("client.query('COMMIT')");
+    expect(resolveCallIndex).toBeGreaterThan(-1);
     expect(commitIndex).toBeGreaterThan(-1);
-    expect(syncIndex).toBeLessThan(commitIndex);
+    expect(resolveCallIndex).toBeLessThan(commitIndex);
   });
 
   test('G2: Stripe order intent uses command-level idempotency and reuses existing PaymentIntent', () => {
