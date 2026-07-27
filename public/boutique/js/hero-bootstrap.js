@@ -1,7 +1,7 @@
 /**
  * @komerce-arch-lite
  * @role          boutique-hero-bootstrap
- * @domain        boutique
+ * @domain        catalog
  * @layer         ui-bootstrap
  * @owner         public/boutique/js/b-home-premium-v1.js
  * @purpose       Hero sticky mobile (scroll.style.top), sticky bar desktop (IntersectionObserver),
@@ -108,15 +108,15 @@
   /* ══ Proverbe africain rotatif ══ */
   (function() {
     let proverbes = [
-      /* ðŸŒ Afrique de l'Est / Swahili */
+      /* 🌍 Afrique de l'Est / Swahili */
       "« Haba na haba hujaza kibaba. » — Grain à grain, on remplit la mesure. (Swahili)",
       "« Haraka haraka haina baraka. » — La précipitation n'apporte pas de bénédiction. (Swahili)",
       "« Akili ni nywele, kila mtu ana zake. » — L'intelligence est comme les cheveux, chacun a les siennes. (Swahili)",
       "« Umoja ni nguvu, utengano ni udhaifu. » — L'union est force, la division est faiblesse. (Swahili)",
-      "« Asiyekuwepo na lake halipo. » — Celui qui n'est pas là , ses affaires n'avancent pas. (Swahili)",
+      "« Asiyekuwepo na lake halipo. » — Celui qui n'est pas là, ses affaires n'avancent pas. (Swahili)",
       "« Mchagua jembe si mkulima. » — Celui qui choisit sa houe n'est pas cultivateur. (Swahili)",
 
-      /* ðŸŒ Afrique de l'Ouest */
+      /* 🌍 Afrique de l'Ouest */
       "« Si tu veux aller vite, marche seul. Si tu veux aller loin, marche ensemble. » — Proverbe africain",
       "« La forêt serait silencieuse si aucun oiseau ne chantait que le mieux. » — Proverbe africain",
       "« L'enfant qui n'est pas élevé par son village brûlera ce village pour se réchauffer. » — Proverbe africain",
@@ -125,12 +125,12 @@
       "« La pluie ne tombe pas sur un seul toit. » — Proverbe camerounais",
       "« Celui qui pose des questions ne se perd jamais. » — Proverbe haoussa",
 
-      /* ðŸŒ Afrique du Nord / Comores */
+      /* 🌍 Afrique du Nord / Comores */
       "« Saba'u 'ilm — walau ilâ s-sîn. » — Cherche le savoir, même jusqu'en Chine. (Arabe / Islam)",
       "« Man sabara zafira. » — Celui qui patiente réussit. (Arabe)",
       "« Al-waqt ka-s-sayf, in lam taqta'hu qata'ak. » — Le temps est comme une épée : si tu ne le coupes pas, il te coupe. (Arabe)",
 
-      /* ðŸŒ Asie */
+      /* 🌏 Asie */
       "« Une crise est une occasion qui se présente à cheval. » — Proverbe chinois",
       "« La meilleure heure pour planter un arbre, c'était il y a 20 ans. La deuxième meilleure, c'est maintenant. » — Proverbe chinois",
       "« Tombe sept fois, relève-toi huit. » — Proverbe japonais (Nana korobi ya oki)",
@@ -138,7 +138,7 @@
       "« Mieux vaut allumer une bougie que maudire l'obscurité. » — Proverbe chinois",
       "« L'eau qui coule doucement creuse la roche. » — Proverbe japonais",
 
-      /* ðŸŒŽ Amériques / Europe */
+      /* 🌎 Amériques / Europe */
       "« Vouloir, c'est pouvoir. » — Proverbe latin",
       "« Chaque saint a son passé, chaque pécheur a son avenir. » — Oscar Wilde",
       "« La vie, c'est ce qui arrive pendant qu'on fait d'autres projets. » — John Lennon",
