@@ -56,6 +56,11 @@ module.exports = {
     assets: [
       '../index.html',
     ],
+    tests: [
+      '../tests/unit/b-bus.test.js',
+      '../tests/unit/b-nav.test.js',
+      '../tests/unit/boutique-core.unit.test.js',
+    ],
   },
 
   docs: [],
