@@ -488,6 +488,17 @@ describe('verifyQr', () => {
     expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({ newStatus: 'collected' }));
   });
 
+  test('P5-L5 : le SELECT verrouille la ligne (FOR UPDATE) — absent avant l\'extraction du noyau partagé', async () => {
+    const client = makeClient([
+      {}, { rows: [order] }, {}, { rows: [{ id: 'sc1' }] }, {},
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    await scanOps.verifyQr({ token }, user);
+    const selectCall = client.query.mock.calls.find(c => String(c[0]).includes('FROM orders'));
+    expect(String(selectCall[0])).toContain('FOR UPDATE OF o');
+  });
+
   test('token manquant → 400', async () => {
     const result = await scanOps.verifyQr({}, user);
     expect(result.status).toBe(400);

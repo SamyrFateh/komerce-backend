@@ -42,14 +42,14 @@
   "summary": {
     "features": 28,
     "healthy": 5,
-    "attention": 23,
-    "blocked": 0,
-    "businessDependencies": 93,
-    "directCrossFeatureImports": 0,
+    "attention": 22,
+    "blocked": 1,
+    "businessDependencies": 94,
+    "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 69,
     "ontologyGaps": 0,
-    "debtItemsTotal": 124
+    "debtItemsTotal": 125
   },
   "features": [
     {
@@ -726,7 +726,10 @@
       },
       "authority": "backend-core — tout changement de middleware d'authentification doit etre valide par le proprietaire de middleware/auth.js",
       "invariants": [
-        "toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde",
+        {
+          "statement": "toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde",
+          "test": "tests/invariants/auth-identity.mutating-routes-guarded.test.js"
+        },
         "les routes de ce manifeste s'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc"
       ],
       "implementation": {
@@ -810,8 +813,15 @@
         "totalFiles": 11,
         "boutiqueManifest": "auth",
         "boutiqueFiles": {
-          "count": 4,
+          "count": 5,
           "files": [
+            {
+              "declared": "../css/identity.css",
+              "resolvedPath": "public/boutique/css/identity.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
             {
               "declared": "../js/b-identity.js",
               "resolvedPath": "public/boutique/js/b-identity.js",
@@ -1800,7 +1810,7 @@
         "totalFiles": 127,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 30,
+          "count": 31,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -1819,6 +1829,13 @@
             {
               "declared": "../css/modal-enriched-content.css",
               "resolvedPath": "public/boutique/css/modal-enriched-content.css",
+              "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../css/modal-media.css",
+              "resolvedPath": "public/boutique/css/modal-media.css",
               "category": "boutique",
               "exists": true,
               "status": "resolved-on-disk"
@@ -2417,10 +2434,14 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 1,
+        "technicalPrimitiveDependencies": 2,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
         "details": [
+          {
+            "to": "auth-identity",
+            "family": "TECHNICAL_PRIMITIVE"
+          },
           {
             "to": "infrastructure",
             "family": "TECHNICAL_PRIMITIVE"
@@ -11356,7 +11377,10 @@
       "invariants": [
         "annulation libre et 100% avant ordered (plancher 24h) ; commande ferme des ordered — demande wallet-only ensuite (DOCTRINE_ANNULATION)",
         "le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait",
-        "tout remboursement retourne au payeur, jamais au destinataire",
+        {
+          "statement": "tout remboursement retourne au payeur, jamais au destinataire",
+          "test": "tests/invariants/orders.refund-to-payer.test.js"
+        },
         "reference de commande lisible et unique",
         "snapshot de cout figure a la creation, jamais recalcule retroactivement",
         "transition de statut uniquement via order-status-machine.js",
@@ -11435,7 +11459,7 @@
             ]
           },
           "services": {
-            "count": 9,
+            "count": 10,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -11475,6 +11499,11 @@
               {
                 "declared": "services/order-status-machine.js",
                 "resolvedPath": "services/order-status-machine.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/qr-collection-core.js",
+                "resolvedPath": "services/qr-collection-core.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -11630,7 +11659,7 @@
             ]
           }
         },
-        "totalFiles": 49,
+        "totalFiles": 50,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12174,9 +12203,15 @@
       },
       "authority": "backend-core — tout changement de webhook ou de logique d'idempotence doit etre valide par le proprietaire de payment-service.js",
       "invariants": [
-        "idempotence stricte sur tout webhook (Stripe, PayPal)",
+        {
+          "statement": "idempotence stricte sur tout webhook (Stripe, PayPal)",
+          "test": "tests/invariants/payments.webhook-idempotency.test.js"
+        },
         "aucun secret de paiement en dur dans le code",
-        "un paiement confirme ne peut etre confirme deux fois"
+        {
+          "statement": "un paiement confirme ne peut etre confirme deux fois",
+          "test": "tests/invariants/payments.no-double-confirm.test.js"
+        }
       ],
       "implementation": {
         "byCategory": {
@@ -12241,7 +12276,7 @@
             ]
           },
           "services": {
-            "count": 11,
+            "count": 12,
             "files": [
               {
                 "declared": "services/cash-operations.js",
@@ -12281,6 +12316,11 @@
               {
                 "declared": "services/payment-service.js",
                 "resolvedPath": "services/payment-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/payment-status-validator.js",
+                "resolvedPath": "services/payment-status-validator.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -12391,11 +12431,18 @@
             ]
           }
         },
-        "totalFiles": 37,
+        "totalFiles": 38,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
-          "count": 2,
+          "count": 3,
           "files": [
+            {
+              "declared": "../css/paypal.css",
+              "resolvedPath": "public/boutique/css/paypal.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
             {
               "declared": "../js/b-paypal.js",
               "resolvedPath": "public/boutique/js/b-paypal.js",
@@ -13981,6 +14028,14 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "consumer": "shared-cart",
+          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "channels": [
+            "interface",
+            "static-code"
+          ]
         }
       ],
       "projections": {
@@ -14876,62 +14931,125 @@
           }
         },
         "totalFiles": 106,
-        "boutiqueManifest": "shared-cart",
+        "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
-          "count": 8,
+          "count": 17,
           "files": [
             {
-              "declared": "../js/b-group-banner.js",
-              "resolvedPath": "public/boutique/js/b-group-banner.js",
+              "declared": "../js/b-modal-cart.js",
+              "resolvedPath": "public/boutique/js/b-modal-cart.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/b-group-view.js",
-              "resolvedPath": "public/boutique/js/b-group-view.js",
+              "declared": "../js/b-modal-core.js",
+              "resolvedPath": "public/boutique/js/b-modal-core.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/b-share-cart.js",
-              "resolvedPath": "public/boutique/js/b-share-cart.js",
+              "declared": "../js/b-modal-image-ux.js",
+              "resolvedPath": "public/boutique/js/b-modal-image-ux.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/group/group-api.js",
-              "resolvedPath": "public/boutique/js/group/group-api.js",
+              "declared": "../js/b-modal-nav.js",
+              "resolvedPath": "public/boutique/js/b-modal-nav.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/group/group-helpers.js",
-              "resolvedPath": "public/boutique/js/group/group-helpers.js",
+              "declared": "../js/b-modal-product.js",
+              "resolvedPath": "public/boutique/js/b-modal-product.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/group/group-render-creator.js",
-              "resolvedPath": "public/boutique/js/group/group-render-creator.js",
+              "declared": "../js/b-modal-social-proof.js",
+              "resolvedPath": "public/boutique/js/b-modal-social-proof.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/group/group-state.js",
-              "resolvedPath": "public/boutique/js/group/group-state.js",
+              "declared": "../js/b-modal.js",
+              "resolvedPath": "public/boutique/js/b-modal.js",
               "category": "js",
               "exists": true,
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../tests/unit/group-render-creator.test.js",
-              "resolvedPath": "public/boutique/tests/unit/group-render-creator.test.js",
+              "declared": "../tests/unit/b-modal-core-active-flows.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-core-active-flows.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-core-desktop-click.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-core-desktop-click.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-core-pdc6-baseline.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-core-pdc6-baseline.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-core-pdc6-coverage.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-core-pdc6-coverage.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-core.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-core.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-image-ux.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-image-ux.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-nav.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-nav.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-product-mdm9.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-product-mdm9.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-product.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-product.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-modal-social-proof.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-modal-social-proof.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
@@ -15462,6 +15580,14 @@
           ]
         },
         {
+          "provider": "recommendations",
+          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "channels": [
+            "interface",
+            "static-code"
+          ]
+        },
+        {
           "provider": "refunds",
           "disposition": "BUSINESS_TRANSVERSAL_SERVICE",
           "channels": [
@@ -15500,8 +15626,8 @@
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
-        "directCrossFeatureImports": 0,
+        "status": "BLOCKED",
+        "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 1,
@@ -15520,7 +15646,7 @@
         "ambiguousOwnershipCount": 2
       },
       "architecturalDebt": {
-        "debtCount": 5,
+        "debtCount": 6,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -15546,6 +15672,11 @@
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
             "evidence": "contract.consumes déclare \"wallet\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          },
+          {
+            "type": "DIRECT_CROSS_FEATURE_IMPORT",
+            "severity": "high",
+            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -16091,7 +16222,10 @@
       },
       "authority": "backend-core — tout changement de calcul de solde doit etre valide par le proprietaire de wallet-service.js",
       "invariants": [
-        "application wallet une seule fois par evenement source",
+        {
+          "statement": "application wallet une seule fois par evenement source",
+          "test": "tests/invariants/wallet.single-application-per-event.test.js"
+        },
         "solde jamais negatif sans flag explicite admin"
       ],
       "implementation": {
@@ -16175,8 +16309,15 @@
         "totalFiles": 10,
         "boutiqueManifest": "wallet",
         "boutiqueFiles": {
-          "count": 2,
+          "count": 3,
           "files": [
+            {
+              "declared": "../css/wallet.css",
+              "resolvedPath": "public/boutique/css/wallet.css",
+              "category": "css",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
             {
               "declared": "../js/b-wallet.js",
               "resolvedPath": "public/boutique/js/b-wallet.js",

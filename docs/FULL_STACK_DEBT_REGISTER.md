@@ -201,15 +201,45 @@ AUDITED_HEAD `dcd6b46a` · AUDIT_DATE 2026-07-14 · 0 P0 PROVEN
 
 ---
 
+### DEBT-11 — `routes/tracking.js:generateTrackingToken` — code mort sur colonne critique
+
+- **SEVERITY** P2
+- **CONFIDENCE** HIGH_CONFIDENCE (grep exhaustif : aucun appelant)
+- **FEATURE** orders / tracking
+- **CATEGORY** DEAD_CODE · COLUMN_OWNERSHIP
+- **DESCRIPTION** `generateTrackingToken(orderId)` écrit `orders.qr_token`
+  (token 6 car. alphanumériques faibles, **sans** `qr_expires_at`, guardé
+  `WHERE qr_token IS NULL`) pour un usage de « tracking » distinct du QR de
+  retrait (48 car. CSPRNG + expiration 48h, généré par
+  `routes/orders/qr.js` uniquement quand `status = 'available'`). Vérifié :
+  **aucun appelant nulle part dans le dépôt** — ni appel direct
+  `generateTrackingToken(`, ni consommation de l'assignation orpheline
+  `router.generateTrackingToken = generateTrackingToken`. Trouvé pendant
+  l'investigation P5-L5 (ownership `qr_token`/`qr_expires_at`) : si jamais
+  rebranché, ce chemin écrirait une valeur sémantiquement différente dans la
+  même colonne que le générateur du retrait, sans coordination entre les
+  deux contrats.
+- **EVIDENCE** `routes/tracking.js:349-364` ; `grep -rn "generateTrackingToken("` →
+  0 site d'appel hors définition.
+- **BUSINESS IMPACT** aucun aujourd'hui (inatteignable). Risque latent si
+  rebranché sans revoir le contrat `qr_token`.
+- **CURRENT MITIGATION** aucune — le code est simplement mort.
+- **RECOMMENDED ACTION** supprimer `generateTrackingToken` (et
+  `router.generateTrackingToken = ...`) après confirmation qu'aucun appelant
+  externe (webhook, script one-off) n'en dépend hors du dépôt applicatif.
+- **E2E LINK** P5-L5 (ownership `qr_token`/`qr_expires_at`)
+
+---
+
 ## Synthèse
 
 ```
 P0  : 0
 P1  : 2   (DEBT-01, DEBT-02)   ← dont 1 proof-debt pure (DEBT-02)
-P2  : 5   (DEBT-03,04,05,06,07)
+P2  : 6   (DEBT-03,04,05,06,07,11)
 P3  : 3   (DEBT-08,09,10)
 
-CODE DEBT  : DEBT-03, DEBT-05, DEBT-08, (partie de DEBT-01)
+CODE DEBT  : DEBT-03, DEBT-05, DEBT-08, DEBT-11, (partie de DEBT-01)
 PROOF DEBT : DEBT-02, DEBT-04, (partie de DEBT-01), sécurité IDOR non exécutée,
              payments parité non prouvée REAL_DB
 ```

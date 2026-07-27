@@ -49,6 +49,7 @@ const db = require('../db');
 const { notifyText } = require('./notification-service');
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('./order-status-machine');
+const { resolveQrCollection } = require('./qr-collection-core');
 const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'scan-operations' });
 
@@ -345,99 +346,15 @@ async function verifyQr(body, user) {
   try {
     await client.query('BEGIN');
 
-    const [queryText, queryParams] = order_id
-      ? [
-          `SELECT o.*, rc.full_name AS recipient_name, rc.phone AS recipient_phone,
-                  r.name AS relais_name, u.phone AS user_phone
-           FROM orders o
-           LEFT JOIN recipients rc ON rc.id = o.recipient_id
-           LEFT JOIN relais     r  ON r.id  = o.relais_id
-           LEFT JOIN users      u  ON u.id  = o.user_id
-           WHERE o.id = $1 AND o.qr_token = $2`,
-          [order_id, token],
-        ]
-      : [
-          `SELECT o.*, rc.full_name AS recipient_name, rc.phone AS recipient_phone,
-                  r.name AS relais_name, u.phone AS user_phone
-           FROM orders o
-           LEFT JOIN recipients rc ON rc.id = o.recipient_id
-           LEFT JOIN relais     r  ON r.id  = o.relais_id
-           LEFT JOIN users      u  ON u.id  = o.user_id
-           WHERE o.qr_token = $1`,
-          [token],
-        ];
+    // P5-L5 : validation + transition + invalidation QR + scan + parcelSync
+    // sont désormais dans qr-collection-core.js, partagé avec
+    // verify-qr-collection.js. ROLLBACK déjà exécuté par le noyau sur tout
+    // `ok:false`. Durcissement au passage : ce chemin n'avait pas de
+    // FOR UPDATE avant l'extraction — le noyau le pose désormais toujours.
+    const result = await resolveQrCollection({ client, token, orderId: order_id, user });
+    if (!result.ok) return result.response;
 
-    const { rows: [order] } = await client.query(queryText, queryParams);
-
-    if (!order) {
-      await client.query('ROLLBACK');
-      return { status: 404, body: { error: 'Commande introuvable' } };
-    }
-
-    if (order.status !== 'available') {
-      await client.query('ROLLBACK');
-      return {
-        status: 422,
-        body: {
-          error: order.status === 'collected'
-            ? 'Ce colis a déjà été remis au client'
-            : `Statut incompatible : ${order.status}`,
-          current_status: order.status,
-        },
-      };
-    }
-
-    if (!order.qr_token) {
-      await client.query('ROLLBACK');
-      return { status: 400, body: { error: 'Aucun QR code généré pour cette commande' } };
-    }
-
-    if (order.qr_token !== token) {
-      await client.query('ROLLBACK');
-      log.warn(`[VERIFY-QR] Token invalide pour ${order.reference}`);
-      return { status: 400, body: { error: 'QR code invalide' } };
-    }
-
-    if (order.qr_expires_at && new Date(order.qr_expires_at) < new Date()) {
-      await client.query('ROLLBACK');
-      return { status: 400, body: { error: 'QR code expiré — veuillez en générer un nouveau', expired_at: order.qr_expires_at } };
-    }
-
-    const machineResult = await transitionOrderStatus({
-      orderId:   order.id,
-      newStatus: 'collected',
-      actor:     { id: user.id, role: user.role },
-      source:    'patch',
-      note:      'Remise client via QR Code',
-      dbClient:  client,
-    });
-
-    if (!machineResult.success) {
-      await client.query('ROLLBACK');
-      return { status: 422, body: { error: machineResult.error } };
-    }
-
-    // Invalider le token (atomique)
-    await client.query(
-      `UPDATE orders SET qr_token = NULL, qr_expires_at = NULL WHERE id = $1`,
-      [order.id]
-    );
-
-    const { rows: [scanRow] } = await client.query(
-      `INSERT INTO scans (order_id, step, scanned_by, location, scan_code, notes)
-       VALUES ($1, 'collected', $2, $3, $4, 'Retrait client via QR Code — token validé')
-       RETURNING id`,
-      [order.id, user.id, order.relais_name || '', `QR-${token.slice(0, 8)}`]
-    );
-
-    // A-BE-15 : sync colis dans la même transaction (atomique avec COMMIT)
-    await safeSyncScanToParcels({
-      order_id:   order.id,
-      step:       'collected',
-      scan_id:    scanRow?.id,
-      scanned_by: user.id,
-      notes:      'Retrait client via QR Code — token validé',
-    }, client);
+    const { order } = result;
 
     await client.query('COMMIT');
 

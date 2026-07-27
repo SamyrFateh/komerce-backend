@@ -42,6 +42,7 @@ module.exports = {
   files: {
     services: [
       'services/payment-service.js',
+      'services/payment-status-validator.js',
       'services/cash-reminder-service.js',
       'services/paypal-client.js',
       'services/payment-paypal.js',

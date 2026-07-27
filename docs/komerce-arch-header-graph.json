@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 381,
-    "filesWithFullHeaders": 353,
+    "scannedCodeFiles": 382,
+    "filesWithFullHeaders": 354,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 381,
+    "filesWithAnyHeaders": 382,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 782,
-    "edges": 4381,
+    "graphNodes": 784,
+    "edges": 4394,
     "dbTables": 116,
-    "doctrines": 156,
+    "doctrines": 157,
     "impactAreas": 129,
-    "unresolvedCodeEdges": 422,
+    "unresolvedCodeEdges": 423,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 67
   },
@@ -46,7 +46,7 @@
     "economic-engine": 38,
     "customs": 6,
     "dashboard": 28,
-    "orders": 23,
+    "orders": 24,
     "documents": 11,
     "auth-identity": 4,
     "operations": 11,
@@ -86,7 +86,7 @@
     "schema": 1,
     "route": 100,
     "entrypoint": 1,
-    "service": 155,
+    "service": 156,
     "external-adapter": 2,
     "machine": 2,
     "policy": 1,
@@ -94,7 +94,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 77,
+    "critical": 78,
     "medium": 104,
     "high": 165,
     "low": 35
@@ -14347,6 +14347,61 @@
       "version": "2026-06"
     },
     {
+      "id": "services/qr-collection-core.js",
+      "file": "services/qr-collection-core.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "qr-collection-core",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "client",
+        "token",
+        "orderId",
+        "user"
+      ],
+      "outputs": [
+        "{ ok:true",
+        "order",
+        "scanRow } | { ok:false",
+        "response:{status",
+        "body} }"
+      ],
+      "depends": [
+        "db.js (via client fourni par l'appelant)",
+        "services/order-status-machine.js",
+        "utils/parcelSync.js"
+      ],
+      "usedBy": [
+        "services/verify-qr-collection.js",
+        "services/scan-operations.js"
+      ],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "orders",
+        "scans"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_transaction_required"
+      ],
+      "doctrine": [
+        "qr_pickup_single_validation (P5-L5)"
+      ],
+      "impactAreas": [
+        "orders"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/radar-queries.js",
       "file": "services/radar-queries.js",
       "type": "file",
@@ -19117,6 +19172,11 @@
       "id": "doctrine:§7",
       "type": "doctrine",
       "doctrine": "§7"
+    },
+    {
+      "id": "doctrine:qr_pickup_single_validation (P5-L5)",
+      "type": "doctrine",
+      "doctrine": "qr_pickup_single_validation (P5-L5)"
     },
     {
       "id": "doctrine:refund_confirmed_only",
@@ -40454,6 +40514,84 @@
       "label": "unknown"
     },
     {
+      "from": "services/qr-collection-core.js",
+      "to": "db.js (via client fourni par l'appelant)",
+      "type": "depends",
+      "label": "db.js (via client fourni par l'appelant)"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "services/order-status-machine.js",
+      "type": "depends",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "utils/parcelSync.js",
+      "type": "depends",
+      "label": "utils/parcelSync.js"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "services/qr-collection-core.js",
+      "type": "uses",
+      "label": "services/verify-qr-collection.js"
+    },
+    {
+      "from": "services/scan-operations.js",
+      "to": "services/qr-collection-core.js",
+      "type": "uses",
+      "label": "services/scan-operations.js"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "db:scans",
+      "type": "db-write",
+      "label": "scans"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "doctrine:qr_pickup_single_validation (P5-L5)",
+      "type": "doctrine",
+      "label": "qr_pickup_single_validation (P5-L5)"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
       "from": "services/radar-queries.js",
       "to": "db",
       "type": "depends",
@@ -58766,6 +58904,7 @@
         "services/payment-status-validator.js",
         "services/pickup-secret-service.js",
         "services/purchasing-receive-service.js",
+        "services/qr-collection-core.js",
         "services/receive-purchase-order.js",
         "services/scan-engine.js",
         "services/scan-operations.js",
@@ -60200,6 +60339,54 @@
         "utils/logger.js"
       ]
     },
+    "services/qr-collection-core.js": {
+      "role": "qr-collection-core",
+      "domain": "orders",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js (via client fourni par l'appelant)",
+        "services/order-status-machine.js",
+        "utils/parcelSync.js"
+      ],
+      "directUsedBy": [
+        "services/verify-qr-collection.js",
+        "services/scan-operations.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "orders",
+        "scans"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "qr_pickup_single_validation (P5-L5)"
+      ],
+      "impactAreas": [
+        "orders"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "db:recipients",
+        "db:relais",
+        "db:scans",
+        "db:users",
+        "doctrine:qr_pickup_single_validation (P5-L5)",
+        "impact:orders",
+        "services/order-status-machine.js",
+        "services/scan-operations.js",
+        "services/verify-qr-collection.js",
+        "utils/parcelSync.js"
+      ]
+    },
     "services/radar-queries.js": {
       "role": "radar-queries",
       "domain": "decision-signals",
@@ -60778,6 +60965,7 @@
         "services/notification-service.js",
         "services/order-status-machine.js",
         "services/purchasing-receive-service.js",
+        "services/qr-collection-core.js",
         "utils/logger.js",
         "utils/parcelSync.js"
       ]
@@ -62441,6 +62629,7 @@
         "services/documents/pickup-proof.js",
         "services/notification-service.js",
         "services/order-status-machine.js",
+        "services/qr-collection-core.js",
         "utils/logger.js",
         "utils/parcelSync.js"
       ]
@@ -63270,6 +63459,7 @@
         "services/hub-operations.js",
         "services/order-status-machine.js",
         "services/parcelOptimizationService.js",
+        "services/qr-collection-core.js",
         "services/scan-operations.js",
         "services/verify-qr-collection.js",
         "utils/logger.js",
@@ -63701,7 +63891,7 @@
   "multiWriterTables": [
     {
       "table": "orders",
-      "writerCount": 32,
+      "writerCount": 33,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/delete-order-cascade.js",
@@ -63728,6 +63918,7 @@
         "services/payment-stripe.js",
         "services/pickup-secret-service.js",
         "services/purchasing-admin-service.js",
+        "services/qr-collection-core.js",
         "services/routing.js",
         "services/scan-operations.js",
         "services/shared-cart-engine.js",
@@ -63858,6 +64049,22 @@
       ]
     },
     {
+      "table": "scans",
+      "writerCount": 10,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/users.js",
+        "routes/hub-dashboard.js",
+        "routes/transit-dashboard.js",
+        "services/qr-collection-core.js",
+        "services/scan-operations.js",
+        "services/simulator/cleanup.js",
+        "services/simulator/state-advancer.js",
+        "services/verify-qr-collection.js",
+        "utils/parcelSync.js"
+      ]
+    },
+    {
       "table": "notification_log",
       "writerCount": 9,
       "writers": [
@@ -63870,21 +64077,6 @@
         "services/notifications/otp-auth.js",
         "services/notifications/parcel.js",
         "services/simulator/state-advancer.js"
-      ]
-    },
-    {
-      "table": "scans",
-      "writerCount": 9,
-      "writers": [
-        "routes/admin/delete-order-cascade.js",
-        "routes/admin/users.js",
-        "routes/hub-dashboard.js",
-        "routes/transit-dashboard.js",
-        "services/scan-operations.js",
-        "services/simulator/cleanup.js",
-        "services/simulator/state-advancer.js",
-        "services/verify-qr-collection.js",
-        "utils/parcelSync.js"
       ]
     },
     {
@@ -66574,6 +66766,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/qr-collection-core.js",
+      "to": "db.js (via client fourni par l'appelant)",
+      "type": "depends",
+      "label": "db.js (via client fourni par l'appelant)"
     },
     {
       "from": "services/radar-queries.js",

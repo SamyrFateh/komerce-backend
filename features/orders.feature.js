@@ -58,6 +58,7 @@ module.exports = {
     services: [
       'services/order-service.js',
       'services/verify-qr-collection.js',
+      'services/qr-collection-core.js',
       'services/invoice-service.js',
       'services/order-cost-snapshot.js',
       'services/invoice-public-token.js',

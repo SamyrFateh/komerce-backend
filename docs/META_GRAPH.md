@@ -1,13 +1,13 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-27T08:18:04.893Z.
+> Régénéré le 2026-07-27T09:10:57.761Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
 ## Sources cousues
 
-- Backend : **782** nœuds · Contrat : **438** endpoints
+- Backend : **784** nœuds · Contrat : **438** endpoints
 - Boutique : **74** modules, 52 endpoints
 - Dashboards : **41** modules, 112 arêtes d'appel
 
