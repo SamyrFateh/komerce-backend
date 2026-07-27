@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          favorites-view
- * @domain        boutique
+ * @domain        catalog
  * @layer         ui-page
  * @criticality   medium
  * @inputs        favorites_state, product_store
