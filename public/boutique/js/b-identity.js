@@ -32,8 +32,7 @@
  */
 
 import { state } from './b-store.js';
-import { showToast } from './b-cart-core.js';
-import { sanitize } from './b-utils.js';
+import { sanitize, showToast } from './b-utils.js';
 import {
   PHONE_COUNTRIES,
   buildE164,

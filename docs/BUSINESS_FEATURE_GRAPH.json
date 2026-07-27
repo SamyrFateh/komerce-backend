@@ -4622,13 +4622,6 @@
       {
         "feature": "infrastructure",
         "category": "docs",
-        "declared": "PROMPT_AUDIT_PREGOLIVE.md",
-        "resolvedPath": "PROMPT_AUDIT_PREGOLIVE.md",
-        "status": "missing-on-disk"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
         "declared": "README.md",
         "resolvedPath": "README.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7988,6 +7981,27 @@
       },
       {
         "feature": "platform-ops",
+        "category": "compositionRoots",
+        "declared": "public/boutique/js/main.js",
+        "resolvedPath": "public/boutique/js/main.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "compositionRoots",
+        "declared": "public/boutique/js/boutique.js",
+        "resolvedPath": "public/boutique/js/boutique.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "compositionRoots",
+        "declared": "public/boutique/js/b-nav.js",
+        "resolvedPath": "public/boutique/js/b-nav.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "platform-ops",
         "category": "services",
         "declared": "services/monitoring.js",
         "resolvedPath": "services/monitoring.js",
@@ -8061,13 +8075,6 @@
         "category": "routes",
         "declared": "routes/simulator.js",
         "resolvedPath": "routes/simulator.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "platform-ops",
-        "category": "boutique",
-        "declared": "js/main.js",
-        "resolvedPath": "public/boutique/js/main.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -14760,32 +14767,8 @@
       {
         "boutiqueManifest": "boutique",
         "category": "tests",
-        "declared": "../tests/unit/b-bus.test.js",
-        "resolvedPath": "public/boutique/tests/unit/b-bus.test.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "boutique",
-        "category": "tests",
         "declared": "../tests/unit/b-modal-cart.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-modal-cart.test.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "boutique",
-        "category": "tests",
-        "declared": "../tests/unit/boutique-core.unit.test.js",
-        "resolvedPath": "public/boutique/tests/unit/boutique-core.unit.test.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "boutique",
-        "category": "tests",
-        "declared": "../tests/unit/render-categories.test.js",
-        "resolvedPath": "public/boutique/tests/unit/render-categories.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -14826,6 +14809,62 @@
         "category": "js",
         "declared": "../js/b-catalog.js",
         "resolvedPath": "public/boutique/js/b-catalog.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-desktop-global-cart-access.js",
+        "resolvedPath": "public/boutique/js/b-desktop-global-cart-access.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-desktop-sidebar.js",
+        "resolvedPath": "public/boutique/js/b-desktop-sidebar.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-desktop-upgrade.js",
+        "resolvedPath": "public/boutique/js/b-desktop-upgrade.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-greeting.js",
+        "resolvedPath": "public/boutique/js/b-greeting.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/b-home-premium-v1.js",
+        "resolvedPath": "public/boutique/js/b-home-premium-v1.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/card-config.js",
+        "resolvedPath": "public/boutique/js/card-config.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "js",
+        "declared": "../js/hero-bootstrap.js",
+        "resolvedPath": "public/boutique/js/hero-bootstrap.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15302,6 +15341,30 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "orders-client",
+        "category": "tests",
+        "declared": "../tests/unit/b-cart-core.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-cart-core.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "orders-client",
+        "category": "tests",
+        "declared": "../tests/unit/b-cart.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-cart.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "orders-client",
+        "category": "tests",
+        "declared": "../tests/unit/b-mini-cart.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-mini-cart.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "payment",
         "category": "js",
         "declared": "../js/b-paypal.js",
@@ -15392,14 +15455,6 @@
       {
         "boutiqueManifest": "platform-ops",
         "category": "boutique",
-        "declared": "../js/hero-bootstrap.js",
-        "resolvedPath": "public/boutique/js/hero-bootstrap.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
-        "category": "boutique",
         "declared": "../js/b-nav.js",
         "resolvedPath": "public/boutique/js/b-nav.js",
         "exists": true,
@@ -15410,54 +15465,6 @@
         "category": "boutique",
         "declared": "../js/boutique.js",
         "resolvedPath": "public/boutique/js/boutique.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
-        "category": "boutique",
-        "declared": "../js/b-desktop-global-cart-access.js",
-        "resolvedPath": "public/boutique/js/b-desktop-global-cart-access.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
-        "category": "boutique",
-        "declared": "../js/b-desktop-sidebar.js",
-        "resolvedPath": "public/boutique/js/b-desktop-sidebar.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
-        "category": "boutique",
-        "declared": "../js/b-desktop-upgrade.js",
-        "resolvedPath": "public/boutique/js/b-desktop-upgrade.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
-        "category": "boutique",
-        "declared": "../js/b-greeting.js",
-        "resolvedPath": "public/boutique/js/b-greeting.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
-        "category": "boutique",
-        "declared": "../js/b-home-premium-v1.js",
-        "resolvedPath": "public/boutique/js/b-home-premium-v1.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
-        "category": "boutique",
-        "declared": "../js/card-config.js",
-        "resolvedPath": "public/boutique/js/card-config.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -15506,6 +15513,30 @@
         "category": "assets",
         "declared": "../index.html",
         "resolvedPath": "public/boutique/index.html",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "platform-ops",
+        "category": "tests",
+        "declared": "../tests/unit/b-bus.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-bus.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "platform-ops",
+        "category": "tests",
+        "declared": "../tests/unit/b-nav.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-nav.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "platform-ops",
+        "category": "tests",
+        "declared": "../tests/unit/boutique-core.unit.test.js",
+        "resolvedPath": "public/boutique/tests/unit/boutique-core.unit.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16529,10 +16560,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "public/boutique/js/b-identity.js",
-                "targetFile": "public/boutique/js/b-cart-core.js"
-              },
-              {
                 "sourceFileId": "public/boutique/tests/unit/b-identity.test.js",
                 "targetFile": "public/boutique/js/b-cart-core.js"
               }
@@ -16588,6 +16615,23 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "catalog",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/auth/me",
+                "routeFile": "routes/auth.js",
+                "consumerFileId": "public/boutique/js/b-greeting.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "catalog",
@@ -16957,10 +17001,6 @@
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
-                "sourceFileId": "public/boutique/js/view-models/product-card-model.js",
-                "targetFile": "public/boutique/js/card-config.js"
-              },
-              {
                 "sourceFileId": "public/boutique/js/view-models/product-card-view-model.js",
                 "targetFile": "public/boutique/js/b-utils.js"
               },
@@ -17033,10 +17073,6 @@
                 "targetFile": "public/boutique/js/b-scroll-owner.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-cart-product-open-style.js",
-                "targetFile": "public/boutique/js/b-desktop-global-cart-access.js"
-              },
-              {
                 "sourceFileId": "public/boutique/js/b-favs.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
@@ -17047,6 +17083,30 @@
               {
                 "sourceFileId": "public/boutique/js/b-favs.js",
                 "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-desktop-sidebar.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-desktop-sidebar.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-desktop-sidebar.js",
+                "targetFile": "public/boutique/js/b-scroll-owner.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-desktop-upgrade.js",
+                "targetFile": "public/boutique/js/b-scroll-owner.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-home-premium-v1.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-home-premium-v1.js",
+                "targetFile": "public/boutique/js/b-scroll-owner.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/render-home-sections.test.js",
@@ -20480,6 +20540,10 @@
                 "targetFile": "public/boutique/js/b-bus.js"
               },
               {
+                "sourceFileId": "public/boutique/js/b-cart-core.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/b-cart-pill.js",
                 "targetFile": "public/boutique/js/b-bus.js"
               },
@@ -20529,6 +20593,34 @@
               },
               {
                 "sourceFileId": "public/boutique/js/b-mini-cart.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-cart-core.test.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-cart-core.test.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-cart.test.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-cart.test.js",
+                "targetFile": "public/boutique/js/b-scroll-owner.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-cart.test.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-mini-cart.test.js",
+                "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-mini-cart.test.js",
                 "targetFile": "public/boutique/js/b-bus.js"
               }
             ]
@@ -21313,11 +21405,6 @@
               {
                 "endpoint": "/api/auth/me",
                 "routeFile": "routes/auth.js",
-                "consumerFileId": "public/boutique/js/b-greeting.js"
-              },
-              {
-                "endpoint": "/api/auth/me",
-                "routeFile": "routes/auth.js",
                 "consumerFileId": "public/boutique/js/komerce-api.js"
               },
               {
@@ -21344,6 +21431,10 @@
             "evidence": [
               {
                 "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/b-desktop-upgrade.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/main.js",
                 "targetFile": "public/boutique/js/b-modal-desktop-enhancers.js"
               },
               {
@@ -21356,27 +21447,15 @@
               },
               {
                 "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/b-home-premium-v1.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/main.js",
                 "targetFile": "public/boutique/js/b-modal-product-detail-bootstrap.js"
               },
               {
-                "sourceFileId": "tests/integration/isweep-services.test.js",
-                "targetFile": "services/product-publication-guard.js"
-              },
-              {
-                "sourceFileId": "tests/integration/isweep-services.test.js",
-                "targetFile": "services/product-price-audit.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-nav.js",
-                "targetFile": "public/boutique/js/b-catalog.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-nav.js",
-                "targetFile": "public/boutique/js/b-favs.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-nav.js",
-                "targetFile": "public/boutique/js/b-pager.js"
+                "sourceFileId": "public/boutique/js/main.js",
+                "targetFile": "public/boutique/js/b-greeting.js"
               },
               {
                 "sourceFileId": "public/boutique/js/boutique.js",
@@ -21395,24 +21474,36 @@
                 "targetFile": "public/boutique/js/b-pager.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-desktop-sidebar.js",
+                "sourceFileId": "public/boutique/js/b-nav.js",
                 "targetFile": "public/boutique/js/b-catalog.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-desktop-sidebar.js",
-                "targetFile": "public/boutique/js/controllers/home-controller.js"
+                "sourceFileId": "public/boutique/js/b-nav.js",
+                "targetFile": "public/boutique/js/b-favs.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-desktop-sidebar.js",
-                "targetFile": "public/boutique/js/shop-schema.js"
+                "sourceFileId": "public/boutique/js/b-nav.js",
+                "targetFile": "public/boutique/js/b-pager.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-desktop-upgrade.js",
-                "targetFile": "public/boutique/js/b-catalog-desktop-enhancers.js"
+                "sourceFileId": "tests/integration/isweep-services.test.js",
+                "targetFile": "services/product-publication-guard.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-desktop-upgrade.js",
-                "targetFile": "public/boutique/js/b-modal-desktop-enhancers.js"
+                "sourceFileId": "tests/integration/isweep-services.test.js",
+                "targetFile": "services/product-price-audit.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
+                "targetFile": "public/boutique/js/b-catalog.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
+                "targetFile": "public/boutique/js/b-favs.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
+                "targetFile": "public/boutique/js/b-pager.js"
               }
             ]
           },
@@ -21651,26 +21742,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/simulator/state-advancer.js",
-                "targetFile": "services/order-status-machine.js"
-              },
-              {
-                "sourceFileId": "tests/unit/state-advancer.test.js",
-                "targetFile": "services/order-status-machine.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-nav.js",
-                "targetFile": "public/boutique/js/b-cart-core.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-nav.js",
-                "targetFile": "public/boutique/js/b-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/b-nav.js",
-                "targetFile": "public/boutique/js/b-tracking.js"
-              },
-              {
                 "sourceFileId": "public/boutique/js/boutique.js",
                 "targetFile": "public/boutique/js/b-cart-core.js"
               },
@@ -21685,6 +21756,38 @@
               {
                 "sourceFileId": "public/boutique/js/boutique.js",
                 "targetFile": "public/boutique/js/b-cart-stepper-guard.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-nav.js",
+                "targetFile": "public/boutique/js/b-cart-core.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-nav.js",
+                "targetFile": "public/boutique/js/b-cart.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-nav.js",
+                "targetFile": "public/boutique/js/b-tracking.js"
+              },
+              {
+                "sourceFileId": "services/simulator/state-advancer.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/state-advancer.test.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
+                "targetFile": "public/boutique/js/b-cart-core.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
+                "targetFile": "public/boutique/js/b-cart.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
+                "targetFile": "public/boutique/js/b-tracking.js"
               }
             ]
           },
@@ -21709,15 +21812,19 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "tests/integration/isweep-transactional-flows.test.js",
-                "targetFile": "services/confirm-pickup-cash-payment.js"
+                "sourceFileId": "public/boutique/js/boutique.js",
+                "targetFile": "public/boutique/js/b-checkout.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-nav.js",
                 "targetFile": "public/boutique/js/b-checkout.js"
               },
               {
-                "sourceFileId": "public/boutique/js/boutique.js",
+                "sourceFileId": "tests/integration/isweep-transactional-flows.test.js",
+                "targetFile": "services/confirm-pickup-cash-payment.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
                 "targetFile": "public/boutique/js/b-checkout.js"
               }
             ]
@@ -21779,6 +21886,22 @@
                 "targetFile": "public/boutique/js/b-share-phone-guard.js"
               },
               {
+                "sourceFileId": "public/boutique/js/boutique.js",
+                "targetFile": "public/boutique/js/b-modal.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/boutique.js",
+                "targetFile": "public/boutique/js/b-share-cart.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/boutique.js",
+                "targetFile": "public/boutique/js/b-group-banner.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-nav.js",
+                "targetFile": "public/boutique/js/b-group-view.js"
+              },
+              {
                 "sourceFileId": "tests/unit/collective-cleanup-tombstones.test.js",
                 "targetFile": "services/collective-close-order-service.js"
               },
@@ -21795,20 +21918,8 @@
                 "targetFile": "routes/baskets.js"
               },
               {
-                "sourceFileId": "public/boutique/js/b-nav.js",
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
                 "targetFile": "public/boutique/js/b-group-view.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/boutique.js",
-                "targetFile": "public/boutique/js/b-modal.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/boutique.js",
-                "targetFile": "public/boutique/js/b-share-cart.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/boutique.js",
-                "targetFile": "public/boutique/js/b-group-banner.js"
               }
             ]
           }
@@ -21824,6 +21935,10 @@
             "evidence": [
               {
                 "sourceFileId": "public/boutique/js/b-nav.js",
+                "targetFile": "public/boutique/js/b-wallet.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
                 "targetFile": "public/boutique/js/b-wallet.js"
               }
             ]
@@ -23349,8 +23464,8 @@
         "filesObserved": 805
       },
       "boutique": {
-        "filesObserved": 119,
-        "nonCanonicalManifestFiles": 14
+        "filesObserved": 123,
+        "nonCanonicalManifestFiles": 12
       },
       "dash": {
         "filesObserved": 83,
@@ -23366,20 +23481,24 @@
   "o6": {
     "version": "O6-1.0",
     "compositionRootOwners": [
-      "infrastructure"
+      "infrastructure",
+      "platform-ops"
     ],
     "wiringFiles": [
       "bootstrap/api-routes.js",
       "bootstrap/crons.js",
-      "middleware/error-handler.js"
+      "middleware/error-handler.js",
+      "public/boutique/js/b-nav.js",
+      "public/boutique/js/boutique.js",
+      "public/boutique/js/main.js"
     ],
     "familySummary": {
       "PROJECTION": 9,
-      "COMPOSITION_ROOT_WIRING": 9,
-      "NON_RUNTIME_TEST": 5,
-      "TECHNICAL_PRIMITIVE": 39,
+      "COMPOSITION_ROOT_WIRING": 13,
+      "NON_RUNTIME_TEST": 6,
+      "TECHNICAL_PRIMITIVE": 40,
       "BUSINESS_TRANSVERSAL_SERVICE": 10,
-      "CROSS_FEATURE_DIRECT_IMPORT": 8,
+      "CROSS_FEATURE_DIRECT_IMPORT": 3,
       "BUSINESS_FEATURE_INTERFACE": 5,
       "PILOTING_CAPABILITY": 2,
       "UNCLASSIFIED": 0
@@ -23628,21 +23747,17 @@
       {
         "from": "auth-identity",
         "to": "orders",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_AND_TEST",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
         "consumerKind": "technical-transversal",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle",
-          "ownership-suspect"
-        ]
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "auth-identity",
@@ -23660,6 +23775,21 @@
         "exceptionReasons": [
           "runtime-cycle"
         ]
+      },
+      {
+        "from": "catalog",
+        "to": "auth-identity",
+        "family": "TECHNICAL_PRIMITIVE",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-transversal",
+        "channels": [
+          "interface"
+        ],
+        "couplingObserved": "interface",
+        "policy": "technical-dependency-policy",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "catalog",
@@ -24143,10 +24273,8 @@
         ],
         "couplingObserved": "mixed",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "orders",
@@ -24182,7 +24310,7 @@
         "from": "orders",
         "to": "platform-ops",
         "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
         "providerKind": "technical-transversal",
         "channels": [
@@ -24281,10 +24409,8 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "payments",
@@ -24344,7 +24470,7 @@
           "interface",
           "static-code"
         ],
-        "couplingObserved": "mixed",
+        "couplingObserved": "interface",
         "policy": "business-dependency-declare-candidate",
         "exceptionRequired": true,
         "exceptionReasons": [
@@ -24369,7 +24495,7 @@
       {
         "from": "platform-ops",
         "to": "payments",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-transversal",
         "providerKind": "business-feature",
@@ -24377,13 +24503,9 @@
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle",
-          "ownership-suspect"
-        ]
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "platform-ops",
@@ -24396,7 +24518,7 @@
           "interface",
           "static-code"
         ],
-        "couplingObserved": "mixed",
+        "couplingObserved": "interface",
         "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
@@ -24404,7 +24526,7 @@
       {
         "from": "platform-ops",
         "to": "recommendations",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "technical-transversal",
         "providerKind": "business-feature",
@@ -24412,18 +24534,14 @@
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle",
-          "ownership-suspect"
-        ]
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "platform-ops",
         "to": "shared-cart",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
+        "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-transversal",
         "providerKind": "business-feature",
@@ -24431,32 +24549,24 @@
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle",
-          "ownership-suspect"
-        ]
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "platform-ops",
         "to": "wallet",
-        "family": "CROSS_FEATURE_DIRECT_IMPORT",
-        "evidenceRole": "RUNTIME_ONLY",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-transversal",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "boundary-remediation-required",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "direct-import",
-          "runtime-cycle",
-          "ownership-suspect"
-        ]
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "purchasing",
@@ -24532,10 +24642,8 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "refunds",
@@ -24611,10 +24719,8 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "shared-cart",
@@ -24734,10 +24840,8 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": true,
-        "exceptionReasons": [
-          "runtime-cycle"
-        ]
+        "exceptionRequired": false,
+        "exceptionReasons": []
       }
     ],
     "unclassified": [],
@@ -24749,13 +24853,13 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-transversal|technical-primitive": 3,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|technical-transversal|technical-transversal|technical-primitive": 2,
-      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 2,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-transversal|business-file-import": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|interface": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|technical-primitive": 11,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 4,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|technical-primitive": 6,
       "PILOTING_CAPABILITY|RUNTIME_AND_TEST|business-transversal|piloting-capability|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-transversal|technical-primitive": 5,
@@ -24765,40 +24869,21 @@
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|technical-transversal|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|piloting-capability|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 5,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 6,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 8,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|mixed": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 2,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|mixed": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|technical-transversal|technical-transversal|interface": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|mixed": 2,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 2,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 2,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 3,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|business-feature|business-transversal|business-file-import": 1
     },
     "runtimeCycles": [
-      {
-        "nodes": [
-          "auth-identity",
-          "orders"
-        ],
-        "key": "auth-identity<->orders",
-        "directions": [
-          {
-            "from": "auth-identity",
-            "to": "orders",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          },
-          {
-            "from": "orders",
-            "to": "auth-identity",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
-      },
       {
         "nodes": [
           "auth-identity",
@@ -24836,82 +24921,6 @@
             "family": "BUSINESS_FEATURE_INTERFACE"
           }
         ]
-      },
-      {
-        "nodes": [
-          "payments",
-          "platform-ops"
-        ],
-        "key": "payments<->platform-ops",
-        "directions": [
-          {
-            "from": "payments",
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          },
-          {
-            "from": "platform-ops",
-            "to": "payments",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          }
-        ]
-      },
-      {
-        "nodes": [
-          "platform-ops",
-          "recommendations"
-        ],
-        "key": "platform-ops<->recommendations",
-        "directions": [
-          {
-            "from": "platform-ops",
-            "to": "recommendations",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          },
-          {
-            "from": "recommendations",
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
-      },
-      {
-        "nodes": [
-          "platform-ops",
-          "shared-cart"
-        ],
-        "key": "platform-ops<->shared-cart",
-        "directions": [
-          {
-            "from": "platform-ops",
-            "to": "shared-cart",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          },
-          {
-            "from": "shared-cart",
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
-      },
-      {
-        "nodes": [
-          "platform-ops",
-          "wallet"
-        ],
-        "key": "platform-ops<->wallet",
-        "directions": [
-          {
-            "from": "platform-ops",
-            "to": "wallet",
-            "family": "CROSS_FEATURE_DIRECT_IMPORT"
-          },
-          {
-            "from": "wallet",
-            "to": "platform-ops",
-            "family": "TECHNICAL_PRIMITIVE"
-          }
-        ]
       }
     ],
     "exceptions": [
@@ -24919,82 +24928,51 @@
         "from": "shared-cart",
         "to": "catalog",
         "decision": "accepted-dependency",
-        "rationale": "Le modal panier partagé consomme en lecture seule des données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié."
+        "rationale": "Le modal panier partagé consomme en lecture seule les données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié."
+      },
+      {
+        "from": "catalog",
+        "to": "orders",
+        "decision": "accepted-dependency",
+        "rationale": "Les surfaces catalogue déclenchent les opérations du panier personnel — ajout, quantité et résumé de ligne — à partir d'un produit sélectionné. La dépendance va du canal de découverte vers l'intention d'achat ; le panier ne modifie aucun état du catalogue."
+      },
+      {
+        "from": "recommendations",
+        "to": "orders",
+        "decision": "accepted-dependency",
+        "rationale": "Une recommandation permet explicitement d'ajouter le produit suggéré au panier personnel et de construire son résumé de ligne. La recommandation ne possède ni le panier ni son cycle de persistance."
+      },
+      {
+        "from": "auth-identity",
+        "to": "platform-ops",
+        "decision": "accepted-dependency",
+        "rationale": "La surface d'identité consomme les primitives techniques du shell — bus, store et utilitaires UI. Cette direction ne transfère aucune autorité métier à platform-ops et ne constitue pas un cycle de modules."
+      },
+      {
+        "from": "platform-ops",
+        "to": "auth-identity",
+        "decision": "accepted-dependency",
+        "rationale": "Le client API transversal expose des appels vers les endpoints d'authentification et le shell monte la surface identité. Il s'agit d'un adaptateur technique et de composition, sans ownership de la logique d'identité."
+      },
+      {
+        "from": "catalog",
+        "to": "platform-ops",
+        "decision": "accepted-dependency",
+        "rationale": "Le catalogue consomme le bus, le store, les utilitaires et l'ownership de scroll fournis par le socle. Ces primitives restent techniques et ne possèdent aucune règle catalogue."
+      },
+      {
+        "from": "platform-ops",
+        "to": "catalog",
+        "decision": "accepted-dependency",
+        "rationale": "Le shell monte les modules de découverte produit et le client API transversal appelle les endpoints catalogue. La couture est un wiring et un adaptateur d'interface ; platform-ops ne possède ni produit, ni prix, ni stock."
       }
     ],
     "staleExceptions": [],
     "duplicateExceptionKeys": [],
     "illegitimateExceptions": [],
-    "missingExceptions": [
-      "auth-identity->orders",
-      "auth-identity->platform-ops",
-      "catalog->orders",
-      "catalog->platform-ops",
-      "orders->auth-identity",
-      "payments->platform-ops",
-      "platform-ops->auth-identity",
-      "platform-ops->catalog",
-      "platform-ops->payments",
-      "platform-ops->recommendations",
-      "platform-ops->shared-cart",
-      "platform-ops->wallet",
-      "recommendations->orders",
-      "recommendations->platform-ops",
-      "shared-cart->platform-ops",
-      "wallet->platform-ops"
-    ],
+    "missingExceptions": [],
     "emptyRationaleExceptions": [],
-    "unexplainedRuntimeCycles": [
-      {
-        "key": "auth-identity<->orders",
-        "undecided": [
-          "auth-identity->orders",
-          "orders->auth-identity"
-        ]
-      },
-      {
-        "key": "auth-identity<->platform-ops",
-        "undecided": [
-          "auth-identity->platform-ops",
-          "platform-ops->auth-identity"
-        ]
-      },
-      {
-        "key": "catalog<->platform-ops",
-        "undecided": [
-          "catalog->platform-ops",
-          "platform-ops->catalog"
-        ]
-      },
-      {
-        "key": "payments<->platform-ops",
-        "undecided": [
-          "payments->platform-ops",
-          "platform-ops->payments"
-        ]
-      },
-      {
-        "key": "platform-ops<->recommendations",
-        "undecided": [
-          "platform-ops->recommendations",
-          "recommendations->platform-ops"
-        ]
-      },
-      {
-        "key": "platform-ops<->shared-cart",
-        "undecided": [
-          "platform-ops->shared-cart",
-          "shared-cart->platform-ops"
-        ]
-      },
-      {
-        "key": "platform-ops<->wallet",
-        "undecided": [
-          "platform-ops->wallet",
-          "wallet->platform-ops"
-        ]
-      }
-    ],
+    "unexplainedRuntimeCycles": [],
     "ontologyGapCoverage": {
       "consumers": [],
       "covered": [],
@@ -26749,19 +26727,8 @@
     "note": "\"cross-repo\" ailleurs dans ce document = cross-scope (frontière de gouvernance), sauf si relation=\"external-path-scope\" ci-dessus pour le scope concerné."
   },
   "drifts": {
-    "error": [
-      {
-        "type": "FILE-DECLARED-INEXISTANT",
-        "ref": "infrastructure / PROMPT_AUDIT_PREGOLIVE.md",
-        "msg": "infrastructure.files.docs déclare \"PROMPT_AUDIT_PREGOLIVE.md\" -> \"PROMPT_AUDIT_PREGOLIVE.md\", introuvable sur disque"
-      }
-    ],
+    "error": [],
     "warn": [
-      {
-        "type": "BOUTIQUE-FILE-MULTIPLE-OWNERS",
-        "ref": "public/boutique/tests/unit/render-categories.test.js",
-        "msg": "\"public/boutique/tests/unit/render-categories.test.js\" est revendiqué par 2 manifests boutique (boutique, catalog) — ownership ambigu entre manifests boutique, à trancher explicitement"
-      },
       {
         "type": "CONSUMES-REFERENCE-UNRESOLVED",
         "ref": "auth -> \"notification\" (entrée: \"notification\")",
@@ -26955,12 +26922,17 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"orders\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"orders\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> platform-ops",
         "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "catalog -> auth-identity",
+        "msg": "dépendance cross-feature observée (canal: interface, 1 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"auth-identity\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26975,7 +26947,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 55 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 59 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27135,7 +27107,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 24 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27180,12 +27152,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> auth-identity",
-        "msg": "dépendance cross-feature observée (canal: interface, 4 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
+        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> catalog",
-        "msg": "dépendance cross-feature observée (canal: interface+static-code, 19 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"catalog\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 20 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"catalog\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27195,7 +27167,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> payments",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"payments\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"payments\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -27210,12 +27182,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> shared-cart",
-        "msg": "dépendance cross-feature observée (canal: static-code, 9 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"shared-cart\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 10 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"shared-cart\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> wallet",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"wallet\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"wallet\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

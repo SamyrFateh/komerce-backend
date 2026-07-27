@@ -42,23 +42,23 @@
   "summary": {
     "features": 28,
     "healthy": 5,
-    "attention": 15,
-    "blocked": 8,
+    "attention": 23,
+    "blocked": 0,
     "businessDependencies": 97,
-    "directCrossFeatureImports": 8,
+    "directCrossFeatureImports": 3,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 69,
     "ontologyGaps": 0,
-    "debtItemsTotal": 130,
+    "debtItemsTotal": 127,
     "gateHealthy": 14,
-    "gateBlocked": 1
+    "gateBlocked": 0
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 45,
-    "attributedFindings": 45,
+    "totalFindings": 43,
+    "attributedFindings": 43,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -1045,7 +1045,7 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 3,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 2,
         "compositionRootRelations": 0,
         "details": [
           {
@@ -1061,14 +1061,18 @@
             "family": "NON_RUNTIME_TEST"
           },
           {
+            "to": "orders",
+            "family": "NON_RUNTIME_TEST"
+          },
+          {
             "to": "platform-ops",
             "family": "TECHNICAL_PRIMITIVE"
           }
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 1,
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -1120,17 +1124,12 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 2,
+        "debtCount": 1,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table revoked_tokens — écrite par auth-identity (W), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -2514,10 +2513,14 @@
         ]
       },
       "technicalContext": {
-        "technicalPrimitiveDependencies": 2,
+        "technicalPrimitiveDependencies": 3,
         "testOnlyRelations": 0,
         "compositionRootRelations": 0,
         "details": [
+          {
+            "to": "auth-identity",
+            "family": "TECHNICAL_PRIMITIVE"
+          },
           {
             "to": "infrastructure",
             "family": "TECHNICAL_PRIMITIVE"
@@ -2529,7 +2532,7 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
@@ -2547,15 +2550,30 @@
         "ambiguousOwnershipCount": 9
       },
       "gateHealth": {
-        "status": "BLOCKED",
-        "failCount": 2,
-        "warnCount": 7,
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 9,
         "gatesReporting": [
           "check:imports",
-          "gate:feature-classification-check",
-          "gate:feature-guard"
+          "gate:feature-classification-check"
         ],
         "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :"
+          },
           {
             "gate": "check:imports",
             "scope": "boutique",
@@ -2611,22 +2629,6 @@
             "verdict": "warn",
             "file": null,
             "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          },
-          {
-            "gate": "gate:feature-guard",
-            "scope": "boutique",
-            "type": "FEATURE-GUARD",
-            "verdict": "fail",
-            "file": null,
-            "message": "@domain mismatch : ../js/b-favs.js declare @domain \"boutique\" mais est liste dans catalog.feature.js (domain \"catalog\")"
-          },
-          {
-            "gate": "gate:feature-guard",
-            "scope": "boutique",
-            "type": "FEATURE-GUARD",
-            "verdict": "fail",
-            "file": null,
-            "message": "@domain mismatch : ../js/render/render-categories.js declare @domain \"boutique\" mais est liste dans catalog.feature.js (domain \"catalog\")"
           }
         ]
       },
@@ -7304,7 +7306,7 @@
             ]
           },
           "docs": {
-            "count": 167,
+            "count": 166,
             "files": [
               {
                 "declared": "AGENTS.md",
@@ -7325,11 +7327,6 @@
                 "declared": "PROCEDURE.md",
                 "resolvedPath": "PROCEDURE.md",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "PROMPT_AUDIT_PREGOLIVE.md",
-                "resolvedPath": "PROMPT_AUDIT_PREGOLIVE.md",
-                "status": "missing-on-disk"
               },
               {
                 "declared": "README.md",
@@ -8774,7 +8771,7 @@
             ]
           }
         },
-        "totalFiles": 385,
+        "totalFiles": 384,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -9144,7 +9141,7 @@
         "status": "ATTENTION",
         "manifestPresent": true,
         "registryPresent": true,
-        "orphanFiles": 1,
+        "orphanFiles": 0,
         "unresolvedInternalApis": 12,
         "declaredOnlyDependencyCount": 3,
         "ontologyGapsLinked": 0,
@@ -9169,7 +9166,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 22,
+        "debtCount": 21,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -9215,11 +9212,6 @@
             "type": "CONSUMES_REFERENCE_UNRESOLVED",
             "severity": "low",
             "evidence": "contract.consumes référence \"payment — bootstrap/api-routes.js monte les routes payment\" — ne correspond à aucun nom de feature connu"
-          },
-          {
-            "type": "ORPHAN_IMPLEMENTATION",
-            "severity": "high",
-            "evidence": "docs/PROMPT_AUDIT_PREGOLIVE.md déclaré, statut résolution: missing-on-disk"
           },
           {
             "type": "UNRESOLVED_INTERNAL_API",
@@ -11988,7 +11980,7 @@
         "totalFiles": 50,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
-          "count": 8,
+          "count": 11,
           "files": [
             {
               "declared": "../css/cart.css",
@@ -12043,6 +12035,27 @@
               "declared": "../js/cart-product-summary.js",
               "resolvedPath": "public/boutique/js/cart-product-summary.js",
               "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-cart-core.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-cart-core.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-cart.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-cart.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-mini-cart.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-mini-cart.test.js",
+              "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
             }
@@ -12498,7 +12511,7 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
@@ -13216,7 +13229,7 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
@@ -13450,7 +13463,7 @@
       "implementation": {
         "byCategory": {
           "boutique": {
-            "count": 7,
+            "count": 6,
             "files": [
               {
                 "declared": "index.html",
@@ -13481,9 +13494,24 @@
                 "declared": "js/komerce-api.js",
                 "resolvedPath": "public/boutique/js/komerce-api.js",
                 "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "compositionRoots": {
+            "count": 3,
+            "files": [
+              {
+                "declared": "public/boutique/js/b-nav.js",
+                "resolvedPath": "public/boutique/js/b-nav.js",
+                "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "js/main.js",
+                "declared": "public/boutique/js/boutique.js",
+                "resolvedPath": "public/boutique/js/boutique.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "public/boutique/js/main.js",
                 "resolvedPath": "public/boutique/js/main.js",
                 "status": "resolved-in-technical-graph"
               }
@@ -13660,10 +13688,10 @@
             ]
           }
         },
-        "totalFiles": 38,
+        "totalFiles": 40,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
-          "count": 23,
+          "count": 19,
           "files": [
             {
               "declared": "../css/boutique-desktop.css",
@@ -13729,41 +13757,6 @@
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/b-desktop-global-cart-access.js",
-              "resolvedPath": "public/boutique/js/b-desktop-global-cart-access.js",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../js/b-desktop-sidebar.js",
-              "resolvedPath": "public/boutique/js/b-desktop-sidebar.js",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../js/b-desktop-upgrade.js",
-              "resolvedPath": "public/boutique/js/b-desktop-upgrade.js",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../js/b-greeting.js",
-              "resolvedPath": "public/boutique/js/b-greeting.js",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../js/b-home-premium-v1.js",
-              "resolvedPath": "public/boutique/js/b-home-premium-v1.js",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
               "declared": "../js/b-nav.js",
               "resolvedPath": "public/boutique/js/b-nav.js",
               "category": "boutique",
@@ -13799,20 +13792,6 @@
               "status": "resolved-on-disk"
             },
             {
-              "declared": "../js/card-config.js",
-              "resolvedPath": "public/boutique/js/card-config.js",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
-              "declared": "../js/hero-bootstrap.js",
-              "resolvedPath": "public/boutique/js/hero-bootstrap.js",
-              "category": "boutique",
-              "exists": true,
-              "status": "resolved-on-disk"
-            },
-            {
               "declared": "../js/komerce-api.js",
               "resolvedPath": "public/boutique/js/komerce-api.js",
               "category": "boutique",
@@ -13823,6 +13802,27 @@
               "declared": "../js/main.js",
               "resolvedPath": "public/boutique/js/main.js",
               "category": "boutique",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-bus.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-bus.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/b-nav.test.js",
+              "resolvedPath": "public/boutique/tests/unit/b-nav.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/boutique-core.unit.test.js",
+              "resolvedPath": "public/boutique/tests/unit/boutique-core.unit.test.js",
+              "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
             }
@@ -14099,7 +14099,7 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 3,
         "testOnlyRelations": 0,
-        "compositionRootRelations": 0,
+        "compositionRootRelations": 4,
         "details": [
           {
             "to": "auth",
@@ -14112,12 +14112,28 @@
           {
             "to": "infrastructure",
             "family": "TECHNICAL_PRIMITIVE"
+          },
+          {
+            "to": "payments",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
+            "to": "recommendations",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
+            "to": "shared-cart",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
+            "to": "wallet",
+            "family": "COMPOSITION_ROOT_WIRING"
           }
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
-        "directCrossFeatureImports": 4,
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
         "declaredNotObserved": 0,
@@ -14136,7 +14152,7 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 12,
+        "warnCount": 10,
         "gatesReporting": [
           "check:body-classes",
           "check:imports"
@@ -14204,22 +14220,6 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
-            "message": "⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :"
-          },
-          {
-            "gate": "check:imports",
-            "scope": "boutique",
-            "type": "TEXT-GATE-DIAGNOSTIC",
-            "verdict": "warn",
-            "file": null,
             "message": "⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :"
           },
           {
@@ -14241,7 +14241,7 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 3,
+        "debtCount": 2,
         "debtItems": [
           {
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
@@ -14252,11 +14252,6 @@
             "type": "AMBIGUOUS_TABLE_OWNERSHIP",
             "severity": "medium",
             "evidence": "table orders — écrite par platform-ops (RW), aucun lifecycle owner résolu (multi-writer non classifié)"
-          },
-          {
-            "type": "DIRECT_CROSS_FEATURE_IMPORT",
-            "severity": "high",
-            "evidence": "4 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT"
           }
         ]
       },
@@ -14846,7 +14841,7 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
@@ -16462,7 +16457,7 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
@@ -17444,7 +17439,7 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,

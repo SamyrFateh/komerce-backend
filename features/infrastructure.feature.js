@@ -163,7 +163,6 @@ module.exports = {
       'CONTRIBUTING.md',
       'docs/_archive/CORRECTIONS_GOUVERNANCE_2026-07-01.md',
       'PROCEDURE.md',
-      'PROMPT_AUDIT_PREGOLIVE.md',
       'README.md',
       'docs/AUDIT_CONFORMITE_PRE_GOLIVE_2026-06-08.md',
       'docs/BOUTIQUE_360.json',

@@ -36,6 +36,11 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    compositionRoots: [
+      'public/boutique/js/main.js',
+      'public/boutique/js/boutique.js',
+      'public/boutique/js/b-nav.js',
+    ],
     services: [
       'services/monitoring.js',
       'services/simulator/cleanup.js',
@@ -55,7 +60,6 @@ module.exports = {
       // utils, scroll, entrée page). Headers @komerce-arch domain=boutique,
       // layer=state|api-client|ui-infrastructure|util — transverse à toutes les
       // features Boutique, ne porte aucune règle métier propre (cf. perimeter.out).
-      'js/main.js',
       'js/komerce-api.js',
       'js/b-store.js',
       'js/b-bus.js',

@@ -6,13 +6,15 @@
  * @criticality   high
  * @inputs        raw_values, api_paths, product_media, currency_values
  * @outputs       sanitized_html, formatted_values, optimized_images, api_results
- * @depends       fetch, Intl
+ * @depends       b-store.js, fetch, Intl
  * @used-by       all-boutique-js-modules
  * @doctrine      sanitize_before_render, api_errors_lisibles, prix_lisible
  * @impact-areas  all-boutique, security, catalog, checkout, modal, tracking
  * @version       2026-06
  */
 'use strict';
+
+import { dom } from './b-store.js';
 
 /**
  * @module b-utils
@@ -28,6 +30,15 @@
  *   const { fmt } = window.KUtils;   ← encore valide pendant la migration
  */
 /* global Intl, crypto */
+
+/** Affiche une notification UI temporaire — utilitaire transversal. */
+export function showToast(msg, type, duration) {
+  type = type || '';
+  dom.toast.innerHTML = '<div class="k-toast-simple">' + (msg || '') + '</div>';
+  dom.toast.className = 'k-toast show' + (type ? ' ' + type : '');
+  clearTimeout(dom.toast._t);
+  dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), duration || 2800);
+}
 
 /* ── TAUX DE CHANGE ─────────────────────────────────────── */
 export const _rates    = { EUR: 495, KMF: 1 };

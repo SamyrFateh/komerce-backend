@@ -91,9 +91,13 @@ function analyzePair(pair, ctx) {
   else evidenceRole = 'MIXED';
 
   const runtimeFiles = evidenceFiles.filter(f => f.role === 'RUNTIME');
-  const evForShape = runtimeFiles.length ? runtimeFiles : evidenceFiles;
-  const hasStatic = channels.has('static-code');
-  const hasIface = channels.has('interface');
+  const nonWiringRuntimeFiles = runtimeFiles.filter(f => !wiring.has(f.source));
+  const evForShape = nonWiringRuntimeFiles.length
+    ? nonWiringRuntimeFiles
+    : (runtimeFiles.length ? runtimeFiles : evidenceFiles);
+  const shapeChannels = new Set(evForShape.map(f => f.channel));
+  const hasStatic = shapeChannels.has('static-code');
+  const hasIface = shapeChannels.has('interface');
   const staticTargets = evForShape.filter(f => f.channel === 'static-code').map(f => f.target).filter(Boolean);
   const techTargets = staticTargets.filter(isTechnicalPrimitiveTarget).length;
   const bizTargets = staticTargets.length - techTargets;
@@ -145,11 +149,9 @@ function classifyPair(pair, ctx) {
     family = 'UNCLASSIFIED';
   } else if (consumerKind === 'projection' || consumerKind === 'frontend-transversal') {
     family = 'PROJECTION';
-  } else if (ctx.compRootOwners.has(pair.from)) {
-    // Le consumer POSSÈDE des fichiers wiring (dérivé de l'ownership, pas du nom).
-    // Légitime UNIQUEMENT si toute la preuve runtime vient de ces fichiers wiring.
-    // Sinon : le composition-root touche une feature hors de son rôle => non compris.
-    family = a.allRuntimeFromWiring ? 'COMPOSITION_ROOT_WIRING' : 'UNCLASSIFIED';
+  } else if (ctx.compRootOwners.has(pair.from) && a.allRuntimeFromWiring) {
+    // Montage applicatif pur. Les preuves hors wiring sont qualifiées normalement.
+    family = 'COMPOSITION_ROOT_WIRING';
   } else if (providerKind === 'technical-transversal') {
     family = 'TECHNICAL_PRIMITIVE';
   } else if (providerKind === 'business-transversal') {

@@ -59,7 +59,7 @@
       "script": "public/boutique/scripts/feature-guard.js",
       "status": "ok",
       "exitCode": 0,
-      "errorCount": 2,
+      "errorCount": 0,
       "warningCount": 0,
       "coverageCount": 0,
       "unprojectableCount": 0,
@@ -395,7 +395,7 @@
       "scope": "boutique",
       "verdict": "warn",
       "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
+      "feature": "catalog",
       "file": null,
       "message": "⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :",
       "sourceFile": "public/boutique/js/b-desktop-global-cart-access.js"
@@ -405,7 +405,7 @@
       "scope": "boutique",
       "verdict": "warn",
       "type": "TEXT-GATE-DIAGNOSTIC",
-      "feature": "platform-ops",
+      "feature": "catalog",
       "file": null,
       "message": "⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :",
       "sourceFile": "public/boutique/js/b-desktop-sidebar.js"
@@ -696,24 +696,6 @@
       "feature": "sourcing",
       "file": null,
       "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-    },
-    {
-      "gate": "gate:feature-guard",
-      "scope": "boutique",
-      "type": "FEATURE-GUARD",
-      "feature": "catalog",
-      "file": null,
-      "message": "@domain mismatch : ../js/b-favs.js declare @domain \"boutique\" mais est liste dans catalog.feature.js (domain \"catalog\")",
-      "verdict": "fail"
-    },
-    {
-      "gate": "gate:feature-guard",
-      "scope": "boutique",
-      "type": "FEATURE-GUARD",
-      "feature": "catalog",
-      "file": null,
-      "message": "@domain mismatch : ../js/render/render-categories.js declare @domain \"boutique\" mais est liste dans catalog.feature.js (domain \"catalog\")",
-      "verdict": "fail"
     }
   ]
 }

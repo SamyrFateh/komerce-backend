@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-27T20:55:04.031Z",
+  "generatedAt": "2026-07-27T22:54:48.864Z",
   "summary": {
     "modules": 74,
     "withHeader": 74,
@@ -143,7 +143,8 @@
       ],
       "imports": [
         "b-store",
-        "b-bus"
+        "b-bus",
+        "b-utils"
       ],
       "bodyClasses": [],
       "emitCalls": [
@@ -598,7 +599,7 @@
       "id": "b-favs",
       "hasHeader": true,
       "role": "favorites-view",
-      "domain": "boutique",
+      "domain": "catalog",
       "layer": "ui-page",
       "criticality": "medium",
       "doctrine": [
@@ -808,7 +809,6 @@
       "listens": [],
       "imports": [
         "b-store",
-        "b-cart-core",
         "b-utils",
         "b-phone"
       ],
@@ -1803,6 +1803,7 @@
         "prix_lisible"
       ],
       "depends": [
+        "b-store.js",
         "fetch",
         "Intl"
       ],
@@ -1811,7 +1812,9 @@
       ],
       "emits": [],
       "listens": [],
-      "imports": [],
+      "imports": [
+        "b-store"
+      ],
       "bodyClasses": [],
       "emitCalls": []
     },
@@ -2076,7 +2079,7 @@
       "id": "hero-bootstrap",
       "hasHeader": true,
       "role": "boutique-hero-bootstrap",
-      "domain": "boutique",
+      "domain": "catalog",
       "layer": "ui-bootstrap",
       "criticality": null,
       "doctrine": [],
@@ -2179,7 +2182,7 @@
       "id": "render-categories",
       "hasHeader": true,
       "role": "boutique-render-categories",
-      "domain": "boutique",
+      "domain": "catalog",
       "layer": "ui-renderer",
       "criticality": null,
       "doctrine": [],

@@ -19,11 +19,12 @@
  * Extrait de boutique.js Sprint 2F
  * Dépendances : b-store.js (state, dom)
  *
- * Exports : showToast, cartQty, cartTotal, saveCart, updateCartBadge, isFav, saveFavs
+ * Exports : cartQty, cartTotal, saveCart, updateCartBadge, isFav, saveFavs
  */
 
-import { state, dom, CART_VERSION } from './b-store.js';
+import { state, CART_VERSION } from './b-store.js';
 import { bus } from './b-bus.js';
+export { showToast } from './b-utils.js';
 
 // FIX vérité unique : CART_VERSION était redéfini ici en local (= 3) en plus
 // de b-store.js (export = 3). Si on bumpait l'un sans l'autre :
@@ -32,23 +33,6 @@ import { bus } from './b-bus.js';
 // → écart silencieux : panier réécrit avec la mauvaise version, donc
 // rejeté au prochain reload. Désormais une seule constante, exportée
 // depuis b-store, importée partout.
-
-// ──────────────────────────────────────────────
-// TOAST
-// ──────────────────────────────────────────────
-
-/**
- * @brief showToast — Affiche un toast notification temporaire en bas d'écran
- * @param {string} msg   - Texte à afficher
- * @param {string} [type] - Classe CSS : 'error' | 'success'
- */
-export function showToast(msg, type, duration) {
-  type = type || '';
-  dom.toast.innerHTML = '<div class="k-toast-simple">' + (msg || '') + '</div>';
-  dom.toast.className = 'k-toast show' + (type ? ' ' + type : '');
-  clearTimeout(dom.toast._t);
-  dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), duration || 2800);
-}
 
 // ──────────────────────────────────────────────
 // CART HELPERS

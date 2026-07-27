@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 784,
-    "edges": 4395,
+    "edges": 4396,
     "dbTables": 116,
     "doctrines": 157,
     "impactAreas": 129,
@@ -3052,6 +3052,7 @@
         "api_results"
       ],
       "depends": [
+        "b-store.js",
         "fetch",
         "Intl"
       ],
@@ -24359,6 +24360,12 @@
       "to": "impact:customer-support",
       "type": "impact",
       "label": "customer-support"
+    },
+    {
+      "from": "public/boutique/js/b-utils.js",
+      "to": "public/boutique/js/b-store.js",
+      "type": "depends",
+      "label": "b-store.js"
     },
     {
       "from": "public/boutique/js/b-utils.js",
@@ -49410,6 +49417,7 @@
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-subcat.js",
+        "public/boutique/js/b-utils.js",
         "public/boutique/js/boutique.js",
         "public/boutique/js/controllers/home-controller.js"
       ]
@@ -49530,6 +49538,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "public/boutique/js/b-store.js",
         "fetch",
         "Intl"
       ],
@@ -49574,6 +49583,7 @@
         "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-store.js",
         "public/boutique/js/b-tracking.js",
         "public/boutique/js/b-wallet.js",
         "public/boutique/js/group/group-helpers.js",
