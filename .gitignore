@@ -20,6 +20,9 @@ Thumbs.db
 # Build output (sauf public/boutique/js/dist/ — versionné)
 build/
 
+# Test coverage generated locally
+**/coverage/
+
 # IDE
 .vscode/
 .idea/
@@ -32,3 +35,25 @@ public/boutique.zip
 
 # Coverage temporaire généré par scripts/touched-tests-gate.js (--strict)
 .gate-coverage-tmp/
+
+# Ancien runtime agent PDP — ne pas réintroduire
+.agent/tasks/
+.agent/state/
+.agent/worklogs/
+.agent/handoffs/
+.agent/lanes/
+.agent/prompts/
+.agent/deliveries/
+.agent/sources/
+.agent/evidence/
+.agent/arbitrations/
+.agent/decisions/
+.agent/audit.ndjson
+.agent/MANIFEST.json
+.agent/TASK-INDEX.json
+.agent/STATUS.md
+.agent/START-HERE.md
+.agent/WORKFLOW.md
+.agent/CHARTER.md
+.agent/CHECKPOINT-PROTOCOL.md
+.agent/EXECUTION_MAP.md
