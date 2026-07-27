@@ -1,8 +1,0 @@
-PASS tests/unit/modal-mobile-canonical.test.js
-PASS tests/unit/b-share-phone-guard.test.js
-
-Test Suites: 93 passed, 93 total
-Tests:       1742 passed, 1742 total
-Snapshots:   0 total
-Time:        33.261 s
-Ran all test suites matching tests/unit.

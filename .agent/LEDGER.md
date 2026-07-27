@@ -1,89 +1,61 @@
-# LEDGER — chantier actif Komerce
+# LEDGER — état de clôture Komerce
 
 Mis à jour : 2026-07-27
-
-Ce fichier contient uniquement l'état courant utile à l'exécution. L'historique détaillé appartient à Git et aux rapports canoniques.
 
 ## Source de vérité opérationnelle
 
 - Branche unique : `main`.
 - Parcours : `AGENTS.md` → `docs/CARTE_FIRST_INDEX.md` → carte de feature → présent ledger.
-- Ne jamais choisir une action depuis un ancien fichier `T-*`, state, worklog, lane, audit ou preuve brute.
+- Aucun ancien fichier de tâche, state, worklog, lane, prompt ou preuve brute ne peut rouvrir un travail.
 
-## Paliers déjà acquis — ne pas refaire
+## Paliers acquis
 
-- **P0-A** : clos, rapport présent dans `.agent/paliers/P0-A-rapport.md`.
-- **P1** : cinq invariants exécutables livrés ; rapport de clôture à consolider, aucun ré-audit général.
-- **P2** : 25/25 gates applicables couverts par un test de détection, plus une exclusion documentée ; ne pas rouvrir les anciens lots.
-- **P3** : split de `boutique.feature.js` réalisé partiellement ; conserver les ownerships livrés.
-- **O6** : `shared-cart → catalog` accepté en lecture seule avec scope et `reviewTrigger` ; ne pas créer de contrat supplémentaire maintenant.
-- **P5-N1** : contrôle des écrivains des colonnes contestées livré.
-- **P5-N3** : une primitive `db.withTransaction`, aucune implémentation transactionnelle indépendante ; façades de compatibilité admises.
+- **P0-A** : clos ; rapport conservé dans `paliers/`.
+- **P1** : cinq invariants exécutables acquis.
+- **P2** : 25/25 gates applicables couverts par un test de détection, plus une exclusion documentée.
+- **P3** : split réalisé ; mojibake du lot ciblé réparé.
+- **O6** : dépendance `shared-cart → catalog` acceptée en lecture seule, avec périmètre et déclencheur de revue.
+- **P5-N1/N2/N3** : clos sur le périmètre contesté :
+  - matrice `payment_status` centralisée, `paid → refunded` seul remboursement autorisé ;
+  - émission, rotation et consommation QR centralisées et atomiques ;
+  - `total_kmf` reste facial et immuable ;
+  - duplicate wallet sans réécriture de `wallet_applied_kmf` ni appel à `markPaid()` ;
+  - test du scénario application partielle puis second `/wallet/apply` présent.
 
-## Chantier actif A — P3b `gateHealth`
+## P3b `gateHealth` — PARTIEL, NON CLOS
 
-Objectif : terminer le livrable explicitement prévu par l'audit, sans inventer de nouveaux gates.
+Livré :
 
-À faire :
+- `gateHealth` existe sur les 28 features ;
+- messages détaillés conservés, verdicts agrégés ;
+- 13 findings projetés ;
+- 0 finding non attribué ;
+- 0 fichier non projetable ;
+- 0 double projection ;
+- tests négatifs de projection présents.
 
-- projeter les constats des gates existants vers les fichiers puis les features ;
-- conserver les messages précis des gates ; agréger uniquement les verdicts ;
-- viser le contrat documenté : au moins 18/24 gates attribuables, 0 fichier non projetable, 0 double attribution, `gateHealth` sur 28/28 features ;
-- corriger `propriétaire: undefined` dans le rendu bus ;
-- ajouter les tests négatifs de projection et de propriété.
+Écart bloquant :
 
-Hors périmètre : modifier les règles métier des gates, inventer un score opaque ou ouvrir P6/P7/P8.
+- le contrat d'audit exige au moins **18 gates sur 24** avec sortie attribuable ;
+- l'implémentation courante n'en collecte que **3** ;
+- la cible ne doit pas être abaissée pour déclarer le palier clos.
 
-## Chantier actif B — P5 à fermer
+Prochaine action unique : rendre au moins 15 gates supplémentaires attribuables ou documenter formellement, gate par gate, les exclusions qui ramènent le dénominateur applicable à une valeur validée architecturalement.
 
-### Payment status
+## Nettoyage dépôt
 
-- autoriser `paid → refunded` ;
-- bloquer `pending → refunded` et `failed → refunded` ;
-- préserver les no-op idempotents sans rejouer les effets de bord.
+Clos pour le périmètre indiscutable :
 
-### QR de retrait
+- ancien runtime `.agent` supprimé ;
+- tâches, states, worklogs, handoffs, lanes, prompts, preuves brutes, livraisons et sources PDP retirés ;
+- coverage versionné retiré ;
+- ancien prompt racine pré-golive retiré ;
+- `.gitignore` empêche leur réintroduction ;
+- `.agent` ne conserve que `README.md`, `LEDGER.md` et `paliers/`.
 
-- centraliser l'émission et la rotation dans le service propriétaire ;
-- laisser la route comme adaptateur HTTP ;
-- supprimer le générateur tracking mort utilisant `orders.qr_token` ;
-- conserver consommation, transition `available → collected` et effacement dans une opération atomique.
+## Verdict global
 
-### Wallet
-
-- reproduire le cas création partielle puis second `/wallet/apply` avec la même clé `checkout_<orderId>` ;
-- empêcher qu'un `duplicate:true` réécrive `wallet_applied_kmf` ou marque la commande payée sans nouveau débit ;
-- doctrine de clôture : une application wallet par commande, sauf futur contrat explicite de top-up avec identifiant d'événement distinct.
-
-## Chantier actif C — réconciliation documentaire
-
-Créer ou mettre à jour les rapports canoniques P1, P2, P3, P3b, P5 et O6.
-
-Métriques à employer :
-
-- invariants exécutables : 5 ;
-- gates de détection : 25/25 applicables + 1 exclusion ;
-- imports cross-feature observés : 1 ;
-- imports cross-feature non acceptés : 0 ;
-- features bloquées après O6 : 0.
-
-## Chantier actif D — nettoyage dépôt
-
-Phase 1 en cours : supprimer les anciennes instructions PDP et neutraliser les faux signaux de branche/tâche.
-
-Phase 2 :
-
-- supprimer `tasks/`, `state/`, `worklogs/`, `handoffs/`, `lanes/`, anciens prompts et preuves brutes lorsqu'aucune référence active ne subsiste ;
-- supprimer les scripts d'orchestration agent devenus orphelins ;
-- inventorier les documents de racine et `docs/chantier/` ; fusionner, archiver ou supprimer les doublons ;
-- vérifier l'absence de `.patch`, ZIP, coverage versionné et sorties temporaires inutiles ;
-- ne garder sous `.agent/` que `README.md`, `LEDGER.md` et les rapports de paliers encore canoniques.
-
-## Définition de terminé
-
-- `gateHealth` est reproductible et projeté sur 28/28 features ;
-- P5 payment, QR et wallet possèdent leurs tests d'invariant ;
-- les fichiers mojibake du split P3 sont réparés sans changement fonctionnel ;
-- les rapports décrivent le code courant ;
-- l'ancien runtime `.agent` n'influence plus aucun agent ;
-- `node scripts/map-check.js`, les gates ciblés et les suites concernées sont verts.
+- **P5 : CLOS.**
+- **Nettoyage runtime : CLOS.**
+- **P3b : OUVERT**, uniquement pour l'écart de couverture 3/18 minimum.
+- Le chantier global ne doit pas être annoncé « 100 % clos » avant résolution de cet écart et exécution verte des gates dans un environnement complet.
