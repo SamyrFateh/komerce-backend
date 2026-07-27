@@ -1,18 +1,41 @@
 {
-  "version": "O6-1.0",
-  "_comment": "Ledger d'EXCEPTIONS O6 — porte UNIQUEMENT les paires O5 OBSERVED_UNDECLARED dont la politique de famille ne suffit pas à décider sans jugement humain (CROSS_FEATURE_DIRECT_IMPORT, directions de cycles runtime, ownership suspects). NE contient PAS les 94. Clé unique from->to. Une entrée dont la paire a disparu d'O5 OBSERVED_UNDECLARED est STALE (bloquant) et doit être supprimée — l'historique appartient à Git. O6 décide ; O6 ne remédie pas encore les coutures.",
+  "version": "O6-1.2",
+  "_comment": "Ledger d'EXCEPTIONS O6 — porte UNIQUEMENT les paires O5 OBSERVED_UNDECLARED dont la politique de famille ne suffit pas à décider sans jugement humain. Une entrée dont la paire a disparu devient STALE et doit être supprimée ; l'historique appartient à Git.",
   "exceptions": [
     {
       "from": "shared-cart",
       "to": "catalog",
       "decision": "accepted-dependency",
-      "rationale": "Le modal panier partagé consomme en lecture seule des données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié.",
+      "rationale": "Le modal panier partagé consomme en lecture seule les données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié.",
       "scope": [
-        "b-modal-core.js -> shop-schema.js",
-        "b-modal-core.js -> b-modal-product-fields.js",
-        "b-modal-cart.js -> view-models/modal-cart-product-model.js"
+        "public/boutique/js/b-modal-core.js -> public/boutique/js/shop-schema.js",
+        "public/boutique/js/b-modal-core.js -> public/boutique/js/b-modal-product-fields.js",
+        "public/boutique/js/b-modal-cart.js -> public/boutique/js/view-models/modal-cart-product-model.js"
       ],
-      "reviewTrigger": "Formaliser une API interne si cette dépendance commence à porter des mutations, si le nombre de sites d'import augmente significativement, ou si plusieurs features consomment ces mêmes fonctions internes de catalog."
+      "reviewTrigger": "Formaliser une API interne si cette dépendance transporte des mutations, s'étend significativement ou devient consommée par plusieurs features."
+    },
+    {
+      "from": "catalog",
+      "to": "orders",
+      "decision": "accepted-dependency",
+      "rationale": "Les surfaces catalogue déclenchent les opérations du panier personnel — ajout, quantité et résumé de ligne — à partir d'un produit sélectionné. La dépendance va du canal de découverte vers l'intention d'achat ; le panier ne modifie aucun état du catalogue.",
+      "scope": [
+        "public/boutique/js/b-catalog.js -> public/boutique/js/b-cart-core.js|b-cart.js",
+        "public/boutique/js/render/render-product-card.js -> public/boutique/js/b-cart-core.js|cart-product-summary.js",
+        "public/boutique/js/b-modal-desktop-product.js|b-modal-buybox-shared.js -> cart"
+      ],
+      "reviewTrigger": "Revoir si le panier commence à écrire dans l'état catalogue, si la construction de ligne devient une règle métier autonome ou si une API de commande frontend stable remplace ces primitives."
+    },
+    {
+      "from": "recommendations",
+      "to": "orders",
+      "decision": "accepted-dependency",
+      "rationale": "Une recommandation permet explicitement d'ajouter le produit suggéré au panier personnel et de construire son résumé de ligne. La recommandation ne possède ni le panier ni son cycle de persistance.",
+      "scope": [
+        "public/boutique/js/b-modal-suggestions.js -> public/boutique/js/b-cart.js",
+        "public/boutique/js/b-modal-suggestions.js -> public/boutique/js/cart-product-summary.js"
+      ],
+      "reviewTrigger": "Revoir si recommendations acquiert des mutations de commande autres que l'ajout explicite au panier ou si plusieurs canaux reproduisent le même adaptateur."
     }
   ]
 }
