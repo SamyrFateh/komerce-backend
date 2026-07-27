@@ -6,89 +6,144 @@
 > 2. `public/boutique/docs/reference/reference-modale-4-etats.html`
 > 3. `public/boutique/docs/reference/reference-modale-architecture.html`
 > 4. `docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md`
-> 5. `public/boutique/HANDOFF_MODALE_PROPRIETE_UNIQUE.md`
+> 5. `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`
+> 6. `public/boutique/HANDOFF_MODALE_PROPRIETE_UNIQUE.md`
 
 ```text
 RÔLE
 Tu es l'agent d'exécution de la modale produit Komerce dans public/boutique.
-Tu n'inventes pas une nouvelle direction visuelle ou un nouveau contrat. Tu mets à jour
-l'existant afin qu'il respecte la référence canonique Product Modal v2.1.
+Tu n'inventes ni une nouvelle direction visuelle ni un nouveau contrat.
+Tu réalignes l'existant sur la référence canonique Product Modal v3.0.
 
 DÉCISION D'ARCHITECTURE
-Il existe un seul Product Detail Contract, un seul état de sélection et deux axes :
-- layout : desktop | mobile
-- richesse : simple | enriched
+Il existe :
+- un seul Product Detail Contract ;
+- un seul état de sélection ;
+- deux compositions responsive : desktop | mobile ;
+- deux niveaux de richesse : simple | enriched.
 
-La combinaison produit quatre rendus :
-1. desktop simple
-2. desktop enrichi
-3. mobile simple
-4. mobile enrichi
+Les quatre rendus sont :
+1. desktop simple ;
+2. desktop enrichi ;
+3. mobile simple ;
+4. mobile enrichi.
 
-Ces quatre rendus ne sont jamais quatre composants ou quatre arbres DOM indépendants.
-Les capacités activent des sections facultatives ; le responsive change la composition.
+Ces rendus ne sont jamais quatre contrats, quatre renderers métiers ou quatre arbres DOM indépendants.
+
+PRINCIPE UX CANONIQUE
+Le hero présente.
+Le configurateur fait choisir.
+Le side cart desktop ou la barre d'action mobile confirme et fait acheter.
+Les détails longs viennent ensuite.
 
 STRUCTURE SÉMANTIQUE ATTENDUE
 ProductModal
 ├── ModalHeader
-├── ProductMain
-│   ├── ProductMedia
-│   │   ├── GalleryRail / pagination facultatifs
-│   │   └── MainMedia
-│   ├── ProductInformation
-│   │   ├── Identity / stock / price / delivery
-│   │   ├── Variants facultatifs
-│   │   ├── Description
-│   │   ├── Actions
-│   │   ├── Reassurance
-│   │   └── Share
-│   └── DesktopCartPanel — desktop uniquement
-├── ProductRecommendations
-└── MobileStickyActions — mobile uniquement
+├── ProductViewport
+│   ├── ProductScroll
+│   │   ├── ProductHero
+│   │   │   ├── ProductMedia
+│   │   │   └── ProductNarrative
+│   │   ├── ProductConfigurator
+│   │   ├── ProductDetails facultatif
+│   │   └── ProductRecommendations facultatif
+│   └── DesktopCartPanel desktop uniquement
+└── MobilePrimaryActions mobile uniquement
 
-RÈGLES VISUELLES
-- Desktop : grille médias | informations | panier.
-- Le panier appartient au shell ; il n'est pas fixed hors de la modale.
-- Les suggestions desktop occupent médias + informations, jamais la colonne panier.
-- Mobile : composition verticale native, galerie tactile, panier dans le header.
-- Ordre mobile : média → identité → stock → prix → livraison → variantes → description
-  → réassurance → partage → suggestions → actions sticky.
-- Le mobile enrichi est obligatoire.
-- Une seule croix de fermeture.
-- Une section absente disparaît sans vide, séparateur ou message technique.
-- Topbar mobile (REF-2026-07e) : sur mobile, la topbar occupe une zone de respiration
-  distincte du média. Ses contrôles sont légers et ne forment pas de bandeau sombre. Le
-  pager est une capsule unique. Le panier tressé est affiché sans pastille de fond.
-  Identique en mobile simple et enrichi — la richesse produit ne change jamais le header.
-  Le média ne commence pas sous la topbar au premier affichage. L'état scrollé peut
-  recevoir une surface translucide légère, jamais un fond gris/sombre ni un overlay.
+COMPOSITION DESKTOP
+- Le shell contient une zone produit et le side cart.
+- Le side cart reste indépendant et n'est pas déplacé dans le contenu produit.
+- Le hero est une grille galerie | récit produit.
+- Le récit produit contient identité, prix, stock, livraison, description courte,
+  bénéfices essentiels, réassurance et partage.
+- Les variantes ne restent pas tassées dans la colonne droite.
+- Un configurateur transversal est placé immédiatement sous le hero.
+- Le configurateur couvre galerie + récit produit et s'arrête avant le side cart.
+- Les actions desktop appartiennent au configurateur.
+- Les détails longs occupent ensuite toute la largeur de la zone produit.
+- Les suggestions viennent après les détails et n'occupent jamais la colonne panier.
+
+CONFIGURATEUR DESKTOP
+- Une famille de variantes = un groupe explicitement libellé.
+- Les groupes utilisent flex-wrap ou une grille auto.
+- L'espace libre reste de la respiration ; ne pas agrandir artificiellement les contrôles.
+- Les options indisponibles restent visibles et explicables.
+- Le panneau affiche la sélection en cours, la disponibilité et la quantité.
+- Ne pas y dupliquer le récapitulatif du side cart.
+- Un produit sans variante conserve un panneau compact : disponibilité, quantité, actions.
+
+COMPOSITION MOBILE
+Le shell mobile possède exactement trois lignes :
+HEADER
+CONTENU SCROLLABLE
+ACTIONS PRIMAIRES
+
+Ordre du contenu :
+- média ;
+- identité / prix / livraison / résumé court ;
+- configurateur pleine largeur ;
+- détails structurés ;
+- suggestions.
+
+Le configurateur mobile reprend les mêmes axes que le desktop, empilés verticalement.
+Les consignes sont explicites : « Choisissez une taille », « Sélectionnez une couleur »,
+« 2 options à compléter ». Ne pas utiliser « Choisissez la suite ».
+
+CONTRAT DE SCROLL
+Desktop :
+- header hors du scroll produit ;
+- un seul conteneur vertical pour hero + configurateur + détails + suggestions ;
+- aucune galerie sticky ou fixed ;
+- side cart indépendant.
+
+Mobile :
+- header = première ligne du shell ;
+- contenu = unique propriétaire du scroll ;
+- actions = troisième ligne du shell ;
+- aucune superposition des CTA sur le contenu ;
+- aucune compensation JS de padding-bottom ou de hauteur viewport.
+
+Invariant : la richesse produit ne change jamais le propriétaire du scroll.
+
+SAMSUNG INTERNET
+La correction doit supprimer la dépendance fonctionnelle entre :
+- visualViewport.height ou une variable --k-vh ;
+- la hauteur mesurée de la CTA ;
+- un padding-bottom synchronisé par JavaScript.
+
+La barre d'action mobile occupe une vraie ligne du layout et respecte :
+padding-bottom: env(safe-area-inset-bottom).
+Le contenu ne passe jamais dessous.
 
 SUGGESTIONS
-- « Vous aimerez aussi » existe dans les quatre états quand des recommandations existent.
-- Simple : le rail arrive plus tôt car le contenu produit est plus court ; rôle découverte.
-- Enrichi : le même rail arrive après davantage d'informations ; rôle complément d'achat.
-- La différence porte sur le contexte, pas sur l'existence ou sur un autre composant.
-- Mobile : rail horizontal tactile, environ 1,6 à 2 cartes visibles.
-- Cartes : image, nom, prix, promotion éventuelle, contrôle neutre + puis stepper − N +.
+- Présentes dans les quatre états lorsque le contrat retourne des recommandations.
+- Simple : arrivent plus tôt parce que le contenu est plus court.
+- Enrichi : arrivent après le configurateur et les détails.
+- Même composant dans les quatre états.
+- Mobile : rail tactile horizontal, environ 1,6 à 2 cartes visibles.
+- Cartes : contrôle neutre + puis stepper − N +.
 - Aucun petit panier sur les cartes.
-- Le rail reste au-dessus de la barre sticky et possède un libellé accessible.
 
 ÉTAT PANIER
 quantité 0 : bouton Ajouter
 quantité > 0 : stepper − N +
 retour à 0 : removeFromCart puis retour du bouton Ajouter
-Une seule source de vérité et aucun état concurrent entre renderers.
+Une seule source de vérité entre les renderers.
 
 DONNÉES
 Prix, ancien prix, remise, stock, disponibilité, média, sélection, livraison et sous-total
 proviennent du contrat détail et de l'état partagé. Ne rien déduire localement.
 
 INTERDITS
-- Pas de quatre HTML indépendants.
+- Pas de quatre HTML runtime indépendants.
 - Pas de déplacement de blocs au JavaScript selon le viewport.
 - Pas de clonage fonctionnel des CTA.
-- Pas de conditionnement réassurance/partage/suggestions à hasEnrichedContent.
+- Pas de configurateur complet dans la colonne droite desktop.
+- Pas d'image sticky ou fixed dans le contenu produit.
+- Pas de scroll imbriqué dans les variantes ou les détails.
 - Pas de hauteur fixe sur les zones de flux.
+- Pas de compensation JS pour réserver la barre mobile.
+- Pas de conditionnement réassurance/partage/suggestions à hasEnrichedContent.
 - Pas de placeholders ou textes de debug en production.
 - Pas d'allow de complaisance pour contourner l'ownership.
 
@@ -101,24 +156,32 @@ npm run test:unit
 Lance les trois après chaque étape. Répare toute régression avant de poursuivre.
 
 MISSION
-1. Inspecte le référentiel et le DOM actuel avant modification.
-2. Produis une matrice précise : existant / conforme / écart / action.
-3. Conserve ce qui respecte déjà la référence.
-4. Ajoute proprement le mobile enrichi sans créer un quatrième renderer autonome.
-5. Aligne les suggestions des quatre états sur la règle canonique.
-6. Aligne les cartes sur le contrôle + / stepper neutre.
-7. Vérifie le panier desktop dans le shell et les actions sticky mobile.
-8. Ajoute ou adapte les tests d'invariant nécessaires.
-9. Fournis le diff, la liste des fichiers et les sorties des trois oracles.
+1. Inspecte les trois références canoniques et le DOM runtime avant modification.
+2. Cartographie le propriétaire actuel du scroll desktop et mobile.
+3. Produis une matrice existant / conforme / écart / action pour les quatre états.
+4. Unifie le shell desktop simple et enrichi.
+5. Crée le hero galerie | récit produit sans déplacer la vérité métier.
+6. Déplace les variantes dans un configurateur transversal sous le hero.
+7. Place les détails longs sous le configurateur en pleine largeur produit.
+8. Conserve le side cart et son indépendance.
+9. Unifie le shell mobile en trois lignes structurelles.
+10. Supprime les compensations Samsung fragiles sans masquer le contenu.
+11. Aligne les suggestions et les cartes + / stepper.
+12. Ajoute ou adapte les tests d'invariant nécessaires.
+13. Fournis le diff, la liste des fichiers et les sorties des trois oracles.
 
 CRITÈRES D'ACCEPTATION
 - Quatre états rendables depuis le même contrat.
-- Mobile enrichi présent.
+- Même shell et même propriétaire de scroll entre simple et enrichi.
+- Desktop : hero galerie | récit, puis configurateur transversal.
+- Desktop : configurateur couvre les deux colonnes produit, jamais le side cart.
+- Desktop : side cart conservé et indépendant.
+- Mobile : header / scroll / actions sont trois lignes du shell.
+- Mobile : configurateur pleine largeur sous le résumé produit.
+- Mobile : aucun contenu masqué sur Samsung Internet et safe-area.
+- Aucune image fixe pendant que le contenu passe dessous.
+- Détails longs après le configurateur.
 - Suggestions desktop/mobile et simple/enrichi.
-- Variantes avant description.
-- Produit simple compact sans trous.
-- Panier desktop structurel.
-- Sticky mobile sans contenu masqué, y compris Samsung Internet et safe-area.
 - Ownership = 0, layout = 0, tests unitaires verts.
 
 Ne te déclare pas terminé sans preuves exécutables.
