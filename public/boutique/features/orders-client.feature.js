@@ -50,6 +50,11 @@ module.exports = {
     css: [
       '../css/cart.css',
     ],
+    tests: [
+      '../tests/unit/b-cart-core.test.js',
+      '../tests/unit/b-cart.test.js',
+      '../tests/unit/b-mini-cart.test.js',
+    ],
   },
 
   docs: [],
