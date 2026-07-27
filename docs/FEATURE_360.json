@@ -1,5 +1,5 @@
 {
-  "version": "F360-1.0",
+  "version": "F360-1.1",
   "sourceModel": {
     "businessFeatureGraphVersion": "O6-1.0",
     "generatedFrom": {
@@ -49,7 +49,20 @@
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 69,
     "ontologyGaps": 0,
-    "debtItemsTotal": 125
+    "debtItemsTotal": 125,
+    "gateHealthy": 15,
+    "gateBlocked": 0
+  },
+  "projectionIntegrity": {
+    "gateFindingsVersion": "GF-1.0",
+    "gateSourcesTotal": 3,
+    "gateSourcesFailed": 0,
+    "totalFindings": 13,
+    "attributedFindings": 13,
+    "unattributedFindingsCount": 0,
+    "unattributedFindings": [],
+    "unprojectableFiles": [],
+    "multiProjectedFiles": []
   },
   "features": [
     {
@@ -353,6 +366,13 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -673,6 +693,24 @@
         "declaredOnlyDependencyCount": 2,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 4,
@@ -1052,6 +1090,24 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 1
+      },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 1,
@@ -2466,6 +2522,24 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 9
       },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
+      },
       "architecturalDebt": {
         "debtCount": 9,
         "debtItems": [
@@ -2921,6 +2995,24 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 2
+      },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 3,
@@ -4260,6 +4352,13 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 9
       },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
       "architecturalDebt": {
         "debtCount": 13,
         "debtItems": [
@@ -4521,6 +4620,13 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -4970,6 +5076,24 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 4,
@@ -6240,6 +6364,24 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 7
       },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
+      },
       "architecturalDebt": {
         "debtCount": 8,
         "debtItems": [
@@ -6469,6 +6611,13 @@
         "declaredOnlyDependencyCount": 1,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 1
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 6,
@@ -8906,6 +9055,24 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 6
       },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
+      },
       "architecturalDebt": {
         "debtCount": 21,
         "debtItems": [
@@ -9253,6 +9420,24 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 1
       },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
+      },
       "architecturalDebt": {
         "debtCount": 2,
         "debtItems": [
@@ -9541,6 +9726,13 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -10494,6 +10686,24 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 7
       },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
+      },
       "architecturalDebt": {
         "debtCount": 10,
         "debtItems": [
@@ -10825,6 +11035,13 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 2,
@@ -11314,6 +11531,13 @@
         "declaredOnlyDependencyCount": 1,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 3
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 4,
@@ -12117,6 +12341,24 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 6
       },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
+      },
       "architecturalDebt": {
         "debtCount": 10,
         "debtItems": [
@@ -12789,6 +13031,24 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 3
       },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
+      },
       "architecturalDebt": {
         "debtCount": 3,
         "debtItems": [
@@ -12917,6 +13177,13 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,
@@ -13471,6 +13738,13 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 2
       },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
       "architecturalDebt": {
         "debtCount": 2,
         "debtItems": [
@@ -13851,6 +14125,13 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 2
       },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
       "architecturalDebt": {
         "debtCount": 3,
         "debtItems": [
@@ -14072,6 +14353,13 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 2,
@@ -14312,6 +14600,24 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 2,
@@ -15645,6 +15951,13 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 2
       },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
       "architecturalDebt": {
         "debtCount": 6,
         "debtItems": [
@@ -15952,6 +16265,24 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 7
       },
+      "gateHealth": {
+        "status": "ATTENTION",
+        "failCount": 0,
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          }
+        ]
+      },
       "architecturalDebt": {
         "debtCount": 7,
         "debtItems": [
@@ -16175,6 +16506,13 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 2,
@@ -16546,6 +16884,13 @@
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 1
       },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
       "architecturalDebt": {
         "debtCount": 1,
         "debtItems": [
@@ -16634,6 +16979,13 @@
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
         "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 0,

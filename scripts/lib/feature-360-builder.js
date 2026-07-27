@@ -24,8 +24,9 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const BFG_PATH = path.join(ROOT, 'docs', 'BUSINESS_FEATURE_GRAPH.json');
+const GATE_FINDINGS_PATH = path.join(ROOT, 'docs', 'GATE_FINDINGS.json');
 
-const VERSION = 'F360-1.0';
+const VERSION = 'F360-1.1';
 
 // Familles O6 qui constituent une vraie dépendance métier (business coupling
 // observé mais non déclaré dans contract.consumes — légitime, pas du bruit).
@@ -45,6 +46,21 @@ const TECHNICAL_FAMILIES = new Set([
 
 function loadBFG() {
   return JSON.parse(fs.readFileSync(BFG_PATH, 'utf8'));
+}
+
+// docs/GATE_FINDINGS.json est produit par scripts/gen-gate-findings.js
+// (aucune règle métier ici — un simple normalisateur de sortie de gates
+// existants). Absence gracieuse : gateHealth reste présent sur 28/28
+// features (status HEALTHY, findings vides) même si le fichier n'existe
+// pas encore ou n'a pas été régénéré après le dernier build().
+function loadGateFindings() {
+  if (!fs.existsSync(GATE_FINDINGS_PATH)) return { version: null, findings: [] };
+  try {
+    const doc = JSON.parse(fs.readFileSync(GATE_FINDINGS_PATH, 'utf8'));
+    return { version: doc.version || null, findings: Array.isArray(doc.findings) ? doc.findings : [], sources: doc.sources || [] };
+  } catch (_) {
+    return { version: null, findings: [], sources: [] };
+  }
 }
 
 // Résout "dash:X" -> "public/X" (scopeTopology : dash mounté sous public/),
@@ -165,6 +181,22 @@ function build() {
   const unclassifiedInvolves = (item, id) => (item && (item.from === id || item.to === id));
 
   const ontologyGapCoverage = bfg.o6.ontologyGapCoverage || { consumers: [], covered: [], uncovered: [], providersByConsumer: {} };
+
+  // ── P3b gateHealth : résultat de gate → fichier → manifeste → feature ────
+  // canonique → gateHealth. Projection pure au-dessus de docs/GATE_FINDINGS.json
+  // (lui-même une simple normalisation de gates existants, cf. gen-gate-findings.js)
+  // et de bfg.edges.implementedBy (même autorité que le reste de Feature 360).
+  // Aucun nouveau gate, aucune règle métier recalculée, aucun score opaque —
+  // uniquement une agrégation de verdicts avec conservation intégrale des
+  // messages sources.
+  const gateFindingsDoc = loadGateFindings();
+  const fileFeatureIndex = buildFileFeatureIndex(bfg.edges.implementedBy);
+  const gateProjection = projectGateFindings(gateFindingsDoc.findings, fileFeatureIndex, names);
+  const gateFindingsByFeature = new Map();
+  for (const f of gateProjection.attributed) {
+    if (!gateFindingsByFeature.has(f.resolvedFeature)) gateFindingsByFeature.set(f.resolvedFeature, []);
+    gateFindingsByFeature.get(f.resolvedFeature).push(f);
+  }
 
   // ── Construction par feature ──────────────────────────────────────────────
   const features = featureNodes.map(node => buildFeature(node));
@@ -412,6 +444,9 @@ function build() {
     }
     const sortedDebtItems = sortBy(debtItems, d => `${d.type}::${d.evidence}`);
 
+    // ── Gate health (P3b) — agrégation pure des verdicts déjà projetés ────
+    const gateHealth = computeGateHealth(id, gateFindingsByFeature.get(id) || []);
+
     return {
       id, kind: identity.kind, status: identity.status,
       manifestFile: manifestOk ? norm(path.relative(ROOT, resolveManifestPath(node.file))) : null,
@@ -428,6 +463,7 @@ function build() {
       technicalContext,
       boundaryHealth,
       governanceHealth,
+      gateHealth,
       architecturalDebt: { debtCount: sortedDebtItems.length, debtItems: sortedDebtItems },
       evidence: {
         source: 'docs/BUSINESS_FEATURE_GRAPH.json',
@@ -451,6 +487,21 @@ function build() {
     ambiguousOwnershipSignals: features.reduce((s, f) => s + f.governanceHealth.ambiguousOwnershipCount, 0),
     ontologyGaps: (ontologyGapCoverage.uncovered || []).length,
     debtItemsTotal: features.reduce((s, f) => s + f.architecturalDebt.debtCount, 0),
+    gateHealthy: features.filter(f => f.gateHealth.status === 'HEALTHY').length,
+    gateBlocked: features.filter(f => f.gateHealth.status === 'BLOCKED').length,
+  };
+
+  // ── Intégrité de la projection gateHealth — jamais silencieuse ──────────
+  const projectionIntegrity = {
+    gateFindingsVersion: gateFindingsDoc.version,
+    gateSourcesTotal: (gateFindingsDoc.sources || []).length,
+    gateSourcesFailed: (gateFindingsDoc.sources || []).filter(s => s.status === 'failed').length,
+    totalFindings: gateFindingsDoc.findings.length,
+    attributedFindings: gateProjection.attributed.length,
+    unattributedFindingsCount: gateProjection.unattributedFindings.length,
+    unattributedFindings: gateProjection.unattributedFindings,
+    unprojectableFiles: gateProjection.unprojectableFiles,
+    multiProjectedFiles: gateProjection.multiProjectedFiles,
   };
 
   return {
@@ -460,6 +511,7 @@ function build() {
       generatedFrom: bfg.generatedFrom,
     },
     summary,
+    projectionIntegrity,
     features,
   };
 }
@@ -521,7 +573,105 @@ function checkInverseConsistency(features) {
   return mismatches;
 }
 
+// ── P3b gateHealth — fonctions pures ────────────────────────────────────────
+
+// Construit l'index fichier -> [features] a partir de bfg.edges.implementedBy
+// (meme autorite que le reste de Feature 360, aucune nouvelle source). Un
+// fichier declare par plusieurs features apparait sous plusieurs entrees —
+// c'est justement ce que projectGateFindings doit detecter et bloquer.
+function buildFileFeatureIndex(implementedByEdges) {
+  const index = new Map(); // file normalise -> Set(feature)
+  for (const e of implementedByEdges || []) {
+    const file = norm(e.resolvedPath || e.declared || e.file);
+    if (!index.has(file)) index.set(file, new Set());
+    index.get(file).add(e.feature);
+  }
+  return index;
+}
+
+// Projette une liste de findings (gate, scope, type, verdict, feature, file,
+// message) vers leur feature canonique, via file en priorite (source la plus
+// fiable — implementedBy), sinon via feature declare directement par le gate
+// (valide contre l'ensemble des features canoniques). Ne devine jamais :
+// - fichier absent de l'index                -> unprojectableFiles (bloque)
+// - fichier revendique par >1 feature         -> multiProjectedFiles (bloque)
+// - ni fichier exploitable ni feature valide  -> unattributedFindings (bloque)
+// Retourne { attributed, unattributedFindings, unprojectableFiles, multiProjectedFiles }.
+function projectGateFindings(findings, fileFeatureIndex, canonicalFeatureNames) {
+  const attributed = [];
+  const unattributedFindings = [];
+  const unprojectableFilesSet = new Set();
+  const multiProjectedByFile = new Map(); // file -> Set(features)
+
+  for (const finding of findings || []) {
+    if (finding.file) {
+      const file = norm(finding.file);
+      const owners = fileFeatureIndex.get(file);
+      if (!owners || owners.size === 0) {
+        unprojectableFilesSet.add(file);
+        unattributedFindings.push(finding);
+        continue;
+      }
+      if (owners.size > 1) {
+        if (!multiProjectedByFile.has(file)) multiProjectedByFile.set(file, new Set(owners));
+        unattributedFindings.push(finding);
+        continue;
+      }
+      attributed.push({ ...finding, resolvedFeature: [...owners][0] });
+      continue;
+    }
+
+    if (finding.feature) {
+      const candidates = String(finding.feature).split(',').map(s => s.trim()).filter(Boolean);
+      const valid = candidates.filter(c => canonicalFeatureNames.has(c));
+      if (valid.length === 1) {
+        attributed.push({ ...finding, resolvedFeature: valid[0] });
+        continue;
+      }
+      // 0 ou >1 correspondance valide : pas d'attribution exploitable, jamais devine.
+      unattributedFindings.push(finding);
+      continue;
+    }
+
+    // ni file ni feature : aucune attribution exploitable.
+    unattributedFindings.push(finding);
+  }
+
+  return {
+    attributed,
+    unattributedFindings,
+    unprojectableFiles: sortBy([...unprojectableFilesSet], x => x),
+    multiProjectedFiles: sortBy(
+      [...multiProjectedByFile.entries()].map(([file, feats]) => ({ file, features: sortBy([...feats], x => x) })),
+      m => m.file
+    ),
+  };
+}
+
+// Agrege des findings deja attribues a UNE feature en gateHealth. Agrege
+// uniquement les verdicts (fail/warn -> status) — ne recalcule, ne
+// reformule et ne score jamais les messages sources, conserves tels quels.
+// Toujours present (meme vide) : gateHealth ne doit jamais etre absent.
+function computeGateHealth(featureId, attributedFindingsForFeature) {
+  const findings = attributedFindingsForFeature || [];
+  const failCount = findings.filter(f => f.verdict === 'fail').length;
+  const warnCount = findings.filter(f => f.verdict === 'warn').length;
+  const status = failCount > 0 ? 'BLOCKED' : (warnCount > 0 ? 'ATTENTION' : 'HEALTHY');
+  const gatesReporting = sortBy([...new Set(findings.map(f => f.gate))], x => x);
+  return {
+    status,
+    failCount,
+    warnCount,
+    gatesReporting,
+    findings: sortBy(
+      findings.map(f => ({ gate: f.gate, scope: f.scope, type: f.type, verdict: f.verdict, file: f.file || null, message: f.message })),
+      f => `${f.gate}::${f.type}::${f.message}`
+    ),
+  };
+}
+
 module.exports = {
   build, VERSION, BUSINESS_FAMILIES, TECHNICAL_FAMILIES,
   classifyPairsToBusinessEdges, computeBoundaryStatus, tableOwnershipStatus, checkInverseConsistency,
+  buildFileFeatureIndex, projectGateFindings, computeGateHealth,
 };

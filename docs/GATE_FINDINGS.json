@@ -1,0 +1,149 @@
+{
+  "version": "GF-1.0",
+  "generatedAt": "2026-07-27",
+  "sources": [
+    {
+      "gate": "gate:feature-registry-check",
+      "scope": "root",
+      "script": "scripts/feature-registry-check.js",
+      "status": "ok",
+      "errorCount": 0,
+      "warningCount": 0
+    },
+    {
+      "gate": "gate:feature-registry-check",
+      "scope": "boutique",
+      "script": "public/boutique/scripts/feature-registry-check.js",
+      "status": "ok",
+      "errorCount": 0,
+      "warningCount": 0
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "script": "scripts/feature-classification-check.js",
+      "status": "ok",
+      "errorCount": 0,
+      "warningCount": 13
+    }
+  ],
+  "findings": [
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "auth-identity",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "auth",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "catalog",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "customs",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "documents",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "economic-engine",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "infrastructure",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "inventory",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "logistics",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "orders",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "payments",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "refunds",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "verdict": "warn",
+      "type": "CLASSIFICATION-MISSING",
+      "feature": "sourcing",
+      "file": null,
+      "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    }
+  ]
+}

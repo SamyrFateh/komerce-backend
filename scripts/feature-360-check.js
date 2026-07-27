@@ -112,7 +112,8 @@ for (const f of model.features) {
 const model2 = build();
 for (let i = 0; i < model.features.length; i++) {
   const a = model.features[i], b = model2.features[i];
-  if (a.boundaryHealth.status !== b.boundaryHealth.status || a.governanceHealth.status !== b.governanceHealth.status) {
+  if (a.boundaryHealth.status !== b.boundaryHealth.status || a.governanceHealth.status !== b.governanceHealth.status
+      || a.gateHealth.status !== b.gateHealth.status) {
     fail('NON_DETERMINISTIC_HEALTH', a.id);
   }
 }
@@ -131,6 +132,29 @@ for (const f of model.features) {
   if (f.architecturalDebt.debtCount !== f.architecturalDebt.debtItems.length) {
     fail('DEBT_COUNT_MISMATCH', f.id);
   }
+}
+
+// ── 8. gateHealth (P3b) — présence sur 28/28, projection jamais silencieuse ─
+for (const f of model.features) {
+  if (!f.gateHealth) { fail('GATE_HEALTH_MISSING', f.id); continue; }
+  if (!['HEALTHY', 'ATTENTION', 'BLOCKED'].includes(f.gateHealth.status)) {
+    fail('GATE_HEALTH_INVALID_STATUS', `${f.id}: ${f.gateHealth.status}`);
+  }
+  for (const finding of f.gateHealth.findings) {
+    if (!finding.message || !finding.message.length) {
+      fail('GATE_FINDING_MESSAGE_LOST', `${f.id}: ${finding.gate}/${finding.type}`);
+    }
+  }
+}
+const pi = model.projectionIntegrity;
+if (pi.unprojectableFiles.length) {
+  fail('GATE_FINDING_FILE_UNPROJECTABLE', pi.unprojectableFiles.join(', '));
+}
+if (pi.multiProjectedFiles.length) {
+  fail('GATE_FINDING_FILE_MULTI_PROJECTED', pi.multiProjectedFiles.map(m => `${m.file} -> ${m.features.join(',')}`).join('; '));
+}
+if (pi.unattributedFindingsCount > 0) {
+  fail('GATE_FINDING_UNATTRIBUTED', `${pi.unattributedFindingsCount} finding(s) sans attribution exploitable`);
 }
 
 // ── Rapport ────────────────────────────────────────────────────────────

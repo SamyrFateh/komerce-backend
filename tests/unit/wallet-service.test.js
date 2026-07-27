@@ -415,6 +415,59 @@ describe('applyToOrder()', () => {
       walletService.applyToOrder(mockClient, { userId: 'user-1', orderId: 'order-1', amountKmf: 500 })
     ).rejects.toThrow('Rien à appliquer');
   });
+
+  // ── Reproduction exacte du défaut clôturé (RECONCILIATION §4.7) ──────────
+  // 1. application wallet partielle lors de la création (déjà persistée :
+  //    wallet_applied_kmf > 0, payment_status = 'pending', total_kmf > 0
+  //    non couvert) ;
+  // 2. second appel /wallet/apply -> applyToOrder() avec la même clé
+  //    d'idempotence checkout_<orderId> (stable, cf. commentaire du contrat
+  //    au-dessus de applyToOrder) ;
+  // 3. debit() retrouve la transaction existante -> duplicate:true ;
+  // 4. AUCUNE nouvelle requête de débit (balance, lot, consumption) ;
+  // 5. wallet_applied_kmf n'est PAS réécrit (aucun UPDATE orders émis) ;
+  // 6. payment_status n'est PAS touché (markPaid() jamais appelé).
+  test('P5-wallet — second appel avec la même clé checkout_<orderId> : duplicate:true, aucun nouveau débit, wallet_applied_kmf et payment_status inchangés', async () => {
+    const ALREADY_APPLIED = 1200; // partiel, appliqué à la création
+    const TOTAL_KMF = 3000;       // reste à payer > 0, donc pas encore 'paid'
+
+    mockQuery
+      // 1) SELECT order FOR UPDATE — état déjà persisté après l'application partielle
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'order-1', user_id: 'user-1', reference: 'KMC-777',
+          total_kmf: TOTAL_KMF, wallet_applied_kmf: ALREADY_APPLIED,
+          payment_status: 'pending',
+        }],
+      })
+      // 2) getOrCreateWallet (no forUpdate)
+      .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 5000 }] })
+      // 3) debit(): idempotence check sur checkout_order-1 -> transaction déjà existante
+      .mockResolvedValueOnce({ rows: [{ id: 'tx-existing', idempotency_key: 'checkout_order-1', amount_kmf: ALREADY_APPLIED }] });
+
+    const queriesBeforeCall = mockQuery.mock.calls.length; // 0 — juste posé pour lisibilité
+
+    const result = await walletService.applyToOrder(mockClient, {
+      userId: 'user-1', orderId: 'order-1', amountKmf: 1800, // le client retente le solde restant
+    });
+
+    // duplicate:true, aucune donnée financière inventée/rejouée
+    expect(result.duplicate).toBe(true);
+    expect(result.applied_kmf).toBe(ALREADY_APPLIED);
+    expect(result.remaining_to_pay).toBe(TOTAL_KMF - ALREADY_APPLIED);
+
+    // Exactement 3 requêtes exécutées : SELECT order, getOrCreateWallet, dup-check.
+    // Rien de plus — donc aucun UPDATE balance/lot/consumption/orders, et
+    // markPaid() (qui commencerait par une requête supplémentaire) jamais appelé.
+    expect(mockQuery.mock.calls.length).toBe(queriesBeforeCall + 3);
+
+    // Aucun appel ne porte sur orders.wallet_applied_kmf ou payment_status —
+    // seule requête UPDATE possible serait un 4e appel, absent ici.
+    const updateOrdersCalls = mockQuery.mock.calls.filter(
+      ([sql]) => /UPDATE\s+orders/i.test(sql)
+    );
+    expect(updateOrdersCalls.length).toBe(0);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

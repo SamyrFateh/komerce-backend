@@ -57,8 +57,33 @@ function renderScorecard(s) {
     `- Ambiguous ownership signals : **${s.ambiguousOwnershipSignals}**`,
     `- Ontology gaps : **${s.ontologyGaps}**`,
     `- Debt items (total) : **${s.debtItemsTotal}**`,
+    `- Gate health — healthy : **${s.gateHealthy}** · blocked : **${s.gateBlocked}**`,
     '',
   ].join('\n');
+}
+
+function renderProjectionIntegrity(pi) {
+  const lines = [
+    '## Gate findings — intégrité de projection',
+    '',
+    `- Source : \`docs/GATE_FINDINGS.json\` (version ${pi.gateFindingsVersion || '_absente_'})`,
+    `- Sources de gates : **${pi.gateSourcesTotal}** (${pi.gateSourcesFailed} en échec)`,
+    `- Findings : **${pi.totalFindings}** total, **${pi.attributedFindings}** attribué(s), **${pi.unattributedFindingsCount}** sans attribution exploitable`,
+    `- Fichiers non projetables : **${pi.unprojectableFiles.length}**`,
+    `- Fichiers multi-projetés : **${pi.multiProjectedFiles.length}**`,
+    '',
+  ];
+  if (pi.unprojectableFiles.length) {
+    lines.push('**Non projetables** :');
+    for (const f of pi.unprojectableFiles) lines.push(`- ${f}`);
+    lines.push('');
+  }
+  if (pi.multiProjectedFiles.length) {
+    lines.push('**Multi-projetés** :');
+    for (const m of pi.multiProjectedFiles) lines.push(`- ${m.file} → ${m.features.join(', ')}`);
+    lines.push('');
+  }
+  return lines.join('\n');
 }
 
 function renderTable(features) {
@@ -129,6 +154,13 @@ function renderFeatureSection(f) {
   lines.push(`**Boundary health** : ${statusBadge(bh.status)} — cross-feature imports: ${bh.directCrossFeatureImports}, runtime cycles: ${bh.runtimeCycles}, unclassified: ${bh.unclassifiedDependencies}, declared-not-observed: ${bh.declaredNotObserved}`);
   const gh = f.governanceHealth;
   lines.push(`**Governance health** : ${statusBadge(gh.status)} — orphan files: ${gh.orphanFiles}, unresolved internal APIs: ${gh.unresolvedInternalApis}, declared-only deps: ${gh.declaredOnlyDependencyCount}, ambiguous ownership: ${gh.ambiguousOwnershipCount}, ontology gaps: ${gh.ontologyGapsLinked}`);
+  const gah = f.gateHealth;
+  lines.push(`**Gate health** : ${statusBadge(gah.status)} — gates: ${gah.gatesReporting.join(', ') || '_aucun_'}, fail: ${gah.failCount}, warn: ${gah.warnCount}`);
+  if (gah.findings.length) {
+    for (const finding of gah.findings) {
+      lines.push(`  - [${finding.gate}] ${finding.verdict === 'fail' ? '🔴' : '🟠'} ${finding.type} — ${finding.message}${finding.file ? ` (${finding.file})` : ''}`);
+    }
+  }
   lines.push('');
 
   // Debt
@@ -158,6 +190,7 @@ function renderMd(model) {
   parts.push('# FEATURE 360', '');
   parts.push('_Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7.3 déjà gouvernée. Feature 360 ne crée aucune nouvelle vérité architecturale ; toute correction se fait dans la source autoritaire existante._', '');
   parts.push(renderScorecard(model.summary));
+  parts.push(renderProjectionIntegrity(model.projectionIntegrity));
   parts.push(renderTable(model.features));
   for (const f of model.features) parts.push(renderFeatureSection(f));
   return parts.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';

@@ -111,6 +111,77 @@ test('F360-H — debt item sans type reconnu ou sans evidence -> détecté comme
   assert.ok(!fake2.evidence.length, 'evidence vide doit être rejetée (pas de dette sans preuve)');
 });
 
+// ─── F360-I — fichier non projetable (aucune feature ne le revendique) ─────
+test('F360-I — finding avec file inconnu de toute feature -> unprojectableFiles, jamais silencieusement ignoré', () => {
+  const index = b.buildFileFeatureIndex([{ feature: 'orders', file: 'services/orders/create.js' }]);
+  const findings = [{ gate: 'gate:x', type: 'X', verdict: 'fail', feature: null, file: 'services/ghost/orphan.js', message: 'msg' }];
+  const proj = b.projectGateFindings(findings, index, new Set(['orders']));
+  assert.strictEqual(proj.attributed.length, 0);
+  assert.strictEqual(proj.unattributedFindings.length, 1);
+  assert.deepStrictEqual(proj.unprojectableFiles, ['services/ghost/orphan.js']);
+  assert.strictEqual(proj.multiProjectedFiles.length, 0);
+});
+
+// ─── F360-J — fichier projeté sur plusieurs features ───────────────────────
+test('F360-J — finding avec file revendiqué par 2 features -> multiProjectedFiles, pas d\'attribution silencieuse', () => {
+  const index = b.buildFileFeatureIndex([
+    { feature: 'orders', file: 'services/shared/util.js' },
+    { feature: 'wallet', file: 'services/shared/util.js' },
+  ]);
+  const findings = [{ gate: 'gate:x', type: 'X', verdict: 'warn', feature: null, file: 'services/shared/util.js', message: 'msg' }];
+  const proj = b.projectGateFindings(findings, index, new Set(['orders', 'wallet']));
+  assert.strictEqual(proj.attributed.length, 0);
+  assert.strictEqual(proj.unattributedFindings.length, 1);
+  assert.strictEqual(proj.multiProjectedFiles.length, 1);
+  assert.deepStrictEqual(proj.multiProjectedFiles[0].features, ['orders', 'wallet']);
+});
+
+// ─── F360-K — finding sans aucune attribution exploitable ──────────────────
+test('F360-K — finding sans feature ni file -> unattributedFindings, jamais perdu', () => {
+  const index = b.buildFileFeatureIndex([]);
+  const findings = [{ gate: 'gate:x', type: 'X', verdict: 'fail', feature: null, file: null, message: 'msg orphelin' }];
+  const proj = b.projectGateFindings(findings, index, new Set(['orders']));
+  assert.strictEqual(proj.attributed.length, 0);
+  assert.strictEqual(proj.unattributedFindings.length, 1);
+  assert.strictEqual(proj.unprojectableFiles.length, 0, 'ne doit pas être confondu avec un fichier non projetable (il n\'y a pas de fichier du tout)');
+  assert.strictEqual(proj.multiProjectedFiles.length, 0);
+});
+
+// ─── F360-L — gateHealth agrège les verdicts, jamais un score, et conserve
+//              les messages détaillés d'origine ───────────────────────────
+test('F360-L — computeGateHealth : 1 fail -> BLOCKED, message détaillé conservé tel quel', () => {
+  const attributed = [
+    { gate: 'gate:css-vars', type: 'UNKNOWN-TOKEN', verdict: 'fail', file: 'css/components.css', message: '--font-body inconnu, non déclaré dans tokens.css', resolvedFeature: 'catalog' },
+  ];
+  const health = b.computeGateHealth('catalog', attributed);
+  assert.strictEqual(health.status, 'BLOCKED');
+  assert.strictEqual(health.failCount, 1);
+  assert.strictEqual(health.findings[0].message, '--font-body inconnu, non déclaré dans tokens.css');
+});
+test('F360-L-bis — 0 fail, ≥1 warn -> ATTENTION (jamais BLOCKED pour un simple avertissement)', () => {
+  const attributed = [
+    { gate: 'gate:x', type: 'W', verdict: 'warn', file: null, message: 'avertissement', resolvedFeature: 'orders' },
+  ];
+  const health = b.computeGateHealth('orders', attributed);
+  assert.strictEqual(health.status, 'ATTENTION');
+});
+test('F360-L-ter — aucun finding -> HEALTHY, gateHealth reste présent (jamais absent)', () => {
+  const health = b.computeGateHealth('payments', []);
+  assert.strictEqual(health.status, 'HEALTHY');
+  assert.deepStrictEqual(health.findings, []);
+  assert.deepStrictEqual(health.gatesReporting, []);
+});
+
+// ─── Bonus — build() réel : gateHealth présent sur 28/28, aucune ambiguïté ──
+test('Bonus — build() réel : gateHealth présent sur chaque feature, 0 fichier non projetable, 0 multi-projeté', () => {
+  const model = b.build();
+  assert.strictEqual(model.features.every(f => !!f.gateHealth), true);
+  assert.strictEqual(model.projectionIntegrity.unprojectableFiles.length, 0,
+    `fichiers non projetables : ${model.projectionIntegrity.unprojectableFiles.join(', ')}`);
+  assert.strictEqual(model.projectionIntegrity.multiProjectedFiles.length, 0,
+    `fichiers multi-projetés : ${model.projectionIntegrity.multiProjectedFiles.map(m => m.file).join(', ')}`);
+});
+
 // ─── Bonus — la vraie projection (build() réel) ne doit jamais fuiter de bruit ─
 test('Bonus — build() réel : 0 fuite de bruit technique/projection dans businessDependencies', () => {
   const model = b.build();
