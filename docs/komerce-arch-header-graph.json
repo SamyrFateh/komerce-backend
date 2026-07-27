@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 784,
-    "edges": 4394,
+    "edges": 4395,
     "dbTables": 116,
     "doctrines": 157,
     "impactAreas": 129,
@@ -14377,7 +14377,8 @@
       ],
       "usedBy": [
         "services/verify-qr-collection.js",
-        "services/scan-operations.js"
+        "services/scan-operations.js",
+        "routes/orders/qr.js"
       ],
       "dbRead": [
         "orders",
@@ -40544,6 +40545,12 @@
       "label": "services/scan-operations.js"
     },
     {
+      "from": "routes/orders/qr.js",
+      "to": "services/qr-collection-core.js",
+      "type": "uses",
+      "label": "routes/orders/qr.js"
+    },
+    {
       "from": "services/qr-collection-core.js",
       "to": "db:orders",
       "type": "db-read",
@@ -53370,6 +53377,7 @@
         "impact:checkout",
         "impact:orders",
         "middleware/auth.js",
+        "services/qr-collection-core.js",
         "services/verify-qr-collection.js",
         "utils/logger.js",
         "utils/rules.js"
@@ -60353,7 +60361,8 @@
       ],
       "directUsedBy": [
         "services/verify-qr-collection.js",
-        "services/scan-operations.js"
+        "services/scan-operations.js",
+        "routes/orders/qr.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -60381,6 +60390,7 @@
         "db:users",
         "doctrine:qr_pickup_single_validation (P5-L5)",
         "impact:orders",
+        "routes/orders/qr.js",
         "services/order-status-machine.js",
         "services/scan-operations.js",
         "services/verify-qr-collection.js",

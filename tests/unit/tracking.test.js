@@ -273,3 +273,15 @@ describe('POST /api/tracking/:token/verify-pickup', () => {
     expect(res.body).toEqual({ valid: false });
   });
 });
+
+describe('DEBT-11 — suppression du writer tracking mort', () => {
+  // P5 §4.6 : generateTrackingToken() écrivait qr_token sans expiration, en
+  // dehors de toute transaction, et n'avait plus aucun appelant en dehors de
+  // ce fichier depuis que l'émission est centralisée dans
+  // qr-collection-core.js::issueOrRotateQrToken. Ce test verrouille sa
+  // disparition définitive du module.
+  test('generateTrackingToken n\'existe plus sur le router exporté', () => {
+    const router = require('../../routes/tracking');
+    expect(router.generateTrackingToken).toBeUndefined();
+  });
+});

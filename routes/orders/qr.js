@@ -27,10 +27,10 @@
 
 const express = require('express');
 const router  = express.Router();
-const crypto  = require('crypto');
 const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { getRule }                   = require('../../utils/rules');
+const { issueOrRotateQrToken }      = require('../../services/qr-collection-core');
 const log = require('../../utils/logger').child({ module: 'qr' });
 
 // ─── POST /api/orders/:id/qr-token ───────────────────────────────────────────
@@ -43,55 +43,54 @@ const log = require('../../utils/logger').child({ module: 'qr' });
 router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']), async (req, res, next) => {
   try {
     const { id } = req.params;
+    const qrHours = await getRule('QR_EXPIRATION_HOURS', 48);
 
-    // Vérifier que la commande est dans un état compatible (available)
-    const { rows: [order] } = await db.query(
-      `SELECT o.*, rc.full_name AS recipient_name, r.name AS relais_name
-       FROM orders o
-       LEFT JOIN recipients rc ON rc.id = o.recipient_id
-       LEFT JOIN relais r ON r.id = o.relais_id
-       WHERE o.id = $1`,
-      [id]
-    );
-
-    if (!order) {
-      return res.status(404).json({ error: 'Commande introuvable' });
-    }
-
-    // GOV-02 (volet 2) — IDOR cross-relais : un agent_relais ne peut générer
-    // un QR de retrait que pour une commande de SON relais. admin a une
-    // portée globale, non concerné par ce garde-fou.
-    if (req.user.role === 'agent_relais' && String(order.relais_id) !== String(req.user.relais_id)) {
-      log.warn(`[IDOR] bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → order ${order.id} (relais ${order.relais_id})`);
-      return res.status(403).json({ error: "Cette commande n'appartient pas à votre relais" });
-    }
-
-    if (order.status !== 'available') {
-      return res.status(422).json({
-        error: `Impossible de générer un QR — statut actuel : ${order.status} (attendu : available)`,
-        current_status: order.status,
+    // [TOK-01] QR_SECRET reste requis au boot (fail-closed via
+    // bootstrap/env.js, inchangé) mais n'entre plus dans le calcul du
+    // token — inchangé par rapport à l'ancien comportement.
+    //
+    // P5 §4.6 — cette route ne contient plus de SQL sur qr_token /
+    // qr_expires_at : l'émission/rotation, le verrou de ligne et le
+    // contrôle de statut sont centralisés dans qr-collection-core.js.
+    // Seule la règle d'autorisation IDOR (spécifique à cette route) reste
+    // ici, appliquée via preWriteCheck sur la ligne déjà verrouillée.
+    //
+    // Même discipline transactionnelle que services/verify-qr-collection.js :
+    // BEGIN posé ici, le noyau fait ROLLBACK lui-même sur tout `ok:false`
+    // (ne pas utiliser db.withTransaction, qui commettrait après un retour
+    // non-throwing même en cas d'échec déjà annulé par le noyau).
+    const client = await db.getClient();
+    let result;
+    try {
+      await client.query('BEGIN');
+      result = await issueOrRotateQrToken({
+        client,
+        orderId: id,
+        expirationHours: qrHours,
+        preWriteCheck: (order) => {
+          // GOV-02 (volet 2) — IDOR cross-relais : un agent_relais ne peut
+          // générer un QR de retrait que pour une commande de SON relais.
+          // admin a une portée globale, non concerné par ce garde-fou.
+          if (req.user.role === 'agent_relais' && String(order.relais_id) !== String(req.user.relais_id)) {
+            log.warn(`[IDOR] bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → order ${order.id} (relais ${order.relais_id})`);
+            return { ok: false, response: { status: 403, body: { error: "Cette commande n'appartient pas à votre relais" } } };
+          }
+          return { ok: true };
+        },
       });
+      if (result.ok) await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
     }
 
-    // [TOK-01] Token QR = CSPRNG pur (crypto.randomBytes), non dérivé des
-    // inputs (id/relaisId/timestamp/QR_SECRET). QR_SECRET reste requis au
-    // boot (fail-closed via bootstrap/env.js, inchangé) mais n'entre plus
-    // dans le calcul du token — le token est stocké puis relu par égalité
-    // stricte (WHERE qr_token = $1), jamais recalculé.
-    const token = crypto.randomBytes(24).toString('hex'); // 48 car. hex
+    if (!result.ok) {
+      return res.status(result.response.status).json(result.response.body);
+    }
 
-    const qrHours   = await getRule('QR_EXPIRATION_HOURS', 48);
-    const expiration = new Date(Date.now() + qrHours * 60 * 60 * 1000);
-
-    // Sauvegarder en DB
-    await db.query(
-      `UPDATE orders
-       SET qr_token = $1, qr_expires_at = $2, updated_at = NOW()
-       WHERE id = $3`,
-      [token, expiration, id]
-    );
-
-    log.info(`[QR-TOKEN] Généré pour ${order.reference} — token: ${token.slice(0, 8)}... expires: ${expiration.toISOString()}`);
+    const { order, token, expiresAt } = result;
 
     // Payload QR complet — sera encodé en JSON dans le QR code côté frontend
     const qr_payload = {
@@ -101,13 +100,13 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
       relaisId:   order.relais_id,
       relaisName: order.relais_name,
       token,
-      expiration: expiration.toISOString(),
+      expiration: expiresAt.toISOString(),
     };
 
     res.json({
       success:    true,
       token,
-      expiration: expiration.toISOString(),
+      expiration: expiresAt.toISOString(),
       qr_payload, // le frontend encode ce JSON en QR
     });
 

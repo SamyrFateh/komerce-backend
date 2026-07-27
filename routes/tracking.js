@@ -348,24 +348,6 @@ async function generatePickupCode(orderId) {
 }
 
 /**
- * Generate qr_token for a new order (call at order creation)
- */
-async function generateTrackingToken(orderId) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = '';
-  const bytes = crypto.randomBytes(6);
-  for (let i = 0; i < 6; i++) {
-    token += chars[bytes[i] % chars.length];
-  }
-  await pool.query(
-    `UPDATE orders SET qr_token = $1 WHERE id = $2 AND qr_token IS NULL`,
-    [token, orderId]
-  );
-  log.info(`📱 Tracking token generated for order ${orderId}: ${token}`);
-  return token;
-}
-
-/**
  * Mask phone number for privacy: +2693221111 → +269***1111
  */
 function maskPhone(phone) {
@@ -375,5 +357,4 @@ function maskPhone(phone) {
 
 // Export router + utility functions
 router.generatePickupCode = generatePickupCode;
-router.generateTrackingToken = generateTrackingToken;
 module.exports = router;

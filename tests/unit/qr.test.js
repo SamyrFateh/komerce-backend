@@ -16,8 +16,35 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
+// GET /retrait/:token reste sur db.query direct (lecture publique, hors P5 §4.6).
 const mockQuery = jest.fn();
-jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
+
+// POST /:id/qr-token est désormais une façade transactionnelle sur
+// db.getClient() qui délègue à issueOrRotateQrToken (P5 §4.6) — le noyau
+// lui-même est testé séparément dans qr-collection-core-emission.test.js ;
+// ici on ne teste que l'orchestration de la route (BEGIN/COMMIT/ROLLBACK,
+// IDOR via preWriteCheck, mapping résultat → réponse HTTP).
+const mockIssueOrRotateQrToken = jest.fn();
+jest.mock('../../services/qr-collection-core', () => ({
+  issueOrRotateQrToken: (...args) => mockIssueOrRotateQrToken(...args),
+}));
+
+function makeFakeClient() {
+  const calls = [];
+  return {
+    calls,
+    released: false,
+    query: jest.fn(async (sql) => { calls.push(String(sql).trim()); return { rows: [] }; }),
+    release: jest.fn(function () { this.released = true; }),
+  };
+}
+
+let fakeClient;
+const mockGetClient = jest.fn();
+jest.mock('../../db', () => ({
+  query: (...args) => mockQuery(...args),
+  getClient: (...args) => mockGetClient(...args),
+}));
 jest.mock('../../utils/rules', () => ({ getRule: jest.fn() }));
 jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() })),
@@ -35,6 +62,9 @@ beforeEach(() => {
   jest.clearAllMocks();
   process.env.QR_SECRET = 'test_qr_secret_min_32_chars_aaaaaaaaaaaaaaaa';
   currentUser = { id: 'admin-1', role: 'admin' };
+  fakeClient = makeFakeClient();
+  mockGetClient.mockResolvedValue(fakeClient);
+  getRule.mockResolvedValue(48);
 
   app = express();
   app.use(express.json());
@@ -51,56 +81,123 @@ describe('POST /:id/qr-token — accès', () => {
     currentUser = { id: 'u1', role: 'client' };
     const res = await request(app).post('/api/orders/order-1/qr-token');
     expect(res.status).toBe(403);
+    expect(mockGetClient).not.toHaveBeenCalled();
   });
 });
 
-describe('POST /:id/qr-token — nominal', () => {
-  it('commande introuvable → 404', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+describe('POST /:id/qr-token — orchestration transactionnelle', () => {
+  it('BEGIN posé avant l\'appel au noyau, COMMIT après un résultat ok:true, client libéré', async () => {
+    mockIssueOrRotateQrToken.mockResolvedValue({
+      ok: true, order: { id: 'order-1', reference: 'ORD-1' }, token: 'a'.repeat(48), expiresAt: new Date(), rotated: false,
+    });
+
+    const res = await request(app).post('/api/orders/order-1/qr-token');
+
+    expect(res.status).toBe(200);
+    expect(fakeClient.calls[0]).toBe('BEGIN');
+    expect(fakeClient.calls).toContain('COMMIT');
+    expect(fakeClient.calls).not.toContain('ROLLBACK');
+    expect(fakeClient.released).toBe(true);
+    expect(mockIssueOrRotateQrToken).toHaveBeenCalledWith(expect.objectContaining({
+      client: fakeClient, orderId: 'order-1', expirationHours: 48,
+    }));
+  });
+
+  it('résultat ok:false → pas de COMMIT (le noyau a déjà fait ROLLBACK), statut/erreur du noyau propagés', async () => {
+    mockIssueOrRotateQrToken.mockResolvedValue({
+      ok: false, response: { status: 422, body: { error: 'Impossible de générer un QR — statut actuel : shipped (attendu : available)', current_status: 'shipped' } },
+    });
+
+    const res = await request(app).post('/api/orders/order-1/qr-token');
+
+    expect(res.status).toBe(422);
+    expect(res.body.current_status).toBe('shipped');
+    expect(fakeClient.calls).not.toContain('COMMIT');
+    expect(fakeClient.released).toBe(true);
+  });
+
+  it('commande introuvable (ok:false 404 du noyau) → 404 propagé', async () => {
+    mockIssueOrRotateQrToken.mockResolvedValue({
+      ok: false, response: { status: 404, body: { error: 'Commande introuvable' } },
+    });
     const res = await request(app).post('/api/orders/order-x/qr-token');
     expect(res.status).toBe(404);
   });
 
-  it('agent_relais sur commande d\'un autre relais → 403 (IDOR guard)', async () => {
+  it('le noyau lève une exception → ROLLBACK, client libéré, 500 via next(err)', async () => {
+    mockIssueOrRotateQrToken.mockRejectedValue(new Error('db down'));
+    const res = await request(app).post('/api/orders/order-1/qr-token');
+    expect(res.status).toBe(500);
+    expect(fakeClient.calls).toContain('ROLLBACK');
+    expect(fakeClient.released).toBe(true);
+  });
+
+  it('qrHours résolu via getRule est transmis au noyau (expirationHours)', async () => {
+    getRule.mockResolvedValue(72);
+    mockIssueOrRotateQrToken.mockResolvedValue({
+      ok: true, order: { id: 'order-1', reference: 'ORD-1' }, token: 'b'.repeat(48), expiresAt: new Date(), rotated: false,
+    });
+    await request(app).post('/api/orders/order-1/qr-token');
+    expect(mockIssueOrRotateQrToken).toHaveBeenCalledWith(expect.objectContaining({ expirationHours: 72 }));
+  });
+});
+
+describe('POST /:id/qr-token — IDOR via preWriteCheck', () => {
+  it('transmet un preWriteCheck qui bloque un agent_relais sur la commande d\'un autre relais', async () => {
     currentUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available', relais_id: 'relais-B' }] });
+    mockIssueOrRotateQrToken.mockImplementation(async ({ preWriteCheck }) => {
+      const authz = preWriteCheck({ id: 'order-1', relais_id: 'relais-B' });
+      if (!authz.ok) return authz;
+      return { ok: true, order: {}, token: 'c'.repeat(48), expiresAt: new Date(), rotated: false };
+    });
+
     const res = await request(app).post('/api/orders/order-1/qr-token');
     expect(res.status).toBe(403);
     expect(res.body.error).toContain('relais');
   });
 
-  it('agent_relais sur commande de son propre relais → autorisé (continue)', async () => {
+  it('agent_relais sur commande de son propre relais → preWriteCheck ok:true, continue', async () => {
     currentUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-A' };
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available', relais_id: 'relais-A', reference: 'ORD-1' }] })
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // UPDATE
-    getRule.mockResolvedValue(48);
+    mockIssueOrRotateQrToken.mockImplementation(async ({ preWriteCheck }) => {
+      const authz = preWriteCheck({ id: 'order-1', relais_id: 'relais-A' });
+      expect(authz.ok).toBe(true);
+      return {
+        ok: true,
+        order: { id: 'order-1', reference: 'ORD-1', relais_id: 'relais-A', relais_name: 'Relais A' },
+        token: 'd'.repeat(48), expiresAt: new Date(), rotated: false,
+      };
+    });
 
     const res = await request(app).post('/api/orders/order-1/qr-token');
     expect(res.status).toBe(200);
   });
 
-  it('statut commande != available → 422 avec statut courant', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'shipped', relais_id: 'r1' }] });
+  it('admin n\'est pas soumis au garde IDOR relais', async () => {
+    currentUser = { id: 'admin-1', role: 'admin' };
+    mockIssueOrRotateQrToken.mockImplementation(async ({ preWriteCheck }) => {
+      const authz = preWriteCheck({ id: 'order-1', relais_id: 'relais-Z' });
+      expect(authz.ok).toBe(true);
+      return { ok: true, order: {}, token: 'e'.repeat(48), expiresAt: new Date(), rotated: false };
+    });
     const res = await request(app).post('/api/orders/order-1/qr-token');
-    expect(res.status).toBe(422);
-    expect(res.body.current_status).toBe('shipped');
+    expect(res.status).toBe(200);
   });
+});
 
-  it('nominal → genere un token, l\'enregistre, retourne le qr_payload', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{
-        id: 'order-1', status: 'available', relais_id: 'relais-A',
-        reference: 'ORD-1', recipient_name: 'Jean Client', relais_name: 'Relais Moroni',
-      }] })
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // UPDATE
-    getRule.mockResolvedValue(48);
+describe('POST /:id/qr-token — construction du qr_payload', () => {
+  it('nominal → qr_payload complet, distingue rotated:false/true dans le résultat', async () => {
+    mockIssueOrRotateQrToken.mockResolvedValue({
+      ok: true,
+      order: { id: 'order-1', reference: 'ORD-1', recipient_name: 'Jean Client', relais_id: 'relais-A', relais_name: 'Relais Moroni' },
+      token: 'f'.repeat(48),
+      expiresAt: new Date(Date.now() + 48 * 3600 * 1000),
+      rotated: true,
+    });
 
     const res = await request(app).post('/api/orders/order-1/qr-token');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(typeof res.body.token).toBe('string');
-    expect(res.body.token).toHaveLength(48); // [TOK-01] crypto.randomBytes(24).toString('hex')
+    expect(res.body.token).toBe('f'.repeat(48));
     expect(res.body.qr_payload).toMatchObject({
       orderId: 'order-1',
       reference: 'ORD-1',
@@ -111,58 +208,15 @@ describe('POST /:id/qr-token — nominal', () => {
   });
 
   it('pas de recipient_name → fallback "Client"', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available', relais_id: null, reference: 'ORD-1' }] })
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
-    getRule.mockResolvedValue(48);
-
+    mockIssueOrRotateQrToken.mockResolvedValue({
+      ok: true,
+      order: { id: 'order-1', reference: 'ORD-1', recipient_name: null, relais_id: null, relais_name: null },
+      token: 'g'.repeat(48),
+      expiresAt: new Date(),
+      rotated: false,
+    });
     const res = await request(app).post('/api/orders/order-1/qr-token');
     expect(res.body.qr_payload.clientName).toBe('Client');
-  });
-
-  it('erreur DB → 500 via next(err)', async () => {
-    mockQuery.mockRejectedValueOnce(new Error('db down'));
-    const res = await request(app).post('/api/orders/order-1/qr-token');
-    expect(res.status).toBe(500);
-  });
-});
-
-// [TOK-01] Preuve : token QR = CSPRNG pur, non dérivé des inputs connus.
-// Le fail-closed QR_SECRET au boot est déjà prouvé par
-// tests/unit/bootstrap-env.test.js (préexistant, inchangé) — non dupliqué ici.
-describe('POST /:id/qr-token — TOK-01 (entropie token)', () => {
-  it('génère un token différent à chaque appel pour la même commande (non-déterministe)', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available', relais_id: 'relais-A', reference: 'ORD-1' }] })
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
-    getRule.mockResolvedValue(48);
-    const res1 = await request(app).post('/api/orders/order-1/qr-token');
-
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available', relais_id: 'relais-A', reference: 'ORD-1' }] })
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
-    getRule.mockResolvedValue(48);
-    const res2 = await request(app).post('/api/orders/order-1/qr-token');
-
-    expect(res1.body.token).not.toBe(res2.body.token);
-  });
-
-  it('le token ne dépend pas de QR_SECRET au runtime (génération indépendante du secret)', async () => {
-    const originalSecret = process.env.QR_SECRET;
-    try {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available', relais_id: 'relais-A', reference: 'ORD-1' }] })
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 });
-      getRule.mockResolvedValue(48);
-      process.env.QR_SECRET = 'un_autre_secret_completement_different_xx';
-      const res = await request(app).post('/api/orders/order-1/qr-token');
-
-      expect(res.status).toBe(200);
-      expect(res.body.token).toHaveLength(48);
-      expect(res.body.token).toMatch(/^[0-9a-f]{48}$/);
-    } finally {
-      process.env.QR_SECRET = originalSecret;
-    }
   });
 });
 
