@@ -1,6 +1,6 @@
 {
-  "version": "O6-1.2",
-  "_comment": "Ledger d'EXCEPTIONS O6 — porte UNIQUEMENT les paires O5 OBSERVED_UNDECLARED dont la politique de famille ne suffit pas à décider sans jugement humain. Une entrée dont la paire a disparu devient STALE et doit être supprimée ; l'historique appartient à Git.",
+  "version": "O6-1.0",
+  "_comment": "Ledger d'EXCEPTIONS O6 — porte uniquement les paires O5 OBSERVED_UNDECLARED dont la politique de famille ne suffit pas à décider sans jugement humain. Une entrée dont la paire a disparu devient STALE et doit être supprimée ; l'historique appartient à Git.",
   "exceptions": [
     {
       "from": "shared-cart",
@@ -36,6 +36,49 @@
         "public/boutique/js/b-modal-suggestions.js -> public/boutique/js/cart-product-summary.js"
       ],
       "reviewTrigger": "Revoir si recommendations acquiert des mutations de commande autres que l'ajout explicite au panier ou si plusieurs canaux reproduisent le même adaptateur."
+    },
+    {
+      "from": "auth-identity",
+      "to": "platform-ops",
+      "decision": "accepted-dependency",
+      "rationale": "La surface d'identité consomme les primitives techniques du shell — bus, store et utilitaires UI. Cette direction ne transfère aucune autorité métier à platform-ops et ne constitue pas un cycle de modules.",
+      "scope": [
+        "public/boutique/js/b-identity.js -> public/boutique/js/b-bus.js|b-store.js|b-utils.js",
+        "public/boutique/js/b-phone.js -> public/boutique/js/b-bus.js|b-store.js|b-utils.js"
+      ],
+      "reviewTrigger": "Revoir si platform-ops commence à interpréter des règles d'identité ou à persister un état d'authentification."
+    },
+    {
+      "from": "platform-ops",
+      "to": "auth-identity",
+      "decision": "accepted-dependency",
+      "rationale": "Le client API transversal expose des appels vers les endpoints d'authentification et le shell monte la surface identité. Il s'agit d'un adaptateur technique et de composition, sans ownership de la logique d'identité.",
+      "scope": [
+        "public/boutique/js/komerce-api.js -> /api/auth/*|/api/phone/*",
+        "public/boutique/js/main.js|b-nav.js|boutique.js -> modules auth-identity"
+      ],
+      "reviewTrigger": "Scinder le client API si des règles d'identité ou des mutations de session commencent à être implémentées dans platform-ops."
+    },
+    {
+      "from": "catalog",
+      "to": "platform-ops",
+      "decision": "accepted-dependency",
+      "rationale": "Le catalogue consomme le bus, le store, les utilitaires et l'ownership de scroll fournis par le socle. Ces primitives restent techniques et ne possèdent aucune règle catalogue.",
+      "scope": [
+        "public/boutique/js/b-catalog*.js|render/*|shop-schema.js -> b-bus.js|b-store.js|b-utils.js|b-scroll-owner.js"
+      ],
+      "reviewTrigger": "Revoir si une primitive platform-ops commence à connaître les catégories, produits, SKU, prix ou stocks."
+    },
+    {
+      "from": "platform-ops",
+      "to": "catalog",
+      "decision": "accepted-dependency",
+      "rationale": "Le shell monte les modules de découverte produit et le client API transversal appelle les endpoints catalogue. La couture est un wiring et un adaptateur d'interface ; platform-ops ne possède ni produit, ni prix, ni stock.",
+      "scope": [
+        "public/boutique/js/main.js|b-nav.js|boutique.js -> modules catalog",
+        "public/boutique/js/komerce-api.js -> /api/products*|/api/categories*"
+      ],
+      "reviewTrigger": "Scinder le client API si des règles catalogue sont introduites dans platform-ops ou si plusieurs consommateurs nécessitent un contrat frontend autonome."
     }
   ]
 }
