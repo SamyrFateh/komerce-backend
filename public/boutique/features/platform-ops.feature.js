@@ -25,6 +25,7 @@ module.exports = {
       'bootstrap de page et orchestration UI globale',
       'bus, store, client API, utilitaires et ownership du scroll',
       'navigation, anti-FOUC et composition responsive globale',
+      'adaptations visuelles globales mobile et desktop',
       'tokens, reset, layout et interactions transverses',
     ],
     out: [
@@ -46,6 +47,12 @@ module.exports = {
       '../js/hero-bootstrap.js',
       '../js/b-nav.js',
       '../js/boutique.js',
+      '../js/b-desktop-global-cart-access.js',
+      '../js/b-desktop-sidebar.js',
+      '../js/b-desktop-upgrade.js',
+      '../js/b-greeting.js',
+      '../js/b-home-premium-v1.js',
+      '../js/card-config.js',
     ],
     css: [
       '../css/tokens.css',
@@ -80,6 +87,7 @@ module.exports = {
   invariants: [
     'un seul bus, un seul store et un seul client API partagés',
     'le shell ne recalcule ni prix, ni stock, ni statut métier',
+    'les adaptations responsive globales restent sans logique métier',
     'les tokens et règles de layout transverses ont un propriétaire unique',
   ],
 };
