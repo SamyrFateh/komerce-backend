@@ -27,8 +27,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 8
 - auth-identity: 4
 - bootstrap: 1
-- boutique: 21
-- catalog: 61
+- boutique: 20
+- catalog: 62
 - checkout: 2
 - customs: 6
 - dashboard: 28
