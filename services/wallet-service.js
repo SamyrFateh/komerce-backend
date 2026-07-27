@@ -232,9 +232,28 @@ async function debit(client, opts) {
 }
 
 // ── Checkout : appliquer wallet à une commande ──────────────────────────────
+// Contrat (P5-N2 clôture, cf. .agent/paliers/P5-rapport.md) :
+//   - total_kmf est la valeur faciale FIXE de la commande, jamais modifiée ici
+//     (factures, dashboards de revenu et routes/orders/create.js en dépendent) ;
+//   - wallet_applied_kmf = somme nette des transactions wallet de checkout
+//     NON contrepassées liées à la commande ; invariant local I-WALLET-1 :
+//     0 <= wallet_applied_kmf <= total_kmf ;
+//   - remaining_to_pay = max(0, total_kmf - wallet_applied_kmf), calculé à la
+//     volée, jamais persisté (pas de nouvelle colonne dans ce palier) ;
+//   - une seule application wallet métier par commande dans ce palier : la clé
+//     d'idempotence `checkout_${orderId}` est stable qu'elle vienne de la
+//     création (routes/orders/create.js) ou d'un appel /api/wallet/apply
+//     ultérieur, donc debit() renvoie duplicate:true sur toute répétition ;
+//   - si duplicate:true, on NE réécrit NI wallet_applied_kmf NI payment_status :
+//     on retourne un résultat idempotent construit depuis l'état déjà
+//     persisté. Une commande ne devient 'paid' via wallet que si le montant
+//     réellement appliqué et persisté couvre total_kmf.
 async function applyToOrder(client, { userId, orderId, amountKmf }) {
+  // Verrouiller la commande AVANT toute décision — sérialise les appels
+  // concurrents sur le même orderId (ex. double-clic, retry réseau) et
+  // garantit que alreadyApplied reflète l'état réellement commité.
   const { rows: [order] } = await client.query(
-    'SELECT * FROM orders WHERE id = $1', [orderId]
+    'SELECT * FROM orders WHERE id = $1 FOR UPDATE', [orderId]
   );
   if (!order) throw new Error('Commande introuvable');
 
@@ -243,8 +262,11 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
     throw Object.assign(new Error('Cette commande ne vous appartient pas'), { statusCode: 403 });
   }
 
+  const alreadyApplied = Number(order.wallet_applied_kmf || 0);
+  const headroom        = Math.max(0, order.total_kmf - alreadyApplied);
+
   const wallet = await getOrCreateWallet(client, userId);
-  const max    = Math.min(amountKmf || wallet.balance_kmf, wallet.balance_kmf, order.total_kmf);
+  const max    = Math.min(amountKmf || wallet.balance_kmf, wallet.balance_kmf, headroom);
   if (max <= 0) throw new Error('Rien à appliquer');
 
   const result = await debit(client, {
@@ -256,13 +278,24 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
     note:           `Appliqué à commande ${order.reference}`,
   });
 
-  const remainingToPay = Math.max(0, order.total_kmf - max);
+  if (result.duplicate) {
+    // Aucun débit nouveau : ne pas rejouer wallet_applied_kmf ni payment_status
+    // depuis le montant demandé. On rend l'état déjà persisté (idempotent).
+    return {
+      ...result,
+      applied_kmf:      alreadyApplied,
+      remaining_to_pay: Math.max(0, order.total_kmf - alreadyApplied),
+    };
+  }
+
+  const newApplied     = alreadyApplied + max;
+  const remainingToPay = Math.max(0, order.total_kmf - newApplied);
 
   // D-02 : séparation des responsabilités — wallet écrit wallet_applied_kmf,
   // payment-service.markPaid() owne payment_status (invariant I-BACK-4).
   await client.query(
     `UPDATE orders SET wallet_applied_kmf = $1, updated_at = NOW() WHERE id = $2`,
-    [max, orderId]
+    [newApplied, orderId]
   );
   if (remainingToPay <= 0) {
     const markPaidResult = await markPaid(orderId, { client });
@@ -281,7 +314,7 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
     }
   }
 
-  return { ...result, applied_kmf: max, remaining_to_pay: remainingToPay };
+  return { ...result, applied_kmf: newApplied, remaining_to_pay: remainingToPay };
 }
 
 // ── Checkout reversal : retirer wallet d'une commande ───────────────────────

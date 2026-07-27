@@ -235,7 +235,7 @@ describe('routes/wallet', () => {
     });
 
     test('retire le wallet et commit', async () => {
-      const client = makeClient([{ rows: [{ user_id: 'user-1' }] }]);
+      const client = makeClient([{ rows: [{ user_id: 'user-1', payment_status: 'pending' }] }]);
       db.getClient.mockResolvedValueOnce(client);
       walletService.removeFromOrder.mockResolvedValueOnce({ reversed_kmf: 3000, transaction: { id: 'tx2' } });
 
@@ -248,6 +248,20 @@ describe('routes/wallet', () => {
         transaction: { id: 'tx2' },
       });
       expectTransactionCommitted(client);
+    });
+
+    // P5-N2 (§7) : le retrait self-service est bloqué une fois la commande payée —
+    // seul le chemin d'annulation métier (order-status-machine) peut re-créditer
+    // le wallet d'une commande déjà 'paid'.
+    test('409 si la commande est déjà payée', async () => {
+      const client = makeClient([{ rows: [{ user_id: 'user-1', payment_status: 'paid' }] }]);
+      db.getClient.mockResolvedValueOnce(client);
+
+      const res = await request(buildApp()).post('/api/wallet/remove').send({ order_id: 'o1' });
+
+      expect(res.status).toBe(409);
+      expect(walletService.removeFromOrder).not.toHaveBeenCalled();
+      expectTransactionRolledBack(client);
     });
   });
 

@@ -157,9 +157,12 @@ router.post('/remove', async (req, res, next) => {
       return res.status(400).json({ error: 'order_id requis' });
     }
 
-    // NEW-02 — Guard IDOR : vérifier que la commande appartient à l'utilisateur connecté
+    // NEW-02 — Guard IDOR : vérifier que la commande appartient à l'utilisateur connecté.
+    // FOR UPDATE : verrouille la commande le temps de la décision, pour éviter
+    // une course avec une confirmation de paiement concurrente (webhook, etc.)
+    // qui rendrait le retrait self-service illégitime entre la lecture et l'écriture.
     const { rows: [orderCheck] } = await client.query(
-      'SELECT user_id FROM orders WHERE id = $1', [order_id]
+      'SELECT user_id, payment_status FROM orders WHERE id = $1 FOR UPDATE', [order_id]
     );
     if (!orderCheck) {
       await client.query('ROLLBACK');
@@ -168,6 +171,13 @@ router.post('/remove', async (req, res, next) => {
     if (String(orderCheck.user_id) !== String(req.user.id)) {
       await client.query('ROLLBACK');
       return res.status(403).json({ error: 'Cette commande ne vous appartient pas' });
+    }
+    // P5-N2 (§7) — retrait self-service autorisé uniquement avant paiement confirmé.
+    // Après 'paid', seul le chemin d'annulation métier (order-status-machine →
+    // removeFromOrder) peut re-créditer le wallet ; l'API self-service n'y touche plus.
+    if (orderCheck.payment_status === 'paid') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Commande déjà payée — retrait wallet impossible via cette route' });
     }
 
     const result = await walletService.removeFromOrder(client, { orderId: order_id });
