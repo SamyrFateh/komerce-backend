@@ -204,7 +204,7 @@ const AlertEngine = {
     for (const r of rows) {
       const hours = Math.round(Number(r.hours_available));
       alerts.push(await this._createAlertIfNew('payment_issue', r.id, r.order_id, 'high',
-        `Colis ${r.reference} disponible depuis ${hours}h — cash non encaissé (${Number(r.total_kmf).toLocaleString()} KMF)`,
+        `Colis ${r.reference} disponible depuis ${hours}h — cash non encaissé (${Number(r.total_kmf).toLocaleString('fr-FR')} KMF)`,
         { hours_pending: hours, amount_kmf: Number(r.total_kmf) }
       ));
     }

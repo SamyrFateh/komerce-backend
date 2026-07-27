@@ -273,7 +273,7 @@ describe("GENERATORS.cash_expiring", () => {
     expect(result.generated).toBe(1);
     const [, params] = mockQuery.mock.calls[1];
     expect(params[1]).toBe('critical');
-    expect(params[2]).toMatch(/150,000 KMF/);
+    expect(params[2]).toContain(`${(150000).toLocaleString('fr-FR')} KMF`);
     expect(params[3]).toMatch(/CMD-2/);
   });
 
@@ -369,7 +369,7 @@ describe("GENERATORS.margin_drift", () => {
     expect(result.generated).toBe(1);
     const [, params] = mockQuery.mock.calls[1];
     expect(params[1]).toBe('warning');
-    expect(params[3]).toMatch(/4,000 KMF \(3 articles\)/); // 12000/3 = 4000
+    expect(params[3]).toContain(`${(4000).toLocaleString('fr-FR')} KMF (3 articles)`); // 12000/3 = 4000
   });
 
   test("erreur DB → catch non-fatal", async () => {

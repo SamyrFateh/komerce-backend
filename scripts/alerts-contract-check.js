@@ -120,7 +120,10 @@ function scanForLegacyAlertWriters(rootDir, options) {
 
     const normalized = content.replace(/\s+/g, ' ');
     if (LEGACY_PATTERN.test(normalized)) {
-      offenders.push(path.relative(rootDir, file));
+      // Chemins toujours normalisés en '/' (portable), même sous Windows où
+      // path.relative() renvoie '\\' — le reste du repo (manifestes de
+      // features, doctrine) déclare systématiquement ses chemins en '/'.
+      offenders.push(path.relative(rootDir, file).split(path.sep).join('/'));
     }
   }
   return offenders;

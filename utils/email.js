@@ -66,7 +66,7 @@ const templates = {
       </p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0">
         <tr style="background:#f8f4ee"><td style="padding:12px;font-weight:600">Référence</td><td style="padding:12px">${o.reference}</td></tr>
-        <tr><td style="padding:12px;font-weight:600">Montant</td><td style="padding:12px">${(o.total_kmf||o.total||0).toLocaleString()} KMF</td></tr>
+        <tr><td style="padding:12px;font-weight:600">Montant</td><td style="padding:12px">${(o.total_kmf||o.total||0).toLocaleString('fr-FR')} KMF</td></tr>
         <tr style="background:#f8f4ee"><td style="padding:12px;font-weight:600">Paiement</td><td style="padding:12px">${o.payment_mode==='cash_relais'?'💰 Cash au relais':'💳 Carte'}</td></tr>
         <tr><td style="padding:12px;font-weight:600">Relais</td><td style="padding:12px">${o.relay_name||o.relay_code||'—'}</td></tr>
       </table>
@@ -172,7 +172,7 @@ const templates = {
         Votre colis <strong>${o.reference}</strong> vous attend au relais <strong>${o.relay_name||''}</strong>.
       </p>
       <p style="font-size:15px;color:#e07a5f;font-weight:600">
-        Pensez à le récupérer et régler le montant de ${(o.total_kmf||o.total||0).toLocaleString()} KMF.
+        Pensez à le récupérer et régler le montant de ${(o.total_kmf||o.total||0).toLocaleString('fr-FR')} KMF.
       </p>
       ${btn(APP+'/suivi.html?ref='+o.reference,'📍 Voir les détails')}
     `)

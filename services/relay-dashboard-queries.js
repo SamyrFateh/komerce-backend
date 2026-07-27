@@ -84,7 +84,7 @@ async function getDashboardKPIs(user) {
   if (Number(kpi.en_attente_72h) > 0)
     alertes.push({ type: 'warning', message: `${kpi.en_attente_72h} colis en attente depuis +72h` });
   if (Number(kpi.cash_a_encaisser) > 0)
-    alertes.push({ type: 'info', message: `${kpi.cash_a_encaisser} paiements cash à encaisser (${Number(kpi.montant_cash_pending).toLocaleString()} KMF)` });
+    alertes.push({ type: 'info', message: `${kpi.cash_a_encaisser} paiements cash à encaisser (${Number(kpi.montant_cash_pending).toLocaleString('fr-FR')} KMF)` });
   if (incidents_ouverts > 0)
     alertes.push({ type: 'danger', message: `${incidents_ouverts} incident(s) non résolu(s)` });
 

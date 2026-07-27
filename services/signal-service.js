@@ -183,7 +183,7 @@ GENERATORS.cash_expiring = async function() {
       await upsertSignal({
         signal_type:   'cash_expiring',
         severity:      severity,
-        title:         'Cash en attente — ' + (r.amount || 0).toLocaleString() + ' KMF',
+        title:         'Cash en attente — ' + (r.amount || 0).toLocaleString('fr-FR') + ' KMF',
         summary:       'En attente depuis ' + r.days_pending + ' jours' +
                        (r.reference ? ' (cmd ' + r.reference + ')' : ''),
         source_module: 'signal-service',
@@ -285,7 +285,7 @@ GENERATORS.margin_drift = async function() {
         signal_type:   'margin_drift',
         severity:      'warning',
         title:         'Marge faible — cmd ' + (r.reference || r.id).substring(0, 12),
-        summary:       'Panier moyen/article: ' + avgPerItem.toLocaleString() + ' KMF (' + r.items + ' articles)',
+        summary:       'Panier moyen/article: ' + avgPerItem.toLocaleString('fr-FR') + ' KMF (' + r.items + ' articles)',
         source_module: 'signal-service',
         target_shell:  'ct',
         target_view:   'dashboard',

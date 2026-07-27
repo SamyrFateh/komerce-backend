@@ -74,7 +74,7 @@ describe('getDashboardKPIs', () => {
     expect(result.kpi.incidents_ouverts).toBe(4);
     expect(result.alertes).toEqual([
       { type: 'warning', message: '1 colis en attente depuis +72h' },
-      { type: 'info', message: '2 paiements cash à encaisser (30,000 KMF)' },
+      { type: 'info', message: `2 paiements cash à encaisser (${(30000).toLocaleString('fr-FR')} KMF)` },
       { type: 'danger', message: '4 incident(s) non résolu(s)' },
     ]);
   });
