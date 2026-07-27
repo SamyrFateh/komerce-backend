@@ -110,13 +110,19 @@ jobs:
           npm --prefix public/boutique ci
 
       - name: Generate Feature 360
-        run: npm run feature:360:gen 2>&1 | tee p3b-feature-gen.log
+        run: |
+          set -o pipefail
+          npm run feature:360:gen 2>&1 | tee p3b-feature-gen.log
 
       - name: Verify Feature 360
-        run: npm run feature:360:check 2>&1 | tee p3b-feature-check.log
+        run: |
+          set -o pipefail
+          npm run feature:360:check 2>&1 | tee p3b-feature-check.log
 
       - name: Verify full governance map
-        run: npm run map:check 2>&1 | tee p3b-map-check.log
+        run: |
+          set -o pipefail
+          npm run map:check 2>&1 | tee p3b-map-check.log
 
       - name: Upload failure logs
         if: failure()
