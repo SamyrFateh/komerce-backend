@@ -19,13 +19,14 @@ module.exports = {
   canonicalFeature: 'catalog',
   sliceKind: 'frontend-slice',
 
-  service: 'Navigation et affichage catalogue : catégories, produits, cartes et fiche produit.',
+  service: 'Navigation et affichage catalogue : catégories, produits, cartes, favoris et fiche produit.',
   perimeter: {
     in: [
       'navigation et découverte produit',
       'Product Detail Contract public',
       'état de sélection SKU partagé mobile/desktop',
-      'rendu des catégories, sections et cartes produit',
+      'rendu des catégories, sections, favoris et cartes produit',
+      'adaptations visuelles desktop de la découverte produit',
     ],
     out: [
       'shell et layout globaux (platform-ops)',
@@ -40,6 +41,13 @@ module.exports = {
       '../js/b-favs.js',
       '../js/b-catalog-desktop-enhancers.js',
       '../js/b-catalog.js',
+      '../js/b-desktop-global-cart-access.js',
+      '../js/b-desktop-sidebar.js',
+      '../js/b-desktop-upgrade.js',
+      '../js/b-greeting.js',
+      '../js/b-home-premium-v1.js',
+      '../js/card-config.js',
+      '../js/hero-bootstrap.js',
       '../js/b-pager.js',
       '../js/b-product-open-contract.js',
       '../js/b-subcat.js',
@@ -85,8 +93,9 @@ module.exports = {
       'modal-selection-model.js / createModalSelection / selectModalOption',
     ],
     consumes: [
-      'platform-ops — bus, store, utilitaires, scroll, shell et navigation globale',
-      'orders — actions panier',
+      'platform-ops — bus, store, utilitaires et scroll',
+      'orders — actions panier depuis les surfaces produit',
+      'auth-identity — salutation best-effort de session',
       'catalog (backend) — catégories et Product Detail Contract',
     ],
   },
@@ -96,5 +105,6 @@ module.exports = {
     'tout fichier js portant @domain catalog est listé dans ce manifeste ou modal-product',
     'mobile et desktop consomment le même Product Detail Contract',
     'aucun renderer ne reconstruit un stock par axe',
+    'les adaptations desktop du catalogue ne deviennent jamais un shell applicatif global',
   ],
 };
