@@ -30,13 +30,15 @@
  *                          jamais via un markPaid(orderId) nu.
  *   3. → failed           : uniquement depuis 'pending' (aucun bypass —
  *                          l'ancien flag guardPending:false est retiré).
- *   4. → refunded         : PERMISSIF côté source (pending/paid/failed) — seul
- *                          paid→refunded est observé en usage réel
- *                          (admin-order-refund.js, payment-paypal.js), mais
- *                          aucune règle métier n'a tranché s'il faut restreindre
- *                          les autres sources. Point NON résolu, laissé ouvert
- *                          à dessein plutôt qu'inventé — cf. NOTE_DE_PASSATION
- *                          P5-N2/N3. À confirmer avant de resserrer.
+ *   4. → refunded         : UNIQUEMENT depuis 'paid' (resserré lors de la
+ *                          réconciliation finale 2026-07-27 — seul
+ *                          paid→refunded est observé en usage réel dans
+ *                          admin-order-refund.js et payment-paypal.js).
+ *                          pending→refunded et failed→refunded sont
+ *                          désormais bloqués : rembourser une commande qui
+ *                          n'a jamais été payée n'a pas de sens métier.
+ *                          refunded→refunded reste un no-op idempotent
+ *                          (règle générique from===to, cf. plus bas).
  *   5. partially_paid     : jamais une cible valide. N'est écrit nulle part
  *                          dans orders.payment_status — c'est un libellé
  *                          calculé à l'affichage (collective-workspace-reads.js),
@@ -61,7 +63,7 @@ const TRANSITIONS = Object.freeze({
     fromWithEvent: [],
   },
   refunded: {
-    from: ['pending', 'paid', 'failed'],
+    from: ['paid'],
     fromWithEvent: [],
   },
 });

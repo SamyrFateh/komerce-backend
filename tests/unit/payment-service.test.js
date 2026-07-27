@@ -72,9 +72,9 @@ describe('payment-service', () => {
     expect(c.calls[0].text).toMatch(/AND payment_status = 'pending'/);
   });
 
-  test('markRefunded : garde source ∈ {pending, paid, failed} — refunded→refunded exclu', async () => {
+  test('markRefunded : garde source = paid uniquement (resserré réconciliation 2026-07-27 §4.5)', async () => {
     const c = fakeClient();
     await svc.markRefunded(7, { client: c });
-    expect(c.calls[0].text).toMatch(/AND payment_status IN \('pending', 'paid', 'failed'\)/);
+    expect(c.calls[0].text).toMatch(/AND payment_status = 'paid'/);
   });
 });

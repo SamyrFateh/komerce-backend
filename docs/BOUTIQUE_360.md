@@ -1,7 +1,7 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-27T15:26:12.696Z.
+> Régénéré le 2026-07-27T15:39:28.175Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
@@ -79,11 +79,11 @@
 | `chip:center` | b-pager | b-catalog | 🟢 sain |
 | `favorites:view-refresh` | b-catalog | b-favs | 🟡 non déclaré |
 | `modal:close` | b-cart, b-checkout | b-modal-core | 🟢 sain |
-| `modal:closed` | b-modal-core | b-modal-product-detail-bootstrap, b-pager | 🟢 sain (propriétaire: undefined) |
-| `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers | 🟢 sain (propriétaire: undefined) |
+| `modal:closed` | b-modal-core | b-modal-product-detail-bootstrap, b-pager | 🟢 sain (propriétaire: modal-product) |
+| `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers | 🟢 sain (propriétaire: modal-product) |
 | `modal:detail-ready` | b-modal-product-detail-bootstrap | b-modal-cart | 🟢 sain |
 | `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-product-open-contract | 🟢 sain |
-| `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟢 sain (propriétaire: undefined) |
+| `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟢 sain (propriétaire: modal-product) |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
 | `nav:goto-track` | b-checkout | b-nav | 🟢 sain |

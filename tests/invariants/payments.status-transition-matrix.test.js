@@ -66,6 +66,28 @@ describe('invariant payment_status — matrice de transitions (validateTransitio
   });
 });
 
+describe('invariant payment_status — matrice de remboursement (réconciliation 2026-07-27, §4.5)', () => {
+  test('paid → refunded : autorisé', () => {
+    expect(validateTransition('paid', 'refunded').allowed).toBe(true);
+  });
+
+  test('refunded → refunded : no-op idempotent', () => {
+    expect(validateTransition('refunded', 'refunded').allowed).toBe(true);
+  });
+
+  test('pending → refunded : bloqué', () => {
+    expect(validateTransition('pending', 'refunded').allowed).toBe(false);
+  });
+
+  test('failed → refunded : bloqué', () => {
+    expect(validateTransition('failed', 'refunded').allowed).toBe(false);
+  });
+
+  test('refunded → paid : bloqué', () => {
+    expect(validateTransition('refunded', 'paid').allowed).toBe(false);
+  });
+});
+
 describe('invariant payment_status — détection statique : partially_paid jamais écrit', () => {
   const SERVICES_DIR = path.join(__dirname, '../../services');
   const WRITE_PATTERN = /payment_status\s*=\s*'partially_paid'/;

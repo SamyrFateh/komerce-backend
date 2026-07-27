@@ -278,7 +278,10 @@ function busStatus(name, m) {
   if (d.orphanEmit.includes(name)) return '🔴 émission orpheline';
   if (d.orphanListen.includes(name)) return '🟠 écouteur orphelin';
   if (d.undeclared.includes(name)) return '🟡 non déclaré';
-  if (os && os.level==='green') return `🟢 sain (propriétaire: ${os.owner})`;
+  if (os && os.level==='green') {
+    const owner = (m.ownership && m.ownership[name] && m.ownership[name].owner) || '—';
+    return `🟢 sain (propriétaire: ${owner})`;
+  }
   return '🟢 sain';
 }
 function epStatus(s){ return {PROVEN:'🟢 prouvé',UNKNOWN:'⚪ non prouvé',NOT_FOUND:'🔴 hors contrat',DYNAMIC:'🔵 dynamique'}[s]||s; }
@@ -376,18 +379,24 @@ function runCheck(m){
   return 1;
 }
 
-const model = build();
-if (SAVE) {
-  const d=model.diagnostics;
-  fs.writeFileSync(BASELINE, JSON.stringify({ orphanEmit:d.orphanEmit, orphanListen:d.orphanListen, undeclared:d.undeclared, notFoundEndpoints:d.notFoundEndpoints, ownershipRed:d.ownershipRed, ownershipOrange:d.ownershipOrange, savedAt:new Date().toISOString() }, null, 2));
+// Exports pour tests unitaires (P3b, réconciliation 2026-07-27 §4.3) — n'affecte
+// pas l'exécution CLI ci-dessous, gardée derrière require.main===module.
+module.exports = { build, busStatus, renderMd };
+
+if (require.main === module) {
+  const model = build();
+  if (SAVE) {
+    const d=model.diagnostics;
+    fs.writeFileSync(BASELINE, JSON.stringify({ orphanEmit:d.orphanEmit, orphanListen:d.orphanListen, undeclared:d.undeclared, notFoundEndpoints:d.notFoundEndpoints, ownershipRed:d.ownershipRed, ownershipOrange:d.ownershipOrange, savedAt:new Date().toISOString() }, null, 2));
+    if(!fs.existsSync(DOCS)) fs.mkdirSync(DOCS,{recursive:true});
+    fs.writeFileSync(OUT_JSON, JSON.stringify(model,null,2)); fs.writeFileSync(OUT_MD, renderMd(model));
+    console.log(`${GRN}${BLD}✔ Baseline boutique-360 figée${R} (${d.orphanEmit.length} ém. orph., ${d.orphanListen.length} éc. orph., ${d.notFoundEndpoints.length} hors contrat).`);
+    process.exit(0);
+  }
+  if (CHECK) process.exit(runCheck(model));
   if(!fs.existsSync(DOCS)) fs.mkdirSync(DOCS,{recursive:true});
   fs.writeFileSync(OUT_JSON, JSON.stringify(model,null,2)); fs.writeFileSync(OUT_MD, renderMd(model));
-  console.log(`${GRN}${BLD}✔ Baseline boutique-360 figée${R} (${d.orphanEmit.length} ém. orph., ${d.orphanListen.length} éc. orph., ${d.notFoundEndpoints.length} hors contrat).`);
-  process.exit(0);
+  console.log(`${GRN}${BLD}✔ BOUTIQUE_360 généré${R} ${DIM}(${model.summary.modules} modules, ${model.summary.events} événements, ${model.summary.endpoints} endpoints)${R}`);
+  console.log(`${CYN}  docs/BOUTIQUE_360.md${R} + ${CYN}docs/BOUTIQUE_360.json${R}`);
+  if(model.summary.notFoundEndpoints) console.log(`${YLW}  ⚠ ${model.summary.notFoundEndpoints} endpoint(s) hors contrat — voir §1.${R}`);
 }
-if (CHECK) process.exit(runCheck(model));
-if(!fs.existsSync(DOCS)) fs.mkdirSync(DOCS,{recursive:true});
-fs.writeFileSync(OUT_JSON, JSON.stringify(model,null,2)); fs.writeFileSync(OUT_MD, renderMd(model));
-console.log(`${GRN}${BLD}✔ BOUTIQUE_360 généré${R} ${DIM}(${model.summary.modules} modules, ${model.summary.events} événements, ${model.summary.endpoints} endpoints)${R}`);
-console.log(`${CYN}  docs/BOUTIQUE_360.md${R} + ${CYN}docs/BOUTIQUE_360.json${R}`);
-if(model.summary.notFoundEndpoints) console.log(`${YLW}  ⚠ ${model.summary.notFoundEndpoints} endpoint(s) hors contrat — voir §1.${R}`);
