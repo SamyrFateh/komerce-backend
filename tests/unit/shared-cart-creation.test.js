@@ -2,7 +2,28 @@
 
 const { makeClient, expectTransactionCommitted, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
 
-jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
+jest.mock('../../db', () => {
+  const getClient = jest.fn();
+  return {
+    getClient,
+    query: jest.fn(),
+    // P5-N3 : primitive partagée, calquée sur l'implémentation réelle (db.js).
+    withTransaction: async (callback) => {
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+        const result = await callback(client);
+        await client.query('COMMIT');
+        return result;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+  };
+});
 
 const db = require('../../db');
 const {

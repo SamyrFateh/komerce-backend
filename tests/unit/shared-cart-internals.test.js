@@ -13,6 +13,22 @@
 const mockGetClient = jest.fn();
 jest.mock('../../db', () => ({
   getClient: (...args) => mockGetClient(...args),
+  // P5-N3 : primitive partagée, calquée sur l'implémentation réelle (db.js)
+  // pour que les assertions BEGIN/COMMIT/ROLLBACK existantes restent valides.
+  withTransaction: async (callback) => {
+    const client = await mockGetClient();
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
 }));
 
 const { CONFIG, generateToken, r, withTransaction, addEvent } = require('../../services/shared-cart-internals');

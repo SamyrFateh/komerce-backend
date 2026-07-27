@@ -50,21 +50,6 @@ function clampOffset(value) {
   return Math.max(0, Math.round(n));
 }
 
-async function withTransaction(callback) {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
 async function listManualRefundQueue(options = {}) {
   const limit = clampLimit(options.limit);
   const offset = clampOffset(options.offset);
@@ -129,7 +114,7 @@ async function markManualRefundProcessed(contributionId, adminUserId, options = 
   const refundReference = String(options.refund_reference || '').trim() || null;
   const note = String(options.note || '').trim() || null;
 
-  return withTransaction(async (client) => {
+  return db.withTransaction(async (client) => {
     const { rows: contributionRows } = await client.query(
       `SELECT *
          FROM shared_cart_contributions

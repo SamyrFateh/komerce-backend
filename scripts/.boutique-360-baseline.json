@@ -8,13 +8,12 @@
   "undeclared": [
     "carousel:changed",
     "favorites:view-refresh",
-    "modal:closed",
-    "modal:composition-synced",
-    "modal:opened",
     "modal:product-changed",
     "sidebar:built",
     "view:changed"
   ],
   "notFoundEndpoints": [],
-  "savedAt": "2026-07-23T19:39:08.430Z"
+  "ownershipRed": [],
+  "ownershipOrange": [],
+  "savedAt": "2026-07-27T00:18:02.566Z"
 }

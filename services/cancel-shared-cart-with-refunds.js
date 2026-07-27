@@ -63,21 +63,6 @@ function r(n) {
   return Math.round(Number(n) || 0);
 }
 
-async function withTransaction(callback) {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
 async function addEvent(client, sharedCartId, eventType, actor, payload) {
   await client.query(
     `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)
@@ -283,7 +268,7 @@ async function notifyRefundedParticipants(cart, contributions) {
  * @returns { cart, refunds: [...] }
  */
 async function cancelSharedCartWithRefunds(sharedCartId, userId, reason) {
-  const { cart, contributions } = await withTransaction(async (client) => {
+  const { cart, contributions } = await db.withTransaction(async (client) => {
     const { rows } = await client.query(
       `SELECT * FROM shared_carts WHERE id = $1 AND beneficiary_user_id = $2 FOR UPDATE`,
       [sharedCartId, userId]

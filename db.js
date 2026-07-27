@@ -136,10 +136,32 @@ async function healthcheck() {
   }
 }
 
+// ── P5-N3 : primitive transactionnelle partagée ─────────────────────────────
+// Avant : redéfinie localement à l'identique dans 4 fichiers (shared-cart-
+// refund-queue.js, cancel-shared-cart-with-refunds.js, shared-cart-internals.js,
+// shared-cart-financial-guard.js) — même BEGIN/COMMIT/ROLLBACK/release copié-
+// collé 4 fois, aucune primitive commune. On ne gouverne pas l'orchestration
+// transactionnelle sans un seul endroit où une transaction commence.
+async function withTransaction(callback) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   query: pool.query.bind(pool),
   getClient: pool.connect.bind(pool),
   connect: pool.connect.bind(pool), // alias : services/confirm-pickup-cash-payment.js en dépend
   pool,
   healthcheck,
+  withTransaction,
 };

@@ -49,20 +49,10 @@ function generateToken() {
 // ─── Helpers ──────────────────────────────────────────────────────────
 function r(n) { return Math.round(Number(n) || 0); }
 
-async function withTransaction(callback) {
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
-}
+// P5-N3 : délègue à la primitive partagée db.withTransaction — interface
+// conservée ici (shared-cart-contributions.js, shared-cart-creation.js et
+// shared-cart-lifecycle.js importent withTransaction depuis ce module).
+const { withTransaction } = db;
 
 // ─── Audit ────────────────────────────────────────────────────────────
 async function addEvent(client, sharedCartId, eventType, actor, payload) {
