@@ -122,6 +122,22 @@ jobs:
           fs.writeFileSync(file, after);
           NODE
 
+      - name: Reconcile Boutique composition-root ownership
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'features/platform-ops.feature.js';
+          const before = fs.readFileSync(file, 'utf8');
+          let after = before.replace("      'js/main.js',\n", '');
+          const marker = '  files: {\n';
+          const block = "  files: {\n    compositionRoots: [\n      'public/boutique/js/main.js',\n      'public/boutique/js/boutique.js',\n      'public/boutique/js/b-nav.js',\n    ],\n";
+          if (after === before || !after.includes(marker) || after.includes('compositionRoots:')) {
+            throw new Error('platform-ops composition-root reconciliation precondition failed');
+          }
+          after = after.replace(marker, block);
+          fs.writeFileSync(file, after);
+          NODE
+
       - name: Regenerate dependent architecture maps
         run: |
           set -o pipefail
