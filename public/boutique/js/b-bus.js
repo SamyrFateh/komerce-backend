@@ -36,6 +36,26 @@
  *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
  *   modal:detail-ready —                  — Product Detail Contract résolu ; réconcilier l'état panier modal
  *   nav:goto-track   —                  — ouvrir l'onglet Suivi depuis la confirmation de commande [b-checkout.js → b-nav.js, FIX 2026-07-11]
+ *   modal:opened     { product }        — fait : la modal vient de s'ouvrir sur ce produit (≠ modal:open, qui est la commande d'ouverture)
+ *   modal:closed     —                  — fait : la modal vient de se fermer (≠ modal:close, qui est la commande de fermeture)
+ *   modal:composition-synced —          — fait : la composition responsive de la modal ouverte vient d'être réconciliée après un resize
+ *
+ * Propriété des contrats (P3b, 2026-07) — owner = feature manifeste propriétaire du
+ * contrat ; producer = seul module autorisé à émettre ; payload = arité attendue
+ * (none = aucun argument, value = un argument). Toute émission hors du producer
+ * déclaré, ou tout écart d'arité au call site, remonte en ATTENTION dans
+ * gen-boutique-360.js. Ne couvre que les événements listés ici — les autres
+ * événements actifs ci-dessus restent hors du périmètre de cette validation :
+ *   modal:opened               owner=modal-product producer=b-modal-core.js payload=value
+ *   modal:closed                owner=modal-product producer=b-modal-core.js payload=none
+ *   modal:composition-synced    owner=modal-product producer=b-modal-product-detail-bootstrap.js payload=none
+ *
+ * Consommateurs déclarés (P3b) — tout écouteur observé hors de cette liste remonte
+ * en ATTENTION comme consommateur non déclaré (un ajout légitime doit d'abord être
+ * ajouté ici, pas seulement câblé) :
+ *   modal:opened     : b-modal-product-detail-bootstrap.js, boutique.js, b-pdp-curation-suggestions.js, b-pager.js, b-modal-desktop-enhancers.js
+ *   modal:closed     : b-modal-product-detail-bootstrap.js, b-pager.js
+ *   modal:composition-synced : b-modal-desktop-enhancers.js, b-modal-core.js
  *
  * Événements retirés du JSDoc (déclarés mais jamais émis ni consommés) :
  *   cart:add, cart:open, cart:close, search:query, pager:navigate

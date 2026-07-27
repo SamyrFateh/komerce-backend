@@ -73,6 +73,10 @@ module.exports = {
     ],
     css: [
       '../css/hero.css',
+      // P3b (2026-07-27) : ownership CSS jamais rapatrié lors du split P3 —
+      // deja declare cote features/catalog.feature.js (racine).
+      '../css/categories.css',
+      '../css/products.css',
     ],
     tests: [
       '../tests/unit/render-home-sections.test.js',

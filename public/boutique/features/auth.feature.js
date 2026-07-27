@@ -45,6 +45,11 @@ module.exports = {
       '../js/b-identity.js',
       '../js/b-phone.js',
     ],
+    css: [
+      // P3b (2026-07-27) : ownership CSS jamais rapatrié lors du split P3 —
+      // deja declare cote features/auth-identity.feature.js (racine).
+      '../css/identity.css',
+    ],
     tests: [
       '../tests/unit/b-identity.test.js',
       '../tests/unit/b-phone.test.js',

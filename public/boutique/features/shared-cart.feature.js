@@ -51,6 +51,14 @@ module.exports = {
       '../js/b-friendly-group-redirect.js',
       '../js/b-share-phone-guard.js',
     ],
+    css: [
+      // P3b (2026-07-27) : ownership CSS jamais rapatrié lors du split P3 —
+      // deja declare cote features/shared-cart.feature.js (racine).
+      '../css/group-cart-flow.css',
+      '../css/hero-cart-proxy.css',
+      '../css/share-cart.css',
+      '../css/shared-followup.css',
+    ],
     tests: [
       '../tests/unit/group-render-creator.test.js',
       // P3 (2026-07-27) : rapatriÃ©s avec leurs fichiers js correspondants.

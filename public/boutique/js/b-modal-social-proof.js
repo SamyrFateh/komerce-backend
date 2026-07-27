@@ -25,8 +25,10 @@
  *
  * Mobile + desktop : pas de garde isDesktop().
  *
- * Point d'entrÃ©e : setupSocialProof().
- * Ã€ appeler depuis bus.on('modal:opened') dans le bootstrap.
+ * Point d'entrée : setupSocialProof().
+ * Câblé sur bus.on('modal:product-changed') (pas modal:opened — le social proof
+ * doit se rejouer à chaque changement de produit affiché, y compris navigation
+ * précédent/suivant sans fermeture de la modal).
  */
 
 import { bus }       from './b-bus.js';

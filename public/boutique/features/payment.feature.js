@@ -42,6 +42,11 @@ module.exports = {
     js: [
       '../js/b-paypal.js',
     ],
+    css: [
+      // P3b (2026-07-27) : ownership CSS jamais rapatrié lors du split P3 —
+      // deja declare cote features/payments.feature.js (racine).
+      '../css/paypal.css',
+    ],
     tests: [
       '../tests/unit/b-paypal.test.js',
       // teste b-paypal.js directement (require réel).

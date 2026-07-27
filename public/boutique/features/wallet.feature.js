@@ -43,6 +43,11 @@ module.exports = {
     js: [
       '../js/b-wallet.js',
     ],
+    css: [
+      // P3b (2026-07-27) : ownership CSS jamais rapatrié lors du split P3 —
+      // deja declare cote features/wallet.feature.js (racine).
+      '../css/wallet.css',
+    ],
     tests: [
       '../tests/unit/b-wallet.test.js',
       // teste b-wallet.js directement (require réel) ; mocke b-utils.js et

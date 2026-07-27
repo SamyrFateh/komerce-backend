@@ -32,10 +32,13 @@
  *   InjectÃ© dynamiquement dans .k-modal-img-wrap par ce module.
  *   RetirÃ© sur desktop via CSS.
  *
- * Point d'entrÃ©e : setupImageUX().
- * Ã€ appeler depuis bus.on('modal:opened') ou aprÃ¨s une reconstruction mÃ©dia PDC-4.
+ * Point d'entrée : setupImageUX().
+ * Appelé impérativement (pas via bus.on) juste après bus.emit('modal:opened')
+ * dans b-modal-core.js, et par les renderers PDC (b-modal-desktop-product.js,
+ * b-modal-mobile-product.js) après une reconstruction média. En interne, seul
+ * carousel:changed est réellement écouté (bus.on, cf. _setupCarouselSync()).
  *
- * DÃ©pendances : b-bus.js, b-store.js
+ * Dépendances : b-bus.js, b-store.js
  */
 
 import { bus }        from './b-bus.js';

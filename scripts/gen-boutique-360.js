@@ -93,7 +93,8 @@ function collectModules(contract) {
     const hm   = raw.match(/@komerce-arch[\s\S]*?\*\//);
     const header = hm ? hm[0] : '';
 
-    const emits   = [...new Set([...code.matchAll(/bus\.emit\(\s*['"]([^'"]+)['"]/g)].map(m => m[1]))];
+    const emitCalls = [...code.matchAll(/bus\.emit\(\s*['"]([^'"]+)['"]\s*(,)?/g)].map(m => ({ name: m[1], hasArg: !!m[2] }));
+    const emits   = [...new Set(emitCalls.map(m => m.name))];
     const listens = [...new Set([...code.matchAll(/bus\.on\(\s*['"]([^'"]+)['"]/g)].map(m => m[1]))];
     const imports = [...new Set([...code.matchAll(/from\s+['"](\.[^'"]+)['"]/g)].map(m => path.basename(m[1]).replace(/\.js$/,'')))];
     const bodyClasses = [...new Set([...code.matchAll(/body\.classList\.(?:add|remove|toggle)\(\s*['"]([^'"]+)['"]/g)].map(m => m[1]))];
@@ -118,7 +119,7 @@ function collectModules(contract) {
       layer: headerField(header,'layer'), criticality: headerField(header,'criticality'),
       doctrine: headerList(header,'doctrine'),
       depends: headerList(header,'depends'), usedBy: headerList(header,'used-by'),
-      emits, listens, imports, bodyClasses,
+      emits, listens, imports, bodyClasses, emitCalls,
     });
   }
   return { modules: modules.sort((a,b)=>a.file.localeCompare(b.file)), callEdges };
@@ -127,15 +128,40 @@ function collectModules(contract) {
 function parseBusRegistry() {
   const raw = fs.readFileSync(BUS_FILE, 'utf8'), lines = raw.split('\n');
   let section = null; const active = [], dead = [];
+  const owned = {}, consumers = {};
+  const stripJs = s => s.replace(/\.js$/, '').trim();
   for (const line of lines) {
-    if (/Événements standard/.test(line)) { section='active'; continue; }
-    if (/Événements retirés/.test(line))  { section='dead';   continue; }
+    if (/Propriété des contrats/.test(line))  { section='owned';     continue; }
+    if (/Consommateurs déclarés/.test(line))  { section='consumers'; continue; }
+    if (/Événements standard/.test(line))     { section='active';    continue; }
+    if (/Événements retirés/.test(line))      { section='dead';      continue; }
     if (!section) continue;
     if (/\*\//.test(line)) { section=null; continue; }
-    if (section==='active') { const m=line.match(/^\s*\*\s{2,}([a-z][\w-]*(?::[\w-]+)?)\b/); if(m) active.push(m[1]); }
-    else line.replace(/^\s*\*\s*/,'').split(',').forEach(t=>{ const tk=t.trim().match(/^[a-z][\w-]*(?::[\w-]+)?/); if(tk) dead.push(tk[0]); });
+    if (section==='active') {
+      const m=line.match(/^\s*\*\s{2,}([a-z][\w-]*(?::[\w-]+)?)\b/); if(m) active.push(m[1]);
+    } else if (section==='dead') {
+      line.replace(/^\s*\*\s*/,'').split(',').forEach(t=>{ const tk=t.trim().match(/^[a-z][\w-]*(?::[\w-]+)?/); if(tk) dead.push(tk[0]); });
+    } else if (section==='owned') {
+      const m = line.match(/^\s*\*\s{2,}([a-z][\w-]*(?::[\w-]+)?)\b(.*)$/);
+      if (m) {
+        const rest = m[2];
+        const ownerM = rest.match(/\bowner=(\S+)/), producerM = rest.match(/\bproducer=(\S+)/), payloadM = rest.match(/\bpayload=(\S+)/);
+        owned[m[1]] = {
+          owner: ownerM ? ownerM[1] : null,
+          producer: producerM ? stripJs(producerM[1]) : null,
+          payload: payloadM ? payloadM[1] : null,
+        };
+      }
+    } else if (section==='consumers') {
+      const m = line.match(/^\s*\*\s{2,}([a-z][\w-]*(?::[\w-]+)?)\s*:\s*(.+)$/);
+      if (m) consumers[m[1]] = m[2].split(',').map(s=>stripJs(s.trim())).filter(Boolean);
+    }
   }
-  return { active:[...new Set(active)], dead:[...new Set(dead.filter(Boolean))] };
+  // Tout événement déclaré owned/consumers doit aussi être un événement actif
+  // (source unique : ne pas dupliquer la liste, juste s'assurer qu'il n'est
+  // pas classé "non déclaré" faute d'avoir été recopié dans les deux blocs).
+  for (const n of Object.keys(owned)) active.push(n);
+  return { active:[...new Set(active)], dead:[...new Set(dead.filter(Boolean))], owned, consumers };
 }
 
 function parseBundles() {
@@ -174,6 +200,41 @@ function build() {
   }
   const declaredUnused = [...declActive].filter(n=>!events[n]);
 
+  // Propriété des contrats (P3b) — uniquement pour les événements déclarés dans
+  // le bloc 'Propriété des contrats' de b-bus.js. Les événements hors de cette
+  // liste ne sont PAS soumis à cette validation (pas de régression sur le reste
+  // du bus, cf. instruction : plusieurs consommateurs n'est pas une anomalie).
+  const emitCallsByEvent = {};
+  modules.forEach(m => (m.emitCalls||[]).forEach(c => (emitCallsByEvent[c.name]=emitCallsByEvent[c.name]||[]).push({ module:m.id, hasArg:c.hasArg })));
+
+  const ownership = {};
+  for (const [name, decl] of Object.entries(registry.owned)) {
+    const e = events[name] || { emitters:[], listeners:[] };
+    const declaredConsumersSet = new Set(registry.consumers[name] || []);
+    const wantsArg = decl.payload === 'value';
+    ownership[name] = {
+      owner: decl.owner,
+      declaredProducer: decl.producer,
+      actualEmitters: e.emitters,
+      producerMissing: !decl.producer || e.emitters.length === 0,
+      producerUnauthorized: decl.producer ? e.emitters.filter(x => x !== decl.producer) : [],
+      declaredConsumers: [...declaredConsumersSet],
+      actualConsumers: e.listeners,
+      consumerUndeclared: e.listeners.filter(x => !declaredConsumersSet.has(x)),
+      payload: decl.payload,
+      payloadMismatches: decl.payload ? (emitCallsByEvent[name]||[]).filter(c => c.hasArg !== wantsArg).map(c=>c.module) : [],
+    };
+  }
+  const ownershipStatus = {};
+  for (const [name, o] of Object.entries(ownership)) {
+    if (!o.owner)                            ownershipStatus[name] = { level:'red',    msg:'propriétaire canonique absent' };
+    else if (o.producerMissing)              ownershipStatus[name] = { level:'red',    msg:`producteur déclaré (${o.declaredProducer||'—'}) n'émet jamais` };
+    else if (o.producerUnauthorized.length)  ownershipStatus[name] = { level:'red',    msg:`producteur non autorisé : ${o.producerUnauthorized.join(', ')}` };
+    else if (o.payloadMismatches.length)     ownershipStatus[name] = { level:'red',    msg:`payload divergent (arité attendue: ${o.payload}) chez ${o.payloadMismatches.join(', ')}` };
+    else if (o.consumerUndeclared.length)    ownershipStatus[name] = { level:'orange', msg:`consommateur non déclaré : ${o.consumerUndeclared.join(', ')}` };
+    else                                      ownershipStatus[name] = { level:'green', msg:'propriété saine' };
+  }
+
   const notFound = [...new Set(callEdges.filter(e=>e.contractStatus==='NOT_FOUND').map(e=>e.route))].sort();
   const unproven = [...new Set(callEdges.filter(e=>e.contractStatus==='UNKNOWN').map(e=>e.route))].sort();
   const dynamic  = [...new Set(callEdges.filter(e=>e.contractStatus==='DYNAMIC').map(e=>e.route))].sort();
@@ -190,22 +251,34 @@ function build() {
       cssBundles: bundles.length, endpoints: endpoints.length,
       orphanEmit: orphanEmit.length, orphanListen: orphanListen.length, undeclared: undeclared.length,
       notFoundEndpoints: notFound.length, unprovenEndpoints: unproven.length, dynamicEndpoints: dynamic.length,
+      ownedEvents: Object.keys(ownership).length,
+      ownershipRed: Object.values(ownershipStatus).filter(s=>s.level==='red').length,
+      ownershipOrange: Object.values(ownershipStatus).filter(s=>s.level==='orange').length,
     },
     modules, events, bundles, callEdges, registry,
     diagnostics: {
       orphanEmit: orphanEmit.sort(), orphanListen: orphanListen.sort(), undeclared: undeclared.sort(),
       declaredUnused: declaredUnused.sort(), notFoundEndpoints: notFound, unprovenEndpoints: unproven, dynamicEndpoints: dynamic,
+      ownershipRed: Object.entries(ownershipStatus).filter(([,s])=>s.level==='red').map(([n])=>n).sort(),
+      ownershipOrange: Object.entries(ownershipStatus).filter(([,s])=>s.level==='orange').map(([n])=>n).sort(),
     },
+    ownership, ownershipStatus,
     bodyClasses: { static: staticBody, dynamic: bodyClassOwners },
     endpoints,
   };
 }
 
 function busStatus(name, m) {
+  const os = m.ownershipStatus && m.ownershipStatus[name];
+  if (os) {
+    if (os.level==='red')    return `🔴 ${os.msg}`;
+    if (os.level==='orange') return `🟠 ${os.msg}`;
+  }
   const d=m.diagnostics;
   if (d.orphanEmit.includes(name)) return '🔴 émission orpheline';
   if (d.orphanListen.includes(name)) return '🟠 écouteur orphelin';
   if (d.undeclared.includes(name)) return '🟡 non déclaré';
+  if (os && os.level==='green') return `🟢 sain (propriétaire: ${os.owner})`;
   return '🟢 sain';
 }
 function epStatus(s){ return {PROVEN:'🟢 prouvé',UNKNOWN:'⚪ non prouvé',NOT_FOUND:'🔴 hors contrat',DYNAMIC:'🔵 dynamique'}[s]||s; }
@@ -256,6 +329,21 @@ function renderMd(m){
   L.push('');
   L.push(renderMermaid(m));
   L.push('');
+  L.push('## 2b. Propriété des contrats bus (P3b)');
+  L.push('');
+  L.push('> Uniquement les événements déclarés dans le bloc `Propriété des contrats` de');
+  L.push('> `b-bus.js`. Plusieurs consommateurs déclarés ne sont **pas** une anomalie —');
+  L.push('> seuls le sont : propriétaire absent, producteur non autorisé/absent, payload');
+  L.push('> divergent, ou consommateur observé hors de la liste déclarée.');
+  L.push('');
+  L.push('| Événement | Propriétaire | Producteur(s) | Consommateurs | Payload | Verdict |');
+  L.push('|---|---|---|---|---|---|');
+  for (const [name,o] of Object.entries(m.ownership||{})) {
+    const st = m.ownershipStatus[name];
+    const icon = st.level==='red'?'🔴':st.level==='orange'?'🟠':'🟢';
+    L.push(`| \`${name}\` | ${o.owner} | ${o.actualEmitters.join(', ')||'—'} | ${o.actualConsumers.join(', ')||'—'} | ${o.payload} | ${icon} ${st.msg} |`);
+  }
+  L.push('');
   L.push('## 3. Bundles CSS');
   L.push('');
   L.push('| Bundle | Sources |');
@@ -278,6 +366,8 @@ function runCheck(m){
   diff('orphanListen','🟠 nouvel écouteur orphelin');
   diff('undeclared','🟡 nouvel événement non déclaré');
   diff('notFoundEndpoints','🔴 nouvel endpoint hors contrat');
+  diff('ownershipRed','🔴 nouvelle violation de propriété bus (producteur/payload)');
+  diff('ownershipOrange','🟠 nouveau consommateur non déclaré');
   console.log(`${BLD}Boutique 360 — ${m.summary.modules} modules, ${m.summary.events} événements, ${m.summary.endpoints} endpoints${R}`);
   if(news.length===0){ console.log(`${GRN}${BLD}✔ Aucune nouvelle anomalie hors baseline.${R}`); return 0; }
   console.log(`${RED}${BLD}✖ ${news.length} nouvelle(s) anomalie(s) :${R}`);
@@ -289,7 +379,7 @@ function runCheck(m){
 const model = build();
 if (SAVE) {
   const d=model.diagnostics;
-  fs.writeFileSync(BASELINE, JSON.stringify({ orphanEmit:d.orphanEmit, orphanListen:d.orphanListen, undeclared:d.undeclared, notFoundEndpoints:d.notFoundEndpoints, savedAt:new Date().toISOString() }, null, 2));
+  fs.writeFileSync(BASELINE, JSON.stringify({ orphanEmit:d.orphanEmit, orphanListen:d.orphanListen, undeclared:d.undeclared, notFoundEndpoints:d.notFoundEndpoints, ownershipRed:d.ownershipRed, ownershipOrange:d.ownershipOrange, savedAt:new Date().toISOString() }, null, 2));
   if(!fs.existsSync(DOCS)) fs.mkdirSync(DOCS,{recursive:true});
   fs.writeFileSync(OUT_JSON, JSON.stringify(model,null,2)); fs.writeFileSync(OUT_MD, renderMd(model));
   console.log(`${GRN}${BLD}✔ Baseline boutique-360 figée${R} (${d.orphanEmit.length} ém. orph., ${d.orphanListen.length} éc. orph., ${d.notFoundEndpoints.length} hors contrat).`);
