@@ -50,15 +50,15 @@
     "ambiguousOwnershipSignals": 69,
     "ontologyGaps": 0,
     "debtItemsTotal": 125,
-    "gateHealthy": 15,
-    "gateBlocked": 0
+    "gateHealthy": 14,
+    "gateBlocked": 1
   },
   "projectionIntegrity": {
-    "gateFindingsVersion": "GF-1.0",
-    "gateSourcesTotal": 3,
+    "gateFindingsVersion": "GF-2.1",
+    "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 13,
-    "attributedFindings": 13,
+    "totalFindings": 45,
+    "attributedFindings": 45,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -695,22 +695,11 @@
         "ambiguousOwnershipCount": 0
       },
       "gateHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "failCount": 0,
-        "warnCount": 1,
-        "gatesReporting": [
-          "gate:feature-classification-check"
-        ],
-        "findings": [
-          {
-            "gate": "gate:feature-classification-check",
-            "scope": "root",
-            "type": "CLASSIFICATION-MISSING",
-            "verdict": "warn",
-            "file": null,
-            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
-          }
-        ]
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
       },
       "architecturalDebt": {
         "debtCount": 4,
@@ -1094,11 +1083,28 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 1,
+        "warnCount": 3,
         "gatesReporting": [
+          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-phone.js — 2 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "CLASSIFICATION-MISSING",
+            "verdict": "warn",
+            "file": null,
+            "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -2523,13 +2529,63 @@
         "ambiguousOwnershipCount": 9
       },
       "gateHealth": {
-        "status": "ATTENTION",
-        "failCount": 0,
-        "warnCount": 1,
+        "status": "BLOCKED",
+        "failCount": 2,
+        "warnCount": 7,
         "gatesReporting": [
-          "gate:feature-classification-check"
+          "check:imports",
+          "gate:feature-classification-check",
+          "gate:feature-guard"
         ],
         "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-modal-desktop-product.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-pager.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-product-open-contract.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-subcat.js — 2 export(s) non consommé(s) :"
+          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -2537,6 +2593,22 @@
             "verdict": "warn",
             "file": null,
             "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+          },
+          {
+            "gate": "gate:feature-guard",
+            "scope": "boutique",
+            "type": "FEATURE-GUARD",
+            "verdict": "fail",
+            "file": null,
+            "message": "@domain mismatch : ../js/b-favs.js declare @domain \"boutique\" mais est liste dans catalog.feature.js (domain \"catalog\")"
+          },
+          {
+            "gate": "gate:feature-guard",
+            "scope": "boutique",
+            "type": "FEATURE-GUARD",
+            "verdict": "fail",
+            "file": null,
+            "message": "@domain mismatch : ../js/render/render-categories.js declare @domain \"boutique\" mais est liste dans catalog.feature.js (domain \"catalog\")"
           }
         ]
       },
@@ -12344,11 +12416,36 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 1,
+        "warnCount": 4,
         "gatesReporting": [
+          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-cart.js — 2 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-mini-cart.js — 1 export(s) non consommé(s) :"
+          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -13034,11 +13131,36 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 1,
+        "warnCount": 4,
         "gatesReporting": [
+          "check:imports",
           "gate:feature-classification-check"
         ],
         "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-checkout-render.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-checkout.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-paypal.js — 1 export(s) non consommé(s) :"
+          },
           {
             "gate": "gate:feature-classification-check",
             "scope": "root",
@@ -13739,11 +13861,111 @@
         "ambiguousOwnershipCount": 2
       },
       "gateHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
+        "warnCount": 12,
+        "gatesReporting": [
+          "check:body-classes",
+          "check:imports"
+        ],
+        "findings": [
+          {
+            "gate": "check:body-classes",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "k-view-wallet                0     1     0     ·      ⚠ warning"
+          },
+          {
+            "gate": "check:body-classes",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ 0 erreur, 4 avertissement(s) — exit 0"
+          },
+          {
+            "gate": "check:body-classes",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline"
+          },
+          {
+            "gate": "check:body-classes",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ [B-2] Classe body 'k-view-group' retirée mais jamais ajoutée dans le JS ou HTML inline"
+          },
+          {
+            "gate": "check:body-classes",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ [B-2] Classe body 'k-view-track' retirée mais jamais ajoutée dans le JS ou HTML inline"
+          },
+          {
+            "gate": "check:body-classes",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ [B-2] Classe body 'k-view-wallet' retirée mais jamais ajoutée dans le JS ou HTML inline"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-boutique-wow-style.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-utils.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "✔ Aucun import fantôme ni cycle inconnu ni module manquant."
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 2,
@@ -15952,11 +16174,54 @@
         "ambiguousOwnershipCount": 2
       },
       "gateHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
+        "warnCount": 5,
+        "gatesReporting": [
+          "check:imports"
+        ],
+        "findings": [
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-friendly-group-redirect.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-group-cart-flow.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-modal.js — 7 export(s) non consommé(s) :"
+          },
+          {
+            "gate": "check:imports",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ js/b-share-cart.js — 3 export(s) non consommé(s) :"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 6,

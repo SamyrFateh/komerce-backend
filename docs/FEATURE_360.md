@@ -14,13 +14,13 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Ambiguous ownership signals : **69**
 - Ontology gaps : **0**
 - Debt items (total) : **125**
-- Gate health — healthy : **15** · blocked : **0**
+- Gate health — healthy : **14** · blocked : **1**
 
 ## Gate findings — intégrité de projection
 
-- Source : `docs/GATE_FINDINGS.json` (version GF-1.0)
-- Sources de gates : **3** (0 en échec)
-- Findings : **13** total, **13** attribué(s), **0** sans attribution exploitable
+- Source : `docs/GATE_FINDINGS.json` (version GF-2.1)
+- Sources de gates : **18** (0 en échec)
+- Findings : **45** total, **45** attribué(s), **0** sans attribution exploitable
 - Fichiers non projetables : **0**
 - Fichiers multi-projetés : **0**
 
@@ -128,8 +128,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 1, declared-only deps: 2, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
-  - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
+**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
 **Architectural debt** (4) :
 - `CONSUMES_REFERENCE_UNRESOLVED` (low) — contract.consumes référence "notification" — ne correspond à aucun nom de feature connu
@@ -177,7 +176,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 1, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
+**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 3
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-phone.js — 2 export(s) non consommé(s) :
+  - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
 
 **Architectural debt** (1) :
@@ -254,8 +255,16 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 9, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
+**Gate health** : 🔴 BLOCKED — gates: check:imports, gate:feature-classification-check, gate:feature-guard, fail: 2, warn: 7
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-buybox-shared.js — 3 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-desktop-product.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-product-detail-bootstrap.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-pager.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-product-open-contract.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-subcat.js — 2 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
+  - [gate:feature-guard] 🔴 FEATURE-GUARD — @domain mismatch : ../js/b-favs.js declare @domain "boutique" mais est liste dans catalog.feature.js (domain "catalog")
+  - [gate:feature-guard] 🔴 FEATURE-GUARD — @domain mismatch : ../js/render/render-categories.js declare @domain "boutique" mais est liste dans catalog.feature.js (domain "catalog")
 
 **Architectural debt** (9) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table alerts — écrite par catalog (W), aucun lifecycle owner résolu (multi-writer non classifié)
@@ -1010,7 +1019,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 2
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 6, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
+**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 4
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-cart-stepper-guard.js — 2 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-cart.js — 2 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-mini-cart.js — 1 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
 
 **Architectural debt** (10) :
@@ -1073,7 +1085,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 3, ontology gaps: 0
-**Gate health** : 🟡 ATTENTION — gates: gate:feature-classification-check, fail: 0, warn: 1
+**Gate health** : 🟡 ATTENTION — gates: check:imports, gate:feature-classification-check, fail: 0, warn: 4
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-checkout-render.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-checkout.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-paypal.js — 1 export(s) non consommé(s) :
   - [gate:feature-classification-check] 🟠 CLASSIFICATION-MISSING — champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)
 
 **Architectural debt** (3) :
@@ -1162,7 +1177,19 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 2, ontology gaps: 0
-**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
+**Gate health** : 🟡 ATTENTION — gates: check:body-classes, check:imports, fail: 0, warn: 12
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — k-view-wallet                0     1     0     ·      ⚠ warning
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ 0 erreur, 4 avertissement(s) — exit 0
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-fav' retirée mais jamais ajoutée dans le JS ou HTML inline
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-group' retirée mais jamais ajoutée dans le JS ou HTML inline
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-track' retirée mais jamais ajoutée dans le JS ou HTML inline
+  - [check:body-classes] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ [B-2] Classe body 'k-view-wallet' retirée mais jamais ajoutée dans le JS ou HTML inline
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-boutique-wow-style.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-global-cart-access.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-desktop-sidebar.js — 2 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-scroll-owner.js — 2 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-utils.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ✔ Aucun import fantôme ni cycle inconnu ni module manquant.
 
 **Architectural debt** (2) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table notification_log — écrite par platform-ops (W), aucun lifecycle owner résolu (multi-writer non classifié)
@@ -1365,7 +1392,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Boundary health** : 🟡 ATTENTION — cross-feature imports: 1, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 2, ambiguous ownership: 2, ontology gaps: 0
-**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
+**Gate health** : 🟡 ATTENTION — gates: check:imports, fail: 0, warn: 5
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-friendly-group-redirect.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-group-cart-flow.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal-cart.js — 1 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-modal.js — 7 export(s) non consommé(s) :
+  - [check:imports] 🟠 TEXT-GATE-DIAGNOSTIC — ⚠ js/b-share-cart.js — 3 export(s) non consommé(s) :
 
 **Architectural debt** (6) :
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table alerts — écrite par shared-cart (W), aucun lifecycle owner résolu (multi-writer non classifié)
