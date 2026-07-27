@@ -100,10 +100,11 @@
 
 ## Exceptions ledger (measured, not fixed)
 
-Total exceptions : **0**.
+Total exceptions : **1**.
 
 | from → to | decision | rationale |
 |---|---|---|
+| shared-cart → catalog | accepted-dependency | Le modal panier partagé consomme en lecture seule des données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié. |
 
 ## Runtime cycles
 

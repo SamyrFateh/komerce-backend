@@ -42,8 +42,8 @@
   "summary": {
     "features": 28,
     "healthy": 5,
-    "attention": 22,
-    "blocked": 1,
+    "attention": 23,
+    "blocked": 0,
     "businessDependencies": 94,
     "directCrossFeatureImports": 1,
     "runtimeCycles": 0,
@@ -15626,7 +15626,7 @@
         ]
       },
       "boundaryHealth": {
-        "status": "BLOCKED",
+        "status": "ATTENTION",
         "directCrossFeatureImports": 1,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,

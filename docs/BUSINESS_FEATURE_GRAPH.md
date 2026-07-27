@@ -1871,7 +1871,7 @@ Consommation de decision-signals (capacité de pilotage).
 
 Ledger `governance/feature-dependency-exceptions.json` — uniquement les paires dont la politique de famille ne suffit pas (imports directs, cycles, ownership suspects). Une entrée dont la paire disparaît d'O5 devient stale (bloquant).
 
-- _none_
+- `shared-cart` → `catalog` — **accepted-dependency** — Le modal panier partagé consomme en lecture seule des données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié.
 
 ### Runtime cycles
 

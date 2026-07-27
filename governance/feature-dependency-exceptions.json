@@ -1,5 +1,18 @@
 {
   "version": "O6-1.0",
   "_comment": "Ledger d'EXCEPTIONS O6 — porte UNIQUEMENT les paires O5 OBSERVED_UNDECLARED dont la politique de famille ne suffit pas à décider sans jugement humain (CROSS_FEATURE_DIRECT_IMPORT, directions de cycles runtime, ownership suspects). NE contient PAS les 94. Clé unique from->to. Une entrée dont la paire a disparu d'O5 OBSERVED_UNDECLARED est STALE (bloquant) et doit être supprimée — l'historique appartient à Git. O6 décide ; O6 ne remédie pas encore les coutures.",
-  "exceptions": []
+  "exceptions": [
+    {
+      "from": "shared-cart",
+      "to": "catalog",
+      "decision": "accepted-dependency",
+      "rationale": "Le modal panier partagé consomme en lecture seule des données et fonctions de présentation du catalogue afin d'afficher le produit et de construire le snapshot ajouté au panier. Aucun état catalog n'est modifié.",
+      "scope": [
+        "b-modal-core.js -> shop-schema.js",
+        "b-modal-core.js -> b-modal-product-fields.js",
+        "b-modal-cart.js -> view-models/modal-cart-product-model.js"
+      ],
+      "reviewTrigger": "Formaliser une API interne si cette dépendance commence à porter des mutations, si le nombre de sites d'import augmente significativement, ou si plusieurs features consomment ces mêmes fonctions internes de catalog."
+    }
+  ]
 }
