@@ -141,12 +141,16 @@ jobs:
           set -o pipefail
           npm run map:check 2>&1 | tee p3b-map-check.log
 
-      - name: Upload failure logs
+      - name: Upload failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: p3b-closure-logs-${{ github.run_id }}
-          path: p3b-*.log
+          path: |
+            p3b-*.log
+            docs/BUSINESS_FEATURE_GRAPH.json
+            docs/O6_INVENTORY.md
+            docs/FEATURE_360.json
           if-no-files-found: warn
           retention-days: 1
 
