@@ -116,9 +116,7 @@ jobs:
           const file = 'features/infrastructure.feature.js';
           const before = fs.readFileSync(file, 'utf8');
           const after = before.replace("      'PROMPT_AUDIT_PREGOLIVE.md',\n", '');
-          if (after === before) {
-            throw new Error('PROMPT_AUDIT_PREGOLIVE.md reference not found exactly once');
-          }
+          if (after === before) throw new Error('PROMPT_AUDIT_PREGOLIVE.md reference not found exactly once');
           fs.writeFileSync(file, after);
           NODE
 
@@ -137,6 +135,121 @@ jobs:
           after = after.replace(marker, block);
           fs.writeFileSync(file, after);
           NODE
+
+      - name: Reconcile mixed composition evidence classification
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'scripts/lib/feature-dependency-disposition.js';
+          let src = fs.readFileSync(file, 'utf8');
+          const oldShape = `  const runtimeFiles = evidenceFiles.filter(f => f.role === 'RUNTIME');
+          const evForShape = runtimeFiles.length ? runtimeFiles : evidenceFiles;
+          const hasStatic = channels.has('static-code');
+          const hasIface = channels.has('interface');`;
+          const newShape = `  const runtimeFiles = evidenceFiles.filter(f => f.role === 'RUNTIME');
+          const nonWiringRuntimeFiles = runtimeFiles.filter(f => !wiring.has(f.source));
+          const evForShape = nonWiringRuntimeFiles.length
+            ? nonWiringRuntimeFiles
+            : (runtimeFiles.length ? runtimeFiles : evidenceFiles);
+          const shapeChannels = new Set(evForShape.map(f => f.channel));
+          const hasStatic = shapeChannels.has('static-code');
+          const hasIface = shapeChannels.has('interface');`;
+          if (!src.includes(oldShape)) throw new Error('analyzePair shape block not found');
+          src = src.replace(oldShape, newShape);
+          const oldBranch = `  } else if (ctx.compRootOwners.has(pair.from)) {
+            // Le consumer est propriétaire d'un fichier de wiring déclaré — mais on ne
+            // classe COMPOSITION_ROOT_WIRING que si TOUTES les preuves runtime viennent
+            // de ce wiring. Sinon la dépendance réelle reste non comprise -> UNCLASSIFIED.
+            family = a.allRuntimeFromWiring ? 'COMPOSITION_ROOT_WIRING' : 'UNCLASSIFIED';
+          } else if (providerKind === 'technical-transversal' || isTechnicalPrimitiveTarget(a)) {`;
+          const newBranch = `  } else if (ctx.compRootOwners.has(pair.from) && a.allRuntimeFromWiring) {
+            // Montage applicatif pur. Si d'autres preuves runtime existent, elles sont
+            // qualifiées normalement après retrait des fichiers de composition.
+            family = 'COMPOSITION_ROOT_WIRING';
+          } else if (providerKind === 'technical-transversal' || isTechnicalPrimitiveTarget(a)) {`;
+          if (!src.includes(oldBranch)) throw new Error('composition-root classify branch not found');
+          src = src.replace(oldBranch, newBranch);
+          fs.writeFileSync(file, src);
+          NODE
+
+      - name: Move toast utility out of orders
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const utilsFile = 'public/boutique/js/b-utils.js';
+          let utils = fs.readFileSync(utilsFile, 'utf8');
+          utils = utils.replace(" * @depends       fetch, Intl", " * @depends       b-store.js, fetch, Intl");
+          utils = utils.replace("'use strict';\n", "'use strict';\n\nimport { dom } from './b-store.js';\n");
+          const marker = '/* ── TAUX DE CHANGE ─────────────────────────────────────── */';
+          const toast = `/** Affiche une notification UI temporaire — utilitaire transversal. */
+          export function showToast(msg, type, duration) {
+            type = type || '';
+            dom.toast.innerHTML = '<div class="k-toast-simple">' + (msg || '') + '</div>';
+            dom.toast.className = 'k-toast show' + (type ? ' ' + type : '');
+            clearTimeout(dom.toast._t);
+            dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), duration || 2800);
+          }
+
+          `;
+          if (!utils.includes(marker) || utils.includes('export function showToast')) throw new Error('b-utils toast precondition failed');
+          utils = utils.replace(marker, toast + marker);
+          fs.writeFileSync(utilsFile, utils);
+
+          const cartFile = 'public/boutique/js/b-cart-core.js';
+          let cart = fs.readFileSync(cartFile, 'utf8');
+          cart = cart.replace("import { state, dom, CART_VERSION } from './b-store.js';", "import { state, CART_VERSION } from './b-store.js';");
+          cart = cart.replace("import { bus } from './b-bus.js';\n", "import { bus } from './b-bus.js';\nexport { showToast } from './b-utils.js';\n");
+          const toastBlock = /\/\/ ─+\n\/\/ TOAST\n\/\/ ─+\n[\s\S]*?export function showToast\([\s\S]*?\n}\n\n/;
+          if (!toastBlock.test(cart)) throw new Error('b-cart-core toast block not found');
+          cart = cart.replace(toastBlock, '');
+          cart = cart.replace('Exports : showToast, cartQty', 'Exports : cartQty');
+          fs.writeFileSync(cartFile, cart);
+
+          const identityFile = 'public/boutique/js/b-identity.js';
+          let identity = fs.readFileSync(identityFile, 'utf8');
+          identity = identity.replace("import { showToast } from './b-cart-core.js';\n", '');
+          identity = identity.replace("import { sanitize } from './b-utils.js';", "import { sanitize, showToast } from './b-utils.js';");
+          if (identity.includes("showToast } from './b-cart-core.js'")) throw new Error('identity still imports toast from cart');
+          fs.writeFileSync(identityFile, identity);
+          NODE
+
+      - name: Add composition classification regression test
+        run: |
+          cat > tests/unit/feature-dependency-disposition-composition.test.js <<'EOF'
+          'use strict';
+          const { classifyPair } = require('../../scripts/lib/feature-dependency-disposition');
+
+          const ctx = {
+            kindOf: name => ({ 'platform-ops': 'technical-transversal', catalog: 'business-feature', auth: 'technical-transversal' }[name]),
+            compRootOwners: new Set(['platform-ops']),
+            wiringFiles: new Set(['public/boutique/js/main.js']),
+          };
+
+          test('mixed composition + interface is classified from the non-wiring interface', () => {
+            const pair = { from: 'platform-ops', to: 'catalog', conformanceStatus: 'OBSERVED_UNDECLARED', channels: [
+              { channel: 'static-code', evidence: [{ sourceFileId: 'public/boutique/js/main.js', targetFile: 'public/boutique/js/b-catalog.js' }] },
+              { channel: 'interface', evidence: [{ consumerFileId: 'public/boutique/js/komerce-api.js', endpoint: '/api/products' }] },
+            ] };
+            expect(classifyPair(pair, ctx).family).toBe('BUSINESS_FEATURE_INTERFACE');
+          });
+
+          test('pure composition remains composition wiring', () => {
+            const pair = { from: 'platform-ops', to: 'catalog', conformanceStatus: 'OBSERVED_UNDECLARED', channels: [
+              { channel: 'static-code', evidence: [{ sourceFileId: 'public/boutique/js/main.js', targetFile: 'public/boutique/js/b-catalog.js' }] },
+            ] };
+            expect(classifyPair(pair, ctx).family).toBe('COMPOSITION_ROOT_WIRING');
+          });
+
+          test('non-wiring technical dependency remains technical', () => {
+            const pair = { from: 'platform-ops', to: 'auth', conformanceStatus: 'OBSERVED_UNDECLARED', channels: [
+              { channel: 'static-code', evidence: [{ sourceFileId: 'routes/health.js', targetFile: 'middleware/auth.js' }] },
+            ] };
+            expect(classifyPair(pair, ctx).family).toBe('TECHNICAL_PRIMITIVE');
+          });
+          EOF
+
+      - name: Run targeted regression tests
+        run: npx jest tests/unit/feature-dependency-disposition-composition.test.js public/boutique/tests/unit/b-cart-core.test.js public/boutique/tests/unit/b-identity.test.js --runInBand
 
       - name: Regenerate dependent architecture maps
         run: |
@@ -200,7 +313,7 @@ jobs:
           rm -f p3b-*.log
           git config user.name "Komerce Governance Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add -u
+          git add -A
           if git diff --cached --quiet; then
             echo "No generated delta"
           else
