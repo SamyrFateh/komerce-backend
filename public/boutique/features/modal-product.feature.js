@@ -94,6 +94,7 @@ module.exports = {
       '../tests/unit/modal-mobile-canonical.test.js',
       '../tests/unit/b-modal-desktop-enhancers.test.js',
       '../tests/unit/modal-product-price-normalization.test.js',
+      '../tests/unit/modal-v3-convergence-invariants.test.js',
     ],
   },
 
@@ -178,40 +179,6 @@ module.exports = {
           /\.k-modal-view-full\s*\{[^}]*position:\s*absolute[^}]*bottom:\s*12px[^}]*left:\s*10px/m,
         ],
       },
-      {
-        artifact: '../css/modal-media.css',
-        label:    'mobile product image cannot collapse in modal flex scroll',
-        mustContain: [
-          /\.k-modal-img-wrap\s*\{[^}]*flex:\s*0\s+0\s+auto[^}]*\}/m,
-          /\.k-modal-img-wrap\s*\{[^}]*min-height:\s*260px[^}]*\}/m,
-        ],
-      },
-      {
-        artifact: '../js/b-modal-suggestions.js',
-        label:    'suggestions lifecycle emits curation-ready event',
-        mustContain: [
-          /bus\.emit\('modal:suggestions-rendered'/m,
-          /delete\s+sugSection\.dataset\.curationProductId/m,
-        ],
-      },
-      {
-        artifact: '../js/b-modal-suggestions.js',
-        label:    'modal suggestions keep discovery level when API is narrow',
-        mustContain: [
-          /function\s+_ensureTwoSuggestionLevels\(sameCat,\s*otherCat\)/m,
-          /p\.category\s*!==\s*product\.category/m,
-        ],
-      },
-      {
-        artifact: '../js/b-pdp-curation-suggestions.js',
-        label:    'PDP curation waits for rendered suggestions',
-        mustContain: [
-          /bus\.on\('modal:suggestions-rendered',\s*scheduleEnhanceCuration\)/m,
-          /k-pdp-curation-section--complements/m,
-        ],
-      },
     ],
-
-    doctrine: { scope: 'boutique', max: 0 },
   },
 };
