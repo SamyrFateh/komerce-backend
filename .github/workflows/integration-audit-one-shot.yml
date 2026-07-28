@@ -15,36 +15,33 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
           POSTGRES_DB: komerce_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d komerce_test"
-          --health-interval 5s
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
           --health-timeout 5s
-          --health-retries 20
+          --health-retries 10
     env:
       NODE_ENV: test
-      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/komerce_test
-      JWT_SECRET: integration-test-secret
-      ADMIN_PASSWORD: integration-admin
+      DATABASE_URL: postgres://komerce:komerce@127.0.0.1:5432/komerce_test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
       STRIPE_SECRET_KEY: sk_test_dummy
       STRIPE_WEBHOOK_SECRET: whsec_dummy
-      QR_SECRET: integration-qr-secret
-      AUTHKEY_API_KEY: integration-dummy
-      PAYPAL_CLIENT_ID: integration-dummy
-      PAYPAL_CLIENT_SECRET: integration-dummy
-      PAYPAL_WEBHOOK_ID: integration-dummy
-      META_WA_APP_SECRET: integration-dummy
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Capture tracked source snapshot
-        run: git archive --format=zip --output=integration-source.zip HEAD
 
       - uses: actions/setup-node@v4
         with:
@@ -54,15 +51,39 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build integration schema
+      - name: Verify schema snapshot
         run: |
-          set -o pipefail
-          node scripts/migrate.js 2>&1 | tee integration-migrate.log
+          node scripts/check-schema-freshness.js
+          node scripts/check-schema-resurrection.js
 
-      - name: Run integration suites
+      - name: Load canonical integration schema
         run: |
           set -o pipefail
-          npx jest tests/integration --runInBand --forceExit --detectOpenHandles --verbose 2>&1 | tee integration-test.log
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql 2>&1 | tee integration-schema.log
+          node scripts/ci-migrate.js 2>&1 | tee -a integration-schema.log
+
+      - name: Run every integration suite and collect failures
+        run: |
+          set -o pipefail
+          : > integration-test.log
+          : > integration-failures.txt
+          failed=0
+          total=0
+          for f in tests/integration/*.test.js; do
+            total=$((total + 1))
+            echo "── $f ──" | tee -a integration-test.log
+            if npx jest "$f" --ci --forceExit 2>&1 | tee -a integration-test.log; then
+              echo "PASS $f" | tee -a integration-test.log
+            else
+              echo "$f" >> integration-failures.txt
+              echo "FAIL $f" | tee -a integration-test.log
+              failed=$((failed + 1))
+            fi
+          done
+          echo "TOTAL=$total FAILED=$failed" | tee -a integration-test.log
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
 
       - name: Upload integration evidence
         if: always()
@@ -70,9 +91,9 @@ jobs:
         with:
           name: integration-audit-${{ github.run_id }}
           path: |
-            integration-source.zip
-            integration-migrate.log
+            integration-schema.log
             integration-test.log
+            integration-failures.txt
           if-no-files-found: warn
           retention-days: 1
 
