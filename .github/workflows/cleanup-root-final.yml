@@ -12,6 +12,19 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@127.0.0.1:5432/komerce_test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
         with:
@@ -120,21 +133,11 @@ jobs:
       - name: Alerts contract
         run: npm run alerts:contract:check
       - name: Map core
-        run: |
-          set -o pipefail
-          node scripts/map-check.js 2>&1 | tee map-core-cleanup.log
-      - name: Upload map-core evidence
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: root-cleanup-map-${{ github.run_id }}
-          path: map-core-cleanup.log
-          retention-days: 1
+        run: node scripts/map-check.js
 
       - name: Commit cleaned tree
         id: commit
         run: |
-          rm -f map-core-cleanup.log
           git config user.name "Komerce Governance Bot"
           git config user.email "actions@users.noreply.github.com"
           git add -A
