@@ -1,5 +1,6 @@
 name: Carte First
 
+# Toute évolution applicative entre par une feature et par une PR vérifiée.
 on:
   pull_request:
   push:
