@@ -1,0 +1,143 @@
+name: Governance Certification
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@127.0.0.1:5432/komerce_test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish running status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -sS -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"pending\",\"context\":\"governance-certification\",\"description\":\"Full repository certification running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install all workspaces
+        run: |
+          npm ci
+          npm --prefix public/boutique ci
+          npm --prefix public/dashboards ci
+
+      - name: Verify and load canonical database
+        run: |
+          node scripts/check-schema-freshness.js
+          node scripts/check-schema-resurrection.js
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+
+      - name: Root governance and unit coverage
+        run: |
+          npm run feature:registry
+          npm run feature:registry-doc
+          npm run feature:classification:strict
+          npm run quality:gate
+          npm run backend:audit
+          npm run audit:gate
+          npm run gate:catalog-contract
+          npx jest --testPathPatterns="tests/unit" --ci --runInBand --testPathIgnorePatterns="tests/integration" --coverage
+
+      - name: Integration suites
+        run: npm run test:integration
+
+      - name: Boutique quality and coverage
+        run: |
+          npm --prefix public/boutique run audit:gate
+          npm --prefix public/boutique run check:fast
+          npm --prefix public/boutique run test:coverage
+
+      - name: Dashboards quality
+        run: |
+          npm --prefix public/dashboards run audit:gate
+          npm --prefix public/dashboards run check:all
+
+      - name: Regenerate governance projections
+        run: |
+          npm run arch:gen
+          npm run dashboards:360
+          npm run boutique:360
+          npm run business-graph:gen
+          npm run meta:graph
+          npm run feature:360:gen
+
+      - name: Final governance gates
+        run: |
+          npm run gate:schema
+          npm run gate:docs-lint
+          npm run gate:feature-audit
+          npm run feature:invariant:check:strict
+          npm run dashboards:360:check
+          npm run boutique:360:check
+          npm run business-graph:check
+          npm run business-graph:ratchet-check
+          npm run business-graph:disposition-check
+          npm run meta:graph:check
+          npm run security:360:check
+          npm run feature:360:check
+          npm run map:check
+
+      - name: Publish final status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          state=failure
+          description="Governance certification failed"
+          if [ "$JOB_STATUS" = "success" ]; then
+            state=success
+            description="Governance and all test scopes passed"
+          fi
+          curl -sS -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"${state}\",\"context\":\"governance-certification\",\"description\":\"${description}\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
