@@ -1,0 +1,41 @@
+name: Apply Final Modal Test Scope Fix
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[test-scope-applied]') && !contains(github.event.head_commit.message, '[governance-certified]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fix renderer source scope in the final modal assertion
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const file = 'tests/unit/modal-mobile-canonical.test.js';
+          let source = fs.readFileSync(file, 'utf8');
+          const before = "  test('promo badge uses promo_pct from contract through the scalar-fields owner', () => {\n    const fieldsSource = fs.readFileSync(PRODUCT_FIELDS_PATH, 'utf8');\n    expect(fieldsSource).toMatch(/pricing\\.promo_pct/);\n    expect(source).toMatch(/paintDetailFields\\(detail, selection\\)/);\n  });";
+          const after = "  test('promo badge uses promo_pct from contract through the scalar-fields owner', () => {\n    const fieldsSource = fs.readFileSync(PRODUCT_FIELDS_PATH, 'utf8');\n    const rendererSource = fs.readFileSync(MOBILE_RENDERER_PATH, 'utf8');\n    expect(fieldsSource).toMatch(/pricing\\.promo_pct/);\n    expect(rendererSource).toMatch(/paintDetailFields\\(detail, selection\\)/);\n  });";
+          if (!source.includes(after)) {
+            if (!source.includes(before)) throw new Error('modal test scope marker missing');
+            source = source.replace(before, after);
+            fs.writeFileSync(file, source);
+          }
+          NODE
+          rm .github/workflows/apply-final-test-scope.yml
+
+      - name: Commit final test scope fix
+        run: |
+          git config user.name "Komerce Governance Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "test(governance): fix final modal assertion scope [test-scope-applied]"
+          git push origin HEAD:main
