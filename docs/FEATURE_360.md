@@ -172,7 +172,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : _aucune_
 
-**Technical context** : 3 primitive dependencies, 2 test-only, 0 composition-root
+**Technical context** : 3 primitive dependencies, 1 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟡 ATTENTION — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 1, ontology gaps: 0
@@ -693,17 +693,17 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `UNRESOLVED_INTERNAL_API` (medium) — utils/rules.js — moteur de règles métier centralisé (null) — statut: undeclared-in-graph
 - `UNRESOLVED_INTERNAL_API` (medium) — validators/index.js — barrel des schémas Joi (null) — statut: undeclared-in-graph
 
-**Implementation** : 384 fichier(s) déclaré(s)
+**Implementation** : 272 fichier(s) déclaré(s)
   - assets : 37
   - bootstrap : 8
-  - ci : 26
-  - config : 11
+  - ci : 16
+  - config : 12
   - db : 16
-  - docs : 166
+  - docs : 60
   - middleware : 5
   - migrations : 6
-  - scripts : 85
-  - tests : 17
+  - scripts : 87
+  - tests : 18
   - utils : 6
   - validators : 1
 

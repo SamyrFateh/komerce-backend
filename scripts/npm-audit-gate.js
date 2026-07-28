@@ -30,6 +30,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { actionableVulnerabilities, inheritedHighCriticalCount } = require('./lib/npm-audit-core');
 
 // --cwd=<path> permet de réutiliser ce même script sur un autre package.json
 // du repo (ex. public/boutique, dépendances isolées : stylelint, playwright)
@@ -75,7 +76,11 @@ console.log(
 );
 
 const allVulns = data.vulnerabilities || {};
-let targets = Object.values(allVulns).filter(v => v.severity === 'high' || v.severity === 'critical');
+let targets = actionableVulnerabilities(allVulns);
+const inheritedCount = inheritedHighCriticalCount(allVulns);
+if (inheritedCount > 0) {
+  console.log(`ℹ️  npm audit v2: ${inheritedCount} entrée(s) héritée(s) regroupée(s) sous leur advisory source.`);
+}
 
 if (targets.length === 0) {
   console.log('\n✅ npm audit: 0 high/critical vulnerabilities');

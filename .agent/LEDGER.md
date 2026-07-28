@@ -74,3 +74,14 @@ Clos pour le périmètre indiscutable :
 - **Nettoyage runtime : CLOS.**
 - Les dettes et attentions encore projetées restent visibles dans Feature 360 et O6 ; elles ne sont pas transformées en faux vert.
 - Ce ledger ne déclare pas P6, P7 ou P8 ouverts ou clos : ces paliers restent hors du chantier terminé ici.
+
+## Certification finale — gouvernance et tests, 2026-07-28
+
+- Unités racine : toutes vertes avec couverture et périmètre explicite `tests/unit`.
+- Intégration : 31/31 suites vertes avec PostgreSQL 16 et bootstrap CI canonique.
+- Boutique et Dashboards : gates et couvertures verts.
+- Projections 360, dispositions O6, invariants, sécurité, Feature 360 et `map:check` : verts.
+- Preuve complète : GitHub Actions run `30349485657`.
+- Audit npm : advisory réel dédupliqué ; exception dev-only `brace-expansion` expirant le 2026-08-15.
+- Les anciens nombres « 13 tests/suites cassés » ne décrivent plus l’état courant.
+- Les workflows de diagnostic, prompts, patches, archives de travail et marqueurs temporaires ont été retirés.

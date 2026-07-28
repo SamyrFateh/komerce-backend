@@ -4440,6 +4440,13 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
+        "declared": "scripts/lib/npm-audit-core.js",
+        "resolvedPath": "scripts/lib/npm-audit-core.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
         "declared": "scripts/map-check.js",
         "resolvedPath": "scripts/map-check.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4519,6 +4526,13 @@
         "category": "scripts",
         "declared": "scripts/run-migrations.js",
         "resolvedPath": "scripts/run-migrations.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/run-integration-tests.js",
+        "resolvedPath": "scripts/run-integration-tests.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -4608,13 +4622,6 @@
       {
         "feature": "infrastructure",
         "category": "docs",
-        "declared": "docs/_archive/CORRECTIONS_GOUVERNANCE_2026-07-01.md",
-        "resolvedPath": "docs/_archive/CORRECTIONS_GOUVERNANCE_2026-07-01.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
         "declared": "PROCEDURE.md",
         "resolvedPath": "PROCEDURE.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4624,13 +4631,6 @@
         "category": "docs",
         "declared": "README.md",
         "resolvedPath": "README.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/AUDIT_CONFORMITE_PRE_GOLIVE_2026-06-08.md",
-        "resolvedPath": "docs/AUDIT_CONFORMITE_PRE_GOLIVE_2026-06-08.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -4694,13 +4694,6 @@
         "category": "docs",
         "declared": "docs/FIX_ERROR_HANDLER_22P02.md",
         "resolvedPath": "docs/FIX_ERROR_HANDLER_22P02.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/KNOWN_FAILING_TESTS.md",
-        "resolvedPath": "docs/KNOWN_FAILING_TESTS.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -4776,20 +4769,6 @@
       {
         "feature": "infrastructure",
         "category": "docs",
-        "declared": "docs/P4_1_CALIBRAGE_RUN2.md",
-        "resolvedPath": "docs/P4_1_CALIBRAGE_RUN2.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/P4_1_PREMIER_RUN.md",
-        "resolvedPath": "docs/P4_1_PREMIER_RUN.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
         "declared": "docs/README.md",
         "resolvedPath": "docs/README.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4797,8 +4776,8 @@
       {
         "feature": "infrastructure",
         "category": "docs",
-        "declared": "docs/RECONCILIATION_2026-06-16.md",
-        "resolvedPath": "docs/RECONCILIATION_2026-06-16.md",
+        "declared": "docs/TEST_CERTIFICATION.md",
+        "resolvedPath": "docs/TEST_CERTIFICATION.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -4846,442 +4825,8 @@
       {
         "feature": "infrastructure",
         "category": "docs",
-        "declared": "docs/SIGNOFF_REVERIF.md",
-        "resolvedPath": "docs/SIGNOFF_REVERIF.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
         "declared": "docs/ZONE_IMPACT.md",
         "resolvedPath": "docs/ZONE_IMPACT.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_agent/README.md",
-        "resolvedPath": "docs/_agent/README.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_agent/session_history/2026-04-07_bootstrap.md",
-        "resolvedPath": "docs/_agent/session_history/2026-04-07_bootstrap.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_agent/state.md",
-        "resolvedPath": "docs/_agent/state.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_agent/workspace/.gitkeep",
-        "resolvedPath": "docs/_agent/workspace/.gitkeep",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/AGENT_CONFIG.md",
-        "resolvedPath": "docs/_archive/AGENT_CONFIG.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/AGENT_SUBAGENTS.md",
-        "resolvedPath": "docs/_archive/AGENT_SUBAGENTS.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/AUDIT_BACKEND_FINDINGS.md",
-        "resolvedPath": "docs/_archive/AUDIT_BACKEND_FINDINGS.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/AUDIT_CONFORMITE_GOUVERNANCE.md",
-        "resolvedPath": "docs/_archive/AUDIT_CONFORMITE_GOUVERNANCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/AUDIT_KOMERCE_FINAL.md",
-        "resolvedPath": "docs/_archive/AUDIT_KOMERCE_FINAL.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/AUDIT_REPORT.md",
-        "resolvedPath": "docs/_archive/AUDIT_REPORT.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/CHANGELOG-P0.md",
-        "resolvedPath": "docs/_archive/CHANGELOG-P0.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/CHANGES_PHASE2_MIGRATION.md",
-        "resolvedPath": "docs/_archive/CHANGES_PHASE2_MIGRATION.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/GOVERNANCE.md",
-        "resolvedPath": "docs/_archive/GOVERNANCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/GOVERNANCE_BOOTSTRAP.md",
-        "resolvedPath": "docs/_archive/GOVERNANCE_BOOTSTRAP.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/IMPACT_SYSTEM.md",
-        "resolvedPath": "docs/_archive/IMPACT_SYSTEM.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/INSTRUCTIONS.md",
-        "resolvedPath": "docs/_archive/INSTRUCTIONS.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/PATCH_BOUTIQUE_ARCHITECTURE.md",
-        "resolvedPath": "docs/_archive/PATCH_BOUTIQUE_ARCHITECTURE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/PATCH_BOUTIQUE_MODAL_ARCHITECTURE.md",
-        "resolvedPath": "docs/_archive/PATCH_BOUTIQUE_MODAL_ARCHITECTURE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/PHASE-1-audit-coherence.md",
-        "resolvedPath": "docs/_archive/PHASE-1-audit-coherence.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/PROMPTS_KIT.md",
-        "resolvedPath": "docs/_archive/PROMPTS_KIT.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/RAPPORT_LOTS_CSS_1-4.md",
-        "resolvedPath": "docs/_archive/RAPPORT_LOTS_CSS_1-4.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/README.md",
-        "resolvedPath": "docs/_archive/README.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/READY_TO_ORDER_ROUTE_PATCH.md",
-        "resolvedPath": "docs/_archive/READY_TO_ORDER_ROUTE_PATCH.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/REPRISE_SESSION.md",
-        "resolvedPath": "docs/_archive/REPRISE_SESSION.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/ROADMAP_KOMERCE.md",
-        "resolvedPath": "docs/_archive/ROADMAP_KOMERCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/ROADMAP_KOMERCE_PROD_FINALE.md",
-        "resolvedPath": "docs/_archive/ROADMAP_KOMERCE_PROD_FINALE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/SCHEMA_GAP_KOMERCE.md",
-        "resolvedPath": "docs/_archive/SCHEMA_GAP_KOMERCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/VALIDATION_GUIDE.md",
-        "resolvedPath": "docs/_archive/VALIDATION_GUIDE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_archive/komerce-point6-gouvernance-operationnelle.md",
-        "resolvedPath": "docs/_archive/komerce-point6-gouvernance-operationnelle.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_logs/2026-04-07_09-53_sync.md",
-        "resolvedPath": "docs/_logs/2026-04-07_09-53_sync.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_logs/2026-04-07_09-54_sync.md",
-        "resolvedPath": "docs/_logs/2026-04-07_09-54_sync.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_logs/2026-04-07_phase1_parcels.md",
-        "resolvedPath": "docs/_logs/2026-04-07_phase1_parcels.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_logs/2026-04-07_phase2_parcels.md",
-        "resolvedPath": "docs/_logs/2026-04-07_phase2_parcels.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_logs/2026-04-07_phase4_cleanup.md",
-        "resolvedPath": "docs/_logs/2026-04-07_phase4_cleanup.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_logs/PHASE2_PARCEL_CHANGELOG.md",
-        "resolvedPath": "docs/_logs/PHASE2_PARCEL_CHANGELOG.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_logs/README.md",
-        "resolvedPath": "docs/_logs/README.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_pending/README.md",
-        "resolvedPath": "docs/_pending/README.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_work/.gitkeep",
-        "resolvedPath": "docs/_work/.gitkeep",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_work/2026-04-07_phase2_parcels_analysis.md",
-        "resolvedPath": "docs/_work/2026-04-07_phase2_parcels_analysis.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_work/AUDIT_CODE_VS_TRUTH_2025-04-07.md",
-        "resolvedPath": "docs/_work/AUDIT_CODE_VS_TRUTH_2025-04-07.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_work/BOUTIQUE_LOT1_TOKENS_CASSES_AUDIT.md",
-        "resolvedPath": "docs/_work/BOUTIQUE_LOT1_TOKENS_CASSES_AUDIT.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_work/PARTS_MODULE_ANALYSIS.md",
-        "resolvedPath": "docs/_work/PARTS_MODULE_ANALYSIS.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_work/README.md",
-        "resolvedPath": "docs/_work/README.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_work/SOURCING_DB_AUDIT.md",
-        "resolvedPath": "docs/_work/SOURCING_DB_AUDIT.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/_work/audit-code-vs-truth-2026-04-07.md",
-        "resolvedPath": "docs/_work/audit-code-vs-truth-2026-04-07.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/AUDIT_BUGS.md",
-        "resolvedPath": "docs/audit/AUDIT_BUGS.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/AUDIT_CODE_INTEGRITY.md",
-        "resolvedPath": "docs/audit/AUDIT_CODE_INTEGRITY.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/AUDIT_DELTA_BACKEND_2026-06-14.md",
-        "resolvedPath": "docs/audit/AUDIT_DELTA_BACKEND_2026-06-14.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/AUDIT_KOMERCE_3D.md",
-        "resolvedPath": "docs/audit/AUDIT_KOMERCE_3D.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/AUDIT_PREGOLIVE_2026-06-22.md",
-        "resolvedPath": "docs/audit/AUDIT_PREGOLIVE_2026-06-22.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/GOV-02_UNPROTECTED_CLASSIFICATION.md",
-        "resolvedPath": "docs/audit/GOV-02_UNPROTECTED_CLASSIFICATION.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/PROMPT_SONNET_DEPLOY_ORCHESTRATION_KOMERCE.md",
-        "resolvedPath": "docs/audit/PROMPT_SONNET_DEPLOY_ORCHESTRATION_KOMERCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/PROMPT_SONNET_LOT387_KOMERCE.md",
-        "resolvedPath": "docs/audit/PROMPT_SONNET_LOT387_KOMERCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/PROMPT_SONNET_OBSERVABILITY_LOGS_KOMERCE.md",
-        "resolvedPath": "docs/audit/PROMPT_SONNET_OBSERVABILITY_LOGS_KOMERCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/PROMPT_SONNET_SECURITY_GOLIVE_KOMERCE.md",
-        "resolvedPath": "docs/audit/PROMPT_SONNET_SECURITY_GOLIVE_KOMERCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/REFACTO_ROUTES_VERIFICATION_2026-06-14.md",
-        "resolvedPath": "docs/audit/REFACTO_ROUTES_VERIFICATION_2026-06-14.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/SECURITY_CHECKLIST.md",
-        "resolvedPath": "docs/audit/SECURITY_CHECKLIST.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/db_audit.md",
-        "resolvedPath": "docs/audit/db_audit.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/findings_updated.ndjson",
-        "resolvedPath": "docs/audit/findings_updated.ndjson",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/middleware_audit.md",
-        "resolvedPath": "docs/audit/middleware_audit.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/audit/utils_audit.md",
-        "resolvedPath": "docs/audit/utils_audit.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5322,260 +4867,8 @@
       {
         "feature": "infrastructure",
         "category": "docs",
-        "declared": "docs/backend/ROUTES_REFACTO_ANALYSIS_2026-06-14.md",
-        "resolvedPath": "docs/backend/ROUTES_REFACTO_ANALYSIS_2026-06-14.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
         "declared": "docs/backend/SECURITY-MODEL.md",
         "resolvedPath": "docs/backend/SECURITY-MODEL.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/ARCH_SCAN_2026-05-19.md",
-        "resolvedPath": "docs/chantier/ARCH_SCAN_2026-05-19.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/AUDIT_MIGRATIONS_060_061.md",
-        "resolvedPath": "docs/chantier/AUDIT_MIGRATIONS_060_061.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/BACKEND_FIXES_REGISTER.md",
-        "resolvedPath": "docs/chantier/BACKEND_FIXES_REGISTER.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/BACKUP_DB_AUDIT_F6.md",
-        "resolvedPath": "docs/chantier/BACKUP_DB_AUDIT_F6.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/BLINDAGE_BASE0_2026-06-16.md",
-        "resolvedPath": "docs/chantier/BLINDAGE_BASE0_2026-06-16.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/CARTOGRAPHY_360.md",
-        "resolvedPath": "docs/chantier/CARTOGRAPHY_360.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/CHECKPOINT_2026-05-21_H1_COMPLETE.md",
-        "resolvedPath": "docs/chantier/CHECKPOINT_2026-05-21_H1_COMPLETE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/CLOTURE_CYCLE_CRITIQUE_BACKEND.md",
-        "resolvedPath": "docs/chantier/CLOTURE_CYCLE_CRITIQUE_BACKEND.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/CORS_AUDIT_D7.md",
-        "resolvedPath": "docs/chantier/CORS_AUDIT_D7.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/CORS_HELMET_AUDIT_D7_D8.md",
-        "resolvedPath": "docs/chantier/CORS_HELMET_AUDIT_D7_D8.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/ENV_AUDIT_D5.md",
-        "resolvedPath": "docs/chantier/ENV_AUDIT_D5.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/GATES_AUDIT.md",
-        "resolvedPath": "docs/chantier/GATES_AUDIT.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/GOVERNANCE_STATUS.md",
-        "resolvedPath": "docs/chantier/GOVERNANCE_STATUS.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/H1A_SERVER_WIRING_CODEMOD.md",
-        "resolvedPath": "docs/chantier/H1A_SERVER_WIRING_CODEMOD.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/H1B_HTML_ROUTES_CODEMOD.md",
-        "resolvedPath": "docs/chantier/H1B_HTML_ROUTES_CODEMOD.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/H1C_SECURITY_CODEMOD.md",
-        "resolvedPath": "docs/chantier/H1C_SECURITY_CODEMOD.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/H1D_CRONS_CODEMOD.md",
-        "resolvedPath": "docs/chantier/H1D_CRONS_CODEMOD.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/HELMET_AUDIT_D8.md",
-        "resolvedPath": "docs/chantier/HELMET_AUDIT_D8.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/I_SWEEP_PLAN.md",
-        "resolvedPath": "docs/chantier/I_SWEEP_PLAN.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/KOMERCE_CORRECTIONS_360_CONSOLIDE.md",
-        "resolvedPath": "docs/chantier/KOMERCE_CORRECTIONS_360_CONSOLIDE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/KOMERCE_HARMONISATION_ARCHI.md",
-        "resolvedPath": "docs/chantier/KOMERCE_HARMONISATION_ARCHI.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/LOGGER_GUIDELINES.md",
-        "resolvedPath": "docs/chantier/LOGGER_GUIDELINES.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/LOT_B_C_REFACTO.md",
-        "resolvedPath": "docs/chantier/LOT_B_C_REFACTO.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/MIGRATIONS_FOLDERS_A5.md",
-        "resolvedPath": "docs/chantier/MIGRATIONS_FOLDERS_A5.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/P0_RUNTIME_CHECK.md",
-        "resolvedPath": "docs/chantier/P0_RUNTIME_CHECK.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/PLAN_H1F_STARTUP_MIGRATIONS.md",
-        "resolvedPath": "docs/chantier/PLAN_H1F_STARTUP_MIGRATIONS.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/PLAN_H1_REFACTO_SERVER.md",
-        "resolvedPath": "docs/chantier/PLAN_H1_REFACTO_SERVER.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/PLAN_POLISSAGE_GOUVERNANCE.md",
-        "resolvedPath": "docs/chantier/PLAN_POLISSAGE_GOUVERNANCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/PROMPTS_KIT_POST_CRITIQUE.md",
-        "resolvedPath": "docs/chantier/PROMPTS_KIT_POST_CRITIQUE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/RATE_LIMIT_AUDIT_D6.md",
-        "resolvedPath": "docs/chantier/RATE_LIMIT_AUDIT_D6.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/README.md",
-        "resolvedPath": "docs/chantier/README.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/STATUS.md",
-        "resolvedPath": "docs/chantier/STATUS.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/VALIDATION_STAGING_2026-05-19.md",
-        "resolvedPath": "docs/chantier/VALIDATION_STAGING_2026-05-19.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/ZONE_IMPACT.md",
-        "resolvedPath": "docs/chantier/ZONE_IMPACT.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/chantier/komerce_backlog.ndjson",
-        "resolvedPath": "docs/chantier/komerce_backlog.ndjson",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5604,13 +4897,6 @@
         "category": "docs",
         "declared": "docs/doctrine/APP_FEATURE_REGISTRY.md",
         "resolvedPath": "docs/doctrine/APP_FEATURE_REGISTRY.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/doctrine/AUDIT_FEATURE_DOCTRINE.md",
-        "resolvedPath": "docs/doctrine/AUDIT_FEATURE_DOCTRINE.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5653,13 +4939,6 @@
         "category": "docs",
         "declared": "docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md",
         "resolvedPath": "docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
-        "declared": "docs/fix-gate-prefix.patch.md",
-        "resolvedPath": "docs/fix-gate-prefix.patch.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5735,13 +5014,6 @@
       {
         "feature": "infrastructure",
         "category": "docs",
-        "declared": "docs/vision/ROADMAP_PILOTE_KOMERCE.md",
-        "resolvedPath": "docs/vision/ROADMAP_PILOTE_KOMERCE.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "docs",
         "declared": "docs/vision/VISION_MARCHE_KOMERCE.md",
         "resolvedPath": "docs/vision/VISION_MARCHE_KOMERCE.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5770,43 +5042,8 @@
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/apply-komerce-arch-headers-once.yml",
-        "resolvedPath": ".github/workflows/apply-komerce-arch-headers-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/apply-komerce-arch-headers-phase2-once.yml",
-        "resolvedPath": ".github/workflows/apply-komerce-arch-headers-phase2-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/apply-komerce-arch-headers-phase3-once.yml",
-        "resolvedPath": ".github/workflows/apply-komerce-arch-headers-phase3-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
         "declared": ".github/workflows/apply-komerce-arch-headers.yml",
         "resolvedPath": ".github/workflows/apply-komerce-arch-headers.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/apply-komerce-arch-total-coverage-once.yml",
-        "resolvedPath": ".github/workflows/apply-komerce-arch-total-coverage-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/audit-komerce-arch-headers-once.yml",
-        "resolvedPath": ".github/workflows/audit-komerce-arch-headers-once.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5861,27 +5098,6 @@
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/enrich-komerce-arch-db-fields-once.yml",
-        "resolvedPath": ".github/workflows/enrich-komerce-arch-db-fields-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/fix-komerce-arch-links-once.yml",
-        "resolvedPath": ".github/workflows/fix-komerce-arch-links-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/generate-komerce-arch-graph-once.yml",
-        "resolvedPath": ".github/workflows/generate-komerce-arch-graph-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
         "declared": ".github/workflows/generate-komerce-arch-graph.yml",
         "resolvedPath": ".github/workflows/generate-komerce-arch-graph.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5905,20 +5121,6 @@
         "category": "ci",
         "declared": ".github/workflows/pr-governance.yml",
         "resolvedPath": ".github/workflows/pr-governance.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/refine-komerce-arch-quality-once.yml",
-        "resolvedPath": ".github/workflows/refine-komerce-arch-quality-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/refine-komerce-arch-quality-v2-once.yml",
-        "resolvedPath": ".github/workflows/refine-komerce-arch-quality-v2-once.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6358,6 +5560,13 @@
       {
         "feature": "infrastructure",
         "category": "config",
+        "declared": "jest.unit.config.js",
+        "resolvedPath": "jest.unit.config.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "config",
         "declared": "package-lock.json",
         "resolvedPath": "package-lock.json",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6430,6 +5639,13 @@
         "category": "tests",
         "declared": "tests/unit/logger.test.js",
         "resolvedPath": "tests/unit/logger.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/npm-audit-core.test.js",
+        "resolvedPath": "tests/unit/npm-audit-core.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -16554,22 +15770,6 @@
       },
       {
         "from": "auth-identity",
-        "to": "orders",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "public/boutique/tests/unit/b-identity.test.js",
-                "targetFile": "public/boutique/js/b-cart-core.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
-        "from": "auth-identity",
         "to": "platform-ops",
         "channels": [
           {
@@ -16586,6 +15786,10 @@
               {
                 "sourceFileId": "public/boutique/tests/unit/b-identity.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-identity.test.js",
+                "targetFile": "public/boutique/js/b-utils.js"
               }
             ]
           }
@@ -23461,7 +22665,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 805
+        "filesObserved": 809
       },
       "boutique": {
         "filesObserved": 123,
@@ -23495,7 +22699,7 @@
     "familySummary": {
       "PROJECTION": 9,
       "COMPOSITION_ROOT_WIRING": 13,
-      "NON_RUNTIME_TEST": 6,
+      "NON_RUNTIME_TEST": 5,
       "TECHNICAL_PRIMITIVE": 40,
       "BUSINESS_TRANSVERSAL_SERVICE": 10,
       "CROSS_FEATURE_DIRECT_IMPORT": 3,
@@ -23741,21 +22945,6 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "auth-identity",
-        "to": "orders",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -24853,7 +24042,7 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-transversal|technical-primitive": 3,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|technical-transversal|technical-transversal|technical-primitive": 2,
-      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 2,
+      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|interface": 1,
@@ -26921,13 +26110,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> orders",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"orders\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
