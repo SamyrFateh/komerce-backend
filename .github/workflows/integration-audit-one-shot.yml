@@ -43,6 +43,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Capture tracked source snapshot
+        run: git archive --format=zip --output=integration-source.zip HEAD
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -52,21 +55,25 @@ jobs:
         run: npm ci
 
       - name: Build integration schema
-        run: node scripts/migrate.js 2>&1 | tee integration-migrate.log
+        run: |
+          set -o pipefail
+          node scripts/migrate.js 2>&1 | tee integration-migrate.log
 
       - name: Run integration suites
         run: |
           set -o pipefail
           npx jest tests/integration --runInBand --forceExit --detectOpenHandles --verbose 2>&1 | tee integration-test.log
 
-      - name: Upload integration logs
+      - name: Upload integration evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integration-audit-${{ github.run_id }}
           path: |
+            integration-source.zip
             integration-migrate.log
             integration-test.log
+          if-no-files-found: warn
           retention-days: 1
 
       - name: Publish integration status
