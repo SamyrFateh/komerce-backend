@@ -51,17 +51,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build integration schema
+        run: node scripts/migrate.js 2>&1 | tee integration-migrate.log
+
       - name: Run integration suites
         run: |
           set -o pipefail
           npx jest tests/integration --runInBand --forceExit --detectOpenHandles --verbose 2>&1 | tee integration-test.log
 
-      - name: Upload integration log
+      - name: Upload integration logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integration-audit-${{ github.run_id }}
-          path: integration-test.log
+          path: |
+            integration-migrate.log
+            integration-test.log
           retention-days: 1
 
       - name: Publish integration status
