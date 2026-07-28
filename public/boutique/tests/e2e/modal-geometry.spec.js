@@ -93,48 +93,85 @@ test.describe('Modale produit — géométrie réelle (volet 3.2)', () => {
     expect(info.scrollHasScrollHeight).toBe(true);
   });
 
-  test('desktop ≥1024px : image sticky reste collée en haut pendant le scroll (produit enrichi)', async ({ page }) => {
+  test('desktop ≥1024px : galerie NON sticky — se déplace avec le scroll, dans le flux du hero (migration v3.0)', async ({ page }) => {
+    // MIGRATION v3.0 : remplace l'ancien oracle (image collée en haut pendant
+    // le scroll, RÉF-2026-07h), explicitement incompatible avec la référence
+    // canonique v3.0 (docs/reference/reference-modale-4-etats.html) où la
+    // galerie appartient au flux normal du hero, comme le configurateur, les
+    // détails et les suggestions — tous sous le même owner de scroll
+    // (.k-modal-scroll). Vérifié géométriquement (pas une lecture de chaîne
+    // CSS) : position calculée, déplacement réel au scroll, indépendance du
+    // side cart.
     await page.setViewportSize({ width: 1280, height: 800 });
     await openModalFor(page, buildEnrichedFixture());
 
-    const wrapTopBefore = await page.evaluate(() => {
+    // 1. Pas de sticky/fixed résiduel, pas de spanning grid-row (ancien
+    //    mécanisme de collage) : la galerie n'a plus aucune raison de rester
+    //    fixe verticalement.
+    const staticPositioning = await page.evaluate(() => {
       const wrap = document.querySelector('.k-modal-img-wrap');
-      return wrap ? wrap.getBoundingClientRect().top : null;
+      const cs = wrap ? getComputedStyle(wrap) : null;
+      return {
+        position: cs ? cs.position : null,
+        gridRow: cs ? cs.gridRow : null,
+      };
     });
-    expect(wrapTopBefore).not.toBeNull();
+    expect(staticPositioning.position).not.toBe('sticky');
+    expect(staticPositioning.position).not.toBe('fixed');
+    expect(staticPositioning.gridRow).not.toMatch(/1\s*\/\s*-1|span/);
 
-    // [P0-A #1 — FIX 2026-07] .k-modal-scroll porte `scroll-behavior: smooth`
-    // (modal-shell.css:1048). Sans neutralisation, `scrollTop = y` déclenche
-    // une animation et le waitForTimeout(120) fixe capture parfois une frame
-    // intermédiaire de cette animation plutôt que la position stabilisée —
-    // mesuré : 3 runs identiques sur 3 donnent [104,96,86,86] (3 valeurs
-    // distinctes) au lieu de la position collée réelle, un artefact de
-    // mesure et non un bug du sticky. Le gabarit de référence
-    // (harnais/geometry/verify-sticky.js) neutralise déjà ce point ; ce
-    // spec ne le faisait pas. Voir R2 : la mesure, pas le produit, était en
-    // cause.
+    // 2. Relevé de position initiale, puis scroll réel de ProductScroll
+    //    (.k-modal-scroll), puis nouvelle position : l'image doit avoir
+    //    bougé avec le contenu (pas être restée collée).
     await page.evaluate(() => {
       document.querySelector('.k-modal-scroll').style.scrollBehavior = 'auto';
     });
+    const topBefore = await page.evaluate(() => {
+      const wrap = document.querySelector('.k-modal-img-wrap');
+      return wrap ? wrap.getBoundingClientRect().top : null;
+    });
+    expect(topBefore).not.toBeNull();
 
-    const thresholds = [0, 100, 200, 400];
-    const tops = [];
-    for (const y of thresholds) {
-      await page.evaluate((y) => {
-        document.querySelector('.k-modal-scroll').scrollTop = y;
-      }, y);
-      await page.waitForTimeout(120);
-      const top = await page.evaluate(() => {
-        const wrap = document.querySelector('.k-modal-img-wrap');
-        return wrap ? Math.round(wrap.getBoundingClientRect().top) : null;
-      });
-      tops.push(top);
+    const sideCartRectBefore = await page.evaluate(() => {
+      const cart = document.getElementById('k-side-cart');
+      return cart ? cart.getBoundingClientRect().top : null;
+    });
+
+    await page.evaluate(() => {
+      document.querySelector('.k-modal-scroll').scrollTop = 400;
+    });
+    await page.waitForTimeout(120);
+
+    const topAfter = await page.evaluate(() => {
+      const wrap = document.querySelector('.k-modal-img-wrap');
+      return wrap ? wrap.getBoundingClientRect().top : null;
+    });
+    expect(topAfter).not.toBeNull();
+    expect(Math.abs(topAfter - topBefore)).toBeGreaterThan(50); // s'est bien déplacée
+
+    // 3. Le side cart (hors ProductScroll) n'a pas été entraîné dans ce
+    //    scroll — indépendance des deux owners.
+    const sideCartRectAfter = await page.evaluate(() => {
+      const cart = document.getElementById('k-side-cart');
+      return cart ? cart.getBoundingClientRect().top : null;
+    });
+    if (sideCartRectBefore !== null && sideCartRectAfter !== null) {
+      expect(Math.abs(sideCartRectAfter - sideCartRectBefore)).toBeLessThanOrEqual(1);
     }
 
-    // "Collé" = le haut de l'image reste stable (±1px d'arrondi) quel que
-    // soit le scrollTop, tant qu'il reste du contenu à droite à défiler.
-    const distinctTops = new Set(tops);
-    expect(distinctTops.size).toBeLessThanOrEqual(2); // tolérance d'arrondi
+    // 4. Hero, configurateur, détails longs et suggestions partagent le même
+    //    owner de scroll (.k-modal-scroll) — pas de scroll imbriqué.
+    const sameOwner = await page.evaluate(() => {
+      const scroll = document.querySelector('.k-modal-scroll');
+      const nodes = [
+        document.querySelector('.k-modal-img-wrap'),
+        document.querySelector('.k-modal-configurator'),
+        document.querySelector('.k-modal-long-details'),
+        document.getElementById('k-modal-suggestions'),
+      ];
+      return nodes.every((n) => n && scroll.contains(n));
+    });
+    expect(sameOwner).toBe(true);
   });
 
   test('desktop ≥1024px : bouton WhatsApp visible et distinct du bouton copier-lien', async ({ page }) => {
@@ -181,19 +218,73 @@ test.describe('Modale produit — géométrie réelle (volet 3.2)', () => {
     expect(info.childCount).toBeGreaterThan(0);
   });
 
-  test('produit simple (non-enrichi) : pas de scroll requis, image sticky non pertinente', async ({ page }) => {
+  test('produit simple (non-enrichi) : même owner de scroll que l\'enrichi, compaction réelle, aucun trou artificiel', async ({ page }) => {
+    // MIGRATION v3.0 : remplace l'ancien oracle « aucun scroll requis »
+    // (hasOverflow === false). Diagnostic géométrique (pas une inversion
+    // aveugle de l'assertion) : le produit simple à 1280×800 débordait de
+    // 148px. Décomposition mesurée :
+    //   - ~44px de trou artificiel : #k-modal-enriched-content est bien
+    //     display:none (vm.hasEnrichedContent faux), mais son track de
+    //     grille (row 4, grid-template-rows explicite à 5 rangées) gardait
+    //     ses deux gaps même vide — défaut réel, CORRIGÉ (classe
+    //     .k-modal-product-zone--no-enriched → grille à 4 rangées quand il
+    //     n'y a pas de contenu enrichi, modal-shell.css + toggle unique dans
+    //     renderEnrichedContent(), b-modal-desktop-product.js).
+    //   - ~18px : #k-modal-payment restait display:block + margin-top sur
+    //     TOUT produit desktop alors que renderPaymentSection(), seule
+    //     fonction censée le peupler, n'est appelée nulle part dans le code
+    //     (vérifié par recherche) — bloc vide mais dimensionnant. CORRIGÉ
+    //     (:not(:empty) — modal-product.css + modal-product-lot4-hybrid.css).
+    // Overflow résiduel après ces deux correctifs : légitime, contenu
+    // canonique v3.0 (hero + configurateur + suggestions) à 1280×800 — la
+    // v3.0 impose une compaction naturelle et un owner de scroll unique,
+    // pas qu'aucun produit ne défile jamais dans chaque viewport.
     await page.setViewportSize({ width: 1280, height: 800 });
     await openModalFor(page, buildSimpleFixture());
 
     const info = await page.evaluate(() => {
       const scroll = document.querySelector('.k-modal-scroll');
+      const zone = document.querySelector('.k-modal-product-zone');
+      const enriched = document.getElementById('k-modal-enriched-content');
+      const payment = document.getElementById('k-modal-payment');
+      const configurator = document.querySelector('.k-modal-configurator');
       return {
         hasOverflow: scroll ? scroll.scrollHeight > scroll.clientHeight + 4 : null,
+        overflowPx: scroll ? scroll.scrollHeight - scroll.clientHeight : null,
+        scrollOwnerContainsAll: [
+          document.querySelector('.k-modal-img-wrap'),
+          configurator,
+          document.querySelector('.k-modal-long-details'),
+          document.getElementById('k-modal-suggestions'),
+        ].every((n) => n && scroll.contains(n)),
+        noNestedScroll: getComputedStyle(configurator).overflowY === 'visible',
+        enrichedReservesNoHeight: !enriched || enriched.hidden === true,
+        paymentReservesNoHeight: !payment || payment.childElementCount === 0,
+        configuratorHeight: configurator ? configurator.getBoundingClientRect().height : null,
       };
     });
-    // Non-régression : un produit court ne doit pas forcer un scroll (cf.
-    // suppression du plancher min-height RÉF-2026-07h).
-    expect(info.hasOverflow).toBe(false);
+    await openModalFor(page, buildEnrichedFixture());
+    const enrichedInfo = await page.evaluate(() => {
+      const scroll = document.querySelector('.k-modal-scroll');
+      const configurator = document.querySelector('.k-modal-configurator');
+      return {
+        overflowPx: scroll ? scroll.scrollHeight - scroll.clientHeight : null,
+        configuratorHeight: configurator ? configurator.getBoundingClientRect().height : null,
+      };
+    });
+
+    // Même owner de scroll pour simple et enrichi, aucun scroll imbriqué.
+    expect(info.scrollOwnerContainsAll).toBe(true);
+    expect(info.noNestedScroll).toBe(true);
+    // Aucune section absente (enrichi, paiement) ne laisse de trou/hauteur
+    // réservée sur le produit simple.
+    expect(info.enrichedReservesNoHeight).toBe(true);
+    expect(info.paymentReservesNoHeight).toBe(true);
+    // Compaction réelle : un produit simple (sans axes/contenu enrichi) doit
+    // rester plus court qu'un produit enrichi (20 combos + contenu long) au
+    // même viewport — borne relative, pas une hauteur pixel arbitraire.
+    expect(info.configuratorHeight).toBeLessThan(enrichedInfo.configuratorHeight);
+    expect(info.overflowPx).toBeLessThan(enrichedInfo.overflowPx);
   });
 
   test('non-régression : overflow-x:hidden seul ne suffit pas à empêcher un débordement horizontal réel', async ({ page }) => {

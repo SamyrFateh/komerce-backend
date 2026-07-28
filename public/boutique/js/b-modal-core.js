@@ -319,6 +319,10 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // (reconcileComposition / resize) — voir _cartHome ci-dessous.
     mountSideCartInModal();
 
+    // LOT 3 : (re)synchroniser .k-modal-actions avec le viewport courant à
+    // chaque ouverture — même raison que mountSideCartInModal ci-dessus.
+    reconcileActionsComposition();
+
     // MOBILE SCROLL FIX — neutralise les styles inline posés par le pager
     // (#k-page-scroll.k-pager-active = position:fixed + overflow:hidden crée un
     // stacking context sur Chrome Android qui bride le scroll de .k-modal-scroll).
@@ -411,11 +415,12 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     document.body.classList.remove('modal-has-cart');
     document.body.style.removeProperty('--modal-scroll-y');
 
-    // REFONTE COQUE DESKTOP — restaurer #k-side-cart à sa position d'origine
-    // (hors overlay). Sans ça il resterait piégé dans .k-modal-cart-slot,
-    // display:none via .k-modal-overlay { display:none } et invisible au
-    // prochain rendu catalogue.
     restoreSideCartHome();
+
+    // LOT 3 : restaurer .k-modal-actions à sa home canonique (.k-modal-configurator)
+    // si elle avait été montée en enfant direct de #k-modal côté mobile —
+    // sans ça, une réouverture desktop ultérieure la retrouverait au mauvais endroit.
+    restoreActionsHome();
 
     // MOBILE SCROLL FIX — restaurer les styles inline du pager
     if (window.innerWidth < 900 && state._savedPagerInlineStyles) {
@@ -487,25 +492,58 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
   // (bus 'modal:composition-synced', émis par
   // b-modal-product-detail-bootstrap.js::syncResponsiveComposition) plutôt
   // que de dupliquer un second listener resize/debounce.
-  function reorderActionsForViewport() {
+  // _actionsHome mémorise la position d'origine desktop (.k-modal-configurator,
+  // via parent + nextSibling) pour un reparentage réversible sans clone —
+  // même doctrine que _cartHome ci-dessous pour #k-side-cart. Corrige un
+  // trou fonctionnel réel (LOT 3) : .k-modal-actions restait piégé en enfant
+  // direct de #k-modal après un premier passage mobile, jamais restauré au
+  // retour desktop ni à la fermeture — le fichier qui était censé porter ce
+  // retour (b-modal-approche-c-hybrid.js::restoreActionsHome) a été supprimé
+  // lors d'un nettoyage antérieur sans que sa doctrine soit reportée ici.
+  let _actionsHome = null;
+
+  function mountActionsInMobileShell() {
     if (!dom.modal) return;
     const act = dom.modal.querySelector('.k-modal-actions');
-    if (!act) return;
-    // Cette fonction ne gère QUE le cas mobile (reparentage flex statique en
-    // enfant direct de #k-modal). Le retour desktop est déjà entièrement pris
-    // en charge, de façon idempotente, par b-modal-approche-c-hybrid.js ::
-    // restoreActionsHome() sur ce même événement modal:composition-synced —
-    // ne pas dupliquer cette doctrine ici (cf audit MDM8_AUDIT_PHASE1.md §1.2,
-    // point 3 : hors périmètre MDM-8, ne pas toucher).
-    if (window.innerWidth < 900 && act.parentNode !== dom.modal) {
-      dom.modal.appendChild(act);
-    }
+    if (!act || isDesktop() || act.parentNode === dom.modal) return;
+    _actionsHome = { parent: act.parentNode, nextSibling: act.nextSibling };
+    dom.modal.appendChild(act);
     // --k-modal-cta-h dépend de act.parentNode (isStatic) : la resynchroniser
     // à chaque reparentage, pas seulement au ResizeObserver de hauteur.
     _syncScrollPadding();
   }
 
-  bus.on('modal:composition-synced', reorderActionsForViewport);
+  function restoreActionsHome() {
+    if (!dom.modal) return;
+    const act = dom.modal.querySelector('.k-modal-actions');
+    if (!act || act.parentNode !== dom.modal) return;
+    if (_actionsHome && _actionsHome.nextSibling && _actionsHome.nextSibling.parentNode === _actionsHome.parent) {
+      _actionsHome.parent.insertBefore(act, _actionsHome.nextSibling);
+    } else if (_actionsHome) {
+      _actionsHome.parent.appendChild(act);
+    } else {
+      // Pas de home mémorisée (ex. setup initial déjà desktop) : home
+      // canonique connue = .k-modal-configurator.
+      const canonicalHome = dom.modal.querySelector('.k-modal-configurator');
+      if (canonicalHome) canonicalHome.appendChild(act);
+    }
+    _actionsHome = null;
+    _syncScrollPadding();
+  }
+
+  // Switch desktop↔mobile pendant que la modale reste ouverte (resize/rotation),
+  // et montage initial (setupModal) : idempotent, ne déplace rien si la
+  // composition est déjà correcte pour le viewport courant.
+  function reconcileActionsComposition() {
+    if (!dom.modalOverlay.classList.contains('open')) return;
+    if (isDesktop()) {
+      restoreActionsHome();
+    } else {
+      mountActionsInMobileShell();
+    }
+  }
+
+  bus.on('modal:composition-synced', reconcileActionsComposition);
 
   // ── REFONTE COQUE DESKTOP — reparentage #k-side-cart ────────────────────
   // _cartHome mémorise la position d'origine (parent + nextSibling) pour un
@@ -557,7 +595,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
    */
   function setupModal() {
 
-    reorderActionsForViewport();
+    mountActionsInMobileShell();
 
     dom.modalBack.addEventListener('click', modalGoBack);
     dom.modalClose.addEventListener('click', closeModal);

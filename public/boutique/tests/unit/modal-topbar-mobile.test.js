@@ -22,7 +22,8 @@
  *   7. le badge panier reste présent (CSS + HTML)
  *   8. #k-modal-nav existe comme groupe cohérent (capsule unique)
  *   9. l'override desktop ≥900px reste présent (non-régression)
- *   10. les actions sticky mobiles restent correctement positionnées
+ *   10. MIGRATION v3.0 (LOT 3) : plus de hack position:fixed sur les actions —
+ *       une vraie ligne de grille .k-modal les réserve
  *   11. le safe-area inférieur reste pris en compte
  *
  * Lecture CSS/HTML statique — même pattern que modal-layout-invariant.test.js.
@@ -149,13 +150,21 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
     expect(desktopSection).toMatch(/k-modal-topbar[^}]*position\s*:\s*relative/);
   });
 
-  test('CTA k-modal-actions est fixed en bas sur mobile (fallback avant reparenting JS)', () => {
-    expect(shell).toMatch(/\.k-modal-actions\s*\{[^}]*position\s*:\s*fixed/);
-    expect(shell).toMatch(/\.k-modal-actions[^}]*bottom\s*:\s*0/);
+  test("MIGRATION v3.0 (LOT 3) : .k-modal-actions n'est plus en position:fixed (hack retiré)", () => {
+    const actionsRule = baseBlock.match(/^\.k-modal-actions\s*\{([^}]*)\}/m)?.[1] ?? '';
+    expect(actionsRule).not.toMatch(/position\s*:\s*fixed/);
+    expect(actionsRule).not.toMatch(/bottom\s*:\s*0/);
+    // La grille .k-modal réserve une vraie 3e ligne (topbar / scroll / actions)
+    // au lieu de la compensation --k-modal-cta-h mesurée en JS.
+    const modalShellRule = baseBlock.match(/^\.k-modal\s*\{([^}]*)\}/m)?.[1] ?? '';
+    expect(modalShellRule).toMatch(/grid-template-rows\s*:\s*auto\s+minmax\(0,\s*1fr\)\s+auto/);
   });
 
-  test('reparenting JS (#k-modal > .k-modal-actions) bascule en position:static', () => {
-    expect(shell).toMatch(/#k-modal\s*>\s*\.k-modal-actions\s*\{[^}]*position\s*:\s*static/);
+  test('reparenting JS (#k-modal > .k-modal-actions) reste en flux normal, sans ancrage fixed résiduel', () => {
+    const directChildRule = baseBlock.match(/#k-modal\s*>\s*\.k-modal-actions\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(directChildRule).toMatch(/position\s*:\s*relative/);
+    expect(directChildRule).not.toMatch(/position\s*:\s*fixed/);
+    expect(directChildRule).not.toMatch(/bottom\s*:\s*0|left\s*:\s*0|right\s*:\s*0/);
   });
 
   test('le safe-area inférieur reste pris en compte pour les actions sticky', () => {

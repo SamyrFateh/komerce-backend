@@ -1206,7 +1206,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 
   /* ── Payment section — PR-D2 rev2 : tabs outlined 4 cols ── */
-  .k-modal-payment {
+  /* FIX (diagnostic overflow produit simple, LOT 3) : :not(:empty) — renderPaymentSection()
+     (b-modal-desktop-product.js), seule fonction censée peupler #k-modal-payment,
+     n'est appelée nulle part dans le code (vérifié). Le bloc restait donc en
+     permanence display:block + margin-top/border-top sans aucun enfant, sur
+     tout produit desktop — ~18px d'espace mort mesuré. Base (.k-modal-payment
+     seul, hors #k-modal) reste display:none tant qu'aucun contenu réel n'est
+     injecté ; ne dévoile la mise en forme desktop que si des enfants existent. */
+  .k-modal-payment:not(:empty) {
     display: block;
     border-top: 1px solid var(--sand-dark);
     margin-top: 14px;

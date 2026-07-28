@@ -101,8 +101,17 @@
   }
 
   /* ── Livraison + paiement ── */
-  #k-modal .k-modal-delivery,
-  #k-modal .k-modal-payment {
+  /* FIX (diagnostic overflow produit simple, LOT 3) : .k-modal-payment séparé
+     de .k-modal-delivery et passé en :not(:empty) — même raison qu'en base
+     (modal-product.css) : renderPaymentSection() n'est jamais appelée, le
+     bloc restait vide mais visible (margin-top:18px) sur tout produit desktop. */
+  #k-modal .k-modal-delivery {
+    display: block;
+    border-top: 0;
+    margin-top: 18px;
+    padding-top: 0;
+  }
+  #k-modal .k-modal-payment:not(:empty) {
     display: block;
     border-top: 0;
     margin-top: 18px;

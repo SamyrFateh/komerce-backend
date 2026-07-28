@@ -632,12 +632,23 @@ function renderEnrichedContent(detail) {
   if (!container) return;
   container.innerHTML = '';
 
+  // FIX (diagnostic overflow produit simple, LOT 3) : le hidden ci-dessous
+  // retire bien #k-modal-enriched-content de la grille (display:none), mais
+  // le track de grille explicite (row 4, modal-shell.css) récupère quand
+  // même son gap des deux côtés même vide — ~44px de trou artificiel mesuré.
+  // La classe --no-enriched (modal-shell.css) retombe sur une grille à 4
+  // rangées réelles pour supprimer ce doublon de gap. Toggle ici : seul
+  // point qui décide déjà si ce produit a du contenu enrichi ou non.
+  const zone = container.closest('.k-modal-product-zone');
+
   const vm = buildProductContentViewModel(detail.content);
   if (!vm.hasEnrichedContent) {
     container.hidden = true;
+    if (zone) zone.classList.add('k-modal-product-zone--no-enriched');
     return;
   }
   container.hidden = false;
+  if (zone) zone.classList.remove('k-modal-product-zone--no-enriched');
 
   appendEnrichedBulletBlock(container, { heading: CONTENT_LABELS.highlights, items: vm.highlights.map((h) => h.label), variant: 'highlights' });
   appendEnrichedSpecifications(container, vm.specificationGroups);
