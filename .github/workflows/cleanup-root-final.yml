@@ -115,8 +115,12 @@ jobs:
           npm run feature:360:gen
       - name: Feature 360 consistency
         run: npm run feature:360:check
-      - name: Complete map check
-        run: npm run map:check
+      - name: Concept impact gate
+        run: npm run gate:concept-impact
+      - name: Alerts contract
+        run: npm run alerts:contract:check
+      - name: Map core
+        run: node scripts/map-check.js
 
       - name: Commit cleaned tree
         id: commit
