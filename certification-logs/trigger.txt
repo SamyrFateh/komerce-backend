@@ -1,1 +1,1 @@
-Trigger the observable read-only governance certification workflow from a non-workflow commit. Remove this file in the final cleanup commit.
+Trigger the governed-tree certification after excluding temporary harness files and applying the runner ownership in the checked tree. Remove this file in the final cleanup commit.
