@@ -1,1 +1,1 @@
-Trigger the one-shot reconciliation of the three remaining root unit suites; its commit then triggers the full certifier. This marker is removed by the certified commit.
+Trigger the one-shot modal assertion scope correction; its commit then triggers the final full certification. This marker is removed by the certified commit.
