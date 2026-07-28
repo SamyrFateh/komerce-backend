@@ -14495,6 +14495,14 @@
       {
         "boutiqueManifest": "modal-product",
         "category": "tests",
+        "declared": "../tests/unit/modal-product-lot4-hybrid.test.js",
+        "resolvedPath": "public/boutique/tests/unit/modal-product-lot4-hybrid.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "modal-product",
+        "category": "tests",
         "declared": "../tests/unit/modal-v3-convergence-invariants.test.js",
         "resolvedPath": "public/boutique/tests/unit/modal-v3-convergence-invariants.test.js",
         "exists": true,
@@ -22676,7 +22684,7 @@
         "filesObserved": 809
       },
       "boutique": {
-        "filesObserved": 124,
+        "filesObserved": 125,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {

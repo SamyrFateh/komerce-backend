@@ -1876,7 +1876,7 @@
         "totalFiles": 127,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 32,
+          "count": 33,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -2070,6 +2070,13 @@
             {
               "declared": "../tests/unit/modal-mobile-suggestion-actions.test.js",
               "resolvedPath": "public/boutique/tests/unit/modal-mobile-suggestion-actions.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/modal-product-lot4-hybrid.test.js",
+              "resolvedPath": "public/boutique/tests/unit/modal-product-lot4-hybrid.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"
