@@ -40,7 +40,6 @@ jobs:
           find docs -type f \( -iname 'PROMPT*.md' -o -iname '*.patch' -o -iname '*.patch.md' -o -iname '*.diff' \) -delete
           find .github/workflows -maxdepth 1 -type f -name '*once*.yml' -delete
           rm -f docs/KNOWN_FAILING_TESTS.md
-
           cat > docs/TEST_CERTIFICATION.md <<'EOF'
           # Certification des tests et de la gouvernance
 
@@ -80,25 +79,32 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-
       - run: npm ci
 
-      - name: Validate cleanup and governance
+      - name: Audit classifier test
+        run: npx jest tests/unit/npm-audit-core.test.js --ci --runInBand
+      - name: Dependency audit gate
+        run: npm run audit:gate
+      - name: Feature registry
+        run: npm run feature:registry
+      - name: Registry documentation
+        run: npm run feature:registry-doc
+      - name: Strict classification
+        run: npm run feature:classification:strict
+      - name: Feature guard
+        run: npm run feature:check
+      - name: Full documentation lint
+        run: npm run gate:docs-lint:full
+      - name: Regenerate governance projections
         run: |
-          set -o pipefail
-          npx jest tests/unit/npm-audit-core.test.js --ci --runInBand
-          npm run audit:gate
-          npm run feature:registry
-          npm run feature:registry-doc
-          npm run feature:classification:strict
-          npm run feature:check
-          npm run gate:docs-lint:full
           npm run arch:gen
           npm run dashboards:360
           npm run boutique:360
           npm run business-graph:gen
           npm run meta:graph
           npm run feature:360:gen
+      - name: Final governance checks
+        run: |
           npm run feature:360:check
           npm run map:check
 
