@@ -766,8 +766,18 @@
     flex: 0 0 auto;
     height: 44px;
   }
+  /* FIX stepper desktop (diagnostic 2026-07) : .k-qty hérite width:100%
+     de la règle de base (modal-shell.css, bloc mobile) — flex-basis:auto
+     retombe sur width quand non redéclaré ici, et flex-shrink:0 empêche
+     tout rétrécissement : le stepper s'étirait sur toute la colonne au
+     lieu de rester compact (~132px), à la place visuelle de l'ex-bouton
+     Ajouter. Largeur explicite ici, scopée à cette règle desktop
+     uniquement (.k-modal-product-zone .k-modal-actions--filled) — ne
+     touche ni la base ni le comportement mobile. */
   #k-modal .k-modal-product-zone .k-modal-actions.k-modal-actions--filled .k-qty {
     display: flex;
+    flex: 0 0 132px;
+    width: 132px;
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
     flex: 1 1 0; height: 44px; border-radius: 999px;
