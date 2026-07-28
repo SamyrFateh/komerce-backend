@@ -1,1 +1,1 @@
-Trigger the proven audit-and-certify workflow with correctly scoped root unit tests. This marker and every diagnostic workflow are removed by the certified commit.
+Trigger the one-shot reconciliation of the three remaining root unit suites; its commit then triggers the full certifier. This marker is removed by the certified commit.
