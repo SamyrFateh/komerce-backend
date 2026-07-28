@@ -71,6 +71,11 @@ jobs:
       - name: Reconcile certified governance files
         run: node scripts/cleanup-final-repo.js
 
+      - name: Remove cleanup harness before validation
+        run: |
+          rm -f scripts/cleanup-final-repo.js
+          rm -f .github/workflows/cleanup-root-final.yml
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -100,8 +105,6 @@ jobs:
       - name: Commit cleaned tree
         id: commit
         run: |
-          rm -f scripts/cleanup-final-repo.js
-          rm -f .github/workflows/cleanup-root-final.yml
           git config user.name "Komerce Governance Bot"
           git config user.email "actions@users.noreply.github.com"
           git add -A
