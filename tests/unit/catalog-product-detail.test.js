@@ -312,13 +312,14 @@ describe('catalog product detail contract v1', () => {
     expect(detail.delivery_options.some((option) => option.code === 'AIR_EXPRESS')).toBe(false);
   });
 
-  test('AIR_EXPRESS apparaît automatiquement quand logistics le rend commercial', () => {
+  test('AIR_EXPRESS apparaît quand logistics le rend commercial et le produit est éligible', () => {
     listCommercialTransportRails.mockReturnValue([
       { code: 'SEA_STANDARD' },
       { code: 'AIR_EXPRESS' },
     ]);
 
-    expect(_buildDeliveryOptions().map((option) => [option.code, option.label])).toEqual([
+    expect(_buildDeliveryOptions({ air_eligibility_status: 'ELIGIBLE' })
+      .map((option) => [option.code, option.label])).toEqual([
       ['SEA_STANDARD', 'Livraison standard'],
       ['AIR_EXPRESS', 'Livraison express'],
     ]);

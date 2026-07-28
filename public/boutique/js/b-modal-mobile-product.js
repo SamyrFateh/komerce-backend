@@ -604,9 +604,9 @@ function renderBelowFold(detail, root, vm) {
  * detail contract and the shared selection state.
  *
  * Composition order:
- *   1. Options (axes) — rendered into #k-modal-variants container
- *   2. Selection message
- *   3. Info strip (availability + delivery chips)
+ *   1. Info strip (availability + delivery chips)
+ *   2. Options (axes) — rendered into #k-modal-variants container
+ *   3. Selection message
  *   4. Below-fold content (description)
  *   5. Identity (name, ref, price) — rendered into existing shell DOM
  *   6. Actions state — rendered into existing shell CTA bar

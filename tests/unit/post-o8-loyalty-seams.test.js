@@ -81,8 +81,9 @@ describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
 
     const db = require('../../db');
     const { createUser, cleanup } = require('../integration/test-harness/seed-helpers');
-    const TIER_LABEL = 'itest-post-o8-tier';
+    const TIER_LABEL = `itest-post-o8-tier-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let tierId;
+    let relaisId;
     let user;
 
     beforeAll(async () => {
@@ -92,21 +93,29 @@ describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
         [TIER_LABEL]
       );
       tierId = tier.id;
+      const { rows: [relais] } = await db.query(
+        `INSERT INTO relais (name, agent_name, phone, address, island)
+         VALUES ($1, 'ITest Loyalty', $2, 'Adresse test loyalty', 'Anjouan')
+         RETURNING id`,
+        [`ITest Loyalty ${Date.now()}`, `+2693${Math.floor(1000000 + Math.random() * 8999999)}`]
+      );
+      relaisId = relais.id;
       user = await createUser({ role: 'client' });
       // One 'collected' order for this user — recalculate_loyalty() counts
       // exactly this status (mission-relevant: a different lifecycle status
       // than confirmPaymentCycle's 'confirmed'/'ordered').
       await db.query(
-        `INSERT INTO orders (reference, user_id, total_kmf, total_eur, payment_mode, payment_status, status)
-         VALUES ($1, $2, 10000, 20, 'cash_relais', 'paid', 'collected')`,
-        [`ITEST-LOYALTY-${Date.now()}`, user.id]
+        `INSERT INTO orders (reference, user_id, relais_id, total_kmf, total_eur, payment_mode, payment_status, status)
+         VALUES ($1, $2, $3, 10000, 20, 'cash_relais', 'paid', 'collected')`,
+        [`ITEST-LOYALTY-${Date.now()}`, user.id, relaisId]
       );
     });
 
     afterAll(async () => {
-      await db.query(`DELETE FROM orders WHERE user_id = $1`, [user.id]).catch(() => {});
+      if (user?.id) await db.query(`DELETE FROM orders WHERE user_id = $1`, [user.id]).catch(() => {});
       await cleanup();
-      await db.query(`DELETE FROM loyalty_tiers WHERE id = $1`, [tierId]).catch(() => {});
+      if (relaisId) await db.query(`DELETE FROM relais WHERE id = $1`, [relaisId]).catch(() => {});
+      if (tierId) await db.query(`DELETE FROM loyalty_tiers WHERE id = $1`, [tierId]).catch(() => {});
     });
 
     it('recalculateLoyalty(db, userId) assigns the tier and is reflected in v_loyalty_summary', async () => {

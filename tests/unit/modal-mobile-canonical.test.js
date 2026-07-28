@@ -26,6 +26,11 @@ const MOBILE_RENDERER_PATH = path.join(
   '../../public/boutique/js/b-modal-mobile-product.js'
 );
 
+const PRODUCT_FIELDS_PATH = path.join(
+  __dirname,
+  '../../public/boutique/js/b-modal-product-fields.js'
+);
+
 const CANONICAL_CSS_PATH = path.join(
   __dirname,
   '../../public/boutique/css/modal-mobile-canonical.css'
@@ -112,8 +117,10 @@ describe('MDM-8: Mobile renderer extinction rules', () => {
     expect(source).not.toMatch(/startGroupCartFlow/);
   });
 
-  test('imports only getCurrentPrice from buybox-shared', () => {
-    expect(source).toMatch(/import\s*\{\s*getCurrentPrice\s*\}\s*from\s*['"]\.\/b-modal-buybox-shared/);
+  test('delegates scalar fields to product-fields and keeps only the buy-now wiring locally', () => {
+    expect(source).toMatch(/import\s*\{\s*paintDetailFields\s*\}\s*from\s*['"]\.\/b-modal-product-fields/);
+    expect(source).toMatch(/import\s*\{\s*wireBuyNowButton\s*\}\s*from\s*['"]\.\/b-modal-buybox-shared/);
+    expect(source).not.toMatch(/getCurrentPrice/);
   });
 
   test('does not call renderSubtotal anywhere (excluding comments)', () => {
@@ -182,17 +189,18 @@ describe('MDM-7: Description below fold', () => {
 
 describe('MDM-3: Identity compact', () => {
   test('old_price only when contract provides it (not reconstructed from promo_pct)', () => {
-    const source = fs.readFileSync(MOBILE_RENDERER_PATH, 'utf8');
-    // Should check detail.pricing.old_price_kmf != null
-    expect(source).toMatch(/old_price_kmf\s*!=\s*null/);
-    // Should NOT multiply or compute old price
-    expect(source).not.toMatch(/price_kmf\s*\*\s*\(/);
-    expect(source).not.toMatch(/price_kmf\s*\/\s*\(/);
+    const fieldsSource = fs.readFileSync(PRODUCT_FIELDS_PATH, 'utf8');
+    // Scalar fields are owned once for desktop and mobile by paintDetailFields().
+    expect(fieldsSource).toMatch(/old_price_kmf/);
+    expect(fieldsSource).toMatch(/oldPrice\s*!=\s*null/);
+    expect(fieldsSource).not.toMatch(/price_kmf\s*\*\s*\(/);
+    expect(fieldsSource).not.toMatch(/price_kmf\s*\/\s*\(/);
   });
 
-  test('promo badge uses promo_pct from contract', () => {
-    const source = fs.readFileSync(MOBILE_RENDERER_PATH, 'utf8');
-    expect(source).toMatch(/pricing\.promo_pct/);
+  test('promo badge uses promo_pct from contract through the scalar-fields owner', () => {
+    const fieldsSource = fs.readFileSync(PRODUCT_FIELDS_PATH, 'utf8');
+    expect(fieldsSource).toMatch(/pricing\.promo_pct/);
+    expect(source).toMatch(/paintDetailFields\(detail, selection\)/);
   });
 });
 
@@ -273,7 +281,7 @@ describe('Architecture: modal never invents data', () => {
 
   test('renderer composition order matches v3 spec', () => {
     // In renderMobileProductDetail, the order should be:
-    // 1. options (axes) → 2. selection message → 3. info strip → 4. below fold
+    // 1. info strip → 2. options (axes) → 3. selection message → 4. below fold
     // → 5. identity → 6. actions → 7. media
     const renderFn = source.match(/export function renderMobileProductDetail[\s\S]+?^}/m);
     expect(renderFn).toBeTruthy();
@@ -287,9 +295,9 @@ describe('Architecture: modal never invents data', () => {
     const actionsPos = body.indexOf('renderActions');
     const mediaPos = body.indexOf('renderMedia');
 
+    expect(stripPos).toBeLessThan(axisPos);
     expect(axisPos).toBeLessThan(msgPos);
-    expect(msgPos).toBeLessThan(stripPos);
-    expect(stripPos).toBeLessThan(foldPos);
+    expect(msgPos).toBeLessThan(foldPos);
     expect(foldPos).toBeLessThan(identityPos);
     expect(identityPos).toBeLessThan(actionsPos);
     expect(actionsPos).toBeLessThan(mediaPos);
