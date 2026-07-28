@@ -33,17 +33,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           rm -rf certification-logs coverage
           rm -rf docs/_agent docs/_logs docs/_pending docs/_work docs/_archive
           rm -rf docs/audit docs/chantier
-
           find . -maxdepth 1 -type f \( -iname '*.zip' -o -iname '*.patch' -o -iname '*.diff' -o -iname '*.log' -o -iname 'PROMPT*.md' \) -delete
           find docs -type f \( -iname 'PROMPT*.md' -o -iname '*.patch' -o -iname '*.patch.md' -o -iname '*.diff' \) -delete
           find .github/workflows -maxdepth 1 -type f -name '*once*.yml' -delete
-
           rm -f docs/KNOWN_FAILING_TESTS.md
-          rm -f .github/workflows/cleanup-root-final.yml
 
           cat > docs/TEST_CERTIFICATION.md <<'EOF'
           # Certification des tests et de la gouvernance
@@ -73,78 +69,14 @@ jobs:
           EOF
 
       - name: Reconcile certified governance files
-        run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const cp = require('child_process');
-
-          const gateFile = 'scripts/npm-audit-gate.js';
-          let gate = fs.readFileSync(gateFile, 'utf8');
-          const pathLine = "const path = require('path');";
-          const coreLine = "const { actionableVulnerabilities, inheritedHighCriticalCount } = require('./lib/npm-audit-core');";
-          if (!gate.includes(coreLine)) gate = gate.replace(pathLine, `${pathLine}\n${coreLine}`);
-          const oldTargets = "let targets = Object.values(allVulns).filter(v => v.severity === 'high' || v.severity === 'critical');";
-          const newTargets = `let targets = actionableVulnerabilities(allVulns);\nconst inheritedCount = inheritedHighCriticalCount(allVulns);\nif (inheritedCount > 0) {\n  console.log(\`ℹ️  npm audit v2: \${inheritedCount} entrée(s) héritée(s) regroupée(s sous leur advisory source.\`);\n}`;
-          if (gate.includes(oldTargets)) gate = gate.replace(oldTargets, newTargets);
-          if (!gate.includes('actionableVulnerabilities(allVulns)')) throw new Error('npm audit classifier missing');
-          fs.writeFileSync(gateFile, gate);
-
-          fs.writeFileSync('scripts/npm-audit-exceptions.json', JSON.stringify([
-            {
-              package: 'brace-expansion',
-              advisory: 'GHSA-mh99-v99m-4gvg',
-              expires: '2026-08-15',
-              scope: 'dev-only',
-              reason: 'Transitif des outils de développement Jest/nodemon uniquement. Aucun pattern utilisateur ne traverse cette chaîne en production. Réévaluer dès qu’un correctif compatible avec les consommateurs CJS 1.x/2.x est disponible.'
-            }
-          ], null, 2) + '\n');
-
-          const manifestFile = 'features/infrastructure.feature.js';
-          let manifest = fs.readFileSync(manifestFile, 'utf8');
-          const deleted = cp.execSync('git ls-files --deleted', { encoding: 'utf8' })
-            .split(/\r?\n/).filter(Boolean);
-          for (const file of deleted) {
-            const escaped = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            manifest = manifest.replace(new RegExp(`^\\s*'${escaped}',\\r?\\n`, 'gm'), '');
-          }
-          const additions = [
-            ["      'scripts/lib/arch-drift-core.js',\n", "      'scripts/lib/npm-audit-core.js',\n"],
-            ["      'scripts/run-migrations.js',\n", "      'scripts/run-integration-tests.js',\n"],
-            ["      'jest.config.js',\n", "      'jest.unit.config.js',\n"],
-            ["      'tests/unit/logger.test.js',\n", "      'tests/unit/npm-audit-core.test.js',\n"],
-            ["      'docs/README.md',\n", "      'docs/TEST_CERTIFICATION.md',\n"]
-          ];
-          for (const [marker, addition] of additions) {
-            if (!manifest.includes(addition.trim())) {
-              if (!manifest.includes(marker)) throw new Error(`manifest marker missing: ${marker.trim()}`);
-              manifest = manifest.replace(marker, marker + addition);
-            }
-          }
-          fs.writeFileSync(manifestFile, manifest);
-
-          const replacements = cp.execSync("git grep -Il 'docs/KNOWN_FAILING_TESTS.md' -- ':!features/infrastructure.feature.js' || true", { encoding: 'utf8' })
-            .split(/\r?\n/).filter(Boolean);
-          for (const file of replacements) {
-            const text = fs.readFileSync(file, 'utf8').replaceAll('docs/KNOWN_FAILING_TESTS.md', 'docs/TEST_CERTIFICATION.md');
-            fs.writeFileSync(file, text);
-          }
-
-          const ledgerFile = '.agent/LEDGER.md';
-          let ledger = fs.readFileSync(ledgerFile, 'utf8');
-          const heading = '## Certification finale — gouvernance et tests, 2026-07-28';
-          const section = `${heading}\n\n- Unités racine : toutes vertes avec couverture et périmètre explicite \\`tests/unit\\`.\n- Intégration : 31/31 suites vertes avec PostgreSQL 16 et bootstrap CI canonique.\n- Boutique et Dashboards : gates et couvertures verts.\n- Projections 360, dispositions O6, invariants, sécurité, Feature 360 et \\`map:check\\` : verts.\n- Preuve complète : GitHub Actions run \\`30349485657\\`.\n- Audit npm : advisory réel dédupliqué ; exception dev-only \\`brace-expansion\\` expirant le 2026-08-15.\n- Les anciens nombres « 13 tests/suites cassés » ne décrivent plus l'état courant.\n- Les workflows de diagnostic, prompts, patches, archives de travail et marqueurs temporaires ont été retirés.\n`;
-          const re = new RegExp(`${heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?(?=\\n## |$)`);
-          ledger = re.test(ledger) ? ledger.replace(re, section) : `${ledger.trimEnd()}\n\n${section}`;
-          fs.writeFileSync(ledgerFile, ledger);
-          NODE
+        run: node scripts/cleanup-final-repo.js
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
       - name: Validate cleanup and governance
         run: |
@@ -168,6 +100,8 @@ jobs:
       - name: Commit cleaned tree
         id: commit
         run: |
+          rm -f scripts/cleanup-final-repo.js
+          rm -f .github/workflows/cleanup-root-final.yml
           git config user.name "Komerce Governance Bot"
           git config user.email "actions@users.noreply.github.com"
           git add -A
