@@ -45,6 +45,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm --prefix public/boutique ci
+      - name: Remove one-shot harness before governance scans
+        run: rm -f .github/workflows/sync-feature-first-once.yml
       - name: Generate architecture headers graph
         run: npm run arch:gen
       - name: Generate dashboards 360
@@ -61,10 +63,9 @@ jobs:
         run: npm run feature:360:check
       - name: Check map reconstruction
         run: npm run map:check
-      - name: Commit generated state and remove harness
+      - name: Commit generated state
         id: commit
         run: |
-          rm -f .github/workflows/sync-feature-first-once.yml
           git config user.name "Komerce Governance Bot"
           git config user.email "actions@users.noreply.github.com"
           git add -A
