@@ -11,6 +11,7 @@
     "arch:check": "npm run arch:gen && node scripts/arch-db-check.js",
     "test": "jest --runInBand --forceExit --detectOpenHandles",
     "test:verbose": "jest --runInBand --forceExit --detectOpenHandles --verbose",
+    "test:integration": "node scripts/run-integration-tests.js",
     "test:unit:v41": "jest tests/unit/shared-cart-v41-transitions.test.js --no-coverage",
     "check:wording:v41": "node public/boutique/scripts/check-group-wording.js --v41",
     "test:lot0": "npm run test:unit:v41 && node public/boutique/scripts/check-group-wording.js",
