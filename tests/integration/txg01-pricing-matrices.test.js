@@ -28,12 +28,14 @@ const TARGET = path.join(__dirname, '../../routes/admin-pricing-matrices.js');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+const ADMIN_ID = '00000000-0000-0000-0000-000000000101';
+
 jest.setTimeout(30000);
 
 function loadRouter() {
   jest.resetModules();
   jest.doMock('../../middleware/auth', () => ({
-    authenticate: (req, _res, next) => { req.user = { id: '00000000-0000-0000-0000-000000000001', role: 'admin' }; next(); },
+    authenticate: (req, _res, next) => { req.user = { id: ADMIN_ID, role: 'admin' }; next(); },
     requireAdmin: (_req, _res, next) => next(),
   }));
   jest.doMock('../../utils/pricing-cache', () => ({ invalidatePricingMatricesCache: jest.fn() }));
@@ -56,14 +58,45 @@ async function restoreAuditTable() {
   await pool.query('ALTER TABLE pricing_matrices_audit_hidden RENAME TO pricing_matrices_audit');
 }
 
-beforeAll(async () => {
+async function seedPricingFixtures() {
+  // Le dump CI est schema-only : cette suite doit créer ses propres lignes et
+  // l'utilisateur référencé par updated_by, sans dépendre d'un seed de prod ou
+  // de l'ordre d'exécution des autres suites.
   await pool.query(`
-    UPDATE pricing_category_dims SET length_cm=30, width_cm=20, height_cm=10 WHERE category='electronique';
-    UPDATE pricing_category_taxes SET douane_pct=0.10, tva_pct=0.20, taxe_add_pct=0 WHERE category='electronique';
+    INSERT INTO users (id, full_name, email, role)
+    VALUES ('${ADMIN_ID}', 'Admin TXG-01', 'txg01-admin@komerce.test', 'admin')
+    ON CONFLICT (id) DO UPDATE
+      SET full_name = EXCLUDED.full_name,
+          email = EXCLUDED.email,
+          role = EXCLUDED.role;
   `);
-});
+  await pool.query(`
+    INSERT INTO pricing_category_dims (category, label_fr, length_cm, width_cm, height_cm, updated_by)
+    VALUES ('electronique', 'Électronique', 30, 20, 10, NULL)
+    ON CONFLICT (category) DO UPDATE
+      SET label_fr = EXCLUDED.label_fr,
+          length_cm = EXCLUDED.length_cm,
+          width_cm = EXCLUDED.width_cm,
+          height_cm = EXCLUDED.height_cm,
+          updated_by = NULL;
+  `);
+  await pool.query(`
+    INSERT INTO pricing_category_taxes (category, label_fr, douane_pct, tva_pct, taxe_add_pct, updated_by)
+    VALUES ('electronique', 'Électronique', 0.10, 0.20, 0, NULL)
+    ON CONFLICT (category) DO UPDATE
+      SET label_fr = EXCLUDED.label_fr,
+          douane_pct = EXCLUDED.douane_pct,
+          tva_pct = EXCLUDED.tva_pct,
+          taxe_add_pct = EXCLUDED.taxe_add_pct,
+          updated_by = NULL;
+  `);
+}
+
+beforeAll(seedPricingFixtures);
 
 afterAll(async () => {
+  await seedPricingFixtures();
+  await pool.query('DELETE FROM users WHERE id = $1', [ADMIN_ID]);
   await pool.end();
 });
 
