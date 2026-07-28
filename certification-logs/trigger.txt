@@ -1,1 +1,1 @@
-Trigger the final governance certification with correctly scoped root units, npm-audit advisory deduplication, and complete temporary-harness cleanup. This marker is removed by the certified commit.
+Trigger the proven audit-and-certify workflow with correctly scoped root unit tests. This marker and every diagnostic workflow are removed by the certified commit.
