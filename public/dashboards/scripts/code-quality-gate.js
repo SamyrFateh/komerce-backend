@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * code-quality-gate.js — Komerce Public (root) Code Quality Gate
+ * code-quality-gate.js — Komerce Dashboards Code Quality Gate
  *
  * Wrapper mince : toute la logique (scan, N2-STRICT, N2-NO-VAR, --fix, --strict)
  * vit dans scripts/lib/code-quality-gate-core.js, partagée avec boutique/ et
@@ -15,10 +15,10 @@
 'use strict';
 
 const path = require('path');
-const core = require('../../scripts/lib/code-quality-gate-core.js');
+const core = require('../../../scripts/lib/code-quality-gate-core.js');
 
 if (require.main === module) {
-  core.run({ root: path.join(__dirname, '..'), label: 'PUBLIC' });
+  core.run({ root: path.join(__dirname, '..'), label: 'DASHBOARDS' });
 }
 
 module.exports = core;
