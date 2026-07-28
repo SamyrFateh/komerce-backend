@@ -199,8 +199,9 @@ describe('MDM-3: Identity compact', () => {
 
   test('promo badge uses promo_pct from contract through the scalar-fields owner', () => {
     const fieldsSource = fs.readFileSync(PRODUCT_FIELDS_PATH, 'utf8');
+    const rendererSource = fs.readFileSync(MOBILE_RENDERER_PATH, 'utf8');
     expect(fieldsSource).toMatch(/pricing\.promo_pct/);
-    expect(source).toMatch(/paintDetailFields\(detail, selection\)/);
+    expect(rendererSource).toMatch(/paintDetailFields\(detail, selection\)/);
   });
 });
 
