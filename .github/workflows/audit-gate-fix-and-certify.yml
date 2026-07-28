@@ -1,4 +1,4 @@
-name: Audit Gate Fix And Full Certification
+name: Audit Fix And Final Governance Certification
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   statuses: write
 
 jobs:
-  fix-and-certify:
+  certify:
     if: ${{ !contains(github.event.head_commit.message, '[governance-certified]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -54,14 +54,16 @@ jobs:
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"pending\",\"context\":\"governance-certification\",\"description\":\"Audit fix and full certification running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+            -d "{\"state\":\"pending\",\"context\":\"governance-certification-final\",\"description\":\"Final governance certification running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
 
-      - name: Apply deterministic audit fix and remove temporary harnesses
+      - name: Apply final corrections and remove all temporary harnesses
         run: |
           rm -f .github/workflows/integration-audit-one-shot.yml
           rm -f .github/workflows/governance-certification.yml
           rm -f .github/workflows/audit-diagnostic.yml
           rm -f .github/workflows/jest-upgrade-diagnostic.yml
+          rm -f .github/workflows/unit-coverage-diagnostic.yml
+          rm -f .github/workflows/final-governance-certification-v2.yml
           rm -f .github/workflows/audit-gate-fix-and-certify.yml
           rm -rf certification-logs
           node - <<'NODE'
@@ -71,14 +73,11 @@ jobs:
           let gate = fs.readFileSync(gateFile, 'utf8');
           const pathLine = "const path = require('path');";
           const coreLine = "const { actionableVulnerabilities, inheritedHighCriticalCount } = require('./lib/npm-audit-core');";
-          if (!gate.includes(coreLine)) {
-            if (!gate.includes(pathLine)) throw new Error('npm audit gate path marker missing');
-            gate = gate.replace(pathLine, `${pathLine}\n${coreLine}`);
-          }
+          if (!gate.includes(coreLine)) gate = gate.replace(pathLine, `${pathLine}\n${coreLine}`);
           const oldTargets = "let targets = Object.values(allVulns).filter(v => v.severity === 'high' || v.severity === 'critical');";
           const newTargets = `let targets = actionableVulnerabilities(allVulns);\nconst inheritedCount = inheritedHighCriticalCount(allVulns);\nif (inheritedCount > 0) {\n  console.log(\`ℹ️  npm audit v2: \${inheritedCount} entrée(s) héritée(s) regroupée(s) sous leur advisory source.\`);\n}`;
           if (gate.includes(oldTargets)) gate = gate.replace(oldTargets, newTargets);
-          if (!gate.includes('actionableVulnerabilities(allVulns)')) throw new Error('npm audit actionable classification not installed');
+          if (!gate.includes('actionableVulnerabilities(allVulns)')) throw new Error('npm audit classification patch missing');
           fs.writeFileSync(gateFile, gate);
 
           fs.writeFileSync('scripts/npm-audit-exceptions.json', JSON.stringify([
@@ -87,20 +86,35 @@ jobs:
               advisory: 'GHSA-mh99-v99m-4gvg',
               expires: '2026-08-15',
               scope: 'dev-only',
-              reason: 'Transitif de Jest/nodemon uniquement. Aucun pattern utilisateur n’atteint ces outils en production. Le correctif amont publié est brace-expansion 5.0.8, incompatible avec les consommateurs CJS 1.x/2.x actuels. Réévaluer dès qu’un backport compatible ou une chaîne Jest/glob corrigée est disponible.'
+              reason: 'Transitif de Jest/nodemon uniquement. Aucun pattern utilisateur n’atteint ces outils en production. Le correctif amont 5.0.8 est incompatible avec les consommateurs CJS 1.x/2.x actuels. Réévaluer dès qu’un backport compatible ou une chaîne Jest/glob corrigée est disponible.'
             }
           ], null, 2) + '\n');
+
+          fs.writeFileSync('jest.unit.config.js', `'use strict';\n\nconst base = require('./jest.config');\n\nmodule.exports = {\n  ...base,\n  roots: ['<rootDir>/tests/unit'],\n  testMatch: ['**/*.test.js'],\n};\n`);
+
+          const packageFile = 'package.json';
+          const pkg = JSON.parse(fs.readFileSync(packageFile, 'utf8'));
+          pkg.scripts['test:integration'] = 'node scripts/run-integration-tests.js';
+          pkg.scripts['test:unit:coverage'] = 'jest --config jest.unit.config.js --ci --runInBand --coverage --forceExit --detectOpenHandles';
+          fs.writeFileSync(packageFile, JSON.stringify(pkg, null, 2) + '\n');
+
+          const ciFile = '.github/workflows/ci.yml';
+          let ci = fs.readFileSync(ciFile, 'utf8');
+          ci = ci.replace(/      - name: Run unit tests \+ coverage \(enforced\)\n        run: >-\n          npx jest --testPathPatterns="tests\/unit" --ci --runInBand\n          --testPathIgnorePatterns="tests\/integration" --coverage\n/, "      - name: Run unit tests + coverage (enforced)\n        run: npm run test:unit:coverage\n");
+          ci = ci.replace(/      - name: Run integration tests \(one suite per process\)\n        run: \|\n          for f in tests\/integration\/\*\.test\.js; do\n            echo "── \$f ──"\n            npx jest "\$f" --ci --forceExit \|\| exit 1\n          done\n/, "      - name: Run integration tests (one suite per process)\n        run: npm run test:integration\n");
+          fs.writeFileSync(ciFile, ci);
 
           const manifestFile = 'features/infrastructure.feature.js';
           let manifest = fs.readFileSync(manifestFile, 'utf8');
           const inserts = [
             ["      'scripts/lib/arch-drift-core.js',\n", "      'scripts/lib/npm-audit-core.js',\n"],
             ["      'scripts/run-migrations.js',\n", "      'scripts/run-integration-tests.js',\n"],
+            ["      'jest.config.js',\n", "      'jest.unit.config.js',\n"],
             ["      'tests/unit/logger.test.js',\n", "      'tests/unit/npm-audit-core.test.js',\n"]
           ];
           for (const [marker, addition] of inserts) {
             if (!manifest.includes(addition.trim())) {
-              if (!manifest.includes(marker)) throw new Error(`infrastructure marker missing: ${marker.trim()}`);
+              if (!manifest.includes(marker)) throw new Error(`manifest marker missing: ${marker.trim()}`);
               manifest = manifest.replace(marker, marker + addition);
             }
           }
@@ -108,7 +122,7 @@ jobs:
 
           const ledgerFile = '.agent/LEDGER.md';
           let ledger = fs.readFileSync(ledgerFile, 'utf8');
-          const certification = `\n\n## Certification finale — gouvernance et tests, 2026-07-28\n\n- Intégration : 31/31 suites vertes avec PostgreSQL 16 et le bootstrap CI canonique.\n- Runner unique : \`npm run test:integration\`, une suite par processus et bilan exhaustif.\n- Audit npm : advisory réel dédupliqué des wrappers hérités ; exception dev-only \`brace-expansion\` datée au 2026-08-15, sans exposition runtime.\n- Tests racine, Boutique, Dashboards, projections 360 et \`map:check\` exécutés dans le run de certification.\n- Les anciens nombres « 13 tests/suites cassés » ne décrivent plus l’état courant.\n- Tous les workflows de diagnostic et marqueurs temporaires sont supprimés du commit certifié.\n`;
+          const certification = `\n\n## Certification finale — gouvernance et tests, 2026-07-28\n\n- Intégration : 31/31 suites vertes avec PostgreSQL 16 et le bootstrap CI canonique.\n- Unités racine : périmètre fixé par \`jest.unit.config.js\`; Boutique et Dashboards ne sont plus exécutés sous le mauvais environnement racine.\n- Audit npm : advisory réel dédupliqué des wrappers hérités ; exception dev-only \`brace-expansion\` datée au 2026-08-15, sans exposition runtime.\n- Gouvernance stricte, couverture racine, Boutique, Dashboards, projections 360 et \`map:check\` exécutés dans le run de certification.\n- Les anciens nombres « 13 tests/suites cassés » ne décrivent plus l’état courant.\n- Tous les workflows de diagnostic et marqueurs temporaires sont supprimés du commit certifié.\n`;
           if (!ledger.includes('## Certification finale — gouvernance et tests, 2026-07-28')) {
             ledger += certification;
             fs.writeFileSync(ledgerFile, ledger);
@@ -116,8 +130,8 @@ jobs:
 
           const knownFile = 'docs/KNOWN_FAILING_TESTS.md';
           let known = fs.readFileSync(knownFile, 'utf8');
-          const note = `\n\n## Certification intégration — 2026-07-28\n\nRésultat canonique : **31/31 suites d’intégration vertes**. Les deux derniers rouges étaient des fixtures non autonomes dans TXG-01 et TXG-02 ; elles créent et nettoient désormais leurs propres données. Le runner permanent \`npm run test:integration\` isole chaque suite et rapporte toutes les défaillances.\n`;
-          if (!known.includes('## Certification intégration — 2026-07-28')) {
+          const note = `\n\n## Certification tests — 2026-07-28\n\nRésultat canonique : **31/31 suites d’intégration vertes**. Le faux volume de suites racine provenait du filtre CLI ambigu \`--testPathPatterns="tests/unit"\`, qui lançait aussi Boutique et Dashboards sous l’environnement Node racine. Le CI utilise désormais \`jest.unit.config.js\` et \`npm run test:unit:coverage\` pour limiter explicitement les unités à \`tests/unit\`.\n`;
+          if (!known.includes('## Certification tests — 2026-07-28')) {
             known += note;
             fs.writeFileSync(knownFile, known);
           }
@@ -142,12 +156,10 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql 2>&1 | tee certification-logs/schema-load.log
           node scripts/ci-migrate.js 2>&1 | tee -a certification-logs/schema-load.log
 
-      - name: Audit classification regression test
-        run: npx jest tests/unit/npm-audit-core.test.js --ci --runInBand
-
       - name: Root governance and quality
         run: |
           set -o pipefail
+          npx jest tests/unit/npm-audit-core.test.js --ci --runInBand 2>&1 | tee certification-logs/audit-core-test.log
           npm run feature:registry 2>&1 | tee certification-logs/feature-registry.log
           npm run feature:registry-doc 2>&1 | tee certification-logs/feature-registry-doc.log
           npm run feature:classification:strict 2>&1 | tee certification-logs/feature-classification.log
@@ -157,10 +169,10 @@ jobs:
           npm run audit:gate 2>&1 | tee certification-logs/npm-audit.log
           npm run gate:catalog-contract 2>&1 | tee certification-logs/catalog-contract.log
 
-      - name: Root unit coverage
+      - name: Correctly scoped root unit coverage
         run: |
           set -o pipefail
-          npx jest --testPathPatterns="tests/unit" --ci --runInBand --testPathIgnorePatterns="tests/integration" --coverage 2>&1 | tee certification-logs/unit-tests.log
+          npm run test:unit:coverage 2>&1 | tee certification-logs/unit-tests.log
 
       - name: Integration suites
         run: |
@@ -211,7 +223,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: governance-certification-${{ github.run_id }}
+          name: governance-certification-final-${{ github.run_id }}
           path: certification-logs
           if-no-files-found: warn
           retention-days: 1
@@ -226,7 +238,7 @@ jobs:
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"failure\",\"context\":\"governance-certification\",\"description\":\"Audit fix or full certification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+            -d "{\"state\":\"failure\",\"context\":\"governance-certification-final\",\"description\":\"Final certification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
 
       - name: Commit certified tree
         if: success()
@@ -251,4 +263,4 @@ jobs:
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${FINAL_SHA}" \
-            -d "{\"state\":\"success\",\"context\":\"governance-certification\",\"description\":\"Governance and all test scopes passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+            -d "{\"state\":\"success\",\"context\":\"governance-certification-final\",\"description\":\"Governance and all test scopes passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
