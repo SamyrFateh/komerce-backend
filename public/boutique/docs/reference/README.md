@@ -9,7 +9,8 @@ Ce dossier fixe la référence visuelle et compositionnelle de la modale produit
 1. `PRODUCT_MODAL_REFERENCE_CANONICAL.md` — règles normatives ;
 2. `reference-modale-4-etats.html` — quatre rendus de référence ;
 3. `reference-modale-architecture.html` — coque, scroll et responsabilités ;
-4. `PROMPT_SONNET_MODALE.md` — prompt d'exécution contrôlé.
+4. `PROMPT_SONNET_MODALE.md` — prompt d'exécution contrôlé ;
+5. `MODAL_V3_FIXTURE_CATALOGUE.md` — catalogue déterministe de validation multi-topologies.
 
 ## Décision v3.0
 
