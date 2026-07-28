@@ -38,6 +38,28 @@ function kmfNumber(text) {
   return digits ? Number(digits) : null;
 }
 
+function isMobileComposition(page) {
+  const viewport = page.viewportSize();
+  return viewport ? viewport.width < 900 : false;
+}
+
+function stockLocator(page) {
+  return page.locator(isMobileComposition(page) ? '#k-modal-stock-pill' : '#k-modal-stock');
+}
+
+async function assertResolvedStock(page, unit) {
+  const stock = stockLocator(page);
+  await expect(stock, 'la disponibilité du SKU résolu doit être rendue dans la composition active').toBeVisible();
+  const qty = Number(unit.available_quantity);
+  if (qty <= 5) {
+    await expect(stock).toContainText(`Plus que ${qty}`);
+  } else if (isMobileComposition(page)) {
+    await expect(stock).toContainText('En stock');
+  } else {
+    await expect(stock).toContainText(`${qty} en stock`);
+  }
+}
+
 function targetAvailableUnit(detail) {
   if (!detail || detail.inventory_model !== 'SKU') return null;
   if (!Array.isArray(detail.option_axes) || detail.option_axes.length === 0) return null;
@@ -158,7 +180,7 @@ async function selectTargetUnit(page, candidate) {
 
   for (const axis of candidate.detail.option_axes) {
     const value = candidate.unit.option_values[axis.key];
-    const button = page.locator(optionSelector(axis.key, value));
+    const button = page.locator('#k-modal-configurator').locator(optionSelector(axis.key, value));
 
     await expect(button, `${axis.key}=${value} doit être proposé`).toBeVisible({ timeout: 5_000 });
     await expect(button).toHaveAttribute('data-option-state', 'AVAILABLE');
@@ -168,7 +190,7 @@ async function selectTargetUnit(page, candidate) {
   }
 
   await expect(addButton, 'le CTA doit être actif une fois le SKU réel résolu').toBeEnabled();
-  await expect(page.locator('#k-modal-stock')).toContainText('Disponible');
+  await assertResolvedStock(page, candidate.unit);
 
   if (candidate.unit.sku) {
     await expect(page.locator('#k-modal-sku')).toContainText(candidate.unit.sku);

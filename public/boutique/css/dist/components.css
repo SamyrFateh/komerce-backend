@@ -5002,6 +5002,16 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     display: flex;
     flex-direction: column;
   }
+  /* LOT4 / ProductConfigurator : les blocs post-hero sont des rangées
+   transversales. Sans placement explicite, l'auto-placement CSS Grid les
+   réduit à une demi-colonne et les expose au recouvrement des régions du hero. */
+  #k-modal .k-modal-product-zone > .k-modal-configurator,
+  #k-modal .k-modal-product-zone > .k-modal-long-details,
+  #k-modal .k-modal-product-zone > .k-modal-enriched-content,
+  #k-modal .k-modal-product-zone > .k-modal-suggestions {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
   #k-modal .k-modal-product-zone > .k-modal-long-details {
     padding: 0 clamp(28px, 4.4vw, 72px);
   }

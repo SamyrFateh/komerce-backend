@@ -54,6 +54,13 @@ describe('convergence v3.0 des quatre états — oracle LOT 4', () => {
     expect(iCartSlot).toBeGreaterThan(iZoneEnd);
   });
 
+  test('desktop : configurateur, détails et suggestions occupent une rangée pleine largeur', () => {
+    const lot4 = fs.readFileSync(path.join(ROOT, 'css/modal-product-lot4-hybrid.css'), 'utf8');
+    const block = lot4.match(/#k-modal \.k-modal-product-zone > \.k-modal-configurator,[\s\S]*?#k-modal \.k-modal-product-zone > \.k-modal-suggestions \{([\s\S]*?)\}/);
+    expect(block).not.toBeNull();
+    expect(block[1]).toMatch(/grid-column:\s*1\s*\/\s*-1/);
+  });
+
   test('la safe-area mobile reste gérée en CSS (env(safe-area-inset-bottom)), pas en JS', () => {
     const shell = fs.readFileSync(path.join(ROOT, 'css/modal-shell.css'), 'utf8');
     expect(shell).toMatch(/env\(safe-area-inset-bottom/);
