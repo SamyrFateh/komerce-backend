@@ -135,11 +135,7 @@ jobs:
           node scripts/ci-migrate.js
 
       - name: Run integration tests (one suite per process)
-        run: |
-          for f in tests/integration/*.test.js; do
-            echo "── $f ──"
-            npx jest "$f" --ci --forceExit || exit 1
-          done
+        run: npm run test:integration
 
   # ─────────────────────────────────────────────────────────────
   # Job 3 — Gates boutique (frontend) : périmètre et dépendances
