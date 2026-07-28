@@ -1,1 +1,1 @@
-Trigger the governed-tree certification after excluding temporary harness files and applying the runner ownership in the checked tree. Remove this file in the final cleanup commit.
+Trigger the certification with root quality gates isolated. Remove this file in the final cleanup commit.
