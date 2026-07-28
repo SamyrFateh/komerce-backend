@@ -2,75 +2,35 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
 
-# Annule les runs obsolètes sur une même branche
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
-  # Job 1 — Tests unitaires : rapides, aucune base de données.
-  # ─────────────────────────────────────────────────────────────
   unit:
-    name: Unit tests + backend audit (no DB)
+    name: Root governance and unit coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: npm
+      - run: npm ci
+      - run: npm run feature:registry
+      - run: npm run quality:gate
+      - run: npm run backend:audit
+      - run: npm run audit:gate
+      - run: npm run test:unit:coverage
+      - run: npm run gate:catalog-contract
+      - run: npm run feature:check
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: "Niveau 0 — Registre des features (cohérence)"
-        run: npm run feature:registry
-
-      - name: "Niveau 1-4 — Pyramide qualité (code)"
-        run: npm run quality:gate
-
-      - name: Backend architecture audit (invariants)
-        run: npm run backend:audit
-
-      - name: npm audit gate (high/critical)
-        run: npm run audit:gate
-
-      - name: Run unit tests + coverage (enforced)
-        run: >-
-          npx jest --testPathPatterns="tests/unit" --ci --runInBand
-          --testPathIgnorePatterns="tests/integration" --coverage
-
-      # ING-4 (doctrine DOCTRINE_INGESTION_CATALOGUE, ING-I4) — répond par un
-      # code de sortie à « un fournisseur sale peut-il polluer la
-      # raffinerie ? ». Rejoue le contrat pivot v1 (ING-1) + le corpus de
-      # fixtures sales (ING-3). Non contournable : ni continue-on-error, ni
-      # entrée dans governance/test-exemptions.json (qui gouverne un autre
-      # gate, sans rapport avec l'ingestion catalogue).
-      - name: "Gate catalogue — un fournisseur sale ne peut pas polluer la raffinerie"
-        run: npm run gate:catalog-contract
-
-      # Dette globale connue : ce gate détecte encore des manques historiques
-      # dans plusieurs cartes. On garde le rapport visible en CI, mais les
-      # garde-fous bloquants actifs passent par Carte First et map:check.
-      - name: "Niveau 5 — Feature Slice Guard (rapport dette globale)"
-        continue-on-error: true
-        run: npm run feature:check
-
-  # ─────────────────────────────────────────────────────────────
-  # Job 2 — Tests d'intégration : Postgres jetable (service container).
-  # Charge docs/db/railway-live-schema.sql via ci-migrate.js,
-  # qui baseline dynamiquement (git) les migrations déjà dans le dump
-  # et n'applique que les migrations post-snapshot.
-  # ─────────────────────────────────────────────────────────────
   integration:
-    name: Integration tests (Postgres)
+    name: Integration tests (PostgreSQL)
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:16
@@ -81,16 +41,15 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U komerce"
+          --health-cmd "pg_isready -U komerce -d komerce_test"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
-
+          --health-retries 10
     env:
+      NODE_ENV: test
       DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
       JWT_SECRET: ci-test-secret-not-for-prod
       ADMIN_PASSWORD: ci-test-admin
-      NODE_ENV: test
       STRIPE_SECRET_KEY: sk_test_dummy
       STRIPE_WEBHOOK_SECRET: whsec_dummy
       QR_SECRET: ci-test-qr-secret
@@ -99,133 +58,54 @@ jobs:
       PAYPAL_CLIENT_SECRET: ci-dummy
       PAYPAL_WEBHOOK_ID: ci-dummy
       META_WA_APP_SECRET: ci-dummy
-
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      # Vérifie que docs/db/railway-live-schema.sql est frais avant tout.
-      # Bloque si une migration récente a ajouté une colonne absente du dump.
-      # Correctif : merger le PR auto créé par schema-refresh.yml.
-      - name: Check schema freshness
-        run: node scripts/check-schema-freshness.js
-
-      # Symétrique du check précédent : bloque si une migration a DROPPÉ un
-      # objet (table/type) qui est pourtant encore présent dans le dump —
-      # signe d'une résurrection hors runner (psql manuel, script de
-      # réconciliation rejoué...). Cf. incident RECONCILIATION_PROD.sql,
-      # juillet 2026 (migration 099).
-      - name: Check schema resurrection (anti drift hors-migrations)
-        run: node scripts/check-schema-resurrection.js
-
-      # Charge le dump Railway (schéma complet) dans le Postgres CI,
-      # puis baseline dynamiquement les migrations déjà présentes dans le dump
-      # (via git log/ls-tree — plus de liste hardcodée).
-      # N'applique que les migrations vraiment nouvelles (post-snapshot).
-      - name: Load DB schema + run pending migrations
+          cache: npm
+      - run: npm ci
+      - run: node scripts/check-schema-freshness.js
+      - run: node scripts/check-schema-resurrection.js
+      - name: Load canonical schema and pending migrations
         run: |
-          psql "$DATABASE_URL" -f docs/db/railway-live-schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
           node scripts/ci-migrate.js
+      - run: npm run test:integration
 
-      - name: Run integration tests (one suite per process)
-        run: npm run test:integration
-
-  # ─────────────────────────────────────────────────────────────
-  # Job 3 — Gates boutique (frontend) : périmètre et dépendances
-  # propres à public/boutique (stylelint, playwright), absentes du
-  # package.json racine -> npm ci dédié, working-directory dédié.
-  # Reprend le job qui vivait (mort, jamais déclenché par GitHub
-  # Actions) dans public/boutique/.github/workflows/ci.yml : seul
-  # un fichier sous .github/workflows/ à la RACINE du repo est lu
-  # par Actions. check:fast = même suite que le hook pre-commit
-  # local (scripts/setup-hooks.sh, étape 6), moins l'e2e Playwright
-  # (nécessite un serveur + DB — hors périmètre de ce job statique).
-  # N1 (audit:gate) ajouté : scripts/npm-audit-gate.js --cwd=. réutilise
-  # le gate racine sans le dupliquer ; jusqu'ici les deps boutique
-  # (stylelint, @playwright/test) n'étaient jamais auditées.
-  # ─────────────────────────────────────────────────────────────
-  boutique-quality:
-    name: "🛡️ Boutique Quality Gates"
+  boutique:
+    name: Boutique quality and coverage
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: public/boutique
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: public/boutique/package-lock.json
+      - run: npm ci
+      - run: npm run audit:gate
+      - run: npm run check:fast
+      - run: npm run test:coverage
 
-      - name: Install dependencies (boutique)
-        run: npm ci
-
-      - name: "N1 — npm audit gate boutique (high/critical)"
-        run: npm run audit:gate
-
-      - name: "Garde-fous boutique (= check:fast : N2 quality + invariants + carte 360, statique)"
-        run: |
-          mkdir -p coverage
-          set -o pipefail
-          npm run check:fast 2>&1 | tee coverage/check-fast.log
-
-      - name: "Couverture boutique réelle — hors bundles et fichiers de test"
-        run: npm run test:coverage
-
-      - name: Publier le rapport de couverture boutique
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: boutique-coverage-${{ github.sha }}
-          path: |
-            public/boutique/coverage/check-fast.log
-            public/boutique/coverage/coverage-summary.json
-            public/boutique/coverage/lcov.info
-            public/boutique/coverage/COVERAGE_MISSING.md
-          if-no-files-found: warn
-
-  # ─────────────────────────────────────────────────────────────
-  # Job 4 — Gates dashboards (frontend admin SPA) : périmètre et
-  # dépendances propres à public/dashboards, absentes du package.json
-  # racine -> npm ci dédié, working-directory dédié. Symétrique du
-  # job boutique-quality ci-dessus. Reprend exactement l'ordre de
-  # check:all (scripts/setup-hooks.sh local) : quality:gate ->
-  # arch:check -> feature:guard -> audit:registry -> testkit:check
-  # -> test:unit. audit:gate (npm audit) ajouté en tête, sur le
-  # même principe que N1 côté boutique : jusqu'ici les deps
-  # dashboards n'étaient jamais auditées en CI. Il est écrit pour
-  # ne jamais faire échouer le job (voir scripts, `|| echo ...`) —
-  # visibilité seulement, pas un gate bloquant.
-  # ─────────────────────────────────────────────────────────────
-  dashboards-quality:
-    name: "🛡️ Dashboards Quality Gates"
+  dashboards:
+    name: Dashboards quality
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: public/dashboards
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: public/dashboards/package-lock.json
-
-      - name: Install dependencies (dashboards)
-        run: npm ci
-
-      - name: "N1 — npm audit dashboards (informatif, non bloquant)"
-        run: npm run audit:gate
-
-      - name: "Garde-fous dashboards (= check:all : quality + arch + feature guard + registre + testkit + tests unitaires)"
-        run: npm run check:all
+      - run: npm ci
+      - run: npm run audit:gate
+      - run: npm run check:all
