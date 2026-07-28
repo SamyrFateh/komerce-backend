@@ -40,12 +40,20 @@
     overflow: hidden;
   }
 
-  /* Reference: compact — spec §5.3 : 11px / 400 / muted, fallback silencieux si absente */
+  /* Reference: compact — spec §5.3 : 11px / 400 / muted, fallback silencieux si absente.
+     P2 référence/SKU longue (2026-07) : une seule ligne, ellipsis — la
+     référence complète reste dans le DOM (textContent inchangé, utile aux
+     tests et à l'accessibilité) mais ne domine plus le bloc commercial. */
   #k-modal .k-modal-sku {
+    display: block;
     font-size: 11px;
     font-weight: 400;
     color: var(--text-muted);
     margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   /* Price row: tight, no overflow issues */
@@ -383,14 +391,21 @@
     display: none;
   }
 
-  /* ── MDM-5 : Info strip — horizontal chip row ──────────────── */
-
+  /* ── MDM-5 : Info strip — P1 livraison mobile (2026-07) ──────────
+     Chantier finition mobile : l'ancienne rangée horizontale unique
+     (flex-wrap:nowrap + overflow:hidden) tronquait silencieusement les
+     libellés de livraison longs ("Livraison spécialisée avec prise de
+     rendez-vous…") et faisait cohabiter guidage/dispo et livraison sur
+     la même ligne dense. Colonne verticale : le chip de guidage (s'il
+     existe) puis chaque mode de livraison occupe sa propre ligne pleine
+     largeur, sans troncature ni scroll horizontal. */
   .k-mdm-info-strip {
     display: flex;
-    flex-wrap: nowrap; /* Opt : 1 ligne max, économise ~22px vs 2 lignes */
-    overflow: hidden;
-    gap: 4px;
-    margin-top: 6px; /* Opt : 10→6px */
+    flex-direction: column;
+    align-items: stretch;
+    overflow: visible;
+    gap: 6px;
+    margin-top: 8px; /* Opt : 10→8px */
     padding: 0;
   }
 
@@ -406,7 +421,8 @@
     color: var(--text);
     border: 0.5px solid var(--border);
     white-space: nowrap;
-    flex-shrink: 0;
+    max-width: 100%;
+    align-self: flex-start; /* le chip de guidage reste compact, pas pleine largeur */
   }
 
   .k-mdm-chip--ok {
@@ -415,9 +431,27 @@
     border-color: var(--green-alpha-14);
   }
 
+  /* Mode de livraison : zone verticale propre, pleine largeur, libellé et
+     meta (prix/délai) jamais coupés. Remplace l'ancien chip compact
+     nowrap par une carte lisible (acceptation : scrollWidth <= clientWidth,
+     aucun ellipsis sur le nom, prix + délai visibles). */
   .k-mdm-chip--delivery {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    padding: 7px 10px;
+    gap: 2px;
     color: var(--text);
     background: var(--sand);
+  }
+
+  .k-mdm-chip--delivery .k-mdm-chip-icon {
+    float: left;
+    margin-right: 4px;
   }
 
   .k-mdm-chip--air {
@@ -426,10 +460,31 @@
     border-color: var(--blue-border);
   }
 
+  /* Mode retenu par défaut quand plusieurs modes existent (marquage
+     purement visuel, cf. b-modal-mobile-product.js) — perceptible sans
+     dépendre uniquement de la couleur : bordure renforcée + icône dédiée. */
+  .k-mdm-chip--delivery-selected {
+    border-color: var(--text);
+    border-width: 1.5px;
+  }
+
+  .k-mdm-chip--delivery-selected::after {
+    content: '✓ Sélectionné';
+    display: block;
+    width: 100%;
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ocean-dark);
+  }
+
   .k-mdm-chip-meta {
+    display: block;
+    width: 100%;
     font-weight: 400;
     color: var(--text-muted);
     font-size: 10px;
+    white-space: normal;
   }
 
   .k-mdm-chip-icon {
@@ -571,6 +626,15 @@
      cette règle a spécificité #k-modal .k-modal-actions — notre override
      ci-dessous est sur #k-modal seul (spécificité inférieure), donc le footer
      n'est pas affecté). */
+  /* ── P1 état après ajout (2026-07) : cible tactile stepper ≥ 44px ──
+     .k-qty-btn { width:38px; height:44px } est une règle de BASE partagée
+     avec le desktop (modal-shell.css) — hors périmètre de ce lot (desktop
+     non touché). Override mobile-only : largeur portée à 44px, acceptation
+     brief "cibles tactiles d'au moins 44 px" pour SIMPLE et SKU. */
+  #k-modal .k-qty-btn {
+    width: 44px;
+  }
+
   #k-modal {
     background: var(--page-bg);
   }

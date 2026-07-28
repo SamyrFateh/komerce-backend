@@ -193,11 +193,13 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     expect(dom.modalSku.textContent).toBe('Réf. SKU-RM');
     expect(dom.modalSku.hidden).toBe(false);
 
-    // MDM-5 : disponibilité et livraison vivent désormais dans l'info strip
-    // (chips), pas dans dom.modalStock.
+    // MDM-5 : livraison vit désormais dans l'info strip (chips), pas dans
+    // dom.modalStock. P2 stock-en-double (2026-07) : le chip "✓ Disponible"
+    // n'est plus rendu quand la sélection résout un SKU — l'info est déjà
+    // portée par le pill stock près du prix (renderStockPill), la répéter
+    // ici était un doublon pur.
     const availChip = root.querySelector('.k-mdm-chip--ok');
-    expect(availChip).not.toBeNull();
-    expect(availChip.textContent).toBe('✓ Disponible');
+    expect(availChip).toBeNull();
 
     expect(document.getElementById('k-add-cart-btn').disabled).toBe(false);
     expect(document.getElementById('k-buy-now-btn').disabled).toBe(false);
@@ -327,7 +329,9 @@ describe('b-modal-mobile-product — PDC-6 renderer coverage closure', () => {
     const resolved = richSelection();
     renderMobileProductDetail(detail, resolved);
     expect(document.getElementById('k-add-cart-btn').hasAttribute('aria-describedby')).toBe(false);
-    expect(dom.modalVariants.querySelector('.k-mdm-chip--ok').textContent).toBe('✓ Disponible');
+    // P2 stock-en-double (2026-07) : plus de chip du tout une fois le SKU
+    // résolu — la disponibilité est déjà annoncée par le pill stock.
+    expect(dom.modalVariants.querySelector('.k-mdm-chip--ok')).toBeNull();
   });
 
   test('gardes DOM et viewport restent fail-safe', () => {

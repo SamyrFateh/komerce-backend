@@ -346,27 +346,30 @@ function renderInfoStrip(detail, selection, root) {
   strip.className = 'k-mdm-info-strip';
   strip.dataset.infoStrip = '1';
 
-  // Availability chip — only when selection is supported
-  if (selection.selection_supported) {
+  // Availability chip — only when selection is supported AND incomplete.
+  // P2 stock-en-double (2026-07) : quand selected_sku_id résout, le produit
+  // est par définition disponible (resolveSelectedSku ne renvoie que des
+  // unités stock_status===AVAILABLE) — l'info est déjà portée par le pill
+  // stock près du prix (renderStockPill). La répéter ici sous "✓ Disponible"
+  // est un pur doublon. Les vraies exceptions (rupture, incompatibilité)
+  // restent surfacées ailleurs via selection.selection_message (message
+  // dédié sous les groupes de variantes), jamais via ce chip. Le chip ne
+  // reste donc utile que pour guider une sélection encore incomplète.
+  if (selection.selection_supported && !selection.selected_sku_id) {
     const availChip = document.createElement('span');
-    if (selection.selected_sku_id) {
-      availChip.className = 'k-mdm-chip k-mdm-chip--ok';
-      availChip.textContent = '✓ Disponible';
-    } else {
-      const hasSelections =
-        Object.keys(selection.selected_options).length > 0;
-      availChip.className = 'k-mdm-chip';
-      availChip.textContent = hasSelections
-        ? 'Choisissez la suite'
-        : 'Choisissez vos options';
-    }
+    const hasSelections =
+      Object.keys(selection.selected_options).length > 0;
+    availChip.className = 'k-mdm-chip';
+    availChip.textContent = hasSelections
+      ? 'Choisissez la suite'
+      : 'Choisissez vos options';
     strip.appendChild(availChip);
   }
 
   // Delivery chips — exclusively from detail.delivery_options[]
   // Never hardcoded. Zero chips if array is empty.
   const options = detail?.delivery_options || [];
-  options.forEach((option) => {
+  options.forEach((option, index) => {
     const chip = document.createElement('span');
     const isAir = typeof option.code === 'string' && option.code.startsWith('AIR_');
     chip.className = `k-mdm-chip k-mdm-chip--delivery${isAir ? ' k-mdm-chip--air' : ''}`;
@@ -375,6 +378,9 @@ function renderInfoStrip(detail, selection, root) {
     iconWrap.appendChild(_deliveryIconSvg(isAir));
     chip.append(iconWrap, document.createTextNode(` ${option.label}`));
 
+    // P1 livraison mobile (2026-07) : chaque mode de livraison a sa propre
+    // zone verticale (chip pleine largeur, meta sur sa propre ligne) au lieu
+    // d'une rangée horizontale dense — voir CSS .k-mdm-chip--delivery.
     // Append meta (price, ETA) if provided by contract
     const meta = [];
     if (option.price_kmf != null) meta.push(fmtPrice(option.price_kmf));
@@ -382,8 +388,15 @@ function renderInfoStrip(detail, selection, root) {
     if (meta.length > 0) {
       const metaSpan = document.createElement('span');
       metaSpan.className = 'k-mdm-chip-meta';
-      metaSpan.textContent = ` · ${meta.join(' · ')}`;
+      metaSpan.textContent = meta.join(' · ');
       chip.appendChild(metaSpan);
+    }
+
+    // Premier mode = choix retenu par défaut (aucune mutation de state,
+    // marquage purement visuel — la sélection réelle du mode reste hors
+    // périmètre PDC de ce lot). Uniquement pertinent si plusieurs modes.
+    if (index === 0 && options.length > 1) {
+      chip.classList.add('k-mdm-chip--delivery-selected');
     }
 
     strip.appendChild(chip);

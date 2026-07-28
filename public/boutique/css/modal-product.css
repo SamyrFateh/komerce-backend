@@ -254,14 +254,17 @@
    .k-modal-trust { display:none } de la base hors-#k-modal (modal-shell.css
    L293) — spécificité #k-modal l'emporte, quel que soit l'ordre source. ── */
 @media (max-width: 899px) {
-  /* FIX trustRows=1 : nowrap + taille réduite pour tenir sur une seule ligne
-     à 390px (3 pills : Paiement sécurisé / Retrait en relais / Stock garanti).
-     flex-wrap:wrap était la cause du verdict FAIL trustRows=2 dans le harnais. */
+  /* P2 réassurance (2026-07) : l'ancien nowrap+10px forcé ("FIX trustRows=1"
+     ci-dessous, conservé en historique) était la cause directe documentée
+     du problème de lisibilité/contraste remonté par l'audit — un compromis
+     de largeur au détriment de la lecture. wrap propre autorisé à 360px,
+     taille et contraste légèrement relevés, rangée toujours compacte
+     (pas de pill, pas de carte). */
   #k-modal .k-modal-trust {
     display: flex;
-    flex-wrap: nowrap;
-    gap: 5px;
-    overflow: hidden;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    column-gap: 10px;
     padding: 10px 0 2px;
     border-top: 1px solid var(--sand-dark);
     margin-top: 4px;
@@ -270,19 +273,20 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 10px;
+    font-size: 11px;
+    line-height: 1.3;
     font-weight: 500;
-    color: var(--text-muted);
+    color: var(--text-muted-dark);
     background: none;
     border: none;
     padding: 0;
     border-radius: 0;
-    white-space: nowrap;
+    white-space: normal;
     flex-shrink: 1;
   }
   #k-modal .k-modal-trust-item svg {
-    width: 13px;
-    height: 13px;
+    width: 14px;
+    height: 14px;
     color: var(--ocean);
     stroke: currentColor;
     fill: none;
