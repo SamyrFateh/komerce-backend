@@ -96,12 +96,17 @@ jobs:
           npm run feature:registry-doc
           npm run feature:classification:strict
 
-      - name: Root quality gates
-        run: |
-          npm run quality:gate
-          npm run backend:audit
-          npm run audit:gate
-          npm run gate:catalog-contract
+      - name: Root code quality
+        run: npm run quality:gate
+
+      - name: Root backend audit
+        run: npm run backend:audit
+
+      - name: Root dependency audit
+        run: npm run audit:gate
+
+      - name: Root catalogue contract
+        run: npm run gate:catalog-contract
 
       - name: Root unit coverage
         run: npx jest --testPathPatterns="tests/unit" --ci --runInBand --testPathIgnorePatterns="tests/integration" --coverage
