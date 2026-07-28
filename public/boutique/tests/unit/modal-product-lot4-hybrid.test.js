@@ -28,4 +28,15 @@ describe('modal-product-lot4-hybrid.css - densification zone produit + teaser su
     expect(zoneRule).not.toMatch(/min-height\s*:\s*clamp/);
   });
 
+  test('place tous les blocs post-hero sur une rangée pleine largeur et cliquable', () => {
+    const block = css.match(
+      /#k-modal \.k-modal-product-zone > \.k-modal-configurator,[\s\S]*?#k-modal \.k-modal-product-zone > \.k-modal-suggestions \{([\s\S]*?)\}/
+    );
+
+    expect(block).not.toBeNull();
+    expect(block[0]).toContain('.k-modal-long-details');
+    expect(block[0]).toContain('.k-modal-enriched-content');
+    expect(block[1]).toMatch(/grid-column:\s*1\s*\/\s*-1/);
+    expect(block[1]).toMatch(/min-width:\s*0/);
+  });
 });
