@@ -29,8 +29,8 @@ const TARGET = path.join(__dirname, '../../services/pricing-strategy-service.js'
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const PRODUCT_ID = '00000000-0000-0000-0000-0000000000b1';
-const USER_ID = '00000000-0000-0000-0000-000000000001';
+const PRODUCT_ID = '00000000-0000-0000-0000-0000000002b1';
+const USER_ID = '00000000-0000-0000-0000-000000000201';
 
 jest.setTimeout(30000);
 
@@ -46,23 +46,60 @@ async function restorePriceHistory() {
   await pool.query('ALTER TABLE price_history_hidden RENAME TO price_history');
 }
 
-async function resetProductPrice() {
-  await pool.query('UPDATE products SET price_kmf = 10000 WHERE id = $1', [PRODUCT_ID]);
+async function seedStrategyFixtures() {
+  // Le snapshot CI ne contient aucune donnée. La preuve doit donc créer le
+  // produit et l'utilisateur référencé par les FK applied_by avant d'appeler
+  // le vrai service.
+  await pool.query(`
+    INSERT INTO users (id, full_name, email, role)
+    VALUES ($1, 'Admin TXG-02', 'txg02-admin@komerce.test', 'admin')
+    ON CONFLICT (id) DO UPDATE
+      SET full_name = EXCLUDED.full_name,
+          email = EXCLUDED.email,
+          role = EXCLUDED.role
+  `, [USER_ID]);
+  await pool.query(`
+    INSERT INTO products (id, name, price_kmf)
+    VALUES ($1, 'Produit Test TXG-02', 10000)
+    ON CONFLICT (id) DO UPDATE
+      SET name = EXCLUDED.name,
+          price_kmf = EXCLUDED.price_kmf
+  `, [PRODUCT_ID]);
+  await pool.query(
+    "DELETE FROM pricing_strategy_history WHERE product_id = $1 AND reason = 'green proof'",
+    [PRODUCT_ID]
+  );
+  await pool.query(
+    "DELETE FROM pricing_strategies WHERE product_id = $1 AND notes = 'green proof'",
+    [PRODUCT_ID]
+  );
   // is_active strategy cleanup so unique partial indexes don't collide across runs
   await pool.query('UPDATE pricing_strategies SET is_active = FALSE WHERE product_id = $1', [PRODUCT_ID]);
 }
 
-beforeAll(async () => {
-  await resetProductPrice();
-});
+async function cleanupStrategyFixtures() {
+  await pool.query(
+    "DELETE FROM pricing_strategy_history WHERE product_id = $1 AND reason = 'green proof'",
+    [PRODUCT_ID]
+  );
+  await pool.query(
+    "DELETE FROM pricing_strategies WHERE product_id = $1 AND notes = 'green proof'",
+    [PRODUCT_ID]
+  );
+  await pool.query('DELETE FROM products WHERE id = $1', [PRODUCT_ID]);
+  await pool.query('DELETE FROM users WHERE id = $1', [USER_ID]);
+}
+
+beforeAll(seedStrategyFixtures);
 
 afterAll(async () => {
+  await cleanupStrategyFixtures();
   await pool.end();
 });
 
 describe('TXG-02 — applyStrategy price_history SAVEPOINT', () => {
   test('GREEN: UPDATE prix persiste malgré price_history indisponible', async () => {
-    await resetProductPrice();
+    await seedStrategyFixtures();
     const svc = loadService();
     await hidePriceHistory();
     try {
