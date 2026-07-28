@@ -40,6 +40,16 @@ jobs:
           find docs -type f \( -iname 'PROMPT*.md' -o -iname '*.patch' -o -iname '*.patch.md' -o -iname '*.diff' \) -delete
           find .github/workflows -maxdepth 1 -type f -name '*once*.yml' -delete
           rm -f docs/KNOWN_FAILING_TESTS.md
+          rm -f docs/AUDIT_CONFORMITE_PRE_GOLIVE_2026-06-08.md
+          rm -f docs/P4_1_CALIBRAGE_RUN2.md
+          rm -f docs/P4_1_PREMIER_RUN.md
+          rm -f docs/RECONCILIATION_2026-06-16.md
+          rm -f docs/SIGNOFF_REVERIF.md
+          rm -f docs/backend/ROUTES_REFACTO_ANALYSIS_2026-06-14.md
+          rm -f docs/boutique/ROADMAP_MODAL_TEMU.md
+          rm -f docs/doctrine/AUDIT_FEATURE_DOCTRINE.md
+          rm -f docs/vision/ROADMAP_PILOTE_KOMERCE.md
+
           cat > docs/TEST_CERTIFICATION.md <<'EOF'
           # Certification des tests et de la gouvernance
 
