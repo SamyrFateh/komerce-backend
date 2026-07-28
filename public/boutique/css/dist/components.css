@@ -3701,14 +3701,17 @@ html.k-mobile-premium-v1 .k-chip-label {
    .k-modal-trust { display:none } de la base hors-#k-modal (modal-shell.css
    L293) — spécificité #k-modal l'emporte, quel que soit l'ordre source. ── */
 @media (max-width: 899px) {
-  /* FIX trustRows=1 : nowrap + taille réduite pour tenir sur une seule ligne
-     à 390px (3 pills : Paiement sécurisé / Retrait en relais / Stock garanti).
-     flex-wrap:wrap était la cause du verdict FAIL trustRows=2 dans le harnais. */
+  /* P2 réassurance (2026-07) : l'ancien nowrap+10px forcé ("FIX trustRows=1"
+     ci-dessous, conservé en historique) était la cause directe documentée
+     du problème de lisibilité/contraste remonté par l'audit — un compromis
+     de largeur au détriment de la lecture. wrap propre autorisé à 360px,
+     taille et contraste légèrement relevés, rangée toujours compacte
+     (pas de pill, pas de carte). */
   #k-modal .k-modal-trust {
     display: flex;
-    flex-wrap: nowrap;
-    gap: 5px;
-    overflow: hidden;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    column-gap: 10px;
     padding: 10px 0 2px;
     border-top: 1px solid var(--sand-dark);
     margin-top: 4px;
@@ -3717,19 +3720,20 @@ html.k-mobile-premium-v1 .k-chip-label {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 10px;
+    font-size: 11px;
+    line-height: 1.3;
     font-weight: 500;
-    color: var(--text-muted);
+    color: var(--text-muted-dark);
     background: none;
     border: none;
     padding: 0;
     border-radius: 0;
-    white-space: nowrap;
+    white-space: normal;
     flex-shrink: 1;
   }
   #k-modal .k-modal-trust-item svg {
-    width: 13px;
-    height: 13px;
+    width: 14px;
+    height: 14px;
     color: var(--ocean);
     stroke: currentColor;
     fill: none;
@@ -5475,12 +5479,20 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     overflow: hidden;
   }
 
-  /* Reference: compact — spec §5.3 : 11px / 400 / muted, fallback silencieux si absente */
+  /* Reference: compact — spec §5.3 : 11px / 400 / muted, fallback silencieux si absente.
+     P2 référence/SKU longue (2026-07) : une seule ligne, ellipsis — la
+     référence complète reste dans le DOM (textContent inchangé, utile aux
+     tests et à l'accessibilité) mais ne domine plus le bloc commercial. */
   #k-modal .k-modal-sku {
+    display: block;
     font-size: 11px;
     font-weight: 400;
     color: var(--text-muted);
     margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   /* Price row: tight, no overflow issues */
@@ -5569,72 +5581,55 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   /* ── MDM-2 : Media height ──────────────────────────────────── */
 
-  /* Replaces the tactical guard from modal-product-price-normalization.css.
-     48vh cap ensures identity + first axis visible without scroll on ≥700px
-     viewports. min-height prevents excessive compression on short screens.
+  /* P1 hauteur du hero (2026-07, lot audit-3) : le cadrage vh (48vh multi,
+     36vh single) rendait la hauteur du hero dépendante du mode galerie
+     plutôt que d'un ratio stable — Golden Elite (multi-image) produisait un
+     cadre visiblement plus haut qu'une fixture SVG single-image, à contenu
+     équivalent. Remplacé par un ratio 4:3 unique (cible brief), identique
+     quel que soit gallery-mode ou has-variants : la hauteur ne dépend plus
+     que de la largeur du wrapper, donc cohérente entre produits.
 
-     FIX Samsung Internet (prix rogné, MDM-8 phase 3) : vh/dvh statiques ne
-     reflètent pas forcément la hauteur réellement visible sur certains
-     Samsung Internet, alors que #k-modal (modal-shell.css + boutique.js
-     syncModalViewportOwner) est déjà fiabilisé sur le Visual Viewport réel.
-     --k-modal-vvh porte cette même mesure (posée par boutique.js) : la
-     dernière déclaration calc() gagne la cascade dès qu'elle est présente
-     (modal ouverte), vh/dvh restent le fallback avant que le JS ne tourne. */
-  #k-modal .k-modal-img-wrap {
-    min-height: 180px;
+     FIX Samsung Internet (prix rogné, MDM-8 phase 3) — conservé : vh/dvh
+     statiques ne reflètent pas toujours la hauteur réellement visible sur
+     certains Samsung Internet ; --k-modal-vvh (posée par boutique.js via
+     syncModalViewportOwner, Visual Viewport réel) reste le garde-fou
+     max-height, mais n'est plus la source de hauteur normale — aspect-ratio
+     pilote désormais le cas courant, vh ne sert qu'à plafonner les cas
+     extrêmes (très petit viewport en hauteur). */
+  #k-modal .k-modal-img-wrap,
+  #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"],
+  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    min-height: 150px;
     max-height: 48vh;
     max-height: 48dvh;
     max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
-    height: 48vh;
-    height: 48dvh;
-    height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
   }
 
-  /* MDM-9 : Mode galerie — wrapper compact en single SANS réduire le
-     sujet visuellement (§1/§2 du correctif).
-     multiple : inchangé, 48vh (confirmé explicitement, non-régression §8).
-     single   : wrapper réduit à 36vh (marge de sécurité sous le seuil de
-     38vh du spec), mais le sujet réel est compensé par un zoom CSS piloté
-     par --k-modal-subject-scale (posé par _applySubjectScale en JS via
-     calcul canvas same-origin du bounding box non-blanc). Le scale est
-     plafonné et conserve une marge de sécurité (0.88) côté JS : jamais de
-     coupe des bords utiles du produit. object-position reste centré. */
-  #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    min-height: 180px;
-    max-height: 48vh;
-    max-height: 48dvh;
-    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
-    height: 48vh;
-    height: 48dvh;
-    height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
-  }
+  /* MDM-9 : le sujet réel (single-image) reste compensé par un zoom CSS
+     piloté par --k-modal-subject-scale (posé par _applySubjectScale en JS
+     via calcul canvas same-origin du bounding box non-blanc) — inchangé,
+     indépendant de la source de hauteur du wrapper. Le scale est plafonné
+     et conserve une marge de sécurité (0.88) côté JS : jamais de coupe des
+     bords utiles du produit. object-position reste centré. */
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
-     Quand le produit a 2 axes (Couleur + Taille), le hero à 48vh consomme
-     trop d'espace vertical → les chips Taille passent sous le fold.
-     k-modal--has-variants est posé par renderMobileProductDetail().
-     Placé APRÈS gallery-mode="multiple" pour primer dans la cascade
-     (même spécificité, ordre gagne). */
+     k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
+     ratio 4:3 (plus compact que l'ancien 48vh), le hero libère déjà plus
+     d'espace vertical pour les chips Taille qu'avant — pas de surcharge
+     supplémentaire nécessaire ici. Règle conservée à titre explicite pour
+     ne pas dépendre implicitement du fallback ci-dessus si le contrat
+     évolue. */
   #k-modal.k-modal--has-variants .k-modal-img-wrap,
   #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    /* OPT final : 44vh → 48vh grâce aux 50px de topbar supprimée sur mobile */
-    height: 48vh;
-    height: 48dvh;
-    height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+    aspect-ratio: 4 / 3;
+    height: auto;
+    min-height: 150px;
     max-height: 48vh;
     max-height: 48dvh;
     max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
-    min-height: 160px;
-  }
-
-  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
-    min-height: 150px;
-    max-height: 36vh;
-    max-height: 36dvh;
-    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.36);
-    height: 36vh;
-    height: 36dvh;
-    height: calc(var(--k-modal-vvh, 100dvh) * 0.36);
   }
 
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
@@ -5677,10 +5672,10 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-sku {
     flex: 0 0 auto;
-    width: 40px; /* Opt : 44→40px */
-    height: 40px; /* Opt : 44→40px */
-    padding: 3px; /* Opt : 4→3px */
-    gap: 0;
+    width: 44px;
+    height: auto; /* P2 swatches : hauteur pilotée par le contenu (image + libellé) */
+    padding: 3px 2px 4px;
+    gap: 2px;
     border-radius: 6px;
     border: 0.5px solid var(--border);
     background: var(--hero-bg);
@@ -5688,13 +5683,25 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   #k-modal .k-sku img {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 1 / 1;
+    height: auto;
   }
 
-  /* Spec §5.4 : la vignette ne porte que l'image, pas de libellé sous elle
-     (le libellé de la couleur sélectionnée vit déjà dans .k-vg-label). */
+  /* P2 swatches (2026-07) : libellé couleur affiché sous la vignette,
+     compact, tronqué proprement. Remplace l'ancien display:none — le nom
+     complet reste porté par l'aria-label du bouton dans tous les cas
+     (inchangé), ceci est un ajout purement visuel pour distinguer des
+     teintes proches sans dépendre de la seule couleur. */
   #k-modal .k-sku-name {
-    display: none;
+    display: block;
+    font-size: 9px;
+    line-height: 1.15;
+    max-width: 40px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    color: var(--text-muted);
   }
 
   #k-modal .k-sku:hover:not(.k-sku--out) {
@@ -5818,14 +5825,21 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     display: none;
   }
 
-  /* ── MDM-5 : Info strip — horizontal chip row ──────────────── */
-
+  /* ── MDM-5 : Info strip — P1 livraison mobile (2026-07) ──────────
+     Chantier finition mobile : l'ancienne rangée horizontale unique
+     (flex-wrap:nowrap + overflow:hidden) tronquait silencieusement les
+     libellés de livraison longs ("Livraison spécialisée avec prise de
+     rendez-vous…") et faisait cohabiter guidage/dispo et livraison sur
+     la même ligne dense. Colonne verticale : le chip de guidage (s'il
+     existe) puis chaque mode de livraison occupe sa propre ligne pleine
+     largeur, sans troncature ni scroll horizontal. */
   .k-mdm-info-strip {
     display: flex;
-    flex-wrap: nowrap; /* Opt : 1 ligne max, économise ~22px vs 2 lignes */
-    overflow: hidden;
-    gap: 4px;
-    margin-top: 6px; /* Opt : 10→6px */
+    flex-direction: column;
+    align-items: stretch;
+    overflow: visible;
+    gap: 6px;
+    margin-top: 8px; /* Opt : 10→8px */
     padding: 0;
   }
 
@@ -5841,7 +5855,8 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     color: var(--text);
     border: 0.5px solid var(--border);
     white-space: nowrap;
-    flex-shrink: 0;
+    max-width: 100%;
+    align-self: flex-start; /* le chip de guidage reste compact, pas pleine largeur */
   }
 
   .k-mdm-chip--ok {
@@ -5850,9 +5865,27 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     border-color: var(--green-alpha-14);
   }
 
+  /* Mode de livraison : zone verticale propre, pleine largeur, libellé et
+     meta (prix/délai) jamais coupés. Remplace l'ancien chip compact
+     nowrap par une carte lisible (acceptation : scrollWidth <= clientWidth,
+     aucun ellipsis sur le nom, prix + délai visibles). */
   .k-mdm-chip--delivery {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    padding: 7px 10px;
+    gap: 2px;
     color: var(--text);
     background: var(--sand);
+  }
+
+  .k-mdm-chip--delivery .k-mdm-chip-icon {
+    float: left;
+    margin-right: 4px;
   }
 
   .k-mdm-chip--air {
@@ -5861,10 +5894,31 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     border-color: var(--blue-border);
   }
 
+  /* Mode retenu par défaut quand plusieurs modes existent (marquage
+     purement visuel, cf. b-modal-mobile-product.js) — perceptible sans
+     dépendre uniquement de la couleur : bordure renforcée + icône dédiée. */
+  .k-mdm-chip--delivery-selected {
+    border-color: var(--text);
+    border-width: 1.5px;
+  }
+
+  .k-mdm-chip--delivery-selected::after {
+    content: '✓ Sélectionné';
+    display: block;
+    width: 100%;
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ocean-dark);
+  }
+
   .k-mdm-chip-meta {
+    display: block;
+    width: 100%;
     font-weight: 400;
     color: var(--text-muted);
     font-size: 10px;
+    white-space: normal;
   }
 
   .k-mdm-chip-icon {
@@ -6006,6 +6060,15 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      cette règle a spécificité #k-modal .k-modal-actions — notre override
      ci-dessous est sur #k-modal seul (spécificité inférieure), donc le footer
      n'est pas affecté). */
+  /* ── P1 état après ajout (2026-07) : cible tactile stepper ≥ 44px ──
+     .k-qty-btn { width:38px; height:44px } est une règle de BASE partagée
+     avec le desktop (modal-shell.css) — hors périmètre de ce lot (desktop
+     non touché). Override mobile-only : largeur portée à 44px, acceptation
+     brief "cibles tactiles d'au moins 44 px" pour SIMPLE et SKU. */
+  #k-modal .k-qty-btn {
+    width: 44px;
+  }
+
   #k-modal {
     background: var(--page-bg);
   }

@@ -88,6 +88,14 @@ import { state, dom } from './b-store.js';
     const prevBtn = document.getElementById('k-modal-prev');
     const nextBtn = document.getElementById('k-modal-next');
 
+    // P2 pager 1/1 (2026-07) : total <= 1 => aucun produit précédent/suivant
+    // possible, le pager n'a pas lieu d'être affiché (il ne réserve alors
+    // aucune largeur dans la topbar). total > 1 => affiché normalement.
+    const shouldShow = list.length > 1;
+    navEl.hidden = !shouldShow;
+    navEl.style.display = shouldShow ? '' : 'none';
+    if (!shouldShow) return;
+
     if (counter) counter.textContent = `${currentIdx + 1}/${list.length}`;
     if (prevBtn) prevBtn.classList.toggle('is-disabled', currentIdx <= 0);
     if (nextBtn) nextBtn.classList.toggle('is-disabled', currentIdx >= list.length - 1);

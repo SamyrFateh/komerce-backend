@@ -177,6 +177,56 @@ test.describe('Chantier finition mobile V3 — P2 référence/SKU longue', () =>
   });
 });
 
+test.describe('Chantier finition mobile V3 — P1 hero (ratio 4:3 cohérent, lot audit-3)', () => {
+  test('elite (multi-image) et editorial (single-image) ont une hauteur de hero cohérente à largeur égale', async ({ page }) => {
+    await openAt(page, { width: 390, height: 844 }, 'elite');
+    const eliteHeight = await page.locator('.k-modal-img-wrap').evaluate((el) => el.getBoundingClientRect().height);
+
+    await openAt(page, { width: 390, height: 844 }, 'editorial');
+    const editorialHeight = await page.locator('.k-modal-img-wrap').evaluate((el) => el.getBoundingClientRect().height);
+
+    // Acceptation brief : hauteur "visuellement cohérente" entre produits,
+    // indépendamment du mode galerie (multiple vs single). Ratio 4:3 partagé
+    // → l'écart ne doit plus dépendre du nombre de médias.
+    expect(Math.abs(eliteHeight - editorialHeight)).toBeLessThanOrEqual(4);
+  });
+
+  test('le wrapper média respecte un ratio proche de 4:3 à 390px de large', async ({ page }) => {
+    await openAt(page, { width: 390, height: 844 }, 'elite');
+    const box = await page.locator('.k-modal-img-wrap').evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { width: r.width, height: r.height };
+    });
+    const ratio = box.width / box.height;
+    expect(ratio).toBeGreaterThan(1.2);
+    expect(ratio).toBeLessThan(1.45); // cible 4/3 ≈ 1.33, marge pour min-height/max-height
+  });
+});
+
+test.describe('Chantier finition mobile V3 — P2 swatches (nom visible, lot audit-3)', () => {
+  test('elite : le nom de la couleur est visible sous chaque vignette, pas seulement à la sélection', async ({ page }) => {
+    await openAt(page, { width: 390, height: 844 }, 'elite');
+    const firstSwatchName = page.locator('.k-sku .k-sku-name').first();
+    await expect(firstSwatchName).toBeVisible();
+    const display = await firstSwatchName.evaluate((el) => getComputedStyle(el).display);
+    expect(display).not.toBe('none');
+    await expect(firstSwatchName).not.toHaveText('');
+  });
+});
+
+test.describe('Chantier finition mobile V3 — P2 pager 1/1 (lot audit-3)', () => {
+  test('elite : recherche à résultat unique -> le pager de navigation produit est masqué', async ({ page }) => {
+    await openAt(page, { width: 390, height: 844 }, 'elite');
+    const nav = page.locator('#k-modal-nav');
+    // Peut ne pas exister du tout (jamais créé) ou exister mais masqué —
+    // les deux sont conformes à l'acceptation "pager complètement masqué".
+    const count = await nav.count();
+    if (count > 0) {
+      await expect(nav).toBeHidden();
+    }
+  });
+});
+
 test.describe('Chantier finition mobile V3 — P2 réassurance', () => {
   for (const viewport of VIEWPORTS) {
     test(`elite @ ${viewport.key} : réassurance lisible (>=11px), contraste amélioré, wrap propre si nécessaire`, async ({ page }) => {

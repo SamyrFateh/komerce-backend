@@ -142,72 +142,55 @@
 
   /* ── MDM-2 : Media height ──────────────────────────────────── */
 
-  /* Replaces the tactical guard from modal-product-price-normalization.css.
-     48vh cap ensures identity + first axis visible without scroll on ≥700px
-     viewports. min-height prevents excessive compression on short screens.
+  /* P1 hauteur du hero (2026-07, lot audit-3) : le cadrage vh (48vh multi,
+     36vh single) rendait la hauteur du hero dépendante du mode galerie
+     plutôt que d'un ratio stable — Golden Elite (multi-image) produisait un
+     cadre visiblement plus haut qu'une fixture SVG single-image, à contenu
+     équivalent. Remplacé par un ratio 4:3 unique (cible brief), identique
+     quel que soit gallery-mode ou has-variants : la hauteur ne dépend plus
+     que de la largeur du wrapper, donc cohérente entre produits.
 
-     FIX Samsung Internet (prix rogné, MDM-8 phase 3) : vh/dvh statiques ne
-     reflètent pas forcément la hauteur réellement visible sur certains
-     Samsung Internet, alors que #k-modal (modal-shell.css + boutique.js
-     syncModalViewportOwner) est déjà fiabilisé sur le Visual Viewport réel.
-     --k-modal-vvh porte cette même mesure (posée par boutique.js) : la
-     dernière déclaration calc() gagne la cascade dès qu'elle est présente
-     (modal ouverte), vh/dvh restent le fallback avant que le JS ne tourne. */
-  #k-modal .k-modal-img-wrap {
-    min-height: 180px;
+     FIX Samsung Internet (prix rogné, MDM-8 phase 3) — conservé : vh/dvh
+     statiques ne reflètent pas toujours la hauteur réellement visible sur
+     certains Samsung Internet ; --k-modal-vvh (posée par boutique.js via
+     syncModalViewportOwner, Visual Viewport réel) reste le garde-fou
+     max-height, mais n'est plus la source de hauteur normale — aspect-ratio
+     pilote désormais le cas courant, vh ne sert qu'à plafonner les cas
+     extrêmes (très petit viewport en hauteur). */
+  #k-modal .k-modal-img-wrap,
+  #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"],
+  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    min-height: 150px;
     max-height: 48vh;
     max-height: 48dvh;
     max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
-    height: 48vh;
-    height: 48dvh;
-    height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
   }
 
-  /* MDM-9 : Mode galerie — wrapper compact en single SANS réduire le
-     sujet visuellement (§1/§2 du correctif).
-     multiple : inchangé, 48vh (confirmé explicitement, non-régression §8).
-     single   : wrapper réduit à 36vh (marge de sécurité sous le seuil de
-     38vh du spec), mais le sujet réel est compensé par un zoom CSS piloté
-     par --k-modal-subject-scale (posé par _applySubjectScale en JS via
-     calcul canvas same-origin du bounding box non-blanc). Le scale est
-     plafonné et conserve une marge de sécurité (0.88) côté JS : jamais de
-     coupe des bords utiles du produit. object-position reste centré. */
-  #k-modal .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    min-height: 180px;
-    max-height: 48vh;
-    max-height: 48dvh;
-    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
-    height: 48vh;
-    height: 48dvh;
-    height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
-  }
+  /* MDM-9 : le sujet réel (single-image) reste compensé par un zoom CSS
+     piloté par --k-modal-subject-scale (posé par _applySubjectScale en JS
+     via calcul canvas same-origin du bounding box non-blanc) — inchangé,
+     indépendant de la source de hauteur du wrapper. Le scale est plafonné
+     et conserve une marge de sécurité (0.88) côté JS : jamais de coupe des
+     bords utiles du produit. object-position reste centré. */
 
   /* ── P3-fix : Hero compact pour produits avec variantes ─────────────────
-     Quand le produit a 2 axes (Couleur + Taille), le hero à 48vh consomme
-     trop d'espace vertical → les chips Taille passent sous le fold.
-     k-modal--has-variants est posé par renderMobileProductDetail().
-     Placé APRÈS gallery-mode="multiple" pour primer dans la cascade
-     (même spécificité, ordre gagne). */
+     k-modal--has-variants est posé par renderMobileProductDetail(). Avec le
+     ratio 4:3 (plus compact que l'ancien 48vh), le hero libère déjà plus
+     d'espace vertical pour les chips Taille qu'avant — pas de surcharge
+     supplémentaire nécessaire ici. Règle conservée à titre explicite pour
+     ne pas dépendre implicitement du fallback ci-dessus si le contrat
+     évolue. */
   #k-modal.k-modal--has-variants .k-modal-img-wrap,
   #k-modal.k-modal--has-variants .k-modal-img-wrap[data-gallery-mode="multiple"] {
-    /* OPT final : 44vh → 48vh grâce aux 50px de topbar supprimée sur mobile */
-    height: 48vh;
-    height: 48dvh;
-    height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
+    aspect-ratio: 4 / 3;
+    height: auto;
+    min-height: 150px;
     max-height: 48vh;
     max-height: 48dvh;
     max-height: calc(var(--k-modal-vvh, 100dvh) * 0.48);
-    min-height: 160px;
-  }
-
-  #k-modal .k-modal-img-wrap[data-gallery-mode="single"] {
-    min-height: 150px;
-    max-height: 36vh;
-    max-height: 36dvh;
-    max-height: calc(var(--k-modal-vvh, 100dvh) * 0.36);
-    height: 36vh;
-    height: 36dvh;
-    height: calc(var(--k-modal-vvh, 100dvh) * 0.36);
   }
 
   #k-modal .k-modal-img-wrap[data-gallery-mode="single"] .k-modal-slide {
@@ -250,10 +233,10 @@
 
   #k-modal .k-sku {
     flex: 0 0 auto;
-    width: 40px; /* Opt : 44→40px */
-    height: 40px; /* Opt : 44→40px */
-    padding: 3px; /* Opt : 4→3px */
-    gap: 0;
+    width: 44px;
+    height: auto; /* P2 swatches : hauteur pilotée par le contenu (image + libellé) */
+    padding: 3px 2px 4px;
+    gap: 2px;
     border-radius: 6px;
     border: 0.5px solid var(--border);
     background: var(--hero-bg);
@@ -261,13 +244,25 @@
 
   #k-modal .k-sku img {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 1 / 1;
+    height: auto;
   }
 
-  /* Spec §5.4 : la vignette ne porte que l'image, pas de libellé sous elle
-     (le libellé de la couleur sélectionnée vit déjà dans .k-vg-label). */
+  /* P2 swatches (2026-07) : libellé couleur affiché sous la vignette,
+     compact, tronqué proprement. Remplace l'ancien display:none — le nom
+     complet reste porté par l'aria-label du bouton dans tous les cas
+     (inchangé), ceci est un ajout purement visuel pour distinguer des
+     teintes proches sans dépendre de la seule couleur. */
   #k-modal .k-sku-name {
-    display: none;
+    display: block;
+    font-size: 9px;
+    line-height: 1.15;
+    max-width: 40px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    color: var(--text-muted);
   }
 
   #k-modal .k-sku:hover:not(.k-sku--out) {

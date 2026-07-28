@@ -89,6 +89,27 @@ describe('updateModalNavArrows', () => {
     expect(document.getElementById('k-modal-prev').classList.contains('is-disabled')).toBe(false);
   });
 
+  it('P2 pager 1/1 (2026-07) : masque entièrement le conteneur nav quand total <= 1', () => {
+    makeTopbar();
+    updateModalNavArrows([{ id: 1 }], 0);
+    const navEl = document.getElementById('k-modal-nav');
+    expect(navEl).not.toBeNull();
+    expect(navEl.hidden).toBe(true);
+    expect(navEl.style.display).toBe('none');
+    // Le compteur n'est pas mis à jour à "1/1" — la navigation est
+    // simplement masquée, aucun texte n'a besoin d'être exact ici.
+  });
+
+  it('P2 pager 1/1 (2026-07) : réaffiche le conteneur nav dès que total > 1', () => {
+    makeTopbar();
+    updateModalNavArrows([{ id: 1 }], 0); // total=1 → masqué
+    updateModalNavArrows([{ id: 1 }, { id: 2 }], 0); // total=2 → réaffiché
+    const navEl = document.getElementById('k-modal-nav');
+    expect(navEl.hidden).toBe(false);
+    expect(navEl.style.display).toBe('');
+    expect(document.getElementById('k-modal-nav-pos').textContent).toBe('1/2');
+  });
+
   it('ne throw pas si dom.modal n\'a pas de .k-modal-topbar', () => {
     expect(() => updateModalNavArrows([{ id: 1 }], 0)).not.toThrow();
     // nav créée mais pas insérée nulle part (topbar introuvable)

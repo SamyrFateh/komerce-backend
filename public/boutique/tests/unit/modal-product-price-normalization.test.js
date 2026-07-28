@@ -74,10 +74,19 @@ describe('modal-product — normalisation du prix mobile', () => {
     expect(css).not.toMatch(/k-mobile-premium-v1/);
   });
 
-  test('le média mobile réserve une hauteur fixe et prévisible (48vh, plancher 180px)', () => {
-    const block = rule('#k-modal .k-modal-img-wrap');
-    expect(block).toMatch(/min-height:\s*180px/);
+  test('le média mobile a une géométrie stable en ratio 4:3, indépendante du mode galerie (P1 hero, 2026-07)', () => {
+    // Selecteur combiné (base + multiple + single partagent désormais le
+    // même ratio) : recherche directe dans la feuille plutôt que via
+    // l'helper rule() (qui ne matche que des sélecteurs simples exacts).
+    const match = css.match(
+      /#k-modal \.k-modal-img-wrap,\s*#k-modal \.k-modal-img-wrap\[data-gallery-mode="multiple"\],\s*#k-modal \.k-modal-img-wrap\[data-gallery-mode="single"\]\s*\{([^}]*)\}/
+    );
+    expect(match).not.toBeNull();
+    const block = match[1];
+    expect(block).toMatch(/aspect-ratio:\s*4\s*\/\s*3/);
+    expect(block).toMatch(/min-height:\s*150px/);
+    // max-height reste un garde-fou (vh), plus la source de hauteur normale
     expect(block).toMatch(/max-height:\s*48vh/);
-    expect(block).toMatch(/height:\s*48vh/);
+    expect(block).toMatch(/height:\s*auto/);
   });
 });

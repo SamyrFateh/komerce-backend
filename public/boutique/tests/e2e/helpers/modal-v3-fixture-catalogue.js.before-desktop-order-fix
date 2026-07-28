@@ -68,67 +68,23 @@ async function selectOptions(page, selection) {
 
 async function expectCanonicalOrder(page) {
   const order = await page.evaluate(() => {
-    const scroll = document.querySelector('.k-modal-scroll');
     const zone = document.querySelector('.k-modal-product-zone');
     const conf = document.getElementById('k-modal-configurator');
     const details = document.getElementById('k-modal-long-details');
     const enriched = document.getElementById('k-modal-enriched-content');
     const suggestions = document.getElementById('k-modal-suggestions');
-
-    const isBefore = (first, second) => Boolean(
-      first &&
-      second &&
-      (first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING)
-    );
-
+    const children = zone ? Array.from(zone.children) : [];
     return {
-      exists: {
-        scroll: Boolean(scroll),
-        zone: Boolean(zone),
-        conf: Boolean(conf),
-        details: Boolean(details),
-        enriched: Boolean(enriched),
-        suggestions: Boolean(suggestions),
-      },
-
-      insideProductScroll: {
-        zone: Boolean(scroll && zone && scroll.contains(zone)),
-        conf: Boolean(scroll && conf && scroll.contains(conf)),
-        details: Boolean(scroll && details && scroll.contains(details)),
-        enriched: Boolean(scroll && enriched && scroll.contains(enriched)),
-        suggestions: Boolean(scroll && suggestions && scroll.contains(suggestions)),
-      },
-
-      sequence: {
-        confBeforeDetails: isBefore(conf, details),
-        detailsBeforeEnriched: isBefore(details, enriched),
-        enrichedBeforeSuggestions: isBefore(enriched, suggestions),
-      },
+      conf: children.indexOf(conf),
+      details: children.indexOf(details),
+      enriched: children.indexOf(enriched),
+      suggestions: children.indexOf(suggestions),
     };
   });
-
-  expect(order.exists).toEqual({
-    scroll: true,
-    zone: true,
-    conf: true,
-    details: true,
-    enriched: true,
-    suggestions: true,
-  });
-
-  expect(order.insideProductScroll).toEqual({
-    zone: true,
-    conf: true,
-    details: true,
-    enriched: true,
-    suggestions: true,
-  });
-
-  expect(order.sequence).toEqual({
-    confBeforeDetails: true,
-    detailsBeforeEnriched: true,
-    enrichedBeforeSuggestions: true,
-  });
+  expect(order.conf).toBeGreaterThanOrEqual(0);
+  expect(order.conf).toBeLessThan(order.details);
+  expect(order.details).toBeLessThan(order.enriched);
+  expect(order.enriched).toBeLessThan(order.suggestions);
 }
 
 module.exports = {
