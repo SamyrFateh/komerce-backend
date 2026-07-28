@@ -2882,17 +2882,21 @@ html.k-mobile-premium-v1 .k-chip-label {
   #k-modal .k-modal-product-zone .k-modal-details  { padding: 0 clamp(18px, 3vw, 32px); }
 }
 
-/* ── Composition 3 pistes ≥1024px (T-020, arbitrage D8) ────────────────
-   rail miniatures | média principal | détails.
+/* ── Composition 2 régions ≥1024px (MIGRATION v3.0, arbitrage LOT4 ProductMedia) ──
+   ProductMedia (rail vignettes + galerie, porté par .k-modal-img-wrap) |
+   ProductNarrative (récit produit, porté par .k-modal-details).
    grid-column/grid-row des enfants de .k-modal-product-zone : seul
    propriétaire ce fichier (cf. .agent/arbitrations/T-020.md).
    grid-template-columns/gap/padding de la zone elle-même restent owned
    par modal-product-lot4-hybrid.css — ne pas les redéclarer ici.
-   .k-modal-thumbs reste absolute dans .k-modal-img-wrap (visuel : T-021),
-   d'où le wrapper média qui couvre les 2 premières pistes. ───────────── */
+   RETRAIT DE LA 3e PISTE (ex "rail miniatures | média principal | détails") :
+   .k-modal-thumbs reste absolute dans .k-modal-img-wrap (visuel : T-021) —
+   ce wrapper couvrait déjà les 2 premières pistes comme un item de grille
+   unique, donc constituait déjà ProductMedia comme région sémantique unique.
+   La grille n'a plus que 2 pistes ; il n'a donc plus besoin de span. ──── */
 /* min:1024px normalisé → min:1200px (doctrine breakpoints 2026-07) */
 @media (min-width: 1200px) {
-  /* REF-2026-07 : placement grille 3 pistes.
+  /* REF-2026-07 : placement grille 2 régions (ProductMedia | ProductNarrative).
      align-self / height / max-height / aspect-ratio / margin sont owned par
      modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —
      ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard).
@@ -2907,14 +2911,18 @@ html.k-mobile-premium-v1 .k-chip-label {
     align-self: stretch;
   }
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    grid-column: 1 / 3;
+    /* MIGRATION v3.0 (LOT4, arbitrage ProductMedia) : plus de span — une
+       seule piste média désormais (ex grid-column: 1 / 3 sur 3 pistes). */
+    grid-column: 1;
     /* MIGRATION v3.0 (retrait sticky, LOT 1) : grid-row repassé à 1, plus
        de spanning hérité du 900px (l'ancien collage RÉF-2026-07h est
        retiré, cf. modal-shell.css l.592 pour le détail). */
     grid-row: 1;
   }
   #k-modal .k-modal-product-zone .k-modal-details {
-    grid-column: 3;
+    /* MIGRATION v3.0 (LOT4, arbitrage ProductMedia) : ProductNarrative est
+       désormais la 2e (et dernière) piste, plus la 3e. */
+    grid-column: 2;
     grid-row: 1;
   }
   /* Actions : inline dans .k-modal-info (colonne droite), pas en grid-row:2.
@@ -4935,10 +4943,18 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     background: var(--page-bg);
   }
 
-  /* ── Composition 3 pistes ≥1200px (T-020, arbitrage D8) ──────────────
-     rail miniatures | média principal | détails.
+  /* ── Composition 2 régions ≥1200px (MIGRATION v3.0, arbitrage LOT4 ProductMedia) ──
+     ProductMedia (rail vignettes + galerie) | ProductNarrative (récit produit).
      grid-template-columns/gap/padding de .k-modal-product-zone : seul
      propriétaire ce fichier.
+     RETRAIT DE LA 3e PISTE (ex "rail miniatures | média principal | détails",
+     T-020/D8) : .k-modal-img-wrap portait déjà le rail de vignettes en overlay
+     absolu (.k-modal-thumbs, cf. modal-shell.css) à l'intérieur d'un seul item
+     de grille couvrant les deux premières pistes — il constituait donc déjà
+     ProductMedia comme région unique. Les deux pistes 64px + minmax(280,420)
+     sont fusionnées en une seule colonne média équivalente ; le rail reste un
+     overlay interne à .k-modal-img-wrap, aucun changement de DOM/JS requis
+     (cf. arbitrage : « refactor CSS, sans déplacement runtime JavaScript »).
      Normalisé 1024px → 1200px et 1440px → 1200px (doctrine 2026-07) :
      les deux breakpoints fusionnés en un seul, valeurs ex-1440 retenues
      (pistes plus généreuses, adaptées dès 1200px avec .k-modal-cart-slot).
@@ -4949,7 +4965,9 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
          REFONTE COQUE — même raison qu'au breakpoint 1024px ci-dessus : piste fixe →
          minmax(300px, 420px) pour absorber la largeur prise par .k-modal-cart-slot. */
       /* REF-2026-07 : même correction qu'à 1024px — image bornée, détails 1fr. */
-      grid-template-columns: 64px minmax(280px, 420px) minmax(340px, 1fr);
+      /* ProductMedia (ex 64px + minmax(280,420)) → minmax(340,480) : conserve
+         l'amplitude combinée précédente (344px→484px) sous une seule piste. */
+      grid-template-columns: minmax(340px, 480px) minmax(340px, 1fr);
       gap: 22px;
       padding: 22px;
     }

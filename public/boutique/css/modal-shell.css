@@ -989,17 +989,21 @@
   #k-modal .k-modal-product-zone .k-modal-details  { padding: 0 clamp(18px, 3vw, 32px); }
 }
 
-/* ── Composition 3 pistes ≥1024px (T-020, arbitrage D8) ────────────────
-   rail miniatures | média principal | détails.
+/* ── Composition 2 régions ≥1024px (MIGRATION v3.0, arbitrage LOT4 ProductMedia) ──
+   ProductMedia (rail vignettes + galerie, porté par .k-modal-img-wrap) |
+   ProductNarrative (récit produit, porté par .k-modal-details).
    grid-column/grid-row des enfants de .k-modal-product-zone : seul
    propriétaire ce fichier (cf. .agent/arbitrations/T-020.md).
    grid-template-columns/gap/padding de la zone elle-même restent owned
    par modal-product-lot4-hybrid.css — ne pas les redéclarer ici.
-   .k-modal-thumbs reste absolute dans .k-modal-img-wrap (visuel : T-021),
-   d'où le wrapper média qui couvre les 2 premières pistes. ───────────── */
+   RETRAIT DE LA 3e PISTE (ex "rail miniatures | média principal | détails") :
+   .k-modal-thumbs reste absolute dans .k-modal-img-wrap (visuel : T-021) —
+   ce wrapper couvrait déjà les 2 premières pistes comme un item de grille
+   unique, donc constituait déjà ProductMedia comme région sémantique unique.
+   La grille n'a plus que 2 pistes ; il n'a donc plus besoin de span. ──── */
 /* min:1024px normalisé → min:1200px (doctrine breakpoints 2026-07) */
 @media (min-width: 1200px) {
-  /* REF-2026-07 : placement grille 3 pistes.
+  /* REF-2026-07 : placement grille 2 régions (ProductMedia | ProductNarrative).
      align-self / height / max-height / aspect-ratio / margin sont owned par
      modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —
      ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard).
@@ -1014,14 +1018,18 @@
     align-self: stretch;
   }
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    grid-column: 1 / 3;
+    /* MIGRATION v3.0 (LOT4, arbitrage ProductMedia) : plus de span — une
+       seule piste média désormais (ex grid-column: 1 / 3 sur 3 pistes). */
+    grid-column: 1;
     /* MIGRATION v3.0 (retrait sticky, LOT 1) : grid-row repassé à 1, plus
        de spanning hérité du 900px (l'ancien collage RÉF-2026-07h est
        retiré, cf. modal-shell.css l.592 pour le détail). */
     grid-row: 1;
   }
   #k-modal .k-modal-product-zone .k-modal-details {
-    grid-column: 3;
+    /* MIGRATION v3.0 (LOT4, arbitrage ProductMedia) : ProductNarrative est
+       désormais la 2e (et dernière) piste, plus la 3e. */
+    grid-column: 2;
     grid-row: 1;
   }
   /* Actions : inline dans .k-modal-info (colonne droite), pas en grid-row:2.
