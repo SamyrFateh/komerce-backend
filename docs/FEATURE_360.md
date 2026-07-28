@@ -278,7 +278,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `AMBIGUOUS_TABLE_OWNERSHIP` (medium) — table sourcing_candidates — écrite par catalog (RW), aucun lifecycle owner résolu (multi-writer non classifié)
 - `DIRECT_CROSS_FEATURE_IMPORT` (high) — 1 paire(s) classées CROSS_FEATURE_DIRECT_IMPORT
 
-**Implementation** : 127 fichier(s) déclaré(s), boutique: 31 fichier(s)
+**Implementation** : 127 fichier(s) déclaré(s), boutique: 32 fichier(s)
   - boutique : 38
   - dash : 4
   - docs : 4

@@ -1876,7 +1876,7 @@
         "totalFiles": 127,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
-          "count": 31,
+          "count": 32,
           "files": [
             {
               "declared": "../css/dist/components.css",
@@ -2084,6 +2084,13 @@
             {
               "declared": "../tests/unit/modal-selection-model.test.js",
               "resolvedPath": "public/boutique/tests/unit/modal-selection-model.test.js",
+              "category": "tests",
+              "exists": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/modal-v3-convergence-invariants.test.js",
+              "resolvedPath": "public/boutique/tests/unit/modal-v3-convergence-invariants.test.js",
               "category": "tests",
               "exists": true,
               "status": "resolved-on-disk"

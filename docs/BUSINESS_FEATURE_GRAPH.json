@@ -14493,6 +14493,14 @@
         "status": "resolved-on-disk"
       },
       {
+        "boutiqueManifest": "modal-product",
+        "category": "tests",
+        "declared": "../tests/unit/modal-v3-convergence-invariants.test.js",
+        "resolvedPath": "public/boutique/tests/unit/modal-v3-convergence-invariants.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
         "boutiqueManifest": "orders-client",
         "category": "boutique",
         "declared": "../js/b-cart-core.js",
@@ -22668,7 +22676,7 @@
         "filesObserved": 809
       },
       "boutique": {
-        "filesObserved": 123,
+        "filesObserved": 124,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
