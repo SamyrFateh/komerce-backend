@@ -1,1 +1,1 @@
-Trigger the certification with root quality gates isolated. Remove this file in the final cleanup commit.
+Trigger the isolated root npm audit diagnostic and the full certification. Remove this file in the final cleanup commit.
