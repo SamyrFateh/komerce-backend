@@ -302,29 +302,17 @@
     max-width: min(100%, calc(500px * 4 / 3));
     width: 100%;
     height: auto;
-    /* ── FIX STICKY 2026-07 (mesuré, Chromium réel) ────────────────────
-       Centrage HORIZONTAL uniquement. Le centrage VERTICAL est retiré :
-       il neutralisait le position:sticky posé par modal-shell.css:584.
-
-       Preuve : zone=1397px, img-wrap=380px → top mesuré 509px = (1397-380)/2.
-       L'item était centré dans sa zone de grille, donc sans marge de collage :
-       il défilait 1:1 avec le scroll (tops [509,409,309,209] à scroll
-       [0,100,200,300]) alors que position:sticky était bien calculé.
-
-       ATTENTION — piège à deux variables : `margin: auto` (axe bloc) ET
-       `align-self: center` centraient CHACUN indépendamment. Neutraliser
-       une seule des deux ne change RIEN de mesurable (vérifié : les deux
-       correctifs partiels donnent exactement [509,409,309,209]). C'est ce
-       qui a fait conclure à tort, lors d'une traque précédente, à un bug
-       Chromium sur position:sticky + item de grille. Il n'y en a pas.
-       Les DEUX doivent tomber ensemble → tops [22,0,0,0] = collé.
-
-       Contrepartie assumée : pour un produit court, le hero est calé en
-       haut de sa colonne au lieu d'être centré. C'est inhérent au sticky
-       (un item centré n'a par définition aucune amplitude de collage). */
+    /* MIGRATION v3.0 (retrait sticky, LOT 1) : ce bloc s'appelait "FIX STICKY
+       2026-07". align-self repasse à `center` (état pré-sticky) : le `start`
+       n'existait que pour donner au hero une amplitude de collage, ce qui
+       neutralisait le centrage vertical. Sans sticky, cette contrainte
+       disparaît. Résout aussi un conflit préexistant avec l'oracle
+       RÉF-2026-07f (modal-desktop-scroll-owner.test.js, 2026-07-25) qui
+       exigeait déjà `align-self:center` ici — les deux corrections cohabitaient
+       mal, celle-ci l'emporte désormais. */
     margin-inline: auto;
     margin-block: 0;
-    align-self: start;
+    align-self: center;
     /* Contour visible (cf. reference-modale-4-etats.html v2.1) : le container
        image n'avait jamais de border nulle part — flottait sans cadre contre
        le fond ivoire du shell. background/border-radius NE sont PAS ajoutés

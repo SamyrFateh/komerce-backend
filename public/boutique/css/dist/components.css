@@ -2463,12 +2463,13 @@ html.k-mobile-premium-v1 .k-chip-label {
      (Approche C hybride) — ne pas redéclarer ici, source de vérité unique. */
   #k-modal .k-modal-product-zone {
     display: grid;
-    /* REF-2026-07 : 3 rangées. La 2e accueille #k-modal-enriched-content et la
-       3e #k-modal-suggestions, désormais DANS la grille conformément à la
-       référence canonique §4. Avant, ces blocs étaient sœurs de la zone : la
-       rangée 2 restait à 0px et le hero sticky n'avait aucune course au-delà
-       de la zone transactionnelle. */
-    grid-template-rows: 1fr auto auto;
+    /* MIGRATION v3.0 (LOT 2) : 5 rangées. Row 1 = hero (image | récit, inchangé
+       depuis avant la migration). Row 2 = .k-modal-configurator (variantes +
+       actions, transversal, pleine largeur — nouveau). Row 3 =
+       .k-modal-long-details (paiement, pleine largeur — nouveau). Row 4 =
+       #k-modal-enriched-content. Row 5 = #k-modal-suggestions (ex-rows 2/3
+       avant l'insertion des deux nouvelles rangées). */
+    grid-template-rows: 1fr auto auto auto auto;
     flex: 0 0 auto;
     width: 100%;
     /* RÉF-2026-07h : min-height (calc(min(880px,100vh-56px)-58px), ≈746px
@@ -2483,12 +2484,11 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* height + overflow : owned par le bloc FIX ci-dessous (même fichier).
      background : owned par modal-product-lot4-hybrid.css (Approche C). */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    grid-column: 1; grid-row: 1 / -1;
-    /* align-self : NE PAS redéclarer ici. Owner unique = modal-media.css
-       (§ FIX STICKY 2026-07), qui vient après dans le bundle et gagnait
-       silencieusement la cascade avec `center` — c'est ce qui neutralisait
-       le position:sticky ci-dessous. Voir le commentaire détaillé là-bas. */
-    position: sticky; top: 0;
+    /* MIGRATION v3.0 (retrait sticky, LOT 1) : grid-row repassé à 1 (n'occupe
+       plus toutes les rangées de la zone). Le collage était le seul motif du
+       spanning 1/-1 et du position:sticky ; les deux sont retirés ensemble.
+       align-self : NE PAS redéclarer ici, owner = modal-media.css. */
+    grid-column: 1; grid-row: 1;
     border-radius: 0; margin: 0; max-height: none;
   }
   #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: zoom-in; }
@@ -2896,30 +2896,26 @@ html.k-mobile-premium-v1 .k-chip-label {
    d'où le wrapper média qui couvre les 2 premières pistes. ───────────── */
 /* min:1024px normalisé → min:1200px (doctrine breakpoints 2026-07) */
 @media (min-width: 1200px) {
-  /* REF-2026-07 : placement grille 3 pistes + reset sticky du 900px.
+  /* REF-2026-07 : placement grille 3 pistes.
      align-self / height / max-height / aspect-ratio / margin sont owned par
      modal-product-lot4-hybrid.css (source-order ultérieure dans le bundle) —
      ne pas les redéclarer ici pour éviter les conflits de cascade (CSS Guard).
      RÉF-2026-07h : min-height:100% retiré. Il forçait la zone à toujours
      remplir 100% de .k-modal-main même pour un produit court (aucun peek
-     suggestions possible), ET plafonnait indirectement l'espace de collage
-     de l'image sticky pour un produit à variantes nombreuses (pas assez de
-     place pour rester épinglée). Sans cette contrainte, la zone fait
-     naturellement la hauteur de son contenu réel : courte pour un produit
-     simple (suggestions visibles en dessous sans scroll), haute pour un
-     produit à 20 variantes (l'image sticky dispose alors de toute la place
-     nécessaire pour rester épinglée pendant le scroll). */
+     suggestions possible). Sans cette contrainte, la zone fait naturellement
+     la hauteur de son contenu réel. MIGRATION v3.0 (LOT 1) : le motif
+     "espace de collage pour l'image sticky" ne s'applique plus, le sticky
+     étant retiré — cette suppression de min-height reste valide pour le
+     peek des suggestions, donc conservée telle quelle. */
   #k-modal .k-modal-product-zone {
     align-self: stretch;
   }
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     grid-column: 1 / 3;
-    grid-row: 1 / -1;
-    /* RÉF-2026-07h : le sticky hérité du 900px est CONSERVÉ ici (plus annulé).
-       Sans le plafond de hauteur retiré ci-dessus sur .k-modal-product-zone,
-       la ligne de grille grandit désormais avec le contenu réel de la
-       colonne détails — l'image dispose donc de toute la place nécessaire
-       pour rester épinglée pendant que les variantes/description défilent. */
+    /* MIGRATION v3.0 (retrait sticky, LOT 1) : grid-row repassé à 1, plus
+       de spanning hérité du 900px (l'ancien collage RÉF-2026-07h est
+       retiré, cf. modal-shell.css l.592 pour le détail). */
+    grid-row: 1;
   }
   #k-modal .k-modal-product-zone .k-modal-details {
     grid-column: 3;
@@ -3069,32 +3065,34 @@ html.k-mobile-premium-v1 .k-chip-label {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   REF-2026-07 — PLACEMENT GRILLE DU CONTENU SOUS-TRANSACTIONNEL
+   MIGRATION v3.0 (LOT 2) — PLACEMENT GRILLE DU CONTENU SOUS-HERO
    Référence canonique §4 « Composition desktop » :
-       médias | informations produit | panier
-       suggestions sur médias + informations | panier
+       hero (galerie|récit) → configurateur transversal → détails longs
+       → suggestions
 
-   #k-modal-enriched-content et #k-modal-suggestions sont désormais des
-   items de .k-modal-product-zone (rangées 2 et 3), et non plus des sœurs.
-   C'est ce qui donne au hero `position: sticky` sa course sur la totalité
-   du défilement : sans eux dans la grille, la rangée 2 mesurait 0px et le
-   hero décrochait dès l'entrée dans les suggestions.
-
-   Mesuré à 1440px, 42 variantes + 6 suggestions :
-     avant  grid-template-rows: 824px 0px    → décroche à scroll 600
-     après  grid-template-rows: 824px 1057px → épinglé sur 1201px d'amplitude
-
-   `1 / -1` plutôt qu'un index en dur : le placement reste correct si une
-   rangée est ajoutée plus tard. Owner unique de ces deux placements.
-   ══════════════════════════════════════════════════════════════════ */
+   Row 1 = hero (img-wrap col1, .k-modal-details col2/3 — inchangé, cf.
+   règles ligne ~592 et ~1026). Rows 2-5 = pleine largeur (grid-column:1/-1),
+   un item par rangée : configurateur, détails longs, contenu enrichi,
+   suggestions. `1 / -1` plutôt qu'un index en dur pour la colonne : le
+   placement reste correct si une piste est ajoutée plus tard. Owner unique
+   de ces placements (grid-template-columns = modal-product-lot4-hybrid.css,
+   grid-template-rows + row-placement = ce fichier). ══════════════════════ */
 @media (min-width: 900px) {
-  #k-modal .k-modal-product-zone > #k-modal-enriched-content {
+  #k-modal .k-modal-product-zone > .k-modal-configurator {
     grid-column: 1 / -1;
     grid-row: 2;
   }
-  #k-modal .k-modal-product-zone > #k-modal-suggestions {
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
     grid-column: 1 / -1;
     grid-row: 3;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-enriched-content {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+  #k-modal .k-modal-product-zone > #k-modal-suggestions {
+    grid-column: 1 / -1;
+    grid-row: 5;
   }
 }
 
@@ -3404,29 +3402,17 @@ html.k-mobile-premium-v1 .k-chip-label {
     max-width: min(100%, calc(500px * 4 / 3));
     width: 100%;
     height: auto;
-    /* ── FIX STICKY 2026-07 (mesuré, Chromium réel) ────────────────────
-       Centrage HORIZONTAL uniquement. Le centrage VERTICAL est retiré :
-       il neutralisait le position:sticky posé par modal-shell.css:584.
-
-       Preuve : zone=1397px, img-wrap=380px → top mesuré 509px = (1397-380)/2.
-       L'item était centré dans sa zone de grille, donc sans marge de collage :
-       il défilait 1:1 avec le scroll (tops [509,409,309,209] à scroll
-       [0,100,200,300]) alors que position:sticky était bien calculé.
-
-       ATTENTION — piège à deux variables : `margin: auto` (axe bloc) ET
-       `align-self: center` centraient CHACUN indépendamment. Neutraliser
-       une seule des deux ne change RIEN de mesurable (vérifié : les deux
-       correctifs partiels donnent exactement [509,409,309,209]). C'est ce
-       qui a fait conclure à tort, lors d'une traque précédente, à un bug
-       Chromium sur position:sticky + item de grille. Il n'y en a pas.
-       Les DEUX doivent tomber ensemble → tops [22,0,0,0] = collé.
-
-       Contrepartie assumée : pour un produit court, le hero est calé en
-       haut de sa colonne au lieu d'être centré. C'est inhérent au sticky
-       (un item centré n'a par définition aucune amplitude de collage). */
+    /* MIGRATION v3.0 (retrait sticky, LOT 1) : ce bloc s'appelait "FIX STICKY
+       2026-07". align-self repasse à `center` (état pré-sticky) : le `start`
+       n'existait que pour donner au hero une amplitude de collage, ce qui
+       neutralisait le centrage vertical. Sans sticky, cette contrainte
+       disparaît. Résout aussi un conflit préexistant avec l'oracle
+       RÉF-2026-07f (modal-desktop-scroll-owner.test.js, 2026-07-25) qui
+       exigeait déjà `align-self:center` ici — les deux corrections cohabitaient
+       mal, celle-ci l'emporte désormais. */
     margin-inline: auto;
     margin-block: 0;
-    align-self: start;
+    align-self: center;
     /* Contour visible (cf. reference-modale-4-etats.html v2.1) : le container
        image n'avait jamais de border nulle part — flottait sans cadre contre
        le fond ivoire du shell. background/border-radius NE sont PAS ajoutés
@@ -4974,6 +4960,23 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
      white → sand est retiré au profit d'un fond uni --page-bg. */
   #k-modal .k-modal-product-zone .k-modal-details {
     background: var(--page-bg);
+    padding: 0 clamp(28px, 4.4vw, 72px);
+  }
+
+  /* ── MIGRATION v3.0 (LOT 2) — Configurateur transversal + détails longs ──
+     Reprend le traitement "carte" de la référence canonique (§4, .config) :
+     bordure fine, coins arrondis 18px (cohérent avec .k-buybox-relay-card),
+     fond blanc pour trancher sur --page-bg de la zone produit. */
+  #k-modal .k-modal-product-zone > .k-modal-configurator {
+    margin: 0 clamp(28px, 4.4vw, 72px) 18px;
+    padding: 18px 22px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+  }
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
     padding: 0 clamp(28px, 4.4vw, 72px);
   }
 

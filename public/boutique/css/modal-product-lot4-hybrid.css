@@ -51,6 +51,23 @@
     padding: 0 clamp(28px, 4.4vw, 72px);
   }
 
+  /* ── MIGRATION v3.0 (LOT 2) — Configurateur transversal + détails longs ──
+     Reprend le traitement "carte" de la référence canonique (§4, .config) :
+     bordure fine, coins arrondis 18px (cohérent avec .k-buybox-relay-card),
+     fond blanc pour trancher sur --page-bg de la zone produit. */
+  #k-modal .k-modal-product-zone > .k-modal-configurator {
+    margin: 0 clamp(28px, 4.4vw, 72px) 18px;
+    padding: 18px 22px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+  }
+  #k-modal .k-modal-product-zone > .k-modal-long-details {
+    padding: 0 clamp(28px, 4.4vw, 72px);
+  }
+
   #k-modal .k-modal-product-zone .k-modal-info {
     max-width: 760px;
     padding-top: clamp(22px, 3vh, 42px);

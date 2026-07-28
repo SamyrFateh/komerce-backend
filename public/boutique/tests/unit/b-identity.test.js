@@ -14,7 +14,7 @@
  * b-checkout.test.js pour state ; b-phone.js a sa propre suite dédiée
  * dans tests/unit/b-phone.test.js et son intégration ici — via
  * makeIntlPhoneInput — est donc couverte en conditions réelles plutôt
- * que simulée). Seul b-cart-core.js (showToast) est mocké.
+ * que simulée). Seul b-utils.js (showToast) est mocké.
  *
  * Couverture visée :
  *   getCurrentIdentity() : window.K.auth.getUser -> window.K.getUser ->
@@ -43,12 +43,20 @@
  *     - fermeture (croix, clic overlay, Échap, annulation) -> résout null.
  */
 
-jest.mock('../../js/b-cart-core.js', () => ({
+// b-identity.js importe showToast depuis b-utils.js (b-cart-core.js ne fait
+// que le ré-exporter, pour d'autres modules) — c'est donc b-utils.js qu'il
+// faut mocker ici. Mocker b-cart-core.js à sa place laisse le vrai
+// showToast() s'exécuter, qui plante sur dom.toast (undefined dans ce
+// fixture) ; l'exception est avalée par le catch de verifyCode() AVANT
+// l'appel à resolve(), donc la promesse de requireIdentity() ne se résout
+// jamais (d'où les timeouts observés, pas juste des échecs d'assertion).
+jest.mock('../../js/b-utils.js', () => ({
+  ...jest.requireActual('../../js/b-utils.js'),
   showToast: jest.fn(),
 }));
 
 const { state } = require('../../js/b-store.js');
-const { showToast } = require('../../js/b-cart-core.js');
+const { showToast } = require('../../js/b-utils.js');
 const { mockWindowK, flush } = require('./helpers/boutiqueTestKit');
 const {
   getCurrentIdentity,

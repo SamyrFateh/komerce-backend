@@ -66,9 +66,8 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `komerce-api.js` | 4 | 0 | 0/0 | — |
 | `b-catalog-desktop-enhancers.js` | 0 | 3 | 1/0 | Header, Chips catégories |
 | `b-modal-cart.js` | 1 | 2 | 1/0 | Modal produit |
+| `b-utils.js` | 3 | 0 | 0/0 | Carte produit |
 | `b-greeting.js` | 2 | 0 | 0/0 | — |
-| `b-utils.js` | 2 | 0 | 0/0 | Carte produit |
-| `b-cart-core.js` | 1 | 0 | 1/2 | Modal produit, Panier, Bottom-nav mobile |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
 | `b-desktop-sidebar.js` | 1 | 0 | 0/1 | Chips catégories |
 | `b-store.js` | 0 | 1 | 0/1 | Modal produit, Panier, Grille produits, Hero |
@@ -135,7 +134,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Indicateur | Valeur | Cible |
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
-| Modules JS écrivant le DOM | 36 | ≤ 5 |
+| Modules JS écrivant le DOM | 35 | ≤ 5 |
 | Breakpoints distincts | 5 | ≤ 2 |
 | Violations breakpoint | 14 | 0 |
 | `!important` | 22 | < 5 |

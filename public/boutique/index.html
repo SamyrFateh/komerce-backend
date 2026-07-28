@@ -66,7 +66,7 @@ if('serviceWorker' in navigator){
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=154">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=342">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=344">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=83">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
@@ -447,39 +447,44 @@ if('serviceWorker' in navigator){
                  ID stable — le renderer JS (getElementById) est insensible à la position DOM.
                  Mobile : peuplé par b-modal-mobile-product.js, position neutre dans le flux. -->
             <div id="k-modal-delivery" class="k-modal-delivery"></div>
-            <!-- Variant picker (Couleur / Taille / Pointure) — juste après la livraison -->
-            <div id="k-modal-variants" class="k-modal-variants"></div>
             <p class="k-modal-desc" id="k-modal-desc"></p>
-            <!-- Actions remontées avant la réassurance (référence image 1 : Ajouter/Acheter
-                 juste sous les sélecteurs, avant trust + partage). -->
-            <div class="k-modal-actions">
-              <div class="k-qty">
-                <button class="k-qty-btn" id="k-qty-minus">−</button>
-                <span class="k-qty-val" id="k-qty-val">1</span>
-                <button class="k-qty-btn" id="k-qty-plus">+</button>
-              </div>
-              <button class="k-add-cart-btn" id="k-add-cart-btn">
-                <img src="/images/panier_tresse.png" width="20" height="20" alt="" aria-hidden="true">
-                Ajouter au panier
-              </button>
-              <button class="k-buy-now-btn" id="k-buy-now-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Acheter maintenant</button>
-            </div>
-            <!-- Réassurance + partage — après les actions (référence image 1) -->
+            <!-- Réassurance + partage — après la description (récit produit) -->
             <div id="k-modal-trust" class="k-modal-trust"></div>
             <div id="k-modal-share-row" class="k-modal-share-row"></div>
-            <div id="k-modal-payment" class="k-modal-payment"></div>
           </div><!-- end .k-modal-info -->
         </div><!-- end .k-modal-details -->
+        <!-- MIGRATION v3.0 (LOT 2) — Configurateur transversal (référence canonique
+             §4 : hero → configurateur → détails longs → suggestions). Sorti de
+             .k-modal-info : variantes + sélection quantité + CTA desktop, en
+             pleine largeur sous le hero. IDs stables (getElementById), le JS
+             (renderAxis, renderActions) est insensible à la position DOM. -->
+        <div class="k-modal-configurator" id="k-modal-configurator">
+          <div id="k-modal-variants" class="k-modal-variants"></div>
+          <div class="k-modal-actions">
+            <div class="k-qty">
+              <button class="k-qty-btn" id="k-qty-minus">−</button>
+              <span class="k-qty-val" id="k-qty-val">1</span>
+              <button class="k-qty-btn" id="k-qty-plus">+</button>
+            </div>
+            <button class="k-add-cart-btn" id="k-add-cart-btn">
+              <img src="/images/panier_tresse.png" width="20" height="20" alt="" aria-hidden="true">
+              Ajouter au panier
+            </button>
+            <button class="k-buy-now-btn" id="k-buy-now-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Acheter maintenant</button>
+          </div>
+        </div>
+        <!-- MIGRATION v3.0 (LOT 2) — Détails longs, pleine largeur, après le
+             configurateur. Ne contient pour l'instant que le paiement ; conçu
+             pour accueillir de futurs blocs de détails techniques. -->
+        <div class="k-modal-long-details" id="k-modal-long-details">
+          <div id="k-modal-payment" class="k-modal-payment"></div>
+        </div>
         <!-- REF-2026-07 — CONFORMITÉ RÉFÉRENCE CANONIQUE §4 « Composition desktop » :
-               médias | informations produit | panier
-               suggestions sur médias + informations | panier
-             Ces deux blocs étaient SŒURS de .k-modal-product-zone. Conséquence
-             mesurée : la rangée 2 de la grille (grid-template-rows: 1fr auto)
-             restait à 0px, donc le hero en grid-row:1/-1 n'avait aucune course
-             au-delà de la zone — il décrochait dès l'entrée dans les suggestions
-             (42 variantes + 6 suggestions : collé jusqu'à scroll 400, décroché
-             à 600). Rapatriés DANS la grille, la rangée 2 passe de 0px à 1057px
-             et le hero reste épinglé sur toute l'amplitude (1201px).
+               hero (galerie|récit) → configurateur transversal → détails longs
+               → suggestions.
+             #k-modal-enriched-content et #k-modal-suggestions sont des items de
+             la grille .k-modal-product-zone (rangées 4 et 5 depuis LOT 2 — ex
+             2 et 3 avant l'insertion du configurateur et des détails longs).
              Sur mobile .k-modal-product-zone est en display:contents : ces blocs
              restent dans le flux vertical, à la même place. Aucun impact. -->
         <div id="k-modal-enriched-content" class="k-modal-enriched-content" hidden></div>
