@@ -15,6 +15,12 @@ const {
 // Catalogue déterministe : il doit toujours tourner contre le serveur statique
 // local et ses routes Playwright, jamais contre le catalogue live.
 test.skip(IS_REMOTE, 'Le catalogue enrichi V3 est un oracle LOCAL déterministe.');
+test.beforeEach(async ({ browserName }, testInfo) => {
+  test.skip(
+    browserName !== 'chromium' || testInfo.project.name !== 'Desktop Chrome',
+    'Matrice interne desktop/mobile exécutée une seule fois sous Chromium.'
+  );
+});
 
 const VIEWPORTS = [
   { key: 'desktop', width: 1440, height: 900 },
