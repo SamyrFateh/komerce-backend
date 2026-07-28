@@ -45,16 +45,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm --prefix public/boutique ci
-      - name: Regenerate governed projections
-        run: |
-          npm run arch:gen
-          npm run dashboards:360
-          npm run boutique:360
-          npm run business-graph:gen
-          npm run meta:graph
-          npm run feature:360:gen
-      - run: npm run feature:360:check
-      - run: npm run map:check
+      - name: Generate architecture headers graph
+        run: npm run arch:gen
+      - name: Generate dashboards 360
+        run: npm run dashboards:360
+      - name: Generate Boutique 360
+        run: npm run boutique:360
+      - name: Generate business feature graph
+        run: npm run business-graph:gen
+      - name: Generate meta graph
+        run: npm run meta:graph
+      - name: Generate Feature 360
+        run: npm run feature:360:gen
+      - name: Check Feature 360
+        run: npm run feature:360:check
+      - name: Check map reconstruction
+        run: npm run map:check
       - name: Commit generated state and remove harness
         id: commit
         run: |
