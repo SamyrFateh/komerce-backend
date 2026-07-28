@@ -1,1 +1,1 @@
-Trigger the isolated Jest 30 audit and unit validation. Remove this file in the final cleanup commit.
+Trigger the deterministic npm-audit gate correction and full repository certification. This marker is removed by the certified commit.
