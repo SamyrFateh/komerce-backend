@@ -2,6 +2,7 @@ name: Carte First
 
 # Toute évolution applicative entre par une feature et par une PR vérifiée.
 # Le contrôle push détecte aussi toute provenance hors PR sur la branche principale.
+# Ownership, preuve de test et reconstruction restent bloquants jusqu'au merge.
 on:
   pull_request:
   push:
