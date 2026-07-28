@@ -104,16 +104,7 @@ jobs:
       - name: Feature guard
         run: npm run feature:check
       - name: Full documentation lint
-        run: |
-          set -o pipefail
-          npm run gate:docs-lint:full 2>&1 | tee docs-lint-cleanup.log
-      - name: Upload documentation lint evidence
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: root-cleanup-docs-${{ github.run_id }}
-          path: docs-lint-cleanup.log
-          retention-days: 1
+        run: npm run gate:docs-lint:full
       - name: Regenerate governance projections
         run: |
           npm run arch:gen
@@ -122,15 +113,14 @@ jobs:
           npm run business-graph:gen
           npm run meta:graph
           npm run feature:360:gen
-      - name: Final governance checks
-        run: |
-          npm run feature:360:check
-          npm run map:check
+      - name: Feature 360 consistency
+        run: npm run feature:360:check
+      - name: Complete map check
+        run: npm run map:check
 
       - name: Commit cleaned tree
         id: commit
         run: |
-          rm -f docs-lint-cleanup.log
           git config user.name "Komerce Governance Bot"
           git config user.email "actions@users.noreply.github.com"
           git add -A
