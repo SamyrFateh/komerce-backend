@@ -1,0 +1,155 @@
+name: Repair Modal Feature First Once
+
+on:
+  push:
+    branches: [governance/enforce-feature-first]
+
+permissions:
+  contents: write
+  statuses: write
+
+jobs:
+  repair:
+    if: ${{ !contains(github.event.head_commit.message, '[modal-e2e-fixed]') }}
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: governance/enforce-feature-first
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix public/boutique ci
+      - name: Apply narrow modal fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          css_path = Path('public/boutique/css/modal-product-lot4-hybrid.css')
+          css = css_path.read_text(encoding='utf-8')
+          anchor = """  #k-modal .k-modal-product-zone > .k-modal-configurator {
+              margin: 0 clamp(28px, 4.4vw, 72px) 18px;
+              padding: 18px 22px;
+              border: 1px solid var(--border);
+              border-radius: 18px;
+              background: var(--white);
+              display: flex;
+              flex-direction: column;
+            }
+          """
+          replacement = anchor + """  /* LOT4 / ProductConfigurator : les blocs post-hero sont des rangées
+             transversales. Sans placement explicite, l'auto-placement CSS Grid les
+             réduit à une demi-colonne et les expose au recouvrement des régions du hero. */
+            #k-modal .k-modal-product-zone > .k-modal-configurator,
+            #k-modal .k-modal-product-zone > .k-modal-long-details,
+            #k-modal .k-modal-product-zone > .k-modal-enriched-content,
+            #k-modal .k-modal-product-zone > .k-modal-suggestions {
+              grid-column: 1 / -1;
+              min-width: 0;
+            }
+          """
+          if anchor not in css:
+              raise SystemExit('CSS anchor not found')
+          css_path.write_text(css.replace(anchor, replacement, 1), encoding='utf-8')
+
+          unit_path = Path('public/boutique/tests/unit/modal-v3-convergence-invariants.test.js')
+          unit = unit_path.read_text(encoding='utf-8')
+          unit_anchor = """  test('la safe-area mobile reste gérée en CSS (env(safe-area-inset-bottom)), pas en JS', () => {
+          """
+          unit_test = """  test('desktop : configurateur, détails et suggestions occupent une rangée pleine largeur', () => {
+              const lot4 = fs.readFileSync(path.join(ROOT, 'css/modal-product-lot4-hybrid.css'), 'utf8');
+              const block = lot4.match(/#k-modal \\.k-modal-product-zone > \\.k-modal-configurator,[\\s\\S]*?#k-modal \\.k-modal-product-zone > \\.k-modal-suggestions \\{([\\s\\S]*?)\\}/);
+              expect(block).not.toBeNull();
+              expect(block[1]).toMatch(/grid-column:\\s*1\\s*\\/\\s*-1/);
+            });
+
+          """
+          if unit_anchor not in unit:
+              raise SystemExit('Unit-test anchor not found')
+          unit_path.write_text(unit.replace(unit_anchor, unit_test + unit_anchor, 1), encoding='utf-8')
+
+          e2e_path = Path('public/boutique/tests/e2e/product-detail-pdc.spec.js')
+          e2e = e2e_path.read_text(encoding='utf-8')
+          helper_anchor = """function targetAvailableUnit(detail) {
+          """
+          helpers = """function isMobileComposition(page) {
+            const viewport = page.viewportSize();
+            return viewport ? viewport.width < 900 : false;
+          }
+
+          function stockLocator(page) {
+            return page.locator(isMobileComposition(page) ? '#k-modal-stock-pill' : '#k-modal-stock');
+          }
+
+          async function assertResolvedStock(page, unit) {
+            const stock = stockLocator(page);
+            await expect(stock, 'la disponibilité du SKU résolu doit être rendue dans la composition active').toBeVisible();
+            const qty = Number(unit.available_quantity);
+            if (qty <= 5) {
+              await expect(stock).toContainText(`Plus que ${qty}`);
+            } else if (isMobileComposition(page)) {
+              await expect(stock).toContainText('En stock');
+            } else {
+              await expect(stock).toContainText(`${qty} en stock`);
+            }
+          }
+
+          """
+          if helper_anchor not in e2e:
+              raise SystemExit('E2E helper anchor not found')
+          e2e = e2e.replace(helper_anchor, helpers + helper_anchor, 1)
+          e2e = e2e.replace(
+              "const button = page.locator(optionSelector(axis.key, value));",
+              "const button = page.locator('#k-modal-configurator').locator(optionSelector(axis.key, value));",
+              1,
+          )
+          old = """  await expect(addButton, 'le CTA doit être actif une fois le SKU réel résolu').toBeEnabled();
+            await expect(page.locator('#k-modal-stock')).toContainText('Disponible');
+          """
+          new = """  await expect(addButton, 'le CTA doit être actif une fois le SKU réel résolu').toBeEnabled();
+            await assertResolvedStock(page, candidate.unit);
+          """
+          if old not in e2e:
+              raise SystemExit('E2E stock assertion anchor not found')
+          e2e_path.write_text(e2e.replace(old, new, 1), encoding='utf-8')
+          PY
+      - name: Remove one-shot harness before scans
+        run: rm -f .github/workflows/fix-modal-feature-first-once.yml
+      - name: Rebuild CSS
+        run: npm --prefix public/boutique run bundle:css
+      - name: Run targeted modal invariants
+        run: npm --prefix public/boutique test -- --runInBand tests/unit/modal-v3-convergence-invariants.test.js tests/unit/b-modal-desktop-product.test.js tests/unit/b-modal-mobile-product.test.js
+      - name: Run Boutique fast gate
+        run: npm --prefix public/boutique run check:fast
+      - name: Regenerate governed projections
+        run: |
+          npm run arch:gen
+          npm run dashboards:360
+          npm run boutique:360
+          npm run business-graph:gen
+          npm run meta:graph
+          npm run feature:360:gen
+      - run: npm run feature:360:check
+      - run: npm run map:check
+      - name: Commit verified repair
+        run: |
+          git config user.name "Komerce Governance Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(modal-product): restore clickable full-width configurator [modal-e2e-fixed]"
+          git push origin HEAD:governance/enforce-feature-first
