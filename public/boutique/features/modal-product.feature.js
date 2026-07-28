@@ -94,6 +94,7 @@ module.exports = {
       '../tests/unit/modal-mobile-canonical.test.js',
       '../tests/unit/b-modal-desktop-enhancers.test.js',
       '../tests/unit/modal-product-price-normalization.test.js',
+      '../tests/unit/modal-product-lot4-hybrid.test.js',
       '../tests/unit/modal-v3-convergence-invariants.test.js',
     ],
   },
