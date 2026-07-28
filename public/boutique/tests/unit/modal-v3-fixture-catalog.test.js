@@ -20,17 +20,23 @@ function combinationCapacity(detail) {
   return detail.option_axes.reduce((total, current) => total * current.values.length, 1);
 }
 
+/**
+ * Richesse structurée de la fiche.
+ *
+ * Une description courte ou un avertissement isolé ne suffisent pas à faire
+ * d'un produit une fiche éditoriale riche. Ce garde-fou est volontaire : la
+ * fixture skuMinimal doit prouver que le configurateur SKU fonctionne même
+ * lorsque highlights/specifications/sections/materials/care sont absents.
+ */
 function isRich(detail) {
   const c = detail.content || {};
   return Boolean(
     c.brand ||
-    c.short_description ||
     (c.highlights || []).length ||
     (c.specifications || []).length ||
     (c.sections || []).length ||
     (c.materials || []).length ||
-    (c.care || []).length ||
-    (c.warnings || []).length
+    (c.care || []).length
   );
 }
 
