@@ -1,1 +1,1 @@
-Trigger the deterministic npm-audit gate correction and full repository certification. This marker is removed by the certified commit.
+Trigger the unit coverage diagnostic with forceExit. Remove this file in the final certified commit.
