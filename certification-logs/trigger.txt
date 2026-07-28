@@ -1,1 +1,1 @@
-Trigger the unit coverage diagnostic with forceExit. Remove this file in the final certified commit.
+Trigger the final governance certification with correctly scoped root units, npm-audit advisory deduplication, and complete temporary-harness cleanup. This marker is removed by the certified commit.
