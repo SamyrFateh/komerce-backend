@@ -7,7 +7,8 @@
 - Boutique : audit, gates rapides et couverture verts.
 - Dashboards : audit et `check:all` verts.
 - Gouvernance : registre, classification, invariants, projections 360, dispositions O6 et `map:check` verts.
-- Preuve d'exécution complète : GitHub Actions run `30349485657`.
+- Preuve de la campagne complète : GitHub Actions run `30349485657`.
+- Preuve du nettoyage racine, de la régénération des cartes et du `map:check` final : GitHub Actions run `30353246191`.
 
 L'ancien chiffre « 13 suites en échec » provenait d'un ancien harnais et de fixtures périmées. Il ne décrit plus l'état du dépôt.
 
