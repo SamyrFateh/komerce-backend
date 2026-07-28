@@ -120,11 +120,21 @@ jobs:
       - name: Alerts contract
         run: npm run alerts:contract:check
       - name: Map core
-        run: node scripts/map-check.js
+        run: |
+          set -o pipefail
+          node scripts/map-check.js 2>&1 | tee map-core-cleanup.log
+      - name: Upload map-core evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: root-cleanup-map-${{ github.run_id }}
+          path: map-core-cleanup.log
+          retention-days: 1
 
       - name: Commit cleaned tree
         id: commit
         run: |
+          rm -f map-core-cleanup.log
           git config user.name "Komerce Governance Bot"
           git config user.email "actions@users.noreply.github.com"
           git add -A
