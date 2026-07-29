@@ -1,9 +1,9 @@
 name: Apply Feature First overlay and close FF-C1 FF-C2
 
 on:
-  push:
+  pull_request:
     branches:
-      - chore/feature-first-c1-c2-closure-20260729
+      - main
 
 permissions:
   contents: write
@@ -24,8 +24,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # One byte in part-03 was altered during the connector transfer.
-          # Repair it deterministically, then verify the original archive hash.
           python - <<'PY'
           from pathlib import Path
           path = Path('.github/feature-first-overlay/part-03')
