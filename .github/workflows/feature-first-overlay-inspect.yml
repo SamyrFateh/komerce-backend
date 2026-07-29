@@ -4,13 +4,15 @@ on:
   push:
     branches:
       - chore/feature-first-c1-c2-closure-20260729
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   inspect:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -29,11 +31,13 @@ jobs:
             echo "bytes   $(stat -c%s /tmp/feature-first-overlay.tar.gz)"
             echo
             tar -tzvf /tmp/feature-first-overlay.tar.gz
-          } > .github/feature-first-overlay/LISTING.txt
-      - name: Commit listing
+          } | tee /tmp/LISTING.txt
+      - name: Commit listing on push only
+        if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
         shell: bash
         run: |
           set -euo pipefail
+          cp /tmp/LISTING.txt .github/feature-first-overlay/LISTING.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .github/feature-first-overlay/LISTING.txt
