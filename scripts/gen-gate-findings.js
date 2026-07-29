@@ -151,6 +151,7 @@ function parseTextFindings(gate, output, exitCode) {
 
 function run(command, args, cwd = ROOT) {
   const r = spawnSync(command, args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+    shell: process.platform === 'win32' && /\.cmd$/i.test(command),
     env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' } });
   return { exitCode: r.status ?? 1, output: [r.stdout, r.stderr].filter(Boolean).join('\n'), error: r.error?.message || null };
 }

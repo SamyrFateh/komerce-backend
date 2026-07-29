@@ -99,7 +99,7 @@ module.exports = {
       'signals: R',
       'sms_log: RW',
       'suppliers_stats: R',
-      'users: W-authorized',   // authorized-writer via auth-identity.revokeSessions() (arbitrage A) — écritures directes de routes/admin/users.js à recâbler
+      'users: W',   // authorized-writer via auth-identity.revokeSessions() (arbitrage A) — écritures directes de routes/admin/users.js à recâbler
       'wallet_transactions: W',
       'wallets: W',
     ],

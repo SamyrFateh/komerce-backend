@@ -152,7 +152,7 @@ function classifyPair(pair, ctx) {
   } else if (ctx.compRootOwners.has(pair.from) && a.allRuntimeFromWiring) {
     // Montage applicatif pur. Les preuves hors wiring sont qualifiées normalement.
     family = 'COMPOSITION_ROOT_WIRING';
-  } else if (providerKind === 'technical-transversal') {
+  } else if (providerKind === 'technical-transversal' || providerKind === 'technical-foundation') {
     family = 'TECHNICAL_PRIMITIVE';
   } else if (providerKind === 'business-transversal') {
     family = 'BUSINESS_TRANSVERSAL_SERVICE';
