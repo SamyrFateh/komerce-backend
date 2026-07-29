@@ -1,0 +1,1192 @@
+{
+  "version": "FEM-1.0",
+  "generator": "scripts/gen-feature-e2e-matrix.js",
+  "note": "Fichier généré — ne pas éditer à la main, relancer le générateur.",
+  "harnesses": {
+    "e2e-api": {
+      "runner": "scripts/run-e2e-feature-tests.js",
+      "commands": {
+        "feature": "npm run test:e2e:feature -- --feature=<nom>",
+        "lot": "npm run test:e2e:lot -- --lot=<1|2|3>",
+        "all": "npm run test:e2e:features"
+      },
+      "requires": "DATABASE_URL vers une base de test (garde fail-closed : tests/helpers/e2eDbKit.js)"
+    },
+    "integration": {
+      "runner": "scripts/run-integration-tests.js",
+      "command": "npm run test:integration"
+    },
+    "e2e-browser": {
+      "location": "public/boutique (paquet npm distinct)",
+      "command": "npm run test:e2e:business (depuis public/boutique)",
+      "requires": "BASE_URL vers un environnement de staging + compte de test",
+      "specs": {
+        "total": 46,
+        "authenticated": 17
+      }
+    }
+  },
+  "tally": {
+    "PARTIAL": 21,
+    "PROVEN": 4,
+    "NOT_APPLICABLE": 1
+  },
+  "features": [
+    {
+      "name": "auth",
+      "manifest": "features/auth.feature.js",
+      "kind": "feature",
+      "type": "transversal",
+      "domain": "auth",
+      "lifecycle": "production",
+      "lot": 1,
+      "exposedRoutes": 0,
+      "invariants": {
+        "declared": 1,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 8,
+        "proofs": 8,
+        "byCategory": {
+          "unit": [
+            "tests/unit/auth-guest.test.js",
+            "tests/unit/auth-middleware.test.js",
+            "tests/unit/auth-route.test.js",
+            "tests/unit/otp-route.test.js",
+            "tests/unit/require-verified-identity.test.js",
+            "tests/unit/soft-auth.test.js",
+            "tests/unit/user-cache.test.js",
+            "tests/unit/verify-authkey-webhook.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "1/1 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "auth-identity",
+      "manifest": "features/auth-identity.feature.js",
+      "kind": "feature",
+      "type": "transversal",
+      "domain": "auth-identity",
+      "lifecycle": "production",
+      "lot": 1,
+      "exposedRoutes": 20,
+      "invariants": {
+        "declared": 2,
+        "executable": 1,
+        "tests": [
+          "tests/invariants/auth-identity.mutating-routes-guarded.test.js"
+        ]
+      },
+      "tests": {
+        "declared": 4,
+        "proofs": 5,
+        "byCategory": {
+          "integration": [
+            "tests/integration/admin-authz-probe.test.js",
+            "tests/integration/otp-no-guest.test.js"
+          ],
+          "unit": [
+            "tests/unit/otp-test-mode.test.js",
+            "tests/unit/client-auth.test.js"
+          ],
+          "invariant": [
+            "tests/invariants/auth-identity.mutating-routes-guarded.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PROVEN",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "1/2 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "catalog",
+      "manifest": "features/catalog.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "catalog",
+      "lifecycle": "production",
+      "lot": 1,
+      "exposedRoutes": 31,
+      "invariants": {
+        "declared": 18,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 37,
+        "proofs": 37,
+        "byCategory": {
+          "unit": [
+            "tests/unit/admin-boutique-categories.test.js",
+            "tests/unit/api-connector-base.test.js",
+            "tests/unit/categories-cache.test.js",
+            "tests/unit/categories.test.js",
+            "tests/unit/connector-utils.test.js",
+            "tests/unit/csv-connector.test.js",
+            "tests/unit/manual-connector.test.js",
+            "tests/unit/manual-connector-source-v2.test.js",
+            "tests/unit/noon-connector.test.js",
+            "tests/unit/catalog-promotion.test.js",
+            "tests/unit/catalog-promotion-axes.test.js",
+            "tests/unit/catalog-promotion-sku.test.js",
+            "tests/unit/catalog-promotion-sku-media.test.js",
+            "tests/unit/catalog-promotion-content.test.js",
+            "tests/unit/catalog-promotion-content-db.test.js",
+            "tests/unit/normalized-product.test.js",
+            "tests/unit/normalized-product-source-contract-v2.test.js",
+            "tests/unit/product-admin-service.test.js",
+            "tests/unit/product-price-audit.test.js",
+            "tests/unit/product-publication-guard.test.js",
+            "tests/unit/products.test.js",
+            "tests/unit/catalog-product-detail.test.js",
+            "tests/unit/modal-mobile-canonical.test.js",
+            "tests/unit/supplier-catalog-scanner.test.js",
+            "tests/unit/catalog-import-orchestrator.test.js",
+            "tests/unit/catalog-import-orchestrator-source-v2.test.js",
+            "tests/unit/catalog-eligibility.test.js",
+            "tests/unit/scan-engine-content-verification.test.js",
+            "tests/unit/scan-engine-extras.test.js",
+            "tests/unit/catalog-public-view.test.js",
+            "tests/unit/catalog-enrichment.test.js",
+            "tests/unit/catalog-enrichment-extended.test.js",
+            "tests/unit/catalog-enrichment-fixtures.js",
+            "tests/unit/catalog-overrides.test.js",
+            "tests/unit/json-source-pipeline.test.js",
+            "tests/unit/catalog-approval.test.js"
+          ],
+          "integration": [
+            "tests/integration/catalog-import-json.integration.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "18/18 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "orders",
+      "manifest": "features/orders.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "orders",
+      "lifecycle": "production",
+      "lot": 1,
+      "exposedRoutes": 34,
+      "invariants": {
+        "declared": 7,
+        "executable": 1,
+        "tests": [
+          "tests/invariants/orders.refund-to-payer.test.js"
+        ]
+      },
+      "tests": {
+        "declared": 27,
+        "proofs": 28,
+        "byCategory": {
+          "e2e-api": [
+            "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js"
+          ],
+          "unit": [
+            "tests/unit/admin-order-refund.test.js",
+            "tests/unit/cancel-order-purchase-orders.test.js",
+            "tests/unit/delete-order-cascade.test.js",
+            "tests/unit/hub-mark-ordered.test.js",
+            "tests/unit/invoice-public-token.test.js",
+            "tests/unit/invoices-route.test.js",
+            "tests/unit/order-api-v2.test.js",
+            "tests/unit/order-cost-snapshot.test.js",
+            "tests/unit/order-payment-confirmation.test.js",
+            "tests/unit/order-service.test.js",
+            "tests/unit/orderParcelLinkRules.test.js",
+            "tests/unit/orders-parcels-route.test.js",
+            "tests/unit/parcels.test.js",
+            "tests/unit/qr.test.js",
+            "tests/unit/verify-qr-collection.test.js",
+            "tests/unit/cash-operations.test.js",
+            "tests/unit/confirm-payment-cycle.test.js",
+            "tests/unit/order-status-machine.test.js",
+            "tests/unit/orders-aggregator-route.test.js",
+            "tests/unit/orders-cancel-route.test.js",
+            "tests/unit/orders-create-route.test.js",
+            "tests/unit/orders-detail.test.js",
+            "tests/unit/orders-list.test.js",
+            "tests/unit/orders-status-route.test.js",
+            "tests/unit/invoice-service.test.js"
+          ],
+          "integration": [
+            "tests/integration/admin-order-refund-payment-service.test.js"
+          ],
+          "invariant": [
+            "tests/invariants/orders.refund-to-payer.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PROVEN",
+      "gaps": [
+        "6/7 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "payments",
+      "manifest": "features/payments.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "payment",
+      "lifecycle": "production",
+      "lot": 1,
+      "exposedRoutes": 18,
+      "invariants": {
+        "declared": 3,
+        "executable": 2,
+        "tests": [
+          "tests/invariants/payments.webhook-idempotency.test.js",
+          "tests/invariants/payments.no-double-confirm.test.js"
+        ]
+      },
+      "tests": {
+        "declared": 17,
+        "proofs": 19,
+        "byCategory": {
+          "unit": [
+            "tests/unit/payment-cash-confirm.test.js",
+            "tests/unit/payment-paypal.test.js",
+            "tests/unit/payment-service.test.js",
+            "tests/unit/payment-stripe.test.js",
+            "tests/unit/payments-webhook.test.js",
+            "tests/unit/paypal-client.test.js",
+            "tests/unit/paypal-webhook.test.js",
+            "tests/unit/cash-operations-service.test.js",
+            "tests/unit/cash-reminder-service.test.js",
+            "tests/unit/cash-route.test.js",
+            "tests/unit/confirm-pickup-cash-payment.test.js",
+            "tests/unit/create-stripe-order-intent.test.js",
+            "tests/unit/payment-paypal-events.test.js",
+            "tests/unit/payments-paypal.test.js",
+            "tests/unit/payments-route.test.js",
+            "tests/unit/pickup-pay-cash.test.js",
+            "tests/unit/reconciliation-service.test.js"
+          ],
+          "invariant": [
+            "tests/invariants/payments.webhook-idempotency.test.js",
+            "tests/invariants/payments.no-double-confirm.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PROVEN",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "1/3 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "shared-cart",
+      "manifest": "features/shared-cart.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "shared-cart",
+      "lifecycle": "production",
+      "lot": 1,
+      "exposedRoutes": 33,
+      "invariants": {
+        "declared": 6,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 41,
+        "proofs": 41,
+        "byCategory": {
+          "unit": [
+            "tests/unit/admin-collective-repairs.test.js",
+            "tests/unit/baskets.test.js",
+            "tests/unit/collective-payment-orchestrator.test.js",
+            "tests/unit/collective-ready-to-order-orchestrator.test.js",
+            "tests/unit/collective-stock-reservation-service.test.js",
+            "tests/unit/collective-workspace-contributions.test.js",
+            "tests/unit/collective-workspace-creation.test.js",
+            "tests/unit/collective-workspace-engine.test.js",
+            "tests/unit/collective-workspace-internals.test.js",
+            "tests/unit/collective-workspace-items.test.js",
+            "tests/unit/collective-workspace-lifecycle.test.js",
+            "tests/unit/collective-workspace-reads.test.js",
+            "tests/unit/collective-workspaces.test.js",
+            "tests/unit/repair-collective-ready-to-capture.test.js",
+            "tests/unit/repair-collective-stock-reservations.test.js",
+            "tests/unit/shared-cart-branches.test.js",
+            "tests/unit/shared-cart-cash-route.test.js",
+            "tests/unit/shared-cart-cash-service.test.js",
+            "tests/unit/shared-cart-contributions.test.js",
+            "tests/unit/shared-cart-creation.test.js",
+            "tests/unit/shared-cart-creator-route.test.js",
+            "tests/unit/shared-cart-engine.test.js",
+            "tests/unit/shared-cart-estimation-service.test.js",
+            "tests/unit/shared-cart-from-order.test.js",
+            "tests/unit/shared-cart-internals.test.js",
+            "tests/unit/shared-cart-items-service.test.js",
+            "tests/unit/shared-cart-public-route.test.js",
+            "tests/unit/shared-cart-reads.test.js",
+            "tests/unit/shared-cart-refund-admin.test.js",
+            "tests/unit/shares-route.test.js",
+            "tests/unit/shared-cart-v41-transitions.test.js",
+            "tests/unit/shared-cart-lifecycle.test.js",
+            "tests/unit/shared-cart-financial-guard.test.js",
+            "tests/unit/shared-cart-queries.test.js",
+            "tests/unit/shared-cart-refund-queue.test.js",
+            "tests/unit/cancel-shared-cart-with-refunds.test.js",
+            "tests/unit/shared-cart-edit-mode.test.js",
+            "tests/unit/shared-cart-lot9-business.test.js",
+            "tests/unit/shared-cart-v4-2-creation.test.js",
+            "tests/unit/shared-cart-v41-reconciliation.test.js",
+            "tests/unit/collective-close-order-service.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "6/6 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "customs",
+      "manifest": "features/customs.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "customs",
+      "lifecycle": "production",
+      "lot": 2,
+      "exposedRoutes": 20,
+      "invariants": {
+        "declared": 1,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 6,
+        "proofs": 6,
+        "byCategory": {
+          "unit": [
+            "tests/unit/admin-customs-categories.test.js",
+            "tests/unit/admin-customs-route.test.js",
+            "tests/unit/admin-customs-shipments.test.js",
+            "tests/unit/customs-analytics.test.js",
+            "tests/unit/customs-classification.test.js",
+            "tests/unit/customs-shipment-service.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "1/1 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "inventory",
+      "manifest": "features/inventory.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "inventory",
+      "lifecycle": "staging",
+      "lot": 2,
+      "exposedRoutes": 8,
+      "invariants": {
+        "declared": 1,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 3,
+        "proofs": 3,
+        "byCategory": {
+          "unit": [
+            "tests/unit/inventory-api-route.test.js",
+            "tests/unit/inventory-service.test.js"
+          ],
+          "integration": [
+            "tests/integration/parcel-auto-create-cash-payment.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "1/1 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "logistics",
+      "manifest": "features/logistics.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "logistics",
+      "lifecycle": "production",
+      "lot": 2,
+      "exposedRoutes": 69,
+      "invariants": {
+        "declared": 6,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 33,
+        "proofs": 33,
+        "byCategory": {
+          "integration": [
+            "tests/integration/test-harness/seed-helpers.js"
+          ],
+          "unit": [
+            "tests/unit/auto-distribute-api.test.js",
+            "tests/unit/auto-parcel.test.js",
+            "tests/unit/carriers.test.js",
+            "tests/unit/client-tracking.test.js",
+            "tests/unit/hub.test.js",
+            "tests/unit/logistics.test.js",
+            "tests/unit/parcel-api-v2-helpers.test.js",
+            "tests/unit/parcel-api-v2-index.test.js",
+            "tests/unit/parcel-api-v2-scans.test.js",
+            "tests/unit/parcel-label.test.js",
+            "tests/unit/parcel-security.test.js",
+            "tests/unit/parcel-service.test.js",
+            "tests/unit/parcelOptimizationService.test.js",
+            "tests/unit/parcelSync.test.js",
+            "tests/unit/pickup-receipt-html.test.js",
+            "tests/unit/pickup-secret.test.js",
+            "tests/unit/pickup-secret-service.test.js",
+            "tests/unit/scan-operations.test.js",
+            "tests/unit/scan-engine.test.js",
+            "tests/unit/parcel-operations.test.js",
+            "tests/unit/parcel-guards.test.js",
+            "tests/unit/parcel-auto-create-service.test.js",
+            "tests/unit/hub-operations.test.js",
+            "tests/unit/parcels-route.test.js",
+            "tests/unit/parcel-api-v2-read.test.js",
+            "tests/unit/relais.test.js",
+            "tests/unit/routing.test.js",
+            "tests/unit/transport-rails.test.js",
+            "tests/unit/scans.test.js",
+            "tests/unit/tracking.test.js",
+            "tests/unit/transit-dashboard.test.js",
+            "tests/unit/transitaire-api.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "6/6 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "loyalty",
+      "manifest": "features/loyalty.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "loyalty",
+      "lifecycle": "production",
+      "lot": 2,
+      "exposedRoutes": 7,
+      "invariants": {
+        "declared": 2,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 3,
+        "proofs": 3,
+        "byCategory": {
+          "unit": [
+            "tests/unit/loyalty-notification.test.js",
+            "tests/unit/loyalty-route.test.js",
+            "tests/unit/loyalty-service.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "2/2 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "purchasing",
+      "manifest": "features/purchasing.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "purchasing",
+      "lifecycle": "production",
+      "lot": 2,
+      "exposedRoutes": 10,
+      "invariants": {
+        "declared": 3,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 8,
+        "proofs": 8,
+        "byCategory": {
+          "unit": [
+            "tests/unit/purchasing.test.js",
+            "tests/unit/purchasing-receive-service.test.js",
+            "tests/unit/purchasing-route.test.js",
+            "tests/unit/purchasing-trigger-service.test.js",
+            "tests/unit/receive-purchase-order.test.js",
+            "tests/unit/repair-ordered-purchasing.test.js",
+            "tests/unit/repair-ordered-without-purchase-orders.test.js",
+            "tests/unit/purchasing-admin-service.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "3/3 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "refunds",
+      "manifest": "features/refunds.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "refunds",
+      "lifecycle": "production",
+      "lot": 2,
+      "exposedRoutes": 0,
+      "invariants": {
+        "declared": 1,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 3,
+        "proofs": 3,
+        "byCategory": {
+          "unit": [
+            "tests/unit/refund-service.test.js",
+            "tests/unit/refunds-util.test.js",
+            "tests/unit/refund-receipt-html.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "1/1 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "unsold-resolution",
+      "manifest": "features/unsold-resolution.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "unsold-resolution",
+      "lifecycle": "production",
+      "lot": 2,
+      "exposedRoutes": 7,
+      "invariants": {
+        "declared": 2,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 1,
+        "proofs": 1,
+        "byCategory": {
+          "unit": [
+            "tests/unit/unsold.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "2/2 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "wallet",
+      "manifest": "features/wallet.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "wallet",
+      "lifecycle": "production",
+      "lot": 2,
+      "exposedRoutes": 9,
+      "invariants": {
+        "declared": 2,
+        "executable": 1,
+        "tests": [
+          "tests/invariants/wallet.single-application-per-event.test.js"
+        ]
+      },
+      "tests": {
+        "declared": 3,
+        "proofs": 4,
+        "byCategory": {
+          "unit": [
+            "tests/unit/wallet-service.test.js",
+            "tests/unit/store-credits.test.js",
+            "tests/unit/wallet-route.test.js"
+          ],
+          "invariant": [
+            "tests/invariants/wallet.single-application-per-event.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PROVEN",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "1/2 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "business-rules",
+      "manifest": "features/business-rules.feature.js",
+      "kind": "feature",
+      "type": "transversal",
+      "domain": "business-rules",
+      "lifecycle": "production",
+      "lot": 3,
+      "exposedRoutes": 5,
+      "invariants": {
+        "declared": 3,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 2,
+        "proofs": 2,
+        "byCategory": {
+          "unit": [
+            "tests/unit/rules-engine.test.js",
+            "tests/unit/admin-rules.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "3/3 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "dashboard",
+      "manifest": "features/dashboard.feature.js",
+      "kind": "feature",
+      "type": "transversal",
+      "domain": "dashboard",
+      "lifecycle": "production",
+      "lot": 3,
+      "exposedRoutes": 65,
+      "invariants": {
+        "declared": 4,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 32,
+        "proofs": 32,
+        "byCategory": {
+          "autre": [
+            "tests/test-dashboard.js"
+          ],
+          "unit": [
+            "tests/unit/admin-costing-full.test.js",
+            "tests/unit/admin-dashboard-route.test.js",
+            "tests/unit/admin-dashboard.test.js",
+            "tests/unit/admin-facades-route.test.js",
+            "tests/unit/admin-loyalty.test.js",
+            "tests/unit/admin-orders-route.test.js",
+            "tests/unit/admin-radar.test.js",
+            "tests/unit/admin-system.test.js",
+            "tests/unit/dashboard-cache.test.js",
+            "tests/unit/dashboard-clients-route.test.js",
+            "tests/unit/dashboard-control-tower.test.js",
+            "tests/unit/dashboard-costing.test.js",
+            "tests/unit/dashboard-helpers.test.js",
+            "tests/unit/dashboard-hub-route.test.js",
+            "tests/unit/dashboard-metrics-helpers.test.js",
+            "tests/unit/dashboard-ops-route.test.js",
+            "tests/unit/dashboard-route.test.js",
+            "tests/unit/dashboard-shared.test.js",
+            "tests/unit/dashboard-workspaces.test.js",
+            "tests/unit/hub-dashboard-queries.test.js",
+            "tests/unit/hub-dashboard-route.test.js",
+            "tests/unit/partners.test.js",
+            "tests/unit/relay-dashboard-route.test.js",
+            "tests/unit/dashboard-logistics.test.js",
+            "tests/unit/dashboard-metrics-index.test.js",
+            "tests/unit/system.test.js",
+            "tests/unit/users.test.js",
+            "tests/unit/dashboard-clients-queries.test.js",
+            "tests/unit/dashboard-metrics.test.js",
+            "tests/unit/dashboard-ops-queries.test.js",
+            "tests/unit/relay-dashboard-queries.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "4/4 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "decision-signals",
+      "manifest": "capabilities/decision-signals.capability.js",
+      "kind": "capability",
+      "type": null,
+      "domain": null,
+      "lifecycle": "staging",
+      "lot": 3,
+      "exposedRoutes": 0,
+      "invariants": {
+        "declared": 2,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 3,
+        "proofs": 3,
+        "byCategory": {
+          "unit": [
+            "tests/unit/radar-queries.test.js",
+            "tests/unit/signals.test.js",
+            "tests/unit/signal-service.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "2/2 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "documents",
+      "manifest": "features/documents.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "documents",
+      "lifecycle": "production",
+      "lot": 3,
+      "exposedRoutes": 3,
+      "invariants": {
+        "declared": 1,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 10,
+        "proofs": 10,
+        "byCategory": {
+          "unit": [
+            "tests/unit/customs-invoice-html.test.js",
+            "tests/unit/customs-invoice.test.js",
+            "tests/unit/document-service.test.js",
+            "tests/unit/documents.test.js",
+            "tests/unit/logo-base64.test.js",
+            "tests/unit/pickup-proof-html.test.js",
+            "tests/unit/pickup-proof.test.js",
+            "tests/unit/wallet-receipt-html.test.js",
+            "tests/unit/wallet-receipt.test.js",
+            "tests/unit/refund-receipt.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "1/1 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "economic-engine",
+      "manifest": "features/economic-engine.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "economic-engine",
+      "lifecycle": "production",
+      "lot": 3,
+      "exposedRoutes": 73,
+      "invariants": {
+        "declared": 1,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 46,
+        "proofs": 46,
+        "byCategory": {
+          "unit": [
+            "tests/unit/admin-cost-components.test.js",
+            "tests/unit/admin-costing.test.js",
+            "tests/unit/admin-finance-config.test.js",
+            "tests/unit/admin-pricing-components.test.js",
+            "tests/unit/admin-pricing-matrices.test.js",
+            "tests/unit/apply-pricing-updates.test.js",
+            "tests/unit/cost-allocation-variance.test.js",
+            "tests/unit/eco-bridge.test.js",
+            "tests/unit/economic-route.test.js",
+            "tests/unit/finance-annulations.test.js",
+            "tests/unit/finance-route.test.js",
+            "tests/unit/finance-sales-analysis.test.js",
+            "tests/unit/finance-summary.test.js",
+            "tests/unit/pricing-cache.test.js",
+            "tests/unit/pricing-cdr.test.js",
+            "tests/unit/pricing-engine.test.js",
+            "tests/unit/pricing-output.test.js",
+            "tests/unit/pricing-recommend.test.js",
+            "tests/unit/pricing-route.test.js",
+            "tests/unit/pricing-strategy-route.test.js",
+            "tests/unit/sourcing-mutations.test.js",
+            "tests/unit/sourcing-analysis.test.js",
+            "tests/unit/finance-metrics-index.test.js",
+            "tests/unit/dashboard-finance-metrics.test.js",
+            "tests/unit/cost-allocation-index.test.js",
+            "tests/unit/cost-allocation-helpers.test.js",
+            "tests/unit/dashboard-finance-route.test.js",
+            "tests/unit/pricing-strategy-service-full.test.js",
+            "tests/unit/transport-pricing.test.js",
+            "tests/unit/sourcing-route.test.js",
+            "tests/unit/cost-allocation-allocate.test.js",
+            "tests/unit/cost-allocation.test.js",
+            "tests/unit/transport-cost-allocation.test.js",
+            "tests/unit/economic-engine-queries.test.js",
+            "tests/unit/pricing-apply.test.js",
+            "tests/unit/pricing-chain.test.js",
+            "tests/unit/pricing-dashboard-truth.test.js",
+            "tests/unit/pricing-flow-contract.test.js",
+            "tests/unit/pricing-guards.test.js",
+            "tests/unit/pricing-rates.test.js",
+            "tests/unit/pricing-strategy-service.test.js",
+            "tests/unit/pricing-surcharge-benchmarks.test.js",
+            "tests/unit/finance-payments.test.js",
+            "tests/unit/admin-risk-provisions.test.js"
+          ],
+          "integration": [
+            "tests/integration/sourcing-engine-routes.test.js",
+            "tests/integration/sourcing-flow-g5.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "1/1 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "incident-management",
+      "manifest": "features/incident-management.feature.js",
+      "kind": "feature",
+      "type": "transversal",
+      "domain": "incident-management",
+      "lifecycle": "production",
+      "lot": 3,
+      "exposedRoutes": 0,
+      "invariants": {
+        "declared": 3,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 1,
+        "proofs": 1,
+        "byCategory": {
+          "unit": [
+            "tests/unit/incident-service.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "3/3 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "infrastructure",
+      "manifest": "features/infrastructure.feature.js",
+      "kind": "feature",
+      "type": "transversal",
+      "domain": "infrastructure",
+      "lifecycle": "production",
+      "lot": 3,
+      "exposedRoutes": 5,
+      "invariants": {
+        "declared": 4,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 17,
+        "proofs": 17,
+        "byCategory": {
+          "integration": [
+            "tests/integration/groupe-paiement.manual.js",
+            "tests/integration/test-harness/mock-db.js"
+          ],
+          "autre": [
+            "tests/test-benchmarks.js",
+            "tests/test-chain.js",
+            "tests/test-flow-contract.js"
+          ],
+          "unit": [
+            "tests/unit/error-handler-fallback.test.js",
+            "tests/unit/error-handler.test.js",
+            "tests/unit/logger.test.js",
+            "tests/unit/npm-audit-core.test.js",
+            "tests/unit/order-parcel-link-rules.test.js",
+            "tests/unit/phone.test.js",
+            "tests/unit/rate-limit.test.js",
+            "tests/unit/db.test.js",
+            "tests/unit/rates.test.js",
+            "tests/unit/reference.test.js",
+            "tests/unit/request-id.test.js",
+            "tests/unit/upload.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "4/4 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "notifications",
+      "manifest": "features/notifications.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "notification",
+      "lifecycle": "production",
+      "lot": 3,
+      "exposedRoutes": 4,
+      "invariants": {
+        "declared": 2,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 16,
+        "proofs": 16,
+        "byCategory": {
+          "autre": [
+            "core/test-whatsapp-notifications.js"
+          ],
+          "unit": [
+            "tests/unit/authkey-client.test.js",
+            "tests/unit/email.test.js",
+            "tests/unit/notification-internals.test.js",
+            "tests/unit/notification-misc.test.js",
+            "tests/unit/notification-otp-auth.test.js",
+            "tests/unit/notification-service-barrel.test.js",
+            "tests/unit/notification-service.test.js",
+            "tests/unit/notification-whatsapp-meta.test.js",
+            "tests/unit/order-notification.test.js",
+            "tests/unit/parcel-notification.test.js"
+          ],
+          "notifications": [
+            "tests/notifications/notification-service-internals.test.js",
+            "tests/notifications/notification-service-order-parcel-otp-auth-loyalty-misc.test.js",
+            "tests/notifications/whatsapp-meta-alert-engine.test.js",
+            "tests/notifications/notification-api-meta-whatsapp-alerts.test.js",
+            "tests/notifications/notification-api-meta-whatsapp-alerts-branches.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "2/2 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "platform-ops",
+      "manifest": "features/platform-ops.feature.js",
+      "kind": "feature",
+      "type": "transversal",
+      "domain": "operations",
+      "lifecycle": "production",
+      "lot": 3,
+      "exposedRoutes": 33,
+      "invariants": {
+        "declared": 3,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 20,
+        "proofs": 20,
+        "byCategory": {
+          "integration": [
+            "tests/integration/api.test.js",
+            "tests/integration/isweep-invariants.test.js",
+            "tests/integration/isweep-services.test.js",
+            "tests/integration/isweep-transactional-flows.test.js",
+            "tests/integration/relais-idor-probe.test.js",
+            "tests/integration/security-grid.test.js"
+          ],
+          "unit": [
+            "tests/unit/relais-idor-probe.test.js",
+            "tests/unit/validators.test.js",
+            "tests/unit/collective-cleanup-tombstones.test.js",
+            "tests/unit/config-route.test.js",
+            "tests/unit/health.test.js",
+            "tests/unit/journal.test.js",
+            "tests/unit/modules.test.js",
+            "tests/unit/monitoring.test.js",
+            "tests/unit/ops-api.test.js",
+            "tests/unit/scenarios.test.js",
+            "tests/unit/simulator-engine.test.js",
+            "tests/unit/simulator-platform-ops.test.js",
+            "tests/unit/simulator-route.test.js",
+            "tests/unit/state-advancer.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "3/3 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "recommendations",
+      "manifest": "features/recommendations.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "recommendations",
+      "lifecycle": "staging",
+      "lot": 3,
+      "exposedRoutes": 1,
+      "invariants": {
+        "declared": 1,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 2,
+        "proofs": 2,
+        "byCategory": {
+          "unit": [
+            "tests/unit/boutique-ranking-engine.test.js",
+            "tests/unit/boutique-suggestions.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "1/1 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "sourcing",
+      "manifest": "features/sourcing.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "sourcing",
+      "lifecycle": "production",
+      "lot": 3,
+      "exposedRoutes": 11,
+      "invariants": {
+        "declared": 4,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 1,
+        "proofs": 1,
+        "byCategory": {
+          "unit": [
+            "tests/unit/sourcing-scanner.test.js"
+          ]
+        },
+        "missingFiles": []
+      },
+      "status": "PARTIAL",
+      "gaps": [
+        "Aucun E2E fonctionnel possédé.",
+        "Aucune preuve traversant les couches réelles (unitaire seul).",
+        "4/4 invariant(s) non exécutable(s)."
+      ]
+    },
+    {
+      "name": "wallet-loyalty",
+      "manifest": "features/wallet-loyalty.feature.js",
+      "kind": "feature",
+      "type": "feature",
+      "domain": "wallet-loyalty",
+      "lifecycle": "deprecated",
+      "lot": null,
+      "exposedRoutes": 0,
+      "invariants": {
+        "declared": 0,
+        "executable": 0,
+        "tests": []
+      },
+      "tests": {
+        "declared": 0,
+        "proofs": 0,
+        "byCategory": {},
+        "missingFiles": []
+      },
+      "status": "NOT_APPLICABLE",
+      "gaps": [
+        "Feature dépréciée — ne pas lui inventer de comportement (chantier §3)."
+      ]
+    }
+  ]
+}
