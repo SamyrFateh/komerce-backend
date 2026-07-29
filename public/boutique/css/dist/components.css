@@ -2071,6 +2071,18 @@ html.k-mobile-premium-v1 .k-chip-label {
       -webkit-backdrop-filter: blur(20px) saturate(180%);
     }
   }
+  /* Panier tressé desktop : même traitement que le fix mobile (L423) —
+     conteneur transparent, sans cercle ni halo, seule l'image flotte.
+     Le fix mobile ne couvrait que le breakpoint <900px ; le disque
+     blanc (background var(--white) + border) restait visible en desktop
+     via la règle de base .k-modal-cart-btn (L91). */
+  #k-modal .k-modal-cart-btn {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  #k-modal .k-modal-cart-btn:active { background: transparent; }
 }
 /* Fix panier flottant transparent : forcer fond opaque sur mobile/tablette
    (backdrop-filter déclaré supporté mais non rendu sur Samsung/Chrome Android) */
