@@ -43,6 +43,7 @@ const walletService = require('../../services/wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('../../services/routing');
 const { notifyOrderCreated }             = require('../../services/notification-service');
 const productAdminService                = require('../../services/product-admin-service');
+const { quoteTransportPriceForOrder, TransportPricingError } = require('../../services/transport-pricing');
 const log = require('../../utils/logger').child({ module: 'create' });
 
 // MODULE_TYPES — sous-types pour le module couture uniquement
@@ -167,13 +168,25 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     );
     const productMap = Object.fromEntries(products.map(p => [p.id, p]));
 
-    const [maxQty, fretPerKg, aedFallback, customsPct, cashTimeout] = await Promise.all([
+    const [
+      maxQty, fretPerKg, aedFallback, customsPct, cashTimeout,
+      seaKmfPerKgCommercial, airKmfPerKgTaxable, airVolumetricDivisor,
+    ] = await Promise.all([
       getRule('MAX_QUANTITY_PER_ITEM', 100),
       getRule('FREIGHT_KMF_PER_KG', 65),
       getRule('AED_KMF_FALLBACK', 138),
       getRule('CUSTOMS_DEFAULT_PCT', 20),
       getRule('CASH_PAYMENT_TIMEOUT_HOURS', 36),
+      // §8 — tarifs commerciaux transport (distincts du coût interne fretPerKg)
+      getRule('SEA_KMF_PER_KG_COMMERCIAL', 65),
+      getRule('AIR_KMF_PER_KG_TAXABLE', 2500),
+      getRule('AIR_VOLUMETRIC_DIVISOR', 6000),
     ]);
+    const transportRates = {
+      SEA_KMF_PER_KG_COMMERCIAL: seaKmfPerKgCommercial,
+      AIR_KMF_PER_KG_TAXABLE: airKmfPerKgTaxable,
+      AIR_VOLUMETRIC_DIVISOR: airVolumetricDivisor,
+    };
 
     let total_kmf = 0;
     let cost_estimated = 0;
@@ -293,6 +306,35 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       cost_estimated += base_aed_kmf + fret_kmf + customs_est;
     }
 
+    // §8 — devis transport commercial, ajouté au total AVANT le calcul de
+    // marge : cost_estimated inclut déjà le coût fret interne (fret_kmf),
+    // donc ignorer le prix transport ici sous-évaluait artificiellement la
+    // marge réelle en plus de ne jamais facturer le transport au client.
+    let transport_price_kmf = 0;
+    try {
+      const transportQuote = quoteTransportPriceForOrder({
+        items: items.map(item => {
+          const product = productMap[item.product_id];
+          return {
+            product_id: item.product_id,
+            requested_transport_rail: item.requested_transport_rail ?? null,
+            weight_kg: product?.weight_kg,
+            volume_cm3: product?.volume_cm3,
+            quantity: item.quantity,
+          };
+        }),
+        rates: transportRates,
+      });
+      transport_price_kmf = transportQuote.transport_price_kmf;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      if (e instanceof TransportPricingError) {
+        return res.status(409).json({ error: e.message, code: e.code });
+      }
+      throw e;
+    }
+    total_kmf += transport_price_kmf;
+
     const margin_est = total_kmf > 0
       ? ((total_kmf - cost_estimated) / total_kmf * 100).toFixed(2)
       : 0;
@@ -342,7 +384,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      order_occasion,
      cost_estimated_kmf, margin_estimated_pct,
      discount_pct, discount_kmf, loyalty_label,
-     destination_island, routing_mode, transit_hub
+     destination_island, routing_mode, transit_hub,
+     transport_price_kmf
    ) VALUES (
      $1,$2,$3,$4,$5,
      $6,
@@ -357,7 +400,8 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      $25,
      $26,$27,
      $28,$29,$30,
-     $31,$32,$33
+     $31,$32,$33,
+     $34
    ) RETURNING *`,
   [
     uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
@@ -391,6 +435,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     routing.destination_island,
     routing.routing_mode,
     routing.transit_hub,
+    transport_price_kmf,
   ]
 );
 
@@ -570,6 +615,7 @@ if (creditApplied > 0 && total_kmf === 0 && order.id) {
         status: order.status,
         total_kmf: order.total_kmf,
         total_eur: order.total_eur,
+        transport_price_kmf: order.transport_price_kmf,
         payment_mode: order.payment_mode,
         payment_status: order.payment_status,
         cash_ref_code: order.cash_ref_code,

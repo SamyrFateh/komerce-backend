@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 382,
-    "filesWithFullHeaders": 354,
+    "scannedCodeFiles": 383,
+    "filesWithFullHeaders": 355,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 382,
+    "filesWithAnyHeaders": 383,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 784,
-    "edges": 4396,
+    "graphNodes": 786,
+    "edges": 4402,
     "dbTables": 116,
-    "doctrines": 157,
+    "doctrines": 158,
     "impactAreas": 129,
     "unresolvedCodeEdges": 423,
     "dbWriteViaOverlapWarnings": 0,
@@ -43,7 +43,7 @@
     "payment": 17,
     "tracking": 1,
     "wallet": 4,
-    "economic-engine": 38,
+    "economic-engine": 39,
     "customs": 6,
     "dashboard": 28,
     "orders": 24,
@@ -86,7 +86,7 @@
     "schema": 1,
     "route": 100,
     "entrypoint": 1,
-    "service": 156,
+    "service": 157,
     "external-adapter": 2,
     "machine": 2,
     "policy": 1,
@@ -96,7 +96,7 @@
   "byCriticality": {
     "critical": 78,
     "medium": 104,
-    "high": 165,
+    "high": 166,
     "low": 35
   },
   "nodes": [
@@ -16666,6 +16666,48 @@
       "version": "2026-07"
     },
     {
+      "id": "services/transport-pricing.js",
+      "file": "services/transport-pricing.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "transport-pricing-quote",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "requested_transport_rail",
+        "weight_kg",
+        "volume_cm3",
+        "quantity",
+        "business_rules"
+      ],
+      "outputs": [
+        "transport_price_kmf",
+        "transport_rail_breakdown"
+      ],
+      "depends": [
+        "services/transport-rails.js"
+      ],
+      "usedBy": [
+        "routes/orders/create.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md §8 (chantier reprise Air Shipped)"
+      ],
+      "impactAreas": [
+        "orders",
+        "economic-engine",
+        "logistics"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/transport-rails.js",
       "file": "services/transport-rails.js",
       "type": "file",
@@ -19284,6 +19326,11 @@
       "id": "doctrine:docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)",
       "type": "doctrine",
       "doctrine": "docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md §8 (chantier reprise Air Shipped)",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md §8 (chantier reprise Air Shipped)"
     },
     {
       "id": "doctrine:whatsapp_template_trace",
@@ -44093,6 +44140,42 @@
       "label": "dashboard"
     },
     {
+      "from": "services/transport-pricing.js",
+      "to": "services/transport-rails.js",
+      "type": "depends",
+      "label": "services/transport-rails.js"
+    },
+    {
+      "from": "routes/orders/create.js",
+      "to": "services/transport-pricing.js",
+      "type": "uses",
+      "label": "routes/orders/create.js"
+    },
+    {
+      "from": "services/transport-pricing.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md §8 (chantier reprise Air Shipped)",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md §8 (chantier reprise Air Shipped)"
+    },
+    {
+      "from": "services/transport-pricing.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/transport-pricing.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/transport-pricing.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
       "from": "services/transport-rails.js",
       "to": "services/parcelOptimizationService.js",
       "type": "depends",
@@ -53194,6 +53277,7 @@
         "services/order-cost-snapshot.js",
         "services/product-admin-service.js",
         "services/routing.js",
+        "services/transport-pricing.js",
         "utils/logger.js",
         "utils/rates.js",
         "utils/rules.js"
@@ -62558,6 +62642,40 @@
         "services/cost-allocation/index.js"
       ]
     },
+    "services/transport-pricing.js": {
+      "role": "transport-pricing-quote",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/transport-rails.js"
+      ],
+      "directUsedBy": [
+        "routes/orders/create.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md §8 (chantier reprise Air Shipped)"
+      ],
+      "impactAreas": [
+        "orders",
+        "economic-engine",
+        "logistics"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md §8 (chantier reprise Air Shipped)",
+        "impact:economic-engine",
+        "impact:logistics",
+        "impact:orders",
+        "routes/orders/create.js",
+        "services/transport-rails.js"
+      ]
+    },
     "services/transport-rails.js": {
       "role": "transport-rail-registry",
       "domain": "logistics",
@@ -62597,7 +62715,8 @@
         "impact:notifications",
         "impact:orders",
         "services/catalog-product-detail.js",
-        "services/parcelOptimizationService.js"
+        "services/parcelOptimizationService.js",
+        "services/transport-pricing.js"
       ]
     },
     "services/verify-qr-collection.js": {

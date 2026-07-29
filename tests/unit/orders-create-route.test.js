@@ -559,8 +559,9 @@ describe('orders/create — loyalty discount', () => {
 
     expect(res.status).toBe(201);
     const insertOrderCall = client.calls.find(c => /INSERT INTO orders/.test(c.sql));
-    // total brut = 10000*2 = 20000 ; discount 10% = 2000 ; total_kmf final = 18000
-    expect(insertOrderCall.params).toContain(18000);
+    // total brut produits = 10000*2 = 20000 ; + transport §8 (1kg*2*65) = 130
+    // => 20130 ; discount 10% = 2013 ; total_kmf final = 18117
+    expect(insertOrderCall.params).toContain(18117);
   });
 });
 
@@ -592,7 +593,9 @@ describe('orders/create — wallet', () => {
   });
 
   it('wallet couvre 100% → confirmPaymentCycle appelé et order rafraîchi', async () => {
-    walletService.getBalanceInTx.mockResolvedValue(20000); // couvre tout le total
+    // couvre tout le total ; total brut 10000*2 = 20000 + transport (§8)
+    // 1kg*2*65 = 130 => 20130
+    walletService.getBalanceInTx.mockResolvedValue(20130);
     const refreshedOrder = { ...orderRow(), status: 'paid', confirmed_at: '2026-06-01T01:00:00Z' };
     const client = makeClient([
       { rows: [RELAIS] },
@@ -618,7 +621,7 @@ describe('orders/create — wallet', () => {
   });
 
   it('confirmPaymentCycle stockBlocked → rollback 409', async () => {
-    walletService.getBalanceInTx.mockResolvedValue(20000);
+    walletService.getBalanceInTx.mockResolvedValue(20130); // couvre tout le total (§8)
     const client = makeClient([
       { rows: [RELAIS] },
       { rows: [{ id: 'recip-1' }] },

@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 382
-- Files with full headers: 354
+- Scanned code files: 383
+- Files with full headers: 355
 - Files with lite headers: 28
-- Files with any headers: 382
+- Files with any headers: 383
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 784
-- Edges: 4396
+- Graph nodes: 786
+- Edges: 4402
 - DB tables: 116
-- Doctrines: 157
+- Doctrines: 158
 - Impact areas: 129
 - Unresolved code edges: 423
 - Tables multi-écrivains directs (>=2): 67
@@ -34,7 +34,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 28
 - decision-signals: 3
 - documents: 11
-- economic-engine: 38
+- economic-engine: 39
 - incident-management: 1
 - infrastructure: 20
 - inventory: 2
@@ -71,7 +71,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 100
 - route-manifest: 1
 - schema: 1
-- service: 156
+- service: 157
 - state: 1
 - state-store: 1
 - ui-bootstrap: 2
@@ -324,6 +324,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
 - services/transport-cost-allocation.js — transport-cost-allocation-contract (economic-engine, high, full)
+- services/transport-pricing.js — transport-pricing-quote (economic-engine, high, full)
 - services/transport-rails.js — transport-rail-registry (logistics, high, full)
 - services/wallet-service.js — wallet-wallet-service (wallet, high, full)
 - services/whatsapp-meta.js — meta-whatsapp-adapter (notification, high, full)

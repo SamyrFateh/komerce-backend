@@ -60,6 +60,7 @@ module.exports = {
       'services/cost-allocation/variance.js',
       'services/cost-allocation/index.js',
       'services/transport-cost-allocation.js',
+      'services/transport-pricing.js',
       'services/pricing-guards.js',
       'services/pricing-rates.js',
       'services/pricing-output.js',
