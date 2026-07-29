@@ -28,8 +28,8 @@
 | `modal-media.css` | 332 | 🔴 **ORPHELIN** |
 | `modal-mobile-canonical.css` | 667 | 🔴 **ORPHELIN** |
 | `modal-mobile-suggestion-actions.css` | 62 | 🔴 **ORPHELIN** |
-| `modal-product-lot4-hybrid.css` | 495 | 🔴 **ORPHELIN** |
-| `modal-product.css` | 1493 | 🔴 **ORPHELIN** |
+| `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
+| `modal-product.css` | 1512 | 🔴 **ORPHELIN** |
 | `modal-shell.css` | 1227 | 🔴 **ORPHELIN** |
 | `paypal.css` | 102 | 🔴 **ORPHELIN** |
 | `products.css` | 888 | 🔴 **ORPHELIN** |
@@ -45,8 +45,8 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=154
- 2. /boutique/css/dist/components.css?v=352
- 3. /boutique/css/dist/desktop.css?v=83
+ 2. /boutique/css/dist/components.css?v=353
+ 3. /boutique/css/dist/desktop.css?v=84
 ```
 
 ## 3. Cartographie des sélecteurs critiques

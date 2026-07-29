@@ -1087,7 +1087,7 @@
     margin-top: 1px; gap: 4px;
   }
   .k-sc-item-price-wrap {
-    display: flex; align-items: baseline; gap: 4px; flex-wrap: nowrap; min-width: 0; overflow: hidden;
+    display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 4px; row-gap: 1px; min-width: 0;
   }
   .k-sc-item-price {
     font-size: 12px; font-weight: 800;
