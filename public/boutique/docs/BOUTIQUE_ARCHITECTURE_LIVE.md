@@ -14,7 +14,7 @@
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1327 | 🔴 **ORPHELIN** |
+| `boutique-desktop.css` | 1315 | 🔴 **ORPHELIN** |
 | `cart.css` | 2120 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
 | `group-cart-flow.css` | 1939 | 🔴 **ORPHELIN** |
@@ -25,7 +25,7 @@
 | `layout.css` | 1166 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
-| `modal-media.css` | 332 | 🔴 **ORPHELIN** |
+| `modal-media.css` | 335 | 🔴 **ORPHELIN** |
 | `modal-mobile-canonical.css` | 667 | 🔴 **ORPHELIN** |
 | `modal-mobile-suggestion-actions.css` | 62 | 🔴 **ORPHELIN** |
 | `modal-product-lot4-hybrid.css` | 502 | 🔴 **ORPHELIN** |
@@ -44,9 +44,9 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=154
- 2. /boutique/css/dist/components.css?v=353
- 3. /boutique/css/dist/desktop.css?v=84
+ 1. /boutique/css/dist/base.css?v=155
+ 2. /boutique/css/dist/components.css?v=354
+ 3. /boutique/css/dist/desktop.css?v=85
 ```
 
 ## 3. Cartographie des sélecteurs critiques

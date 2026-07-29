@@ -701,7 +701,7 @@
     top: 0;
     right: 0;
     bottom: 0;
-    width: 240px;
+    width: 272px; /* élargi (audit 2026-07) : 240px → 272px, aligné sur --sc-reserve-w (layout.css) */
     height: 100dvh;
     border-radius: 0;
     background: var(--surface-sand-94);
@@ -763,20 +763,8 @@
     color: var(--text);
     letter-spacing: .01em;
   }
-  .k-sc-title-badge {
-    min-width: 18px;
-    height: 18px;
-    background: var(--cta-green);
-    color: var(--white);
-    border-radius: 99px;
-    font-size: 10px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 5px;
-  }
-  .k-sc-title-badge:empty { display: none; }
+  /* .k-sc-title-badge retiré (audit 2026-07) : bulle "Mon panier (N)"
+     redondante avec la liste d'articles et le CTA Commander(N). */
 
   /* ──────────────────────────────────────────────────────────
      FOOTER (bottom block) — livraison + sous-total + CTAs.
@@ -1196,7 +1184,7 @@
 
 @media (min-width: 1200px) {
   .k-side-cart {
-    width: 254px;
+    width: 288px; /* élargi (audit 2026-07) : 254px → 288px, aligné sur --sc-reserve-w (layout.css) */
   }
   /* Le panneau reparenté doit rester à 100% de .k-modal-cart-slot (largeur
      pilotée par la grille de la coque, modal-shell.css), pas à 254px fixe —
@@ -1207,7 +1195,7 @@
   }
   body:has(.k-side-cart.has-items),
   body.sc-reserve {
-    padding-right: var(--sc-reserve-w, 254px); /* VIS-1 — token défini dans layout.css @1200px */
+    padding-right: var(--sc-reserve-w, 288px); /* VIS-1 — token défini dans layout.css @1200px */
   }
   /* Largeur "wide" des conteneurs de centrage ≥1200px.
      Rapatrié de desktop-commerce-skeleton.css (supprimé le 31/05 — fichier mort).
@@ -1247,11 +1235,11 @@
 @media (min-width: 1200px) {
   body:has(.k-side-cart.has-items) #k-hero-fixed-wrap,
   body.sc-reserve #k-hero-fixed-wrap {
-    max-width: calc(100vw - var(--sc-reserve-w, 254px));
+    max-width: calc(100vw - var(--sc-reserve-w, 288px));
   }
   body:has(.k-side-cart.has-items) .k-hero-img,
   body.sc-reserve .k-hero-img {
-    max-width: calc(100vw - var(--sc-reserve-w, 254px));
+    max-width: calc(100vw - var(--sc-reserve-w, 288px));
   }
 }
 /* ══ FIN HERO RÉSERVE SIDE-CART ════════════════════════════════ */
