@@ -109,7 +109,7 @@ module.exports = {
       'GET /api/admin/rules',
       'GET /api/admin/rules/:key',
       'PATCH /api/admin/rules/:key',
-      'GET /api/admin/rules/:key/history',
+
       // Rapatriés (D2, 2026-07-29) — routes réelles de routes/admin-rules.js,
       // jamais déclarées jusqu'ici (ni ici ni dans dashboard).
       'POST /api/admin/rules/:key/reset',

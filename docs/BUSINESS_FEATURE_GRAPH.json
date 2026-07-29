@@ -4,6 +4,7 @@
     "featureManifests": [
       "features/auth.feature.js",
       "features/auth-identity.feature.js",
+      "features/business-rules.feature.js",
       "features/catalog.feature.js",
       "features/customs.feature.js",
       "features/dashboard.feature.js",
@@ -37,7 +38,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 28,
+    "businessManifestsResolved": 29,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -92,8 +93,24 @@
         "owner": "backend-core",
         "since": "2025-08",
         "service": "Authentifier un utilisateur et gérer son identité active (OTP, login/register, magic-link, guest-checkout, profil) via les routes exposées.",
-        "businessKind": "technical-transversal",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:business-rules",
+        "name": "business-rules",
+        "file": "features/business-rules.feature.js",
+        "legacyType": "transversal",
+        "status": "production",
+        "owner": "backend-core",
+        "since": "2026-07",
+        "service": "Detenir le referentiel des regles metier parametrables, versionner chaque changement, et servir a toute feature la valeur en vigueur avec un repli garanti sur la valeur codee en dur.",
+        "businessKind": "business-transversal",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -109,7 +126,7 @@
         "since": "2025-09",
         "service": "Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.",
         "businessKind": "business-feature",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -204,8 +221,8 @@
         "owner": "backend",
         "since": null,
         "service": "Infrastructure transversale consommée par toutes les features : middleware non-auth (error-handler, rate-limit, request-id, upload, validate), utilitaires partagés (logger, phone, rates, reference, rules), barrel de validation Joi, et bootstrap applicatif (Express, routes, crons, env, sécurité, migrations startup).",
-        "businessKind": "technical-transversal",
-        "kindSource": "O2-baseline (mission O3 §2 / registry)",
+        "businessKind": "technical-foundation",
+        "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
         "declaredOnly": false,
@@ -819,6 +836,34 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "business-rules",
+        "category": "utils",
+        "declared": "utils/rules.js",
+        "resolvedPath": "utils/rules.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "business-rules",
+        "category": "routes",
+        "declared": "routes/admin-rules.js",
+        "resolvedPath": "routes/admin-rules.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "business-rules",
+        "category": "tests",
+        "declared": "tests/unit/rules-engine.test.js",
+        "resolvedPath": "tests/unit/rules-engine.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "business-rules",
+        "category": "tests",
+        "declared": "tests/unit/admin-rules.test.js",
+        "resolvedPath": "tests/unit/admin-rules.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "catalog",
         "category": "utils",
         "declared": "utils/categories-cache.js",
@@ -1030,6 +1075,13 @@
       },
       {
         "feature": "catalog",
+        "category": "schemas",
+        "declared": "schemas/catalog/import-profile.v1.schema.json",
+        "resolvedPath": "schemas/catalog/import-profile.v1.schema.json",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
         "category": "migrations",
         "declared": "migrations/098_catalog_refinery_foundation.sql",
         "resolvedPath": "migrations/098_catalog_refinery_foundation.sql",
@@ -1089,6 +1141,20 @@
         "category": "migrations",
         "declared": "migrations/109_product_sku_media.sql",
         "resolvedPath": "migrations/109_product_sku_media.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/110_catalog_import_audit.sql",
+        "resolvedPath": "migrations/110_catalog_import_audit.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "config",
+        "declared": "config/import-profiles/komerce-test-dummyjson.v1.json",
+        "resolvedPath": "config/import-profiles/komerce-test-dummyjson.v1.json",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -1983,13 +2049,6 @@
       {
         "feature": "dashboard",
         "category": "routes",
-        "declared": "routes/admin-rules.js",
-        "resolvedPath": "routes/admin-rules.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "dashboard",
-        "category": "routes",
         "declared": "routes/admin.js",
         "resolvedPath": "routes/admin.js",
         "status": "resolved-in-technical-graph"
@@ -2690,13 +2749,6 @@
       {
         "feature": "dashboard",
         "category": "tests",
-        "declared": "tests/unit/admin-rules.test.js",
-        "resolvedPath": "tests/unit/admin-rules.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "dashboard",
-        "category": "tests",
         "declared": "tests/unit/admin-system.test.js",
         "resolvedPath": "tests/unit/admin-system.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3154,6 +3206,13 @@
         "category": "services",
         "declared": "services/transport-cost-allocation.js",
         "resolvedPath": "services/transport-cost-allocation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/transport-pricing.js",
+        "resolvedPath": "services/transport-pricing.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -3677,6 +3736,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/transport-pricing.test.js",
+        "resolvedPath": "tests/unit/transport-pricing.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/sourcing-route.test.js",
         "resolvedPath": "tests/unit/sourcing-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3879,16 +3945,16 @@
       },
       {
         "feature": "infrastructure",
-        "category": "utils",
-        "declared": "utils/rules.js",
-        "resolvedPath": "utils/rules.js",
+        "category": "validators",
+        "declared": "validators/index.js",
+        "resolvedPath": "validators/index.js",
         "status": "resolved-in-technical-graph"
       },
       {
         "feature": "infrastructure",
-        "category": "validators",
-        "declared": "validators/index.js",
-        "resolvedPath": "validators/index.js",
+        "category": "bootstrap",
+        "declared": "bootstrap/feature-wiring.js",
+        "resolvedPath": "bootstrap/feature-wiring.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -5503,6 +5569,13 @@
       },
       {
         "feature": "infrastructure",
+        "category": "routes",
+        "declared": "server.js",
+        "resolvedPath": "server.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "infrastructure",
         "category": "config",
         "declared": "db.js",
         "resolvedPath": "db.js",
@@ -5695,13 +5768,6 @@
         "category": "tests",
         "declared": "tests/unit/request-id.test.js",
         "resolvedPath": "tests/unit/request-id.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "tests",
-        "declared": "tests/unit/rules-engine.test.js",
-        "resolvedPath": "tests/unit/rules-engine.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9304,6 +9370,46 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "business-rules",
+        "entry": "GET /api/admin/rules",
+        "method": "GET",
+        "path": "/api/admin/rules",
+        "routeFile": "routes/admin-rules.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "business-rules",
+        "entry": "GET /api/admin/rules/:key",
+        "method": "GET",
+        "path": "/api/admin/rules/{id}",
+        "routeFile": "routes/admin-rules.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "business-rules",
+        "entry": "PATCH /api/admin/rules/:key",
+        "method": "PATCH",
+        "path": "/api/admin/rules/{id}",
+        "routeFile": "routes/admin-rules.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "business-rules",
+        "entry": "POST /api/admin/rules/:key/reset",
+        "method": "POST",
+        "path": "/api/admin/rules/{id}/reset",
+        "routeFile": "routes/admin-rules.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "business-rules",
+        "entry": "GET /api/admin/rules/audit",
+        "method": "GET",
+        "path": "/api/admin/rules/audit",
+        "routeFile": "routes/admin-rules.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "catalog",
         "entry": "GET /api/products",
         "method": "GET",
@@ -9769,14 +9875,6 @@
       },
       {
         "feature": "dashboard",
-        "entry": "GET /api/admin/rules",
-        "method": "GET",
-        "path": "/api/admin/rules",
-        "routeFile": "routes/admin-rules.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
         "entry": "GET /api/admin/loyalty/pending",
         "method": "GET",
         "path": "/api/admin/loyalty/pending",
@@ -9957,38 +10055,6 @@
         "method": "GET",
         "path": "/api/admin/radar/status-details",
         "routeFile": "routes/admin-radar.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
-        "entry": "GET /api/admin/rules/:key",
-        "method": "GET",
-        "path": "/api/admin/rules/{id}",
-        "routeFile": "routes/admin-rules.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
-        "entry": "PATCH /api/admin/rules/:key",
-        "method": "PATCH",
-        "path": "/api/admin/rules/{id}",
-        "routeFile": "routes/admin-rules.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
-        "entry": "POST /api/admin/rules/:key/reset",
-        "method": "POST",
-        "path": "/api/admin/rules/{id}/reset",
-        "routeFile": "routes/admin-rules.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "dashboard",
-        "entry": "GET /api/admin/rules/audit",
-        "method": "GET",
-        "path": "/api/admin/rules/audit",
-        "routeFile": "routes/admin-rules.js",
         "status": "resolved-owned"
       },
       {
@@ -10885,7 +10951,7 @@
         "method": "GET",
         "path": "/api/health",
         "routeFile": "server.js",
-        "status": "resolved-different-owner"
+        "status": "resolved-owned"
       },
       {
         "feature": "infrastructure",
@@ -10893,7 +10959,7 @@
         "method": "GET",
         "path": "/api/public/config",
         "routeFile": "server.js",
-        "status": "resolved-different-owner"
+        "status": "resolved-owned"
       },
       {
         "feature": "infrastructure",
@@ -10909,7 +10975,7 @@
         "method": "POST",
         "path": "/api/shared-carts/stripe/webhook",
         "routeFile": "server.js",
-        "status": "resolved-different-owner"
+        "status": "resolved-owned"
       },
       {
         "feature": "infrastructure",
@@ -12882,6 +12948,36 @@
         "status": "resolved"
       },
       {
+        "feature": "business-rules",
+        "fn": "getRuleNumber",
+        "file": "utils/rules.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "business-rules",
+        "fn": "getRule",
+        "file": "utils/rules.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "business-rules",
+        "fn": "getAllRules",
+        "file": "utils/rules.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "business-rules",
+        "fn": "setRule",
+        "file": "utils/rules.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "catalog",
+        "fn": "createDraftFromSourcingCandidate",
+        "file": "services/product-admin-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "economic-engine",
         "fn": "recommend",
         "file": "services/pricing-engine.js",
@@ -12974,12 +13070,6 @@
       {
         "feature": "infrastructure",
         "fn": null,
-        "file": "utils/rules.js",
-        "status": "resolved"
-      },
-      {
-        "feature": "infrastructure",
-        "fn": null,
         "file": "validators/index.js",
         "status": "resolved"
       },
@@ -12993,6 +13083,12 @@
         "feature": "logistics",
         "fn": "transitionParcelStatus",
         "file": "services/parcel-operations.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "notifications",
+        "fn": "setNotificationOutcomeListener",
+        "file": "services/notifications/internals.js",
         "status": "resolved"
       },
       {
@@ -13085,6 +13181,36 @@
         "from": "auth",
         "to": "orders",
         "raw": "orders",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "auth",
+        "raw": "auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)",
+        "resolved": true
+      },
+      {
+        "from": "auth-identity",
+        "to": "notifications",
+        "raw": "notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)",
+        "resolved": true
+      },
+      {
+        "from": "business-rules",
+        "to": "auth",
+        "raw": "auth (garde de route admin)",
+        "resolved": true
+      },
+      {
+        "from": "business-rules",
+        "to": "infrastructure",
+        "raw": "infrastructure (journalisation, acces base)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
+        "to": "business-rules",
+        "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)",
         "resolved": true
       },
       {
@@ -13202,6 +13328,18 @@
         "resolved": true
       },
       {
+        "from": "dashboard",
+        "to": "business-rules",
+        "raw": "business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
+        "to": "decision-signals",
+        "raw": "decision-signals (services/radar-queries.js — routes/admin-radar.js)",
+        "resolved": true
+      },
+      {
         "from": "documents",
         "to": "orders",
         "raw": "orders, customs, wallet, refunds (donnees source du document)",
@@ -13229,6 +13367,12 @@
         "from": "documents",
         "to": "auth",
         "raw": "auth",
+        "resolved": true
+      },
+      {
+        "from": "economic-engine",
+        "to": "logistics",
+        "raw": "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)",
         "resolved": true
       },
       {
@@ -13395,6 +13539,12 @@
       },
       {
         "from": "logistics",
+        "to": "business-rules",
+        "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: utils/parcels.js -> utils/rules.js ; services/parcel-operations.js -> utils/rules.js)",
+        "resolved": true
+      },
+      {
+        "from": "logistics",
         "to": "orders",
         "raw": "orders (commande rattachee au colis)",
         "resolved": true
@@ -13461,6 +13611,18 @@
       },
       {
         "from": "loyalty",
+        "to": "auth",
+        "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/loyalty.js -> middleware/auth.js)",
+        "resolved": true
+      },
+      {
+        "from": "loyalty",
+        "to": "notifications",
+        "raw": "notifications (FF-C1 2026-07-29 — émission de message ; preuve: services/loyalty-service.js -> services/notification-service.js)",
+        "resolved": true
+      },
+      {
+        "from": "loyalty",
         "to": "auth-identity",
         "raw": "auth-identity (identification du client)",
         "resolved": true
@@ -13473,9 +13635,21 @@
       },
       {
         "from": "notifications",
+        "to": "auth",
+        "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",
+        "resolved": true
+      },
+      {
+        "from": "notifications",
         "to": "toutes les features emettrices",
         "raw": "toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement",
         "resolved": false
+      },
+      {
+        "from": "orders",
+        "to": "business-rules",
+        "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)",
+        "resolved": true
       },
       {
         "from": "orders",
@@ -13563,6 +13737,42 @@
       },
       {
         "from": "payments",
+        "to": "platform-ops",
+        "raw": "platform-ops (FF-C1 2026-07-29 — monitoring et exploitation technique ; preuve: routes/payments.js -> services/monitoring.js)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "auth",
+        "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/cash.js -> middleware/auth.js ; routes/payments.js -> middleware/auth.js ; routes/pickup-pay-cash.js -> middleware/auth.js ; +2)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "refunds",
+        "raw": "refunds (FF-C1 2026-07-29 — orchestration du remboursement ; preuve: services/payment-paypal.js -> services/refund-service.js)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "documents",
+        "raw": "documents (FF-C1 2026-07-29 — émission ou lecture documentaire ; preuve: services/payment-paypal.js -> services/documents/refund-receipt.js)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "notifications",
+        "raw": "notifications (FF-C1 2026-07-29 — émission de message ; preuve: services/cash-reminder-service.js -> services/notification-service.js ; services/payment-paypal.js -> services/notification-service.js ; services/payment-cash-confirm.js -> services/notification-service.js ; +2)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "business-rules",
+        "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/cash-reminder-service.js -> utils/rules.js)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
         "to": "orders",
         "raw": "orders (commande a payer)",
         "resolved": true
@@ -13595,6 +13805,18 @@
         "from": "payments",
         "to": "purchasing",
         "raw": "purchasing (declenche verification/reapprovisionnement apres encaissement — services/purchasing-trigger-service.js triggerPurchasing, O7.3 provider purchasing)",
+        "resolved": true
+      },
+      {
+        "from": "platform-ops",
+        "to": "business-rules",
+        "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/config.js -> utils/rules.js)",
+        "resolved": true
+      },
+      {
+        "from": "platform-ops",
+        "to": "auth",
+        "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/modules.js -> middleware/auth.js ; routes/health.js -> middleware/auth.js ; routes/ops-api.js -> middleware/auth.js ; +2)",
         "resolved": true
       },
       {
@@ -13679,6 +13901,12 @@
         "from": "refunds",
         "to": "documents",
         "raw": "documents (reçu)",
+        "resolved": true
+      },
+      {
+        "from": "shared-cart",
+        "to": "refunds",
+        "raw": "refunds (FF-C1 2026-07-29 — orchestration du remboursement ; preuve: services/shared-cart-refund-queue.js -> services/refund-service.js ; services/cancel-shared-cart-with-refunds.js -> services/refund-service.js)",
         "resolved": true
       },
       {
@@ -13785,6 +14013,18 @@
       },
       {
         "from": "wallet",
+        "to": "auth",
+        "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/wallet.js -> middleware/auth.js)",
+        "resolved": true
+      },
+      {
+        "from": "wallet",
+        "to": "documents",
+        "raw": "documents (FF-C1 2026-07-29 — émission ou lecture documentaire ; preuve: services/wallet-service.js -> services/documents/wallet-receipt.js ; routes/wallet.js -> services/documents/wallet-receipt.js)",
+        "resolved": true
+      },
+      {
+        "from": "wallet",
         "to": "auth-identity",
         "raw": "auth-identity (identification du client)",
         "resolved": true
@@ -13799,6 +14039,24 @@
         "from": "admin-dashboard",
         "to": "sourcing",
         "raw": "sourcing",
+        "resolved": true
+      },
+      {
+        "from": "decision-signals",
+        "to": "auth",
+        "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/signals.js -> middleware/auth.js)",
+        "resolved": true
+      },
+      {
+        "from": "decision-signals",
+        "to": "logistics",
+        "raw": "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/radar-queries.js -> utils/parcels.js)",
+        "resolved": true
+      },
+      {
+        "from": "decision-signals",
+        "to": "business-rules",
+        "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/radar-queries.js -> utils/rules.js)",
         "resolved": true
       }
     ],
@@ -15670,7 +15928,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth-identity",
@@ -15766,7 +16024,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "auth-identity",
@@ -15795,6 +16053,46 @@
           }
         ],
         "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "business-rules",
+        "to": "auth",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-rules.js",
+                "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "business-rules",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "utils/rules.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "utils/rules.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "routes/admin-rules.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "catalog",
@@ -15839,6 +16137,46 @@
       },
       {
         "from": "catalog",
+        "to": "business-rules",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "services/catalog-product-detail.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "services/catalog-enrichment.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-import-orchestrator-source-v2.test.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-enrichment.test.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-enrichment-extended.test.js",
+                "targetFile": "utils/rules.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "catalog",
         "to": "economic-engine",
         "channels": [
           {
@@ -15851,6 +16189,10 @@
               {
                 "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
                 "targetFile": "services/pricing-engine.js"
+              },
+              {
+                "sourceFileId": "services/catalog-product-detail.js",
+                "targetFile": "services/transport-pricing.js"
               },
               {
                 "sourceFileId": "tests/unit/supplier-catalog-scanner.test.js",
@@ -15909,10 +16251,6 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "services/suppliers/catalog-import-json.js",
                 "targetFile": "db.js"
               },
@@ -15927,10 +16265,6 @@
               {
                 "sourceFileId": "services/catalog-enrichment.js",
                 "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/catalog-enrichment.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "services/catalog-approval.js",
@@ -15993,16 +16327,8 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "tests/unit/catalog-import-orchestrator-source-v2.test.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/catalog-import-orchestrator-source-v2.test.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "tests/unit/catalog-eligibility.test.js",
@@ -16029,16 +16355,8 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "tests/unit/catalog-enrichment.test.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "tests/unit/catalog-enrichment-extended.test.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/catalog-enrichment-extended.test.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "tests/integration/catalog-import-json.integration.test.js",
@@ -16587,10 +16905,6 @@
                 "targetFile": "middleware/auth.js"
               },
               {
-                "sourceFileId": "routes/admin-rules.js",
-                "targetFile": "middleware/auth.js"
-              },
-              {
                 "sourceFileId": "routes/dashboard.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -16601,6 +16915,22 @@
               {
                 "sourceFileId": "routes/relay-dashboard.js",
                 "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
+        "to": "business-rules",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/dashboard-shared.js",
+                "targetFile": "utils/rules.js"
               }
             ]
           }
@@ -16645,7 +16975,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "dashboard",
@@ -16807,14 +17137,6 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "routes/admin-rules.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/admin-rules.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "routes/dashboard-clients.js",
                 "targetFile": "utils/logger.js"
               },
@@ -16835,10 +17157,6 @@
                 "targetFile": "utils/rates.js"
               },
               {
-                "sourceFileId": "routes/dashboard-shared.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "db.js"
               },
@@ -16857,10 +17175,6 @@
               {
                 "sourceFileId": "routes/relay-dashboard.js",
                 "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "tests/unit/admin-rules.test.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "tests/unit/dashboard-control-tower.test.js",
@@ -17013,7 +17327,27 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "decision-signals",
+        "to": "business-rules",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/radar-queries.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/radar-queries.test.js",
+                "targetFile": "utils/rules.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "decision-signals",
@@ -17027,10 +17361,6 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "services/radar-queries.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "services/signal-service.js",
                 "targetFile": "db.js"
               },
@@ -17049,10 +17379,6 @@
               {
                 "sourceFileId": "tests/unit/radar-queries.test.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/radar-queries.test.js",
-                "targetFile": "utils/rules.js"
               }
             ]
           }
@@ -17073,7 +17399,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "documents",
@@ -17595,6 +17921,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/transport-pricing.js",
+                "targetFile": "services/transport-rails.js"
+              },
+              {
                 "sourceFileId": "tests/integration/sourcing-engine-routes.test.js",
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
@@ -17605,7 +17935,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "economic-engine",
@@ -17713,6 +18043,30 @@
       },
       {
         "from": "infrastructure",
+        "to": "business-rules",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "bootstrap/feature-wiring.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-rules.js"
+              },
+              {
+                "sourceFileId": "bootstrap/crons.js",
+                "targetFile": "utils/rules.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "infrastructure",
         "to": "catalog",
         "channels": [
           {
@@ -17772,10 +18126,6 @@
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
-                "targetFile": "routes/admin-rules.js"
-              },
-              {
-                "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/dashboard.js"
               },
               {
@@ -17810,6 +18160,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "bootstrap/feature-wiring.js",
+                "targetFile": "services/signal-service.js"
+              },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/signals.js"
@@ -18010,6 +18364,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "bootstrap/feature-wiring.js",
+                "targetFile": "services/notifications/internals.js"
+              },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/notification-api.js"
@@ -18373,6 +18731,30 @@
       },
       {
         "from": "logistics",
+        "to": "business-rules",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "utils/parcels.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations.test.js",
+                "targetFile": "utils/rules.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "logistics",
         "to": "catalog",
         "channels": [
           {
@@ -18412,10 +18794,6 @@
               },
               {
                 "sourceFileId": "utils/parcels.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
-                "sourceFileId": "utils/parcels.js",
                 "targetFile": "utils/reference.js"
               },
               {
@@ -18425,10 +18803,6 @@
               {
                 "sourceFileId": "services/parcel-operations.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/parcel-operations.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "services/parcel-operations.js",
@@ -18687,10 +19061,6 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "tests/unit/parcel-operations.test.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "tests/unit/hub-operations.test.js",
                 "targetFile": "db.js"
               }
@@ -18905,7 +19275,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "loyalty",
@@ -18961,7 +19331,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "notifications",
@@ -18981,7 +19351,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "notifications",
@@ -18992,10 +19362,6 @@
             "evidence": [
               {
                 "sourceFileId": "tests/unit/notification-internals.test.js",
-                "targetFile": "services/signal-service.js"
-              },
-              {
-                "sourceFileId": "services/notifications/internals.js",
                 "targetFile": "services/signal-service.js"
               }
             ]
@@ -19160,6 +19526,50 @@
       },
       {
         "from": "orders",
+        "to": "business-rules",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/orders/create.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "routes/orders/qr.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "routes/orders/list.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "routes/orders/cancel.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcels.test.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/qr.test.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/orders-cancel-route.test.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/orders-create-route.test.js",
+                "targetFile": "utils/rules.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
         "to": "catalog",
         "channels": [
           {
@@ -19268,6 +19678,10 @@
               {
                 "sourceFileId": "services/order-cost-snapshot.js",
                 "targetFile": "services/pricing-engine.js"
+              },
+              {
+                "sourceFileId": "routes/orders/create.js",
+                "targetFile": "services/transport-pricing.js"
               },
               {
                 "sourceFileId": "tests/unit/order-cost-snapshot.test.js",
@@ -19407,10 +19821,6 @@
               },
               {
                 "sourceFileId": "routes/orders/create.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
-                "sourceFileId": "routes/orders/create.js",
                 "targetFile": "utils/rates.js"
               },
               {
@@ -19431,19 +19841,11 @@
               },
               {
                 "sourceFileId": "routes/orders/qr.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
-                "sourceFileId": "routes/orders/qr.js",
                 "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "routes/orders/list.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "routes/orders/list.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "routes/orders/cancel.js",
@@ -19456,10 +19858,6 @@
               {
                 "sourceFileId": "routes/orders/cancel.js",
                 "targetFile": "validators/index.js"
-              },
-              {
-                "sourceFileId": "routes/orders/cancel.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "routes/orders/cancel.js",
@@ -19499,15 +19897,7 @@
               },
               {
                 "sourceFileId": "tests/unit/parcels.test.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
-                "sourceFileId": "tests/unit/parcels.test.js",
                 "targetFile": "utils/reference.js"
-              },
-              {
-                "sourceFileId": "tests/unit/qr.test.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "tests/unit/verify-qr-collection.test.js",
@@ -19530,20 +19920,12 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "tests/unit/orders-cancel-route.test.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "tests/unit/orders-create-route.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
               {
                 "sourceFileId": "tests/unit/orders-create-route.test.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/orders-create-route.test.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "tests/unit/orders-create-route.test.js",
@@ -19956,7 +20338,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "payments",
@@ -19988,6 +20370,26 @@
       },
       {
         "from": "payments",
+        "to": "business-rules",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/cash-reminder-service.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/cash-reminder-service.test.js",
+                "targetFile": "utils/rules.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "payments",
         "to": "documents",
         "channels": [
           {
@@ -20004,7 +20406,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "payments",
@@ -20024,10 +20426,6 @@
               {
                 "sourceFileId": "services/cash-reminder-service.js",
                 "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/cash-reminder-service.js",
-                "targetFile": "utils/rules.js"
               },
               {
                 "sourceFileId": "services/paypal-client.js",
@@ -20166,10 +20564,6 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "tests/unit/cash-reminder-service.test.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "tests/unit/cash-route.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
@@ -20196,6 +20590,21 @@
               {
                 "sourceFileId": "tests/unit/reconciliation-service.test.js",
                 "targetFile": "db.js"
+              }
+            ]
+          },
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/public/config",
+                "routeFile": "server.js",
+                "consumerFileId": "public/boutique/js/b-checkout.js"
+              },
+              {
+                "endpoint": "/api/public/config",
+                "routeFile": "server.js",
+                "consumerFileId": "public/boutique/js/b-paypal.js"
               }
             ]
           }
@@ -20322,7 +20731,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "payments",
@@ -20496,7 +20905,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "payments",
@@ -20548,7 +20957,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "payments",
@@ -20597,7 +21006,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "platform-ops",
@@ -20625,6 +21034,22 @@
           }
         ],
         "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "platform-ops",
+        "to": "business-rules",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/config.js",
+                "targetFile": "utils/rules.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "platform-ops",
@@ -20812,10 +21237,6 @@
                 "targetFile": "utils/logger.js"
               },
               {
-                "sourceFileId": "routes/config.js",
-                "targetFile": "utils/rules.js"
-              },
-              {
                 "sourceFileId": "tests/integration/api.test.js",
                 "targetFile": "server.js"
               },
@@ -20854,6 +21275,16 @@
               {
                 "sourceFileId": "tests/unit/state-advancer.test.js",
                 "targetFile": "db.js"
+              }
+            ]
+          },
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/health",
+                "routeFile": "server.js",
+                "consumerFileId": "public/boutique/js/komerce-api.js"
               }
             ]
           }
@@ -22266,7 +22697,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "sourcing",
@@ -22414,7 +22845,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "wallet",
@@ -22462,7 +22893,7 @@
             ]
           }
         ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "wallet",
@@ -22665,7 +23096,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 809
+        "filesObserved": 812
       },
       "boutique": {
         "filesObserved": 123,
@@ -22691,20 +23122,22 @@
     "wiringFiles": [
       "bootstrap/api-routes.js",
       "bootstrap/crons.js",
+      "bootstrap/feature-wiring.js",
       "middleware/error-handler.js",
       "public/boutique/js/b-nav.js",
       "public/boutique/js/boutique.js",
-      "public/boutique/js/main.js"
+      "public/boutique/js/main.js",
+      "server.js"
     ],
     "familySummary": {
       "PROJECTION": 9,
-      "COMPOSITION_ROOT_WIRING": 13,
+      "COMPOSITION_ROOT_WIRING": 14,
       "NON_RUNTIME_TEST": 5,
-      "TECHNICAL_PRIMITIVE": 40,
-      "BUSINESS_TRANSVERSAL_SERVICE": 10,
+      "TECHNICAL_PRIMITIVE": 29,
+      "BUSINESS_TRANSVERSAL_SERVICE": 3,
       "CROSS_FEATURE_DIRECT_IMPORT": 3,
-      "BUSINESS_FEATURE_INTERFACE": 5,
-      "PILOTING_CAPABILITY": 2,
+      "BUSINESS_FEATURE_INTERFACE": 7,
+      "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
     },
     "pairClassifications": [
@@ -22849,7 +23282,7 @@
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
         "consumerKind": "technical-transversal",
-        "providerKind": "technical-transversal",
+        "providerKind": "business-feature",
         "channels": [
           "static-code"
         ],
@@ -22864,7 +23297,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-transversal",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -22890,26 +23323,11 @@
       },
       {
         "from": "auth-identity",
-        "to": "auth",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "auth-identity",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "technical-transversal",
-        "providerKind": "technical-transversal",
+        "consumerKind": "business-feature",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -22923,7 +23341,7 @@
         "to": "logistics",
         "family": "NON_RUNTIME_TEST",
         "evidenceRole": "TEST_ONLY",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "business-feature",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
@@ -22935,25 +23353,10 @@
       },
       {
         "from": "auth-identity",
-        "to": "notifications",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "auth-identity",
         "to": "platform-ops",
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "business-feature",
         "providerKind": "technical-transversal",
         "channels": [
           "static-code"
@@ -22968,15 +23371,15 @@
       {
         "from": "catalog",
         "to": "auth-identity",
-        "family": "TECHNICAL_PRIMITIVE",
+        "family": "BUSINESS_FEATURE_INTERFACE",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "business-feature",
         "channels": [
           "interface"
         ],
         "couplingObserved": "interface",
-        "policy": "technical-dependency-policy",
+        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -22986,7 +23389,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23035,27 +23438,12 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "technical-primitive",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "dashboard",
-        "to": "decision-signals",
-        "family": "PILOTING_CAPABILITY",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-transversal",
-        "providerKind": "piloting-capability",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "piloting-capability-dependency",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -23065,22 +23453,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-transversal",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "decision-signals",
-        "to": "auth",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "piloting-capability",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23095,27 +23468,12 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "piloting-capability",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "technical-primitive",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "decision-signals",
-        "to": "logistics",
-        "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "piloting-capability",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -23125,7 +23483,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-transversal",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23140,27 +23498,12 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "technical-primitive",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "economic-engine",
-        "to": "logistics",
-        "family": "NON_RUNTIME_TEST",
-        "evidenceRole": "TEST_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -23170,7 +23513,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-transversal",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23184,8 +23527,8 @@
         "to": "auth-identity",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
-        "providerKind": "technical-transversal",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-feature",
         "channels": [
           "static-code"
         ],
@@ -23196,10 +23539,25 @@
       },
       {
         "from": "infrastructure",
+        "to": "business-rules",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "import-mixed",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
         "to": "decision-signals",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "technical-foundation",
         "providerKind": "piloting-capability",
         "channels": [
           "static-code"
@@ -23214,7 +23572,7 @@
         "to": "loyalty",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
@@ -23229,7 +23587,7 @@
         "to": "notifications",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "technical-foundation",
         "providerKind": "business-transversal",
         "channels": [
           "static-code"
@@ -23244,7 +23602,7 @@
         "to": "payments",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
@@ -23259,7 +23617,7 @@
         "to": "platform-ops",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "technical-foundation",
         "providerKind": "technical-transversal",
         "channels": [
           "static-code"
@@ -23274,7 +23632,7 @@
         "to": "purchasing",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
@@ -23289,7 +23647,7 @@
         "to": "sourcing",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
@@ -23304,7 +23662,7 @@
         "to": "unsold-resolution",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
+        "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
         "channels": [
           "static-code"
@@ -23320,7 +23678,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23350,22 +23708,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "loyalty",
-        "to": "auth",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23380,37 +23723,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "loyalty",
-        "to": "notifications",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "notifications",
-        "to": "auth",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-transversal",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23422,15 +23735,15 @@
       {
         "from": "notifications",
         "to": "decision-signals",
-        "family": "PILOTING_CAPABILITY",
-        "evidenceRole": "RUNTIME_AND_TEST",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
         "consumerKind": "business-transversal",
         "providerKind": "piloting-capability",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "business-file-import",
-        "policy": "piloting-capability-dependency",
+        "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -23440,7 +23753,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-transversal",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23452,16 +23765,16 @@
       {
         "from": "orders",
         "to": "auth-identity",
-        "family": "TECHNICAL_PRIMITIVE",
+        "family": "BUSINESS_FEATURE_INTERFACE",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "business-feature",
         "channels": [
           "interface",
           "static-code"
         ],
         "couplingObserved": "mixed",
-        "policy": "technical-dependency-policy",
+        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -23471,7 +23784,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23528,105 +23841,16 @@
       },
       {
         "from": "payments",
-        "to": "auth",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "payments",
-        "to": "documents",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "payments",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
+          "interface",
           "static-code"
         ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "payments",
-        "to": "notifications",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "payments",
-        "to": "platform-ops",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "payments",
-        "to": "refunds",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "platform-ops",
-        "to": "auth",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "technical-transversal",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
+        "couplingObserved": "mixed",
         "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
@@ -23634,15 +23858,15 @@
       {
         "from": "platform-ops",
         "to": "auth-identity",
-        "family": "TECHNICAL_PRIMITIVE",
+        "family": "BUSINESS_FEATURE_INTERFACE",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "technical-transversal",
-        "providerKind": "technical-transversal",
+        "providerKind": "business-feature",
         "channels": [
           "interface"
         ],
         "couplingObserved": "interface",
-        "policy": "technical-dependency-policy",
+        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": true,
         "exceptionReasons": [
           "runtime-cycle"
@@ -23672,11 +23896,12 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-transversal",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
+          "interface",
           "static-code"
         ],
-        "couplingObserved": "technical-primitive",
+        "couplingObserved": "mixed",
         "policy": "technical-dependency-policy",
         "exceptionRequired": false,
         "exceptionReasons": []
@@ -23763,7 +23988,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23793,7 +24018,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23840,7 +24065,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-transversal",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23872,7 +24097,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23928,27 +24153,12 @@
         "exceptionReasons": []
       },
       {
-        "from": "shared-cart",
-        "to": "refunds",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
         "from": "sourcing",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -23963,42 +24173,12 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
         "couplingObserved": "technical-primitive",
         "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "wallet",
-        "to": "auth",
-        "family": "TECHNICAL_PRIMITIVE",
-        "evidenceRole": "RUNTIME_ONLY",
-        "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "technical-primitive",
-        "policy": "technical-dependency-policy",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "wallet",
-        "to": "documents",
-        "family": "BUSINESS_TRANSVERSAL_SERVICE",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "business-feature",
-        "providerKind": "business-transversal",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "business-dependency-declare-candidate",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -24008,7 +24188,7 @@
         "family": "TECHNICAL_PRIMITIVE",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "business-feature",
-        "providerKind": "technical-transversal",
+        "providerKind": "technical-foundation",
         "channels": [
           "static-code"
         ],
@@ -24038,39 +24218,34 @@
       "PROJECTION|RUNTIME_ONLY|projection|business-feature|interface": 7,
       "PROJECTION|RUNTIME_ONLY|projection|business-transversal|interface": 1,
       "PROJECTION|RUNTIME_ONLY|projection|piloting-capability|interface": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|technical-transversal|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-transversal|technical-primitive": 3,
-      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|technical-transversal|technical-transversal|technical-primitive": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
-      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-transversal|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|interface": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|technical-primitive": 11,
-      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|technical-primitive": 6,
-      "PILOTING_CAPABILITY|RUNTIME_AND_TEST|business-transversal|piloting-capability|business-file-import": 2,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-transversal|technical-primitive": 5,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|piloting-capability|technical-transversal|technical-primitive": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-transversal|technical-primitive": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|piloting-capability|business-feature|technical-primitive": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|technical-primitive": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 11,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|technical-transversal|business-file-import": 2,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|piloting-capability|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 6,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
-      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 8,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|mixed": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|mixed": 1,
-      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|technical-transversal|technical-transversal|interface": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
+      "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
+      "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-transversal|technical-foundation|technical-primitive": 5,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|piloting-capability|technical-foundation|technical-primitive": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|technical-transversal|business-file-import": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|piloting-capability|business-file-import": 1,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|mixed": 2,
+      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 3,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 1,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|technical-transversal|business-feature|interface": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 2,
+      "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 3,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1,
-      "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_ONLY|business-feature|business-transversal|business-file-import": 1
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1
     },
     "runtimeCycles": [
       {
@@ -24088,7 +24263,7 @@
           {
             "from": "platform-ops",
             "to": "auth-identity",
-            "family": "TECHNICAL_PRIMITIVE"
+            "family": "BUSINESS_FEATURE_INTERFACE"
           }
         ]
       },
@@ -24178,7 +24353,7 @@
         },
         {
           "feature": "infrastructure",
-          "mode": "RW"
+          "mode": "W"
         }
       ],
       "readers": [
@@ -24199,11 +24374,7 @@
         },
         {
           "feature": "dashboard",
-          "mode": "RW"
-        },
-        {
-          "feature": "infrastructure",
-          "mode": "RW"
+          "mode": "W"
         },
         {
           "feature": "loyalty",
@@ -24211,6 +24382,7 @@
         }
       ],
       "readers": [
+        "business-rules",
         "documents",
         "economic-engine",
         "logistics",
@@ -24454,6 +24626,34 @@
       ],
       "lifecycleOwner": null,
       "resolution": "ambiguous-multi-writer"
+    },
+    "business_rules": {
+      "writers": [
+        {
+          "feature": "business-rules",
+          "mode": "RW"
+        }
+      ],
+      "readers": [
+        "dashboard",
+        "economic-engine",
+        "logistics"
+      ],
+      "lifecycleOwner": "business-rules",
+      "resolution": "single-writer"
+    },
+    "business_rules_history": {
+      "writers": [
+        {
+          "feature": "business-rules",
+          "mode": "RW"
+        }
+      ],
+      "readers": [
+        "dashboard"
+      ],
+      "lifecycleOwner": "business-rules",
+      "resolution": "single-writer"
     },
     "alerts": {
       "writers": [
@@ -24835,34 +25035,6 @@
       "lifecycleOwner": "shared-cart",
       "resolution": "multi-writer-resolved-by-classification-signal"
     },
-    "business_rules": {
-      "writers": [
-        {
-          "feature": "infrastructure",
-          "mode": "RW"
-        }
-      ],
-      "readers": [
-        "dashboard",
-        "economic-engine",
-        "logistics"
-      ],
-      "lifecycleOwner": "infrastructure",
-      "resolution": "single-writer"
-    },
-    "business_rules_history": {
-      "writers": [
-        {
-          "feature": "infrastructure",
-          "mode": "RW"
-        }
-      ],
-      "readers": [
-        "dashboard"
-      ],
-      "lifecycleOwner": "infrastructure",
-      "resolution": "single-writer"
-    },
     "collective_payment_sessions": {
       "writers": [
         {
@@ -25219,15 +25391,11 @@
         {
           "feature": "economic-engine",
           "mode": "RW"
-        },
-        {
-          "feature": "infrastructure",
-          "mode": "RW"
         }
       ],
       "readers": [],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "economic-engine",
+      "resolution": "single-writer"
     },
     "competitor_prices": {
       "writers": [
@@ -25281,7 +25449,7 @@
         },
         {
           "feature": "infrastructure",
-          "mode": "RW"
+          "mode": "W"
         }
       ],
       "readers": [],
@@ -25317,18 +25485,14 @@
         {
           "feature": "economic-engine",
           "mode": "RW"
-        },
-        {
-          "feature": "infrastructure",
-          "mode": "RW"
         }
       ],
       "readers": [
         "loyalty",
         "shared-cart"
       ],
-      "lifecycleOwner": null,
-      "resolution": "ambiguous-multi-writer"
+      "lifecycleOwner": "economic-engine",
+      "resolution": "single-writer"
     },
     "garment_models": {
       "writers": [
@@ -25445,7 +25609,7 @@
       "writers": [
         {
           "feature": "infrastructure",
-          "mode": "RW"
+          "mode": "W"
         },
         {
           "feature": "logistics",
@@ -25460,7 +25624,7 @@
       "writers": [
         {
           "feature": "infrastructure",
-          "mode": "RW"
+          "mode": "W"
         },
         {
           "feature": "logistics",
@@ -25475,7 +25639,7 @@
       "writers": [
         {
           "feature": "infrastructure",
-          "mode": "RW"
+          "mode": "W"
         }
       ],
       "readers": [],
@@ -25820,10 +25984,10 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 24,
-        "manifestsConnected": 24,
-        "technicalNodesTotal": 307,
-        "technicalNodesOwned": 307,
+        "manifestsDiscovered": 25,
+        "manifestsConnected": 25,
+        "technicalNodesTotal": 309,
+        "technicalNodesOwned": 309,
         "technicalOrphans": 0
       },
       "dash": {
@@ -25856,6 +26020,7 @@
       "singleRepoFeatures": [
         "admin-dashboard",
         "auth",
+        "business-rules",
         "customs",
         "dashboard",
         "decision-signals",
@@ -26004,21 +26169,6 @@
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "infrastructure / GET /api/health",
-        "msg": "contract.exposes déclare \"GET /api/health\" mais le contrat OpenAPI le résout vers \"server.js\", non déclaré dans infrastructure.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "infrastructure / GET /api/public/config",
-        "msg": "contract.exposes déclare \"GET /api/public/config\" mais le contrat OpenAPI le résout vers \"server.js\", non déclaré dans infrastructure.files.routes"
-      },
-      {
-        "type": "EXPOSED-ROUTE-OWNER-MISMATCH",
-        "ref": "infrastructure / POST /api/shared-carts/stripe/webhook",
-        "msg": "contract.exposes déclare \"POST /api/shared-carts/stripe/webhook\" mais le contrat OpenAPI le résout vers \"server.js\", non déclaré dans infrastructure.files.routes"
-      },
-      {
         "type": "EXPOSED-ROUTE-UNRESOLVED",
         "ref": "infrastructure / GET /*.html",
         "msg": "\"GET /*.html\" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
@@ -26090,11 +26240,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> auth",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"auth\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 11 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
       },
@@ -26102,11 +26247,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> logistics",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"logistics\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "auth-identity -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26121,7 +26261,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "catalog -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 42 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 36 preuve(s)) sans contract.consumes déclaré chez \"catalog\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26140,28 +26280,13 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "dashboard -> decision-signals",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"dashboard\" vers \"decision-signals\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "dashboard -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 52 preuve(s)) sans contract.consumes déclaré chez \"dashboard\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "decision-signals -> auth",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"decision-signals\" vers \"auth\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 48 preuve(s)) sans contract.consumes déclaré chez \"dashboard\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "decision-signals -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 8 preuve(s)) sans contract.consumes déclaré chez \"decision-signals\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "decision-signals -> logistics",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"decision-signals\" vers \"logistics\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez \"decision-signals\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26175,11 +26300,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "economic-engine -> logistics",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"economic-engine\" vers \"logistics\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "incident-management -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"incident-management\" vers \"infrastructure\""
       },
@@ -26190,8 +26310,13 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> business-rules",
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"business-rules\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> decision-signals",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"decision-signals\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"decision-signals\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26201,7 +26326,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"notifications\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26241,12 +26366,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "logistics -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 75 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "loyalty -> auth",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"loyalty\" vers \"auth\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26255,18 +26375,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "loyalty -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"loyalty\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "notifications -> auth",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"auth\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "notifications -> decision-signals",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"decision-signals\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"notifications\" vers \"decision-signals\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26281,7 +26391,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "orders -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 68 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 60 preuve(s)) sans contract.consumes déclaré chez \"orders\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26300,38 +26410,8 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "payments -> auth",
-        "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"auth\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "payments -> documents",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"documents\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "payments -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 46 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "payments -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"notifications\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "payments -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"platform-ops\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "payments -> refunds",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"refunds\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> auth",
-        "msg": "dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 46 preuve(s)) sans contract.consumes déclaré chez \"payments\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26346,7 +26426,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 27 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 27 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26430,11 +26510,6 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "shared-cart -> refunds",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"refunds\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "sourcing -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"infrastructure\""
       },
@@ -26442,16 +26517,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "unsold-resolution -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"unsold-resolution\" vers \"infrastructure\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "wallet -> auth",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"auth\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "wallet -> documents",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"documents\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26490,18 +26555,8 @@
       },
       {
         "type": "WRITER-NOT-OWNER",
-        "ref": "charges",
-        "msg": "table \"charges\" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
         "ref": "economic_snapshots",
         "msg": "table \"economic_snapshots\" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
-      },
-      {
-        "type": "WRITER-NOT-OWNER",
-        "ref": "finance_config",
-        "msg": "table \"finance_config\" a 2 écrivain(s) déclaré(s) (economic-engine, infrastructure) sans owner de lifecycle univoque (classification.signals.ownsTables) — WRITES != OWNS, à rendre visible, pas nécessairement une erreur"
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -26646,7 +26701,7 @@
       {
         "type": "WRITER-NOT-OWNER",
         "ref": "users",
-        "msg": "table \"users\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard, infrastructure"
+        "msg": "table \"users\" : lifecycle owner = loyalty (classification.signals.ownsTables), mais aussi écrite par auth, auth-identity, dashboard"
       },
       {
         "type": "WRITER-NOT-OWNER",

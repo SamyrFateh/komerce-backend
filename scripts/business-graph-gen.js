@@ -129,13 +129,16 @@ const O2_BASELINE = {
   'business-feature': [
     'shared-cart', 'orders', 'purchasing', 'payments', 'wallet', 'loyalty',
     'logistics', 'economic-engine', 'catalog', 'sourcing', 'customs',
-    'inventory', 'unsold-resolution', 'recommendations',
+    'inventory', 'unsold-resolution', 'recommendations', 'auth-identity',
   ],
   'business-transversal': [
     'notifications', 'documents', 'refunds', 'dashboard', 'incident-management',
   ],
   'technical-transversal': [
-    'auth', 'auth-identity', 'platform-ops', 'infrastructure',
+    'auth', 'platform-ops',
+  ],
+  'technical-foundation': [
+    'infrastructure',
   ],
   'piloting-capability': ['decision-signals'],
   // Section « projection / ui-shell » de la mission — FEATURE_DOCTRINE distingue
