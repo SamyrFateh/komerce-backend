@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-29T17:12:52.478Z",
+  "generatedAt": "2026-07-29T17:38:13.936Z",
   "summary": {
     "modules": 74,
     "withHeader": 74,
@@ -960,6 +960,7 @@
         "b-modal-image-ux",
         "b-modal-social-proof",
         "b-modal-product-fields",
+        "render-product-card",
         "b-modal-product",
         "b-modal-suggestions",
         "b-modal-nav",

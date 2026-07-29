@@ -37,7 +37,7 @@ import {
 }                         from './b-cart-core.js';
 import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
-import { renderAddControl } from './render/render-product-card.js';
+import { renderAddControl, FAV_HEART_SVG } from './render/render-product-card.js';
 import { getProductCartSummary, getCartItemProductId } from './cart-product-summary.js';
 
 'use strict';
@@ -529,12 +529,12 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
     if (idx >= 0) {
       state.favs.splice(idx, 1);
       btnEl.classList.remove('liked');
-      btnEl.innerHTML = '🤍';
+      btnEl.innerHTML = FAV_HEART_SVG;
       showToast('Retiré des favoris');
     } else {
       state.favs.push(id);
       btnEl.classList.add('liked');
-      btnEl.innerHTML = '❤️';
+      btnEl.innerHTML = FAV_HEART_SVG;
       btnEl.classList.add('k-pop');
       setTimeout(() => btnEl.classList.remove('k-pop'), 300);
       showToast('❤️ Ajouté aux favoris');

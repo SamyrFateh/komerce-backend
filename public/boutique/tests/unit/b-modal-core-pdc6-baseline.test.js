@@ -178,7 +178,7 @@ describe('b-modal-core — PDC-6 measured baseline closure', () => {
     expect(dom.modalPromoBadge.classList.contains('show')).toBe(true);
     expect(dom.modal.classList.contains('k-modal--has-promo')).toBe(true);
     expect(fav.classList.contains('liked')).toBe(true);
-    expect(fav.innerHTML).toBe('❤️');
+    expect(fav.innerHTML).toContain('<svg');
     expect(dom.modalBackLabel.textContent).toBe('Retour');
   });
 });

@@ -59,6 +59,18 @@ function normalizeCartSummary(productId, value) {
  * @param {string} safeName - nom échappé du produit (pour aria-label)
  * @param {'grid'|'suggestion'|'catalog-suggestion'|'modal-suggestion'} variant
  */
+/**
+ * Icône cœur favori — SVG unique partagé entre carte catalogue, modale
+ * produit et toggleFav (b-cart.js). Remplace les emoji ❤️/🤍 : leur couleur
+ * de glyphe est fixée par la police et ignore `color`/`fill` en CSS, d'où
+ * un cœur au repos invisible sur fond clair et un rouge plein-écran non
+ * pilotable à l'état liked. Ici fill/stroke suivent `currentColor`, donc
+ * les deux états sont gérés en CSS via la classe .liked (products.css,
+ * modal-media.css).
+ */
+export const FAV_HEART_SVG =
+  '<svg viewBox="0 0 24 24"><path d="M12 21s-7.2-4.4-9.9-8.6C.6 9.4 1.4 5.6 4.6 4.1c2.6-1.2 5.4-.2 7.4 2.1 2-2.3 4.8-3.3 7.4-2.1 3.2 1.5 4 5.3 2.5 8.3C19.2 16.6 12 21 12 21z"/></svg>';
+
 export function renderAddControl(productId, cartState, safeName, variant) {
   const summary = normalizeCartSummary(productId, cartState);
   const qty = summary.totalQty;
@@ -116,7 +128,7 @@ function renderGridCard(product, cartSummary) {
         ${renderProductCarousel(vm.raw, 400)}
         ${vm.promoLabel ? `<span class="k-card-promo">${vm.promoLabel}</span>` : ''}
         <button class="k-card-fav${isFav(vm.id) ? ' liked' : ''}" data-fav="${vm.id}" aria-label="Favori">
-          ${isFav(vm.id) ? '❤️' : '🤍'}
+          ${FAV_HEART_SVG}
         </button>
       </div>
       <div class="k-card-info">

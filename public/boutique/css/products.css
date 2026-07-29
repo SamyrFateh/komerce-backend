@@ -117,6 +117,23 @@
   box-shadow: 0 0 0 2px var(--pink-shadow);
 }
 
+/* Icône cœur SVG (remplace les emoji ❤️/🤍, dont le glyphe ignorait
+   color/fill : cœur invisible au repos sur fond clair, rouge non
+   pilotable à l'état liked). Contour visible au repos (currentColor =
+   --ocean-dark ci-dessus), rempli --pink à l'état liked. */
+.k-card-fav svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  transition: fill .2s var(--ease), stroke .2s var(--ease);
+}
+.k-card-fav.liked svg {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .k-card-fav:hover {
     transform: scale(1.08);

@@ -65,6 +65,7 @@ import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { setupImageUX }     from './b-modal-image-ux.js';
 import { setupSocialProof } from './b-modal-social-proof.js';
 import { paintProvisionalFields } from './b-modal-product-fields.js';
+import { FAV_HEART_SVG } from './render/render-product-card.js';
 import {
   buildCarouselSlides, goToSlide, openSizeGuide, closeSizeGuide,
   _syncScrollPadding,
@@ -245,7 +246,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     if (modalFavBtn) {
       const favState = state.favs.includes(product.id);
       modalFavBtn.classList.toggle('liked', favState);
-      modalFavBtn.innerHTML = favState ? '❤️' : '🤍';
+      modalFavBtn.innerHTML = FAV_HEART_SVG;
     }
 
     dom.modalBackLabel.textContent = state.modalHistory.length > 0 ? 'Retour' : 'Catalogue';
@@ -623,7 +624,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         if (gridFavBtn) {
           const isNowFav = state.favs.includes(state.modalProduct.id);
           gridFavBtn.classList.toggle('liked', isNowFav);
-          gridFavBtn.innerHTML = isNowFav ? '❤️' : '🤍';
+          gridFavBtn.innerHTML = FAV_HEART_SVG;
         }
       });
     }

@@ -367,7 +367,7 @@ describe('b-cart', () => {
       toggleFav(7, btn);
       expect(state.favs).toContain(7);
       expect(btn.classList.contains('liked')).toBe(true);
-      expect(btn.innerHTML).toBe('❤️');
+      expect(btn.innerHTML).toContain('<svg');
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Ajouté aux favoris'));
       expect(saveFavs).toHaveBeenCalled();
       jest.advanceTimersByTime(300);
@@ -382,7 +382,7 @@ describe('b-cart', () => {
       toggleFav(7, btn);
       expect(state.favs).not.toContain(7);
       expect(btn.classList.contains('liked')).toBe(false);
-      expect(btn.innerHTML).toBe('🤍');
+      expect(btn.innerHTML).toContain('<svg');
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Retiré des favoris'));
       expect(saveFavs).toHaveBeenCalled();
     });
