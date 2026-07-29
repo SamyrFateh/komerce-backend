@@ -9078,6 +9078,7 @@ body.cart-open  #k-section-index { display:none; }
 /* ── BUG-VIEW-1 — Masquage par défaut (symétrique à .k-fav-view/.k-track-view dans cart.css)
    Sans ce display:none, la vue groupe reste visible même quand elle ne devrait pas l'être,
    provoquant un mélange de contenus entre onglets Suivi / Groupe / Commandes. ──────────── */
+#k-group-view.k-group-view { display: none; }
 #k-group-view.k-group-view.show { display: block; }
 .k-group-view .k-group-card,
 .k-group-view .k-group-actions-card,
