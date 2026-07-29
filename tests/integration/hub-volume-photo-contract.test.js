@@ -40,6 +40,7 @@ if (!hasIntegrationEnv) {
   let parcelRef;
   let pngPath;
   let badPngPath;
+  let uploadedPhotoPath;
 
   const BASE = '/api/hub';
   const nilUuid = '00000000-0000-0000-0000-000000000000';
@@ -100,6 +101,9 @@ if (!hasIntegrationEnv) {
     process.env.NODE_ENV = 'test';
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'ci-test-secret-not-for-prod';
 
+    jest.spyOn(require('../../bootstrap/crons'), 'startOperationalCrons')
+      .mockImplementation(() => {});
+
     app = require('../../server');
     db = require('../../db');
 
@@ -120,10 +124,14 @@ if (!hasIntegrationEnv) {
     try { await db.query(`DELETE FROM relais WHERE id = $1`, [relaisId]); } catch (_) {}
     try { await db.query(`DELETE FROM products WHERE id = $1`, [productId]); } catch (_) {}
     try {
+      if (uploadedPhotoPath) fs.rmSync(uploadedPhotoPath, { force: true });
+    } catch (_) {}
+    try {
       if (pngPath) fs.rmSync(path.dirname(pngPath), { recursive: true, force: true });
     } catch (_) {}
     await cleanup();
-    if (db.end) await db.end().catch(() => {});
+    jest.restoreAllMocks();
+    if (db.pool && db.pool.end) await db.pool.end().catch(() => {});
   }, 20000);
 
   describe('POST /volume', () => {
@@ -178,9 +186,7 @@ if (!hasIntegrationEnv) {
   describe('POST /photo', () => {
     test('401 sans token', async () => {
       const res = await request(app)
-        .post(`${BASE}/photo`)
-        .field('parcel_id', parcelId)
-        .attach('photo', pngPath);
+        .post(`${BASE}/photo`);
       expect(res.status).toBe(401);
     });
 
@@ -237,6 +243,15 @@ if (!hasIntegrationEnv) {
       expect(res.body).toHaveProperty('photo_url');
       expect(res.body).toHaveProperty('photo_count');
       expect(res.body).toHaveProperty('recorded_at');
+
+      uploadedPhotoPath = path.join(
+        __dirname,
+        '..',
+        '..',
+        'public',
+        res.body.photo_url.replace(/^\/+/, '')
+      );
+      expect(fs.existsSync(uploadedPhotoPath)).toBe(true);
 
       const { rows } = await db.query(
         `SELECT event_type, scanned_by, actor_role, photo_urls, notes

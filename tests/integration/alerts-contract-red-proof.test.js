@@ -35,7 +35,7 @@ if (!hasIntegrationEnv) {
   jest.setTimeout(20000);
 
   afterAll(async () => {
-    // Nothing persisted by this suite (every legacy INSERT is expected to fail).
+    await db.pool.end();
   });
 
   describe('ALERTS CONTRACT — mechanism of failure (documented, kept green)', () => {
@@ -45,7 +45,7 @@ if (!hasIntegrationEnv) {
           `INSERT INTO alerts (level, source, message, payload) VALUES ($1, $2, $3, $4)`,
           ['critical', 'red_proof', 'red proof message', JSON.stringify({ a: 1 })]
         )
-      ).rejects.toThrow(/column .*level.* does not exist|column "level" of relation "alerts" does not exist/i);
+      ).rejects.toMatchObject({ code: '42703' });
     });
 
     it('RED-2 — inside a transaction, the failed legacy INSERT poisons the client: next query fails', async () => {
@@ -66,15 +66,13 @@ if (!hasIntegrationEnv) {
         } catch (err) {
           caught = err; // mirrors the try/catch already present in P0-A..F today
         }
-        expect(caught).not.toBeNull();
+        expect(caught).toMatchObject({ code: '42703' });
 
         // The mission's central claim: catching the JS error is NOT enough.
         // The client is now in "aborted transaction" state at the Postgres
         // level — every subsequent statement on this SAME client fails,
         // including statements that have nothing to do with alerts.
-        await expect(client.query('SELECT 1')).rejects.toThrow(
-          /current transaction is aborted/i
-        );
+        await expect(client.query('SELECT 1')).rejects.toMatchObject({ code: '25P02' });
       } finally {
         await client.query('ROLLBACK').catch(() => {});
         client.release();

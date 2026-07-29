@@ -12,14 +12,20 @@ jest.mock('../../services/authkey-client', () => ({
   callAuthKeyText: jest.fn(),
   WID: 'WID_DEFAULT',
 }));
-jest.mock('../../services/signal-service', () => ({ upsertSignal: jest.fn(() => Promise.resolve()) }));
+
+const mockNotificationOutcomeListener = jest.fn();
 
 const db = require('../../db');
-const signalService = require('../../services/signal-service');
 const internals = require('../../services/notifications/internals');
 
 describe('notifications/internals', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockNotificationOutcomeListener.mockReset().mockResolvedValue(undefined);
+    internals.setNotificationOutcomeListener(mockNotificationOutcomeListener);
+  });
+
+  afterAll(() => internals.setNotificationOutcomeListener(null));
 
   it('firstName et formatAmount fournissent les fallbacks UI', () => {
     expect(internals.firstName()).toBe('Client');
@@ -107,32 +113,53 @@ describe('notifications/internals', () => {
     await expect(internals.logNotification({ channel: 'whatsapp', event: 'x', status: 'failed' })).resolves.toBeUndefined();
   });
 
-  it('_alertNotificationFailure cree un signal non bloquant', () => {
-    internals._alertNotificationFailure({ event: 'paid', orderRef: 'CMD-001', orderId: 'order-001', error: new Error('boom') });
+  it('_alertNotificationFailure publie un fait neutre non bloquant', async () => {
+    internals._alertNotificationFailure({
+      event: 'paid',
+      orderRef: 'CMD-001',
+      orderId: 'order-001',
+      error: new Error('boom'),
+    });
 
-    expect(signalService.upsertSignal).toHaveBeenCalledWith(expect.objectContaining({
-      signal_type: 'notification_failure', severity: 'warning', entity_id: 'order-001', target_filters: { order_id: 'order-001' },
-      meta: expect.objectContaining({ event: 'paid', orderRef: 'CMD-001', orderId: 'order-001' }),
-    }));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(mockNotificationOutcomeListener).toHaveBeenCalledWith({
+      type: 'NotificationOutcomeRecorded',
+      status: 'failed',
+      event: 'paid',
+      orderRef: 'CMD-001',
+      orderId: 'order-001',
+      error: 'Error: boom',
+    });
   });
 
-  it("_alertNotificationFailure : summary replie sur '?' si ni orderRef ni orderId", () => {
+  it('_alertNotificationFailure normalise les références absentes à null', async () => {
     internals._alertNotificationFailure({ event: 'paid', error: 'boom' });
 
-    expect(signalService.upsertSignal).toHaveBeenCalledWith(expect.objectContaining({
-      summary: expect.stringContaining('Commande ? ·'),
-      target_filters: {},
-      entity_id: null,
-    }));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(mockNotificationOutcomeListener).toHaveBeenCalledWith({
+      type: 'NotificationOutcomeRecorded',
+      status: 'failed',
+      event: 'paid',
+      orderRef: null,
+      orderId: null,
+      error: 'boom',
+    });
   });
 
-  it("_alertNotificationFailure n'interrompt pas le flux même si upsertSignal rejette (catch interne)", async () => {
-    signalService.upsertSignal.mockReturnValueOnce(Promise.reject(new Error('signal service down')));
+  it("_alertNotificationFailure n'interrompt pas le flux si le listener rejette", async () => {
+    mockNotificationOutcomeListener.mockRejectedValueOnce(new Error('listener down'));
 
-    expect(() => internals._alertNotificationFailure({ event: 'paid', orderId: 'order-001', error: 'boom' })).not.toThrow();
+    expect(() => internals._alertNotificationFailure({
+      event: 'paid',
+      orderId: 'order-001',
+      error: 'boom',
+    })).not.toThrow();
 
-    // Laisse la microtask du .catch() interne se résoudre avant la fin du test.
     await new Promise((resolve) => setImmediate(resolve));
+
+    expect(mockNotificationOutcomeListener).toHaveBeenCalledTimes(1);
   });
 
   describe('notifyText', () => {
@@ -180,15 +207,21 @@ describe('notifications/internals', () => {
       ]);
     });
 
-    it("catch l'exception, alerte via _alertNotificationFailure, et renvoie ok:false sans relancer", async () => {
+    it("catch l'exception, publie un fait neutre et renvoie ok:false sans relancer", async () => {
       authkey.callAuthKeyText.mockRejectedValueOnce(new Error('provider crash'));
 
       const result = await internals.notifyText('+269321', 'Bonjour', 'evt', 'order-3');
+      await new Promise((resolve) => setImmediate(resolve));
 
       expect(result).toEqual({ ok: false, error: 'provider crash' });
-      expect(signalService.upsertSignal).toHaveBeenCalledWith(expect.objectContaining({
-        meta: expect.objectContaining({ event: 'evt', orderId: 'order-3', error: 'provider crash' }),
-      }));
+      expect(mockNotificationOutcomeListener).toHaveBeenCalledWith({
+        type: 'NotificationOutcomeRecorded',
+        status: 'failed',
+        event: 'evt',
+        orderRef: null,
+        orderId: 'order-3',
+        error: 'provider crash',
+      });
     });
   });
 });

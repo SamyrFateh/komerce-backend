@@ -11322,13 +11322,9 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 1,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 0,
         "compositionRootRelations": 0,
         "details": [
-          {
-            "to": "decision-signals",
-            "family": "NON_RUNTIME_TEST"
-          },
           {
             "to": "infrastructure",
             "family": "TECHNICAL_PRIMITIVE"
@@ -11559,8 +11555,13 @@
             ]
           },
           "tests": {
-            "count": 26,
+            "count": 27,
             "files": [
+              {
+                "declared": "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/admin-order-refund-payment-service.test.js",
                 "resolvedPath": "tests/integration/admin-order-refund-payment-service.test.js",
@@ -11704,7 +11705,7 @@
             ]
           }
         },
-        "totalFiles": 50,
+        "totalFiles": 51,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 11,

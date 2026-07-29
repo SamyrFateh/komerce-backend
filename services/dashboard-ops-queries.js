@@ -146,7 +146,7 @@ async function getOps() {
 async function getPilotage(mois) {
   const [annee, moisNum] = mois.split('-').map(Number);
   const debutMois = `${mois}-01`;
-  const finMois   = new Date(annee, moisNum, 1).toISOString().split('T')[0];
+  const finMois   = new Date(Date.UTC(annee, moisNum, 1)).toISOString().split('T')[0];
   const rates     = await getEurKmf();
 
   const { rows: [vol] } = await db.query(`

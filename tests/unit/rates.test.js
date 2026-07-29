@@ -27,8 +27,8 @@
 const mockDbQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...a) => mockDbQuery(...a) }));
 
+
 const mockGetRuleNumber = jest.fn();
-jest.mock('../../utils/rules', () => ({ getRuleNumber: (...a) => mockGetRuleNumber(...a) }));
 
 const mockLogWarn = jest.fn();
 jest.mock('../../utils/logger', () => ({
@@ -41,6 +41,7 @@ beforeEach(() => {
   jest.resetModules();
   jest.clearAllMocks();
   rates = require('../../utils/rates');
+  rates.configureRatesFallbackProvider(mockGetRuleNumber);
 });
 
 describe('getRates — cache mémoire', () => {
@@ -152,7 +153,11 @@ describe('getRates — fallback ultime', () => {
     const result = await rates.getRates();
 
     expect(result).toEqual({ eur_kmf: 492, aed_kmf: 138 });
-    expect(mockLogWarn).toHaveBeenCalledTimes(1);
+    expect(mockLogWarn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: expect.any(Error) }),
+      expect.stringContaining('fallback métier injecté indisponible')
+    );
+    expect(mockLogWarn).toHaveBeenCalledWith(expect.stringContaining('Fallback ultime'));
   });
 });
 
