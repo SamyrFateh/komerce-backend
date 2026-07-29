@@ -7,7 +7,7 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js
- * @used-by       routes/signals.js, services/notifications/internals.js
+ * @used-by       routes/signals.js, bootstrap/feature-wiring.js
  * @db-read       cash_collections, order_items, orders, parcels, products, users
  * @db-write      signals
  * @db-txn        resolve_before_behavior_change

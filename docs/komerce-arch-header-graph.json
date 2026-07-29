@@ -13,24 +13,25 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 383,
-    "filesWithFullHeaders": 355,
+    "scannedCodeFiles": 384,
+    "filesWithFullHeaders": 356,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 383,
+    "filesWithAnyHeaders": 384,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 786,
-    "edges": 4405,
-    "dbTables": 116,
-    "doctrines": 158,
-    "impactAreas": 129,
-    "unresolvedCodeEdges": 423,
+    "graphNodes": 792,
+    "edges": 4414,
+    "dbTables": 117,
+    "doctrines": 161,
+    "impactAreas": 130,
+    "unresolvedCodeEdges": 422,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 67
+    "multiWriterTables": 68
   },
   "byDomain": {
     "infrastructure": 20,
+    "bootstrap": 2,
     "notification": 16,
     "auth": 8,
     "logistics": 35,
@@ -45,7 +46,8 @@
     "wallet": 4,
     "economic-engine": 39,
     "customs": 6,
-    "dashboard": 28,
+    "dashboard": 27,
+    "business-rules": 1,
     "orders": 24,
     "documents": 11,
     "auth-identity": 4,
@@ -56,7 +58,6 @@
     "decision-signals": 3,
     "sourcing": 1,
     "unsold-resolution": 1,
-    "bootstrap": 1,
     "incident-management": 1,
     "refunds": 2
   },
@@ -64,6 +65,7 @@
     "route-manifest": 1,
     "bootstrap": 6,
     "cron": 1,
+    "composition-root": 1,
     "manual-test": 1,
     "middleware": 11,
     "ui-bootstrap": 2,
@@ -96,7 +98,7 @@
   "byCriticality": {
     "critical": 78,
     "medium": 104,
-    "high": 166,
+    "high": 167,
     "low": 35
   },
   "nodes": [
@@ -279,6 +281,45 @@
         "bootstrap"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "bootstrap/feature-wiring.js",
+      "file": "bootstrap/feature-wiring.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "feature-boundary-composition-root",
+      "domain": "bootstrap",
+      "layer": "composition-root",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "business-rules",
+        "notification outcomes"
+      ],
+      "outputs": [
+        "runtime dependency wiring"
+      ],
+      "depends": [
+        "utils/rates.js",
+        "utils/rules.js",
+        "services/notifications/internals.js",
+        "services/signal-service.js"
+      ],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "feature_first",
+        "dependency_inversion",
+        "composition_root_only"
+      ],
+      "impactAreas": [],
+      "version": "2026-07"
     },
     {
       "id": "bootstrap/html-routes.js",
@@ -4600,8 +4641,8 @@
       "file": "routes/admin-rules.js",
       "type": "file",
       "headerType": "full",
-      "role": "dashboard-admin-rules",
-      "domain": "dashboard",
+      "role": "business-rules-admin-rules",
+      "domain": "business-rules",
       "layer": "route",
       "criticality": "high",
       "owner": null,
@@ -4617,7 +4658,7 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "utils/rules.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -4627,7 +4668,10 @@
         "business_rules_history",
         "users"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "business_rules",
+        "business_rules_history (via utils/rules.js)"
+      ],
       "dbWriteVia": [],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -4636,10 +4680,9 @@
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "dashboard",
-        "admin-dashboard"
+        "business-rules"
       ],
-      "version": "2026-06"
+      "version": "2026-07-29 (rattaché à business-rules, B2)"
     },
     {
       "id": "routes/admin.js",
@@ -8828,6 +8871,7 @@
         "bootstrap/api-routes.js",
         "bootstrap/html-routes.js",
         "bootstrap/crons.js",
+        "bootstrap/feature-wiring.js",
         "routes/shared-cart.js"
       ],
       "usedBy": [
@@ -15804,7 +15848,7 @@
       ],
       "usedBy": [
         "routes/signals.js",
-        "services/notifications/internals.js"
+        "bootstrap/feature-wiring.js"
       ],
       "dbRead": [
         "cash_collections",
@@ -17714,8 +17758,7 @@
       ],
       "depends": [
         "db",
-        "utils/logger.js",
-        "utils/rules.js"
+        "utils/logger.js"
       ],
       "usedBy": [
         "routes/admin-finance-config.js",
@@ -18176,6 +18219,11 @@
       "table": "business_rules_history"
     },
     {
+      "id": "db:business_rules_history (via utils/rules.js)",
+      "type": "db-table",
+      "table": "business_rules_history (via utils/rules.js)"
+    },
+    {
       "id": "db:disputes",
       "type": "db-table",
       "table": "disputes"
@@ -18604,6 +18652,21 @@
       "id": "doctrine:retention_snapshots",
       "type": "doctrine",
       "doctrine": "retention_snapshots"
+    },
+    {
+      "id": "doctrine:feature_first",
+      "type": "doctrine",
+      "doctrine": "feature_first"
+    },
+    {
+      "id": "doctrine:dependency_inversion",
+      "type": "doctrine",
+      "doctrine": "dependency_inversion"
+    },
+    {
+      "id": "doctrine:composition_root_only",
+      "type": "doctrine",
+      "doctrine": "composition_root_only"
     },
     {
       "id": "doctrine:DOCTRINE_NON_CONFORMITE (Q-1)",
@@ -19836,6 +19899,11 @@
       "area": "admin-dashboard"
     },
     {
+      "id": "impact:business-rules",
+      "type": "impact-area",
+      "area": "business-rules"
+    },
+    {
       "id": "impact:documents",
       "type": "impact-area",
       "area": "documents"
@@ -20294,6 +20362,54 @@
       "to": "impact:bootstrap",
       "type": "impact",
       "label": "bootstrap"
+    },
+    {
+      "from": "bootstrap/feature-wiring.js",
+      "to": "utils/rates.js",
+      "type": "depends",
+      "label": "utils/rates.js"
+    },
+    {
+      "from": "bootstrap/feature-wiring.js",
+      "to": "utils/rules.js",
+      "type": "depends",
+      "label": "utils/rules.js"
+    },
+    {
+      "from": "bootstrap/feature-wiring.js",
+      "to": "services/notifications/internals.js",
+      "type": "depends",
+      "label": "services/notifications/internals.js"
+    },
+    {
+      "from": "bootstrap/feature-wiring.js",
+      "to": "services/signal-service.js",
+      "type": "depends",
+      "label": "services/signal-service.js"
+    },
+    {
+      "from": "server.js",
+      "to": "bootstrap/feature-wiring.js",
+      "type": "uses",
+      "label": "server.js"
+    },
+    {
+      "from": "bootstrap/feature-wiring.js",
+      "to": "doctrine:feature_first",
+      "type": "doctrine",
+      "label": "feature_first"
+    },
+    {
+      "from": "bootstrap/feature-wiring.js",
+      "to": "doctrine:dependency_inversion",
+      "type": "doctrine",
+      "label": "dependency_inversion"
+    },
+    {
+      "from": "bootstrap/feature-wiring.js",
+      "to": "doctrine:composition_root_only",
+      "type": "doctrine",
+      "label": "composition_root_only"
     },
     {
       "from": "bootstrap/html-routes.js",
@@ -26454,9 +26570,9 @@
     },
     {
       "from": "routes/admin-rules.js",
-      "to": "services/*",
+      "to": "utils/rules.js",
       "type": "depends",
-      "label": "services/*"
+      "label": "utils/rules.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -26484,21 +26600,27 @@
     },
     {
       "from": "routes/admin-rules.js",
+      "to": "db:business_rules",
+      "type": "db-write",
+      "label": "business_rules"
+    },
+    {
+      "from": "routes/admin-rules.js",
+      "to": "db:business_rules_history (via utils/rules.js)",
+      "type": "db-write",
+      "label": "business_rules_history (via utils/rules.js)"
+    },
+    {
+      "from": "routes/admin-rules.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
     },
     {
       "from": "routes/admin-rules.js",
-      "to": "impact:dashboard",
+      "to": "impact:business-rules",
       "type": "impact",
-      "label": "dashboard"
-    },
-    {
-      "from": "routes/admin-rules.js",
-      "to": "impact:admin-dashboard",
-      "type": "impact",
-      "label": "admin-dashboard"
+      "label": "business-rules"
     },
     {
       "from": "routes/admin.js",
@@ -32488,6 +32610,12 @@
       "to": "bootstrap/crons.js",
       "type": "depends",
       "label": "bootstrap/crons.js"
+    },
+    {
+      "from": "server.js",
+      "to": "bootstrap/feature-wiring.js",
+      "type": "depends",
+      "label": "bootstrap/feature-wiring.js"
     },
     {
       "from": "server.js",
@@ -43081,10 +43209,10 @@
       "label": "routes/signals.js"
     },
     {
-      "from": "services/notifications/internals.js",
+      "from": "bootstrap/feature-wiring.js",
       "to": "services/signal-service.js",
       "type": "uses",
-      "label": "services/notifications/internals.js"
+      "label": "bootstrap/feature-wiring.js"
     },
     {
       "from": "services/signal-service.js",
@@ -46090,12 +46218,6 @@
       "label": "utils/logger.js"
     },
     {
-      "from": "utils/rates.js",
-      "to": "utils/rules.js",
-      "type": "depends",
-      "label": "utils/rules.js"
-    },
-    {
       "from": "routes/admin-finance-config.js",
       "to": "utils/rates.js",
       "type": "uses",
@@ -46745,6 +46867,43 @@
         "impact:bootstrap",
         "server.js",
         "utils/logger.js"
+      ]
+    },
+    "bootstrap/feature-wiring.js": {
+      "role": "feature-boundary-composition-root",
+      "domain": "bootstrap",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "utils/rates.js",
+        "utils/rules.js",
+        "services/notifications/internals.js",
+        "services/signal-service.js"
+      ],
+      "directUsedBy": [
+        "server.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "feature_first",
+        "dependency_inversion",
+        "composition_root_only"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "doctrine:composition_root_only",
+        "doctrine:dependency_inversion",
+        "doctrine:feature_first",
+        "server.js",
+        "services/notifications/internals.js",
+        "services/signal-service.js",
+        "utils/rates.js",
+        "utils/rules.js"
       ]
     },
     "bootstrap/html-routes.js": {
@@ -51138,8 +51297,8 @@
       ]
     },
     "routes/admin-rules.js": {
-      "role": "dashboard-admin-rules",
-      "domain": "dashboard",
+      "role": "business-rules-admin-rules",
+      "domain": "business-rules",
       "criticality": "high",
       "headerType": "full",
       "owner": null,
@@ -51147,7 +51306,7 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "utils/rules.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -51158,23 +51317,25 @@
         "business_rules_history",
         "users"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "business_rules",
+        "business_rules_history (via utils/rules.js)"
+      ],
       "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "dashboard",
-        "admin-dashboard"
+        "business-rules"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
         "db:business_rules",
         "db:business_rules_history",
+        "db:business_rules_history (via utils/rules.js)",
         "db:users",
         "doctrine:resolve_before_behavior_change",
-        "impact:admin-dashboard",
-        "impact:dashboard",
+        "impact:business-rules",
         "middleware/auth.js",
         "utils/rules.js"
       ]
@@ -55164,6 +55325,7 @@
         "bootstrap/api-routes.js",
         "bootstrap/html-routes.js",
         "bootstrap/crons.js",
+        "bootstrap/feature-wiring.js",
         "routes/shared-cart.js"
       ],
       "directUsedBy": [
@@ -55190,6 +55352,7 @@
         "bootstrap/api-routes.js",
         "bootstrap/crons.js",
         "bootstrap/env.js",
+        "bootstrap/feature-wiring.js",
         "bootstrap/html-routes.js",
         "bootstrap/security.js",
         "bootstrap/server-lifecycle.js",
@@ -58453,6 +58616,7 @@
         "whatsapp"
       ],
       "mustCheck": [
+        "bootstrap/feature-wiring.js",
         "db:notification_log",
         "doctrine:fallback_trace",
         "doctrine:notification_non_bloquante",
@@ -58468,7 +58632,6 @@
         "services/notifications/order.js",
         "services/notifications/otp-auth.js",
         "services/notifications/parcel.js",
-        "services/signal-service.js",
         "utils/logger.js"
       ]
     },
@@ -61887,7 +62050,7 @@
       ],
       "directUsedBy": [
         "routes/signals.js",
-        "services/notifications/internals.js"
+        "bootstrap/feature-wiring.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -61909,6 +62072,7 @@
         "unknown"
       ],
       "mustCheck": [
+        "bootstrap/feature-wiring.js",
         "db:cash_collections",
         "db:order_items",
         "db:orders",
@@ -61919,7 +62083,6 @@
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
         "routes/signals.js",
-        "services/notifications/internals.js",
         "utils/logger.js"
       ]
     },
@@ -63780,8 +63943,7 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "utils/logger.js",
-        "utils/rules.js"
+        "utils/logger.js"
       ],
       "directUsedBy": [
         "routes/admin-finance-config.js",
@@ -63806,6 +63968,7 @@
         "unknown"
       ],
       "mustCheck": [
+        "bootstrap/feature-wiring.js",
         "db:finance_config",
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
@@ -63938,6 +64101,7 @@
       ],
       "mustCheck": [
         "bootstrap/crons.js",
+        "bootstrap/feature-wiring.js",
         "db:business_rules",
         "db:business_rules_history",
         "db:users",
@@ -64570,6 +64734,14 @@
       ]
     },
     {
+      "table": "business_rules",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin-rules.js",
+        "utils/rules.js"
+      ]
+    },
+    {
       "table": "cart_shares",
       "writerCount": 2,
       "writers": [
@@ -65188,12 +65360,6 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
-    },
-    {
-      "from": "routes/admin-rules.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
     },
     {
       "from": "routes/admin.js",

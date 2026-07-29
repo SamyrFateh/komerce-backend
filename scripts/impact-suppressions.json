@@ -70,5 +70,17 @@
     "category": "dangerousOps",
     "contains": "child_process",
     "reason": "Script d'outillage local (smoke test du gate) : spawn d'un process en CI/dev, jamais expose a une requete utilisateur."
+  },
+  {
+    "file": "scripts/gen-data-ownership.js",
+    "category": "hardcodedSecrets",
+    "contains": "sms_log: 'notifications'",
+    "reason": "Mapping table -> feature owner : sms_log est un nom de table et notifications un identifiant de feature, aucun secret."
+  },
+  {
+    "file": "scripts/gen-data-ownership.js",
+    "category": "hardcodedSecrets",
+    "contains": "stripe_events_processed: 'payments'",
+    "reason": "Mapping table -> feature owner : stripe_events_processed est un nom de table et payments un identifiant de feature, aucun secret."
   }
 ]
