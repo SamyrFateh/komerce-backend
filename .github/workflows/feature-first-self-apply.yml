@@ -38,6 +38,36 @@ jobs:
           test "$(sha256sum /tmp/feature-first-overlay.tar.gz | awk '{print $1}')" = "c01170ae198afaffe892147b5b7e237ac83a1009b4050158400978bac0de8da5"
           tar -xzf /tmp/feature-first-overlay.tar.gz -C .
 
+      - name: Align finalizer with capability manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/finalize-ff-c1-c2.js')
+          src = path.read_text()
+          old = """    const contract = /(contract\\s*:\\s*\\{\\s*\\n)/;
+              assert(contract.test(src), `${manifestRel}: bloc contract introuvable`);
+              return src.replace(contract, `$1    consumes: [\\n${entry}    ],\\n`);
+          """
+          new = """    const contract = /(contract\\s*:\\s*\\{\\s*\\n)/;
+              if (contract.test(src)) {
+                return src.replace(contract, `$1    consumes: [\\n${entry}    ],\\n`);
+              }
+
+              // Les capabilities historiques peuvent ne pas encore avoir de bloc
+              // contract. La clôture FF-C1 le crée explicitement au lieu de
+              // transformer l'absence de contrat en exception silencieuse.
+              const moduleEnd = /\\n\\};\\s*$/;
+              assert(moduleEnd.test(src), `${manifestRel}: fin de manifeste introuvable`);
+              return src.replace(moduleEnd,
+                `\\n\\n  contract: {\\n    consumes: [\\n${entry}    ],\\n  },\\n};\\n`);
+          """
+          if old not in src:
+              raise SystemExit('Finalizer capability patch anchor not found')
+          path.write_text(src.replace(old, new))
+          PY
+
       - name: Validate overlay JavaScript
         shell: bash
         run: |
