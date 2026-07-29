@@ -21981,6 +21981,10 @@
                 "targetFile": "public/boutique/js/b-modal-product-fields.js"
               },
               {
+                "sourceFileId": "public/boutique/js/b-modal-core.js",
+                "targetFile": "public/boutique/js/render/render-product-card.js"
+              },
+              {
                 "sourceFileId": "public/boutique/js/b-modal-cart.js",
                 "targetFile": "public/boutique/js/view-models/modal-cart-product-model.js"
               }
@@ -26486,7 +26490,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "shared-cart -> catalog",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"catalog\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"shared-cart\" vers \"catalog\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
