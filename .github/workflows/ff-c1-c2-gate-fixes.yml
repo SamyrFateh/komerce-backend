@@ -61,11 +61,11 @@ jobs:
           # feature manifests. Their owned runtime files remain enforced.
           gate = Path('scripts/touched-files-feature-gate.js')
           src = gate.read_text()
-          old = r"  /\.md$/, /\.feature\.js$/, /(^|\/)tests?\//, /\.spec\.js$/, /\.test\.js$/,")
-          new = r"  /\.md$/, /\.feature\.js$/, /\.capability\.js$/, /(^|\/)tests?\//, /\.spec\.js$/, /\.test\.js$/,")
+          old = r"/\.feature\.js$/, /(^|\/)tests?\//"
+          new = r"/\.feature\.js$/, /\.capability\.js$/, /(^|\/)tests?\//"
           if old not in src:
               raise SystemExit('Capability exclusion anchor not found')
-          gate.write_text(src.replace(old, new))
+          gate.write_text(src.replace(old, new, 1))
 
           # Header grammar accepts flat table names only.
           route = Path('routes/admin-rules.js')
@@ -74,23 +74,17 @@ jobs:
           new = '@db-write      business_rules, business_rules_history'
           if old not in src:
               raise SystemExit('admin-rules DB header anchor not found')
-          route.write_text(src.replace(old, new))
+          route.write_text(src.replace(old, new, 1))
 
           # A generated registry must be stable when its semantic content did
           # not change. Preserve the prior timestamp on identical output.
           gen = Path('scripts/gen-route-registry.js')
           src = gen.read_text()
-          old = """const registry = build();
-          fs.mkdirSync(path.dirname(OUT), { recursive: true });
-          fs.writeFileSync(OUT, JSON.stringify({
-            generatedAt: new Date().toISOString(),
-            generator:   'scripts/gen-route-registry.js',
-            count:       registry.length,
-            routes:      registry,
-          }, null, 2));
-
-          console.log(`route-registry: ${registry.length} route(s) résolue(s) → ${path.relative(ROOT, OUT)}`);"""
-          new = """const registry = build();
+          marker = 'const registry = build();'
+          pos = src.rfind(marker)
+          if pos < 0:
+              raise SystemExit('route registry writer marker not found')
+          replacement = '''const registry = build();
           fs.mkdirSync(path.dirname(OUT), { recursive: true });
 
           const semantic = {
@@ -120,10 +114,12 @@ jobs:
 
           fs.writeFileSync(OUT, JSON.stringify({ generatedAt, ...semantic }, null, 2));
 
-          console.log(`route-registry: ${registry.length} route(s) résolue(s) → ${path.relative(ROOT, OUT)}`);"""
-          if old not in src:
-              raise SystemExit('route registry writer anchor not found')
-          gen.write_text(src.replace(old, new))
+          console.log(`route-registry: ${registry.length} route(s) résolue(s) → ${path.relative(ROOT, OUT)}`);
+          '''
+          # Remove YAML/Python indentation embedded in the literal.
+          replacement = '\n'.join(line[10:] if line.startswith('          ') else line
+                                  for line in replacement.splitlines()) + '\n'
+          gen.write_text(src[:pos] + replacement)
           PY
 
       - name: Regenerate governed artifacts
