@@ -83,6 +83,10 @@ module.exports = {
       'routes/order-api-v2.js',
     ],
       tests: [
+      // E2E fonctionnel Feature First (chantier E2E positive-contracts).
+      // Scénario vertical : orders est la feature PROPRIETAIRE ; auth,
+      // catalog, payments et logistics sont traversées, pas co-proprietaires.
+      'tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js',
       'tests/unit/admin-order-refund.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',
       'tests/unit/delete-order-cascade.test.js',

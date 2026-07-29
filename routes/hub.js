@@ -95,6 +95,11 @@ router.post('/volume', ...hubAuth, validate({ body: hub.volume }), async (req, r
 // sur gros volume. Multipart : champ 'photo' + parcel_id. Les deux lignes de
 // défense (extension + magic bytes) sont portées par middleware/upload-hub.
 router.post('/photo', ...hubAuth, uploadHub.single('photo'), uploadHub.validateMagicBytes, async (req, res, next) => {
+  const removeUploadedFile = () => {
+    if (!req.file || !req.file.path) return;
+    try { require('fs').unlinkSync(req.file.path); } catch (_) {}
+  };
+
   try {
     if (!req.file) {
       return res.status(400).json({ error: "Photo manquante (champ multipart 'photo')" });
@@ -102,13 +107,17 @@ router.post('/photo', ...hubAuth, uploadHub.single('photo'), uploadHub.validateM
     const { error, value } = hub.photo.validate({ parcel_id: req.body.parcel_id, notes: req.body.notes });
     if (error) {
       // Fichier déjà écrit par multer : le nettoyer avant de rejeter
-      try { require('fs').unlinkSync(req.file.path); } catch (_) {}
+      removeUploadedFile();
       return res.status(400).json({ error: error.details[0].message });
     }
     const photoUrl = uploadHub.PUBLIC_PREFIX + req.file.filename;
     const result = await hubOps.recordSealPhoto(value.parcel_id, req.user.id, photoUrl, value.notes || null);
+    if (result.status >= 400) removeUploadedFile();
     res.status(result.status).json(result.body);
-  } catch (err) { next(err); }
+  } catch (err) {
+    removeUploadedFile();
+    next(err);
+  }
 });
 
 // ── POST /batch-scan ─────────────────────────────────────────────────────────

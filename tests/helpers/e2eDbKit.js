@@ -149,7 +149,14 @@ function describeE2E(title, body) {
   const target = assertTestDatabase();
   const db = require('../../db');
 
-  describe(`${title} [db=${target.database}]`, () => body({ db }));
+  describe(`${title} [db=${target.database}]`, () => {
+    // Les hooks de nettoyage du scénario sont enregistrés par body()
+    // avant ce finaliseur : les données sont supprimées avant le pool.
+    body({ db });
+    afterAll(async () => {
+      if (db.pool && db.pool.end) await db.pool.end();
+    });
+  });
 }
 
 module.exports = {

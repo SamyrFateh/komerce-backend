@@ -93,7 +93,7 @@ function runSuite(suite) {
   console.log(`\n── ${suite.file}  [feature: ${suite.feature}] ──`);
   const result = spawnSync(
     process.execPath,
-    [JEST_BIN, suite.file, '--ci', '--runInBand', '--forceExit'],
+    [JEST_BIN, suite.file, '--ci', '--runInBand'],
     { cwd: ROOT, env: process.env, stdio: 'inherit' }
   );
 

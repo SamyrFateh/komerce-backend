@@ -373,7 +373,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - utils: 1
 - services: 10
 - routes: 13
-- tests: 26
+- tests: 27
 - tables owned (lifecycle): 3 — `order_item_cost_imputations`, `customs_history`, `disputes`
 - tables written: 14
 - interfaces exposed: 33
@@ -1332,7 +1332,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### WARN / DEBT (126)
+### WARN / DEBT (125)
 
 Classification sémantique Lot O4 Phase E — voir `governance/business-graph-warning-semantics.js`. Catégories : EXPECTED_TOPOLOGY (relation légitime documentée), KNOWN_DEBT (déclaration manquante, pas un défaut de comportement), ACTIONABLE_DRIFT (écart probable à corriger), INVALID_DECLARATION (nom de feature inexistant), GENERATOR_LIMITATION (artefact d'extraction).
 
@@ -1394,7 +1394,6 @@ Classification sémantique Lot O4 Phase E — voir `governance/business-graph-wa
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ inventory -> logistics — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "logistics"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ logistics -> infrastructure — dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ loyalty -> infrastructure — dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "infrastructure"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> decision-signals — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "decision-signals"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ notifications -> infrastructure — dépendance cross-feature observée (canal: static-code, 12 preuve(s)) sans contract.consumes déclaré chez "notifications" vers "infrastructure"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> auth-identity — dépendance cross-feature observée (canal: interface+static-code, 3 preuve(s)) sans contract.consumes déclaré chez "orders" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** _[ACTIONABLE_DRIFT]_ orders -> infrastructure — dépendance cross-feature observée (canal: static-code, 60 preuve(s)) sans contract.consumes déclaré chez "orders" vers "infrastructure"
@@ -1475,7 +1474,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 812 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 813 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 123 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 83 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -1581,7 +1580,6 @@ Meta Graph monté : oui.
 | loyalty | infrastructure | static-code | 5 | **OBSERVED_UNDECLARED** |
 | loyalty | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | notifications | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| notifications | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
 | notifications | infrastructure | static-code | 12 | **OBSERVED_UNDECLARED** |
 | orders | auth | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | orders | auth-identity | static-code, interface | 3 | **OBSERVED_UNDECLARED** |
@@ -1594,7 +1592,7 @@ Meta Graph monté : oui.
 | orders | logistics | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 9 | **OBSERVED_UNDECLARED** |
-| orders | payments | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| orders | payments | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 24 | **OBSERVED_UNDECLARED** |
 | orders | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code, interface | 2 | **OBSERVED_UNDECLARED** |
@@ -1705,7 +1703,6 @@ Meta Graph monté : oui.
 - `inventory` → `logistics` (canaux: static-code)
 - `logistics` → `infrastructure` (canaux: static-code)
 - `loyalty` → `infrastructure` (canaux: static-code)
-- `notifications` → `decision-signals` (canaux: static-code)
 - `notifications` → `infrastructure` (canaux: static-code)
 - `orders` → `auth-identity` (canaux: static-code, interface)
 - `orders` → `infrastructure` (canaux: static-code)
@@ -1802,14 +1799,14 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 |---|---|---|
 | PROJECTION | 9 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 14 | application-wiring-not-consumption |
-| NON_RUNTIME_TEST | 5 | non-runtime-evidence |
+| NON_RUNTIME_TEST | 4 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 29 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 3 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 3 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 7 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **70** | |
+| **TOTAL** | **69** | |
 
 ### Projection dependencies
 
@@ -1852,7 +1849,6 @@ Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
 - `auth` → `auth-identity` — business-file-import, TEST_ONLY
 - `auth` → `notifications` — business-file-import, TEST_ONLY
 - `inventory` → `logistics` — business-file-import, TEST_ONLY
-- `notifications` → `decision-signals` — business-file-import, TEST_ONLY
 
 ### Technical primitives
 

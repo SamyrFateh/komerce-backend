@@ -10,14 +10,14 @@
 |---|---|
 | PROJECTION | 9 |
 | COMPOSITION_ROOT_WIRING | 14 |
-| NON_RUNTIME_TEST | 5 |
+| NON_RUNTIME_TEST | 4 |
 | TECHNICAL_PRIMITIVE | 29 |
 | BUSINESS_TRANSVERSAL_SERVICE | 3 |
 | CROSS_FEATURE_DIRECT_IMPORT | 3 |
 | BUSINESS_FEATURE_INTERFACE | 7 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **70** |
+| **TOTAL** | **69** |
 
 ## The 94 pairs (from → to)
 
@@ -62,7 +62,6 @@
 | inventory → logistics | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | logistics → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-foundation | static-code | technical-primitive | technical-dependency-policy | — | `` |
 | loyalty → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-foundation | static-code | technical-primitive | technical-dependency-policy | — | `` |
-| notifications → decision-signals | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | piloting-capability | static-code | business-file-import | non-runtime-evidence | — | `` |
 | notifications → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-transversal | technical-foundation | static-code | technical-primitive | technical-dependency-policy | — | `` |
 | orders → auth-identity | BUSINESS_FEATURE_INTERFACE | RUNTIME_ONLY | business-feature | business-feature | interface+static-code | mixed | business-dependency-declare-candidate | — | `` |
 | orders → infrastructure | TECHNICAL_PRIMITIVE | RUNTIME_AND_TEST | business-feature | technical-foundation | static-code | technical-primitive | technical-dependency-policy | — | `` |
