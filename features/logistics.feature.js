@@ -286,7 +286,9 @@ module.exports = {
     internalApi: [
       { fn: 'transitionParcelStatus', file: 'services/parcel-operations.js' },
     ],
-    consumes: ['orders (commande rattachee au colis)',
+    consumes: [
+      "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: utils/parcels.js -> utils/rules.js ; services/parcel-operations.js -> utils/rules.js)",
+'orders (commande rattachee au colis)',
       'customs (statut declaration)',
       'auth',
       'catalog',

@@ -281,7 +281,9 @@ module.exports = {
       'POST /api/shares/:token/contributions',
       'PATCH /api/shares/:token/contributions/:id',
     ],
-    consumes: ['orders',        // domaine propriétaire : order-status-machine
+    consumes: [
+      "refunds (FF-C1 2026-07-29 — orchestration du remboursement ; preuve: services/shared-cart-refund-queue.js -> services/refund-service.js ; services/cancel-shared-cart-with-refunds.js -> services/refund-service.js)",
+'orders',        // domaine propriétaire : order-status-machine
       'wallet',        // domaine propriétaire : wallet-service
       'products',      // lecture seule
       'notification', // émission uniquement,

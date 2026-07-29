@@ -8,6 +8,7 @@
 
 module.exports = {
   name:     'dashboard',
+  nature:   'feature',   // feature | capability | governance-unit
   type:     'transversal',
   domain:   'dashboard',
   status:   'production',
@@ -98,7 +99,7 @@ module.exports = {
       'signals: R',
       'sms_log: RW',
       'suppliers_stats: R',
-      'users: RW',
+      'users: W-authorized',   // authorized-writer via auth-identity.revokeSessions() (arbitrage A) — écritures directes de routes/admin/users.js à recâbler
       'wallet_transactions: W',
       'wallets: W',
     ],
@@ -122,7 +123,8 @@ module.exports = {
       'GET /api/hub-dash/dashboard',
       'GET /api/relay/dashboard',
       'GET /api/admin/radar',
-      'GET /api/admin/rules',
+      // 'GET /api/admin/rules' — retiré (B2, 2026-07-29) : endpoint réel de
+      // routes/admin-rules.js, propriété de business-rules.
       'GET /api/admin/loyalty/pending',
       'GET /api/admin/partners',
       'GET /api/admin/users',
@@ -148,10 +150,9 @@ module.exports = {
       'GET /api/admin/radar/money',
       'GET /api/admin/radar/orders-by-detail/:detail',
       'GET /api/admin/radar/status-details',
-      'GET /api/admin/rules/:key',
-      'PATCH /api/admin/rules/:key',
-      'POST /api/admin/rules/:key/reset',
-      'GET /api/admin/rules/audit',
+      // 'GET /api/admin/rules/:key', 'PATCH /api/admin/rules/:key',
+      // 'POST /api/admin/rules/:key/reset', 'GET /api/admin/rules/audit'
+      // — retirés (B2, 2026-07-29) : propriété business-rules.
       'POST /api/admin/users',
       'DELETE /api/admin/users/:id',
       'PUT /api/admin/users/:id/password',
@@ -199,6 +200,10 @@ module.exports = {
       'documents',
       'recommendations',
       'purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)',
+      // Déclarations FF-C1 (2026-07-29) — arêtes réelles, dashboard est
+      // business-transversal (arbitrage 2026-07-29), consommations métier ordinaires.
+      'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
+      'decision-signals (services/radar-queries.js — routes/admin-radar.js)',
     ],
   },
 
@@ -292,7 +297,8 @@ module.exports = {
       'routes/admin-dashboard.js',
       'routes/admin-loyalty.js',
       'routes/admin-radar.js',
-      'routes/admin-rules.js',
+      // routes/admin-rules.js — retiré (B2, 2026-07-29) : vérité mutée
+      // appartient à business-rules, pas à dashboard qui ne fait qu'agréger.
       'routes/admin.js',
       'routes/dashboard-clients.js',
       'routes/dashboard-hub.js',
@@ -411,7 +417,7 @@ module.exports = {
       'tests/unit/admin-loyalty.test.js',
       'tests/unit/admin-orders-route.test.js',
       'tests/unit/admin-radar.test.js',
-      'tests/unit/admin-rules.test.js',
+      // tests/unit/admin-rules.test.js — retiré (B2, 2026-07-29) : suit routes/admin-rules.js vers business-rules.
       'tests/unit/admin-system.test.js',
       'tests/unit/dashboard-cache.test.js',
       'tests/unit/dashboard-clients-route.test.js',
@@ -458,6 +464,7 @@ module.exports = {
   // `kind: business-transversal`. `feature-registry-check.js` compte désormais
   // `dashboard` dans les domaines transversaux, pas dans les features métier.
   classification: {
+    axis:     'business',   // business | support — seule source de la binarité
     kind:     'business-transversal',
     decision: 'aggregation-lecture',
     signals: {

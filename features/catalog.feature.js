@@ -12,10 +12,22 @@
 
 module.exports = {
   name:     'catalog',
+  nature:   'feature',   // feature | capability | governance-unit
   type:     'feature',
   domain:   'catalog',
   status:   'production',
   owner:    'backend-core',
+
+  // ── Classification d'ontologie (arbitrage 2026-07-29) ────────────────────
+  // `axis` est la SEULE source de la binarité business/support. `type` est un
+  // champ historique de topologie et ne doit jamais servir à la dériver.
+  classification: {
+    axis:     'business',   // business | support
+    kind:     'business-feature',
+    rationale: [
+      'Propriétaire exclusif de products, catalog_media, product_variants, product_skus, product_sku_media, et des règles de canonicalisation, dédoublonnage et publication (arbitrage D, 2026-07-29).',
+    ],
+  },
   since:    '2025-09',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
@@ -81,6 +93,9 @@ module.exports = {
       'schemas/catalog/normalized-supplier-product.v1.schema.json',
       'schemas/catalog/normalized-supplier-product.v2.schema.json',
       'schemas/catalog/product-detail.v1.schema.json',
+      // Rattaché (B1, 2026-07-29) : schéma du profil d'import, catalogué à tort
+      // dans le fourre-tout komerce-repo — cœur catalog (json-source-pipeline.js).
+      'schemas/catalog/import-profile.v1.schema.json',
     ],
     migrations: [
       'migrations/098_catalog_refinery_foundation.sql',
@@ -92,6 +107,14 @@ module.exports = {
       'migrations/107_product_variants_axis_display_name.sql',
       'migrations/108_product_skus_supplier_identity.sql',
       'migrations/109_product_sku_media.sql',
+      // Rattaché (B1, 2026-07-29) : audit d'import, catalogué à tort dans
+      // komerce-schema — suit services/suppliers/json-source-pipeline.js.
+      'migrations/110_catalog_import_audit.sql',
+    ],
+    config: [
+      // Rattaché (B1, 2026-07-29) : profil de test dummyjson, catalogué à tort
+      // dans komerce-repo — consommé par services/suppliers/json-source-pipeline.js.
+      'config/import-profiles/komerce-test-dummyjson.v1.json',
     ],
     docs: [
       'docs/doctrine/DOCTRINE_CATALOGUE.md',
@@ -269,7 +292,23 @@ module.exports = {
       'GET /api/products/categories',
       'GET /api/products/subcategories',
     ],
+    // Protocole de mutation exposé à sourcing (arbitrage D, 2026-07-29) : écrit
+
+    // atomiquement products, catalog_media, product_variants, product_skus et
+
+    // product_sku_media, décide créer / fusionner / rattacher, et retourne le
+
+    // productId. Idempotent via l'état PROMOTION_PENDING porté par sourcing.
+
+    internalApi: [
+
+      { fn: 'createDraftFromSourcingCandidate', file: 'services/product-admin-service.js' },
+
+    ],
+
     consumes: [
+      "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)",
+
       'economic-engine (prix produit et valorisation commerciale transport)',
       'logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)',
       'shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)',

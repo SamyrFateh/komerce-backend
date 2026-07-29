@@ -215,7 +215,9 @@ module.exports = {
     internalApi: [
       { fn: 'transitionOrderStatus', file: 'services/order-status-machine.js' },
     ],
-    consumes: ['wallet (application credit)',
+    consumes: [
+      "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)",
+'wallet (application credit)',
       'economic-engine (cout figure a la commande)',
       'logistics (rattachement colis)',
       'catalog (lecture produit)',
