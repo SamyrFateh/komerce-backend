@@ -48,7 +48,7 @@
 
 'use strict';
 
-import { state, dom } from './b-store.js';
+import { state, dom, getRequestedTransportRail } from './b-store.js';
 import { fmtPrice, optimizeImgUrl } from './b-utils.js';
 import {
   OPTION_STATE,
@@ -367,12 +367,35 @@ function renderInfoStrip(detail, selection, root) {
   }
 
   // Delivery chips — exclusively from detail.delivery_options[]
-  // Never hardcoded. Zero chips if array is empty.
+  // Never hardcoded. Zero chips if array is empty. Les options indisponibles
+  // restent affichées (info transparente, comportement historique du chip
+  // mobile) mais ne participent jamais au choix interactif.
   const options = detail?.delivery_options || [];
-  options.forEach((option, index) => {
-    const chip = document.createElement('span');
+  const availableOptions = options.filter((option) => option.available !== false);
+  // Plusieurs options réellement disponibles → chaque chip disponible
+  // devient un choix explicite (role=radio), miroir du sélecteur desktop
+  // (.k-dsel-wrap) — voir b-modal-desktop-product.js::renderDeliverySelector.
+  const isInteractive = availableOptions.length > 1;
+  const selectedRail = isInteractive ? getRequestedTransportRail() : null;
+
+  if (isInteractive) {
+    strip.setAttribute('role', 'radiogroup');
+    strip.setAttribute('aria-label', 'Mode de livraison');
+  }
+
+  options.forEach((option) => {
     const isAir = typeof option.code === 'string' && option.code.startsWith('AIR_');
+    const isClickable = isInteractive && option.available !== false;
+    const isSelected = isClickable && option.code === selectedRail;
+    const chip = document.createElement(isClickable ? 'button' : 'span');
     chip.className = `k-mdm-chip k-mdm-chip--delivery${isAir ? ' k-mdm-chip--air' : ''}`;
+    if (isClickable) {
+      chip.type = 'button';
+      chip.dataset.rail = option.code;
+      chip.setAttribute('role', 'radio');
+      chip.setAttribute('aria-checked', String(isSelected));
+      if (isSelected) chip.classList.add('k-mdm-chip--delivery-selected');
+    }
     const iconWrap = document.createElement('span');
     iconWrap.className = 'k-mdm-chip-icon';
     iconWrap.appendChild(_deliveryIconSvg(isAir));
@@ -392,11 +415,15 @@ function renderInfoStrip(detail, selection, root) {
       chip.appendChild(metaSpan);
     }
 
-    // Premier mode = choix retenu par défaut (aucune mutation de state,
-    // marquage purement visuel — la sélection réelle du mode reste hors
-    // périmètre PDC de ce lot). Uniquement pertinent si plusieurs modes.
-    if (index === 0 && options.length > 1) {
-      chip.classList.add('k-mdm-chip--delivery-selected');
+    if (isClickable) {
+      chip.addEventListener('click', () => {
+        state.modalDeliverySelection = { requested_transport_rail: option.code };
+        strip.querySelectorAll('.k-mdm-chip--delivery[data-rail]').forEach((c) => {
+          const active = c.dataset.rail === option.code;
+          c.classList.toggle('k-mdm-chip--delivery-selected', active);
+          c.setAttribute('aria-checked', String(active));
+        });
+      });
     }
 
     strip.appendChild(chip);

@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        product_id, canonical_catalog_rows, commercially_exposed_transport_rails
  * @outputs       public_product_detail_v1
- * @depends       services/transport-rails.js, schemas/catalog/product-detail.v1.schema.json
+ * @depends       services/transport-rails.js, services/transport-pricing.js, utils/rules.js, schemas/catalog/product-detail.v1.schema.json
  * @used-by       routes/catalog-product-detail.js
- * @db-read       catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
+ * @db-read       business_rules, catalog_media, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/specs/DECISION_MODELE_STOCK_SKU.md, docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md
  * @impact-areas  catalog, product-detail, modal, logistics
- * @version       2026-07 — fiche produit enrichie (content)
+ * @version       2026-07 — §9 : price_kmf réel via transport-pricing.js ; eta_label toujours null (aucune source honnête)
  */
 
 'use strict';
@@ -22,6 +22,8 @@ const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 const detailSchema = require('../schemas/catalog/product-detail.v1.schema.json');
 const { listCommercialTransportRails } = require('./transport-rails');
+const { getRule } = require('../utils/rules');
+const { quoteTransportPriceForItem, TransportPricingError } = require('./transport-pricing');
 
 const CONTRACT_VERSION = '1';
 
@@ -320,13 +322,25 @@ function buildSellableUnits(product, skuRows, media, explicitSkuMediaMap = new M
  * Règles :
  *  1. Seuls les rails PUBLIC + ACTIVE + ACTIVE (listCommercialTransportRails) sont exposés.
  *  2. AIR_EXPRESS est filtré si le produit n'est pas ELIGIBLE (PENDING_REVIEW ou EXCLUDED).
- *  3. Aucun prix ni délai n'est inventé ici. price_kmf et eta_label sont null
- *     tant que les moteurs logistics + economic-engine ne les fournissent pas.
+ *  3. price_kmf (§9) est un devis réel via services/transport-pricing.js
+ *     (quantity=1, poids/volume produit), jamais une valeur inventée ici.
+ *     Si le produit n'a pas de weight_kg (donnée manquante) ou que le devis
+ *     échoue (tarif business_rules absent, rail ambigu...), price_kmf reste
+ *     null plutôt que de propager une erreur — la fiche produit ne doit
+ *     jamais planter pour un problème de tarification transport.
+ *  4. eta_label reste null : aucune source de donnée honnête ne relie
+ *     aujourd'hui un délai à SEA_STANDARD/AIR_EXPRESS (la table `carriers`
+ *     est un seed d'exemple générique, sans lien avec les rails commerciaux
+ *     — voir gap note features/catalog.feature.js). À câbler quand une
+ *     décision business fournira un délai réel par rail.
  *
- * @param {{ air_eligibility_status?: string }} product — ligne products lue en DB
+ * @param {{ air_eligibility_status?: string, weight_kg?: number, volume_cm3?: number }} product
+ * @param {object} rates business_rules injectées par l'appelant (mêmes clés que transport-pricing.js)
  */
-function buildDeliveryOptions(product = {}) {
+function buildDeliveryOptions(product = {}, rates = {}) {
   const airEligible = product.air_eligibility_status === 'ELIGIBLE';
+  const weightKg = Number(product.weight_kg);
+  const hasWeight = Number.isFinite(weightKg) && weightKg > 0;
 
   return listCommercialTransportRails()
     .filter((rail) => !(rail.code === 'AIR_EXPRESS' && !airEligible))
@@ -337,13 +351,32 @@ function buildDeliveryOptions(product = {}) {
         error.code = 'PRODUCT_DETAIL_RAIL_LABEL_MISSING';
         throw error;
       }
+
+      let price_kmf = null;
+      if (hasWeight) {
+        try {
+          const quote = quoteTransportPriceForItem({
+            requestedTransportRailCode: rail.code,
+            weightKg,
+            volumeCm3: Number(product.volume_cm3) || 0,
+            quantity: 1,
+            rates,
+          });
+          price_kmf = quote.price_kmf;
+        } catch (e) {
+          if (!(e instanceof TransportPricingError)) throw e;
+          // Tarif manquant/rail non valorisable → honnête : reste null.
+          price_kmf = null;
+        }
+      }
+
       return {
         code: rail.code,
         label,
         available: true,
+        price_kmf,
         // Doctrine DOCTRINE_PRODUCT_DETAIL_CONTRACT : aucune vérité inventée.
-        // Ces valeurs viendront des moteurs logistics et economic-engine.
-        price_kmf: null,
+        // Le délai viendra d'une future source business dédiée par rail.
         eta_label: null,
         unavailable_reason: null,
       };
@@ -366,7 +399,7 @@ async function getProductDetail(dbClient, productId) {
   const { rows: [product] } = await dbClient.query(
     `SELECT id, product_ref, sku, name, description, category, subcategory, series,
             price_kmf, promo_pct, image_url, images, has_variants, inventory_model,
-            air_eligibility_status
+            air_eligibility_status, weight_kg, volume_cm3
        FROM products
       WHERE id = $1 AND is_active = TRUE`,
     [productId]
@@ -448,6 +481,23 @@ async function getProductDetail(dbClient, productId) {
     [productId]
   );
 
+  // Mêmes clés/fallbacks que routes/orders/create.js — un seul point de
+  // vérité pour les tarifs commerciaux transport (business_rules).
+  const [
+    seaKmfPerKgCommercial,
+    airKmfPerKgTaxable,
+    airVolumetricDivisor,
+  ] = await Promise.all([
+    getRule('SEA_KMF_PER_KG_COMMERCIAL', 65),
+    getRule('AIR_KMF_PER_KG_TAXABLE', 2500),
+    getRule('AIR_VOLUMETRIC_DIVISOR', 6000),
+  ]);
+  const transportRates = {
+    SEA_KMF_PER_KG_COMMERCIAL: seaKmfPerKgCommercial,
+    AIR_KMF_PER_KG_TAXABLE: airKmfPerKgTaxable,
+    AIR_VOLUMETRIC_DIVISOR: airVolumetricDivisor,
+  };
+
   const detail = {
     contract_version: CONTRACT_VERSION,
     inventory_model: product.inventory_model,
@@ -469,7 +519,7 @@ async function getProductDetail(dbClient, productId) {
     media,
     option_axes: buildOptionAxes(variantRows),
     sellable_units: buildSellableUnits(product, skuRows, media, explicitSkuMediaMap),
-    delivery_options: buildDeliveryOptions(product),
+    delivery_options: buildDeliveryOptions(product, transportRates),
     content: buildContent(profileRow || null, sectionRows, attributeRows),
   };
 

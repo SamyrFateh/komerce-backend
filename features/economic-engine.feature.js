@@ -148,6 +148,7 @@ module.exports = {
       'tests/unit/cost-allocation-helpers.test.js',
       'tests/unit/dashboard-finance-route.test.js',
       'tests/unit/pricing-strategy-service-full.test.js',
+      'tests/unit/transport-pricing.test.js',
       'tests/unit/sourcing-route.test.js',
       'tests/unit/cost-allocation-allocate.test.js',
       'tests/unit/cost-allocation.test.js',

@@ -288,8 +288,8 @@ module.exports = {
         risk: 'GET /api/products/:id/detail v1 projette honnêtement les donnees canoniques actuelles products/product_variants/product_skus ; les roles source riches comme SCENE restent donc indisponibles tant que la promotion source vers catalogue n est pas explicite.',
       },
       {
-        gap: 'le contrat detail v1 expose uniquement les rails deja commercialement exposes ; aucun service de devis produit/destination ne fournit encore price_kmf ou eta_label de livraison.',
-        risk: 'delivery_options est structure et honnete mais prix/delai restent null ; interdiction de retomber sur Gratuit ou 3 a 5 semaines code en frontend.',
+        gap: 'le contrat detail v1 expose les rails deja commercialement exposes avec price_kmf reel (services/transport-pricing.js, quantity=1, poids/volume produit) depuis le chantier §9. eta_label reste null : aucune table ne relie un delai a SEA_STANDARD/AIR_EXPRESS (la table carriers existe mais c est un seed d exemple generique Dubai->Moroni, sans FK vers les rails, explicitement marque "a adapter avant la mise en prod").',
+        risk: 'price_kmf est fiable (memes business_rules que orders/create.js) et retombe honnetement a null si le produit n a pas de weight_kg ou si le tarif est absent. eta_label reste interdit d affichage tant qu aucune decision business ne fournit un delai reel par rail ; interdiction de retomber sur Gratuit ou 3 a 5 semaines code en frontend.',
       },
       {
         gap: 'b-modal-core.js lance encore le fetch variantes legacy et modal-view-model.js reste necessaire pour des classes structurelles historiques.',

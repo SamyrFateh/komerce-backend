@@ -2,7 +2,13 @@
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../services/transport-rails', () => ({
+  ...jest.requireActual('../../services/transport-rails'),
   listCommercialTransportRails: jest.fn(),
+}));
+jest.mock('../../utils/rules', () => ({
+  // Mêmes fallbacks que production (routes/orders/create.js) — les tests
+  // n'ont pas besoin de mocker une valeur différente sauf cas explicite.
+  getRule: jest.fn((key, fallback) => Promise.resolve(fallback)),
 }));
 
 const express = require('express');
@@ -310,6 +316,25 @@ describe('catalog product detail contract v1', () => {
       },
     ]);
     expect(detail.delivery_options.some((option) => option.code === 'AIR_EXPRESS')).toBe(false);
+  });
+
+  test('price_kmf est un devis réel (transport-pricing.js) quand le produit a un weight_kg', async () => {
+    const detail = await getProductDetail(
+      dbFor({ product: skuProduct({ weight_kg: 2 }) }),
+      PRODUCT_ID
+    );
+
+    // Fallback par défaut SEA_KMF_PER_KG_COMMERCIAL = 65 → 2kg × 1 × 65 = 130.
+    expect(detail.delivery_options).toEqual([
+      {
+        code: 'SEA_STANDARD',
+        label: 'Livraison standard',
+        available: true,
+        price_kmf: 130,
+        eta_label: null,
+        unavailable_reason: null,
+      },
+    ]);
   });
 
   test('AIR_EXPRESS apparaît quand logistics le rend commercial et le produit est éligible', () => {

@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 786,
-    "edges": 4402,
+    "edges": 4405,
     "dbTables": 116,
     "doctrines": 158,
     "impactAreas": 129,
@@ -9534,12 +9534,15 @@
       ],
       "depends": [
         "services/transport-rails.js",
+        "services/transport-pricing.js",
+        "utils/rules.js",
         "schemas/catalog/product-detail.v1.schema.json"
       ],
       "usedBy": [
         "routes/catalog-product-detail.js"
       ],
       "dbRead": [
+        "business_rules",
         "catalog_media",
         "product_attributes",
         "product_content_profile",
@@ -9563,7 +9566,7 @@
         "modal",
         "logistics"
       ],
-      "version": "2026-07 — fiche produit enrichie (content)"
+      "version": "2026-07 — §9 : price_kmf réel via transport-pricing.js ; eta_label toujours null (aucune source honnête)"
     },
     {
       "id": "services/catalog-promotion.js",
@@ -33419,6 +33422,18 @@
     },
     {
       "from": "services/catalog-product-detail.js",
+      "to": "services/transport-pricing.js",
+      "type": "depends",
+      "label": "services/transport-pricing.js"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "utils/rules.js",
+      "type": "depends",
+      "label": "utils/rules.js"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
       "to": "schemas/catalog/product-detail.v1.schema.json",
       "type": "depends",
       "label": "schemas/catalog/product-detail.v1.schema.json"
@@ -33428,6 +33443,12 @@
       "to": "services/catalog-product-detail.js",
       "type": "uses",
       "label": "routes/catalog-product-detail.js"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:business_rules",
+      "type": "db-read",
+      "label": "business_rules"
     },
     {
       "from": "services/catalog-product-detail.js",
@@ -55810,6 +55831,8 @@
       "purpose": null,
       "directDependsOn": [
         "services/transport-rails.js",
+        "services/transport-pricing.js",
+        "utils/rules.js",
         "schemas/catalog/product-detail.v1.schema.json"
       ],
       "directUsedBy": [
@@ -55817,6 +55840,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "business_rules",
         "catalog_media",
         "product_attributes",
         "product_content_profile",
@@ -55840,6 +55864,7 @@
         "logistics"
       ],
       "mustCheck": [
+        "db:business_rules",
         "db:catalog_media",
         "db:product_attributes",
         "db:product_content_profile",
@@ -55856,7 +55881,9 @@
         "impact:modal",
         "impact:product-detail",
         "routes/catalog-product-detail.js",
-        "services/transport-rails.js"
+        "services/transport-pricing.js",
+        "services/transport-rails.js",
+        "utils/rules.js"
       ]
     },
     "services/catalog-promotion.js": {
@@ -62673,6 +62700,7 @@
         "impact:logistics",
         "impact:orders",
         "routes/orders/create.js",
+        "services/catalog-product-detail.js",
         "services/transport-rails.js"
       ]
     },
@@ -63924,6 +63952,7 @@
         "routes/orders/qr.js",
         "services/cash-reminder-service.js",
         "services/catalog-enrichment.js",
+        "services/catalog-product-detail.js",
         "services/parcel-operations.js",
         "services/radar-queries.js",
         "services/shared-cart-v41-transitions.js",

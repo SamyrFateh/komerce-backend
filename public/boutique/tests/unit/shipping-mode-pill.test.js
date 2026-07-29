@@ -211,7 +211,14 @@ describe('shipping-mode-pill — desktop (k-modal-delivery)', () => {
 });
 
 describe('shipping-mode-pill — mobile (chip k-mdm-chip--air)', () => {
-  jest.mock('../../js/b-store.js', () => ({ state: {}, dom: {} }));
+  jest.mock('../../js/b-store.js', () => ({
+    state: {},
+    dom: {},
+    getRequestedTransportRail: jest.fn(() => {
+      const { state } = require('../../js/b-store.js');
+      return state.modalDeliverySelection?.requested_transport_rail ?? null;
+    }),
+  }));
   jest.mock('../../js/b-utils.js', () => ({
     fmtPrice: jest.fn((n) => String(n) + ' KMF'),
     optimizeImgUrl: jest.fn((url) => url),
@@ -286,6 +293,7 @@ describe('shipping-mode-pill — mobile (chip k-mdm-chip--air)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     installDom();
+    Object.keys(state).forEach((key) => delete state[key]);
   });
 
   test('option AIR_ → chip porte la classe accent k-mdm-chip--air', () => {
@@ -303,6 +311,57 @@ describe('shipping-mode-pill — mobile (chip k-mdm-chip--air)', () => {
     const seaChip = Array.from(chips).find((c) => c.textContent.includes('Livraison standard'));
     expect(airChip.classList.contains('k-mdm-chip--air')).toBe(true);
     expect(seaChip.classList.contains('k-mdm-chip--air')).toBe(false);
+  });
+
+  test('deux modes exposés → chips deviennent des boutons radio, aucun présélectionné', () => {
+    const detail = baseDetail({
+      delivery_options: [
+        { code: 'SEA_STANDARD', label: 'Livraison standard', available: true },
+        { code: 'AIR_EXPRESS', label: 'Livraison express', available: true, eta_label: 'Sous 5 jours' },
+      ],
+    });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const chips = document.querySelectorAll('.k-mdm-chip--delivery');
+    expect(chips).toHaveLength(2);
+    chips.forEach((chip) => {
+      expect(chip.tagName).toBe('BUTTON');
+      expect(chip.getAttribute('role')).toBe('radio');
+      expect(chip.getAttribute('aria-checked')).toBe('false');
+      expect(chip.classList.contains('k-mdm-chip--delivery-selected')).toBe(false);
+    });
+    expect(document.querySelector('.k-mdm-info-strip').getAttribute('role')).toBe('radiogroup');
+  });
+
+  test('clic sur un chip livraison → sélectionne ce rail dans state.modalDeliverySelection', () => {
+    const detail = baseDetail({
+      delivery_options: [
+        { code: 'SEA_STANDARD', label: 'Livraison standard', available: true },
+        { code: 'AIR_EXPRESS', label: 'Livraison express', available: true, eta_label: 'Sous 5 jours' },
+      ],
+    });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const airChip = document.querySelector('.k-mdm-chip--delivery[data-rail="AIR_EXPRESS"]');
+    airChip.click();
+
+    expect(state.modalDeliverySelection.requested_transport_rail).toBe('AIR_EXPRESS');
+    expect(airChip.classList.contains('k-mdm-chip--delivery-selected')).toBe(true);
+    expect(airChip.getAttribute('aria-checked')).toBe('true');
+    const seaChip = document.querySelector('.k-mdm-chip--delivery[data-rail="SEA_STANDARD"]');
+    expect(seaChip.classList.contains('k-mdm-chip--delivery-selected')).toBe(false);
+    expect(seaChip.getAttribute('aria-checked')).toBe('false');
+  });
+
+  test('une seule option exposée → chip reste une simple pill informative, pas un bouton', () => {
+    const detail = baseDetail({
+      delivery_options: [{ code: 'SEA_STANDARD', label: 'Livraison standard', available: true }],
+    });
+    renderMobileProductDetail(detail, baseSelection());
+
+    const chip = document.querySelector('.k-mdm-chip--delivery');
+    expect(chip.tagName).toBe('SPAN');
+    expect(chip.getAttribute('role')).toBeNull();
   });
 
   test('aucune option AIR_ → aucun chip accenté', () => {

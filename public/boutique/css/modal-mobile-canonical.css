@@ -449,6 +449,21 @@
     margin-right: 4px;
   }
 
+  /* §1.4 : chip devenu un vrai bouton radio quand plusieurs modes sont
+     exposés (voir b-modal-mobile-product.js::renderInfoStrip). Reset des
+     styles natifs <button> — le visuel doit rester identique au chip
+     informatif <span>. */
+  button.k-mdm-chip--delivery {
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  button.k-mdm-chip--delivery:active {
+    background: var(--border);
+  }
+
   .k-mdm-chip--air {
     color: var(--blue-dark);
     background: var(--blue-light-bg);

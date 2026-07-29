@@ -1,6 +1,13 @@
 'use strict';
 
-jest.mock('../../js/b-store.js', () => ({ state: {}, dom: {} }));
+jest.mock('../../js/b-store.js', () => ({
+  state: {},
+  dom: {},
+  getRequestedTransportRail: jest.fn(() => {
+    const { state } = require('../../js/b-store.js');
+    return state.modalDeliverySelection?.requested_transport_rail ?? null;
+  }),
+}));
 
 jest.mock('../../js/b-utils.js', () => ({
   fmtPrice: jest.fn((n) => String(n) + ' KMF'),
