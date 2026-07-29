@@ -123,9 +123,9 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
     expect(rule).toMatch(/height\s*:\s*40px/);
   });
 
-  test("l'asset panier_tresse.png reste utilisé dans la topbar", () => {
+  test("l'asset panier_tresse_vert.png reste utilisé dans la topbar", () => {
     const topbarHtml = html.slice(html.indexOf('k-modal-topbar'), html.indexOf('k-modal-topbar-right') + 400);
-    expect(topbarHtml).toMatch(/panier_tresse\.png/);
+    expect(topbarHtml).toMatch(/panier_tresse_vert\.png/);
   });
 
   test('le badge panier reste présent (CSS + HTML)', () => {

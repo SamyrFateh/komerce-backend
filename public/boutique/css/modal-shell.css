@@ -503,7 +503,8 @@
   /* REF-2026-07 : label "Retour" visible desktop (était masqué globalement) */
   #k-modal #k-modal-back-label { display: inline; }
   #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
-  #k-modal .k-modal-cart-icon { width: 24px; height: 24px; }
+  #k-modal .k-modal-cart-btn { width: 38px; height: 38px; }
+  #k-modal .k-modal-cart-icon { width: 28px; height: 28px; }
   .k-modal-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-left: 12px; flex: 1; min-width: 0; overflow: hidden; }
   .k-modal-breadcrumb span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .k-modal-breadcrumb-sep { color: var(--text-light); flex-shrink: 0; }
