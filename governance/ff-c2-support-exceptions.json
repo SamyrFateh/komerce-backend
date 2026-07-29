@@ -1,0 +1,76 @@
+{
+  "version": "FF-C2-2026-07-29",
+  "policy": "Exceptions nominatives et exactes pour les coutures platform-ops arbitrées le 2026-07-29. Aucun wildcard, aucune feature entière.",
+  "exceptions": [
+    {
+      "from": "platform-ops",
+      "to": "auth",
+      "file": "routes/config.js",
+      "target": "middleware/auth.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    },
+    {
+      "from": "platform-ops",
+      "to": "auth",
+      "file": "routes/health.js",
+      "target": "middleware/auth.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    },
+    {
+      "from": "platform-ops",
+      "to": "auth",
+      "file": "routes/modules.js",
+      "target": "middleware/auth.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    },
+    {
+      "from": "platform-ops",
+      "to": "auth",
+      "file": "routes/ops-api.js",
+      "target": "middleware/auth.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    },
+    {
+      "from": "platform-ops",
+      "to": "auth",
+      "file": "routes/simulator.js",
+      "target": "middleware/auth.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    },
+    {
+      "from": "platform-ops",
+      "to": "business-rules",
+      "file": "routes/config.js",
+      "target": "utils/rules.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    },
+    {
+      "from": "platform-ops",
+      "to": "economic-engine",
+      "file": "routes/modules.js",
+      "target": "services/pricing-engine.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    },
+    {
+      "from": "platform-ops",
+      "to": "logistics",
+      "file": "services/simulator/state-advancer.js",
+      "target": "services/parcel-operations.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    },
+    {
+      "from": "platform-ops",
+      "to": "logistics",
+      "file": "services/simulator/state-advancer.js",
+      "target": "services/parcel-operations.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    },
+    {
+      "from": "platform-ops",
+      "to": "orders",
+      "file": "services/simulator/state-advancer.js",
+      "target": "services/order-status-machine.js",
+      "rationale": "Couture d’exploitation platform-ops explicitement arbitrée ; exception limitée à cet import exact."
+    }
+  ]
+}

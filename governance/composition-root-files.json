@@ -4,9 +4,11 @@
   "wiringFiles": [
     "bootstrap/api-routes.js",
     "bootstrap/crons.js",
+    "bootstrap/feature-wiring.js",
     "middleware/error-handler.js",
     "public/boutique/js/main.js",
     "public/boutique/js/boutique.js",
-    "public/boutique/js/b-nav.js"
+    "public/boutique/js/b-nav.js",
+    "server.js"
   ]
 }

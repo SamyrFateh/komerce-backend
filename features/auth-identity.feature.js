@@ -14,10 +14,22 @@ module.exports = {
 
   // ── Identite ─────────────────────────────────────────────────────────────
   name:     'auth-identity',
+  nature:   'feature',   // feature | capability | governance-unit
   type:     'transversal',   // feature | transversal
   domain:   'auth-identity',
   status:   'production',   // draft | staging | production | deprecated
   owner:    'backend-core',
+
+  // ── Classification d'ontologie (arbitrage 2026-07-29) ────────────────────
+  // `axis` est la SEULE source de la binarité business/support. `type` est un
+  // champ historique de topologie et ne doit jamais servir à la dériver.
+  classification: {
+    axis:     'business',   // business | support
+    kind:     'business-feature',
+    rationale: [
+      'Propriétaire de `users` et `otp_codes` (arbitrage A, 2026-07-29). Cycle de vie propre : OTP, magic-link, guest-checkout. Expose revokeSessions() comme protocole de mutation.',
+    ],
+  },
   since:    '2025-08',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
@@ -91,7 +103,7 @@ module.exports = {
       'products: R',
       'relais: R',
       'revoked_tokens: W',
-      'users: RW',
+      'users: RW',   // OWNER (arbitrage A, 2026-07-29) — seule feature autorisée à muter, via l'API interne ci-dessous
     ],
   },
 
@@ -134,7 +146,13 @@ module.exports = {
     internalApi: [
       { fn: 'makeIntlPhoneInput', file: 'public/boutique/js/b-phone.js' },
     ],
-    consumes: [],
+    consumes: [
+      // Déclarations FF-C1 (2026-07-29) — arêtes réelles, non des inversions :
+      // auth-identity est business (arbitrage A), ces dépendances sont donc
+      // des consommations métier→support et métier→métier ordinaires.
+      'auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)',
+      'notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)',
+    ],
   },
 
   // ── Dette assumée / documentée ────────────────────────────────────────────

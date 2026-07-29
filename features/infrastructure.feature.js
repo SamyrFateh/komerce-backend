@@ -20,10 +20,22 @@
 module.exports = {
 
   name:     'infrastructure',
+  nature:   'feature',   // feature | capability | governance-unit
   type:     'transversal',
   domain:   'infrastructure',
   status:   'production',
   owner:    'backend',
+
+  // ── Classification d'ontologie (arbitrage 2026-07-29) ────────────────────
+  // `axis` est la SEULE source de la binarité business/support. `type` est un
+  // champ historique de topologie et ne doit jamais servir à la dériver.
+  classification: {
+    axis:     'support',   // business | support
+    kind:     'technical-foundation',
+    rationale: [
+      'Socle technique pur (arbitrage B, 2026-07-29). Les écritures runtime constatées sur finance_config / charges / economic_snapshots ont été re-scopées vers economic-engine, users vers auth-identity, business_rules vers la feature business-rules. Ne subsistent que des écritures technical-writer (DDL de démarrage, crons d\'orchestration).',
+    ],
+  },
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
   service: "Infrastructure transversale consommée par toutes les features : middleware non-auth (error-handler, rate-limit, request-id, upload, validate), utilitaires partagés (logger, phone, rates, reference, rules), barrel de validation Joi, et bootstrap applicatif (Express, routes, crons, env, sécurité, migrations startup).",
@@ -47,12 +59,13 @@ module.exports = {
       'utils/phone.js',
       'utils/rates.js',
       'utils/reference.js',
-      'utils/rules.js',
+      // utils/rules.js — transféré à la feature business-rules (arbitrage B, 2026-07-29)
     ],
     validators: [
       'validators/index.js',
     ],
     bootstrap: [
+      'bootstrap/feature-wiring.js',
       'bootstrap/api-routes.js',
       'bootstrap/boot-guard.js',
       'bootstrap/crons.js',
@@ -296,6 +309,13 @@ module.exports = {
       'db/seed-products-v2.json',
       'db/seed.sql',
     ],
+    // server.js est aussi déclaré ici (D2, 2026-07-29) : les 5 endpoints
+    // ci-dessous (exposes) sont montés inline directement sur `app` dans
+    // server.js, pas via un routeur monté séparément — FF-D2 a besoin de
+    // le trouver dans un groupe "routes" pour rattacher ces endpoints.
+    routes: [
+      'server.js',
+    ],
     config: [
       'db.js',
       'server.js',
@@ -327,7 +347,7 @@ module.exports = {
       'tests/unit/rates.test.js',
       'tests/unit/reference.test.js',
       'tests/unit/request-id.test.js',
-      'tests/unit/rules-engine.test.js',
+      // tests/unit/rules-engine.test.js — transféré à business-rules (arbitrage B)
       'tests/unit/upload.test.js',
     ],
   },
@@ -342,21 +362,21 @@ module.exports = {
   // (nom de table construit par variable) a échappé au scan.
   db: {
     tables: [
-      'business_rules: RW',
-      'business_rules_history: RW',
-      'charges: RW',
+      // business_rules — retiré : propriété business-rules (arbitrage B) — feature scindée le 2026-07-29
+      // business_rules_history — retiré : propriété business-rules (arbitrage B)
+      // charges — retiré : propriété economic-engine (arbitrage B)
 
-      'economic_snapshots: RW',
-      'finance_config: RW',
-      'pickup_print_tokens: RW',
-      'pickup_reveal_codes: RW',
-      'revoked_tokens: RW',
+      'economic_snapshots: W-technical',   // technical-writer : bootstrap/crons.js planifie le snapshot, economic-engine le calcule et le possède
+      // finance_config — retiré : propriété economic-engine (arbitrage B). Écriture runtime constatée : services/pricing-rates.js, routes/admin-finance-config.js, routes/admin-costing.js — toutes economic-engine
+      'pickup_print_tokens: W-technical',   // technical-writer : purge planifiée (bootstrap/crons.js). Propriétaire : logistics
+      'pickup_reveal_codes: W-technical',   // technical-writer : purge planifiée (bootstrap/crons.js). Propriétaire : logistics
+      'revoked_tokens: W-technical',   // technical-writer : purge planifiée. Propriétaire : auth-identity (arbitrage A)
       // schema_migrations : écrit par scripts/run-migrations.js (runner CI/deploy).
       // Ce fichier est hors des SCAN_ROOTS du générateur de graphe (scripts/ non
       // scanné), donc invérifiable par header — c'est un angle mort de l'outil,
       // pas une fausse déclaration. Vérifié manuellement le 2026-07-07.
-      'schema_migrations: RW',
-      'users: RW',
+      'schema_migrations: W-technical',   // technical-writer : DDL versionné, aucune décision métier
+      // users — retiré : propriété auth-identity (arbitrage A)
     ],
   },
 
@@ -395,7 +415,6 @@ module.exports = {
       'utils/phone.js — normalisation numéros téléphone Comores',
       'utils/rates.js — taux de change KMF/EUR',
       'utils/reference.js — génération de références commande/colis',
-      'utils/rules.js — moteur de règles métier centralisé',
       'validators/index.js — barrel des schémas Joi',
       'bootstrap/* — démarrage Express, routage, crons, migrations',
     ],

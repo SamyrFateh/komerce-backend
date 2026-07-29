@@ -71,4 +71,14 @@ module.exports = {
     'un signal est un constat derive, jamais une mutation d\'une table possedee par une autre feature',
     'acknowledge/resolve/snooze changent uniquement l\'etat du signal, jamais l\'etat de la donnee source',
   ],
+
+  contract: {
+    consumes: [
+      "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/signals.js -> middleware/auth.js)",
+
+      "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/radar-queries.js -> utils/parcels.js)",
+
+      "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/radar-queries.js -> utils/rules.js)",
+    ],
+  },
 };

@@ -286,11 +286,32 @@ function build() {
 
 const registry = build();
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
-fs.writeFileSync(OUT, JSON.stringify({
-  generatedAt: new Date().toISOString(),
-  generator:   'scripts/gen-route-registry.js',
-  count:       registry.length,
-  routes:      registry,
-}, null, 2));
+
+const semantic = {
+  generator: 'scripts/gen-route-registry.js',
+  count: registry.length,
+  routes: registry,
+};
+
+let generatedAt = process.env.SOURCE_DATE_EPOCH
+  ? new Date(Number(process.env.SOURCE_DATE_EPOCH) * 1000).toISOString()
+  : new Date().toISOString();
+
+// Idempotence : une régénération sans changement sémantique ne doit pas
+// produire un diff uniquement parce que l'horloge a avancé.
+try {
+  const previous = JSON.parse(fs.readFileSync(OUT, 'utf8'));
+  const previousSemantic = {
+    generator: previous.generator,
+    count: previous.count,
+    routes: previous.routes,
+  };
+  if (JSON.stringify(previousSemantic) === JSON.stringify(semantic)
+      && typeof previous.generatedAt === 'string') {
+    generatedAt = previous.generatedAt;
+  }
+} catch { /* première génération ou artefact illisible */ }
+
+fs.writeFileSync(OUT, JSON.stringify({ generatedAt, ...semantic }, null, 2));
 
 console.log(`route-registry: ${registry.length} route(s) résolue(s) → ${path.relative(ROOT, OUT)}`);

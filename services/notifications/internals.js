@@ -33,24 +33,38 @@ const {
 const WID_OTP        = process.env.WID_OTP        || null;
 const WID_MAGIC_LINK = process.env.WID_MAGIC_LINK || null;
 
+let _notificationOutcomeListener = null;
+
+/**
+ * Point d'assemblage sortant. Notifications publie un fait neutre ; le
+ * composition root choisit les observateurs. Aucun transporteur de message ne
+ * connaît decision-signals.
+ */
+function setNotificationOutcomeListener(listener) {
+  if (listener !== null && typeof listener !== 'function') {
+    throw new TypeError('notification outcome listener must be a function or null');
+  }
+  _notificationOutcomeListener = listener;
+}
+
 function _alertNotificationFailure({ event, orderRef, orderId, error }) {
-  const signalService = require('../signal-service');
-  signalService.upsertSignal({
-    signal_type:    'notification_failure',
-    severity:       'warning',
-    title:          `Notif échouée — ${event}`,
-    summary:        `Commande ${orderRef || orderId || '?'} · ${String(error).substring(0, 120)}`,
-    source_module:  'notification-service',
-    target_shell:   'bo',
-    target_view:    'orders',
-    target_filters: orderId ? { order_id: orderId } : {},
-    owner_role:     'admin',
-    entity_type:    'order',
-    entity_id:      orderId || null,
-    recommendation: 'Vérifier les logs notification-service et relancer manuellement si nécessaire',
-    confidence:     'high',
-    meta:           { event, orderRef, orderId, error: String(error) },
-  }).catch(e => log.error({ err: e }, '[notification-service] Failed to upsert notification_failure signal'));
+  if (!_notificationOutcomeListener) {
+    log.warn({ event, orderRef, orderId }, '[notification-service] notification failure has no observer');
+    return;
+  }
+
+  // Fire-and-forget assumé : une alerte de pilotage ne doit jamais casser
+  // l'envoi ou le parcours appelant.
+  Promise.resolve()
+    .then(() => _notificationOutcomeListener({
+      type: 'NotificationOutcomeRecorded',
+      status: 'failed',
+      event,
+      orderRef: orderRef || null,
+      orderId: orderId || null,
+      error: String(error),
+    }))
+    .catch(err => log.error({ err }, '[notification-service] notification outcome observer failed'));
 }
 
 // ─── Logger interne ────────────────────────────────────────────────────
@@ -215,6 +229,7 @@ module.exports = {
   callAuthKey, callAuthKeyText, WID,
   WID_OTP, WID_MAGIC_LINK,
   _alertNotificationFailure,
+  setNotificationOutcomeListener,
   logNotification,
   notifyText,
   firstName, formatAmount, pickPhone, pickRecipients,

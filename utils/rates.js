@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js, utils/rules.js
+ * @depends       db, utils/logger.js
  * @db-write      none
  * @db-read      finance_config
  * @used-by       routes/admin-finance-config.js, routes/dashboard-shared.js, routes/finance.js, routes/modules.js, routes/orders/create.js, routes/payments.js, services/pricing-rates.js, services/shared-cart-lifecycle.js
@@ -33,11 +33,22 @@
  */
 
 const db = require('../db');
-const { getRuleNumber } = require('./rules');
 const log = require('./logger').child({ module: 'rates' });
 
 // Fallback hardcodé ultime (si BDD totalement inaccessible)
 const RATES_FALLBACK = { eur_kmf: 492, aed_kmf: 138 };
+
+// Fourni par bootstrap/feature-wiring.js. Le composant technique ne connaît
+// plus directement business-rules ; le composition root assemble les deux.
+let _ratesFallbackProvider = null;
+
+function configureRatesFallbackProvider(provider) {
+  if (provider !== null && typeof provider !== 'function') {
+    throw new TypeError('rates fallback provider must be a function or null');
+  }
+  _ratesFallbackProvider = provider;
+  invalidateCache();
+}
 
 // Cache mémoire 60s
 let _cache = null;
@@ -71,12 +82,20 @@ async function getRates() {
     }
   } catch (_) { /* fallback */ }
 
-  // 3. Fallback secondaire : business_rules (legacy)
-  try {
-    const eur = await getRuleNumber('EUR_KMF_FALLBACK', RATES_FALLBACK.eur_kmf);
-    const aed = await getRuleNumber('AED_KMF_FALLBACK', RATES_FALLBACK.aed_kmf);
-    return { eur_kmf: eur, aed_kmf: aed };
-  } catch (_) { /* fallback */ }
+  // 3. Fallback secondaire injecté par le composition root.
+  // La direction reste business-rules -> configuration -> infrastructure ;
+  // rates.js ne requiert jamais lui-même la feature métier.
+  if (_ratesFallbackProvider) {
+    try {
+      const [eur, aed] = await Promise.all([
+        _ratesFallbackProvider('EUR_KMF_FALLBACK', RATES_FALLBACK.eur_kmf),
+        _ratesFallbackProvider('AED_KMF_FALLBACK', RATES_FALLBACK.aed_kmf),
+      ]);
+      return { eur_kmf: Number(eur), aed_kmf: Number(aed) };
+    } catch (err) {
+      log.warn({ err }, '[getRates] fallback métier injecté indisponible');
+    }
+  }
 
   // 4. Fallback ultime : hardcodés
   // ND2 FIX — on log explicitement pour ne pas manquer une panne DB prolongée
@@ -93,4 +112,4 @@ function invalidateCache() {
   _cacheAt = 0;
 }
 
-module.exports = { getRates, invalidateCache, RATES_FALLBACK };
+module.exports = { getRates, invalidateCache, configureRatesFallbackProvider, RATES_FALLBACK };

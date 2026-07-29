@@ -1,19 +1,19 @@
 /**
  * @komerce-arch
- * @role          dashboard-admin-rules
- * @domain        dashboard
+ * @role          business-rules-admin-rules
+ * @domain        business-rules
  * @layer         route
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, utils/rules.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       business_rules, business_rules_history, users
- * @db-write      none
+ * @db-write      business_rules, business_rules_history
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  dashboard, admin-dashboard
- * @version       2026-06
+ * @impact-areas  business-rules
+ * @version       2026-07-29 (rattaché à business-rules, B2)
  */
 
 /**

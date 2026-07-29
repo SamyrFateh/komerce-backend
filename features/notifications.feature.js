@@ -142,6 +142,7 @@ module.exports = {
       'POST /webhook/meta-whatsapp',
     ],
     internalApi: [
+      { fn: 'setNotificationOutcomeListener', file: 'services/notifications/internals.js' },
       { fn: 'notifyOrder*',   file: 'services/notifications/order.js' },
       { fn: 'notifyParcel*',  file: 'services/notifications/parcel.js' },
       { fn: 'sendOtpMessage / sendMagicLink', file: 'services/notifications/otp-auth.js' },
@@ -149,6 +150,8 @@ module.exports = {
       { fn: 'notifyText',    file: 'services/notifications/misc.js' },
     ],
     consumes: [
+      "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)",
+
       'toutes les features emettrices (orders, payments, shared-cart, refunds...) en entree evenementielle uniquement',
     ],
   },

@@ -1393,6 +1393,15 @@
                           "type": "integer",
                           "default": 1
                         },
+                        "requested_transport_rail": {
+                          "type": "string",
+                          "enum": [
+                            "SEA_STANDARD",
+                            "AIR_EXPRESS",
+                            null
+                          ],
+                          "default": null
+                        },
                         "module_type": {
                           "type": "string",
                           "enum": [
