@@ -369,7 +369,9 @@ function renderDeliverySelector(container, detail) {
   // faire. L'afficher n'est pas une demande explicite du client : on ne
   // force jamais requested_transport_rail ici (cf. reconcileDeliverySelection).
   if (options.length <= 1) {
-    const { mode, label, lead_time_label } = deriveDeliveryMode(options);
+    const { mode } = deriveDeliveryMode(options);
+    const opt = options[0] || null;
+    const label = opt?.label || 'Livraison';
     const pill = document.createElement('div');
     pill.className = `k-modal-delivery-pill k-modal-delivery-pill--${mode}`;
     pill.dataset.deliveryMode = mode;
@@ -379,7 +381,13 @@ function renderDeliverySelector(container, detail) {
     icon.appendChild(_deliveryIconSvg(mode === 'air'));
     pill.appendChild(icon);
     const text = document.createElement('span');
-    text.textContent = lead_time_label ? `${label} · ${lead_time_label}` : label;
+    // Prix + délai issus exclusivement de l'option réelle (contrat) — jamais
+    // du mode générique air/sea dérivé du préfixe de code, qui n'a aucune
+    // garantie de correspondre à la convention AIR_/SEA_ (ex. FREIGHT_HOME).
+    const extra = [opt?.price_kmf != null ? fmtPrice(opt.price_kmf) : null, opt?.eta_label || null]
+      .filter(Boolean)
+      .join(' · ');
+    text.textContent = extra ? `${label} · ${extra}` : label;
     pill.appendChild(text);
     container.appendChild(pill);
     return;

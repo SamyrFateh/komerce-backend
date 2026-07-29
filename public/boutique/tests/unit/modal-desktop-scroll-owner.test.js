@@ -4,8 +4,8 @@
  * tests/unit/modal-desktop-scroll-owner.test.js
  *
  * Oracle RÉF-2026-07f — scroll owner unique desktop (supersede l'invariant
- * "double scroll" validé par l'arbitrage .agent/arbitrations/T-018.md —
- * cf. addendum de supersession daté 2026-07-25 dans ce même fichier).
+ * "double scroll" — cf. addendum de supersession daté 2026-07-25 dans ce
+ * même fichier).
  *
  * Constat utilisateur : deux scrollbars visibles côte à côte sur la modale
  * desktop (.k-modal-main ET .k-modal-details scrollaient indépendamment),
@@ -13,6 +13,20 @@
  * laissait de l'espace visible en dessous d'elle. Contredit
  * PRODUCT_MODAL_REFERENCE_CANONICAL.md §9 : « un seul conteneur scrollable
  * par composition ».
+ *
+ * DÉCISION A — T-018-bis (audit desktop finition, 2026-07) : le dernier
+ * test de ce fichier verrouillait littéralement `align-self:center` sur
+ * .k-modal-img-wrap. Ce centrage recréait un vide artificiel au-dessus du
+ * média dès qu'un récit produit long (fixture Stress) allongeait la ligne
+ * de grille — 142px de vide constatés. La note qui avait introduit `center`
+ * confondait position:sticky (comportement au SCROLL, retiré) et align-self
+ * (alignement VERTICAL dans la grille, sans lien avec le sticky). L'oracle
+ * a donc été mis à jour pour verrouiller `align-self:start` à la place :
+ * ce fichier ET le bloc de règle owner (modal-media.css,
+ * @media(min-width:900px) .k-modal-img-wrap) sont les deux points où cette
+ * décision est consignée. Preuve : mesure Playwright live (top média = top
+ * récit = 108px, diff:0 sur Stress), capture
+ * desktop-stress-hero-alignment.png.
  *
  * .k-modal-product-zone et .k-modal-details ont chacun PLUSIEURS règles
  * desktop légitimes à différents breakpoints (900px, 1024px) portant des
@@ -91,6 +105,6 @@ describe('scroll owner unique desktop — oracle RÉF-2026-07f', () => {
     expect(imgRule).toMatch(/aspect-ratio\s*:\s*4\s*\/\s*3/);
     expect(imgRule).toMatch(/min-height\s*:\s*360px/);
     expect(imgRule).toMatch(/max-height\s*:\s*500px/);
-    expect(imgRule).toMatch(/align-self\s*:\s*center/);
+    expect(imgRule).toMatch(/align-self\s*:\s*start/);
   });
 });

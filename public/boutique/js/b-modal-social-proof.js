@@ -53,12 +53,26 @@ function _fmtCount(n) {
 //  INJECT
 // ═══════════════════════════════════════════════════════════════
 
+// PDC/ownership-fix (audit desktop finition) : .k-modal-meta est un conteneur
+// PARTAGÉ — il héberge aussi #k-modal-cat (owner: b-modal-product-fields.js)
+// et #k-modal-stock (owner: b-modal-desktop-product.js). Un `meta.innerHTML = ''`
+// aveugle les détruisait à chaque changement de produit (les deux nœuds
+// disparaissaient purement et simplement du DOM — pas juste vidés de texte —
+// et les futures écritures via dom.modalStock/dom.modalCat visaient alors un
+// nœud détaché, silencieusement). On ne retire donc plus que NOS propres
+// nœuds injectés (marqués data-social-proof), jamais le reste du conteneur.
+const SOCIAL_PROOF_MARKER = 'data-social-proof';
+
+function _clearOwnSocialProofNodes(meta) {
+  meta.querySelectorAll('[' + SOCIAL_PROOF_MARKER + ']').forEach((el) => el.remove());
+}
+
 function injectSocialProof() {
   let meta = modalZone('.k-modal-meta');
   if (!meta) return;
 
   let product = state.modalProduct;
-  meta.innerHTML = '';
+  _clearOwnSocialProofNodes(meta);
 
   if (!product) return;
 
@@ -66,6 +80,7 @@ function injectSocialProof() {
   if (product.rank) {
     let rankEl = document.createElement('span');
     rankEl.className = 'k-modal-meta-rank';
+    rankEl.setAttribute(SOCIAL_PROOF_MARKER, '1');
     rankEl.textContent = '#' + product.rank + '\u202fBestseller';
     meta.appendChild(rankEl);
   }
@@ -73,6 +88,7 @@ function injectSocialProof() {
   // ── Vendus ────────────────────────────────────────────────
   if (product.sold_count && product.sold_count > 0) {
     let soldEl = document.createElement('span');
+    soldEl.setAttribute(SOCIAL_PROOF_MARKER, '1');
     soldEl.innerHTML =
       '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
         '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>' +
@@ -86,6 +102,7 @@ function injectSocialProof() {
   // ── Note + avis ───────────────────────────────────────────
   if (product.rating && product.rating > 0) {
     let ratingEl = document.createElement('span');
+    ratingEl.setAttribute(SOCIAL_PROOF_MARKER, '1');
     let reviewPart = product.review_count
       ? '\u00a0\u00b7\u00a0' + _fmtCount(product.review_count) + ' avis'
       : '';

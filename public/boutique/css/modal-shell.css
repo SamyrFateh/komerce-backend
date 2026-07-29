@@ -918,10 +918,12 @@
      côte pour l'utilisateur, sans gain fonctionnel. La contrainte d'origine
      (empêcher un contenu droit long d'agrandir/déformer la colonne image)
      est désormais portée par .k-modal-img-wrap lui-même (aspect-ratio fixe,
-     min/max-height, align-self:center — modal-media.css, D6/T-018) : l'image
+     min/max-height, align-self:start — modal-media.css, D6/T-018-bis) : l'image
      ne dépend plus de la hauteur de la ligne de grille pour rester bornée,
      donc le clamp externe ici est devenu redondant et contre-productif.
-     .agent/arbitrations/T-018.md — note de mise à jour ajoutée. */
+     Décision A (align-self center→start, T-018-bis) consignée dans
+     modal-media.css même — bloc @media(min-width:900px) .k-modal-img-wrap —
+     et son oracle jumeau tests/unit/modal-desktop-scroll-owner.test.js. */
   /* grid-template-columns : owned par modal-product-lot4-hybrid.css (Approche C). */
   #k-modal .k-modal-product-zone {
     align-items: start;
@@ -930,9 +932,10 @@
   /* ── Image : géométrie intrinsèque transférée à modal-media.css (D6/T-018) ──
      Ce bloc reste propriétaire du confinement horizontal (overflow/width :
      empêchent le débordement hors de la colonne). La géométrie intrinsèque
-     du hero (aspect-ratio, bornes de taille, centrage) est définie dans
-     modal-media.css — source de vérité unique pour cette responsabilité
-     (voir arbitrage .agent/arbitrations/T-018.md). max-width retiré (2026-07) :
+     du hero (aspect-ratio, bornes de taille, alignement) est définie dans
+     modal-media.css — source de vérité unique pour cette responsabilité,
+     dont la décision A (align-self:start, T-018-bis) documentée à même le
+     bloc de règle. max-width retiré (2026-07) :
      modal-media.css pose déjà max-width:min(100%, calc(500px*4/3)) — toujours
      ≤100%, donc cette déclaration était intégralement morte (conflit inutile
      en cascade, cf. css:guard) sans jamais changer le rendu. */

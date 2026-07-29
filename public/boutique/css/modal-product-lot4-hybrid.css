@@ -446,7 +446,7 @@
    choix des variantes (prioritaire), quitte à laisser un espace de fond
    visible sous l'image pour un produit à contenu très court ou très long.
    modal-media.css (source-order antérieure) reprend la main : aspect-ratio
-   4/3, min 360px, max 500px, align-self:center — aucun override ici. */
+   4/3, min 360px, max 500px, align-self:start (T-018-bis) — aucun override ici. */
 /* min:1024px → min:1200px (doctrine 2026-07) */
 @media (min-width: 1200px) {
   /* REF-2026-07b : slide aligné en haut.
