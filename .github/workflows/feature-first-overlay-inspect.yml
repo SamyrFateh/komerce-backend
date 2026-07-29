@@ -20,12 +20,37 @@ jobs:
         with:
           ref: chore/feature-first-c1-c2-closure-20260729
           fetch-depth: 0
+      - name: Diagnose segment 03
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected = {}
+          for row in Path('.github/feature-first-overlay/part-03.expected-line-sha256').read_text().splitlines():
+              number, digest = row.split()
+              expected[int(number)] = digest
+          lines = Path('.github/feature-first-overlay/part-03').read_bytes().splitlines(keepends=True)
+          print(f'actual_lines={len(lines)} expected_lines={len(expected)}')
+          mismatch = False
+          for number in sorted(set(expected) | set(range(1, len(lines) + 1))):
+              actual = hashlib.sha256(lines[number - 1]).hexdigest() if number <= len(lines) else '<missing>'
+              wanted = expected.get(number, '<unexpected>')
+              if actual != wanted:
+                  mismatch = True
+                  text = lines[number - 1].decode('ascii', errors='replace').rstrip('\n') if number <= len(lines) else '<missing>'
+                  print(f'MISMATCH line={number} expected={wanted} actual={actual} content={text}')
+          if not mismatch:
+              print('SEGMENT_03_LINES_OK')
+          PY
       - name: Rebuild and inspect archive
         shell: bash
         run: |
           set -euo pipefail
-          cat .github/feature-first-overlay/part-* > /tmp/feature-first-overlay.b64
+          cat .github/feature-first-overlay/part-0[0-8] > /tmp/feature-first-overlay.b64
           base64 --decode /tmp/feature-first-overlay.b64 > /tmp/feature-first-overlay.tar.gz
+          test "$(sha256sum /tmp/feature-first-overlay.tar.gz | awk '{print $1}')" = "c01170ae198afaffe892147b5b7e237ac83a1009b4050158400978bac0de8da5"
           {
             echo "sha256  $(sha256sum /tmp/feature-first-overlay.tar.gz | awk '{print $1}')"
             echo "bytes   $(stat -c%s /tmp/feature-first-overlay.tar.gz)"
