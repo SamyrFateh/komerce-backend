@@ -65,9 +65,9 @@ if('serviceWorker' in navigator){
      Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=154">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=353">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=84">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=155">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=354">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=85">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en
      cascade, alors que deploy-css.js ne le régénérait jamais (absent de
@@ -336,10 +336,10 @@ if('serviceWorker' in navigator){
          Layout vertical : header sticky (sous-total + CTAs) en haut,
          puis liste items scrollable. -->
     <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
-      <!-- ── TITLE : "Mon panier" + badge (référence image 1) ── -->
+      <!-- ── TITLE : "Mon panier" (badge retiré, audit 2026-07 — redondant
+           avec la liste d'articles et le CTA Commander(N)) ── -->
       <div class="k-sc-title-bar">
         <span class="k-sc-title-label">Mon panier</span>
-        <span id="k-sc-title-badge" class="k-sc-title-badge"></span>
       </div>
 
       <!-- ── ITEMS : zone scrollable, prend le reste de la hauteur ── -->

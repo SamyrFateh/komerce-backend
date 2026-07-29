@@ -506,7 +506,7 @@ body:has(#k-page-scroll.k-pager-active) {
      (typique Windows 125% → viewport effectif ~1520px → 1266px dispo < 1400), margin:0 auto
      part en marges négatives → clip gauche (logo + titre + 1ère carte). Solution : caper la
      largeur des conteneurs centrés à l'espace réellement disponible quand le panier est docké. */
-  :root { --sc-reserve-w: 240px; }
+  :root { --sc-reserve-w: 272px; } /* élargi (audit 2026-07) : 240px → 272px, aligné sur boutique-desktop.css */
 
   /* ROOT CAUSE FIX : le max-width de #k-catalog-section a UN SEUL owner
      (#k-desktop-catalog-wrap #k-catalog-section, plus bas). On ne se bat plus
@@ -661,7 +661,7 @@ body:has(#k-page-scroll.k-pager-active) {
 @media (min-width: 1200px) {
 
   /* VIS-1 FIX — token réserve 254px aligné sur boutique-desktop.css (@1200px) */
-  :root { --sc-reserve-w: 254px; }
+  :root { --sc-reserve-w: 288px; } /* élargi (audit 2026-07) : 254px → 288px, aligné sur boutique-desktop.css */
 
   .k-header { height: 72px; }
   .k-header-inner { height: 72px; }
