@@ -20,14 +20,14 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 792,
+    "graphNodes": 791,
     "edges": 4414,
-    "dbTables": 117,
+    "dbTables": 116,
     "doctrines": 161,
     "impactAreas": 130,
     "unresolvedCodeEdges": 422,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 68
+    "multiWriterTables": 69
   },
   "byDomain": {
     "infrastructure": 20,
@@ -4670,7 +4670,7 @@
       ],
       "dbWrite": [
         "business_rules",
-        "business_rules_history (via utils/rules.js)"
+        "business_rules_history"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -18219,11 +18219,6 @@
       "table": "business_rules_history"
     },
     {
-      "id": "db:business_rules_history (via utils/rules.js)",
-      "type": "db-table",
-      "table": "business_rules_history (via utils/rules.js)"
-    },
-    {
       "id": "db:disputes",
       "type": "db-table",
       "table": "disputes"
@@ -26606,9 +26601,9 @@
     },
     {
       "from": "routes/admin-rules.js",
-      "to": "db:business_rules_history (via utils/rules.js)",
+      "to": "db:business_rules_history",
       "type": "db-write",
-      "label": "business_rules_history (via utils/rules.js)"
+      "label": "business_rules_history"
     },
     {
       "from": "routes/admin-rules.js",
@@ -51319,7 +51314,7 @@
       ],
       "dbWrite": [
         "business_rules",
-        "business_rules_history (via utils/rules.js)"
+        "business_rules_history"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -51332,7 +51327,6 @@
         "bootstrap/api-routes.js",
         "db:business_rules",
         "db:business_rules_history",
-        "db:business_rules_history (via utils/rules.js)",
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:business-rules",
@@ -64735,6 +64729,14 @@
     },
     {
       "table": "business_rules",
+      "writerCount": 2,
+      "writers": [
+        "routes/admin-rules.js",
+        "utils/rules.js"
+      ]
+    },
+    {
+      "table": "business_rules_history",
       "writerCount": 2,
       "writers": [
         "routes/admin-rules.js",

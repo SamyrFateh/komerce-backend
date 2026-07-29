@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, utils/rules.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       business_rules, business_rules_history, users
- * @db-write      business_rules, business_rules_history (via utils/rules.js)
+ * @db-write      business_rules, business_rules_history
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  business-rules

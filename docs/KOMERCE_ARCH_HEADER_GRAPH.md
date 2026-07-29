@@ -13,13 +13,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 792
+- Graph nodes: 791
 - Edges: 4414
-- DB tables: 117
+- DB tables: 116
 - Doctrines: 161
 - Impact areas: 130
 - Unresolved code edges: 422
-- Tables multi-écrivains directs (>=2): 68
+- Tables multi-écrivains directs (>=2): 69
 - Avertissements db-write / db-write-via en chevauchement: 0
 
 ## Domains
@@ -402,7 +402,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/shared-cart-lifecycle.js -> baskets
 - WRITE routes/admin-boutique-categories.js -> boutique_categories
 - WRITE routes/admin-boutique-categories.js -> boutique_subcategories
-- WRITE routes/admin-rules.js -> business_rules_history (via utils/rules.js)
+- WRITE routes/admin-rules.js -> business_rules_history
 - WRITE utils/rules.js -> business_rules_history
 - WRITE routes/admin-rules.js -> business_rules
 - WRITE utils/rules.js -> business_rules
@@ -574,6 +574,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
+- business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - cart_shares: 2 écrivains directs — routes/orders/create.js, routes/shares.js
 - cash_collections: 2 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js
 - catalog_field_overrides: 2 écrivains directs — services/catalog-overrides.js, services/product-admin-service.js
@@ -592,7 +593,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - paypal_events_processed: 2 écrivains directs — services/payment-paypal-events.js, services/payment-paypal.js
 - pickup_verify_attempts: 2 écrivains directs — routes/parcels.js, routes/tracking.js
 - product_sku_media: 2 écrivains directs — routes/sourcing-scanner.js, services/catalog-promotion.js
-- product_suppliers: 2 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 

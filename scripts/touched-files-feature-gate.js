@@ -33,7 +33,7 @@ const C = { red: '\x1b[31m', grn: '\x1b[32m', ylw: '\x1b[33m', dim: '\x1b[2m', b
 const ENFORCE_EXT = /\.(js|mjs|cjs|ts|css|html)$/;
 const EXCLUDE = [
   /^archive\//, /node_modules\//, /\/dist\//, /\.github\//, /(^|\/)docs\//,
-  /\.md$/, /\.feature\.js$/, /(^|\/)tests?\//, /\.spec\.js$/, /\.test\.js$/,
+  /\.md$/, /\.feature\.js$/, /\.capability\.js$/, /(^|\/)tests?\//, /\.spec\.js$/, /\.test\.js$/,
   /(^|\/)migrations\//, /(^|\/)scripts\//,        // infra repo (gouvernée à part)
   /package(-lock)?\.json$/, /\.config\.(js|cjs|mjs)$/,
 ];
