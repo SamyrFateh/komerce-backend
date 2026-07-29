@@ -1,0 +1,42 @@
+name: Inspect Feature First overlay
+
+on:
+  push:
+    branches:
+      - chore/feature-first-c1-c2-closure-20260729
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chore/feature-first-c1-c2-closure-20260729
+          fetch-depth: 0
+      - name: Rebuild and inspect archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/feature-first-overlay/part-* > /tmp/feature-first-overlay.b64
+          base64 --decode /tmp/feature-first-overlay.b64 > /tmp/feature-first-overlay.tar.gz
+          {
+            echo "sha256  $(sha256sum /tmp/feature-first-overlay.tar.gz | awk '{print $1}')"
+            echo "bytes   $(stat -c%s /tmp/feature-first-overlay.tar.gz)"
+            echo
+            tar -tzvf /tmp/feature-first-overlay.tar.gz
+          } > .github/feature-first-overlay/LISTING.txt
+      - name: Commit listing
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/feature-first-overlay/LISTING.txt
+          git diff --cached --quiet && exit 0
+          git commit -m 'chore(feature-first): inspect staged local overlay'
+          git push origin HEAD:chore/feature-first-c1-c2-closure-20260729
