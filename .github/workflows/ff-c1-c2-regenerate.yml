@@ -1,0 +1,139 @@
+name: Regenerate artifacts after FF-C1 FF-C2 closure
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chore/feature-first-c1-c2-closure-20260729
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Reconcile review findings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          # 1. Supprimer le doublon exact dans les exceptions FF-C2.
+          exc_path = Path('governance/ff-c2-support-exceptions.json')
+          exc = json.loads(exc_path.read_text())
+          seen = set()
+          unique = []
+          for item in exc.get('exceptions', []):
+              key = (item.get('from'), item.get('to'), item.get('file'), item.get('target'))
+              if key in seen:
+                  continue
+              seen.add(key)
+              unique.append(item)
+          exc['exceptions'] = unique
+          exc_path.write_text(json.dumps(exc, ensure_ascii=False, indent=2) + '\n')
+
+          # 2. Corriger le header de dépendance devenu obsolète après inversion.
+          signal_path = Path('services/signal-service.js')
+          signal = signal_path.read_text()
+          signal = signal.replace(
+              '@used-by       routes/signals.js, services/notifications/internals.js',
+              '@used-by       routes/signals.js, bootstrap/feature-wiring.js'
+          )
+          signal_path.write_text(signal)
+
+          # 3. Nommer les deux faux positifs du scanner : ce sont des noms de tables,
+          #    suivis du nom de leur feature owner, jamais des credentials.
+          sup_path = Path('scripts/impact-suppressions.json')
+          suppressions = json.loads(sup_path.read_text())
+          additions = [
+              {
+                  'file': 'scripts/gen-data-ownership.js',
+                  'category': 'hardcodedSecrets',
+                  'contains': "sms_log: 'notifications'",
+                  'reason': 'Mapping table -> feature owner : sms_log est un nom de table et notifications un identifiant de feature, aucun secret.'
+              },
+              {
+                  'file': 'scripts/gen-data-ownership.js',
+                  'category': 'hardcodedSecrets',
+                  'contains': "stripe_events_processed: 'payments'",
+                  'reason': 'Mapping table -> feature owner : stripe_events_processed est un nom de table et payments un identifiant de feature, aucun secret.'
+              }
+          ]
+          existing = {(x.get('file'), x.get('category'), x.get('contains')) for x in suppressions}
+          for item in additions:
+              key = (item['file'], item['category'], item['contains'])
+              if key not in existing:
+                  suppressions.append(item)
+          sup_path.write_text(json.dumps(suppressions, ensure_ascii=False, indent=2) + '\n')
+          PY
+
+      - name: Regenerate architecture graph
+        run: npm run arch:gen
+
+      - name: Regenerate route registry and OpenAPI contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+
+      - name: Recheck FF-C1 and FF-C2
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/finalize-ff-c1-c2.js | tee /tmp/ff-final.log
+          grep -q 'PASS FF-C1' /tmp/ff-final.log
+          grep -q 'PASS FF-C2' /tmp/ff-final.log
+
+      - name: Remove temporary workflow and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/ff-c1-c2-regenerate.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --stat
+          git diff --cached --quiet && { echo 'No generated changes'; exit 1; }
+          git commit -m 'chore(governance): regenerate artifacts after FF-C1 FF-C2 closure'
+          git push origin HEAD:chore/feature-first-c1-c2-closure-20260729
