@@ -484,16 +484,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
-  padding: 0 10px;
+  min-height: 40px;
+  padding: 8px 10px;
   border-radius: 8px;
   border: 1.5px solid var(--border);
   background: var(--white);
   color: var(--text);
   font-size: 13px;
   font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
   cursor: pointer;
-  white-space: nowrap;
+  /* P2-fix (audit desktop 2026-07) : white-space:nowrap + height fixe sans
+     overflow laissait le texte déborder visuellement hors d'une boîte DOM
+     par ailleurs correctement dimensionnée (grid distincte par option) —
+     l'assertion de bounding box passait alors que le rendu débordait. Un
+     libellé long doit pouvoir passer sur 2 lignes plutôt que déborder :
+     fonctionne quelle que soit la longueur du libellé, pas seulement les
+     valeurs courtes actuelles. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
   transition: border-color .15s, background .15s, color .15s, box-shadow .15s;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -526,7 +537,7 @@
   .k-sku-name   { max-width: 70px; font-size: 11px; }
   .k-sku-slash  { width: 68px; height: 68px; }
   .k-vg-sizes   { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
-  .k-vp         { height: 44px; font-size: 14px; }
+  .k-vp         { min-height: 44px; font-size: 14px; }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1111,13 +1122,21 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* ── Sélecteur mode livraison — dérivé de delivery_options[], voir
      b-modal-desktop-product.js::renderDeliverySelector(). Pas de libellés
      fixes ici : le nombre de boutons et leur contenu suivent le contrat. ── */
+  /* P3-fix (audit desktop 2026-07) : flex:1 sans flex-wrap partageait la
+     largeur à parts égales entre N options quel que soit leur nombre —
+     un libellé long (ex. plusieurs modes de livraison spécialisés) se
+     retrouvait comprimé dans 1/N de la colonne. On passe à un flex-basis
+     avec plancher et flex-wrap : les options gardent une largeur lisible
+     et retombent sur une nouvelle ligne plutôt que de se comprimer.
+     S'applique par nombre de modes de livraison, pas par fixture. */
   .k-dsel-wrap {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 10px;
   }
   .k-dsel-btn {
-    flex: 1;
+    flex: 1 1 220px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1128,7 +1147,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     cursor: pointer;
     text-align: left;
     transition: border-color 0.15s, background 0.15s;
-    min-width: 0;
+    min-width: 220px;
   }
   .k-dsel-btn:hover { border-color: var(--coral); }
   .k-dsel-btn.is-selected {

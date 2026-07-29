@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { IS_REMOTE, addToCartFromModal } = require('./helpers/boutique.helpers');
+const { IS_REMOTE, addToCartFromModal, assertNoOverlayOnActions } = require('./helpers/boutique.helpers');
 const {
   catalogue,
   stubFixtureCatalogue,
@@ -124,7 +124,11 @@ test.describe('Chantier finition mobile V3 — P2 stock non dupliqué', () => {
     await addToCartFromModal(page);
 
     await expect(page.locator('.k-mdm-chip--ok')).toHaveCount(0);
+    // Un test DOM vert (img/k-sku-thumb = 0) ne suffit pas : il laisse
+    // passer tout élément non-img positionné par-dessus les actions (ex.
+    // particule flyToCart encore visible au moment de la capture).
     await expect(page.locator('.k-modal-actions img, .k-modal-actions .k-sku-thumb')).toHaveCount(0);
+    await assertNoOverlayOnActions(page);
     const filledLabel = page.locator('.k-modal-actions').getByText(/Dans le panier/);
     await expect(filledLabel).toBeVisible();
 
@@ -162,6 +166,7 @@ test.describe('Chantier finition mobile V3 — P2 référence/SKU longue', () =>
     const stepper = page.locator('.k-modal-actions .k-qty').first();
     await expect(stepper).toBeVisible();
     await expect(page.locator('.k-modal-actions img, .k-modal-actions .k-sku-thumb')).toHaveCount(0);
+    await assertNoOverlayOnActions(page);
     await expect(page.locator('#k-buy-now-btn')).toBeVisible();
 
     // Cibles tactiles >= 44px (acceptation brief).

@@ -2811,10 +2811,12 @@ html.k-mobile-premium-v1 .k-chip-label {
      côte pour l'utilisateur, sans gain fonctionnel. La contrainte d'origine
      (empêcher un contenu droit long d'agrandir/déformer la colonne image)
      est désormais portée par .k-modal-img-wrap lui-même (aspect-ratio fixe,
-     min/max-height, align-self:center — modal-media.css, D6/T-018) : l'image
+     min/max-height, align-self:start — modal-media.css, D6/T-018-bis) : l'image
      ne dépend plus de la hauteur de la ligne de grille pour rester bornée,
      donc le clamp externe ici est devenu redondant et contre-productif.
-     .agent/arbitrations/T-018.md — note de mise à jour ajoutée. */
+     Décision A (align-self center→start, T-018-bis) consignée dans
+     modal-media.css même — bloc @media(min-width:900px) .k-modal-img-wrap —
+     et son oracle jumeau tests/unit/modal-desktop-scroll-owner.test.js. */
   /* grid-template-columns : owned par modal-product-lot4-hybrid.css (Approche C). */
   #k-modal .k-modal-product-zone {
     align-items: start;
@@ -2823,9 +2825,10 @@ html.k-mobile-premium-v1 .k-chip-label {
   /* ── Image : géométrie intrinsèque transférée à modal-media.css (D6/T-018) ──
      Ce bloc reste propriétaire du confinement horizontal (overflow/width :
      empêchent le débordement hors de la colonne). La géométrie intrinsèque
-     du hero (aspect-ratio, bornes de taille, centrage) est définie dans
-     modal-media.css — source de vérité unique pour cette responsabilité
-     (voir arbitrage .agent/arbitrations/T-018.md). max-width retiré (2026-07) :
+     du hero (aspect-ratio, bornes de taille, alignement) est définie dans
+     modal-media.css — source de vérité unique pour cette responsabilité,
+     dont la décision A (align-self:start, T-018-bis) documentée à même le
+     bloc de règle. max-width retiré (2026-07) :
      modal-media.css pose déjà max-width:min(100%, calc(500px*4/3)) — toujours
      ≤100%, donc cette déclaration était intégralement morte (conflit inutile
      en cascade, cf. css:guard) sans jamais changer le rendu. */
@@ -3400,8 +3403,7 @@ html.k-mobile-premium-v1 .k-chip-label {
    Ownership : modal-media.css devient propriétaire de la géométrie
    intrinsèque du hero desktop (ratio, bornes de taille), tandis que
    modal-shell.css reste propriétaire du confinement global de la
-   modal / product-zone / scroll des détails (voir arbitrage
-   .agent/arbitrations/T-018.md).
+   modal / product-zone / scroll des détails.
    Ancien owner (modal-shell.css §6) posait height:100%/max-height:100%
    sur .k-modal-img-wrap, forçant une hauteur pleine (~842px) dérivée
    du confinement du shell — retiré, remplacé ici par une géométrie
@@ -3421,17 +3423,24 @@ html.k-mobile-premium-v1 .k-chip-label {
     max-width: min(100%, calc(500px * 4 / 3));
     width: 100%;
     height: auto;
-    /* MIGRATION v3.0 (retrait sticky, LOT 1) : ce bloc s'appelait "FIX STICKY
-       2026-07". align-self repasse à `center` (état pré-sticky) : le `start`
-       n'existait que pour donner au hero une amplitude de collage, ce qui
-       neutralisait le centrage vertical. Sans sticky, cette contrainte
-       disparaît. Résout aussi un conflit préexistant avec l'oracle
-       RÉF-2026-07f (modal-desktop-scroll-owner.test.js, 2026-07-25) qui
-       exigeait déjà `align-self:center` ici — les deux corrections cohabitaient
-       mal, celle-ci l'emporte désormais. */
+    /* T-018-bis — DÉCISION A (audit desktop finition, 2026-07) :
+       align-self repasse de `center` à `start`. La note MIGRATION v3.0
+       précédente confondait deux sujets distincts : position:sticky
+       pilotait le comportement au SCROLL, tandis qu'align-self pilote
+       l'alignement VERTICAL dans la ligne de grille. Retirer le sticky ne
+       justifiait pas de centrer le média face à un récit potentiellement
+       long (fixture Stress : 142px de vide artificiel constaté au-dessus
+       de l'image avant correction). Le ratio 4:3, les bornes 360–500px,
+       la largeur et le confinement (T-018) restent inchangés — seul
+       l'alignement change. Owner de cette décision : ce bloc de règle
+       (modal-media.css) et son oracle jumeau
+       tests/unit/modal-desktop-scroll-owner.test.js, qui verrouille
+       littéralement `align-self:start` et sert de preuve de non-régression.
+       Preuve visuelle : audit Playwright live (mesure DOM top média = top
+       récit = 108px, diff:0, capture desktop-stress-hero-alignment.png). */
     margin-inline: auto;
     margin-block: 0;
-    align-self: center;
+    align-self: start;
     /* Contour visible (cf. reference-modale-4-etats.html v2.1) : le container
        image n'avait jamais de border nulle part — flottait sans cadre contre
        le fond ivoire du shell. background/border-radius NE sont PAS ajoutés
@@ -5388,7 +5397,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
    choix des variantes (prioritaire), quitte à laisser un espace de fond
    visible sous l'image pour un produit à contenu très court ou très long.
    modal-media.css (source-order antérieure) reprend la main : aspect-ratio
-   4/3, min 360px, max 500px, align-self:center — aucun override ici. */
+   4/3, min 360px, max 500px, align-self:start (T-018-bis) — aucun override ici. */
 /* min:1024px → min:1200px (doctrine 2026-07) */
 @media (min-width: 1200px) {
   /* REF-2026-07b : slide aligné en haut.

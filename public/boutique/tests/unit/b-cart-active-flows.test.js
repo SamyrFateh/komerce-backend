@@ -187,18 +187,26 @@ test('termine l’animation fly-to-cart et nettoie ses particules', () => {
   const source = document.createElement('button');
   source.getBoundingClientRect = () => ({ left: 10, top: 20, width: 20, height: 20 });
   dom.cartBtn.getBoundingClientRect = () => ({ left: 200, top: 40, width: 40, height: 40 });
-  const timestamps = [1, 901];
+  // P1-fix (audit desktop 2026-07) : durée de vol 900ms → 500ms, pour que la
+  // particule libère la zone actions plus vite (owner : b-cart.js::flyToCart).
+  const timestamps = [1, 501];
   global.requestAnimationFrame = jest.fn((callback) => {
-    callback(timestamps.shift() || 901);
+    callback(timestamps.shift() || 501);
     return 1;
   });
 
   addToCart(product(2, { image_url: '/img/p2.jpg' }), 1, source);
   expect(document.body.querySelectorAll('[style*="z-index: 9998"]')).toHaveLength(6);
-  jest.advanceTimersByTime(350);
+  // Décollage : 350ms → 150ms.
+  jest.advanceTimersByTime(150);
   expect(dom.cartBadge.classList.contains('bump')).toBe(true);
-  jest.advanceTimersByTime(200);
+  // Nettoyage post-impact : 200ms → 120ms.
+  jest.advanceTimersByTime(120);
   expect(document.body.querySelectorAll('[style*="z-index: 9998"]')).toHaveLength(0);
+  // Verrouille aussi la classe stable utilisée par les oracles Playwright
+  // (assertNoOverlayOnActions) : l'élément doit être identifiable et
+  // effectivement retiré du DOM après nettoyage.
+  expect(document.body.querySelectorAll('.k-fly-particle')).toHaveLength(0);
 });
 
 test('le bouton modal ouvre le drawer mobile et recentre le side-cart desktop', () => {

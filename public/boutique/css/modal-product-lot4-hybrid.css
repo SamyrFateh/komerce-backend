@@ -65,9 +65,16 @@
      Reprend le traitement "carte" de la référence canonique (§4, .config) :
      bordure fine, coins arrondis 18px (cohérent avec .k-buybox-relay-card),
      fond blanc pour trancher sur --page-bg de la zone produit. */
+  /* P4-fix (audit desktop 2026-07) : le margin horizontal clamp(28,4.4vw,72)
+     s'ajoutait à un second inset déjà posé par le padding:22px de
+     .k-modal-product-zone (≥1200px) — double inset, carte ~83% de la zone.
+     .k-modal-long-details n'a qu'un seul inset (son propre padding) ; la
+     carte configurateur doit occuper la même largeur utile. Le margin
+     horizontal est retiré ; l'inset visuel du contenu passe en padding
+     interne, cohérent avec le reste des lignes transversales. */
   #k-modal .k-modal-product-zone > .k-modal-configurator {
-    margin: 0 clamp(28px, 4.4vw, 72px) 18px;
-    padding: 18px 22px;
+    margin: 0 0 18px;
+    padding: 18px clamp(28px, 4.4vw, 72px);
     border: 1px solid var(--border);
     border-radius: 18px;
     background: var(--white);

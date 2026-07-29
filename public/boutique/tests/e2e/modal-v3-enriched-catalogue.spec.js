@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { IS_REMOTE, addToCartFromModal } = require('./helpers/boutique.helpers');
+const { IS_REMOTE, addToCartFromModal, assertNoOverlayOnActions, closeModal } = require('./helpers/boutique.helpers');
 const {
   catalogue,
   stubFixtureCatalogue,
@@ -72,7 +72,12 @@ async function expectShellAndHero(page, viewport) {
     expect(geometry.actionsDirectChild).toBe(false);
     expect(geometry.actionsInsideScroll).toBe(true);
     expect(geometry.desktopGeometry.confTop).toBeGreaterThanOrEqual(geometry.desktopGeometry.heroBottom - 3);
-    expect(geometry.desktopGeometry.confWidth / geometry.desktopGeometry.zoneWidth).toBeGreaterThan(0.7);
+    // P4-fix (audit desktop 2026-07) : seuil resserré de 0.7 → 0.92. L'ancien
+    // seuil de 0.7 laissait passer le défaut réel (~83%, double inset entre
+    // le padding de .k-modal-product-zone et le margin de .k-modal-configurator).
+    // La cible est un configurateur qui occupe la même largeur utile que
+    // .k-modal-long-details, pas un ratio arbitraire.
+    expect(geometry.desktopGeometry.confWidth / geometry.desktopGeometry.zoneWidth).toBeGreaterThan(0.92);
   }
 }
 
@@ -101,6 +106,11 @@ for (const viewport of VIEWPORTS) {
         await expect(page.locator('#k-add-cart-btn')).toBeEnabled();
 
         await addToCartFromModal(page);
+        // Un test DOM vert (ex. `.k-modal-actions img = 0`) ne suffit pas :
+        // il laisse passer tout élément non-img positionné par-dessus (ex.
+        // particule flyToCart encore visible). On vérifie ici l'absence
+        // réelle de chevauchement, pas seulement la structure DOM attendue.
+        await assertNoOverlayOnActions(page);
         await optionalShot(page, `${viewport.key}-${entry.key}-added.png`);
 
         if (viewport.key === 'desktop') {
@@ -176,5 +186,123 @@ test.describe('Catalogue enrichi V3 — scénarios spécifiques', () => {
 
     expect(measurements.mainOverflow).toBe(true);
     expect(measurements.nestedScrollable).toBe(false);
+  });
+
+  test('P2 — stress : aucun texte d’option ne déborde de sa boîte, quelle que soit la longueur du libellé', async ({ page }) => {
+    const entry = catalogue.cases.find((item) => item.key === 'stress');
+    await stubFixtureCatalogue(page);
+    await openFixtureFromSearch(page, entry);
+
+    // Un test DOM vert sur la présence de bounding boxes distinctes ne
+    // suffit pas : la boîte peut être correcte pendant que le texte peint
+    // déborde visuellement (white-space:nowrap + hauteur fixe, sans
+    // overflow). On vérifie ici le rendu réel de chaque bouton d'option
+    // texte (.k-vp), pour tous les axes de la fixture la plus dense
+    // (4 axes, libellés longs type "Passe-câbles simple").
+    const overflowing = await page.evaluate(() => {
+      const offenders = [];
+      document.querySelectorAll('.k-vp').forEach((btn) => {
+        if (btn.scrollWidth > btn.clientWidth + 1 || btn.scrollHeight > btn.clientHeight + 1) {
+          offenders.push(btn.textContent.trim());
+        }
+      });
+      return offenders;
+    });
+    expect(overflowing, `Option(s) débordant de leur boîte : ${overflowing.join(', ')}`).toEqual([]);
+
+    await optionalShot(page, 'desktop-stress-options-detail.png');
+  });
+
+  test('P3 — stress : les deux modes de livraison restent lisibles, aucun libellé comprimé', async ({ page }) => {
+    const entry = catalogue.cases.find((item) => item.key === 'stress');
+    await stubFixtureCatalogue(page);
+    await openFixtureFromSearch(page, entry);
+
+    const dsel = page.locator('.k-dsel-btn');
+    await expect(dsel).toHaveCount(2);
+
+    const measurements = await dsel.evaluateAll((buttons) => buttons.map((btn) => {
+      const label = btn.querySelector('.k-dsel-label');
+      return {
+        text: label?.textContent.trim() || '',
+        width: btn.getBoundingClientRect().width,
+        labelOverflow: label ? label.scrollWidth > label.clientWidth + 1 : false,
+      };
+    }));
+
+    for (const m of measurements) {
+      // Plancher de lisibilité (flex-basis 220px) : un mode ne doit jamais
+      // se retrouver comprimé sous ce seuil quel que soit le nombre total
+      // de modes exposés par le contrat.
+      expect(m.width, `${m.text} — largeur ${m.width}px`).toBeGreaterThanOrEqual(200);
+      expect(m.labelOverflow, `${m.text} — libellé débordant`).toBe(false);
+    }
+
+    await optionalShot(page, 'desktop-stress-delivery-detail.png');
+  });
+
+  test('P5 — side cart : trois articles distincts s’affichent sans chevauchement ni troncature de prix', async ({ page }) => {
+    await stubFixtureCatalogue(page);
+
+    const elite = catalogue.cases.find((item) => item.key === 'elite');
+    const garment = catalogue.cases.find((item) => item.key === 'garment');
+    const editorial = catalogue.cases.find((item) => item.key === 'editorial');
+
+    await openFixtureFromSearch(page, elite);
+    await selectOptions(page, elite.validSelection);
+    await addToCartFromModal(page);
+    await assertNoOverlayOnActions(page);
+    await closeModal(page);
+
+    await openFixtureFromSearch(page, garment);
+    await selectOptions(page, garment.validSelection);
+    await addToCartFromModal(page);
+    await assertNoOverlayOnActions(page);
+    await closeModal(page);
+
+    await openFixtureFromSearch(page, editorial);
+    await addToCartFromModal(page);
+    await assertNoOverlayOnActions(page);
+
+    const items = page.locator('#k-side-cart .k-sc-item');
+    await expect(items).toHaveCount(3);
+
+    const boxes = await items.evaluateAll((els) => els.map((el) => {
+      const rect = el.getBoundingClientRect();
+      const priceWrap = el.querySelector('.k-sc-item-price-wrap');
+      return {
+        rect: { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right },
+        priceOverflow: priceWrap ? priceWrap.scrollWidth > priceWrap.clientWidth + 1 : false,
+      };
+    }));
+
+    function intersects(a, b) {
+      return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+    }
+    for (let i = 0; i < boxes.length; i++) {
+      expect(boxes[i].priceOverflow, `article ${i} — prix tronqué`).toBe(false);
+      for (let j = i + 1; j < boxes.length; j++) {
+        expect(intersects(boxes[i].rect, boxes[j].rect), `articles ${i}/${j} se chevauchent`).toBe(false);
+      }
+    }
+
+    await optionalShot(page, 'desktop-side-cart-three-items.png');
+  });
+
+  test('P6 — elite Noir/42 : la combinaison réelle en stock faible affiche "Plus que 4"', async ({ page }) => {
+    const entry = catalogue.cases.find((item) => item.key === 'elite');
+    await stubFixtureCatalogue(page);
+    await openFixtureFromSearch(page, entry);
+
+    // Combinaison retrouvée depuis la fixture réelle (sellable_units[],
+    // available_quantity: 4), jamais injectée dans le DOM — cf. garde-fous.
+    await selectOptions(page, { Couleur: 'Noir', Taille: '42' });
+
+    const stock = page.locator('#k-modal-stock');
+    await expect(stock).toBeVisible();
+    await expect(stock).toHaveText('● Plus que 4');
+    await expect(stock).toHaveClass(/k-modal-stock--low/);
+
+    await optionalShot(page, 'desktop-low-stock-detail.png');
   });
 });

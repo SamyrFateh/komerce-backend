@@ -142,6 +142,14 @@ async function addToCartFromModal(page) {
     (await page.locator('#k-modal-cart-badge').textContent().catch(() => '0')) || '0',
     10
   );
+  // Snapshot des éléments DOM existants avant le clic : assertNoOverlayOnActions
+  // n'inspecte ensuite que les éléments réellement créés par l'action d'ajout
+  // (ex. particule fly-to-cart), jamais le chrome permanent de la page (nav
+  // mobile, pager, overlay) qui chevauche géométriquement la zone actions
+  // sans être un défaut.
+  await page.evaluate(() => {
+    window.__preAddElements = new Set(document.querySelectorAll('body *'));
+  });
   const addBtn = page.locator('#k-add-cart-btn');
   await expect(addBtn).toBeEnabled({ timeout: 3_000 });
   await addBtn.click();
@@ -154,6 +162,74 @@ async function addToCartFromModal(page) {
     { sel: '#k-modal-cart-badge', before: badgeBefore },
     { timeout: 6_000 }
   );
+  // Attend la disparition réelle de la particule fly-to-cart (b-cart.js) —
+  // un test/capture "état stable" pris avant cette disparition la verrait
+  // encore visible au-dessus des actions.
+  await page.waitForFunction(
+    () => !document.querySelector('.k-fly-particle'),
+    null,
+    { timeout: 3_000 }
+  );
+}
+
+/**
+ * Oracle de collision — P1 (audit desktop 2026-07) : un test DOM vert du
+ * type `.k-modal-actions img = 0` ne suffit pas, il laisse passer tout
+ * élément non-<img> positionné par-dessus les actions (clone d'animation,
+ * pseudo-élément, élément hors de .k-modal-actions). On vérifie ici
+ * l'absence réelle de chevauchement visuel avec les cibles protégées :
+ * `.k-qty`, le libellé « Dans le panier », `.k-buy-now-btn`.
+ *
+ * Ne considère que les éléments position:fixed/absolute apparus APRÈS le
+ * snapshot pris par addToCartFromModal (window.__preAddElements) : le
+ * chrome permanent (nav mobile fixe, overlay, pager) chevauche déjà
+ * structurellement la zone actions sans être un défaut, et générerait sinon
+ * des faux positifs sur toutes les fixtures.
+ */
+async function assertNoOverlayOnActions(page) {
+  const offenders = await page.evaluate(() => {
+    function intersectsRects(a, b) {
+      return !(
+        a.right <= b.left ||
+        a.left >= b.right ||
+        a.bottom <= b.top ||
+        a.top >= b.bottom
+      );
+    }
+
+    const targets = ['.k-qty', '.k-modal-actions .k-buy-now-btn', '#k-buy-now-btn']
+      .map((sel) => document.querySelector(sel))
+      .filter(Boolean);
+
+    const filledLabel = Array.from(document.querySelectorAll('.k-modal-actions *')).find(
+      (el) => el.children.length === 0 && /Dans le panier/.test(el.textContent || '')
+    );
+    if (filledLabel) targets.push(filledLabel);
+
+    const pre = window.__preAddElements || new Set();
+    const candidates = Array.from(document.body.querySelectorAll('*')).filter((el) => {
+      if (pre.has(el)) return false;
+      const style = getComputedStyle(el);
+      if (style.position !== 'fixed' && style.position !== 'absolute') return false;
+      if (style.visibility === 'hidden' || style.display === 'none' || Number(style.opacity) === 0) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+
+    const found = [];
+    for (const el of candidates) {
+      const rect = el.getBoundingClientRect();
+      for (const target of targets) {
+        if (intersectsRects(rect, target.getBoundingClientRect())) {
+          found.push(el.className || el.tagName);
+          break;
+        }
+      }
+    }
+    return found;
+  });
+
+  expect(offenders, `Élément(s) flottant(s) au-dessus des actions: ${offenders.join(', ')}`).toEqual([]);
 }
 
 /**
@@ -312,6 +388,7 @@ module.exports = {
   waitForModalOpen,
   closeModal,
   addToCartFromModal,
+  assertNoOverlayOnActions,
   openCartDrawer,
   getCartItems,
   addFirstProductToCart,

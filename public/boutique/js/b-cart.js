@@ -102,12 +102,19 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
     const srcRect = sourceEl.getBoundingClientRect();
     const dstRect = cartIcon.getBoundingClientRect();
     const startX = srcRect.left + srcRect.width / 2;
-    const startY = srcRect.top + srcRect.height / 2;
+    // P1-fix : décollage au-dessus du bouton source (jamais centré dessus),
+    // pour ne jamais apparaître visuellement superposée au libellé/CTA
+    // qu'elle quitte. Owner : b-cart.js::flyToCart (seul créateur de cet
+    // élément — cf. audit-modal-ownership.js).
+    const startY = srcRect.top - 18;
     const endX = dstRect.left + dstRect.width / 2;
     const endY = dstRect.top + dstRect.height / 2;
 
-    // Main particle
+    // Main particle — .k-fly-particle : sélecteur stable pour les oracles
+    // Playwright (assertNoOverlayOnActions / addToCartFromModal), plus
+    // fiable qu'un div anonyme.
     const particle = document.createElement('div');
+    particle.className = 'k-fly-particle';
     particle.style.cssText = [
       'position:fixed', 'z-index:9999', 'pointer-events:none',
       'border-radius:50%', 'background:var(--ocean)',
@@ -151,8 +158,9 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
     particle.style.transform = 'translate(-50%,-50%) scale(1.15)';
     particle.style.opacity = '1';
 
-    // Phase 2: Arc flight
-    const duration = 900;
+    // Phase 2: Arc flight — P1-fix : 900ms → 500ms (durée totale visée
+    // ~770ms au lieu de ~1450ms, cf. audit desktop 2026-07).
+    const duration = 500;
     let startTime = null;
 
     /**
@@ -209,7 +217,7 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
         setTimeout(() => {
           particle.remove();
           sparkles.forEach(sp => sp.remove());
-        }, 200);
+        }, 120);
         // Badge bump — celui du bouton réellement ciblé par l'animation
         const targetBadge = cartIcon === dom.modalCartBtn ? dom.modalCartBadge : dom.cartBadge;
         if (targetBadge) {
@@ -220,7 +228,7 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
       }
     }
 
-    setTimeout(() => requestAnimationFrame(animateArc), 350);
+    setTimeout(() => requestAnimationFrame(animateArc), 150);
   }
 
   /* ── ADD TO CART ────────────────────────────────────────── */
@@ -330,24 +338,33 @@ import { getProductCartSummary, getCartItemProductId } from './cart-product-summ
   }
 
   if (isModalAdd) {
-    // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
-    setTimeout(() => {
-      const count = cartQty();
-      dom.addCartBtn.classList.remove('added');
-      dom.addCartBtn.classList.add('confirmed');
-      dom.addCartBtn.disabled = false;
-      dom.addCartBtn.innerHTML = '✓ Ajouté';
-      dom.addCartBtn.onclick = function() {
-        bus.emit('modal:close');
-        // Desktop : le side-cart est déjà visible — on ne rouvre pas le tiroir
-        if (isDesktop()) {
-          let sc = document.getElementById('k-side-cart');
-          if (sc) { sc.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
-        } else {
-          setTimeout(openCart, 150);
-        }
-      };
-    }, 700);
+    // Découvert en faisant tourner réellement le test e2e mobile SKU
+    // (elite) : ce feedback legacy réservé aux produits SIMPLE écrasait
+    // sans condition le libellé persistant "🧺 Dans le panier (N)" déjà
+    // peint de façon synchrone par _syncModalQtyUI() (b-modal-cart.js,
+    // owner unique du libellé SKU). Guard structurel par inventory_model,
+    // pas par fixture : un SKU garde toujours son libellé persistant.
+    const isSkuModal = state.modalProductDetail?.inventory_model === 'SKU';
+    if (!isSkuModal) {
+      // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
+      setTimeout(() => {
+        const count = cartQty();
+        dom.addCartBtn.classList.remove('added');
+        dom.addCartBtn.classList.add('confirmed');
+        dom.addCartBtn.disabled = false;
+        dom.addCartBtn.innerHTML = '✓ Ajouté';
+        dom.addCartBtn.onclick = function() {
+          bus.emit('modal:close');
+          // Desktop : le side-cart est déjà visible — on ne rouvre pas le tiroir
+          if (isDesktop()) {
+            let sc = document.getElementById('k-side-cart');
+            if (sc) { sc.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+          } else {
+            setTimeout(openCart, 150);
+          }
+        };
+      }, 700);
+    }
   } else if (isBuyNowBtn) {
     // Buy-now depuis la modal : rafraîchir le side-cart desktop silencieusement
     // (la modal gère elle-même le feedback visuel du bouton et l'ouverture du panier)
