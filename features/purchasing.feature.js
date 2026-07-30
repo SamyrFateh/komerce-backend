@@ -62,6 +62,9 @@ module.exports = {
     ],
     migrations: [],
     tests: [
+      // E2E fonctionnel Feature First — purchasing est PROPRIETAIRE ;
+      // orders, catalog et logistics sont traversees.
+      'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js',
       'tests/unit/purchasing.test.js',                              // triggerPurchasing (purchasing-trigger-service)
       'tests/unit/purchasing-receive-service.test.js',
       'tests/unit/purchasing-route.test.js',                        // couche HTTP routes/purchasing.js
@@ -149,7 +152,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    'un besoin d\'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)',
+    { statement: 'un besoin d\'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)',
+      test: 'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js' },
     'purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)',
     'une réception ne peut être appliquée qu\'à un bon de commande existant et cohérent',
   ],
