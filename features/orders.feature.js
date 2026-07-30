@@ -83,6 +83,9 @@ module.exports = {
       'routes/order-api-v2.js',
     ],
       tests: [
+      // E2E fonctionnel Feature First — orders est PROPRIETAIRE ;
+      // auth, catalog, logistics et business-rules sont traversees.
+      'tests/e2e-api/orders.cancellation-doctrine.e2e.test.js',
       // E2E fonctionnel Feature First (chantier E2E positive-contracts).
       // Scénario vertical : orders est la feature PROPRIETAIRE ; auth,
       // catalog, payments et logistics sont traversées, pas co-proprietaires.
@@ -266,8 +269,10 @@ module.exports = {
     'le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait',
     { statement: 'tout remboursement retourne au payeur, jamais au destinataire',
       test: 'tests/invariants/orders.refund-to-payer.test.js' },
-    'reference de commande lisible et unique',
-    'snapshot de cout figure a la creation, jamais recalcule retroactivement',
+    { statement: 'reference de commande lisible et unique',
+      test: 'tests/e2e-api/orders.cancellation-doctrine.e2e.test.js' },
+    { statement: 'snapshot de cout figure a la creation, jamais recalcule retroactivement',
+      test: 'tests/e2e-api/orders.cancellation-doctrine.e2e.test.js' },
     'transition de statut uniquement via order-status-machine.js',
     'annulation libere les achats fournisseurs lies dans la meme transaction',
   ],

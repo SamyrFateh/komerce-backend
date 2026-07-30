@@ -189,16 +189,19 @@
       "exposedRoutes": 34,
       "invariants": {
         "declared": 7,
-        "executable": 1,
+        "executable": 3,
         "tests": [
-          "tests/invariants/orders.refund-to-payer.test.js"
+          "tests/invariants/orders.refund-to-payer.test.js",
+          "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
+          "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js"
         ]
       },
       "tests": {
-        "declared": 27,
-        "proofs": 28,
+        "declared": 28,
+        "proofs": 29,
         "byCategory": {
           "e2e-api": [
+            "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
             "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js"
           ],
           "unit": [
@@ -239,7 +242,7 @@
       },
       "status": "PROVEN",
       "gaps": [
-        "6/7 invariant(s) non exécutable(s)."
+        "4/7 invariant(s) non exécutable(s)."
       ]
     },
     {
