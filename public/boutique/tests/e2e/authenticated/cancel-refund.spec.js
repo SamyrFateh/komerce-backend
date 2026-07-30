@@ -24,7 +24,7 @@
 'use strict';
 const { test, expect } = require('@playwright/test');
 const { BASE_URL } = require('../helpers/boutique.helpers');
-const { getRecentOrders, verifySession, verifyWalletBalance } = require('../helpers/api.helpers');
+const { getRecentOrders, verifySession, verifyWalletBalance, assertNotProdIfMutant } = require('../helpers/api.helpers');
 const { getOrderByRef } = require('../helpers/business.helpers');
 
 const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').replace('/boutique/', '');

@@ -316,6 +316,14 @@ async function provisionTestWallet(page, targetBalance = 50_000) {
     );
   }
   const apiBase = (process.env.BASE_URL || 'http://localhost:3000/boutique/').replace('/boutique/', '');
+  const currentWallet = await verifyWalletBalance(page);
+  if (!currentWallet) {
+    throw new Error('[R5] provisionTestWallet: wallet client inaccessible avant provisionnement.');
+  }
+  if (currentWallet.balance >= targetBalance) {
+    return currentWallet;
+  }
+  const creditAmount = targetBalance - currentWallet.balance;
   // Récupérer le userId du compte de test depuis la session
   const userId = await page.evaluate(async (base) => {
     try {
@@ -333,6 +341,7 @@ async function provisionTestWallet(page, targetBalance = 50_000) {
     try {
       const r = await fetch(new URL('/api/wallet/admin/credit', args.base).href, {
         method: 'POST',
+        credentials: 'omit',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${args.token}`,
@@ -351,7 +360,7 @@ async function provisionTestWallet(page, targetBalance = 50_000) {
       const d = await r.json();
       return { ok: true, balance: d.wallet?.balance ?? d.balance ?? null };
     } catch (e) { return { ok: false, error: e.message }; }
-  }, { base: apiBase, token: adminToken, userId, amount: targetBalance });
+  }, { base: apiBase, token: adminToken, userId, amount: creditAmount });
 
   if (!result.ok) {
     throw new Error(`[R5] provisionTestWallet échoué : ${result.error}`);

@@ -21,7 +21,7 @@ const {
   BASE_URL, waitForGrid, openFirstCard, addToCartFromModal,
   openCheckout, selectRecipientOther,
 } = require('../helpers/boutique.helpers');
-const { verifySession, verifyWalletBalance, getRecentOrders } = require('../helpers/api.helpers');
+const { verifySession, verifyWalletBalance, getRecentOrders, assertNotProdIfMutant } = require('../helpers/api.helpers');
 const { getProductStock } = require('../helpers/business.helpers');
 
 const API_BASE = (process.env.BASE_URL || 'http://localhost:3000/boutique/').replace('/boutique/', '');

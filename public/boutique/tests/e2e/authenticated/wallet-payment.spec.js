@@ -44,6 +44,10 @@ test.describe('FLOW — Commande payée 100% wallet (F02)', () => {
     }
     const page = await browser.newPage();
     try {
+      // provisionTestWallet interroge /api/auth/me via page.evaluate : la page
+      // doit avoir navigue sur l'origine pour porter le cookie de session,
+      // sinon about:blank renvoie null et le helper leve.
+      await page.goto(BASE_URL);
       walletBefore = await provisionTestWallet(page, 50_000);
       // eslint-disable-next-line no-console
       console.log(`[F02] Wallet provisionné : ${walletBefore.balance} KMF`);

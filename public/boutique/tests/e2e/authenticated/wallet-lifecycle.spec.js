@@ -45,6 +45,7 @@ test.describe('FLOW — Cycle de vie wallet complet (F02 → F03 → F11)', () =
     }
     const page = await browser.newPage();
     try {
+      await page.goto(BASE_URL);
       const wallet = await provisionTestWallet(page, 50_000);
       initialBalance = wallet.balance;
       // eslint-disable-next-line no-console

@@ -16,7 +16,7 @@
 'use strict';
 const { test, expect } = require('@playwright/test');
 const { BASE_URL, navigateToTab } = require('../helpers/boutique.helpers');
-const { getRecentOrders, verifySession } = require('../helpers/api.helpers');
+const { getRecentOrders, verifySession, requireOrders } = require('../helpers/api.helpers');
 const { getOrderHistory, getOrderByRef } = require('../helpers/business.helpers');
 
 test.describe('FLOW — Historique commande (F06)', () => {
