@@ -45,6 +45,7 @@ const db  = require('../db');
 
 const { transitionOrderStatus } = require('./order-status-machine');
 const { markPaid } = require('./payment-service');
+const { ensureSecretGenerated } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'parcel-auto-create-service' });
 
 /**
@@ -231,7 +232,7 @@ async function confirmCashAndCreateParcel(ref, actor) {
     await client.query('BEGIN');
 
     const { rows: [order] } = await client.query(
-      `SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status, o.total_kmf, o.user_id,
+      `SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status, o.total_kmf, o.user_id, o.relais_id,
          u.full_name AS customer_name, u.phone AS customer_phone
        FROM orders o
        LEFT JOIN users u ON u.id = o.user_id
@@ -281,8 +282,18 @@ async function confirmCashAndCreateParcel(ref, actor) {
       role: actor.role || 'system',
     });
 
+    // Code de retrait canonique — généré ici, à la confirmation du paiement
+    // (jamais à la création). Idempotent : no-op si déjà généré (ex. via le
+    // hook order-status-machine → available, plus tard dans le cycle de vie).
+    const secretResult = await ensureSecretGenerated({
+      orderId:  order.id,
+      relaisId: order.relais_id || null,
+      channel:  'cash_confirm',
+      dbClient: client,
+    });
+
     await client.query('COMMIT');
-    return { order, parcelResult };
+    return { order, parcelResult, pickupCodeToCache: secretResult.code || null };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     throw err;

@@ -26,6 +26,9 @@
  * Exports :
  *   helpers          — generatePickupCode, hashCode, normalizeCode
  *   generateAndStoreSecret  — anti-collision + UPDATE orders
+ *   ensureSecretGenerated   — (Lot 2) point d'entrée idempotent pour tous les
+ *                             canaux de confirmation de paiement ; no-op si un
+ *                             secret existe déjà pour la commande
  *   cacheCodeForReveal      — INSERT pickup_reveal_codes (one-shot reveal cache)
  *   issuePrintToken         — INSERT pickup_print_tokens
  *   getReceiptHTML          — HTML imprimable du reçu
@@ -80,6 +83,16 @@ function hashCode(code, salt) {
  */
 function normalizeCode(input) {
   return String(input || '').replace(/[-\s]/g, '').toUpperCase();
+}
+
+/**
+ * Formate un pickup_secret_last4 en affichage masqué "•••-•XX-XX".
+ * Usage : tous les lecteurs (dashboards, tracking) qui affichaient
+ * auparavant orders.pickup_code en clair (Lot 2).
+ */
+function maskLast4(last4) {
+  if (!last4) return null;
+  return '•••-•' + last4.slice(0, 2) + '-' + last4.slice(2);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -170,6 +183,43 @@ async function generateAndStoreSecret({
   log.info(`[PICKUP-SECRET] ✅ Code généré channel=${channel} order=${orderId} last4=${last4}`);
 
   return { code, last4 };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ensureSecretGenerated
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// Point d'entrée idempotent pour tous les canaux de confirmation de paiement
+// (Lot 2 — convergence). Ne régénère JAMAIS un secret existant : si la
+// commande a déjà un pickup_secret_hash, la fonction est un no-op et renvoie
+// { code: null, last4, alreadyExisted: true } pour que l'appelant sache qu'il
+// n'a pas de code en clair à mettre en cache pour la révélation one-shot.
+//
+// dbClient : à fournir systématiquement pour rester dans la même transaction
+// que l'écriture de statut de paiement (résout @db-txn resolve_before_behavior_change).
+
+async function ensureSecretGenerated({ orderId, relaisId = null, channel, dbClient = null }) {
+  if (!orderId) throw new Error('ensureSecretGenerated: orderId requis');
+  if (!channel) throw new Error('ensureSecretGenerated: channel requis');
+
+  const dbHandle = dbClient || db;
+  const { rows: [existing] } = await dbHandle.query(
+    `SELECT pickup_secret_hash, pickup_secret_last4 FROM orders WHERE id = $1`,
+    [orderId]
+  );
+
+  if (existing && existing.pickup_secret_hash) {
+    return { code: null, last4: existing.pickup_secret_last4, alreadyExisted: true };
+  }
+
+  const { code, last4 } = await generateAndStoreSecret({
+    orderId,
+    relaisId,
+    channel,
+    dbClient,
+  });
+
+  return { code, last4, alreadyExisted: false };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -633,8 +683,10 @@ module.exports = {
   generatePickupCode,
   hashCode,
   normalizeCode,
+  maskLast4,
   // fonctions métier
   generateAndStoreSecret,
+  ensureSecretGenerated,
   cacheCodeForReveal,
   issuePrintToken,
   getReceiptHTML,

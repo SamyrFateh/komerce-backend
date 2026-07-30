@@ -36,6 +36,7 @@
  */
 
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
+const { ensureSecretGenerated, cacheCodeForReveal } = require('./pickup-secret-service');
 const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'payment-cash-confirm' });
 
@@ -136,10 +137,25 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
       };
     }
 
+    // Code de retrait canonique — généré ici, à la confirmation du paiement.
+    // Idempotent : no-op si déjà généré (ex. régénéré ailleurs entre-temps).
+    const secretResult = await ensureSecretGenerated({
+      orderId:  order.id,
+      relaisId: order.relais_id || null,
+      channel:  'cash_confirm',
+      dbClient: client,
+    });
+
     await client.query(
       'UPDATE orders SET cash_paid_at = COALESCE(cash_paid_at, NOW()) WHERE id = $1', [order.id]
     );
     await client.query('COMMIT');
+
+    // Après commit (comme Stripe/PayPal/wallet) : cache pour révélation one-shot.
+    if (secretResult.code) {
+      cacheCodeForReveal(order.id, secretResult.code)
+        .catch(e => log.error({ err: e }, '[CASH-CONFIRM] cacheCodeForReveal error:'));
+    }
 
     const response = {
       status: 200,

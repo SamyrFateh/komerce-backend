@@ -50,7 +50,6 @@
 
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'order-status-machine' });
-const { randomBytes } = require('crypto');
 const { adjustStock } = require('./product-admin-service');
 const { sourceStatusesFor, sqlGuard } = require('./payment-status-validator');
 
@@ -141,18 +140,6 @@ function isForwardTransition(from, to) {
   return toRank > fromRank;
 }
 
-/**
- * Generate a secure 6-char pickup code.
- */
-function generatePickupCode() {
-  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  return Array.from({ length: 6 }, () => {
-    let b; do { b = randomBytes(1)[0]; } while (b >= 216);
-    return CHARS[b % 36];
-  }).join('');
-}
-
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // transitionOrderStatus() — THE SINGLE ENTRY POINT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -196,7 +183,7 @@ async function transitionOrderStatus({
   // ── 1. Load current order ────────────────────────────────────────────────
   const forUpdate = dbClient ? ' FOR UPDATE' : '';
   const { rows: [order] } = await q.query(
-    `SELECT id, status, payment_mode, pickup_code FROM orders WHERE id = $1${forUpdate}`,
+    `SELECT id, status, payment_mode, relais_id, pickup_secret_hash FROM orders WHERE id = $1${forUpdate}`,
     [orderId]
   );
   if (!order) {
@@ -279,15 +266,6 @@ async function transitionOrderStatus({
     }
   }
 
-  // Auto-generate pickup_code when → available
-  let pickupCode = null;
-  if (newStatus === 'available' && !order.pickup_code) {
-    pickupCode = generatePickupCode();
-    setParts.push(`pickup_code = $${paramIdx}`);
-    values.push(pickupCode);
-    paramIdx++;
-  }
-
   // Cancel reason
   if (newStatus === 'cancelled' && cancelReason) {
     setParts.push(`cancel_reason = $${paramIdx}`);
@@ -301,6 +279,20 @@ async function transitionOrderStatus({
     `UPDATE orders SET ${setParts.join(', ')} WHERE id = $${paramIdx}`,
     values
   );
+
+  // Auto-generate le code de retrait canonique quand → available (idempotent —
+  // no-op si un secret existe déjà, ex. déjà généré à la confirmation du
+  // paiement). require() tardif : évite le cycle avec pickup-secret-service.js,
+  // qui dépend lui-même de transitionOrderStatus.
+  if (newStatus === 'available' && !order.pickup_secret_hash) {
+    const { ensureSecretGenerated } = require('./pickup-secret-service');
+    await ensureSecretGenerated({
+      orderId:  orderId,
+      relaisId: order.relais_id || null,
+      channel:  'status_available',
+      dbClient: dbClient || null,
+    });
+  }
 
   // ── 5. Special: confirmed (paiement reçu) → set payment_status = 'paid' ──
   // Ceci remplace la logique qui était dans payments.js

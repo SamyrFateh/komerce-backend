@@ -23,7 +23,8 @@ const db = require('../db');
 const { CONFIG, r, withTransaction, addEvent } = require('./shared-cart-internals');
 const { appendOrderHistoryNote } = require('./order-status-machine');
 const { sendTemplateWhatsApp } = require('./whatsapp-meta');
-const { getUniqueRef, generatePickupCode } = require('./order-service');
+const { getUniqueRef } = require('./order-service');
+const { ensureSecretGenerated, cacheCodeForReveal } = require('./pickup-secret-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
 const { getRates } = require('../utils/rates');
@@ -210,7 +211,6 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     // 5. Créer la commande complète
     const orderId = crypto.randomUUID();
     const reference = await getUniqueRef(db);
-    const pickupCode = generatePickupCode();
     const liveRates = await getRates();
     const eurKmf = liveRates?.eur_kmf || 492;
     const totalEur = parseFloat((totalKmf / eurKmf).toFixed(2));
@@ -221,7 +221,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
          tracking_phone,
          total_kmf, total_eur,
          payment_mode, payment_status,
-         cash_ref_code, pickup_code,
+         cash_ref_code,
          status,
          shared_cart_id, prepaid_amount_kmf, remaining_cash_kmf,
          destination_island, routing_mode, transit_hub
@@ -230,17 +230,16 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
          $6,
          $7, $8,
          'mixed_shared_cart_cash', 'pending',
-         NULL, $9,
+         NULL,
          'pending',
-         $10, $11, $12,
-         $13, $14, $15
+         $9, $10, $11,
+         $12, $13, $14
        )
        RETURNING *`,
       [
         orderId, reference, userId, recipientId, relais.id,
         recipientPhone || null,
         totalKmf, totalEur,
-        pickupCode,
         sharedCartId, prepaidKmf, remainingCashKmf,
         routing.destination_island,
         routing.routing_mode,
@@ -282,6 +281,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     // 7. Cycle paiement + stock (cas A : 100% financé — remaining_cash_kmf = 0)
     //    Cas B (creatorCoversGap, remaining > 0) : pas de confirmPaymentCycle ici,
     //    le cash résiduel sera encaissé à la livraison (doctrine §5.7).
+    let sharedCartPickupCode = null;
     if (remainingCashKmf === 0) {
       const cycleResult = await confirmPaymentCycle({
         orderId: order.id,
@@ -301,6 +301,17 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
           items: cycleResult.insufficientItems,
         }));
       }
+
+      // Code de retrait canonique — généré ici, à la confirmation du paiement
+      // (jamais à la création). Cas B (cash résiduel) : pas de code tant que
+      // le cash n'a pas été encaissé — voir services/cash-operations.js.
+      const secretResult = await ensureSecretGenerated({
+        orderId:  order.id,
+        relaisId: relais.id,
+        channel:  'shared_cart_full_payment',
+        dbClient: client,
+      });
+      if (secretResult.code) sharedCartPickupCode = secretResult.code;
     }
 
     // 8. Marquer le panier comme ORDERED (converted_to_order)
@@ -335,6 +346,9 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       order: finalOrder || order,
       prepaidKmf,
       remainingCashKmf,
+      // Clair, one-shot — le caller doit le passer à cacheCodeForReveal()
+      // APRÈS commit puis le jeter. Null si cas B (cash résiduel).
+      pickupCodeToCache: sharedCartPickupCode,
     };
   });
 }

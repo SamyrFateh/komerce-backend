@@ -12770,7 +12770,6 @@
       ],
       "outputs": [
         "order_reference",
-        "pickup_code",
         "wallet_applied_state"
       ],
       "depends": [

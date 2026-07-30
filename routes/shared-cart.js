@@ -76,6 +76,7 @@ const windowRules = require('../services/shared-cart-v41-transitions');
 const log = require('../utils/logger').child({ module: 'shared-cart' });
 const { sendTemplateWhatsApp } = require('../services/whatsapp-meta');
 const queries = require('../services/shared-cart-queries');
+const { cacheCodeForReveal } = require('../services/pickup-secret-service');
 
 const router      = express.Router();
 const adminRouter = express.Router();
@@ -686,6 +687,13 @@ router.post('/:id/finalize', authenticate, async (req, res, next) => {
       prepaid_kmf:        result.prepaidKmf,
       remaining_cash_kmf: result.remainingCashKmf,
     });
+
+    // Code de retrait Cas A (100% financé) : cache pour révélation one-shot,
+    // après commit (comme Stripe/PayPal/wallet_full_payment). Null en Cas B.
+    if (result.pickupCodeToCache) {
+      cacheCodeForReveal(result.order.id, result.pickupCodeToCache)
+        .catch(e => log.error({ err: e, cart_id: req.params.id }, '[finalize] cacheCodeForReveal error:'));
+    }
 
     // LOY-01 — Hook fidélité gros panier (créateur du panier partagé, fire-and-forget)
     if (result.order?.id) {

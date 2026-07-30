@@ -208,22 +208,12 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
     });
   }
 
-  const { randomBytes } = require('crypto');
   const client = await db.getClient();
 
   // ── Helpers ──────────────────────────────────────────────────────
   const now = new Date();
   const daysAgo = (d) => new Date(now.getTime() - d * 86400000).toISOString();
   const YEAR = now.getFullYear();
-
-  const genPickup = () => {
-    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return Array.from({ length: 6 }, () => {
-      let b;
-      do { b = randomBytes(1)[0]; } while (b >= 216);
-      return CHARS[b % 36];
-    }).join('');
-  };
 
   let cashRefIdx = 0;
   const genCashRef = () => String(Date.now() + (cashRefIdx++)).slice(-8);
@@ -365,24 +355,32 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
         `INSERT INTO orders (
            id, reference, user_id, relais_id,
            total_kmf, total_eur, payment_mode, payment_status,
-           cash_ref_code, pickup_code, status, confection_type, qr_token,
+           cash_ref_code, status, confection_type, qr_token,
            created_at, ordered_at, preparation_at, shipped_at,
            available_at, collected_at, cancelled_at
          ) VALUES (
            $1::uuid, $2, $3::uuid, $4::uuid,
            $5, $6, $7, $8,
-           $9, $10, $11, $12, $13,
-           $14, $15, $16, $17,
-           $18, $19, $20
+           $9, $10, $11, $12,
+           $13, $14, $15, $16,
+           $17, $18, $19
          )`,
         [
           orderId, s.ref, cl.id, s.rid,
           totalKmf, totalEur, s.pm, s.ps,
-          cashRef, genPickup(), s.st, 'aucun', crypto.randomUUID(),
+          cashRef, s.st, 'aucun', crypto.randomUUID(),
           createdAt, s.ordered_at, s.preparation_at, s.shipped_at,
           s.available_at, s.collected_at, s.cancelled_at,
         ]
       );
+
+      // Lot 2 : génère le secret de retrait canonique pour les commandes déjà
+      // disponibles en relais dans le jeu de démo, sinon le flux de remise
+      // (collectParcel / verify-pickup) n'a aucun code à vérifier.
+      if (s.st === 'available') {
+        const { ensureSecretGenerated } = require('../../services/pickup-secret-service');
+        await ensureSecretGenerated({ orderId, relaisId: s.rid || null, channel: 'demo_seed', dbClient: client });
+      }
 
       const orderItemIds = [];
       const { resolveFrozenClassification } = require('../../services/customs-classification');

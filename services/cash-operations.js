@@ -35,6 +35,7 @@
  */
 
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
+const { ensureSecretGenerated } = require('./pickup-secret-service');
 const { createAlert } = require('../utils/alerts');
 const db = require('../db');
 const log = require('../utils/logger').child({ module: 'cash-operations' });
@@ -152,11 +153,22 @@ async function collectCash({ orderId, agentUser, dbClient }) {
     return { stock_blocked: true, insufficient_items: cycleResult.insufficientItems };
   }
 
+  // Code de retrait canonique — généré ici, à la confirmation du paiement.
+  // Idempotent : no-op si déjà généré. Le clair (une seule fois) est renvoyé
+  // à la route pour cacheCodeForReveal() APRÈS COMMIT.
+  const secretResult = await ensureSecretGenerated({
+    orderId,
+    relaisId: order.relais_id || null,
+    channel:  'cash_confirm',
+    dbClient: client,
+  });
+
   return {
     success:    true,
     collection,
     noop:       cycleResult.noop,
     amount_kmf: amountKmf,
+    pickupCodeToCache: secretResult.code || null,
   };
 }
 

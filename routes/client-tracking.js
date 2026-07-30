@@ -23,6 +23,7 @@ const router = express.Router();
 const pool = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { computeOrderStatusDetail, getOrderStatusDetailMessage } = require('../utils/parcels');
+const { maskLast4 } = require('../services/pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'client-tracking' });
 
 const STATUS_LABELS = {
@@ -57,7 +58,7 @@ router.get('/', authenticate, async (req, res, next) => {
       SELECT 
         o.id, o.reference, o.status, o.total_kmf,
         o.payment_mode, o.payment_status,
-        o.pickup_code, o.qr_token,
+        o.pickup_secret_last4, o.qr_token,
         o.created_at, o.ordered_at, o.preparation_at,
         o.shipped_at, o.in_transit_at, o.available_at, o.collected_at,
         o.destination_island,
@@ -205,7 +206,7 @@ router.get('/', authenticate, async (req, res, next) => {
           address: order.relais_address,
           island: order.relais_island
         },
-        pickupCode: isAtRelay ? order.pickup_code : null,
+        pickupCode: isAtRelay ? maskLast4(order.pickup_secret_last4) : null,
         items,
         parcels,
         invoices,

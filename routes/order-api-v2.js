@@ -42,6 +42,7 @@ const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { confirmCashAndCreateParcel, createParcelManually } = require('../services/parcel-auto-create-service');
+const { cacheCodeForReveal } = require('../services/pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'order-api-v2' });
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
@@ -236,9 +237,14 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
       full_name: req.user?.full_name || 'Admin CT',
       email:     req.user?.email,
     };
-    const { order, parcelResult } = await confirmCashAndCreateParcel(req.params.ref, actor);
+    const { order, parcelResult, pickupCodeToCache } = await confirmCashAndCreateParcel(req.params.ref, actor);
 
     log.info(`💰 Cash confirmed + auto-parcel: ${order.reference} by ${actor.email || 'system'}`);
+
+    if (pickupCodeToCache) {
+      cacheCodeForReveal(order.id, pickupCodeToCache)
+        .catch(e => log.error({ err: e }, '[CONFIRM-CASH] cacheCodeForReveal error:'));
+    }
 
     // Notifications (fire-and-forget)
     const notif = require('../services/notification-service');

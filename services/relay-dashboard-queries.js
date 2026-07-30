@@ -39,6 +39,7 @@
  */
 
 const db  = require('../db');
+const { maskLast4 } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'relay-dashboard-queries' });
 
 // ─── getDashboardKPIs ─────────────────────────────────────────────────────
@@ -138,7 +139,7 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }) {
   const { rows } = await db.query(`
     SELECT
       o.id, o.reference, o.status, o.total_kmf,
-      o.payment_mode, o.payment_status, o.pickup_code,
+      o.payment_mode, o.payment_status, o.pickup_secret_last4,
       o.created_at, o.ordered_at, o.shipped_at, o.in_transit_at,
       o.available_at, o.collected_at, o.cancelled_at, o.updated_at,
       rc.full_name AS client_nom, rc.phone AS client_phone,
@@ -178,6 +179,7 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }) {
     }
     return {
       ...o,
+      pickup_code: maskLast4(o.pickup_secret_last4),
       total_kmf: Number(o.total_kmf),
       heures_attente: heures,
       age_jours: Math.round(Number(o.age_jours)),
@@ -303,7 +305,7 @@ async function getOrderDetail(user, orderId) {
   return {
     order: {
       id: order.id, reference: order.reference, status: order.status,
-      pickup_code: order.pickup_code,
+      pickup_code: maskLast4(order.pickup_secret_last4),
       created_at: order.created_at, updated_at: order.updated_at,
       age_jours: Math.round(Number(order.age_jours)),
       heures_attente: Math.round(Number(order.heures_attente) || 0),

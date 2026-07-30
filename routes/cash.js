@@ -42,6 +42,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { collectCash } = require('../services/cash-operations'); // [R5]
+const { cacheCodeForReveal } = require('../services/pickup-secret-service');
 const notifSvc = require('../services/notification-service');
 const log = require('../utils/logger').child({ module: 'cash-route' });
 
@@ -113,6 +114,11 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
     }
 
     await client.query('COMMIT');
+
+    if (result.pickupCodeToCache) {
+      cacheCodeForReveal(result.collection.order_id, result.pickupCodeToCache)
+        .catch(e => log.error({ err: e }, '[CASH-COLLECT] cacheCodeForReveal error:'));
+    }
 
     // CASH-01 — Hooks post-paiement communs (notification + sourcing),
     // alignés sur /api/payments/cash/confirm et /api/pickup/pay-cash.

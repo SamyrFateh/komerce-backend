@@ -24,7 +24,6 @@
  *   - generateOrderRef()    → séquence DB (plus de collision)
  *   - generateShipmentRef() → séquence DB (plus de collision)
  *   - generateCashCode()    → crypto.randomInt (non prévisible)
- *   - generatePickupCode()  → crypto.randomInt (non prévisible)
  *   - generateBasketCode()  → crypto.randomBytes (non prévisible)
  *
  * v9.0 — Phase 1 Refonte Parcel-Centric :
@@ -57,14 +56,6 @@ async function generateOrderRef(db) {
  * @returns {string} Code 6 chiffres
  */
 function generateCashCode() {
-  return String(crypto.randomInt(100000, 999999));
-}
-
-/**
- * Génère un code retrait destinataire à 6 chiffres (crypto-secure).
- * @returns {string} Code 6 chiffres
- */
-function generatePickupCode() {
   return String(crypto.randomInt(100000, 999999));
 }
 
@@ -119,7 +110,6 @@ async function generateParcelRef(db) {
 module.exports = {
   generateOrderRef,
   generateCashCode,
-  generatePickupCode,
   generateBasketCode,
   generateShipmentRef,
   generateParcelRef,

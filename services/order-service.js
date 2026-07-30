@@ -5,7 +5,7 @@
  * @layer         service
  * @criticality   high
  * @inputs        order_payload, wallet_context, reference_seed
- * @outputs       order_reference, pickup_code, wallet_applied_state
+ * @outputs       order_reference, wallet_applied_state
  * @depends       db.js, services/wallet-service.js
  * @used-by       routes/orders.js, shared-cart-engine.js, checkout-flows
  * @db-read       orders
@@ -58,15 +58,6 @@ function generateCashCode() {
   return digits.join('');
 }
 
-function generatePickupCode() {
-  const PICKUP_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  return Array.from({ length: 6 }, () => {
-    let b;
-    do { b = randomBytes(1)[0]; } while (b >= 216);
-    return PICKUP_CHARS[b % 36];
-  }).join('');
-}
-
 // ─── Wallet balance (remplace store_credits) ─────────────────────────────────
 
 async function getAvailableCredits(dbOrClient, userId) {
@@ -78,6 +69,5 @@ module.exports = {
   generateRef,
   getUniqueRef,
   generateCashCode,
-  generatePickupCode,
   getAvailableCredits,
 };

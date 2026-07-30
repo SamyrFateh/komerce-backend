@@ -125,7 +125,7 @@ router.get('/:token', async (req, res, next) => {
       SELECT
         o.id, o.reference, o.status, o.total_kmf,
         o.payment_mode, o.payment_status,
-        o.pickup_code,
+        o.pickup_secret_hash,
         o.created_at, o.shipped_at, o.available_at, o.collected_at,
         o.ordered_at, o.preparation_at, o.in_transit_at,
         o.destination_island,
@@ -258,7 +258,7 @@ router.get('/:token', async (req, res, next) => {
         name: order.relais_name,
         address: order.relais_address
       } : null,
-      pickupReady: isAtRelay && Boolean(order.pickup_code),
+      pickupReady: isAtRelay && Boolean(order.pickup_secret_hash),
       items: itemsResult.rows.map(i => ({
         name: i.product_name,
         emoji: i.emoji,
@@ -308,7 +308,7 @@ router.post('/:token/verify-pickup', async (req, res, next) => {
     }
 
     const result = await pool.query(`
-      SELECT pickup_code, status FROM orders WHERE qr_token = $1
+      SELECT id, status FROM orders WHERE qr_token = $1
     `, [token]);
 
     if (result.rows.length === 0) {
@@ -316,36 +316,32 @@ router.post('/:token/verify-pickup', async (req, res, next) => {
     }
 
     const order = result.rows[0];
-    
+
     // Only allow verification when at relay
     if (!['available', 'collected', 'delivered'].includes(order.status)) {
       return res.status(400).json({ valid: false, error: 'Commande pas encore disponible au retrait' });
     }
 
-    const expected = Buffer.from(String(order.pickup_code || ''));
-    const provided = Buffer.from(String(code).trim());
-    const valid = expected.length > 0 &&
-      expected.length === provided.length &&
-      crypto.timingSafeEqual(expected, provided);
-    res.json({ valid: valid });
+    // Lot 2 : vérification déléguée au service canonique (hash+salt) — plus de
+    // comparaison en clair sur une colonne qui n'est plus jamais écrite.
+    // verifyPickupCode gère son propre anti-brute-force par commande
+    // (pickup_secret_attempts) ; le rate-limit token+IP ci-dessus
+    // (pickup_verify_attempts) reste en plus — anti-énumération sur route
+    // publique non authentifiée, distinct et toujours légitime.
+    const { verifyPickupCode } = require('../services/pickup-secret-service');
+    const verifyResult = await verifyPickupCode({ orderId: order.id, code, agentId: null });
+
+    if (verifyResult.status === 429) {
+      return res.status(429).json({ valid: false, error: verifyResult.body.error, blockedUntil: verifyResult.body.blocked_until });
+    }
+    // Tout le reste (200 = code valide ; 401/404/400/410 = code invalide,
+    // pas encore émis, ou expiré) est aplati sur le contrat existant du
+    // endpoint : 200 { valid: boolean }.
+    return res.json({ valid: verifyResult.status === 200, error: verifyResult.status === 200 ? undefined : verifyResult.body.error });
   } catch (err) {
     next(err);
   }
 });
-
-/**
- * Generate pickup code for an order when parcel arrives at relay
- * Called from scan event processing
- */
-async function generatePickupCode(orderId) {
-  const code = String(crypto.randomInt(100000, 1000000));
-  await pool.query(
-    `UPDATE orders SET pickup_code = $1 WHERE id = $2 AND pickup_code IS NULL`,
-    [code, orderId]
-  );
-  log.info(`📱 Pickup code generated for order ${orderId}: ${code}`);
-  return code;
-}
 
 /**
  * Mask phone number for privacy: +2693221111 → +269***1111
@@ -355,6 +351,4 @@ function maskPhone(phone) {
   return phone.slice(0, 4) + '***' + phone.slice(-4);
 }
 
-// Export router + utility functions
-router.generatePickupCode = generatePickupCode;
 module.exports = router;

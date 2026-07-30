@@ -127,7 +127,7 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
          o.total_kmf,
          o.payment_mode,
          o.payment_status,
-         o.pickup_code,
+         o.pickup_secret_last4,
          o.qr_token,
          o.qr_expires_at,
          o.available_at,
@@ -170,10 +170,12 @@ router.get('/relais', authenticate, requireRole(['admin', 'agent_relais']), asyn
     );
 
     // Calculer alertes (colis disponibles non retirés — seuil configurable)
+    const { maskLast4 } = require('../../services/pickup-secret-service');
     const alertHours = await getRule('ORDER_ALERT_48H_AVAILABLE', 48);
     const now        = Date.now();
     const enriched   = rows.map(o => ({
       ...o,
+      pickup_code: maskLast4(o.pickup_secret_last4),
       alert_48h: o.status === 'available' && o.available_at
         ? (now - new Date(o.available_at).getTime()) > alertHours * 60 * 60 * 1000
         : false,

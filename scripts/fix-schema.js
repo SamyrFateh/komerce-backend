@@ -360,19 +360,22 @@ await run('customs_taux_mensuel view', `
     }
   } catch (err) { console.error('  ⚠️ qr_token generation:', err.message); }
 
-  // Generate pickup_code for orders without one (4 digits)
+  // Generate canonical pickup secret (Lot 2) for orders at relay without one yet.
+  // orders.pickup_code is retired and no longer read anywhere in the app —
+  // this backfill now goes through the same hashed-secret path as every
+  // confirmation channel, instead of writing the old plaintext column.
   try {
-    const ordersNoCode = await db.query(
-  "SELECT id FROM orders WHERE pickup_code IS NULL AND status = 'available'"
-);
-    if (ordersNoCode.rows.length > 0) {
-      for (const row of ordersNoCode.rows) {
-        const code = String(crypto.randomInt(1000, 10000));
-        await db.query('UPDATE orders SET pickup_code = $1 WHERE id = $2 AND pickup_code IS NULL', [code, row.id]);
+    const { ensureSecretGenerated } = require('../services/pickup-secret-service');
+    const ordersNoSecret = await db.query(
+      "SELECT id, relais_id FROM orders WHERE pickup_secret_hash IS NULL AND status = 'available'"
+    );
+    if (ordersNoSecret.rows.length > 0) {
+      for (const row of ordersNoSecret.rows) {
+        await ensureSecretGenerated({ orderId: row.id, relaisId: row.relais_id || null, channel: 'schema_backfill' });
       }
-      console.log(`  ✅ Generated pickup_code for ${ordersNoCode.rows.length} orders at relay`);
+      console.log(`  ✅ Generated pickup secret for ${ordersNoSecret.rows.length} orders at relay`);
     }
-  } catch (err) { console.error('  ⚠️ pickup_code generation:', err.message); }
+  } catch (err) { console.error('  ⚠️ pickup secret generation:', err.message); }
 
   await run('idx_orders_qr_token',
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_qr_token ON orders(qr_token) WHERE qr_token IS NOT NULL');

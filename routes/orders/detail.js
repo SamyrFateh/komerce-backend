@@ -107,8 +107,8 @@ router.get('/:ref', softAuthenticate, async (req, res, next) => {
       payment_status:      order.payment_status,
       // cash_ref_code exposé uniquement aux agents et admins
       ...(isAdmin       ? { cash_ref_code: order.cash_ref_code } : {}),
-      // pickup_code exposé uniquement à l'admin et l'agent relais (pas au public, pas à l'agent hub)
-      ...(isRelaisAdmin ? { pickup_code:   order.pickup_code   } : {}),
+      // pickup_code (masqué) exposé uniquement à l'admin et l'agent relais (pas au public, pas à l'agent hub)
+      ...(isRelaisAdmin ? { pickup_code: require('../../services/pickup-secret-service').maskLast4(order.pickup_secret_last4) } : {}),
       confection_type:       order.confection_type,
       module_type:           order.module_type,
       module_size:           order.module_size,

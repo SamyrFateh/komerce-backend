@@ -38,7 +38,8 @@ const { appendOrderHistoryNote }         = require('../../services/order-status-
 const { getRates }                       = require('../../utils/rates');
 const { validate }                       = require('../../middleware/validate');
 const { orders }                         = require('../../validators');
-const { getUniqueRef, generateCashCode, generatePickupCode } = require('../../services/order-service');
+const { getUniqueRef, generateCashCode } = require('../../services/order-service');
+const { ensureSecretGenerated, cacheCodeForReveal } = require('../../services/pickup-secret-service');
 const walletService = require('../../services/wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('../../services/routing');
 const { notifyOrderCreated }             = require('../../services/notification-service');
@@ -365,7 +366,6 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       ? generateCashCode()
       : null;
 
-    const pickup_code = generatePickupCode();
     const reference = await getUniqueRef(db);
 
     const { rows: [order] } = await client.query(
@@ -375,7 +375,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      tracking_phone,
      total_kmf, total_eur,
      payment_mode, payment_status, stripe_payment_id,
-     cash_ref_code, pickup_code,
+     cash_ref_code,
      status,
      confection_type, confection_instructions,
      confection_delay_days, confection_artisan_id,
@@ -391,17 +391,17 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      $6,
      $7,$8,
      $9,$10,$11,
-     $12,$13,
+     $12,
      'pending',
-     $14,$15,
-     $16,$17,
-     $18,$19,$20,
-     $21,$22,$23,$24,
-     $25,
-     $26,$27,
-     $28,$29,$30,
-     $31,$32,$33,
-     $34
+     $13,$14,
+     $15,$16,
+     $17,$18,$19,
+     $20,$21,$22,$23,
+     $24,
+     $25,$26,
+     $27,$28,$29,
+     $30,$31,$32,
+     $33
    ) RETURNING *`,
   [
     uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
@@ -414,7 +414,6 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     'pending',
     stripe_payment_intent || null,
     cash_ref_code,
-    pickup_code,
     confection_type,
     confection_instructions || null,
     confection_delay_days,
@@ -515,6 +514,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
 
     // ── Wallet couvre 100% → cycle paiement complet (state machine + stock) ──
     // Sans cet appel : status reste 'pending', stock non décrémenté, machine contournée.
+    let walletPickupCode = null;
     if (creditApplied > 0 && total_kmf === 0) {
       const { confirmPaymentCycle } = require('../../services/order-payment-confirmation');
       const cycleResult = await confirmPaymentCycle({
@@ -531,6 +531,17 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           items: cycleResult.insufficientItems,
         });
       }
+
+      // Code de retrait canonique — généré ici, à la confirmation du paiement
+      // (jamais à la création). Même transaction que le cycle de paiement.
+      const secretResult = await ensureSecretGenerated({
+        orderId:  order.id,
+        relaisId: relais?.id || null,
+        channel:  'wallet_full_payment',
+        dbClient: client,
+      });
+      if (secretResult.code) walletPickupCode = secretResult.code;
+
       // Rafraîchir order : status / confirmed_at à jour dans la réponse API
       const { rows: [refreshed] } = await client.query(
         'SELECT * FROM orders WHERE id = $1', [order.id]
@@ -553,6 +564,14 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     }
 
     await client.query('COMMIT');
+
+    // ── Code de retrait wallet-100% : cache pour révélation one-shot ────────
+    // Fait après COMMIT (comme Stripe/PayPal) : pickup_reveal_codes n'est pas
+    // transactionnel avec la commande, un échec ici ne doit pas la faire échouer.
+    if (walletPickupCode) {
+      cacheCodeForReveal(order.id, walletPickupCode)
+        .catch(e => log.error({ err: e }, '[ORDER-CREATE] cacheCodeForReveal (wallet) error:'));
+    }
 
     // ── Lier le partage à la commande si share_token présent (fire-and-forget) ──
     if (share_token) {

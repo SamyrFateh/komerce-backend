@@ -50,6 +50,7 @@ const { notifyText } = require('./notification-service');
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('./order-status-machine');
 const { resolveQrCollection } = require('./qr-collection-core');
+const { normalizeCode, hashCode } = require('./pickup-secret-service');
 const { createAlert } = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'scan-operations' });
 
@@ -215,28 +216,50 @@ async function collectParcel(body, user, ip, ua) {
     return { status: 400, body: { error: 'pickup_code requis' } };
   }
 
+  // Lot 2 : plus de lookup direct sur orders.pickup_code (colonne en clair,
+  // supprimée). La recherche "à l'aveugle" (sans order_id connu au préalable)
+  // n'accepte que le code complet à 8 caractères : un raccourci à 4
+  // caractères (pickup_secret_last4) peut légitimement collisionner entre
+  // deux commandes actives de relais différents, et sans order_id connu on
+  // n'a rien d'autre pour désambiguïser.
+  const normalized = normalizeCode(pickup_code);
+  if (normalized.length !== 8) {
+    return { status: 400, body: { error: 'Code attendu : 8 caractères complets' } };
+  }
+  const last4 = normalized.slice(-4);
+
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
 
-    const { rows } = await client.query(
+    const { rows: candidates } = await client.query(
       `SELECT o.*, r.name AS relais_name, rc.full_name AS recipient_name
        FROM orders o
        LEFT JOIN relais     r  ON r.id  = o.relais_id
        LEFT JOIN recipients rc ON rc.id = o.recipient_id
-       WHERE o.pickup_code = $1 AND o.status = 'available'
+       WHERE o.pickup_secret_last4 = $1 AND o.status = 'available'
        FOR UPDATE OF o`,
-      [pickup_code]
+      [last4]
     );
 
-    if (!rows.length) {
+    // Désambiguïsation par hash complet (le last4 seul n'est pas garanti
+    // unique tous relais confondus — voir generateAndStoreSecret).
+    const order = candidates.find(o =>
+      o.pickup_secret_hash && hashCode(normalized, o.pickup_secret_salt) === o.pickup_secret_hash
+    );
+
+    if (!order) {
       await client.query('ROLLBACK');
       _logAlert('low', 'pickup_code invalide', { user_id: user.id, user_role: user.role, ip, ua,
         code_attempted_prefix: String(pickup_code).slice(0, 2) + '****' });
       return { status: 404, body: { error: 'Code invalide ou commande déjà retirée' } };
     }
 
-    const order = rows[0];
+    // Expiration (alignée sur verifyPickupCode)
+    if (order.pickup_secret_expires_at && new Date(order.pickup_secret_expires_at) < new Date()) {
+      await client.query('ROLLBACK');
+      return { status: 410, body: { error: 'Code expiré. Escalade admin nécessaire.' } };
+    }
 
     // Anti-brute-force par commande
     if (order.pickup_secret_blocked_until && new Date(order.pickup_secret_blocked_until) > new Date()) {
@@ -559,7 +582,7 @@ async function _notifyPostScan(step, order_id, reference) {
 
     if (step === 'relais_received') {
       const { rows: [o] } = await db.query(
-        `SELECT o.pickup_code, rc.phone AS recipient_phone, rc.full_name,
+        `SELECT o.pickup_secret_last4, rc.phone AS recipient_phone, rc.full_name,
                 r.name AS relais_name, r.address AS relais_address
          FROM orders o
          LEFT JOIN recipients rc ON rc.id = o.recipient_id
@@ -568,8 +591,15 @@ async function _notifyPostScan(step, order_id, reference) {
         [order_id]
       );
       if (o?.recipient_phone) {
+        // Lot 2 : le code en clair n'est plus lisible ici (jamais persisté en
+        // clair hors pickup_reveal_codes, TTL 30 min). On envoie le masqué +
+        // un renvoi vers la révélation one-shot dans l'app, au lieu de
+        // blaster le code complet par SMS (contraire à la doctrine reveal-once).
+        const masked = o.pickup_secret_last4
+          ? ('•••-•' + o.pickup_secret_last4.slice(0, 2) + '-' + o.pickup_secret_last4.slice(2))
+          : '••••••••';
         notifyText(o.recipient_phone,
-          `Komerce · Bonjour ${o.full_name}, votre colis est disponible au ${o.relais_name} (${o.relais_address}). Code de retrait : ${o.pickup_code}`,
+          `Komerce · Bonjour ${o.full_name}, votre colis est disponible au ${o.relais_name} (${o.relais_address}). Code de retrait (${masked}) : consultez-le dans l'app pour le voir en entier.`,
           'available', order_id
         ).catch(err => log.error({ err }, 'Notification available error'));
         return true;
