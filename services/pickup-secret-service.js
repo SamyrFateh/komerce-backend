@@ -356,44 +356,59 @@ async function verifyPickupCode({ orderId, code, agentId }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function collectOrder({ orderId, agentId, role, collectedByName }) {
-  const { rows: [order] } = await db.query(`
-    SELECT id, reference, status FROM orders WHERE id = $1
-  `, [orderId]);
+  return db.withTransaction(async (client) => {
+    // Verrou de ligne (résout @db-txn resolve_before_behavior_change, en-tête
+    // de fichier) : élimine la fenêtre check-then-act entre la lecture du
+    // statut et son écriture. FOR UPDATE bloque toute transaction concurrente
+    // qui voudrait lire/écrire cette même ligne tant que celle-ci n'a pas
+    // COMMIT/ROLLBACK — les appels concurrents se mettent en file, chacun
+    // relit alors un statut à jour au lieu d'un statut périmé.
+    const { rows: [order] } = await client.query(`
+      SELECT id, reference, status FROM orders WHERE id = $1 FOR UPDATE
+    `, [orderId]);
 
-  if (!order) {
-    return { status: 404, body: { error: 'Commande introuvable' } };
-  }
-  if (order.status === 'collected') {
-    return { status: 409, body: { error: 'Cette commande est déjà marquée comme récupérée' } };
-  }
+    if (!order) {
+      return { status: 404, body: { error: 'Commande introuvable' } };
+    }
+    // Relecture APRÈS l'acquisition du verrou : la valeur lue avant FOR
+    // UPDATE serait déjà périmée si un appel concurrent a committé pendant
+    // l'attente du verrou. C'est cette relecture, pas la requête elle-même,
+    // qui ferme la course.
+    if (order.status === 'collected') {
+      return { status: 409, body: { error: 'Cette commande est déjà marquée comme récupérée' } };
+    }
 
-  const transition = await transitionOrderStatus({
-    orderId,
-    newStatus: 'collected',
-    actor:  { id: agentId, role },
-    source: 'patch',
-    note:   'Colis remis apres verification du code retrait',
+    const transition = await transitionOrderStatus({
+      orderId,
+      newStatus: 'collected',
+      actor:  { id: agentId, role },
+      source: 'patch',
+      note:   'Colis remis apres verification du code retrait',
+      dbClient: client, // même transaction, même verrou — transitionOrderStatus
+                         // sait déjà poser FOR UPDATE quand dbClient est fourni.
+    });
+
+    if (!transition.success && !transition.noop) {
+      return { status: 409, body: { error: transition.error } };
+    }
+
+    await client.query(`
+      UPDATE orders
+      SET collected_by_name = $1,
+          updated_at        = NOW()
+      WHERE id = $2
+    `, [collectedByName || null, orderId]);
+
+    log.info(`[PICKUP-SECRET] 📦 Colis remis pour ${order.reference} à "${collectedByName || '(anonyme)'}"`);
+
+    return { status: 200, body: {
+      success:   true,
+      message:   'Colis remis. Commande marquée comme récupérée.',
+      order_ref: order.reference,
+    }};
   });
-
-  if (!transition.success && !transition.noop) {
-    return { status: 409, body: { error: transition.error } };
-  }
-
-  await db.query(`
-    UPDATE orders
-    SET collected_by_name = $1,
-        updated_at        = NOW()
-    WHERE id = $2
-  `, [collectedByName || null, orderId]);
-
-  log.info(`[PICKUP-SECRET] 📦 Colis remis pour ${order.reference} à "${collectedByName || '(anonyme)'}"`);
-
-  return { status: 200, body: {
-    success:   true,
-    message:   'Colis remis. Commande marquée comme récupérée.',
-    order_ref: order.reference,
-  }};
 }
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 // regenerateCode

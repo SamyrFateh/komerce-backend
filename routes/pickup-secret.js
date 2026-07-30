@@ -325,49 +325,21 @@ router.post('/verify/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
 // 4. POST /collect/:orderId — Marquer la commande comme récupérée
 // ══════════════════════════════════════════════════════════════════════════════
 // À appeler après un verify réussi et remise physique du colis.
+// Cycle B (O7.2) : la logique inline de collect a été déplacée dans
+// services/pickup-secret-service.js:collectOrder, comme pour les autres
+// fonctions de ce fichier. collectOrder pose désormais un FOR UPDATE +
+// relecture dans une transaction unique (résolution @db-txn
+// resolve_before_behavior_change). Le routeur reste un adaptateur HTTP.
 router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req, res, next) => {
   try {
-    const { orderId } = req.params;
-    const agentId     = req.user.id;
-    const { collected_by_name } = req.body;
-
-    const { rows: [order] } = await db.query(`
-      SELECT id, reference, status FROM orders WHERE id = $1
-    `, [orderId]);
-
-    if (!order) {
-      return res.status(404).json({ error: 'Commande introuvable' });
-    }
-    if (order.status === 'collected') {
-      return res.status(409).json({ error: 'Cette commande est déjà marquée comme récupérée' });
-    }
-
-    const transition = await transitionOrderStatus({
-      orderId,
-      newStatus: 'collected',
-      actor: { id: agentId, role: req.user.role },
-      source: 'patch',
-      note: 'Colis remis apres verification du code retrait',
+    const { collectOrder } = require('../services/pickup-secret-service');
+    const result = await collectOrder({
+      orderId:         req.params.orderId,
+      agentId:         req.user.id,
+      role:            req.user.role,
+      collectedByName: req.body.collected_by_name,
     });
-    if (!transition.success && !transition.noop) {
-      return res.status(409).json({ error: transition.error });
-    }
-
-    await db.query(`
-      UPDATE orders
-      SET collected_by_name = $1,
-          updated_at        = NOW()
-      WHERE id = $2
-    `, [collected_by_name || null, orderId]);
-
-    log.info(`[PICKUP-SECRET] 📦 Colis remis pour ${order.reference} à "${collected_by_name || '(anonyme)'}"`);
-
-    res.json({
-      success: true,
-      message: 'Colis remis. Commande marquée comme récupérée.',
-      order_ref: order.reference,
-    });
-
+    res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });
 

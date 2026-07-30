@@ -83,6 +83,8 @@ module.exports = {
       'routes/order-api-v2.js',
     ],
       tests: [
+      // E2E fonctionnel — preuve d'unicite de remise (Lot 1 retrait-secours).
+      'tests/e2e-api/orders.single-collect.e2e.test.js',
       // E2E fonctionnel Feature First — orders est PROPRIETAIRE ;
       // auth, catalog, logistics et business-rules sont traversees.
       'tests/e2e-api/orders.cancellation-doctrine.e2e.test.js',

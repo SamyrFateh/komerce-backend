@@ -20,9 +20,18 @@
  *   revealOnce             — introuvable / ownership / pending / déjà révélé / expiré / cache absent / nominal
  */
 
-jest.mock('../../db', () => ({
-  query: jest.fn(),
-}));
+jest.mock('../../db', () => {
+  const query = jest.fn();
+  return {
+    query,
+    // withTransaction(cb) appelle cb({ query }) avec LE MÊME mock que
+    // db.query : les tests existants qui empilent des mockResolvedValueOnce
+    // sur db.query et inspectent db.query.mock.calls continuent de
+    // fonctionner à l'identique, que le code sous test passe par db.query
+    // directement ou par client.query à l'intérieur d'une transaction.
+    withTransaction: jest.fn((cb) => cb({ query })),
+  };
+});
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));

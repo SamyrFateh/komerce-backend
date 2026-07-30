@@ -197,10 +197,11 @@
         ]
       },
       "tests": {
-        "declared": 28,
-        "proofs": 29,
+        "declared": 29,
+        "proofs": 30,
         "byCategory": {
           "e2e-api": [
+            "tests/e2e-api/orders.single-collect.e2e.test.js",
             "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
             "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js"
           ],
