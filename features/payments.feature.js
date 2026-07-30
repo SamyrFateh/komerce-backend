@@ -73,6 +73,9 @@ module.exports = {
       'css/paypal.css',
     ],
     tests: [
+      // E2E fonctionnel Feature First — couche C, contrat de la frontiere PayPal.
+      // payments est PROPRIETAIRE ; orders, inventory, catalog, logistics traversees.
+      'tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js',
       'tests/unit/payment-cash-confirm.test.js',
       'tests/unit/payment-paypal.test.js',
       'tests/unit/payment-service.test.js',

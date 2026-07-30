@@ -45,6 +45,9 @@ module.exports = {
     ],
     routes: [],
     tests: [
+      // E2E fonctionnel Feature First — refunds est PROPRIETAIRE du scenario ;
+      // orders, payments, wallet, catalog et logistics sont traversees.
+      'tests/e2e-api/refunds.no-double-application.e2e.test.js',
       'tests/unit/refund-service.test.js',
       'tests/unit/refunds-util.test.js',
       'tests/unit/refund-receipt-html.test.js',
