@@ -27,8 +27,8 @@
     }
   },
   "tally": {
-    "PARTIAL": 19,
-    "PROVEN": 6,
+    "PARTIAL": 18,
+    "PROVEN": 7,
     "NOT_APPLICABLE": 1
   },
   "features": [
@@ -308,13 +308,19 @@
       "exposedRoutes": 33,
       "invariants": {
         "declared": 6,
-        "executable": 0,
-        "tests": []
+        "executable": 2,
+        "tests": [
+          "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
+          "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js"
+        ]
       },
       "tests": {
-        "declared": 41,
-        "proofs": 41,
+        "declared": 42,
+        "proofs": 42,
         "byCategory": {
+          "e2e-api": [
+            "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js"
+          ],
           "unit": [
             "tests/unit/admin-collective-repairs.test.js",
             "tests/unit/baskets.test.js",
@@ -361,11 +367,10 @@
         },
         "missingFiles": []
       },
-      "status": "PARTIAL",
+      "status": "PROVEN",
       "gaps": [
-        "Aucun E2E fonctionnel possédé.",
         "Aucune preuve traversant les couches réelles (unitaire seul).",
-        "6/6 invariant(s) non exécutable(s)."
+        "4/6 invariant(s) non exécutable(s)."
       ]
     },
     {
