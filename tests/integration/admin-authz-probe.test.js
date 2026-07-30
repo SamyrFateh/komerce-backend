@@ -61,11 +61,15 @@ if (!hasIntegrationEnv) {
   const { createUser, cleanup } = require('./test-harness/seed-helpers');
 
   let app;
+  let db;
 
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'ci-test-secret-not-for-prod';
+    jest.spyOn(require('../../bootstrap/crons'), 'startOperationalCrons')
+      .mockImplementation(() => {});
     app = require('../../server');
+    db = require('../../db');
     await new Promise((r) => setTimeout(r, 2000)); // laisse le boot/migrations finir
   });
 
@@ -73,6 +77,8 @@ if (!hasIntegrationEnv) {
     if (app && app.get && app.get('httpServer')) { await new Promise((resolve) => app.get('httpServer').close(resolve)); }
     await cleanup();
     await new Promise((r) => setTimeout(r, 500));
+    jest.restoreAllMocks();
+    if (db && db.pool && db.pool.end) await db.pool.end();
   });
 
   const bearer = (t) => ['Authorization', `Bearer ${t}`];

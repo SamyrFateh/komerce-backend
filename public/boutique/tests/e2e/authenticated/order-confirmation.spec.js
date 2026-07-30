@@ -45,8 +45,19 @@ test.describe('FLOW — Écran de confirmation post-commande (F04 partiel)', () 
   // reste orpheline sur le compte de test à chaque run. Même pattern que F01.
   let createdOrderId = null;
 
-  test.afterEach(async ({ page }) => {
+  test.afterEach(async ({ page }, testInfo) => {
     if (createdOrderId) {
+      const observeMs = Number(process.env.E2E_OBSERVE_MS || 0);
+
+      if (Number.isFinite(observeMs) && observeMs > 0) {
+        testInfo.setTimeout(testInfo.timeout + observeMs);
+        // eslint-disable-next-line no-console
+        console.log(
+          `[F04p] Observation dashboard pendant ${observeMs} ms — order.id=${createdOrderId}`
+        );
+        await page.waitForTimeout(observeMs);
+      }
+
       await cancelOrder(page, createdOrderId, 'e2e-cleanup-F04p');
       createdOrderId = null;
     }
