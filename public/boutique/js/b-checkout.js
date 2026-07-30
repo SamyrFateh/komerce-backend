@@ -172,13 +172,11 @@ async function _loadRelaisSection(container, od) {
   try {
     const data = await apiGet('/api/relais', { signal });
     let list = Array.isArray(data) ? data : (data.relais || data.data || []);
-    // PANSEMENT TEMPORAIRE : écarter les relais de test/staging (ex. "AAA E2E
-    // Relais Test") qui ne devraient pas apparaître en prod. La VRAIE solution
-    // est de les désactiver/supprimer dans la DB (is_active=false côté backend).
-    list = list.filter(r => {
-      const hay = ((r.name || '') + ' ' + (r.address || '')).toLowerCase();
-      return !/\b(e2e|staging|test)\b/.test(hay);
-    });
+    // Filtre nom-based test/e2e/staging retiré (2026-07-30) : il tournait pour
+    // tous les environnements et masquait aussi les relais E2E légitimement
+    // actifs sur staging. La source de vérité pour "ce relais doit apparaître"
+    // est is_active en DB (déjà filtré par routes/relais.js : WHERE is_active
+    // = TRUE) — à gérer par environnement côté DB, pas par regex sur le nom.
     if (!list.length) {
       container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>';
       setRelayStatus(od, 'empty');
