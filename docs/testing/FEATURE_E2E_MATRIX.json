@@ -27,8 +27,8 @@
     }
   },
   "tally": {
-    "PARTIAL": 21,
-    "PROVEN": 4,
+    "PARTIAL": 18,
+    "PROVEN": 7,
     "NOT_APPLICABLE": 1
   },
   "features": [
@@ -260,9 +260,12 @@
         ]
       },
       "tests": {
-        "declared": 17,
-        "proofs": 19,
+        "declared": 18,
+        "proofs": 20,
         "byCategory": {
+          "e2e-api": [
+            "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js"
+          ],
           "unit": [
             "tests/unit/payment-cash-confirm.test.js",
             "tests/unit/payment-paypal.test.js",
@@ -291,7 +294,6 @@
       },
       "status": "PROVEN",
       "gaps": [
-        "Aucun E2E fonctionnel possédé.",
         "1/3 invariant(s) non exécutable(s)."
       ]
     },
@@ -306,13 +308,19 @@
       "exposedRoutes": 33,
       "invariants": {
         "declared": 6,
-        "executable": 0,
-        "tests": []
+        "executable": 2,
+        "tests": [
+          "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
+          "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js"
+        ]
       },
       "tests": {
-        "declared": 41,
-        "proofs": 41,
+        "declared": 42,
+        "proofs": 42,
         "byCategory": {
+          "e2e-api": [
+            "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js"
+          ],
           "unit": [
             "tests/unit/admin-collective-repairs.test.js",
             "tests/unit/baskets.test.js",
@@ -359,11 +367,10 @@
         },
         "missingFiles": []
       },
-      "status": "PARTIAL",
+      "status": "PROVEN",
       "gaps": [
-        "Aucun E2E fonctionnel possédé.",
         "Aucune preuve traversant les couches réelles (unitaire seul).",
-        "6/6 invariant(s) non exécutable(s)."
+        "4/6 invariant(s) non exécutable(s)."
       ]
     },
     {
@@ -413,12 +420,14 @@
       "exposedRoutes": 8,
       "invariants": {
         "declared": 1,
-        "executable": 0,
-        "tests": []
+        "executable": 1,
+        "tests": [
+          "tests/e2e-api/inventory.stock-never-negative.e2e.test.js"
+        ]
       },
       "tests": {
-        "declared": 3,
-        "proofs": 3,
+        "declared": 4,
+        "proofs": 4,
         "byCategory": {
           "unit": [
             "tests/unit/inventory-api-route.test.js",
@@ -426,15 +435,15 @@
           ],
           "integration": [
             "tests/integration/parcel-auto-create-cash-payment.test.js"
+          ],
+          "e2e-api": [
+            "tests/e2e-api/inventory.stock-never-negative.e2e.test.js"
           ]
         },
         "missingFiles": []
       },
-      "status": "PARTIAL",
-      "gaps": [
-        "Aucun E2E fonctionnel possédé.",
-        "1/1 invariant(s) non exécutable(s)."
-      ]
+      "status": "PROVEN",
+      "gaps": []
     },
     {
       "name": "logistics",
@@ -586,9 +595,12 @@
         "tests": []
       },
       "tests": {
-        "declared": 3,
-        "proofs": 3,
+        "declared": 4,
+        "proofs": 4,
         "byCategory": {
+          "e2e-api": [
+            "tests/e2e-api/refunds.no-double-application.e2e.test.js"
+          ],
           "unit": [
             "tests/unit/refund-service.test.js",
             "tests/unit/refunds-util.test.js",
@@ -597,9 +609,8 @@
         },
         "missingFiles": []
       },
-      "status": "PARTIAL",
+      "status": "PROVEN",
       "gaps": [
-        "Aucun E2E fonctionnel possédé.",
         "Aucune preuve traversant les couches réelles (unitaire seul).",
         "1/1 invariant(s) non exécutable(s)."
       ]

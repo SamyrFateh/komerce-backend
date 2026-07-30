@@ -6,8 +6,8 @@
 
 | Statut | Features |
 |---|---|
-| `PROVEN` | 4 |
-| `PARTIAL` | 21 |
+| `PROVEN` | 7 |
+| `PARTIAL` | 18 |
 | `MISSING` | 0 |
 | `NOT_APPLICABLE` | 1 |
 
@@ -29,19 +29,19 @@ E2E navigateur : 46 specs Playwright, dont 17 sous `authenticated/`.
 | `auth-identity` | feature / transversal | production | 20 | 1/2 | integration:2 invariant:1 unit:2 | `PROVEN` | Aucun E2E fonctionnel possédé. 1/2 invariant(s) non exécutable(s). |
 | `catalog` | feature / feature | production | 31 | 0/18 | integration:1 unit:36 | `PARTIAL` | Aucun E2E fonctionnel possédé. 18/18 invariant(s) non exécutable(s). |
 | `orders` | feature / feature | production | 34 | 1/7 | e2e-api:1 integration:1 invariant:1 unit:25 | `PROVEN` | 6/7 invariant(s) non exécutable(s). |
-| `payments` | feature / feature | production | 18 | 2/3 | invariant:2 unit:17 | `PROVEN` | Aucun E2E fonctionnel possédé. 1/3 invariant(s) non exécutable(s). |
-| `shared-cart` | feature / feature | production | 33 | 0/6 | unit:41 | `PARTIAL` | Aucun E2E fonctionnel possédé. Aucune preuve traversant les couches réelles (unitaire seul). 6/6 invariant(s) non exécutable(s). |
+| `payments` | feature / feature | production | 18 | 2/3 | e2e-api:1 invariant:2 unit:17 | `PROVEN` | 1/3 invariant(s) non exécutable(s). |
+| `shared-cart` | feature / feature | production | 33 | 2/6 | e2e-api:1 unit:41 | `PROVEN` | Aucune preuve traversant les couches réelles (unitaire seul). 4/6 invariant(s) non exécutable(s). |
 
 ## Lot 2
 
 | Feature | Nature | Cycle | Routes | Invariants (exéc./décl.) | Preuves exécutables | Couverture | Gap |
 |---|---|---|---|---|---|---|---|
 | `customs` | feature / feature | production | 20 | 0/1 | unit:6 | `PARTIAL` | Aucun E2E fonctionnel possédé. Aucune preuve traversant les couches réelles (unitaire seul). 1/1 invariant(s) non exécutable(s). |
-| `inventory` | feature / feature | staging | 8 | 0/1 | integration:1 unit:2 | `PARTIAL` | Aucun E2E fonctionnel possédé. 1/1 invariant(s) non exécutable(s). |
+| `inventory` | feature / feature | staging | 8 | 1/1 | e2e-api:1 integration:1 unit:2 | `PROVEN` |  |
 | `logistics` | feature / feature | production | 69 | 0/6 | integration:1 unit:32 | `PARTIAL` | Aucun E2E fonctionnel possédé. 6/6 invariant(s) non exécutable(s). |
 | `loyalty` | feature / feature | production | 7 | 0/2 | unit:3 | `PARTIAL` | Aucun E2E fonctionnel possédé. Aucune preuve traversant les couches réelles (unitaire seul). 2/2 invariant(s) non exécutable(s). |
 | `purchasing` | feature / feature | production | 10 | 0/3 | unit:8 | `PARTIAL` | Aucun E2E fonctionnel possédé. Aucune preuve traversant les couches réelles (unitaire seul). 3/3 invariant(s) non exécutable(s). |
-| `refunds` | feature / feature | production | 0 | 0/1 | unit:3 | `PARTIAL` | Aucun E2E fonctionnel possédé. Aucune preuve traversant les couches réelles (unitaire seul). 1/1 invariant(s) non exécutable(s). |
+| `refunds` | feature / feature | production | 0 | 0/1 | e2e-api:1 unit:3 | `PROVEN` | Aucune preuve traversant les couches réelles (unitaire seul). 1/1 invariant(s) non exécutable(s). |
 | `unsold-resolution` | feature / feature | production | 7 | 0/2 | unit:1 | `PARTIAL` | Aucun E2E fonctionnel possédé. Aucune preuve traversant les couches réelles (unitaire seul). 2/2 invariant(s) non exécutable(s). |
 | `wallet` | feature / feature | production | 9 | 1/2 | invariant:1 unit:3 | `PROVEN` | Aucun E2E fonctionnel possédé. 1/2 invariant(s) non exécutable(s). |
 

@@ -50,6 +50,9 @@ module.exports = {
       'tests/unit/inventory-api-route.test.js',
       'tests/unit/inventory-service.test.js',
       'tests/integration/parcel-auto-create-cash-payment.test.js',
+      // E2E fonctionnel Feature First — inventory est PROPRIETAIRE du scenario ;
+      // orders, payments, catalog et logistics sont traversees.
+      'tests/e2e-api/inventory.stock-never-negative.e2e.test.js',
     ],
   },
 
@@ -120,7 +123,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    'le stock ne descend jamais sous zero sans flag explicite de surventee assumee',
+    { statement: 'le stock ne descend jamais sous zero sans flag explicite de surventee assumee',
+      test: 'tests/e2e-api/inventory.stock-never-negative.e2e.test.js' },
   ],
 
   // ── Historique ───────────────────────────────────────────────────────────

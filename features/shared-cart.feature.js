@@ -101,6 +101,9 @@ module.exports = {
       'migrations/099_drop_zombie_shared_cart_commitments.sql',
     ],
     tests: [
+      // E2E fonctionnel Feature First — shared-cart est PROPRIETAIRE ;
+      // payments, auth-identity, catalog et logistics sont traversees.
+      'tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js',
       'tests/unit/admin-collective-repairs.test.js',
       'tests/unit/baskets.test.js',
       'tests/unit/collective-payment-orchestrator.test.js',
@@ -319,8 +322,10 @@ module.exports = {
   // Complémentaires aux invariants globaux de ZONE_IMPACT.md (I-01..I-10).
   invariants: [
     'snapshot figé après 1ère contribution payée',
-    'idempotence webhook Stripe sur shared_cart_contributions',
-    'fenêtre paiement 48h — aucune extension sans machine de statut',
+    { statement: 'idempotence webhook Stripe sur shared_cart_contributions',
+      test: 'tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js' },
+    { statement: 'fenêtre paiement 48h — aucune extension sans machine de statut',
+      test: 'tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js' },
     'annulation restores wallet si contribution confirmée',
     'lien partagé ouvre une boutique — jamais un guichet (Boutique First)',
     'participant consulte en lecture seule — règle sa part seulement si panier payable',
