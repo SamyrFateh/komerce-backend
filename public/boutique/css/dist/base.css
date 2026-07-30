@@ -1302,7 +1302,14 @@ body:has(#k-page-scroll.k-pager-active) {
   }
   body {
     height: auto;
-    overflow-y: auto;
+    /* overflow-y: propriétaire unique = bloc FIXED CONTEXT PRESERVATION
+       (L843 plus bas) : overflow-y: visible. Déclaration overflow-y: auto
+       retirée d'ici (2026-07-30) — elle dupliquait ce même sélecteur/média
+       avec une valeur différente (conflit 🔴 détecté par css-guard.js).
+       Coexistait sans bug visible seulement parce que ce bloc est chargé
+       avant l'autre dans ce même fichier ; tout réordonnancement futur
+       aurait pu réintroduire le bug de containing-block sur .k-side-cart
+       decrit ci-dessous pour overflow-x. */
     /* overflow-x:clip retiré ici : créait un containing block qui ancrait
        .k-side-cart (position:fixed) au body au lieu du viewport. Le clip
        horizontal est désormais assuré par #k-catalog-section/.k-section/.k-grid. */

@@ -1,5 +1,5 @@
 {
-  "total": 110,
+  "total": 109,
   "keys": [
     "#k-modal .k-modal-desc|||@media (min-width: 900px) {|||line-height",
     "#k-modal .k-modal-name-row|||@media (min-width: 900px) {|||margin-top",
@@ -109,8 +109,7 @@
     ".k-wallet-section|||global|||margin-top",
     ".k-wallet-section|||global|||padding",
     ".k-wallet-title|||global|||font-size",
-    "body|||@media (min-width: 900px) {|||overflow-y",
     "html.k-home-premium-v1 .k-hero-badge|||@media (min-width: 900px) {|||letter-spacing"
   ],
-  "savedAt": "2026-07-26T01:36:52.118Z"
+  "savedAt": "2026-07-30T07:20:14.327Z"
 }
