@@ -1,6 +1,6 @@
 {
   "version": "GF-2.1",
-  "generatedAt": "2026-07-29",
+  "generatedAt": "2026-07-30",
   "contract": {
     "minimumAttributableSources": 18,
     "configuredSources": 18,
@@ -45,7 +45,7 @@
       "status": "ok",
       "exitCode": 0,
       "errorCount": 1,
-      "warningCount": 13,
+      "warningCount": 15,
       "coverageCount": 0,
       "unprojectableCount": 0,
       "multiProjectedCount": 0,
@@ -409,6 +409,24 @@
       "feature": "sourcing",
       "file": null,
       "message": "champ `classification` absent — ajouter lors du prochain changement de ce manifest (ratchet phase 2)"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "type": "SIDEEFFECT-NO-INVARIANT",
+      "verdict": "warn",
+      "feature": "purchasing",
+      "file": null,
+      "message": "externalSideEffect \"outbound-message\" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie"
+    },
+    {
+      "gate": "gate:feature-classification-check",
+      "scope": "root",
+      "type": "SIDEEFFECT-NO-INVARIANT",
+      "verdict": "warn",
+      "feature": "shared-cart",
+      "file": null,
+      "message": "externalSideEffect \"payment\" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie"
     },
     {
       "gate": "gate:feature-classification-check",

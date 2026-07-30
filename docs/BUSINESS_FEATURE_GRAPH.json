@@ -5820,6 +5820,13 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "inventory",
+        "category": "tests",
+        "declared": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "logistics",
         "category": "middleware",
         "declared": "middleware/upload-hub.js",
@@ -6816,6 +6823,20 @@
       {
         "feature": "orders",
         "category": "tests",
+        "declared": "tests/e2e-api/orders.single-collect.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/orders.single-collect.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
         "declared": "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js",
         "resolvedPath": "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7148,6 +7169,13 @@
         "declared": "css/paypal.css",
         "resolvedPath": "public/boutique/css/paypal.css",
         "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "payments",
@@ -7600,6 +7628,13 @@
       {
         "feature": "purchasing",
         "category": "tests",
+        "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
         "declared": "tests/unit/purchasing.test.js",
         "resolvedPath": "tests/unit/purchasing.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7694,6 +7729,13 @@
         "declared": "services/refund-service.js",
         "resolvedPath": "services/refund-service.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "refunds",
@@ -8057,6 +8099,13 @@
         "category": "migrations",
         "declared": "migrations/099_drop_zombie_shared_cart_commitments.sql",
         "resolvedPath": "migrations/099_drop_zombie_shared_cart_commitments.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "tests",
+        "declared": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15982,7 +16031,15 @@
               },
               {
                 "sourceFileId": "tests/integration/admin-authz-probe.test.js",
+                "targetFile": "bootstrap/crons.js"
+              },
+              {
+                "sourceFileId": "tests/integration/admin-authz-probe.test.js",
                 "targetFile": "server.js"
+              },
+              {
+                "sourceFileId": "tests/integration/admin-authz-probe.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/integration/otp-no-guest.test.js",
@@ -18673,6 +18730,38 @@
         "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
+        "from": "inventory",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+                "targetFile": "routes/orders.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "inventory",
+        "to": "payments",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+                "targetFile": "routes/payments.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
         "from": "logistics",
         "to": "auth",
         "channels": [
@@ -19961,6 +20050,10 @@
               {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "services/parcel-auto-create-service.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.single-collect.e2e.test.js",
+                "targetFile": "routes/pickup-secret.js"
               },
               {
                 "sourceFileId": "tests/unit/orderParcelLinkRules.test.js",
@@ -21736,6 +21829,10 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
+                "sourceFileId": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
                 "sourceFileId": "tests/unit/receive-purchase-order.test.js",
                 "targetFile": "services/order-status-machine.js"
               }
@@ -21874,6 +21971,46 @@
               {
                 "sourceFileId": "tests/unit/refund-service.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "refunds",
+        "to": "orders",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+                "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+                "targetFile": "routes/orders.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+                "targetFile": "routes/admin/orders.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "refunds",
+        "to": "payments",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+                "targetFile": "routes/payments.js"
               }
             ]
           }
@@ -23091,7 +23228,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 813
+        "filesObserved": 820
       },
       "boutique": {
         "filesObserved": 123,
@@ -23127,7 +23264,7 @@
     "familySummary": {
       "PROJECTION": 9,
       "COMPOSITION_ROOT_WIRING": 14,
-      "NON_RUNTIME_TEST": 4,
+      "NON_RUNTIME_TEST": 7,
       "TECHNICAL_PRIMITIVE": 29,
       "BUSINESS_TRANSVERSAL_SERVICE": 3,
       "CROSS_FEATURE_DIRECT_IMPORT": 3,
@@ -23698,6 +23835,36 @@
         "exceptionReasons": []
       },
       {
+        "from": "inventory",
+        "to": "orders",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "inventory",
+        "to": "payments",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "logistics",
         "to": "infrastructure",
         "family": "TECHNICAL_PRIMITIVE",
@@ -24055,6 +24222,21 @@
         "exceptionReasons": []
       },
       {
+        "from": "refunds",
+        "to": "payments",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-transversal",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "shared-cart",
         "to": "catalog",
         "family": "CROSS_FEATURE_DIRECT_IMPORT",
@@ -24202,7 +24384,7 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|technical-primitive": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 11,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
@@ -24224,6 +24406,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1
     },
     "runtimeCycles": [
@@ -26220,7 +26403,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 11 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26344,6 +26527,16 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "inventory -> orders",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"orders\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "inventory -> payments",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"inventory\" vers \"payments\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "logistics -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
       },
@@ -26456,6 +26649,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "refunds -> infrastructure",
         "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"infrastructure\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "refunds -> payments",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"payments\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

@@ -45,21 +45,21 @@
     "healthy": 6,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 117,
+    "businessDependencies": 118,
     "directCrossFeatureImports": 3,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 65,
     "ontologyGaps": 0,
-    "debtItemsTotal": 122,
-    "gateHealthy": 16,
+    "debtItemsTotal": 121,
+    "gateHealthy": 14,
     "gateBlocked": 1
   },
   "projectionIntegrity": {
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 18,
-    "attributedFindings": 18,
+    "totalFindings": 20,
+    "attributedFindings": 20,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -9007,7 +9007,10 @@
       },
       "authority": "backend-core — tout changement de calcul de disponibilite doit etre valide par le proprietaire de inventory-service.js",
       "invariants": [
-        "le stock ne descend jamais sous zero sans flag explicite de surventee assumee"
+        {
+          "statement": "le stock ne descend jamais sous zero sans flag explicite de surventee assumee",
+          "test": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js"
+        }
       ],
       "implementation": {
         "byCategory": {
@@ -9042,8 +9045,13 @@
             ]
           },
           "tests": {
-            "count": 3,
+            "count": 4,
             "files": [
+              {
+                "declared": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/parcel-auto-create-cash-payment.test.js",
                 "resolvedPath": "tests/integration/parcel-auto-create-cash-payment.test.js",
@@ -9062,7 +9070,7 @@
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 7,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -9184,7 +9192,7 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 1,
-        "testOnlyRelations": 1,
+        "testOnlyRelations": 3,
         "compositionRootRelations": 0,
         "details": [
           {
@@ -9193,6 +9201,14 @@
           },
           {
             "to": "logistics",
+            "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "orders",
+            "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "payments",
             "family": "NON_RUNTIME_TEST"
           }
         ]
@@ -11422,8 +11438,14 @@
           "statement": "tout remboursement retourne au payeur, jamais au destinataire",
           "test": "tests/invariants/orders.refund-to-payer.test.js"
         },
-        "reference de commande lisible et unique",
-        "snapshot de cout figure a la creation, jamais recalcule retroactivement",
+        {
+          "statement": "reference de commande lisible et unique",
+          "test": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js"
+        },
+        {
+          "statement": "snapshot de cout figure a la creation, jamais recalcule retroactivement",
+          "test": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js"
+        },
         "transition de statut uniquement via order-status-machine.js",
         "annulation libere les achats fournisseurs lies dans la meme transaction"
       ],
@@ -11555,11 +11577,21 @@
             ]
           },
           "tests": {
-            "count": 27,
+            "count": 29,
             "files": [
+              {
+                "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/orders.single-collect.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/orders.single-collect.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -11705,7 +11737,7 @@
             ]
           }
         },
-        "totalFiles": 51,
+        "totalFiles": 53,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 11,
@@ -12222,6 +12254,13 @@
           ]
         },
         {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -12512,8 +12551,13 @@
             ]
           },
           "tests": {
-            "count": 17,
+            "count": 18,
             "files": [
+              {
+                "declared": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/cash-operations-service.test.js",
                 "resolvedPath": "tests/unit/cash-operations-service.test.js",
@@ -12602,7 +12646,7 @@
             ]
           }
         },
-        "totalFiles": 38,
+        "totalFiles": 39,
         "boutiqueManifest": "payment",
         "boutiqueFiles": {
           "count": 3,
@@ -13964,7 +14008,10 @@
       },
       "authority": "backend-core — tout changement du flux d'engagement fournisseur (déclenchement, confirmation, réception) doit être validé par le propriétaire de services/purchasing-trigger-service.js et services/purchasing-receive-service.js",
       "invariants": [
-        "un besoin d'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)",
+        {
+          "statement": "un besoin d'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)",
+          "test": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js"
+        },
         "purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)",
         "une réception ne peut être appliquée qu'à un bon de commande existant et cohérent"
       ],
@@ -14016,8 +14063,13 @@
             ]
           },
           "tests": {
-            "count": 8,
+            "count": 9,
             "files": [
+              {
+                "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/purchasing-admin-service.test.js",
                 "resolvedPath": "tests/unit/purchasing-admin-service.test.js",
@@ -14061,7 +14113,7 @@
             ]
           }
         },
-        "totalFiles": 15,
+        "totalFiles": 16,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14303,11 +14355,22 @@
         "ambiguousOwnershipCount": 2
       },
       "gateHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "SIDEEFFECT-NO-INVARIANT",
+            "verdict": "warn",
+            "file": null,
+            "message": "externalSideEffect \"outbound-message\" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 3,
@@ -14605,8 +14668,13 @@
             ]
           },
           "tests": {
-            "count": 3,
+            "count": 4,
             "files": [
+              {
+                "declared": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/refund-receipt-html.test.js",
                 "resolvedPath": "tests/unit/refund-receipt-html.test.js",
@@ -14635,7 +14703,7 @@
             ]
           }
         },
-        "totalFiles": 5,
+        "totalFiles": 6,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14715,6 +14783,13 @@
           ]
         },
         {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -14757,12 +14832,16 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 1,
-        "testOnlyRelations": 0,
+        "testOnlyRelations": 1,
         "compositionRootRelations": 0,
         "details": [
           {
             "to": "infrastructure",
             "family": "TECHNICAL_PRIMITIVE"
+          },
+          {
+            "to": "payments",
+            "family": "NON_RUNTIME_TEST"
           }
         ]
       },
@@ -14771,9 +14850,8 @@
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 2,
+        "declaredNotObserved": 1,
         "declaredNotObservedEvidence": [
-          "orders",
           "shared-cart"
         ]
       },
@@ -14806,13 +14884,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 2,
+        "debtCount": 1,
         "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"orders\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          },
           {
             "type": "DECLARED_NOT_OBSERVED",
             "severity": "low",
@@ -14853,8 +14926,14 @@
       "authority": "backend-core — tout changement de machine d'état v4/v4.1 doit être validé par le propriétaire de shared-cart-engine.js",
       "invariants": [
         "snapshot figé après 1ère contribution payée",
-        "idempotence webhook Stripe sur shared_cart_contributions",
-        "fenêtre paiement 48h — aucune extension sans machine de statut",
+        {
+          "statement": "idempotence webhook Stripe sur shared_cart_contributions",
+          "test": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js"
+        },
+        {
+          "statement": "fenêtre paiement 48h — aucune extension sans machine de statut",
+          "test": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js"
+        },
         "annulation restores wallet si contribution confirmée",
         "lien partagé ouvre une boutique — jamais un guichet (Boutique First)",
         "participant consulte en lecture seule — règle sa part seulement si panier payable"
@@ -15212,8 +15291,13 @@
             ]
           },
           "tests": {
-            "count": 41,
+            "count": 42,
             "files": [
+              {
+                "declared": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/admin-collective-repairs.test.js",
                 "resolvedPath": "tests/unit/admin-collective-repairs.test.js",
@@ -15422,7 +15506,7 @@
             ]
           }
         },
-        "totalFiles": 106,
+        "totalFiles": 107,
         "boutiqueManifest": "shared-cart-modal",
         "boutiqueFiles": {
           "count": 17,
@@ -16151,11 +16235,22 @@
         "ambiguousOwnershipCount": 2
       },
       "gateHealth": {
-        "status": "HEALTHY",
+        "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 0,
-        "gatesReporting": [],
-        "findings": []
+        "warnCount": 1,
+        "gatesReporting": [
+          "gate:feature-classification-check"
+        ],
+        "findings": [
+          {
+            "gate": "gate:feature-classification-check",
+            "scope": "root",
+            "type": "SIDEEFFECT-NO-INVARIANT",
+            "verdict": "warn",
+            "file": null,
+            "message": "externalSideEffect \"payment\" mais aucun invariant lié (idempotence, webhook…) — documenter la garantie"
+          }
+        ]
       },
       "architecturalDebt": {
         "debtCount": 6,
