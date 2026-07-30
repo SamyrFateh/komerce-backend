@@ -6,8 +6,8 @@
 
 | Statut | Features |
 |---|---|
-| `PROVEN` | 7 |
-| `PARTIAL` | 18 |
+| `PROVEN` | 8 |
+| `PARTIAL` | 17 |
 | `MISSING` | 0 |
 | `NOT_APPLICABLE` | 1 |
 
@@ -40,7 +40,7 @@ E2E navigateur : 46 specs Playwright, dont 17 sous `authenticated/`.
 | `inventory` | feature / feature | staging | 8 | 1/1 | e2e-api:1 integration:1 unit:2 | `PROVEN` |  |
 | `logistics` | feature / feature | production | 69 | 0/6 | integration:1 unit:32 | `PARTIAL` | Aucun E2E fonctionnel possédé. 6/6 invariant(s) non exécutable(s). |
 | `loyalty` | feature / feature | production | 7 | 0/2 | unit:3 | `PARTIAL` | Aucun E2E fonctionnel possédé. Aucune preuve traversant les couches réelles (unitaire seul). 2/2 invariant(s) non exécutable(s). |
-| `purchasing` | feature / feature | production | 10 | 0/3 | unit:8 | `PARTIAL` | Aucun E2E fonctionnel possédé. Aucune preuve traversant les couches réelles (unitaire seul). 3/3 invariant(s) non exécutable(s). |
+| `purchasing` | feature / feature | production | 10 | 1/3 | e2e-api:1 unit:8 | `PROVEN` | Aucune preuve traversant les couches réelles (unitaire seul). 2/3 invariant(s) non exécutable(s). |
 | `refunds` | feature / feature | production | 0 | 0/1 | e2e-api:1 unit:3 | `PROVEN` | Aucune preuve traversant les couches réelles (unitaire seul). 1/1 invariant(s) non exécutable(s). |
 | `unsold-resolution` | feature / feature | production | 7 | 0/2 | unit:1 | `PARTIAL` | Aucun E2E fonctionnel possédé. Aucune preuve traversant les couches réelles (unitaire seul). 2/2 invariant(s) non exécutable(s). |
 | `wallet` | feature / feature | production | 9 | 1/2 | invariant:1 unit:3 | `PROVEN` | Aucun E2E fonctionnel possédé. 1/2 invariant(s) non exécutable(s). |
