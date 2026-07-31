@@ -6871,22 +6871,6 @@ body.cart-open .k-wa-fab {
   letter-spacing: .01em;
 }
 
-/* Segment "Qui récupère ?" : coral uniquement sur le bouton actif */
-.ck-recip-seg {
-  border-radius: 12px;
-  padding: 3px;
-  border: 1.5px solid var(--checkout-seg-border);
-}
-.ck-recip-seg button {
-  background: transparent;
-  font-family: var(--font-checkout);
-  border-radius: 9px;
-}
-.ck-recip-seg button.on {
-  background: var(--checkout-sel-bg);
-  color: var(--coral);
-}
-
 /* Toggle fulfillment : coral uniquement sur actif */
 .ck-fulfillment-btn {
   color: var(--checkout-seg-text);
@@ -7789,16 +7773,6 @@ body.cart-open .k-wa-fab {
   padding-top: 0;
 }
 
-/* Quand les champs bénéficiaire sont visibles (mode "Quelqu'un d'autre"),
-   toutes les sections passent en padding minimal pour tenir dans l'écran.
-   Owner : cart.css — conforme R3/R5. */
-.k-order-body--checkout:has(.ck-recip-fields:not([hidden])) .ck-section-block {
-  padding-top: 8px;
-}
-.k-order-body--checkout:has(.ck-recip-fields:not([hidden])) .ck-section-block:first-child {
-  padding-top: 0;
-}
-
 /* Label section pour le titre VOUS COMMANDEZ AVEC */
 .k-ck-id-label--section {
   font-size: .62rem;
@@ -7806,76 +7780,27 @@ body.cart-open .k-wa-fab {
   margin-bottom: 2px;
 }
 
-/* ── Case « Je récupère moi-même » compactée ── */
-.ck-benf-me-label {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  cursor: pointer;
-  user-select: none;
-  margin-top: 3px;
+/* ── Bloc statique « 🔒 Retrait sécurisé » (Lot 3 — remplace le segment
+   Moi/Quelqu'un d'autre et les champs bénéficiaire ci-dessus) ── */
+.ck-secure-pickup-notice {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
   background: var(--green-bg-leaf);
   border: 1px solid var(--leaf-border, var(--border));
-  border-radius: 10px;
-  padding: 8px 10px;
+  color: var(--text);
 }
-.ck-benf-me-cb {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: var(--cta-green);
-  flex-shrink: 0;
-}
-.ck-benf-me-text { display: flex; flex-direction: column; gap: 1px; }
-.ck-benf-me-title { font-size: .82rem; font-weight: 700; color: var(--text); }
-.ck-benf-me-sub { font-size: .68rem; color: var(--text-muted); }
-.ck-recip-fields {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.ck-recip-fields .k-ck-group { margin-bottom: 0; }
-.ck-recip-fields .k-ck-label { margin-bottom: 2px; font-size: .76rem; }
-.ck-recip-fields .k-ck-input { min-height: 34px; font-size: .9rem; }
-.ck-recip-fields .k-ck-km-wrap { height: 34px; }
-.ck-recip-fields .k-ck-km-input { font-size: .9rem; }
-.ck-recip-fields[hidden] { display: none; }
-
-/* « Qui récupère ? » — segment Moi / Quelqu'un d'autre (remplace la case à cocher) */
-.ck-recip-seg {
-  display: flex;
-  gap: 3px;
-  background: var(--border-text-06);
-  border-radius: 12px;
-  padding: 3px;
-  margin-bottom: 4px;
-}
-.ck-recip-seg button {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: .85rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  padding: 11px 6px;
-  border-radius: 9px;
-  cursor: pointer;
-}
-.ck-recip-seg button.on {
-  background: var(--checkout-sel-bg);
-  color: var(--coral);
-  box-shadow: inset 0 0 0 1.5px var(--coral);
-}
-.ck-recip-note {
-  font-size: .76rem;
-  font-weight: 600;
+.ck-secure-pickup-title {
+  font-weight: 800;
+  font-size: .86rem;
+  margin-bottom: 6px;
   color: var(--ocean-dark);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
+}
+.ck-secure-pickup-line {
+  font-size: .76rem;
+  line-height: 1.35;
+  color: var(--text-muted);
 }
 
 /* ── Checkout body mobile ── */
@@ -7885,51 +7810,6 @@ body.cart-open .k-wa-fab {
   flex-direction: column;
   min-height: 0;
 }
-/* Le vide entre Relais et Paiement est désormais comblé par .ck-self-pickup-info
-   en mode Moi (bloc métier), et par les champs bénéficiaire en mode Quelqu'un d'autre. */
-.ck-self-pickup-info {
-  margin-top: 10px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--green-bg-leaf);
-  border: 1px solid var(--leaf-border, var(--border));
-  color: var(--text);
-}
-.ck-self-pickup-info[hidden] { display: none; }
-.ck-self-pickup-title {
-  font-weight: 800;
-  font-size: .86rem;
-  margin-bottom: 6px;
-  color: var(--ocean-dark);
-}
-.ck-self-pickup-line {
-  font-size: .76rem;
-  line-height: 1.35;
-  color: var(--text-muted);
-}
-.ck-self-pickup-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 9px;
-  padding-top: 8px;
-  border-top: 1px solid var(--leaf-border, var(--border));
-}
-.ck-spi-changed,
-.ck-spi-notyou {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: .72rem;
-  color: var(--text-muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-  line-height: 1.3;
-}
-.ck-spi-changed:hover,
-.ck-spi-notyou:hover { color: var(--sage-dark); }
-
 /* Guest hint plus compact */
 .k-ck-guest-hint {
   display: flex;
@@ -8074,7 +7954,7 @@ body.cart-open .k-wa-fab {
   }
   .ck-section-block { padding-top: 18px; }
   .ck-section-title { font-size: .68rem; margin-bottom: 6px; }
-  .ck-benf-me-label { padding: 10px 12px; }
+  .ck-secure-pickup-notice { padding: 10px 12px; }
   .ck-confirm-btn { min-height: 64px; }
   .ck-relais-ile-btn { min-height: 36px; font-size: .78rem; }
 }

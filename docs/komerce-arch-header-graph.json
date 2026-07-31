@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 791,
-    "edges": 4419,
+    "edges": 4418,
     "dbTables": 116,
     "doctrines": 161,
     "impactAreas": 130,
@@ -555,9 +555,7 @@
         "revoked_tokens",
         "users"
       ],
-      "dbWrite": [
-        "users"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
@@ -20660,12 +20658,6 @@
       "from": "middleware/auth-guest.js",
       "to": "db:users",
       "type": "db-read",
-      "label": "users"
-    },
-    {
-      "from": "middleware/auth-guest.js",
-      "to": "db:users",
-      "type": "db-write",
       "label": "users"
     },
     {
@@ -47127,9 +47119,7 @@
         "revoked_tokens",
         "users"
       ],
-      "dbWrite": [
-        "users"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -64469,20 +64459,6 @@
       ]
     },
     {
-      "table": "users",
-      "writerCount": 8,
-      "writers": [
-        "bootstrap/startup-migrations.js",
-        "middleware/auth-guest.js",
-        "routes/admin/system.js",
-        "routes/admin/users.js",
-        "routes/auth.js",
-        "routes/client-auth.js",
-        "routes/otp.js",
-        "services/loyalty-service.js"
-      ]
-    },
-    {
       "table": "incidents",
       "writerCount": 7,
       "writers": [
@@ -64519,6 +64495,19 @@
         "services/shared-cart-financial-guard.js",
         "services/shared-cart-queries.js",
         "services/shared-cart-refund-queue.js"
+      ]
+    },
+    {
+      "table": "users",
+      "writerCount": 7,
+      "writers": [
+        "bootstrap/startup-migrations.js",
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/auth.js",
+        "routes/client-auth.js",
+        "routes/otp.js",
+        "services/loyalty-service.js"
       ]
     },
     {

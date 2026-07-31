@@ -364,10 +364,9 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
   try {
     await db.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_payer VARCHAR(30);
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_beneficiary VARCHAR(30);
       CREATE INDEX IF NOT EXISTS idx_users_phone_payer ON users(phone_payer);
     `);
-    log.info('✅ Migration 040: phone_payer + phone_beneficiary columns added');
+    log.info('✅ Migration 040: phone_payer column added');
   } catch(e) { log.warn({ err: e }, 'Migration 040 (non-fatal):'); }
 
   try {

@@ -63,7 +63,6 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
               u.phone       AS user_phone,
               u.full_name   AS user_full_name,
               u.phone_payer,
-              u.phone_beneficiary,
               rc.phone      AS recipient_phone,
               rc.full_name  AS recipient_name
        FROM orders o

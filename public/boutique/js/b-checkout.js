@@ -39,12 +39,10 @@ import {
   makePhoneInput            as _makePhoneInputRender,
 } from './b-checkout-render.js';
 import {
-  PHONE_COUNTRIES,
   digitsOnly as _digitsOnly,
   normalizeLocal as _normalizeLocal,
   prettifyLocal as _prettifyLocal,
   buildE164 as _buildE164,
-  isValidLocalLength,
   makeIntlPhoneInput as _makeIntlPhoneInput,
 } from './b-phone.js';
 
@@ -256,7 +254,6 @@ function _renderRelaisSummary(container, od, byIle, allIles) {
     _openRelaisPicker(od, byIle, allIles, () => {
       clearRelaySelectionError();
       _renderRelaisSummary(container, od, byIle, allIles);
-      setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
       refreshCheckoutComputedUI();
     });
   });
@@ -373,17 +370,6 @@ function getRelayGroupOrder(groups) {
   });
 }
 
-function readIntlPhoneValue(id, fallbackValue) {
-  const input      = document.getElementById(id);
-  const countrySel = document.getElementById(id + '-country');
-  if (!input || !countrySel) return (fallbackValue || '').trim();
-  const country = PHONE_COUNTRIES.find(c => c.code === countrySel.value);
-  const digits  = _normalizeLocal(countrySel.value, _digitsOnly(input.value));
-  // Validation stricte : on refuse si le nombre de chiffres ne correspond pas au pays
-  if (!country || !digits || !isValidLocalLength(countrySel.value, input.value)) return '';
-  return _buildE164(countrySel.value, digits);
-}
-
 /* S3.1 — rendu délégué à b-checkout-render.js */
 function renderFulfillmentSelector(container, od, onChange) {
   _renderFulfillmentSelector(container, od, onChange);
@@ -396,18 +382,6 @@ export function getDefaultPhoneCodeForZone(zone) {
 /** Le champ "suivi expéditeur" est toujours côté diaspora → +33 par défaut. */
 function getDefaultSenderPhoneCode() {
   return '+33';
-}
-
-function setIntlPhoneDefault(id, zone, force) {
-  const sel   = document.getElementById(id + '-country');
-  const input = document.getElementById(id);
-  if (!sel) return;
-  const nextCode = getDefaultPhoneCodeForZone(zone);
-  const hasValue = !!String(input?.value || '').trim();
-  if (force || !hasValue) {
-    sel.value = nextCode;
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-  }
 }
 
 function clearRelaySelectionError() {
@@ -545,274 +519,22 @@ export function renderCheckout() {
     }
     // ── Fin restauration silencieuse ─────────────────────────────────────────
 
-    // ── Bloc « Qui récupère ? » ───────────────────────────────────────────────
-    // Logique : utilisateur reconnu → ses infos sont DÉJÀ dans la carte du haut.
-    // Donc « Je récupère moi-même » → AUCUN champ (pas de doublon).
-    // « Quelqu'un d'autre récupère » → on révèle les champs Nom/Tél du retraitant.
-    const benfSection = document.createElement('div');
-    benfSection.className = 'ck-section-block';
-    const benfTitle = document.createElement('div');
-    benfTitle.className = 'ck-section-title';
-    benfTitle.innerHTML = '<span class="ck-step-num" aria-hidden="true">1</span>QUI RÉCUPÈRE ?';
-    benfSection.appendChild(benfTitle);
-
-    // #cb-benf-is-me CONSERVÉ (caché) — lu par submitOrder + le préremplissage.
-    // Le segment visible « Moi / Quelqu'un d'autre » le pilote en dispatchant un
-    // 'change' natif : aucun changement de logique, juste l'habillage.
-    const benfCb = document.createElement('input');
-    benfCb.type = 'checkbox';
-    benfCb.id = 'cb-benf-is-me';
-    benfCb.className = 'ck-benf-me-cb';
-    benfCb.checked = true;
-    benfCb.hidden = true;
-    benfSection.appendChild(benfCb);
-
-    const benfSeg = document.createElement('div');
-    benfSeg.className = 'ck-recip-seg';
-    benfSeg.setAttribute('role', 'tablist');
-    benfSeg.innerHTML =
-      '<button type="button" class="on" data-me="1">Moi</button>'
-      + '<button type="button" data-me="0">Quelqu\u2019un d\u2019autre</button>';
-    benfSection.appendChild(benfSeg);
-
-    // Champs retraitant — MASQUÉS si « Moi » (infos déjà dans la carte),
-    // révélés seulement si « Quelqu'un d'autre ». Le suivi-aux-deux vit ici.
-    const benfFields = document.createElement('div');
-    benfFields.className = 'ck-recip-fields';
-    benfFields.hidden = true;
-    benfFields.appendChild(makeInput('of-beneficiary-name', 'Nom de la personne qui retire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
-    benfFields.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone de la personne qui retire *', od, 'beneficiary_phone'));
-    const benfNote = document.createElement('div');
-    benfNote.className = 'ck-recip-note';
-    benfNote.textContent = '📲 Le suivi WhatsApp sera envoyé à vous deux';
-    benfFields.appendChild(benfNote);
-    benfSection.appendChild(benfFields);
-    body.appendChild(benfSection);
-
-    /* ── Bloc métier "Je retire moi-même" ──
-       Visible en mode Moi, masqué en mode Quelqu'un d'autre.
-       Piloté par _syncRecipFields(). Remplace ck-fill-above.
-       FIX 2026-06-06 : déclaré ICI (avant _syncRecipFields) pour éviter la
-       ReferenceError qui avortait renderCheckout() et empêchait le bouton
-       "Commander" de fonctionner (modal fermée sans action). */
-    const selfPickupInfo = document.createElement('div');
-    selfPickupInfo.className = 'ck-self-pickup-info';
-    selfPickupInfo.innerHTML =
-      '<div class="ck-self-pickup-title">✅ Vous récupérez cette commande</div>'
-      + '<div class="ck-self-pickup-line">📲 Suivi WhatsApp envoyé sur votre numéro</div>'
-      + '<div class="ck-self-pickup-line">🏪 Paiement cash au relais sélectionné</div>'
-      + '<div class="ck-self-pickup-actions">'
-      + '<button type="button" class="ck-spi-changed">Votre num\u00e9ro a chang\u00e9\u00a0?</button>'
-      + '<button type="button" class="ck-spi-notyou">Ce n\u2019est pas vous\u00a0?</button>'
-      + '</div>';
-    // Même flux que « Changer » / « Ce n'est pas vous ? » de la carte identité en tête.
-    const _spiOnChanged = (newUser) => {
-      state.user = newUser;
-      const _idCard = body.querySelector('#ck-identity-recap');
-      if (_idCard) applyIdentityToCard(_idCard, newUser);
-    };
-    bindChangeIdentity(selfPickupInfo, '.ck-spi-changed', _spiOnChanged);
-    bindChangeIdentity(selfPickupInfo, '.ck-spi-notyou', _spiOnChanged);
-
-    // Le segment pilote la case + l'affichage des champs.
-    const _benfCb = benfCb;
-    const _segBtns = benfSeg.querySelectorAll('button');
-    const _syncRecipFields = () => {
-      const isMe = _benfCb.checked;
-      _segBtns.forEach(b => b.classList.toggle('on', (b.dataset.me === '1') === isMe));
-      body.classList.toggle('ck-is-me', isMe);
-      // Masquer/restaurer les actions de la carte identité selon le mode.
-      // En mode "Quelqu'un d'autre", "Changer" et "Ce n'est pas vous ?" n'ont
-      // pas de sens (le payeur ne change pas) → on les masque.
-      const _idCard = body.querySelector('#ck-identity-recap');
-      if (_idCard) {
-        const _chBtn = _idCard.querySelector('.k-ck-id-change');
-        const _nyBtn = _idCard.querySelector('.k-ck-id-notyou');
-        if (_chBtn) _chBtn.hidden = !isMe;
-        if (_nyBtn) _nyBtn.hidden = !isMe;
-      }
-      if (isMe) {
-        benfFields.hidden = true;
-        selfPickupInfo.hidden = true;
-      } else {
-        benfFields.hidden = false;
-        selfPickupInfo.hidden = true;
-        // SÉCURITÉ : vider systématiquement les champs bénéficiaire quand
-        // on bascule sur "quelqu'un d'autre". Sans ça, les champs restent
-        // pré-remplis avec les propres infos du payeur → il pourrait valider
-        // sans les modifier, et l'OTP serait envoyé à son propre numéro au
-        // lieu de celui du vrai destinataire.
-        const nameInput    = document.getElementById('of-beneficiary-name');
-        const phoneInput   = document.getElementById('of-beneficiary-phone');
-        const phoneCountry = document.getElementById('of-beneficiary-phone-country');
-        if (nameInput)    { nameInput.value = ''; od.beneficiary_name = ''; }
-        if (phoneInput)   { phoneInput.value = ''; }
-        if (phoneCountry) { phoneCountry.value = getDefaultPhoneCodeForZone(od.fulfillment_zone || 'comoros'); }
-        od.beneficiary_phone = '';
-        // Focus sur le premier champ pour guider l'user
-        setTimeout(() => nameInput?.focus(), 50);
-      }
-    };
-    _benfCb.addEventListener('change', _syncRecipFields);
-    benfSeg.addEventListener('click', e => {
-      const b = e.target.closest('button'); if (!b) return;
-      const me = b.dataset.me === '1';
-      if (_benfCb.checked === me) return;          // pas de changement → no-op
-      _benfCb.checked = me;
-      _benfCb.dispatchEvent(new Event('change', { bubbles: true })); // → sync + préremplissage
-    });
-    _syncRecipFields();
-
-    // ── Logique préremplissage (inchangée : lit #cb-benf-is-me) ───────────────
-    // DOCTRINE : ce handler ne déclenche JAMAIS requireIdentity() ni de modale.
-    // Il lit passivement l'identité déjà connue (getCurrentIdentity) ou tente
-    // une restauration silencieuse (restoreIdentity — cookie httpOnly, zéro OTP).
-    // requireIdentity() reste réservé à submitOrder() et au clic "Ce n'est pas vous ?".
-    setTimeout(() => {
-      const cbBenfMe = document.getElementById('cb-benf-is-me');
-      if (!cbBenfMe) return;
-
-      /**
-       * Préremplie les champs bénéficiaire avec une identité validée.
-       * Ne fait rien si l'identité est admin/système/invalide.
-       * Ne déclenche aucune modale.
-       * @param {Object} identity
-       * @returns {boolean} true si préremplissage effectué
-       */
-      /**
-       * Extrait le meilleur téléphone disponible depuis l'objet identité.
-       * Parcourt les propriétés dans l'ordre de priorité et retourne la
-       * première valeur non vide.  Retourne '' si aucune n'est trouvable.
-       * @param {Object} id - objet identité normalisé (ou brut)
-       * @returns {string} numéro brut (idéalement E.164)
-       */
-      function _getIdentityPhone(id) {
-        if (!id) return '';
-        // Priorité : objet normalisé (phone déjà résolu par normalizeUser)
-        // → puis propriétés alternatives connues en base Komerce
-        return (
-          id.phone          ||
-          id.phone_number   ||
-          id.whatsapp_phone ||
-          id.whatsapp       ||
-          id.mobile         ||
-          id.user?.phone    ||
-          id.profile?.phone ||
-          ''
-        ).trim();
-      }
-
-      /**
-       * Préremplie les champs bénéficiaire avec une identité validée.
-       * — Utilise PHONE_COUNTRIES (liste réelle des indicatifs) pour parser
-       *   le numéro E.164 → (dialCode, local).  Le regex /^(\+\d{1,4})(.*)/ 
-       *   est greedy et peut se tromper (ex. +2693… capturé à 4 chiffres 
-       *   au lieu de 3).  On cherche à la place le code connu le plus long
-       *   qui préfixe le numéro, puis on formate le local via prettifyLocal.
-       * — Ne fait rien si l'identité est admin/système/invalide ou si le
-       *   numéro est absent ou inexploitable.
-       * — Ne déclenche aucune modale, aucun OTP.
-       * @param {Object} identity
-       * @returns {boolean} true si préremplissage effectué
-       */
-      function _prefillFromIdentity(identity) {
-        const nameInput    = document.getElementById('of-beneficiary-name');
-        const phoneInput   = document.getElementById('of-beneficiary-phone');
-        const phoneCountry = document.getElementById('of-beneficiary-phone-country');
-
-        // ── Nom ──────────────────────────────────────────────────────
-        const _idName = ((identity && (identity.full_name || identity.name)) || '').trim();
-        const _isAdminName = /admin|komerce|syst[eè]me?|test|demo/i.test(_idName);
-
-        // ── Téléphone — source de vérité ─────────────────────────────
-        // On lit _getIdentityPhone() plutôt que identity.phone directement,
-        // pour couvrir les variantes de propriétés retournées par l'API.
-        const _rawPhone = _getIdentityPhone(identity);
-
-        // Validation préliminaire (avant parsing)
-        const _isAdminPhone = /^(\+\d{1,4})?0{4,}/.test(_rawPhone) || _rawPhone.length < 8;
-        const _usable = identity && _idName && !_isAdminName && !_isAdminPhone;
-
-        if (!_usable) return false;
-
-        // ── Prérempli nom ─────────────────────────────────────────────
-        if (nameInput) {
-          nameInput.value = _idName;
-          od.beneficiary_name = _idName;
-        }
-
-        // ── Prérempli téléphone — parsing via PHONE_COUNTRIES ─────────
-        // Cherche le code indicatif connu le plus long qui préfixe le numéro.
-        // Ex: +2693231452 → found = { code:'+269', digits:7 }
-        //                 → local = '3231452'
-        // Ex: +33612345678 → found = { code:'+33', digits:9 }
-        //                  → local = '612345678' → prettify → '06 12 34 56 78'
-        // Si aucun code connu n'est trouvé : on tente quand même de coller
-        // le numéro brut dans l'input pour ne pas bloquer l'utilisateur.
-        if (phoneInput && phoneCountry) {
-          // Trier par longueur décroissante pour matcher le plus long en premier
-          // (+269 avant +26, +212 avant +21, etc.)
-          const _sorted = PHONE_COUNTRIES.slice().sort((a, b) => b.code.length - a.code.length);
-          const _found  = _sorted.find(c => _rawPhone.startsWith(c.code));
-
-          if (_found) {
-            const _localRaw = _rawPhone.slice(_found.code.length);
-            const _localDisplay = _prettifyLocal(_localRaw, _found);
-
-            phoneCountry.value = _found.code;
-            // bubbles:false — changement programmatique, ne doit pas
-            // remonter vers les autres listeners (payGrid, etc.)
-            phoneCountry.dispatchEvent(new Event('change', { bubbles: false }));
-            phoneInput.value = _localDisplay;
-            od.beneficiary_phone = _rawPhone; // stocker l'E.164 complet
-          } else {
-            // Indicatif inconnu — coller le brut, l'utilisateur peut corriger
-            phoneInput.value = _rawPhone;
-            od.beneficiary_phone = _rawPhone;
-          }
-        }
-
-        return true;
-      }
-
-      cbBenfMe.addEventListener('change', function() {
-        if (!this.checked) {
-          // Décoché : on ne vide pas une saisie manuelle existante
-          return;
-        }
-
-        // 1. Lecture synchrone — identité déjà en mémoire
-        const syncIdentity = getCurrentIdentity();
-        if (syncIdentity) {
-          _prefillFromIdentity(syncIdentity);
-          return;
-        }
-
-        // 2. Pas d'identité en mémoire → tentative de restauration passive
-        //    (cookie httpOnly kmrc_jwt — aucun OTP, aucune modale)
-        //    Si la restauration échoue ou retourne null, on laisse les champs
-        //    libres pour saisie manuelle. On ne décoche pas la case.
-        restoreIdentity().then(restoredIdentity => {
-          // Vérifier que la case est toujours cochée (l'user n'a pas décoché
-          // pendant l'attente async)
-          if (!cbBenfMe.checked) return;
-          if (restoredIdentity) {
-            _prefillFromIdentity(restoredIdentity);
-          }
-          // Si toujours pas d'identité : champs manuels disponibles, aucune action
-        }).catch(() => { /* restauration silencieuse — on ignore les erreurs réseau */ });
-      });
-
-      // État initial : « je récupère moi-même » coché par défaut → préremplissage
-      // une fois au chargement (équivaut à sélectionner l'option « me » du toggle).
-      if (cbBenfMe.checked) cbBenfMe.dispatchEvent(new Event('change', { bubbles: true }));
-    }, 0);
-    // ── Fin bloc bénéficiaire ────────────────────────────────────────────────
+    // ── Retrait sécurisé (Lot 3 — remplace « Qui récupère ? ») ────────────────
+    // Bloc informatif, non interactif : le code de retrait est envoyé au
+    // WhatsApp vérifié de l'acheteur (identité OTP), qui le transmet ensuite
+    // à qui il veut. Aucune identité de retrait distincte n'est collectée.
+    const secureNotice = document.createElement('div');
+    secureNotice.className = 'ck-secure-pickup-notice';
+    secureNotice.innerHTML =
+      '<div class="ck-secure-pickup-title">🔒 Retrait sécurisé</div>'
+      + '<div class="ck-secure-pickup-line">Le code de retrait sera envoyé sur votre WhatsApp vérifié '
+      + 'lorsque votre commande sera prête. Vous pourrez le transmettre à la personne de votre choix.</div>';
+    body.appendChild(secureNotice);
 
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-section-block';
-    sRelais.innerHTML = '<div class="ck-section-title"><span class="ck-step-num" aria-hidden="true">2</span>POINT DE RETRAIT</div>';
+    sRelais.innerHTML = '<div class="ck-section-title"><span class="ck-step-num" aria-hidden="true">1</span>POINT DE RETRAIT</div>';
     body.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
@@ -821,13 +543,10 @@ export function renderCheckout() {
     body.appendChild(relaisSection);
     _loadRelaisSection(relaisSection, od);
 
-    // selfPickupInfo déclaré et initialisé plus haut (avant _syncRecipFields).
-    body.appendChild(selfPickupInfo);
-
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-section-block ck-payment-section';
-    s2.innerHTML = '<div class="ck-section-title"><span class="ck-step-num" aria-hidden="true">3</span>PAIEMENT</div>';
+    s2.innerHTML = '<div class="ck-section-title"><span class="ck-step-num" aria-hidden="true">2</span>PAIEMENT</div>';
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
@@ -885,14 +604,6 @@ export function renderCheckout() {
       if (chip && enabled) chip.style.display = '';
     });
 
-
-    // Le pays/zone est désormais piloté par le picker de relais (_openRelaisPicker),
-    // qui rafraîchit lui-même le défaut du téléphone bénéficiaire. Ici on ne fait
-    // que poser le défaut initial — la section relais est chargée une seule fois ci-dessus.
-    function refreshFulfillment() {
-      setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
-    }
-    refreshFulfillment();
 
     /* ── 5. Wallet ── */
     checkWalletBalance();
@@ -1100,7 +811,6 @@ export function updateWalletDisplay() {
 
 export async function submitOrder(btn) {
   const od = state.orderData;
-  const benfIsMe = !!(document.getElementById('cb-benf-is-me')?.checked);
 
   // ── Verrou state machine (FIX 2026-07-10) ────────────────────────────────
   // Même si le DOM est manipulé / le bouton forcé, aucune commande ne part
@@ -1127,17 +837,10 @@ export async function submitOrder(btn) {
     return;
   }
 
-  // ── Si quelqu'un d'autre récupère : valider ses champs avant l'OTP ────────
-  if (!benfIsMe) {
-    const _name  = (document.getElementById('of-beneficiary-name')?.value || '').trim();
-    const _phone = readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
-    if (!_name)  { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
-    if (!_phone) { showToast('Indiquez un téléphone valide pour le bénéficiaire.', 'error'); return; }
-  }
-
-  // ── OTP — identifie le payeur ─────────────────────────────────────────────
-  // "Je récupère moi-même" : nom + tél viennent de l'identité OTP.
-  // "Quelqu'un d'autre"    : champs bénéficiaire déjà validés ci-dessus.
+  // ── OTP — identifie l'acheteur, seule identité de retrait ─────────────────
+  // Lot 3 : plus de « qui récupère ? ». Le code de retrait est envoyé au
+  // WhatsApp vérifié de l'acheteur ; nom/téléphone viennent uniquement de
+  // l'identité OTP.
   const identity = await requireIdentity({
     reason: 'valider votre commande',
     title: 'Sécuriser votre commande',
@@ -1145,27 +848,8 @@ export async function submitOrder(btn) {
   if (!identity) return; // annulé → panier intact
 
   const trackingPhone = identity.phone || null;
-
-  // ── Résoudre nom + tél bénéficiaire après OTP ─────────────────────────────
-  const recipName  = benfIsMe
-    ? (identity.full_name || identity.name || '').trim()
-    : (document.getElementById('of-beneficiary-name')?.value || '').trim();
-  const recipPhone = benfIsMe
-    ? identity.phone || ''
-    : readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
-
-  // SÉCURITÉ : quand "quelqu'un d'autre récupère", interdire que le bénéficiaire
-  // ait le même numéro que le payeur OTP. Ce cas survient si l'user a mis
-  // son propre numéro dans le champ bénéficiaire (contournement du suivi double).
-  // On bloque et on demande à corriger le champ — sans annuler la commande entière.
-  if (!benfIsMe && recipPhone && trackingPhone && recipPhone === trackingPhone) {
-    showToast('Le numéro de la personne qui récupère doit être différent du vôtre.', 'error');
-    document.getElementById('of-beneficiary-phone')?.focus();
-    btn.disabled = false;
-    btn.dataset.busy = '0';
-    refreshCheckoutComputedUI();
-    return;
-  }
+  const recipName  = (identity.full_name || identity.name || '').trim();
+  const recipPhone = identity.phone || '';
 
   const clientEmail = undefined;
   const isStripe = od.payment_mode === 'stripe_eur';
@@ -1193,7 +877,6 @@ export async function submitOrder(btn) {
       if (!state.pendingStripeOrderRef) {
         apiResult = await apiPost('/api/orders', {
           items, relais_id: od.selectedRelaisId || undefined,
-          recipient_name: recipName, recipient_phone: recipPhone,
           payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
           tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
         }, { idempotencyKey: state.checkoutAttemptKey });
@@ -1205,7 +888,6 @@ export async function submitOrder(btn) {
     } else {
       apiResult = await apiPost('/api/orders', {
         items, relais_id: od.selectedRelaisId || undefined,
-        recipient_name: recipName, recipient_phone: recipPhone,
         payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
         tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
       });
@@ -1307,7 +989,8 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
  * Validation pré-clic PayPal — vérifie que le formulaire de checkout est
  * complet AVANT d'ouvrir la popup PayPal. Renvoie true/false.
  *
- * Réutilise les contrôles existants : identité, relais, bénéficiaire.
+ * Réutilise les contrôles existants : identité, relais. Lot 3 : plus de
+ * validation bénéficiaire, l'acheteur OTP est l'unique identité de retrait.
  */
 async function _validateCheckoutForm() {
   const od = state.orderData || {};
@@ -1322,16 +1005,6 @@ async function _validateCheckoutForm() {
   // 2. Relais sélectionné
   if (!od.selectedRelaisId) {
     showToast('Sélectionnez un relais', 'error');
-    return false;
-  }
-
-  // 3. Bénéficiaire (nom + téléphone)
-  const benefNameEl  = document.getElementById('of-beneficiary-name');
-  const benefPhoneEl = document.getElementById('of-beneficiary-phone');
-  const benefName  = benefNameEl?.value?.trim();
-  const benefPhone = benefPhoneEl?.value?.trim();
-  if (!benefName || !benefPhone) {
-    showToast('Renseignez le nom et le téléphone du bénéficiaire', 'error');
     return false;
   }
 
@@ -1353,8 +1026,7 @@ async function _createKomerceOrderForPayPal() {
   }
 
   const identity   = getCurrentIdentity();
-  const recipName  = document.getElementById('of-beneficiary-name')?.value?.trim();
-  const recipPhone = document.getElementById('of-beneficiary-phone')?.value?.trim();
+  const recipName  = (identity?.full_name || identity?.name || '').trim();
   const trackingPhone = identity?.phone || undefined;
 
   const items = state.cart.map(i => ({
@@ -1368,8 +1040,6 @@ async function _createKomerceOrderForPayPal() {
   const apiResult = await apiPost('/api/orders', {
     items,
     relais_id:        od.selectedRelaisId,
-    recipient_name:   recipName,
-    recipient_phone:  recipPhone,
     payment_mode:     'paypal_eur',
     use_wallet:       od.use_wallet || false,
     tracking_phone:   trackingPhone,
@@ -1387,7 +1057,8 @@ async function _createKomerceOrderForPayPal() {
  * Callback de succès après capture PayPal — affiche l'écran de confirmation.
  */
 function _onPayPalSuccess(captureRes) {
-  const recipName = document.getElementById('of-beneficiary-name')?.value?.trim() || '';
+  const identity  = getCurrentIdentity();
+  const recipName = (identity?.full_name || identity?.name || '').trim();
   const orderRef  = state.pendingPaypalOrderRef;
   // Reconstruire un orderData minimal pour renderOrderSuccess
   const orderData = state.lastApiResult?.order || { reference: orderRef };

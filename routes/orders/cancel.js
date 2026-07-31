@@ -68,7 +68,6 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
               u.phone       AS user_phone,
               u.full_name   AS user_full_name,
               u.phone_payer,
-              u.phone_beneficiary,
               u.email       AS user_email,
               rc.phone      AS recipient_phone,
               rc.full_name  AS recipient_name

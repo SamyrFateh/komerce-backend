@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31T01:43:30.855Z",
+  "generatedAt": "2026-07-31T10:16:59.236Z",
   "summary": {
     "modules": 74,
     "withHeader": 74,
@@ -509,8 +509,7 @@
       ],
       "bodyClasses": [
         "cart-open",
-        "k-order-body--checkout",
-        "ck-is-me"
+        "k-order-body--checkout"
       ],
       "emitCalls": [
         {
@@ -3435,9 +3434,6 @@
         "b-cart"
       ],
       "k-order-body--checkout": [
-        "b-checkout"
-      ],
-      "ck-is-me": [
         "b-checkout"
       ],
       "k-id-scroll-lock": [

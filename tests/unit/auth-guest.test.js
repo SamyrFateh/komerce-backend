@@ -14,7 +14,6 @@
  *   ✓ token valide + jti révoqué → 401 "Session expirée"
  *   ✓ token valide + user en cache → req.user peuplé, next()
  *   ✓ token valide + user absent du cache → requête DB, peuple le cache
- *   ✓ token valide + nouveau recipient_phone → update phone_beneficiary + invalide cache mis à jour
  *   ✓ token valide + user introuvable en DB → 401 identity_required
  *   ✓ token invalide/expiré → tombe vers le refus 401 identity_required (pas de log.error)
  *   ✓ pas de token → 401 identity_required
@@ -114,7 +113,7 @@ describe('authenticateOrCreateGuest — révocation (jti)', () => {
 describe('authenticateOrCreateGuest — résolution utilisateur (cache partagé)', () => {
   it('utilise le cache si présent, req.user peuplé, next()', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [] }); // révocation
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client', phone_beneficiary: null });
+    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client' });
 
     const req = { headers: { authorization: `Bearer ${validToken()}` }, body: {} };
     const res = makeRes();
@@ -123,14 +122,14 @@ describe('authenticateOrCreateGuest — résolution utilisateur (cache partagé)
     await authenticateOrCreateGuest(req, res, next);
 
     expect(mockQuery).toHaveBeenCalledTimes(1); // uniquement révocation
-    expect(req.user).toEqual({ id: 'user-1', role: 'client', phone_beneficiary: null });
+    expect(req.user).toEqual({ id: 'user-1', role: 'client' });
     expect(next).toHaveBeenCalledTimes(1);
   });
 
   it('charge depuis la DB et peuple le cache si absent', async () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [] }) // révocation
-      .mockResolvedValueOnce({ rows: [{ id: 'user-1', full_name: 'Jean', role: 'client', phone_beneficiary: null }] }); // users
+      .mockResolvedValueOnce({ rows: [{ id: 'user-1', full_name: 'Jean', role: 'client' }] }); // users
     mockCacheGet.mockReturnValueOnce(null);
 
     const req = { headers: { authorization: `Bearer ${validToken()}` }, body: {} };
@@ -159,66 +158,6 @@ describe('authenticateOrCreateGuest — résolution utilisateur (cache partagé)
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Identité requise', code: 'identity_required' });
     expect(next).not.toHaveBeenCalled();
-  });
-});
-
-describe('authenticateOrCreateGuest — mise à jour phone_beneficiary', () => {
-  it('met à jour phone_beneficiary si un nouveau recipient_phone (E.164) est fourni dans le body', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [] }) // révocation
-      .mockResolvedValueOnce({ rows: [] }); // UPDATE phone_beneficiary
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client', phone_beneficiary: '+33600000000' });
-
-    const req = {
-      headers: { authorization: `Bearer ${validToken()}` },
-      body: { recipient_phone: '+269321234' },
-    };
-    const res = makeRes();
-    const next = jest.fn();
-
-    await authenticateOrCreateGuest(req, res, next);
-
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.stringContaining('UPDATE users SET phone_beneficiary'),
-      ['+269321234', 'user-1']
-    );
-    expect(req.user.phone_beneficiary).toBe('+269321234');
-    expect(mockCacheSet).toHaveBeenCalledWith('user-1', expect.objectContaining({ phone_beneficiary: '+269321234' }));
-    expect(next).toHaveBeenCalledTimes(1);
-  });
-
-  it("ne fait pas d'UPDATE si recipient_phone est identique au bénéficiaire déjà connu", async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // révocation uniquement
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client', phone_beneficiary: '+269321234' });
-
-    const req = {
-      headers: { authorization: `Bearer ${validToken()}` },
-      body: { recipient_phone: '+269321234' },
-    };
-    const res = makeRes();
-    const next = jest.fn();
-
-    await authenticateOrCreateGuest(req, res, next);
-
-    expect(mockQuery).toHaveBeenCalledTimes(1); // pas d'UPDATE
-    expect(next).toHaveBeenCalledTimes(1);
-  });
-
-  it("ignore un recipient_phone non normalisable (pas d'indicatif connu)", async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // révocation uniquement
-    mockCacheGet.mockReturnValueOnce({ id: 'user-1', role: 'client', phone_beneficiary: null });
-
-    const req = {
-      headers: { authorization: `Bearer ${validToken()}` },
-      body: { recipient_phone: '0699272526' }, // pas de defaultCountry → null
-    };
-    const res = makeRes();
-    const next = jest.fn();
-
-    await authenticateOrCreateGuest(req, res, next);
-
-    expect(mockQuery).toHaveBeenCalledTimes(1); // pas d'UPDATE
-    expect(next).toHaveBeenCalledTimes(1);
   });
 });
 

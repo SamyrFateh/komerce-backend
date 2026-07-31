@@ -56,7 +56,7 @@ describe('notification internals', () => {
     expect(internals.formatAmount(null)).toBe('');
   });
 
-  test('selects payer and beneficiary recipients according to event semantics', () => {
+  test('selects the payer as sole recipient, regardless of event (Lot 3 : no more distinct beneficiary)', () => {
     const order = {
       tracking_phone: '+33600000001',
       recipient_phone: '+26900000002',
@@ -65,20 +65,19 @@ describe('notification internals', () => {
 
     expect(internals.pickRecipients(order, 'order_created')).toEqual([
       { phone: '+33600000001', role: 'payer' },
-      { phone: '+26900000002', role: 'beneficiary' },
     ]);
     expect(internals.pickRecipients(order, 'payment_confirmed')).toEqual([
       { phone: '+33600000001', role: 'payer' },
     ]);
     expect(internals.pickRecipients(order, 'order_delivered')).toEqual([
-      { phone: '+26900000002', role: 'beneficiary' },
+      { phone: '+33600000001', role: 'payer' },
     ]);
   });
 
-  test('deduplicates payer and beneficiary phones', () => {
+  test('falls back to phone_payer and ignores recipient_phone', () => {
     expect(internals.pickRecipients({
       phone_payer: '+26900000002',
-      recipient_phone: '+26900000002',
+      recipient_phone: '+26900000009',
     }, 'order_shipped')).toEqual([
       { phone: '+26900000002', role: 'payer' },
     ]);

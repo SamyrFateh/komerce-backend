@@ -7,7 +7,6 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/logger.js, utils/phone.js, utils/user-cache.js
- * @db-write      users
  * @db-read      revoked_tokens, users
  * @used-by       routes/orders/create.js, routes/payments-paypal.js, routes/shared-cart.js
  * @doctrine      resolve_before_behavior_change
@@ -24,7 +23,6 @@
  *   1. Si un token valide est présent (cookie kmrc_jwt ou Bearer) :
  *        - refuse (401 Session expirée) si le jti est révoqué
  *        - charge req.user depuis le cache, ou la DB si absent du cache
- *        - met à jour phone_beneficiary si un nouveau recipient_phone est fourni
  *        - refuse (401 identity_required) si le user n'existe pas en DB
  *   2. Sinon (pas de token, token invalide/expiré) → refuse strictement
  *      (401 identity_required)
@@ -96,7 +94,7 @@ async function authenticateOrCreateGuest(req, res, next) {
 
         if (!user) {
           const { rows } = await db.query(
-            `SELECT id, full_name, email, phone, phone_payer, phone_beneficiary, role, currency_pref
+            `SELECT id, full_name, email, phone, phone_payer, role, currency_pref
                FROM users WHERE id = $1`,
             [decoded.id]
           );
@@ -107,13 +105,6 @@ async function authenticateOrCreateGuest(req, res, next) {
         }
 
         if (user) {
-          // Mise à jour phone_beneficiary si nouveau bénéficiaire pour cette commande
-          const newBenef = normalizePhone(req.body?.recipient_phone);
-          if (newBenef && newBenef !== user.phone_beneficiary) {
-            await db.query(`UPDATE users SET phone_beneficiary = $1 WHERE id = $2`, [newBenef, user.id]);
-            user.phone_beneficiary = newBenef;
-            setCachedUser(user.id, user);
-          }
           req.user = user;
           return next();
         }

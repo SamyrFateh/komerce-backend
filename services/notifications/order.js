@@ -90,7 +90,6 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
          u.phone         AS user_phone,
          u.full_name     AS user_full_name,
          u.phone_payer,
-         u.phone_beneficiary,
          r.phone         AS recipient_phone,
          r.full_name     AS recipient_name
        FROM orders o

@@ -187,8 +187,6 @@ const orders = {
       relais_id:             uuid,
       payment_mode:          Joi.string().valid('stripe_eur', 'cash_relais', 'paypal_eur').required(),
       stripe_payment_intent: safeStr(200),
-      recipient_name:        safeStr(100),
-      recipient_phone:       phone,
       tracking_phone:        phone.allow(null, ''),
       confection_type:           Joi.string().valid(...CONFECTION_TYPES).default('aucun'),
       confection_instructions:   safeStr(1000),

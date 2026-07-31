@@ -111,67 +111,20 @@ function pickPhone(order, fallback) {
 }
 
 /**
- * Retourne la liste des téléphones qui doivent recevoir la notif selon l'événement.
- * 
- * Stratégie Komerce (payeur diaspora â‰  bénéficiaire Comores) :
- *   - order_created    → payeur + bénéficiaire (si différents) : les deux doivent savoir
- *   - payment_confirmed → payeur uniquement : seul lui a besoin de rassurance débit
- *   - order_shipped    → payeur + bénéficiaire : les deux suivent la progression
- *   - order_delivered  → bénéficiaire uniquement : c'est lui qui vient chercher
- *   - order_cancelled  → payeur uniquement : remboursement le concerne
- *   - abandoned_cart   → payeur uniquement : remarketing
- * 
- * Dédoublonne automatiquement : si payeur === bénéficiaire (achat local), on envoie 1 seule fois.
+ * Retourne la liste des téléphones qui doivent recevoir la notif.
+ *
+ * Lot 3 : l'acheteur (identité OTP vérifiée) est l'unique destinataire —
+ * il n'y a plus de bénéficiaire de retrait distinct à notifier séparément.
+ * Le paramètre `event` est conservé pour compatibilité d'appel (les call
+ * sites existants le passent toujours) mais n'influence plus le résultat.
  */
 function pickRecipients(order, event) {
-  // payeur : tracking_phone (prioritaire) > phone_payer (migration 040) > user_phone
-  // bénéficiaire : recipient_phone (via JOIN recipients r) > phone_beneficiary > user_phone si pas de recipient distinct
   const payer = order.tracking_phone
              || order.phone_payer
              || order.user_phone
              || null;
-  const benef = order.recipient_phone
-             || order.phone_beneficiary
-             || null;
 
-  const result = [];
-  const seen = new Set();
-  const add = (phone, role) => {
-    if (!phone) return;
-    if (seen.has(phone)) return;
-    seen.add(phone);
-    result.push({ phone, role });
-  };
-
-  switch (event) {
-    case 'order_created':
-    case 'order_shipped':
-      add(payer, 'payer');
-      add(benef, 'beneficiary');
-      break;
-
-    case 'payment_confirmed':
-    case 'order_cancelled':
-    case 'abandoned_cart':
-      add(payer, 'payer');
-      // Si pas de payeur distinct (achat local), on utilise le bénéficiaire
-      if (result.length === 0) add(benef, 'beneficiary');
-      break;
-
-    case 'order_delivered':
-    case 'order_collected':
-      add(benef, 'beneficiary');
-      // Fallback : si pas de bénéficiaire, on notifie le payeur
-      if (result.length === 0) add(payer, 'payer');
-      break;
-
-    default:
-      // Fallback générique : l'un ou l'autre
-      add(payer, 'payer');
-      if (result.length === 0) add(benef, 'beneficiary');
-  }
-
-  return result;
+  return payer ? [{ phone: payer, role: 'payer' }] : [];
 }
 
 

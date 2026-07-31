@@ -101,7 +101,7 @@ async function requireVerifiedIdentityForCheckout(req, res, next) {
     let user = userCache.get(decoded.id);
     if (!user) {
       const { rows } = await db.query(
-        `SELECT id, full_name, email, phone, phone_payer, phone_beneficiary, role, currency_pref
+        `SELECT id, full_name, email, phone, phone_payer, role, currency_pref
            FROM users WHERE id = $1`,
         [decoded.id]
       );

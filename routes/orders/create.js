@@ -70,8 +70,6 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       relais_id,
       payment_mode,
       stripe_payment_intent,
-      recipient_name,
-      recipient_phone,
 	  tracking_phone,
 
       confection_type = 'aucun',
@@ -141,8 +139,12 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     }
 
     let recipient_id = null;
-    const rName  = recipient_name  || req.user.full_name;
-    const rPhone = recipient_phone || req.user.phone;
+    // Lot 3 (checkout) : plus de « qui récupère ? » dans le formulaire — le
+    // backend n'accepte aucune identité de retrait alternative depuis le
+    // payload de création. Le compte acheteur (WhatsApp vérifié) est la
+    // seule source.
+    const rName  = req.user.full_name;
+    const rPhone = req.user.phone;
 
     if (rName && rPhone) {
       const { rows: [existingRc] } = await client.query(

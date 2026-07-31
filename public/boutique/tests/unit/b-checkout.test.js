@@ -28,10 +28,10 @@
  *   - checkoutCart (garde panier vide — le chemin succès appelle renderCheckout()
  *     en interne, cf. note de dette ci-dessous)
  *   - submitOrder (LE cœur argent de ce fichier) : toutes les validations
- *     (relais requis, bénéficiaire requis, doublon téléphone payeur/bénéficiaire,
- *     annulation OTP, garde anti double-clic), le chemin succès cash_relais
- *     bout-en-bout jusqu'à renderOrderSuccess, et le chemin erreur Stripe
- *     (carte non chargée).
+ *     (relais requis, annulation OTP, garde anti double-clic — Lot 3 : plus
+ *     de bénéficiaire de retrait distinct à valider), le chemin succès
+ *     cash_relais bout-en-bout jusqu'à renderOrderSuccess, et le chemin
+ *     erreur Stripe (carte non chargée).
  *   - renderOrderSuccess (construction DOM déléguée à buildOrderSuccessDOM,
  *     on vérifie le câblage des listeners métier : copier, fermer, suivre)
  *   - makeInput / makePhoneInput / makeIntlPhoneInput (délégation render/phone)
@@ -142,28 +142,6 @@ function resetDom() {
   dom.modalOverlay = document.createElement('div');
   document.body.appendChild(dom.orderModal);
   document.body.appendChild(wrapper);
-}
-
-function setBeneficiaryFields(name, phoneDigits, countryCode) {
-  const nameEl = document.createElement('input');
-  nameEl.id = 'of-beneficiary-name';
-  nameEl.value = name;
-  document.body.appendChild(nameEl);
-
-  const phoneEl = document.createElement('input');
-  phoneEl.id = 'of-beneficiary-phone';
-  phoneEl.value = phoneDigits;
-  document.body.appendChild(phoneEl);
-
-  if (countryCode) {
-    const countryEl = document.createElement('select');
-    countryEl.id = 'of-beneficiary-phone-country';
-    const opt = document.createElement('option');
-    opt.value = countryCode;
-    countryEl.appendChild(opt);
-    countryEl.value = countryCode;
-    document.body.appendChild(countryEl);
-  }
 }
 
 describe('b-checkout', () => {
@@ -341,38 +319,8 @@ describe('b-checkout', () => {
       });
     });
 
-    it('"quelqu\'un d\'autre récupère" sans nom → toast erreur', () => {
-      state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
-      setBeneficiaryFields('', '');
-      const btn = document.createElement('button');
-
-      return submitOrder(btn).then(() => {
-        expect(showToast).toHaveBeenCalledWith(
-          'Indiquez le nom de la personne qui récupère.', 'error'
-        );
-        expect(requireIdentity).not.toHaveBeenCalled();
-      });
-    });
-
-    it('"quelqu\'un d\'autre récupère" sans téléphone valide → toast erreur', () => {
-      state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
-      setBeneficiaryFields('Fatima', ''); // pas de select pays → readIntlPhoneValue = ''
-      const btn = document.createElement('button');
-
-      return submitOrder(btn).then(() => {
-        expect(showToast).toHaveBeenCalledWith(
-          'Indiquez un téléphone valide pour le bénéficiaire.', 'error'
-        );
-        expect(requireIdentity).not.toHaveBeenCalled();
-      });
-    });
-
     it('garde anti double-clic : busy=1 posé après résolution OTP → aucun apiPost déclenché', async () => {
       state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
-      const cbIsMe = document.createElement('input');
-      cbIsMe.id = 'cb-benf-is-me';
-      cbIsMe.checked = true;
-      document.body.appendChild(cbIsMe);
       requireIdentity.mockResolvedValue({ phone: '+269123456', full_name: 'Amina' });
       const btn = document.createElement('button');
       btn.dataset.busy = '1';
@@ -385,10 +333,6 @@ describe('b-checkout', () => {
 
     it('OTP annulé (requireIdentity résout null) → aucune commande créée, panier intact', async () => {
       state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
-      const cbIsMe = document.createElement('input');
-      cbIsMe.id = 'cb-benf-is-me';
-      cbIsMe.checked = true;
-      document.body.appendChild(cbIsMe);
       requireIdentity.mockResolvedValue(null);
       state.cart = [{ product: { id: 1 }, qty: 1 }];
       const btn = document.createElement('button');
@@ -399,33 +343,12 @@ describe('b-checkout', () => {
       expect(clearCart).not.toHaveBeenCalled();
       expect(state.cart).toHaveLength(1);
     });
-
-    it('doublon téléphone bénéficiaire = téléphone payeur OTP → bloque avec toast, réactive le bouton', async () => {
-      state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
-      setBeneficiaryFields('Fatima', '123456', '+269');
-      requireIdentity.mockResolvedValue({ phone: '+269123456', full_name: 'Amina' });
-      const btn = document.createElement('button');
-      btn.disabled = true;
-
-      await submitOrder(btn);
-
-      expect(showToast).toHaveBeenCalledWith(
-        'Le numéro de la personne qui récupère doit être différent du vôtre.', 'error'
-      );
-      expect(btn.disabled).toBe(false);
-      expect(btn.dataset.busy).toBe('0');
-      expect(apiPost).not.toHaveBeenCalled();
-    });
   });
 
   describe('submitOrder — chemin succès cash_relais', () => {
     it('crée la commande, vide le panier, affiche la confirmation', async () => {
       state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais', relayStatus: 'ready' };
       state.cart = [{ product: { id: 1 }, qty: 2 }];
-      const cbIsMe = document.createElement('input');
-      cbIsMe.id = 'cb-benf-is-me';
-      cbIsMe.checked = true;
-      document.body.appendChild(cbIsMe);
 
       requireIdentity.mockResolvedValue({ phone: '+269123456', full_name: 'Amina' });
       apiPost.mockResolvedValue({ order: { reference: 'CMD-001', id: 55 } });
@@ -433,13 +356,17 @@ describe('b-checkout', () => {
       const btn = document.createElement('button');
       await submitOrder(btn);
 
+      // Lot 3 : plus de recipient_name/recipient_phone envoyés — l'identité de
+      // retrait est déduite côté backend depuis le compte OTP (tracking_phone).
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
         items: [{ product_id: '1', quantity: 2, confection_type: 'aucun', variant_combo: null, requested_transport_rail: null }],
         relais_id: 7,
-        recipient_name: 'Amina',
-        recipient_phone: '+269123456',
         payment_mode: 'cash_relais',
+        tracking_phone: '+269123456',
       }));
+      const sentPayload = apiPost.mock.calls[0][1];
+      expect(sentPayload).not.toHaveProperty('recipient_name');
+      expect(sentPayload).not.toHaveProperty('recipient_phone');
       expect(clearCart).toHaveBeenCalled();
       expect(showToast).toHaveBeenCalledWith('Commande confirmée !', 'success');
       expect(btn.dataset.busy).toBe('0');
@@ -451,10 +378,6 @@ describe('b-checkout', () => {
     it('erreur API → toast erreur, bouton réactivé, busy remis à 0', async () => {
       state.orderData = { selectedRelaisId: 7, payment_mode: 'cash_relais', relayStatus: 'ready' };
       state.cart = [{ product: { id: 1 }, qty: 1 }];
-      const cbIsMe = document.createElement('input');
-      cbIsMe.id = 'cb-benf-is-me';
-      cbIsMe.checked = true;
-      document.body.appendChild(cbIsMe);
 
       requireIdentity.mockResolvedValue({ phone: '+269123456', full_name: 'Amina' });
       apiPost.mockRejectedValue(new Error('Relais complet'));
@@ -575,7 +498,8 @@ describe('b-checkout', () => {
       expect(dom.orderModal.classList.contains('open')).toBe(true);
       expect(document.body.classList.contains('cart-open')).toBe(true);
       // Le rendu réel a bien tourné : structure du formulaire présente.
-      expect(dom.orderBody.textContent).toContain('QUI RÉCUPÈRE');
+      expect(dom.orderBody.textContent).toContain('Retrait sécurisé');
+      expect(dom.orderBody.textContent).not.toContain('QUI RÉCUPÈRE');
     });
 
     it('modale produit ouverte au moment du checkout → fermée en premier (bus modal:close)', async () => {
@@ -668,35 +592,24 @@ describe('b-checkout', () => {
       expect(dom.orderBody.querySelector('#ck-guest-hint')).toBeNull();
     });
 
-    it('bascule "Quelqu\'un d\'autre" → révèle les champs bénéficiaire, masque l\'action "Changer" de la carte identité', async () => {
+    it('affiche le bloc statique « Retrait sécurisé » (pas de toggle, pas de champ bénéficiaire)', async () => {
       getCurrentIdentity.mockReturnValue({ full_name: 'Amina', phone: '+269123456' });
       renderCheckout();
       await flush();
 
-      let otherBtn = dom.orderBody.querySelector('.ck-recip-seg button[data-me="0"]');
-      let fields = dom.orderBody.querySelector('.ck-recip-fields');
-      expect(fields.hidden).toBe(true);
+      const notice = dom.orderBody.querySelector('.ck-secure-pickup-notice');
+      expect(notice).not.toBeNull();
+      expect(notice.textContent).toContain('Retrait sécurisé');
+      expect(notice.textContent).toContain('WhatsApp vérifié');
+      expect(dom.orderBody.querySelector('.ck-recip-seg')).toBeNull();
+      expect(dom.orderBody.querySelector('.ck-recip-fields')).toBeNull();
+      expect(dom.orderBody.querySelector('#of-beneficiary-name')).toBeNull();
+      expect(dom.orderBody.querySelector('#of-beneficiary-phone')).toBeNull();
 
-      otherBtn.click();
-
-      expect(fields.hidden).toBe(false);
-      let idCard = dom.orderBody.querySelector('#ck-identity-recap');
-      expect(idCard.querySelector('.k-ck-id-change').hidden).toBe(true);
-    });
-
-    it('retour à "Moi" → re-masque les champs bénéficiaire', async () => {
-      getCurrentIdentity.mockReturnValue({ full_name: 'Amina', phone: '+269123456' });
-      renderCheckout();
-      await flush();
-
-      let meBtn = dom.orderBody.querySelector('.ck-recip-seg button[data-me="1"]');
-      let otherBtn = dom.orderBody.querySelector('.ck-recip-seg button[data-me="0"]');
-      let fields = dom.orderBody.querySelector('.ck-recip-fields');
-
-      otherBtn.click();
-      expect(fields.hidden).toBe(false);
-      meBtn.click();
-      expect(fields.hidden).toBe(true);
+      // La carte identité garde ses actions "Changer" / "Ce n'est pas vous ?"
+      // actives en permanence — plus de bascule Moi/Quelqu'un d'autre qui les masque.
+      const idCard = dom.orderBody.querySelector('#ck-identity-recap');
+      expect(idCard.querySelector('.k-ck-id-change').hidden).toBe(false);
     });
   });
 
@@ -928,25 +841,6 @@ describe('b-checkout', () => {
       return renderPayPalButton.mock.calls[0][1];
     }
 
-    // NOTE : makeInput (of-beneficiary-name) délègue au mock de
-    // b-checkout-render.js et makeIntlPhoneInput (of-beneficiary-phone) au
-    // mock de b-phone.js — aucun des deux ne crée un input réel avec l'id
-    // attendu (même pattern que setBeneficiaryFields plus haut dans ce
-    // fichier, utilisé par les tests submitOrder). On les injecte donc
-    // nous-mêmes, après activation PayPal pour éviter tout conflit d'ordre
-    // avec le rendu de renderCheckout().
-    function fillRealBeneficiaryFields(name, phone) {
-      document.querySelectorAll('#of-beneficiary-name, #of-beneficiary-phone').forEach(el => el.remove());
-      const nameEl = document.createElement('input');
-      nameEl.id = 'of-beneficiary-name';
-      nameEl.value = name;
-      document.body.appendChild(nameEl);
-      const phoneEl = document.createElement('input');
-      phoneEl.id = 'of-beneficiary-phone';
-      phoneEl.value = phone;
-      document.body.appendChild(phoneEl);
-    }
-
     beforeEach(() => {
       state.orderData = {};
       state.pendingPaypalOrderRef = null;
@@ -960,7 +854,6 @@ describe('b-checkout', () => {
     it("validateBeforeClick : pas d'identité (téléphone) → toast erreur, false", async () => {
       getCurrentIdentity.mockReturnValue(null);
       const { validateBeforeClick } = await activatePaypalAndGetCallbacks();
-      fillRealBeneficiaryFields('Fatima', '3211234');
 
       const ok = await validateBeforeClick();
 
@@ -972,7 +865,6 @@ describe('b-checkout', () => {
       getCurrentIdentity.mockReturnValue({ full_name: 'Amina', phone: '+269123456' });
       state.orderData.selectedRelaisId = null;
       const { validateBeforeClick } = await activatePaypalAndGetCallbacks();
-      fillRealBeneficiaryFields('Fatima', '3211234');
 
       const ok = await validateBeforeClick();
 
@@ -980,23 +872,10 @@ describe('b-checkout', () => {
       expect(showToast).toHaveBeenCalledWith(expect.stringContaining('relais'), 'error');
     });
 
-    it('validateBeforeClick : identité + relais ok mais bénéficiaire incomplet → toast erreur, false', async () => {
+    it('validateBeforeClick : identité + relais ok → true, aucun toast (Lot 3 : plus de validation bénéficiaire)', async () => {
       getCurrentIdentity.mockReturnValue({ full_name: 'Amina', phone: '+269123456' });
       state.orderData.selectedRelaisId = 1;
       const { validateBeforeClick } = await activatePaypalAndGetCallbacks();
-      fillRealBeneficiaryFields('', '3211234');
-
-      const ok = await validateBeforeClick();
-
-      expect(ok).toBe(false);
-      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('bénéficiaire'), 'error');
-    });
-
-    it('validateBeforeClick : tout est renseigné → true, aucun toast', async () => {
-      getCurrentIdentity.mockReturnValue({ full_name: 'Amina', phone: '+269123456' });
-      state.orderData.selectedRelaisId = 1;
-      const { validateBeforeClick } = await activatePaypalAndGetCallbacks();
-      fillRealBeneficiaryFields('Fatima', '3211234');
 
       const ok = await validateBeforeClick();
 
@@ -1004,26 +883,26 @@ describe('b-checkout', () => {
       expect(showToast).not.toHaveBeenCalled();
     });
 
-    it('prepareKomerceOrder : crée la commande Komerce (payment_mode=paypal_eur), mémorise la référence pending', async () => {
+    it("prepareKomerceOrder : crée la commande Komerce (payment_mode=paypal_eur) sans identité de retrait alternative, mémorise la référence pending", async () => {
       getCurrentIdentity.mockReturnValue({ full_name: 'Amina', phone: '+269123456' });
       state.orderData.selectedRelaisId = 7;
       state.orderData.use_wallet = true;
       state.cart = [{ product: { id: 42 }, qty: 2 }];
       apiPost.mockResolvedValueOnce({ order: { reference: 'CMD-PP-001', id: 99 } });
       const { prepareKomerceOrder } = await activatePaypalAndGetCallbacks();
-      fillRealBeneficiaryFields('Fatima', '3211234');
 
       const result = await prepareKomerceOrder();
 
       expect(apiPost).toHaveBeenCalledWith('/api/orders', expect.objectContaining({
         items: [{ product_id: '42', quantity: 2, confection_type: 'aucun', variant_combo: null, requested_transport_rail: null }],
         relais_id: 7,
-        recipient_name: 'Fatima',
-        recipient_phone: '3211234',
         payment_mode: 'paypal_eur',
         use_wallet: true,
         tracking_phone: '+269123456',
       }), expect.objectContaining({ idempotencyKey: 'idem-key-1' }));
+      const [, sentPayload] = apiPost.mock.calls[0];
+      expect(sentPayload).not.toHaveProperty('recipient_name');
+      expect(sentPayload).not.toHaveProperty('recipient_phone');
       expect(result).toEqual({ order_reference: 'CMD-PP-001', order_id: 99 });
       expect(state.pendingPaypalOrderRef).toBe('CMD-PP-001');
       expect(state.lastApiResult).toEqual({ order: { reference: 'CMD-PP-001', id: 99 } });

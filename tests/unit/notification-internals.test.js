@@ -48,31 +48,17 @@ describe('notifications/internals', () => {
     expect(internals.pickPhone({}, [])).toBeNull(); // fallback[0] undefined sur tableau vide
   });
 
-  it('pickRecipients dedoublonne payeur et beneficiaire selon levenement', () => {
+  it("pickRecipients renvoie le payeur comme unique destinataire, quel que soit l'événement (Lot 3 : plus de bénéficiaire distinct)", () => {
     const order = { tracking_phone: '+payer', recipient_phone: '+benef', user_phone: '+user' };
 
-    expect(internals.pickRecipients(order, 'order_created')).toEqual([
-      { phone: '+payer', role: 'payer' },
-      { phone: '+benef', role: 'beneficiary' },
-    ]);
+    expect(internals.pickRecipients(order, 'order_created')).toEqual([{ phone: '+payer', role: 'payer' }]);
     expect(internals.pickRecipients(order, 'payment_confirmed')).toEqual([{ phone: '+payer', role: 'payer' }]);
-    expect(internals.pickRecipients(order, 'order_delivered')).toEqual([{ phone: '+benef', role: 'beneficiary' }]);
-    expect(internals.pickRecipients({ tracking_phone: '+same', recipient_phone: '+same' }, 'order_shipped')).toEqual([{ phone: '+same', role: 'payer' }]);
+    expect(internals.pickRecipients(order, 'order_delivered')).toEqual([{ phone: '+payer', role: 'payer' }]);
+    expect(internals.pickRecipients(order, 'order_collected')).toEqual([{ phone: '+payer', role: 'payer' }]);
   });
 
-  it('pickRecipients fallback beneficiaire/payeur selon cas', () => {
-    expect(internals.pickRecipients({ recipient_phone: '+benef' }, 'payment_confirmed')).toEqual([{ phone: '+benef', role: 'beneficiary' }]);
-    expect(internals.pickRecipients({ tracking_phone: '+payer' }, 'order_delivered')).toEqual([{ phone: '+payer', role: 'payer' }]);
-    expect(internals.pickRecipients({ phone_payer: '+payer' }, 'unknown_event')).toEqual([{ phone: '+payer', role: 'payer' }]);
-  });
-
-  it("pickRecipients (event 'default') replie sur le bénéficiaire si aucun payeur n'existe", () => {
-    expect(internals.pickRecipients({ recipient_phone: '+benef' }, 'unknown_event')).toEqual([{ phone: '+benef', role: 'beneficiary' }]);
-  });
-
-  it('pickRecipients (order_collected) suit le même chemin que order_delivered', () => {
-    expect(internals.pickRecipients({ recipient_phone: '+benef' }, 'order_collected')).toEqual([{ phone: '+benef', role: 'beneficiary' }]);
-    expect(internals.pickRecipients({ tracking_phone: '+payer' }, 'order_collected')).toEqual([{ phone: '+payer', role: 'payer' }]);
+  it('pickRecipients retombe sur phone_payer et ignore recipient_phone', () => {
+    expect(internals.pickRecipients({ phone_payer: '+payer', recipient_phone: '+benef' }, 'unknown_event')).toEqual([{ phone: '+payer', role: 'payer' }]);
   });
 
   it('logNotification insere un log avec detail stringifie', async () => {

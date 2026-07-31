@@ -14,7 +14,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 791
-- Edges: 4419
+- Edges: 4418
 - DB tables: 116
 - Doctrines: 161
 - Impact areas: 130
@@ -543,10 +543,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared_carts: 11 écrivains directs — routes/shared-cart-from-order.js, services/cancel-shared-cart-with-refunds.js, services/shared-cart-cash-service.js, services/shared-cart-contributions.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-financial-guard.js, services/shared-cart-items-service.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js, services/shared-cart-reads.js
 - notification_log: 9 écrivains directs — services/notification-service.js, services/notifications/internals.js, services/notifications/loyalty.js, services/notifications/misc.js, services/notifications/notification-service.js, services/notifications/order.js, services/notifications/otp-auth.js, services/notifications/parcel.js, services/simulator/state-advancer.js
 - order_status_history: 8 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, routes/orders/create.js, services/order-status-machine.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js
-- users: 8 écrivains directs — bootstrap/startup-migrations.js, middleware/auth-guest.js, routes/admin/system.js, routes/admin/users.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/loyalty-service.js
 - incidents: 7 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/ops-api.js, services/alert-engine.js, services/incident-service.js, services/reconciliation-service.js, services/scan-engine.js
 - order_items: 7 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/orders/create.js, services/parcel-operations.js, services/scan-engine.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js
 - shared_cart_contributions: 7 écrivains directs — services/cancel-shared-cart-with-refunds.js, services/shared-cart-cash-service.js, services/shared-cart-contributions.js, services/shared-cart-engine.js, services/shared-cart-financial-guard.js, services/shared-cart-queries.js, services/shared-cart-refund-queue.js
+- users: 7 écrivains directs — bootstrap/startup-migrations.js, routes/admin/system.js, routes/admin/users.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/loyalty-service.js
 - collective_workspace_events: 6 écrivains directs — services/collective-workspace-contributions.js, services/collective-workspace-creation.js, services/collective-workspace-engine.js, services/collective-workspace-internals.js, services/collective-workspace-items.js, services/collective-workspace-lifecycle.js
 - scan_events: 6 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/transitaire-api.js, services/hub-operations.js, services/parcel-auto-create-service.js, services/scan-engine.js
 - basket_items: 5 écrivains directs — routes/admin/system.js, routes/admin/users.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js

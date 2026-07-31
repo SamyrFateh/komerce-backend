@@ -18930,10 +18930,6 @@
               },
               {
                 "sourceFileId": "services/scan-operations.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/scan-operations.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -18955,6 +18951,10 @@
               {
                 "sourceFileId": "services/pickup-secret-service.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/pickup-secret-service.js",
+                "targetFile": "utils/alerts.js"
               },
               {
                 "sourceFileId": "services/pickup-secret-service.js",

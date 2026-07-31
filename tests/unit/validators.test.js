@@ -39,8 +39,6 @@ describe('orders.create', () => {
       items: [{ product_id: '00000000-0000-0000-0000-000000000001', quantity: 2 }],
       relais_id: '00000000-0000-0000-0000-000000000002',
       payment_mode: 'cash_relais',
-      recipient_name: 'Ali Mohamed',
-      recipient_phone: '+2693210001',
     };
     const { error } = validate(schema, valid);
     expect(error).toBeUndefined();
@@ -52,8 +50,6 @@ describe('orders.create', () => {
       items: [{ product_id: '00000000-0000-0000-0000-000000000001', quantity: 1 }],
       relais_id: '00000000-0000-0000-0000-000000000002',
       payment_mode: 'paypal_eur',
-      recipient_name: 'Ali Mohamed',
-      recipient_phone: '+2693210001',
     };
     const { error } = validate(schema, valid);
     expect(error).toBeUndefined();
