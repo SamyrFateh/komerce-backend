@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-07-31T10:16:59.922Z",
+  "generatedAt": "2026-07-31T13:51:14.943Z",
   "sources": {
     "backend": {
-      "nodes": 791
+      "nodes": 793
     },
     "boutique": {
-      "modules": 74,
+      "modules": 75,
       "endpoints": 52
     },
     "dashboards": {
@@ -71,6 +71,7 @@
     "/api/wallet": {
       "boutique": [
         "b-checkout",
+        "b-komerce",
         "b-wallet"
       ],
       "dashboards": [],
@@ -138,6 +139,7 @@
     "/api/auth/me": {
       "boutique": [
         "b-greeting",
+        "b-komerce",
         "komerce-api"
       ],
       "dashboards": [],
@@ -1650,6 +1652,7 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
         "b-paypal",
         "b-tracking",
         "b-wallet",
@@ -1688,6 +1691,7 @@
         "b-checkout",
         "b-greeting",
         "b-identity",
+        "b-komerce",
         "b-tracking",
         "b-wallet",
         "komerce-api"
@@ -1707,6 +1711,7 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
         "b-wallet"
       ],
       "dashboards": []
@@ -1717,6 +1722,7 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
         "b-wallet"
       ],
       "dashboards": []
@@ -1727,6 +1733,7 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
         "b-wallet"
       ],
       "dashboards": []
@@ -1737,6 +1744,7 @@
       ],
       "boutique": [
         "b-checkout",
+        "b-komerce",
         "b-wallet"
       ],
       "dashboards": []
@@ -1845,6 +1853,7 @@
       ],
       "boutique": [
         "b-greeting",
+        "b-komerce",
         "komerce-api"
       ],
       "dashboards": []
@@ -1855,6 +1864,7 @@
       ],
       "boutique": [
         "b-greeting",
+        "b-komerce",
         "komerce-api"
       ],
       "dashboards": []

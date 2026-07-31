@@ -160,12 +160,15 @@ router.get('/me', authenticate, async (req, res, next) => {
 
 router.put('/me', authenticate, validate(auth.updateProfile), async (req, res, next) => {
   try {
-    const { full_name, phone, currency_pref } = req.body;
+    // Lot 4 §3.4 — phone n'est plus accepté par le schéma (validators/index.js) :
+    // le WhatsApp vérifié se modifie uniquement via le parcours OTP existant,
+    // jamais par ce endpoint générique. On ne le lit ni ne l'écrit ici.
+    const { full_name, currency_pref } = req.body;
     const { rows: [user] } = await db.query(
-      `UPDATE users SET full_name = COALESCE($1, full_name), phone = COALESCE($2, phone),
-       currency_pref = COALESCE($3, currency_pref), updated_at = NOW()
-       WHERE id = $4 RETURNING id, full_name, email, phone, role, country, currency_pref`,
-      [full_name, phone, currency_pref, req.user.id]
+      `UPDATE users SET full_name = COALESCE($1, full_name),
+       currency_pref = COALESCE($2, currency_pref), updated_at = NOW()
+       WHERE id = $3 RETURNING id, full_name, email, phone, role, country, currency_pref`,
+      [full_name, currency_pref, req.user.id]
     );
     res.json(user);
   } catch (err) {

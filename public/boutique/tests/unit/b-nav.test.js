@@ -12,11 +12,16 @@
  * — jamais importé pour de vrai nulle part.
  *
  * Toutes les dépendances de vues (b-cart, b-checkout, b-catalog, b-favs,
- * b-tracking, b-wallet, b-group-view, b-pager, b-scroll-owner,
+ * b-tracking, b-komerce, b-group-view, b-pager, b-scroll-owner,
  * b-cart-core) sont mockées — hors périmètre, couvertes par leurs propres
  * suites. Seuls b-bus.js et b-store.js sont réels (état/bus partagés,
  * comme dans les autres suites boutique). b-utils.js (apiGet) réel aussi,
  * via mockWindowK() du kit, pour loadRelais().
+ *
+ * Lot 4 (2026-07-31) : l'ancien onglet wallet autonome a disparu ; b-nav.js
+ * route désormais 'komerce' vers b-komerce.js (renderKomerceView), qui
+ * monte lui-même b-wallet.js dans son propre panneau. b-wallet.js n'est
+ * donc plus une dépendance directe de b-nav.js.
  */
 
 jest.mock('../../js/b-cart-core.js', () => ({ showToast: jest.fn() }));
@@ -38,7 +43,7 @@ jest.mock('../../js/b-catalog.js', () => ({
 }));
 jest.mock('../../js/b-favs.js', () => ({ renderFavView: jest.fn() }));
 jest.mock('../../js/b-tracking.js', () => ({ renderTrackView: jest.fn() }));
-jest.mock('../../js/b-wallet.js', () => ({ renderWalletView: jest.fn() }));
+jest.mock('../../js/b-komerce.js', () => ({ renderKomerceView: jest.fn() }));
 jest.mock('../../js/b-group-view.js', () => ({
   renderGroupView: jest.fn(),
   detectParticipantToken: jest.fn(),
@@ -55,7 +60,7 @@ const { checkoutCart, closeOrderModal } = require('../../js/b-checkout.js');
 const { renderGrid } = require('../../js/b-catalog.js');
 const { renderFavView } = require('../../js/b-favs.js');
 const { renderTrackView } = require('../../js/b-tracking.js');
-const { renderWalletView } = require('../../js/b-wallet.js');
+const { renderKomerceView } = require('../../js/b-komerce.js');
 const { renderGroupView, detectParticipantToken, stopPolling } = require('../../js/b-group-view.js');
 const { destroyMobilePager } = require('../../js/b-pager.js');
 const { scrollPageToTop } = require('../../js/b-scroll-owner.js');
@@ -206,7 +211,7 @@ describe('switchView', () => {
   function mountViews() {
     mountFixture(
       '<div id="k-catalog-section"></div><div id="k-fav-view"></div><div id="k-track-view"></div>' +
-      '<div id="k-group-view"></div><div id="k-wallet-view"></div><div id="k-hero-fixed-wrap"></div>' +
+      '<div id="k-group-view"></div><div id="k-komerce-view"></div><div id="k-hero-fixed-wrap"></div>' +
       '<div id="k-promos-section"></div><div id="k-cart-overlay" class="open"></div>' +
       '<div id="k-cart-drawer" class="open"></div>'
     );
@@ -277,6 +282,20 @@ describe('switchView', () => {
     switchView('track');
     expect(scrollPageToTop).toHaveBeenCalledWith('smooth');
   });
+
+  test('Lot 4 : bascule vers komerce -> body.k-view-komerce + #k-komerce-view.show', () => {
+    mountViews();
+    switchView('komerce');
+    expect(document.body.classList.contains('k-view-komerce')).toBe(true);
+    expect(document.getElementById('k-komerce-view').classList.contains('show')).toBe(true);
+  });
+
+  test('Lot 4 : quitter komerce retire la classe show', () => {
+    mountViews();
+    switchView('komerce');
+    switchView('fav');
+    expect(document.getElementById('k-komerce-view').classList.contains('show')).toBe(false);
+  });
 });
 
 describe('setupBnav', () => {
@@ -286,7 +305,7 @@ describe('setupBnav', () => {
       '<button class="k-bnav-item" data-tab="fav"></button>' +
       '<button class="k-bnav-item" data-tab="track"></button>' +
       '<button class="k-bnav-item" data-tab="group"></button>' +
-      '<button class="k-bnav-item" data-tab="wallet"></button>' +
+      '<button class="k-bnav-item" data-tab="komerce"></button>' +
       '<button class="k-bnav-item" data-tab="shop"></button>'
     );
   }
@@ -320,11 +339,11 @@ describe('setupBnav', () => {
     expect(renderGroupView).toHaveBeenCalled();
   });
 
-  test('tab=wallet -> renderWalletView()', () => {
+  test('tab=komerce -> renderKomerceView()', () => {
     mountNavButtons();
     setupBnav();
-    document.querySelector('[data-tab="wallet"]').click();
-    expect(renderWalletView).toHaveBeenCalled();
+    document.querySelector('[data-tab="komerce"]').click();
+    expect(renderKomerceView).toHaveBeenCalled();
   });
 
   test('active la classe "active" uniquement sur le bouton cliqué', () => {

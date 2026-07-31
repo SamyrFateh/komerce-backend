@@ -1,14 +1,14 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-31T10:16:59.922Z.
+> Régénéré le 2026-07-31T13:51:14.943Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
 ## Sources cousues
 
-- Backend : **791** nœuds · Contrat : **438** endpoints
-- Boutique : **74** modules, 52 endpoints
+- Backend : **793** nœuds · Contrat : **438** endpoints
+- Boutique : **75** modules, 52 endpoints
 - Dashboards : **41** modules, 112 arêtes d'appel
 
 ## Synthèse des coutures
@@ -33,7 +33,7 @@
 | `invoices` | 2 | 1 | 1 |
 | `order_items` | 6 | 3 | 4 |
 | `order_status_history` | 1 | 3 | 2 |
-| `orders` | 19 | 5 | 13 |
+| `orders` | 19 | 6 | 13 |
 | `parcel_items` | 4 | 1 | 3 |
 | `parcels` | 10 | 2 | 10 |
 | `product_skus` | 3 | 3 | 5 |
@@ -42,7 +42,7 @@
 | `recipients` | 1 | 3 | 2 |
 | `relais` | 9 | 4 | 8 |
 | `scan_events` | 3 | 1 | 3 |
-| `users` | 10 | 6 | 6 |
+| `users` | 10 | 7 | 6 |
 
 ## 4. Carte des coutures (partagés + fantômes)
 

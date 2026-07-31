@@ -253,6 +253,18 @@ export function apiPost(path, body, options) {
   const retries = Number.isFinite(opts.retries) ? opts.retries : 2;
   return window.K.request(path, 'POST', body || null, retries, opts);
 }
+/**
+ * PUT via la couche centrale K.request.
+ * Lot 4 (Mon Komerce) : nécessaire pour PUT /api/auth/me (Mes informations,
+ * Mes préférences). Par défaut retries: 0 — une requête PUT mute un état
+ * serveur, on ne la rejoue pas silencieusement comme un GET.
+ */
+export function apiPut(path, body, options) {
+  _assertApi();
+  const opts = options || {};
+  const retries = Number.isFinite(opts.retries) ? opts.retries : 0;
+  return window.K.request(path, 'PUT', body || null, retries, opts);
+}
 
 /* ── COMPAT LEGACY window.KUtils ─────────────────────────── */
 // Conservé pendant la migration pour tout code qui consomme window.KUtils

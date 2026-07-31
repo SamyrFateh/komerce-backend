@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        view_requests, bus_events, drawer_state, scroll_state, relais_data
  * @outputs       active_view, drawer_state, infinite_scroll, relais_list
- * @depends       b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-wallet.js, b-group-view.js, b-pager.js, b-scroll-owner.js
+ * @depends       b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-komerce.js, b-group-view.js, b-pager.js, b-scroll-owner.js
  * @used-by       boutique.js
  * @doctrine      navigation_sans_friction, mobile_desktop_coherence
  * @impact-areas  boutique-navigation, view-switching, drawer, infinite-scroll
@@ -30,7 +30,7 @@ import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
 import { renderTrackView }               from './b-tracking.js';
-import { renderWalletView }              from './b-wallet.js';
+import { renderKomerceView }             from './b-komerce.js';
 import { renderGroupView, detectParticipantToken, stopPolling } from './b-group-view.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
@@ -164,23 +164,23 @@ export function switchView(tab) {
     stopPolling();
   }
 
-  document.body.classList.remove('k-view-shop', 'k-view-fav', 'k-view-track', 'k-view-group', 'k-view-wallet');
+  document.body.classList.remove('k-view-shop', 'k-view-fav', 'k-view-track', 'k-view-group', 'k-view-komerce');
   document.body.classList.add('k-view-' + tab);
-  const catalog    = document.getElementById('k-catalog-section');
-  const favView    = document.getElementById('k-fav-view');
-  const trackView  = document.getElementById('k-track-view');
-  const groupView  = document.getElementById('k-group-view');
-  const walletView = document.getElementById('k-wallet-view');
-  const heroWrap   = document.getElementById('k-hero-fixed-wrap');
-  const pageScroll = dom.pageScroll;
-  const promoSec   = document.getElementById('k-promos-section');
-  if (catalog)   catalog.classList.toggle('u-hidden', tab !== 'shop');
-  if (favView)   favView.classList.toggle('show', tab === 'fav');
-  if (trackView) trackView.classList.toggle('show', tab === 'track');
-  if (groupView) groupView.classList.toggle('show', tab === 'group');
-  if (walletView) walletView.classList.toggle('show', tab === 'wallet');
-  if (promoSec)  promoSec.classList.toggle('u-hidden', tab !== 'shop');
-  if (heroWrap)  heroWrap.classList.toggle('u-hidden', tab !== 'shop');
+  const catalog     = document.getElementById('k-catalog-section');
+  const favView     = document.getElementById('k-fav-view');
+  const trackView   = document.getElementById('k-track-view');
+  const groupView   = document.getElementById('k-group-view');
+  const komerceView = document.getElementById('k-komerce-view');
+  const heroWrap    = document.getElementById('k-hero-fixed-wrap');
+  const pageScroll  = dom.pageScroll;
+  const promoSec    = document.getElementById('k-promos-section');
+  if (catalog)     catalog.classList.toggle('u-hidden', tab !== 'shop');
+  if (favView)     favView.classList.toggle('show', tab === 'fav');
+  if (trackView)   trackView.classList.toggle('show', tab === 'track');
+  if (groupView)   groupView.classList.toggle('show', tab === 'group');
+  if (komerceView) komerceView.classList.toggle('show', tab === 'komerce');
+  if (promoSec)    promoSec.classList.toggle('u-hidden', tab !== 'shop');
+  if (heroWrap)    heroWrap.classList.toggle('u-hidden', tab !== 'shop');
 
   // Notifier les modules desktop (sidebar, merch cards, promo strip)
   bus.emit('view:changed', tab);
@@ -226,6 +226,10 @@ export function switchView(tab) {
 // esprit qu'ARCH-1 (pill/mini-cart via bus.on('cart:update')).
 bus.on('nav:goto-track', () => { renderTrackView(); switchView('track'); });
 
+// Lot 4 — lien discret checkout → Mon Komerce > Mon wallet (§5 : le checkout
+// ne devient jamais l'écran de gestion du wallet, il ne fait que pointer).
+bus.on('nav:goto-komerce-wallet', () => { renderKomerceView('wallet'); switchView('komerce'); });
+
 /**
  * Branche la bottom nav mobile + les boutons nav desktop.
  */
@@ -240,7 +244,7 @@ export function setupBnav() {
       if (tab === 'fav')   { renderFavView(); switchView('fav'); return; }
       if (tab === 'track') { renderTrackView(); switchView('track'); return; }
       if (tab === 'group') { renderGroupView(); switchView('group'); return; }
-      if (tab === 'wallet') { renderWalletView(); switchView('wallet'); return; }
+      if (tab === 'komerce') { renderKomerceView(); switchView('komerce'); return; }
       switchView('shop');
     });
   });
@@ -283,8 +287,13 @@ function handleTabDeepLink() {
     const tab = params.get('tab');
     if (!tab || tab === 'shop') return;
 
-    const validTabs = ['track', 'group', 'fav', 'wallet'];
+    // 'wallet' : redirection temporaire (Lot 4 §6) — l'ancien onglet wallet
+    // autonome a disparu, tout lien ?tab=wallet encore actif ouvre désormais
+    // Mon Komerce > Mon wallet. À retirer si aucun consommateur réel ne
+    // justifie plus cette redirection.
+    const validTabs = ['track', 'group', 'fav', 'komerce', 'wallet'];
     if (!validTabs.includes(tab)) return;
+    const resolvedTab = tab === 'wallet' ? 'komerce' : tab;
 
     // Nettoyer ?tab= de l'URL
     params.delete('tab');
@@ -294,13 +303,13 @@ function handleTabDeepLink() {
 
     // Activer l'onglet
     document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
-      i.classList.toggle('active', i.dataset.tab === tab);
+      i.classList.toggle('active', i.dataset.tab === resolvedTab);
     });
 
-    if (tab === 'fav')    { renderFavView(); switchView('fav'); }
-    if (tab === 'track')  { renderTrackView(); switchView('track'); }
-    if (tab === 'group')  { renderGroupView(); switchView('group'); }
-    if (tab === 'wallet') { renderWalletView(); switchView('wallet'); }
+    if (resolvedTab === 'fav')     { renderFavView(); switchView('fav'); }
+    if (resolvedTab === 'track')   { renderTrackView(); switchView('track'); }
+    if (resolvedTab === 'group')   { renderGroupView(); switchView('group'); }
+    if (resolvedTab === 'komerce') { renderKomerceView(tab === 'wallet' ? 'wallet' : undefined); switchView('komerce'); }
   } catch (_) {}
 }
 

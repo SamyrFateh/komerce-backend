@@ -1,0 +1,154 @@
+/**
+ * @komerce-arch-lite
+ * @role          komerce-view-styles
+ * @domain        account
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-komerce.js
+ * @purpose       Styles de l'espace Mon Komerce (shell + 5 sous-rubriques)
+ * @impact-areas  account, wallet, boutique-navigation
+ * @version       2026-07
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — komerce.css
+   Mon Komerce — espace personnel du client (Lot 4).
+   Mobile-first, tokens.css requis. Même pattern que .k-fav-view /
+   .k-track-view / .k-wallet-view pour le container racine.
+   ═══════════════════════════════════════════════════════════════ */
+
+.k-komerce-view { display: none; padding: 12px 10px calc(var(--bnav-h) + 96px); min-height: 60vh; }
+.k-komerce-view.show { display: block; }
+
+/* ── Header ──────────────────────────────────────────────────── */
+.k-kmc-header { padding: 4px 2px 14px; }
+.k-kmc-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem; font-weight: 700;
+  color: var(--text); margin: 0;
+}
+
+/* ── Sous-navigation ─────────────────────────────────────────── */
+.k-kmc-subnav {
+  display: flex; gap: 6px; overflow-x: auto;
+  padding-bottom: 12px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--sand-dark);
+  scrollbar-width: none;
+}
+.k-kmc-subnav::-webkit-scrollbar { display: none; }
+.k-kmc-subnav-item {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1.5px solid var(--sand-dark);
+  border-radius: 100px;
+  background: var(--white);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: .8rem; font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.k-kmc-subnav-item:hover { border-color: var(--ocean); }
+.k-kmc-subnav-item.active {
+  background: var(--ocean-dark-deep);
+  border-color: var(--ocean-dark-deep);
+  color: var(--white);
+}
+
+.k-kmc-panel { min-height: 40vh; }
+
+/* ── Loading (même pattern que k-wlt-loading) ──────────────────── */
+.k-kmc-loading { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.k-kmc-spin {
+  width: 28px; height: 28px; margin: 0 auto 12px;
+  border: 3px solid var(--sand-dark); border-top-color: var(--ocean);
+  border-radius: 50%; animation: k-kmc-spin .7s linear infinite;
+}
+@keyframes k-kmc-spin { to { transform: rotate(360deg); } }
+
+/* ── États vide / erreur / gate d'auth (même pattern que k-wlt-empty) ── */
+.k-kmc-empty {
+  text-align: center; padding: 48px 20px; color: var(--text-muted);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.k-kmc-empty-icon  { font-size: 40px; opacity: .45; }
+.k-kmc-empty-title { font-size: .9rem; font-weight: 700; color: var(--text); }
+.k-kmc-empty-sub   { font-size: .78rem; max-width: 260px; line-height: 1.4; }
+
+.k-kmc-action-btn {
+  margin-top: 12px; padding: 10px 20px; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, var(--ocean-dark) 0%, var(--ocean) 100%);
+  color: var(--white); font-size: .82rem; font-weight: 700; cursor: pointer;
+}
+.k-kmc-action-btn:disabled { opacity: .6; cursor: wait; }
+
+/* ── Vue d'ensemble ─────────────────────────────────────────────── */
+.k-kmc-overview {
+  background: var(--white); border: 1.5px solid var(--sand-dark);
+  border-radius: 22px; padding: 24px 22px;
+  box-shadow: 0 4px 24px rgb(46 107 40 / .06);
+}
+.k-kmc-ov-identity { margin-bottom: 18px; }
+.k-kmc-ov-name  { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.k-kmc-ov-phone { font-size: .78rem; color: var(--text-muted); margin-top: 3px; }
+
+.k-kmc-ov-wallet {
+  background: var(--sage-bg-pale); border-radius: 16px;
+  padding: 16px 18px; margin-bottom: 14px;
+}
+.k-kmc-ov-wallet-label  { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--sage-dark); }
+.k-kmc-ov-wallet-amount { font-family: var(--font-display); font-size: 1.7rem; font-weight: 600; color: var(--ocean-dark-deep); margin-top: 4px; }
+.k-kmc-ov-wallet-expiry { font-size: .74rem; color: var(--text-muted); margin-top: 4px; }
+
+.k-kmc-ov-security {
+  font-size: .78rem; color: var(--sage-dark); font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.k-kmc-ov-shortcuts { display: flex; gap: 10px; flex-wrap: wrap; }
+.k-kmc-shortcut-btn {
+  padding: 9px 16px; border: 1.5px solid var(--sand-dark); border-radius: 12px;
+  background: var(--white); color: var(--text); font-family: var(--font);
+  font-size: .78rem; font-weight: 700; cursor: pointer;
+}
+.k-kmc-shortcut-btn:hover { border-color: var(--ocean); }
+
+/* ── Retrait & sécurité ─────────────────────────────────────────── */
+.k-kmc-security {
+  background: var(--white); border: 1.5px solid var(--sand-dark);
+  border-radius: 18px; padding: 20px;
+}
+.k-kmc-sec-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--sand-dark);
+}
+.k-kmc-sec-label { font-size: .8rem; color: var(--text-muted); }
+.k-kmc-sec-value { font-size: .84rem; font-weight: 700; color: var(--text); }
+.k-kmc-sec-doctrine p {
+  font-size: .78rem; line-height: 1.55; color: var(--text-muted);
+  margin: 0 0 10px;
+}
+.k-kmc-sec-doctrine p:last-child { margin-bottom: 0; }
+
+/* ── Mes informations / Mes préférences (formulaires) ───────────── */
+.k-kmc-form {
+  background: var(--white); border: 1.5px solid var(--sand-dark);
+  border-radius: 18px; padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.k-kmc-field { display: flex; flex-direction: column; gap: 6px; }
+.k-kmc-field span { font-size: .74rem; font-weight: 700; color: var(--text-muted); }
+.k-kmc-field input,
+.k-kmc-field select {
+  padding: 10px 12px; border: 1.5px solid var(--sand-dark); border-radius: 10px;
+  font-family: var(--font); font-size: .86rem; color: var(--text);
+  background: var(--white);
+}
+.k-kmc-field--readonly input { background: var(--sage-bg-pale); color: var(--text-muted); }
+.k-kmc-field-hint { font-size: .72rem; color: var(--text-muted); line-height: 1.4; margin: 0; }
+
+/* ── Responsive desktop ─────────────────────────────────────────── */
+@media (min-width: 900px) {
+  .k-komerce-view { max-width: 640px; margin: 0 auto; padding-top: 24px; }
+  .k-kmc-subnav { overflow-x: visible; flex-wrap: wrap; }
+}

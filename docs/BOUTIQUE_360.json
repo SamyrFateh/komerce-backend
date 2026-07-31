@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-31T10:16:59.236Z",
+  "generatedAt": "2026-07-31T13:51:14.509Z",
   "summary": {
-    "modules": 74,
-    "withHeader": 74,
-    "events": 20,
-    "declaredActive": 15,
+    "modules": 75,
+    "withHeader": 75,
+    "events": 21,
+    "declaredActive": 16,
     "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 52,
@@ -492,6 +492,7 @@
       ],
       "emits": [
         "modal:close",
+        "nav:goto-komerce-wallet",
         "nav:goto-track"
       ],
       "listens": [],
@@ -514,6 +515,10 @@
       "emitCalls": [
         {
           "name": "modal:close",
+          "hasArg": false
+        },
+        {
+          "name": "nav:goto-komerce-wallet",
           "hasArg": false
         },
         {
@@ -814,6 +819,38 @@
       "bodyClasses": [
         "k-id-scroll-lock"
       ],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/b-komerce.js",
+      "id": "b-komerce",
+      "hasHeader": true,
+      "role": "boutique-account-view",
+      "domain": "account",
+      "layer": "ui-page",
+      "criticality": "medium",
+      "doctrine": [
+        "wallet_visible_client",
+        "navigation_sans_friction",
+        "otp_une_fois"
+      ],
+      "depends": [
+        "b-utils.js",
+        "b-identity.js",
+        "b-wallet.js"
+      ],
+      "usedBy": [
+        "b-nav.js",
+        "boutique.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils",
+        "b-identity",
+        "b-wallet"
+      ],
+      "bodyClasses": [],
       "emitCalls": []
     },
     {
@@ -1393,7 +1430,7 @@
         "b-catalog.js",
         "b-favs.js",
         "b-tracking.js",
-        "b-wallet.js",
+        "b-komerce.js",
         "b-group-view.js",
         "b-pager.js",
         "b-scroll-owner.js"
@@ -1406,7 +1443,8 @@
       ],
       "listens": [
         "cart:update",
-        "nav:goto-track"
+        "nav:goto-track",
+        "nav:goto-komerce-wallet"
       ],
       "imports": [
         "b-bus",
@@ -1418,7 +1456,7 @@
         "b-catalog",
         "b-favs",
         "b-tracking",
-        "b-wallet",
+        "b-komerce",
         "b-group-view",
         "b-pager",
         "b-scroll-owner"
@@ -2513,6 +2551,14 @@
         "b-catalog"
       ]
     },
+    "nav:goto-komerce-wallet": {
+      "emitters": [
+        "b-checkout"
+      ],
+      "listeners": [
+        "b-nav"
+      ]
+    },
     "nav:goto-track": {
       "emitters": [
         "b-checkout"
@@ -2627,7 +2673,8 @@
         "shared-followup",
         "identity",
         "paypal",
-        "wallet"
+        "wallet",
+        "komerce"
       ]
     },
     {
@@ -2747,6 +2794,55 @@
       "module": "b-identity",
       "route": "/api/auth/otp/verify",
       "raw": "/api/auth/otp/verify",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
+      "route": "/api/auth/me",
+      "raw": "/api/auth/me",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
+      "route": "/api/wallet",
+      "raw": "/api/wallet",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
+      "route": "/api/auth/me",
+      "raw": "/api/auth/me",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
+      "route": "/api/auth/me",
+      "raw": "/api/auth/me",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
+      "route": "/api/auth/me",
+      "raw": "/api/auth/me",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
+      "route": "/api/auth/me",
+      "raw": "/api/auth/me",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
+      "route": "/api/auth/me",
+      "raw": "/api/auth/me",
       "dynamic": false,
       "contractStatus": "UNKNOWN"
     },
@@ -3206,6 +3302,7 @@
       "modal:suggestions-rendered",
       "modal:detail-ready",
       "nav:goto-track",
+      "nav:goto-komerce-wallet",
       "modal:opened",
       "modal:closed",
       "modal:composition-synced"

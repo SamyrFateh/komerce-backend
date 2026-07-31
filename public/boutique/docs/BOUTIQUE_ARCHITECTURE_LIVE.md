@@ -10,18 +10,19 @@
 
 ## 1. Inventaire CSS
 
-24 fichier(s) sur disque, 24 orphelin(s).
+25 fichier(s) sur disque, 25 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
 | `boutique-desktop.css` | 1315 | 🔴 **ORPHELIN** |
-| `cart.css` | 2120 | 🔴 **ORPHELIN** |
+| `cart.css` | 2002 | 🔴 **ORPHELIN** |
 | `categories.css` | 996 | 🔴 **ORPHELIN** |
 | `group-cart-flow.css` | 1940 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
+| `komerce.css` | 155 | 🔴 **ORPHELIN** |
 | `layout.css` | 1173 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
@@ -45,7 +46,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=156
- 2. /boutique/css/dist/components.css?v=362
+ 2. /boutique/css/dist/components.css?v=367
  3. /boutique/css/dist/desktop.css?v=85
 ```
 
@@ -110,7 +111,7 @@ Aucun. ✅
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 24 (cible : 0)
+- **CSS orphelins** : 25 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 25 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)

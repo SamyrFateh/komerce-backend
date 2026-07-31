@@ -63,9 +63,13 @@ const auth = {
     }).or('email', 'phone'),
   },
   updateProfile: {
+    // Lot 4 §3.4 — le WhatsApp vérifié n'est pas un champ texte éditable.
+    // Toute modification d'identité vérifiée passe par le parcours OTP
+    // existant (routes/otp.js), jamais par ce PUT générique. `phone` est
+    // volontairement absent : stripUnknown (middleware/validate.js) le
+    // neutralise avant que la route ne le voie.
     body: Joi.object({
       full_name:     safeStr(100),
-      phone:         phone,
       currency_pref: Joi.string().valid('KMF', 'EUR'),
     }).min(1),
   },

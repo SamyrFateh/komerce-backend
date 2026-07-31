@@ -613,9 +613,16 @@ export function renderCheckout() {
     walletSection.innerHTML = '<label class="k-wallet-label">'
       + '<input type="checkbox" id="cb-use-wallet" class="k-wallet-cb">'
       + '<div class="k-wallet-info"><div class="k-wallet-title">💰 Utiliser mon crédit</div>'
-      + '<div id="wallet-balance-text" class="k-wallet-balance">Chargement…</div></div></label>'
-      + '<div id="wallet-deduction" class="k-wallet-ded"></div>';
+      + '<div id="wallet-balance-text" class="k-wallet-balance">Chargement…</div>'
+      + '<div id="wallet-expiry-text" class="k-wallet-expiry-text"></div></div></label>'
+      + '<div id="wallet-deduction" class="k-wallet-ded"></div>'
+      + '<button type="button" id="wallet-goto-komerce" class="k-wallet-goto-komerce">Voir mon wallet dans Mon Komerce</button>';
     body.appendChild(walletSection);
+    // Lot 4 §5 — lien discret, jamais l'écran de gestion du wallet lui-même.
+    document.getElementById('wallet-goto-komerce')?.addEventListener('click', () => {
+      bus.emit('nav:goto-komerce-wallet');
+      closeOrderModal();
+    });
 
     /* ── 6. Confirm (sticky) ── */
     // FIX: supprimer tout ancien bouton confirm
@@ -767,6 +774,7 @@ export async function checkWalletBalance() {
       // les capturer avant l'await figeait des références null.
       const section = document.getElementById('wallet-section');
       const balText = document.getElementById('wallet-balance-text');
+      const expText = document.getElementById('wallet-expiry-text');
       if (res.ok) {
         const data = await res.json();
         state.walletBalance = data.balance_kmf || 0;
@@ -780,6 +788,11 @@ export async function checkWalletBalance() {
           balText.textContent = state.walletBalance > 0
             ? 'Solde disponible : ' + fmt(state.walletBalance, 'KMF')
             : 'Aucun crédit disponible';
+        }
+        if (expText) {
+          expText.textContent = (state.walletBalance > 0 && data.expires_at)
+            ? 'Expire le ' + new Date(data.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+            : '';
         }
       } else {
         // Réponse non-ok (401/403/5xx) : ne pas laisser "Chargement…" indéfiniment.
