@@ -605,6 +605,9 @@ describe('orders/create — wallet', () => {
       { rows: [] }, // INSERT order_status_history
       { rows: [] }, // UPDATE wallet_applied_kmf
       { rows: [] }, // INSERT order_items
+      { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
+      { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
+      { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
       { rows: [refreshedOrder] }, // SELECT orders refresh post confirmPaymentCycle
     ]);
     db.getClient.mockResolvedValue(client);

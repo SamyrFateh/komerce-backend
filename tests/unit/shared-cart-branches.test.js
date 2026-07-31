@@ -85,6 +85,7 @@ jest.mock('../../services/shared-cart-v41-transitions', () => ({
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
+  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
 jest.mock('../../services/whatsapp-meta', () => ({

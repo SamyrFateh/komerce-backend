@@ -16,6 +16,7 @@ const { makeClient } = require('../integration/test-harness/mock-db');
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
+  forModule: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
 const mockConfirmPaymentCycle = jest.fn();
@@ -164,6 +165,9 @@ describe('confirmCashByReference', () => {
   test('nominal : commit + confirmPaymentCycle + notif/purchasing post-commit', async () => {
     const client = makeClient([
       { rows: [ORDER] },        // SELECT orders
+      { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
+      { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
+      { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
       { rows: [], rowCount: 1 }, // UPDATE orders SET cash_paid_at
     ]);
     const db = makeDb(client);
@@ -194,6 +198,9 @@ describe('confirmCashByReference', () => {
     const client = makeClient([
       { rows: [ORDER] },                          // SELECT orders
       { rows: [{ relais_id: 'relais-1' }] },      // SELECT users relais_id (match)
+      { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
+      { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
+      { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
       { rows: [], rowCount: 1 },                  // UPDATE orders cash_paid_at
     ]);
     const db = makeDb(client);
@@ -231,6 +238,9 @@ describe('confirmCashByReference — Lot A, branches manquantes', () => {
   test('cycle en noop (déjà traité ailleurs) → poursuit malgré success=false', async () => {
     const client = makeClient([
       { rows: [ORDER] },
+      { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
+      { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
+      { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
       { rows: [], rowCount: 1 }, // UPDATE cash_paid_at
     ]);
     const db = makeDb(client);
@@ -262,6 +272,9 @@ describe('confirmCashByReference — Lot A, branches manquantes', () => {
     test('loyaltyService.handleOrderConfirmed résout avec skipped=false → branche log info exécutée', async () => {
       const client = makeClient([
         { rows: [ORDER] },
+        { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
+        { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
+        { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
         { rows: [], rowCount: 1 },
       ]);
       const db = makeDb(client);
@@ -280,6 +293,9 @@ describe('confirmCashByReference — Lot A, branches manquantes', () => {
     test('loyaltyService.handleOrderConfirmed rejette → catch silencieux, réponse 200 conservée', async () => {
       const client = makeClient([
         { rows: [ORDER] },
+        { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
+        { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
+        { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
         { rows: [], rowCount: 1 },
       ]);
       const db = makeDb(client);
@@ -297,6 +313,9 @@ describe('confirmCashByReference — Lot A, branches manquantes', () => {
     test('notifyPaymentConfirmed et triggerPurchasing rejettent → catch silencieux, réponse 200 conservée', async () => {
       const client = makeClient([
         { rows: [ORDER] },
+        { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
+        { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
+        { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
         { rows: [], rowCount: 1 },
       ]);
       const db = makeDb(client);
@@ -315,6 +334,9 @@ describe('confirmCashByReference — Lot A, branches manquantes', () => {
     test('triggerPurchasing résout → branche log info OK exécutée', async () => {
       const client = makeClient([
         { rows: [ORDER] },
+        { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
+        { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
+        { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
         { rows: [], rowCount: 1 },
       ]);
       const db = makeDb(client);
@@ -332,6 +354,9 @@ describe('confirmCashByReference — Lot A, branches manquantes', () => {
     test('triggerPurchasing throw de façon synchrone → catch [CASH-POSTCOMMIT] non-fatal', async () => {
       const client = makeClient([
         { rows: [ORDER] },
+        { rows: [] },              // ensureSecretGenerated: SELECT hash/last4 existant
+        { rows: [] },              // generateAndStoreSecret: anti-collision SELECT
+        { rows: [], rowCount: 1 }, // generateAndStoreSecret: UPDATE orders (secret)
         { rows: [], rowCount: 1 },
       ]);
       const db = makeDb(client);

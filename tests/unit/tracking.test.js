@@ -33,6 +33,11 @@ jest.mock('../../utils/parcels', () => ({
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
+const mockVerifyPickupCode = jest.fn();
+jest.mock('../../services/pickup-secret-service', () => ({
+  verifyPickupCode: (...args) => mockVerifyPickupCode(...args),
+}));
+
 const express = require('express');
 const request = require('supertest');
 
@@ -100,7 +105,7 @@ describe('GET /api/tracking/:token — exposition pickup_code / relay', () => {
 
   test('status available + pickup_code défini : pickupReady=true, relay exposé', async () => {
     mockQuery
-      .mockResolvedValueOnce({ rows: [baseOrderRow({ status: 'available', pickup_code: '1234' })] })
+      .mockResolvedValueOnce({ rows: [baseOrderRow({ status: 'available', pickup_code: '1234', pickup_secret_hash: 'hash-1' })] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
@@ -253,19 +258,22 @@ describe('POST /api/tracking/:token/verify-pickup', () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ count: 1, reset_at: new Date(Date.now() + 60000).toISOString() }] })
-      .mockResolvedValueOnce({ rows: [{ pickup_code: '4521', status: 'available' }] });
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available' }] });
+    mockVerifyPickupCode.mockResolvedValueOnce({ status: 200, body: {} });
 
     const res = await request(app).post('/api/tracking/TOKEN123/verify-pickup').send({ code: '4521' });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ valid: true });
+    expect(mockVerifyPickupCode).toHaveBeenCalledWith({ orderId: 'order-1', code: '4521', agentId: null });
   });
 
   test('valid=false si le code ne correspond pas', async () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ count: 1, reset_at: new Date(Date.now() + 60000).toISOString() }] })
-      .mockResolvedValueOnce({ rows: [{ pickup_code: '4521', status: 'available' }] });
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', status: 'available' }] });
+    mockVerifyPickupCode.mockResolvedValueOnce({ status: 401, body: {} });
 
     const res = await request(app).post('/api/tracking/TOKEN123/verify-pickup').send({ code: '0000' });
 
