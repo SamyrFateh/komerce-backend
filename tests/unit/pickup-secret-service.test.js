@@ -36,6 +36,17 @@ jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
+const mockSafeSyncScanToParcels = jest.fn();
+jest.mock('../../utils/parcelSync', () => ({
+  safeSyncScanToParcels: (...args) => mockSafeSyncScanToParcels(...args),
+  STEP_TO_ORDER_STATUS: { collected: 'collected' },
+}));
+
+const mockCreateAlert = jest.fn(() => Promise.resolve());
+jest.mock('../../utils/alerts', () => ({
+  createAlert: (...args) => mockCreateAlert(...args),
+}));
+
 const mockTransitionOrderStatus = jest.fn();
 jest.mock('../../services/order-status-machine', () => ({
   transitionOrderStatus: (...args) => mockTransitionOrderStatus(...args),
@@ -59,6 +70,7 @@ const {
   getReceiptHTML,
   verifyPickupCode,
   collectOrder,
+  collectByPickupCode,
   regenerateCode,
   getPickupStatus,
   revealOnce,
@@ -66,6 +78,8 @@ const {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockSafeSyncScanToParcels.mockResolvedValue({ synced: true });
+  mockCreateAlert.mockResolvedValue();
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -586,5 +600,249 @@ describe('revealOnce', () => {
 
     const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
     expect(result.status).toBe(200);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// collectByPickupCode — Lot 2C : orchestrateur canonique de remise aveugle
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('collectByPickupCode', () => {
+  const SALT = 'testsalt0123456789';
+  const CODE = 'A7K3M9P2'; // 8 caractères canoniques, normalisé (sans tirets)
+  const LAST4 = CODE.slice(-4);
+  const HASH = hashCode(CODE, SALT);
+
+  function buildOrder(overrides = {}) {
+    return {
+      id: 'o1', reference: 'KOM-001', relais_id: 'r1', relais_name: 'Relais A',
+      recipient_name: 'Jean Dupont', status: 'available',
+      pickup_secret_hash: HASH, pickup_secret_salt: SALT, pickup_secret_last4: LAST4,
+      pickup_secret_expires_at: null, pickup_secret_attempts: 0, pickup_secret_blocked_until: null,
+      ...overrides,
+    };
+  }
+
+  const admin       = { id: 'u0', role: 'admin' };
+  const agentRelais = { id: 'u3', role: 'agent_relais' };
+
+  test('pickup_code manquant → 400, aucune transaction ouverte', async () => {
+    const result = await collectByPickupCode({ code: '', user: admin });
+    expect(result.status).toBe(400);
+    expect(db.withTransaction).not.toHaveBeenCalled();
+  });
+
+  test('code à 6 chiffres (legacy) → 400', async () => {
+    const result = await collectByPickupCode({ code: '123456', user: admin });
+    expect(result.status).toBe(400);
+    expect(db.withTransaction).not.toHaveBeenCalled();
+  });
+
+  test('code à 4 caractères (recherche aveugle last4 seul) → 400', async () => {
+    const result = await collectByPickupCode({ code: LAST4, user: admin });
+    expect(result.status).toBe(400);
+    expect(db.withTransaction).not.toHaveBeenCalled();
+  });
+
+  test('code complet valide (admin) → 200, scan_code = référence (jamais le secret)', async () => {
+    const order = buildOrder();
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })       // SELECT candidates FOR UPDATE
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] }) // INSERT scans
+      .mockResolvedValueOnce({});                      // UPDATE reset attempts
+
+    const result = await collectByPickupCode({ code: CODE, user: admin, ip: '1.2.3.4', userAgent: 'UA' });
+
+    expect(result.status).toBe(200);
+    expect(result.body.reference).toBe('KOM-001');
+    expect(result.body.order_id).toBe('o1');
+    expect(result.body.code).toBeUndefined();
+    expect(result.body.pickup_code).toBeUndefined();
+
+    const insertCall = db.query.mock.calls[1];
+    expect(insertCall[0]).toMatch(/INSERT INTO scans/);
+    // scan_code doit être la référence de commande, jamais le secret saisi
+    expect(insertCall[1]).toContain(order.reference);
+    expect(insertCall[1]).not.toContain(CODE);
+    // notes neutres, jamais le secret
+    expect(insertCall[1].join(' ')).not.toMatch(new RegExp(CODE));
+  });
+
+  test('code avec tirets de présentation → accepté (normalisation)', async () => {
+    const order = buildOrder();
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] })
+      .mockResolvedValueOnce({});
+
+    const dashed = CODE.slice(0, 3) + '-' + CODE.slice(3, 6) + '-' + CODE.slice(6);
+    const result = await collectByPickupCode({ code: dashed, user: admin });
+    expect(result.status).toBe(200);
+  });
+
+  test('code invalide (hash ne correspond à aucun candidat) → 404, alerte sécurité', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }); // aucun candidat pour ce last4
+
+    const result = await collectByPickupCode({ code: CODE, user: admin, ip: '1.2.3.4', userAgent: 'UA' });
+    expect(result.status).toBe(404);
+    expect(mockCreateAlert).toHaveBeenCalled();
+    const alertPayload = mockCreateAlert.mock.calls[0][1];
+    expect(alertPayload.description).not.toMatch(new RegExp(CODE));
+  });
+
+  test('commande déjà collectée (absente de la recherche "available") → 404, pas de second retrait', async () => {
+    // Le WHERE status='available' exclut naturellement une commande déjà
+    // collected : aucun candidat renvoyé, même comportement que "code invalide".
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await collectByPickupCode({ code: CODE, user: admin });
+    expect(result.status).toBe(404);
+  });
+
+  test('secret expiré → 410', async () => {
+    const order = buildOrder({ pickup_secret_expires_at: new Date(Date.now() - 60000).toISOString() });
+    db.query.mockResolvedValueOnce({ rows: [order] });
+
+    const result = await collectByPickupCode({ code: CODE, user: admin });
+    expect(result.status).toBe(410);
+  });
+
+  test('commande bloquée (brute-force) → 429', async () => {
+    const order = buildOrder({ pickup_secret_blocked_until: new Date(Date.now() + 60000).toISOString() });
+    db.query.mockResolvedValueOnce({ rows: [order] });
+
+    const result = await collectByPickupCode({ code: CODE, user: agentRelais });
+    expect(result.status).toBe(429);
+    expect(result.body.blocked_until).toBeDefined();
+  });
+
+  test('agent du bon relais → succès (cross-relais check OK)', async () => {
+    const order = buildOrder();
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })            // candidates
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] }) // users.relais_id
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] })       // INSERT scans
+      .mockResolvedValueOnce({});                             // reset attempts
+
+    const result = await collectByPickupCode({ code: CODE, user: agentRelais });
+    expect(result.status).toBe(200);
+  });
+
+  test('agent d\'un autre relais → 403, compteur incrémenté dans la même transaction', async () => {
+    const order = buildOrder();
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })            // candidates
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r2' }] }) // users.relais_id (mismatch)
+      .mockResolvedValueOnce({});                             // UPDATE attempts (cross-relais)
+
+    const result = await collectByPickupCode({ code: CODE, user: agentRelais, ip: '1.2.3.4', userAgent: 'UA' });
+    expect(result.status).toBe(403);
+    expect(result.body.attempts).toBe(1);
+    expect(mockCreateAlert).toHaveBeenCalled();
+  });
+
+  test('agent_relais sans relais_id → 403, configuration incomplète', async () => {
+    const order = buildOrder();
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: null }] });
+
+    const result = await collectByPickupCode({ code: CODE, user: agentRelais });
+    expect(result.status).toBe(403);
+    expect(result.body.error).toMatch(/incomplète/);
+  });
+
+  test('admin → succès quel que soit le relais (pas de cross-relais check)', async () => {
+    const order = buildOrder({ relais_id: 'r-autre' });
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] })
+      .mockResolvedValueOnce({});
+
+    const result = await collectByPickupCode({ code: CODE, user: admin });
+    expect(result.status).toBe(200);
+  });
+
+  test('appelle transitionOrderStatus si le sync colis a échoué (synced=false)', async () => {
+    const order = buildOrder();
+    mockSafeSyncScanToParcels.mockResolvedValueOnce({ synced: false });
+    mockTransitionOrderStatus.mockResolvedValueOnce({ success: true });
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] })
+      .mockResolvedValueOnce({});
+
+    await collectByPickupCode({ code: CODE, user: admin });
+
+    expect(mockTransitionOrderStatus).toHaveBeenCalledWith(
+      expect.objectContaining({ newStatus: 'collected', source: 'scan' })
+    );
+  });
+
+  test('erreur pendant parcelSync → transaction rejetée (rollback)', async () => {
+    mockSafeSyncScanToParcels.mockRejectedValueOnce(new Error('parcelSync down'));
+    const order = buildOrder();
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] });
+
+    await expect(collectByPickupCode({ code: CODE, user: admin })).rejects.toThrow('parcelSync down');
+  });
+
+  test('erreur pendant la transition (fallback) → transaction rejetée (rollback)', async () => {
+    mockSafeSyncScanToParcels.mockResolvedValueOnce({ synced: false });
+    mockTransitionOrderStatus.mockRejectedValueOnce(new Error('transition failed'));
+    const order = buildOrder();
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] });
+
+    await expect(collectByPickupCode({ code: CODE, user: admin })).rejects.toThrow('transition failed');
+  });
+
+  test('reset le compteur de tentatives au succès', async () => {
+    const order = buildOrder({ pickup_secret_attempts: 2 });
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] })
+      .mockResolvedValueOnce({});
+
+    await collectByPickupCode({ code: CODE, user: admin });
+
+    const resetCall = db.query.mock.calls[2];
+    expect(resetCall[0]).toMatch(/pickup_secret_attempts\s*=\s*0/);
+  });
+
+  test('utilise le verrou FOR UPDATE pour la résolution par last4', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    await collectByPickupCode({ code: CODE, user: admin });
+    expect(db.query.mock.calls[0][0]).toMatch(/FOR UPDATE/);
+  });
+
+  test('scans.scan_code ne contient jamais le secret complet', async () => {
+    const order = buildOrder();
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] })
+      .mockResolvedValueOnce({});
+
+    await collectByPickupCode({ code: CODE, user: admin });
+
+    const insertParams = db.query.mock.calls[1][1];
+    expect(insertParams).not.toContain(CODE);
+    expect(insertParams).toContain(order.reference);
+  });
+
+  test('scans.notes ne contient jamais le secret complet', async () => {
+    const order = buildOrder();
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] })
+      .mockResolvedValueOnce({});
+
+    await collectByPickupCode({ code: CODE, user: admin });
+
+    const insertParams = db.query.mock.calls[1][1];
+    const notesValue = insertParams[insertParams.length - 1];
+    expect(notesValue).not.toMatch(new RegExp(CODE));
   });
 });

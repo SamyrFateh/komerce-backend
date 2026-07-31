@@ -186,9 +186,29 @@ describe('scans.collect', () => {
   const schema = validators.scans?.collect;
   const runTest = canValidate(schema) ? test : test.skip;
 
-  runTest('accepts valid pickup_code', () => {
-    const { error } = validate(schema, { pickup_code: 'AB1234' });
+  runTest('accepts valid 8-character canonical pickup_code without separators', () => {
+    const { error } = validate(schema, { pickup_code: 'A7K3M9P2' });
     expect(error).toBeUndefined();
+  });
+
+  runTest('accepts valid pickup_code with presentation dashes', () => {
+    const { error } = validate(schema, { pickup_code: 'A7K-3M9-P2' });
+    expect(error).toBeUndefined();
+  });
+
+  runTest('rejects legacy 6-digit pickup_code', () => {
+    const { error } = validate(schema, { pickup_code: '123456' });
+    expect(error).toBeDefined();
+  });
+
+  runTest('rejects 4-character blind-search pickup_code', () => {
+    const { error } = validate(schema, { pickup_code: '3MP2' });
+    expect(error).toBeDefined();
+  });
+
+  runTest('rejects missing pickup_code', () => {
+    const { error } = validate(schema, {});
+    expect(error).toBeDefined();
   });
 });
 

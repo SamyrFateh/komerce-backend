@@ -17297,6 +17297,14 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/relay-dashboard-queries.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin/system.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
                 "sourceFileId": "routes/hub-dashboard.js",
                 "targetFile": "utils/parcelSync.js"
               },
@@ -18387,6 +18395,10 @@
               {
                 "sourceFileId": "scripts/ci-probe-token.js",
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
+              },
+              {
+                "sourceFileId": "scripts/fix-schema.js",
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "server.js",
@@ -20040,16 +20052,36 @@
                 "targetFile": "utils/parcelSync.js"
               },
               {
+                "sourceFileId": "services/order-status-machine.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "routes/orders/detail.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
                 "sourceFileId": "routes/orders/parcels.js",
                 "targetFile": "services/parcel-operations.js"
+              },
+              {
+                "sourceFileId": "routes/orders/create.js",
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "routes/orders/create.js",
                 "targetFile": "services/routing.js"
               },
               {
+                "sourceFileId": "routes/orders/list.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
                 "sourceFileId": "routes/order-api-v2.js",
                 "targetFile": "services/parcel-auto-create-service.js"
+              },
+              {
+                "sourceFileId": "routes/order-api-v2.js",
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "tests/e2e-api/orders.single-collect.e2e.test.js",
@@ -20711,12 +20743,24 @@
                 "targetFile": "services/pickup-secret-service.js"
               },
               {
+                "sourceFileId": "services/payment-cash-confirm.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
                 "sourceFileId": "services/payment-stripe.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "services/cash-operations.js",
                 "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "services/reconciliation-service.js",
                 "targetFile": "utils/parcels.js"
+              },
+              {
+                "sourceFileId": "routes/cash.js",
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "routes/pickup-pay-cash.js",
@@ -22434,7 +22478,15 @@
             "evidence": [
               {
                 "sourceFileId": "services/shared-cart-lifecycle.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "services/shared-cart-lifecycle.js",
                 "targetFile": "services/routing.js"
+              },
+              {
+                "sourceFileId": "routes/shared-cart.js",
+                "targetFile": "services/pickup-secret-service.js"
               },
               {
                 "sourceFileId": "tests/unit/shared-cart-lifecycle.test.js",

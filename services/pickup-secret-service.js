@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/order-status-machine.js, utils/pickup-receipt-html.js
- * @used-by       routes/pickup-secret.js, services/payment-stripe.js, services/payment-paypal.js, routes/pickup-pay-cash.js
+ * @depends       db.js, services/order-status-machine.js, utils/pickup-receipt-html.js, utils/parcelSync.js, utils/alerts.js
+ * @used-by       routes/pickup-secret.js, services/payment-stripe.js, services/payment-paypal.js, routes/pickup-pay-cash.js, services/scan-operations.js
  * @db-read       order_items, orders, pickup_print_tokens, pickup_reveal_codes, products, relais, users
- * @db-write      orders, pickup_print_tokens, pickup_reveal_codes
+ * @db-write      alerts, orders, pickup_print_tokens, pickup_reveal_codes, scans
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -34,6 +34,11 @@
  *   getReceiptHTML          — HTML imprimable du reçu
  *   verifyPickupCode        — vérification code au retrait (rate-limited)
  *   collectOrder            — transition → collected
+ *   collectByPickupCode     — (Lot 2C) orchestrateur canonique de remise
+ *                             aveugle : résolution par hash salé (sans
+ *                             orderId connu), anti-fraude cross-relais,
+ *                             remise atomique. Seul point d'entrée pour
+ *                             services/scan-operations.js::collectParcel.
  *   regenerateCode          — admin : régénère un code
  *   getPickupStatus         — status masqué (jamais le code clair)
  *   revealOnce              — révélation one-shot au payeur
@@ -43,8 +48,10 @@
 
 const crypto = require('crypto');
 const db     = require('../db');
-const { transitionOrderStatus } = require('./order-status-machine');
-const { buildReceiptHTML }      = require('../utils/pickup-receipt-html');
+const { transitionOrderStatus }                    = require('./order-status-machine');
+const { buildReceiptHTML }                         = require('../utils/pickup-receipt-html');
+const { safeSyncScanToParcels }                     = require('../utils/parcelSync');
+const { createAlert }                               = require('../utils/alerts');
 const log = require('../utils/logger').child({ module: 'pickup-secret-service' });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -675,6 +682,205 @@ async function revealOnce({ orderId, userId }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// collectByPickupCode (Lot 2C)
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// Orchestrateur canonique de remise "aveugle" : l'agent relais saisit le
+// code secret complet sans que l'UI connaisse l'orderId à l'avance (modèle
+// guichet). Toute la logique métier auparavant dupliquée dans
+// services/scan-operations.js::collectParcel vit désormais ici, comme seul
+// propriétaire :
+//   - résolution de la commande par hash salé (via pickup_secret_last4 pour
+//     restreindre le candidat set, puis comparaison hash exacte) ;
+//   - contrôles expiration / blocage brute-force ;
+//   - anti-fraude cross-relais (I-10, ZONE_IMPACT.md) ;
+//   - remise atomique : INSERT scans (scan_code = référence commande,
+//     JAMAIS le secret), sync parcelSync, fallback transitionOrderStatus,
+//     reset du compteur de tentatives — dans une unique transaction
+//     (FOR UPDATE posé dès la résolution, @db-txn resolve_before_behavior_change).
+//
+// Ne renvoie jamais le code saisi ni un dérivé dans body/logs/alertes.
+
+const CODE_FORMAT_REGEX = new RegExp(`^[${CODE_ALPHABET}]{${CODE_LENGTH}}$`);
+
+async function collectByPickupCode({ code, user, ip = null, userAgent = null }) {
+  const normalized = normalizeCode(code);
+
+  if (!CODE_FORMAT_REGEX.test(normalized)) {
+    return { status: 400, body: {
+      error: 'Code de retrait invalide — format attendu : 8 caractères (tirets de présentation autorisés)',
+    }};
+  }
+
+  const last4   = normalized.slice(-4);
+  const agentId = user?.id || null;
+  const role    = user?.role || null;
+
+  return db.withTransaction(async (client) => {
+    // FOR UPDATE dès la résolution : élimine la fenêtre check-then-act entre
+    // la lecture de la commande candidate et sa remise (même doctrine que
+    // collectOrder ci-dessus). last4 restreint le candidate set ; la
+    // correspondance exacte se fait ensuite par comparaison de hash salé —
+    // jamais par égalité directe sur le secret.
+    const { rows: candidates } = await client.query(`
+      SELECT o.id, o.reference, o.relais_id, o.recipient_name, o.status,
+             r.name AS relais_name,
+             o.pickup_secret_hash, o.pickup_secret_salt, o.pickup_secret_last4,
+             o.pickup_secret_expires_at, o.pickup_secret_attempts, o.pickup_secret_blocked_until
+      FROM orders o
+      LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.pickup_secret_last4 = $1
+        AND o.status = 'available'
+      FOR UPDATE
+    `, [last4]);
+
+    const order = candidates.find(c =>
+      c.pickup_secret_hash && hashCode(normalized, c.pickup_secret_salt) === c.pickup_secret_hash
+    );
+
+    if (!order) {
+      await _logSecurityAlert(client, {
+        type:        'pickup_collect_invalid_code',
+        entityId:    null,
+        title:       `Tentative de retrait avec un code invalide (last4=${last4})`,
+        description: `agent_id=${agentId} role=${role} ip=${ip || 'inconnue'} user_agent=${userAgent || 'inconnu'}`,
+      });
+      return { status: 404, body: { error: 'Code de retrait introuvable ou déjà utilisé' } };
+    }
+
+    const now = new Date();
+
+    if (order.pickup_secret_blocked_until && new Date(order.pickup_secret_blocked_until) > now) {
+      const retryAfter = Math.ceil((new Date(order.pickup_secret_blocked_until) - now) / 1000 / 60);
+      return { status: 429, body: {
+        error: `Trop de tentatives. Réessayez dans ${retryAfter} min.`,
+        blocked_until: order.pickup_secret_blocked_until,
+      }};
+    }
+
+    if (order.pickup_secret_expires_at && new Date(order.pickup_secret_expires_at) < now) {
+      return { status: 410, body: { error: 'Code expiré. Escalade admin nécessaire.' } };
+    }
+
+    // I-10 — un agent_relais ne peut remettre que les colis de son propre
+    // relais. Les admins ne sont pas soumis à ce contrôle (multi-relais).
+    const crossCheckFailure = await _crossRelaisCheck(client, { order, user, ip, userAgent });
+    if (crossCheckFailure) return crossCheckFailure;
+
+    const notes = 'Retrait confirmé — code secret vérifié au guichet relais';
+
+    const { rows: [scan] } = await client.query(
+      `INSERT INTO scans (order_id, step, scan_code, scanned_by, notes)
+       VALUES ($1, 'collected', $2, $3, $4)
+       RETURNING id`,
+      [order.id, order.reference, agentId, notes]
+    );
+
+    // FIX-004 : safeSyncScanToParcels appelé DANS la transaction (client en
+    // second argument) pour rester sous le même verrou FOR UPDATE.
+    const syncResult = await safeSyncScanToParcels({
+      order_id:   order.id,
+      step:       'collected',
+      scan_id:    scan.id,
+      scanned_by: agentId,
+      notes,
+    }, client);
+
+    if (!syncResult.synced) {
+      await transitionOrderStatus({
+        orderId:   order.id,
+        newStatus: 'collected',
+        actor:     { id: agentId, role },
+        source:    'scan',
+        scanId:    scan.id,
+        note:      notes + ' (fallback, pas de colis parcelSync)',
+        dbClient:  client,
+      });
+    }
+
+    await client.query(`
+      UPDATE orders
+      SET pickup_secret_attempts      = 0,
+          pickup_secret_blocked_until = NULL,
+          updated_at                  = NOW()
+      WHERE id = $1
+    `, [order.id]);
+
+    log.info(`[PICKUP-SECRET] 📦 Retrait aveugle confirmé pour ${order.reference} par agent=${agentId}`);
+
+    return { status: 200, body: {
+      success:      true,
+      order_id:     order.id,
+      reference:    order.reference,
+      recipient:    order.recipient_name,
+      relais:       order.relais_name,
+      collected_at: now.toISOString(),
+    }};
+  });
+}
+
+/**
+ * Anti-fraude cross-relais (I-10). Renvoie une réponse { status, body } si
+ * l'agent doit être bloqué, ou null si la vérification passe (ou ne
+ * s'applique pas — admin).
+ */
+async function _crossRelaisCheck(client, { order, user, ip, userAgent }) {
+  if (!user || user.role === 'admin') return null;
+
+  const { rows: [agent] } = await client.query(
+    'SELECT relais_id FROM users WHERE id = $1', [user.id]
+  );
+  const agentRelaisId = agent?.relais_id || null;
+
+  if (!agentRelaisId) {
+    return { status: 403, body: { error: 'Configuration agent incomplète — contactez un admin' } };
+  }
+
+  if (String(agentRelaisId) !== String(order.relais_id)) {
+    const attempts = (order.pickup_secret_attempts || 0) + 1;
+
+    await client.query(`
+      UPDATE orders
+      SET pickup_secret_attempts = $1,
+          updated_at             = NOW()
+      WHERE id = $2
+    `, [attempts, order.id]);
+
+    log.warn(`[PICKUP-SECRET] ⛔ Cross-relais refusé — agent ${user.id} (relais ${agentRelaisId}) tentait ${order.reference} (relais ${order.relais_id})`);
+
+    await _logSecurityAlert(client, {
+      type:        'pickup_collect_cross_relais_blocked',
+      entityId:    order.id,
+      title:       `Cross-relais refusé — ${order.reference}`,
+      description: `agent_id=${user.id} agent_relais_id=${agentRelaisId} order_relais_id=${order.relais_id} ip=${ip || 'inconnue'} user_agent=${userAgent || 'inconnu'}`,
+    });
+
+    return { status: 403, body: {
+      error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider',
+      attempts,
+    }};
+  }
+
+  return null;
+}
+
+/** Persiste une alerte sécurité — jamais le secret en clair (Lot 2C). */
+async function _logSecurityAlert(client, { type, entityId, title, description }) {
+  try {
+    await createAlert(client, {
+      type,
+      entityType:  'order',
+      entityId,
+      severity:    'high',
+      title,
+      description,
+    });
+  } catch (e) {
+    log.error({ err: e }, '[PICKUP-SECRET] _logSecurityAlert error');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // EXPORTS
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -692,6 +898,7 @@ module.exports = {
   getReceiptHTML,
   verifyPickupCode,
   collectOrder,
+  collectByPickupCode,
   regenerateCode,
   getPickupStatus,
   revealOnce,

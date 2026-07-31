@@ -50,8 +50,7 @@ const { notifyText } = require('./notification-service');
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('./order-status-machine');
 const { resolveQrCollection } = require('./qr-collection-core');
-const { normalizeCode, hashCode } = require('./pickup-secret-service');
-const { createAlert } = require('../utils/alerts');
+const { collectByPickupCode } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'scan-operations' });
 
 // Droits d'accès par étape (iso-comportement avec la route)
@@ -201,8 +200,14 @@ async function recordScan(body, user, deviceId) {
 // ── collectParcel (POST /api/scans/collect) ─────────────────────────────────
 
 /**
- * Retrait par le destinataire : l'agent relais saisit le code à 6 chiffres.
- * Anti-fraude P0 : cross-relais check + brute-force 5 attempts + block 15 min.
+ * Retrait par le destinataire : l'agent relais saisit le code secret complet.
+ *
+ * Façade mince (Lot 2C) : toute la logique métier — résolution par hash
+ * salé, contrôles d'expiration/blocage, anti-fraude cross-relais (I-10),
+ * remise atomique — vit désormais dans
+ * services/pickup-secret-service.js::collectByPickupCode. Ce module ne fait
+ * plus que déléguer, notifier le commanditaire en post-commit, et traduire
+ * le résultat métier au contrat HTTP existant (inchangé).
  *
  * @param {object} body — { pickup_code }
  * @param {object} user — { id, role }
@@ -212,141 +217,30 @@ async function recordScan(body, user, deviceId) {
  */
 async function collectParcel(body, user, ip, ua) {
   const { pickup_code } = body;
-  if (!pickup_code) {
-    return { status: 400, body: { error: 'pickup_code requis' } };
+
+  const result = await collectByPickupCode({ code: pickup_code, user, ip, userAgent: ua });
+
+  if (result.status !== 200) {
+    return result;
   }
 
-  // Lot 2 : plus de lookup direct sur orders.pickup_code (colonne en clair,
-  // supprimée). La recherche "à l'aveugle" (sans order_id connu au préalable)
-  // n'accepte que le code complet à 8 caractères : un raccourci à 4
-  // caractères (pickup_secret_last4) peut légitimement collisionner entre
-  // deux commandes actives de relais différents, et sans order_id connu on
-  // n'a rien d'autre pour désambiguïser.
-  const normalized = normalizeCode(pickup_code);
-  if (normalized.length !== 8) {
-    return { status: 400, body: { error: 'Code attendu : 8 caractères complets' } };
+  const { order_id, ...publicBody } = result.body;
+
+  // Notification commanditaire — effet post-commit, non bloquant.
+  const { rows: [fullOrder] } = await db.query(
+    `SELECT u.phone AS user_phone FROM orders o
+     LEFT JOIN users u ON u.id = o.user_id WHERE o.id = $1`,
+    [order_id]
+  );
+  if (fullOrder?.user_phone) {
+    notifyText(
+      fullOrder.user_phone,
+      `Komerce · Votre colis ${publicBody.reference} a bien été récupéré par ${publicBody.recipient}. Merci pour votre confiance !`,
+      'collected', order_id
+    ).catch(err => log.error({ err }, 'Notification collect error'));
   }
-  const last4 = normalized.slice(-4);
 
-  const client = await db.getClient();
-  try {
-    await client.query('BEGIN');
-
-    const { rows: candidates } = await client.query(
-      `SELECT o.*, r.name AS relais_name, rc.full_name AS recipient_name
-       FROM orders o
-       LEFT JOIN relais     r  ON r.id  = o.relais_id
-       LEFT JOIN recipients rc ON rc.id = o.recipient_id
-       WHERE o.pickup_secret_last4 = $1 AND o.status = 'available'
-       FOR UPDATE OF o`,
-      [last4]
-    );
-
-    // Désambiguïsation par hash complet (le last4 seul n'est pas garanti
-    // unique tous relais confondus — voir generateAndStoreSecret).
-    const order = candidates.find(o =>
-      o.pickup_secret_hash && hashCode(normalized, o.pickup_secret_salt) === o.pickup_secret_hash
-    );
-
-    if (!order) {
-      await client.query('ROLLBACK');
-      _logAlert('low', 'pickup_code invalide', { user_id: user.id, user_role: user.role, ip, ua,
-        code_attempted_prefix: String(pickup_code).slice(0, 2) + '****' });
-      return { status: 404, body: { error: 'Code invalide ou commande déjà retirée' } };
-    }
-
-    // Expiration (alignée sur verifyPickupCode)
-    if (order.pickup_secret_expires_at && new Date(order.pickup_secret_expires_at) < new Date()) {
-      await client.query('ROLLBACK');
-      return { status: 410, body: { error: 'Code expiré. Escalade admin nécessaire.' } };
-    }
-
-    // Anti-brute-force par commande
-    if (order.pickup_secret_blocked_until && new Date(order.pickup_secret_blocked_until) > new Date()) {
-      await client.query('ROLLBACK');
-      log.warn(`[SCAN-COLLECT] Order ${order.reference} blocked until ${order.pickup_secret_blocked_until}`);
-      return { status: 429, body: {
-        error: 'Trop de tentatives sur cette commande, réessayez plus tard',
-        blocked_until: order.pickup_secret_blocked_until,
-      }};
-    }
-
-    // Cross-relais check (I-10)
-    if (user.role === 'agent_relais') {
-      const crossCheck = await _crossRelaisCheck(client, user, order);
-      if (crossCheck) {
-        // crossCheck != null signifie refus — client déjà rollback dans helper
-        return crossCheck;
-      }
-    }
-
-    const { rows: [scanRow] } = await client.query(
-      `INSERT INTO scans (order_id, step, scanned_by, location, scan_code, notes)
-       VALUES ($1,'collected',$2,$3,$4,$5) RETURNING id`,
-      [order.id, user.id, order.relais_name || '', pickup_code, 'Retrait destinataire — code valide']
-    );
-
-    const collectSync = await safeSyncScanToParcels({
-      order_id:   order.id,
-      step:       'collected',
-      scan_id:    scanRow?.id,
-      scanned_by: user.id,
-      notes:      'Retrait destinataire — code valide',
-    }, client);
-
-    if (!collectSync.synced && STEP_TO_ORDER_STATUS['collected']) {
-      await transitionOrderStatus({
-        orderId:   order.id,
-        newStatus: STEP_TO_ORDER_STATUS['collected'],
-        actor:     { id: user.id, role: user.role },
-        source:    'scan',
-        scanId:    scanRow?.id,
-        note:      'Retrait destinataire (no parcels)',
-        dbClient:  client,
-      });
-    }
-
-    // Reset compteur d'échecs au succès (défense en profondeur)
-    await client.query(
-      `UPDATE orders
-         SET pickup_secret_attempts = 0, pickup_secret_blocked_until = NULL
-       WHERE id = $1
-         AND (pickup_secret_attempts > 0 OR pickup_secret_blocked_until IS NOT NULL)`,
-      [order.id]
-    );
-
-    await client.query('COMMIT');
-
-    // Notification commanditaire (non bloquant)
-    const { rows: [fullOrder] } = await db.query(
-      `SELECT u.phone AS user_phone FROM orders o
-       LEFT JOIN users u ON u.id = o.user_id WHERE o.id = $1`,
-      [order.id]
-    );
-    if (fullOrder?.user_phone) {
-      notifyText(
-        fullOrder.user_phone,
-        `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name}. Merci pour votre confiance !`,
-        'collected', order.id
-      ).catch(err => log.error({ err }, 'Notification collect error'));
-    }
-
-    return {
-      status: 200,
-      body: {
-        message:      'Retrait enregistré',
-        reference:    order.reference,
-        recipient:    order.recipient_name,
-        relais:       order.relais_name,
-        collected_at: new Date().toISOString(),
-      },
-    };
-  } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw err;
-  } finally {
-    client.release();
-  }
+  return { status: 200, body: publicBody };
 }
 
 // ── verifyQr (POST /api/scans/verify-qr) ────────────────────────────────────
@@ -486,65 +380,11 @@ async function triggerScan3(order_id, scanned_by = null) {
 }
 
 // ── Helpers privés ───────────────────────────────────────────────────────────
-
-/**
- * Cross-relais check (I-10). Vérifie que l'agent relais est affecté au bon
- * relais. Gère le brute-force (5 tentatives → block 15 min).
- * Retourne null si OK, ou { status, body } si refus.
- * Le client est déjà en ROLLBACK quand on retourne un refus.
- */
-async function _crossRelaisCheck(client, user, order) {
-  let agentRelaisId = null;
-  let checkPossible = true;
-
-  try {
-    const { rows: [agent] } = await client.query(
-      'SELECT relais_id FROM users WHERE id = $1',
-      [user.id]
-    );
-    agentRelaisId = agent?.relais_id || null;
-  } catch (e) {
-    checkPossible = false;
-    log.warn(`[SCAN-COLLECT] users.relais_id query failed: ${e.message}`);
-  }
-
-  if (!checkPossible || !agentRelaisId) {
-    await client.query('ROLLBACK');
-    _logAlert('elevated', `agent_relais sans relais_id tente collect: user=${user.id}`, {
-      order_reference: order.reference, user_id: user.id, check_possible: checkPossible,
-    });
-    return { status: 403, body: { error: 'Configuration agent incomplète — contactez un admin' } };
-  }
-
-  if (String(agentRelaisId) !== String(order.relais_id)) {
-    const attempts    = (order.pickup_secret_attempts || 0) + 1;
-    const blockUntil  = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
-
-    await client.query('ROLLBACK');
-    try {
-      await db.query(
-        `UPDATE orders SET pickup_secret_attempts = $1, pickup_secret_blocked_until = $2 WHERE id = $3`,
-        [attempts, blockUntil, order.id]
-      );
-    } catch (e) {
-      log.warn({ err: e }, '[SCAN-COLLECT] update attempts failed');
-    }
-
-    log.warn(`[SCAN-COLLECT] ⛔ Cross-relais refusé — agent ${user.id} (relais ${agentRelaisId}) tentait order ${order.reference} (relais ${order.relais_id}) — attempts=${attempts}/5`);
-    _logAlert('elevated', `Cross-relais refusé: ${order.reference}`, {
-      user_id: user.id, agent_relais_id: agentRelaisId,
-      order_relais_id: order.relais_id, order_reference: order.reference,
-      attempts, blocked_until: blockUntil,
-    });
-    return { status: 403, body: {
-      error:        'Cette commande appartient à un autre relais — vous ne pouvez pas la valider',
-      attempts,
-      blocked_until: blockUntil,
-    }};
-  }
-
-  return null; // OK
-}
+//
+// _crossRelaisCheck / _logAlert (anti-fraude cross-relais, I-10) ont été
+// déplacés dans services/pickup-secret-service.js (Lot 2C) : ils font
+// désormais partie de l'orchestrateur canonique collectByPickupCode et ne
+// sont plus dupliqués ici.
 
 /**
  * Déclenche les notifications SMS post-scan selon l'étape.
@@ -621,23 +461,6 @@ function _notifyAnomaly(reference, step, notes, order_id) {
       ))
     ))
     .catch(err => log.error({ err }, 'Notification anomaly error'));
-}
-
-/**
- * Log d'alerte sécurité non bloquant. Appelée uniquement APRÈS un ROLLBACK
- * déjà exécuté par l'appelant (cf. call sites) : jamais sur un client
- * transactionnel encore ouvert. Persistée via le pool (`db`).
- */
-function _logAlert(level, message, payload) {
-  const entityId = payload?.order_id || null;
-  createAlert(db, {
-    type: 'scan_operations_security',
-    entityType: 'order',
-    entityId,
-    severity: level,
-    title: String(message).slice(0, 500),
-    description: JSON.stringify(payload),
-  }).catch((e) => log.error({ err: e.message }, '[SCAN-OPS] alert insert failed'));
 }
 
 module.exports = { recordScan, collectParcel, verifyQr, triggerScan3 };

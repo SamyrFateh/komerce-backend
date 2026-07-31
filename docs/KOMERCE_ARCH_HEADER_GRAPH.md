@@ -14,7 +14,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 791
-- Edges: 4414
+- Edges: 4419
 - DB tables: 116
 - Doctrines: 161
 - Impact areas: 130
@@ -382,6 +382,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/payment-cash-confirm.js -> alerts
 - WRITE services/payment-paypal.js -> alerts
 - WRITE services/payment-stripe.js -> alerts
+- WRITE services/pickup-secret-service.js -> alerts
 - WRITE services/product-publication-guard.js -> alerts
 - WRITE services/purchasing-trigger-service.js -> alerts
 - WRITE services/repair-collective-ready-to-capture.js -> alerts
@@ -490,7 +491,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/relay-dashboard.js -> order_comments
 - WRITE routes/hub-dashboard.js -> order_incidents
 - WRITE routes/relay-dashboard.js -> order_incidents
-- WRITE services/order-cost-snapshot.js -> order_item_cost_imputations
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -534,13 +534,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
 - orders: 33 écrivains directs — routes/admin-customs-shipments.js, routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/orders/cancel.js, routes/orders/create.js, routes/orders/qr.js, routes/orders/status.js, routes/parcels.js, routes/pickup-secret.js, routes/tracking.js, services/admin-order-refund.js, services/cash-reminder-service.js, services/create-stripe-order-intent.js, services/customs-shipment-service.js, services/inventory-service.js, services/order-cost-snapshot.js, services/order-status-machine.js, services/parcel-auto-create-service.js, services/parcelOptimizationService.js, services/payment-cash-confirm.js, services/payment-paypal.js, services/payment-service.js, services/payment-stripe.js, services/pickup-secret-service.js, services/purchasing-admin-service.js, services/qr-collection-core.js, services/routing.js, services/scan-operations.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/simulator/state-advancer.js, services/verify-qr-collection.js, services/wallet-service.js
-- alerts: 19 écrivains directs — services/admin-order-refund.js, services/cancel-order-purchase-orders.js, services/cash-operations.js, services/catalog-approval.js, services/confirm-pickup-cash-payment.js, services/notification-service.js, services/notifications/notification-service.js, services/order-payment-confirmation.js, services/payment-cash-confirm.js, services/payment-paypal.js, services/payment-stripe.js, services/product-publication-guard.js, services/purchasing-trigger-service.js, services/repair-collective-ready-to-capture.js, services/repair-collective-stock-reservations.js, services/repair-ordered-without-purchase-orders.js, services/scan-operations.js, utils/alerts.js, utils/parcelSync.js
+- alerts: 20 écrivains directs — services/admin-order-refund.js, services/cancel-order-purchase-orders.js, services/cash-operations.js, services/catalog-approval.js, services/confirm-pickup-cash-payment.js, services/notification-service.js, services/notifications/notification-service.js, services/order-payment-confirmation.js, services/payment-cash-confirm.js, services/payment-paypal.js, services/payment-stripe.js, services/pickup-secret-service.js, services/product-publication-guard.js, services/purchasing-trigger-service.js, services/repair-collective-ready-to-capture.js, services/repair-collective-stock-reservations.js, services/repair-ordered-without-purchase-orders.js, services/scan-operations.js, utils/alerts.js, utils/parcelSync.js
 - parcels: 18 écrivains directs — routes/admin-customs-shipments.js, routes/admin/system.js, routes/carriers.js, routes/hub-dashboard.js, routes/parcels.js, routes/transitaire-api.js, services/auto-parcel.js, services/cash-reminder-service.js, services/customs-shipment-service.js, services/hub-operations.js, services/parcel-auto-create-service.js, services/parcel-operations.js, services/parcel-security.js, services/parcelOptimizationService.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, utils/parcelSync.js
 - shared_cart_events: 13 écrivains directs — routes/shared-cart-from-order.js, services/cancel-shared-cart-with-refunds.js, services/shared-cart-cash-service.js, services/shared-cart-contributions.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-estimation-service.js, services/shared-cart-financial-guard.js, services/shared-cart-internals.js, services/shared-cart-items-service.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js, services/shared-cart-refund-queue.js
 - products: 12 écrivains directs — routes/admin/system.js, routes/sourcing-scanner.js, services/apply-pricing-updates.js, services/catalog-approval.js, services/catalog-enrichment.js, services/catalog-overrides.js, services/hub-operations.js, services/pricing-apply.js, services/pricing-strategy-service.js, services/product-admin-service.js, services/sourcing-mutations.js, services/suppliers/catalog-import-orchestrator.js
 - parcel_items: 11 écrivains directs — routes/admin/system.js, routes/hub-dashboard.js, routes/parcels.js, services/auto-parcel.js, services/inventory-service.js, services/parcel-auto-create-service.js, services/parcel-operations.js, services/parcelOptimizationService.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js
+- scans: 11 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/users.js, routes/hub-dashboard.js, routes/transit-dashboard.js, services/pickup-secret-service.js, services/qr-collection-core.js, services/scan-operations.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, services/verify-qr-collection.js, utils/parcelSync.js
 - shared_carts: 11 écrivains directs — routes/shared-cart-from-order.js, services/cancel-shared-cart-with-refunds.js, services/shared-cart-cash-service.js, services/shared-cart-contributions.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-financial-guard.js, services/shared-cart-items-service.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js, services/shared-cart-reads.js
-- scans: 10 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/users.js, routes/hub-dashboard.js, routes/transit-dashboard.js, services/qr-collection-core.js, services/scan-operations.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, services/verify-qr-collection.js, utils/parcelSync.js
 - notification_log: 9 écrivains directs — services/notification-service.js, services/notifications/internals.js, services/notifications/loyalty.js, services/notifications/misc.js, services/notifications/notification-service.js, services/notifications/order.js, services/notifications/otp-auth.js, services/notifications/parcel.js, services/simulator/state-advancer.js
 - order_status_history: 8 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, routes/orders/create.js, services/order-status-machine.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js
 - users: 8 écrivains directs — bootstrap/startup-migrations.js, middleware/auth-guest.js, routes/admin/system.js, routes/admin/users.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/loyalty-service.js

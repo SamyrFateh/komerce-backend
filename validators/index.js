@@ -338,9 +338,31 @@ const baskets = {
   giftConfirm: { params: Joi.object({ code: safeStr(50).required() }), body: Joi.object({ recipient_phone: phone, recipient_name: safeStr(100), relais_name: safeStr(100), order_reference: safeStr(50) }) },
 };
 
+// Secret de retrait canonique (Lot 2C) : 8 caractères utiles dans
+// l'alphabet sans ambiguïté visuelle (pas de 0/O/I/1/l — cohérent avec
+// services/pickup-secret-service.js::CODE_ALPHABET). Tirets/espaces de
+// présentation ("A7K-3M9-P2") sont acceptés mais retirés avant contrôle de
+// longueur. Refuse explicitement les anciens codes numériques à 6 chiffres
+// et toute recherche aveugle à 4 caractères (last4 seul n'est jamais une
+// preuve suffisante — voir /api/scans/collect).
+const PICKUP_CODE_ALPHABET_RE = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]+$/;
+const pickupCodeFull = Joi.string().trim().max(40).custom((value, helpers) => {
+  const normalized = String(value || '').replace(/[-\s]/g, '').toUpperCase();
+  if (normalized.length !== 8) {
+    return helpers.error('pickupCode.length');
+  }
+  if (!PICKUP_CODE_ALPHABET_RE.test(normalized)) {
+    return helpers.error('pickupCode.alphabet');
+  }
+  return value;
+}, 'pickup code format (8 caractères canoniques)').messages({
+  'pickupCode.length':   'Code attendu : 8 caractères complets (tirets/espaces de présentation autorisés)',
+  'pickupCode.alphabet': 'Code invalide : caractères non reconnus',
+});
+
 const scans = {
   create: { body: Joi.object({ scan_code: safeStr(200).required(), step: Joi.string().valid('preparation', 'shipped', 'in_transit', 'relais_received').required(), location: safeStr(200), notes: safeStr(500), is_anomaly: Joi.boolean().default(false), latitude: Joi.number().min(-90).max(90), longitude: Joi.number().min(-180).max(180) }) },
-  collect: { body: Joi.object({ pickup_code: safeStr(20).required() }) },
+  collect: { body: Joi.object({ pickup_code: pickupCodeFull.required() }) },
   hubReceive: { body: Joi.object({ qr_code: safeStr(200).required(), po_id: uuid }) },
   verifyQr: { body: Joi.object({ token: safeStr(500).required(), order_id: uuid }) },
 };

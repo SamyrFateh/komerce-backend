@@ -10,14 +10,12 @@
  *   ✓ generateShipmentRef : format EXP-YYYY-NNNN via séquence DB mockée
  *   ✓ generateParcelRef   : format KOM-P-YYYY-NNNNNN via séquence DB mockée
  *   ✓ generateCashCode    : 6 chiffres, dans la plage crypto.randomInt
- *   ✓ generatePickupCode  : 6 chiffres, dans la plage crypto.randomInt
  *   ✓ generateBasketCode  : format K-XXXX, alphabet restreint sans ambiguïté
  */
 
 const {
   generateOrderRef,
   generateCashCode,
-  generatePickupCode,
   generateBasketCode,
   generateShipmentRef,
   generateParcelRef,
@@ -75,21 +73,6 @@ describe('generateCashCode', () => {
   it('reste dans la plage [100000, 999999] sur plusieurs tirages', () => {
     for (let i = 0; i < 50; i++) {
       const n = Number(generateCashCode());
-      expect(n).toBeGreaterThanOrEqual(100000);
-      expect(n).toBeLessThanOrEqual(999999);
-    }
-  });
-});
-
-describe('generatePickupCode', () => {
-  it('génère un code à 6 chiffres', () => {
-    const code = generatePickupCode();
-    expect(code).toMatch(/^\d{6}$/);
-  });
-
-  it('reste dans la plage [100000, 999999] sur plusieurs tirages', () => {
-    for (let i = 0; i < 50; i++) {
-      const n = Number(generatePickupCode());
       expect(n).toBeGreaterThanOrEqual(100000);
       expect(n).toBeLessThanOrEqual(999999);
     }

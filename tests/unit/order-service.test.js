@@ -9,7 +9,6 @@ const {
   generateRef,
   getUniqueRef,
   generateCashCode,
-  generatePickupCode,
   getAvailableCredits,
 } = require('../../services/order-service');
 
@@ -62,13 +61,6 @@ describe('order-service', () => {
     it('produit un code de 6 chiffres', () => {
       const code = generateCashCode();
       expect(code).toMatch(/^\d{6}$/);
-    });
-  });
-
-  describe('generatePickupCode', () => {
-    it('produit un code de 6 caracteres alphanumeriques majuscules', () => {
-      const code = generatePickupCode();
-      expect(code).toMatch(/^[A-Z0-9]{6}$/);
     });
   });
 

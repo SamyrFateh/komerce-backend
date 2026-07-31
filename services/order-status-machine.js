@@ -284,14 +284,16 @@ async function transitionOrderStatus({
   // no-op si un secret existe déjà, ex. déjà généré à la confirmation du
   // paiement). require() tardif : évite le cycle avec pickup-secret-service.js,
   // qui dépend lui-même de transitionOrderStatus.
+  let pickupCode = null;
   if (newStatus === 'available' && !order.pickup_secret_hash) {
     const { ensureSecretGenerated } = require('./pickup-secret-service');
-    await ensureSecretGenerated({
+    const secretResult = await ensureSecretGenerated({
       orderId:  orderId,
       relaisId: order.relais_id || null,
       channel:  'status_available',
       dbClient: dbClient || null,
     });
+    pickupCode = secretResult.code || null;
   }
 
   // ── 5. Special: confirmed (paiement reçu) → set payment_status = 'paid' ──

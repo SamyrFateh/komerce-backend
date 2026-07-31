@@ -69,7 +69,17 @@ jest.mock('../../routes/purchasing', () => ({
 }));
 
 const mockQuery = jest.fn();
-jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
+jest.mock('../../db', () => {
+  const query = jest.fn((...args) => mockQuery(...args));
+  return {
+    query,
+    // withTransaction(cb) appelle cb({ query }) avec LE MÊME mock que
+    // db.query : les fixtures mockResolvedValueOnce existantes continuent de
+    // fonctionner à l'identique, que le code sous test passe par db.query
+    // directement ou par client.query à l'intérieur d'une transaction.
+    withTransaction: (cb) => cb({ query }),
+  };
+});
 
 const express = require('express');
 const request = require('supertest');

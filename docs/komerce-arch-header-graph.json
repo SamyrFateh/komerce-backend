@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 791,
-    "edges": 4414,
+    "edges": 4419,
     "dbTables": 116,
     "doctrines": 161,
     "impactAreas": 130,
@@ -13602,13 +13602,16 @@
       "depends": [
         "db.js",
         "services/order-status-machine.js",
-        "utils/pickup-receipt-html.js"
+        "utils/pickup-receipt-html.js",
+        "utils/parcelSync.js",
+        "utils/alerts.js"
       ],
       "usedBy": [
         "routes/pickup-secret.js",
         "services/payment-stripe.js",
         "services/payment-paypal.js",
-        "routes/pickup-pay-cash.js"
+        "routes/pickup-pay-cash.js",
+        "services/scan-operations.js"
       ],
       "dbRead": [
         "order_items",
@@ -13620,9 +13623,11 @@
         "users"
       ],
       "dbWrite": [
+        "alerts",
         "orders",
         "pickup_print_tokens",
-        "pickup_reveal_codes"
+        "pickup_reveal_codes",
+        "scans"
       ],
       "dbWriteVia": [
         {
@@ -39563,6 +39568,18 @@
       "label": "utils/pickup-receipt-html.js"
     },
     {
+      "from": "services/pickup-secret-service.js",
+      "to": "utils/parcelSync.js",
+      "type": "depends",
+      "label": "utils/parcelSync.js"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "utils/alerts.js",
+      "type": "depends",
+      "label": "utils/alerts.js"
+    },
+    {
       "from": "routes/pickup-secret.js",
       "to": "services/pickup-secret-service.js",
       "type": "uses",
@@ -39585,6 +39602,12 @@
       "to": "services/pickup-secret-service.js",
       "type": "uses",
       "label": "routes/pickup-pay-cash.js"
+    },
+    {
+      "from": "services/scan-operations.js",
+      "to": "services/pickup-secret-service.js",
+      "type": "uses",
+      "label": "services/scan-operations.js"
     },
     {
       "from": "services/pickup-secret-service.js",
@@ -39630,6 +39653,12 @@
     },
     {
       "from": "services/pickup-secret-service.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
@@ -39645,6 +39674,12 @@
       "to": "db:pickup_reveal_codes",
       "type": "db-write",
       "label": "pickup_reveal_codes"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:scans",
+      "type": "db-write",
+      "label": "scans"
     },
     {
       "from": "services/pickup-secret-service.js",
@@ -59873,13 +59908,16 @@
       "directDependsOn": [
         "db.js",
         "services/order-status-machine.js",
-        "utils/pickup-receipt-html.js"
+        "utils/pickup-receipt-html.js",
+        "utils/parcelSync.js",
+        "utils/alerts.js"
       ],
       "directUsedBy": [
         "routes/pickup-secret.js",
         "services/payment-stripe.js",
         "services/payment-paypal.js",
-        "routes/pickup-pay-cash.js"
+        "routes/pickup-pay-cash.js",
+        "services/scan-operations.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -59892,9 +59930,11 @@
         "users"
       ],
       "dbWrite": [
+        "alerts",
         "orders",
         "pickup_print_tokens",
-        "pickup_reveal_codes"
+        "pickup_reveal_codes",
+        "scans"
       ],
       "dbWriteVia": [
         {
@@ -59913,6 +59953,7 @@
         "logistics"
       ],
       "mustCheck": [
+        "db:alerts",
         "db:order_items",
         "db:order_status_history",
         "db:orders",
@@ -59921,6 +59962,7 @@
         "db:product_variants",
         "db:products",
         "db:relais",
+        "db:scans",
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
@@ -59929,7 +59971,10 @@
         "services/order-status-machine.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
+        "services/scan-operations.js",
+        "utils/alerts.js",
         "utils/logger.js",
+        "utils/parcelSync.js",
         "utils/pickup-receipt-html.js"
       ]
     },
@@ -61251,6 +61296,7 @@
         "routes/scans.js",
         "services/notification-service.js",
         "services/order-status-machine.js",
+        "services/pickup-secret-service.js",
         "services/purchasing-receive-service.js",
         "services/qr-collection-core.js",
         "utils/logger.js",
@@ -63106,7 +63152,8 @@
         "impact:refunds",
         "services/payment-cash-confirm.js",
         "services/payment-paypal.js",
-        "services/payment-stripe.js"
+        "services/payment-stripe.js",
+        "services/pickup-secret-service.js"
       ]
     },
     "utils/categories-cache.js": {
@@ -63782,6 +63829,7 @@
         "services/hub-operations.js",
         "services/order-status-machine.js",
         "services/parcelOptimizationService.js",
+        "services/pickup-secret-service.js",
         "services/qr-collection-core.js",
         "services/scan-operations.js",
         "services/verify-qr-collection.js",
@@ -64255,7 +64303,7 @@
     },
     {
       "table": "alerts",
-      "writerCount": 19,
+      "writerCount": 20,
       "writers": [
         "services/admin-order-refund.js",
         "services/cancel-order-purchase-orders.js",
@@ -64268,6 +64316,7 @@
         "services/payment-cash-confirm.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
+        "services/pickup-secret-service.js",
         "services/product-publication-guard.js",
         "services/purchasing-trigger-service.js",
         "services/repair-collective-ready-to-capture.js",
@@ -64357,6 +64406,23 @@
       ]
     },
     {
+      "table": "scans",
+      "writerCount": 11,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/users.js",
+        "routes/hub-dashboard.js",
+        "routes/transit-dashboard.js",
+        "services/pickup-secret-service.js",
+        "services/qr-collection-core.js",
+        "services/scan-operations.js",
+        "services/simulator/cleanup.js",
+        "services/simulator/state-advancer.js",
+        "services/verify-qr-collection.js",
+        "utils/parcelSync.js"
+      ]
+    },
+    {
       "table": "shared_carts",
       "writerCount": 11,
       "writers": [
@@ -64371,22 +64437,6 @@
         "services/shared-cart-lifecycle.js",
         "services/shared-cart-queries.js",
         "services/shared-cart-reads.js"
-      ]
-    },
-    {
-      "table": "scans",
-      "writerCount": 10,
-      "writers": [
-        "routes/admin/delete-order-cascade.js",
-        "routes/admin/users.js",
-        "routes/hub-dashboard.js",
-        "routes/transit-dashboard.js",
-        "services/qr-collection-core.js",
-        "services/scan-operations.js",
-        "services/simulator/cleanup.js",
-        "services/simulator/state-advancer.js",
-        "services/verify-qr-collection.js",
-        "utils/parcelSync.js"
       ]
     },
     {

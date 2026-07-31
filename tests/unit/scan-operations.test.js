@@ -5,8 +5,13 @@
  *
  * Couverture :
  *   recordScan    — nominal, scan_code KOM-ITEM, step invalide, role refusé, 404 commande
- *   collectParcel — nominal, code invalide (404), cross-relais refus, brute-force block,
- *                   agent sans relais_id
+ *   collectParcel — façade mince (Lot 2C) : délègue la logique métier (résolution
+ *                   par hash salé, anti-fraude cross-relais, brute-force, remise
+ *                   atomique) à services/pickup-secret-service.js::collectByPickupCode
+ *                   (couverte exhaustivement dans pickup-secret-service.test.js).
+ *                   Ce fichier ne teste que le contrat de délégation : forwarding
+ *                   des paramètres, passthrough des erreurs métier, traduction de
+ *                   la réponse HTTP et notification post-commit du commanditaire.
  *   verifyQr      — nominal, token invalide, expiré, statut incompatible, machine fail
  *   triggerScan3  — nominal, statut non preparation (skip)
  */
@@ -16,6 +21,11 @@ jest.mock('../../utils/parcelSync');
 jest.mock('../../services/notification-service');
 jest.mock('../../services/order-status-machine');
 jest.mock('../../services/loyalty-service', () => ({ recalculateLoyalty: jest.fn().mockResolvedValue() }), { virtual: true });
+
+const mockCollectByPickupCode = jest.fn();
+jest.mock('../../services/pickup-secret-service', () => ({
+  collectByPickupCode: (...args) => mockCollectByPickupCode(...args),
+}));
 
 const db                       = require('../../db');
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../../utils/parcelSync');
@@ -299,164 +309,142 @@ describe('recordScan', () => {
 describe('collectParcel', () => {
   const agentRelais = { id: 'u3', role: 'agent_relais' };
   const admin       = { id: 'u0', role: 'admin' };
-  const order = {
-    id: 'o1', reference: 'KOM-001', relais_id: 'r1', relais_name: 'Relais A',
-    recipient_name: 'Jean Dupont', status: 'available',
-    pickup_secret_attempts: 0, pickup_secret_blocked_until: null,
-  };
 
-  test('nominal admin — retrait enregistré → 200', async () => {
-    const client = makeClient([
-      {},                    // BEGIN
-      { rows: [order] },     // SELECT orders FOR UPDATE
-      { rows: [{ id: 's1' }] }, // INSERT scans
-      {},                    // UPDATE reset attempts
-      {},                    // COMMIT
-    ]);
-    db.getClient.mockResolvedValue(client);
+  function successBody(overrides = {}) {
+    return {
+      success: true, order_id: 'o1', reference: 'KOM-001',
+      recipient: 'Jean Dupont', relais: 'Relais A',
+      collected_at: '2026-07-31T00:00:00.000Z',
+      ...overrides,
+    };
+  }
+
+  test('délègue à collectByPickupCode avec code/user/ip/userAgent', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({ status: 200, body: successBody() });
     db.query.mockResolvedValue({ rows: [{ user_phone: '+269123456' }] });
 
-    const result = await scanOps.collectParcel({ pickup_code: '123456' }, admin, '127.0.0.1', 'UA');
+    await scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, admin, '127.0.0.1', 'UA');
+
+    expect(mockCollectByPickupCode).toHaveBeenCalledWith({
+      code: 'A7K3M9P2', user: admin, ip: '127.0.0.1', userAgent: 'UA',
+    });
+  });
+
+  test('succès (200) — traduit la réponse, masque order_id, déclenche la notification', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({ status: 200, body: successBody() });
+    db.query.mockResolvedValue({ rows: [{ user_phone: '+269123456' }] });
+
+    const result = await scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, admin, '127.0.0.1', 'UA');
+
     expect(result.status).toBe(200);
     expect(result.body.reference).toBe('KOM-001');
+    expect(result.body.recipient).toBe('Jean Dupont');
+    expect(result.body.order_id).toBeUndefined(); // jamais exposé au contrat HTTP public
+    expect(notifyText).toHaveBeenCalledWith(
+      '+269123456',
+      expect.stringContaining('KOM-001'),
+      'collected', 'o1'
+    );
   });
 
-  test('code invalide → 404 + log alert', async () => {
-    const client = makeClient([{}, { rows: [] }, {}]); // BEGIN, SELECT vide, ROLLBACK
-    db.getClient.mockResolvedValue(client);
-    db.query.mockResolvedValue({ rows: [] }); // alert INSERT
+  test('succès mais commanditaire sans téléphone → pas de notification, toujours 200', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({ status: 200, body: successBody() });
+    db.query.mockResolvedValue({ rows: [{ user_phone: null }] });
 
-    const result = await scanOps.collectParcel({ pickup_code: '000000' }, agentRelais, '1.2.3.4', 'UA');
-    expect(result.status).toBe(404);
+    const result = await scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, admin, '127.0.0.1', 'UA');
+
+    expect(result.status).toBe(200);
+    expect(notifyText).not.toHaveBeenCalled();
   });
 
-  test('commande bloquée anti-brute-force → 429', async () => {
-    const blockedOrder = { ...order, pickup_secret_blocked_until: new Date(Date.now() + 60000).toISOString() };
-    const client = makeClient([{}, { rows: [blockedOrder] }, {}]);
-    db.getClient.mockResolvedValue(client);
+  test('notification commanditaire échoue → catch géré silencieusement, réponse déjà 200', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({ status: 200, body: successBody() });
+    db.query.mockResolvedValue({ rows: [{ user_phone: '+269123456' }] });
+    notifyText.mockRejectedValueOnce(new Error('sms provider down'));
+
+    const result = await scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, admin, '127.0.0.1', 'UA');
+    await flushPromises();
+
+    expect(result.status).toBe(200);
+  });
+
+  test('code invalide (400 format) → passthrough intact, pas de lookup notification', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({ status: 400, body: { error: 'Code de retrait invalide — format attendu : 8 caractères (tirets de présentation autorisés)' } });
 
     const result = await scanOps.collectParcel({ pickup_code: '123456' }, agentRelais, '1.2.3.4', 'UA');
+
+    expect(result.status).toBe(400);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  test('code introuvable (404) → passthrough intact', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({ status: 404, body: { error: 'Code de retrait introuvable ou déjà utilisé' } });
+
+    const result = await scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, agentRelais, '1.2.3.4', 'UA');
+
+    expect(result.status).toBe(404);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  test('commande bloquée anti-brute-force (429) → passthrough intact', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({
+      status: 429,
+      body: { error: 'Trop de tentatives. Réessayez dans 15 min.', blocked_until: '2026-07-31T01:00:00.000Z' },
+    });
+
+    const result = await scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, agentRelais, '1.2.3.4', 'UA');
+
     expect(result.status).toBe(429);
     expect(result.body.blocked_until).toBeDefined();
   });
 
-  test('cross-relais refus — agent mauvais relais → 403', async () => {
-    // agent affecté à relais r2, commande sur relais r1
-    const client = makeClient([
-      {},                                  // BEGIN
-      { rows: [order] },                   // SELECT orders FOR UPDATE
-      { rows: [{ relais_id: 'r2' }] },    // SELECT users.relais_id
-      {},                                  // ROLLBACK
-    ]);
-    db.getClient.mockResolvedValue(client);
-    db.query.mockResolvedValue({ rows: [] }); // UPDATE attempts + alert INSERT
+  test('secret expiré (410) → passthrough intact', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({ status: 410, body: { error: 'Code expiré. Escalade admin nécessaire.' } });
 
-    const result = await scanOps.collectParcel({ pickup_code: '123456' }, agentRelais, '1.2.3.4', 'UA');
+    const result = await scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, admin, '127.0.0.1', 'UA');
+
+    expect(result.status).toBe(410);
+  });
+
+  test('cross-relais refusé (403) → passthrough intact, corps métier (attempts) préservé', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({
+      status: 403,
+      body: { error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider', attempts: 1 },
+    });
+
+    const result = await scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, agentRelais, '1.2.3.4', 'UA');
+
     expect(result.status).toBe(403);
     expect(result.body.attempts).toBe(1);
   });
 
-  test('agent sans relais_id → 403', async () => {
-    const client = makeClient([
-      {},
-      { rows: [order] },
-      { rows: [{ relais_id: null }] }, // relais_id null
-      {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-    db.query.mockResolvedValue({ rows: [] });
+  test('agent_relais sans relais_id (403 configuration incomplète) → passthrough intact', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({
+      status: 403,
+      body: { error: 'Configuration agent incomplète — contactez un admin' },
+    });
 
-    const result = await scanOps.collectParcel({ pickup_code: '123456' }, agentRelais, '1.2.3.4', 'UA');
+    const result = await scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, agentRelais, '1.2.3.4', 'UA');
+
     expect(result.status).toBe(403);
     expect(result.body.error).toMatch('incomplète');
   });
 
-  test('pickup_code manquant → 400', async () => {
-    const result = await scanOps.collectParcel({}, agentRelais, '1.2.3.4', 'UA');
-    expect(result.status).toBe(400);
-    expect(db.getClient).not.toHaveBeenCalled();
+  test('la requête de lookup notification échoue → propage l\'erreur (pas de swallow silencieux)', async () => {
+    mockCollectByPickupCode.mockResolvedValueOnce({ status: 200, body: successBody() });
+    db.query.mockRejectedValueOnce(new Error('db timeout'));
+
+    await expect(
+      scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, admin, '127.0.0.1', 'UA')
+    ).rejects.toThrow('db timeout');
   });
 
-  test('appelle transitionOrderStatus si le sync colis a échoué (synced=false)', async () => {
-    const client = makeClient([
-      {}, { rows: [order] }, { rows: [{ id: 's1' }] }, {}, {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-    db.query.mockResolvedValue({ rows: [{ user_phone: '+269123456' }] });
-    safeSyncScanToParcels.mockResolvedValueOnce({ synced: false });
+  test('erreur métier propagée par collectByPickupCode (ex: rollback transactionnel) → propage', async () => {
+    mockCollectByPickupCode.mockRejectedValueOnce(new Error('parcelSync down'));
 
-    await scanOps.collectParcel({ pickup_code: '123456' }, admin, '127.0.0.1', 'UA');
-
-    expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({ newStatus: 'collected', source: 'scan' }));
-  });
-
-  test('agent_relais du bon relais → succès (cross-relais check OK, retourne null)', async () => {
-    const client = makeClient([
-      {}, { rows: [order] }, { rows: [{ relais_id: 'r1' }] }, { rows: [{ id: 's1' }] }, {}, {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-    db.query.mockResolvedValue({ rows: [{ user_phone: '+269123456' }] });
-
-    const result = await scanOps.collectParcel({ pickup_code: '123456' }, agentRelais, '1.2.3.4', 'UA');
-    expect(result.status).toBe(200);
-  });
-
-  test('la requête users.relais_id échoue → 403 configuration incomplète', async () => {
-    const client = {
-      query: jest.fn()
-        .mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({ rows: [order] }) // SELECT orders FOR UPDATE
-        .mockRejectedValueOnce(new Error('db timeout')) // SELECT users.relais_id échoue
-        .mockResolvedValueOnce({}), // ROLLBACK
-      release: jest.fn(),
-    };
-    db.getClient.mockResolvedValue(client);
-    db.query.mockResolvedValue({ rows: [] });
-
-    const result = await scanOps.collectParcel({ pickup_code: '123456' }, agentRelais, '1.2.3.4', 'UA');
-    expect(result.status).toBe(403);
-    expect(result.body.error).toMatch(/incomplète/);
-  });
-
-  test('échec de mise à jour des tentatives (cross-relais refus) → géré silencieusement', async () => {
-    const client = makeClient([
-      {}, { rows: [order] }, { rows: [{ relais_id: 'r2' }] }, {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-    db.query.mockRejectedValueOnce(new Error('update failed')); // UPDATE attempts échoue
-
-    const result = await scanOps.collectParcel({ pickup_code: '123456' }, agentRelais, '1.2.3.4', 'UA');
-    expect(result.status).toBe(403);
-    expect(result.body.attempts).toBe(1);
-  });
-
-  test('rollback et propage l\'erreur si une requete echoue', async () => {
-    const client = {
-      query: jest.fn()
-        .mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({ rows: [order] }) // SELECT orders FOR UPDATE
-        .mockRejectedValueOnce(new Error('insert failed')) // INSERT scans
-        .mockResolvedValueOnce({}), // ROLLBACK
-      release: jest.fn(),
-    };
-    db.getClient.mockResolvedValue(client);
-
-    await expect(scanOps.collectParcel({ pickup_code: '123456' }, admin, '127.0.0.1', 'UA')).rejects.toThrow('insert failed');
-    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
-  });
-
-  test('notification commanditaire échoue → catch géré silencieusement', async () => {
-    const client = makeClient([
-      {}, { rows: [order] }, { rows: [{ id: 's1' }] }, {}, {},
-    ]);
-    db.getClient.mockResolvedValue(client);
-    db.query.mockResolvedValue({ rows: [{ user_phone: '+269123456' }] });
-    notifyText.mockRejectedValueOnce(new Error('sms provider down'));
-
-    const result = await scanOps.collectParcel({ pickup_code: '123456' }, admin, '127.0.0.1', 'UA');
-    await flushPromises();
-
-    expect(result.status).toBe(200);
+    await expect(
+      scanOps.collectParcel({ pickup_code: 'A7K3M9P2' }, admin, '127.0.0.1', 'UA')
+    ).rejects.toThrow('parcelSync down');
   });
 });
 

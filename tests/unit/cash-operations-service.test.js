@@ -48,6 +48,10 @@ describe('cash-operations', () => {
         { rows: [{ relais_id: 'relais-001' }] },
         { rows: [] },
         { rows: [{ id: 'collection-001', order_id: 'order-001', amount_kmf: 12000 }] },
+      
+        { rows: [{}] }, // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
+        { rows: [] }, // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
+        { rows: [] }, // generateAndStoreSecret: UPDATE orders (stockage du secret)
       ]);
       confirmPaymentCycle.mockResolvedValue({ success: true, noop: false });
 
@@ -58,6 +62,7 @@ describe('cash-operations', () => {
         collection: { id: 'collection-001', order_id: 'order-001', amount_kmf: 12000 },
         noop: false,
         amount_kmf: 12000,
+        pickupCodeToCache: expect.any(String),
       });
       expect(confirmPaymentCycle).toHaveBeenCalledWith({
         orderId: 'order-001',
@@ -206,6 +211,10 @@ describe('cash-operations — Lot A, branches manquantes', () => {
         { rows: [makeOrder({ relais_id: 'relais-999' })] },
         { rows: [] }, // SELECT cash_collections (doublon check)
         { rows: [{ id: 'collection-002', order_id: 'order-001', amount_kmf: 12000 }] },
+      
+        { rows: [{}] }, // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
+        { rows: [] }, // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
+        { rows: [] }, // generateAndStoreSecret: UPDATE orders (stockage du secret)
       ]);
       confirmPaymentCycle.mockResolvedValue({ success: true, noop: false });
 
@@ -229,6 +238,10 @@ describe('cash-operations — Lot A, branches manquantes', () => {
         { rows: [{ relais_id: 'relais-001' }] },
         { rows: [] },
         { rows: [{ id: 'collection-003', order_id: 'order-001', amount_kmf: 12000 }] },
+      
+        { rows: [{}] }, // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
+        { rows: [] }, // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
+        { rows: [] }, // generateAndStoreSecret: UPDATE orders (stockage du secret)
       ]);
       confirmPaymentCycle.mockResolvedValue({ success: false, noop: true, stockBlocked: false });
 

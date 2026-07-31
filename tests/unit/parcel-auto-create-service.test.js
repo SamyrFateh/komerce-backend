@@ -287,6 +287,9 @@ describe('confirmCashAndCreateParcel', () => {
       { rows: [] },                   // INSERT parcels
       { rows: [] },                   // INSERT parcel_items
       { rows: [] },                   // INSERT scan_events
+      { rows: [{}] },                 // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
+      { rows: [] },                   // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
+      { rows: [] },                   // generateAndStoreSecret: UPDATE orders (stockage du secret)
     ]);
     mockGetClient.mockResolvedValue(client);
 
@@ -309,6 +312,9 @@ describe('confirmCashAndCreateParcel', () => {
       { rows: [], rowCount: 1 },    // UPDATE payment_status
       { rows: [ORDER_PAID] },       // SELECT order (autoCreateParcel)
       { rows: [{ id: 'old-parcel', reference: 'PCL-2026-0001' }] }, // colis déjà existant
+      { rows: [{}] },               // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
+      { rows: [] },                 // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
+      { rows: [] },                 // generateAndStoreSecret: UPDATE orders (stockage du secret)
     ]);
     mockGetClient.mockResolvedValue(client);
 

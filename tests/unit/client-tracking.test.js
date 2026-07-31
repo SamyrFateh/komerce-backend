@@ -70,7 +70,7 @@ describe('client-tracking — GET / pickupCode (anti-fuite secret retrait)', () 
   const baseOrder = {
     id: 'o1', reference: 'CMD-1', status: 'shipped', total_kmf: 10000,
     payment_mode: 'cash', payment_status: 'paid',
-    pickup_code: 'SECRET-1234', qr_token: 'qr-1',
+    pickup_secret_last4: 'S123', qr_token: 'qr-1',
     created_at: '2026-06-01', ordered_at: '2026-06-01',
     preparation_at: null, shipped_at: '2026-06-02', in_transit_at: null,
     available_at: null, collected_at: null,
@@ -101,7 +101,7 @@ describe('client-tracking — GET / pickupCode (anti-fuite secret retrait)', () 
 
     const res = await request(app).get('/api/client/tracking');
 
-    expect(res.body.orders[0].pickupCode).toBe('SECRET-1234');
+    expect(res.body.orders[0].pickupCode).toBe('•••-•S1-23');
   });
 
   it('révèle pickup_code une fois la commande collected', async () => {
@@ -114,7 +114,7 @@ describe('client-tracking — GET / pickupCode (anti-fuite secret retrait)', () 
 
     const res = await request(app).get('/api/client/tracking');
 
-    expect(res.body.orders[0].pickupCode).toBe('SECRET-1234');
+    expect(res.body.orders[0].pickupCode).toBe('•••-•S1-23');
   });
 });
 

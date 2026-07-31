@@ -55,15 +55,17 @@ const { buildReceiptHTML, escapeHTML } = require('../utils/pickup-receipt-html')
 // (payments) de ne plus importer un fichier ROUTE pour générer un code
 // retrait au moment du paiement. Voir docs/O7_2_CYCLE_ANALYSIS.md, Cycle B.
 const {
-  generatePickupCode, hashCode, normalizeCode,
   generateAndStoreSecret, cacheCodeForReveal,
+  verifyPickupCode, regenerateCode,
 } = require('../services/pickup-secret-service');
 
 // ══════════════════════════════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════════════════════════════
 
-// generatePickupCode / hashCode / normalizeCode : voir services/pickup-secret-service.js (O7.2 Cycle B)
+// generatePickupCode / hashCode / normalizeCode / verifyPickupCode / regenerateCode :
+// voir services/pickup-secret-service.js — seul propriétaire de la logique
+// métier du secret de retrait (Lot 2C).
 
 // Helper : rôle agent relais ou admin
 function isRelaisOrAdmin(req) {
@@ -225,98 +227,11 @@ router.post('/verify/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
     const { code }    = req.body;
     const agentId     = req.user.id;
 
-    if (!code) {
-      return res.status(400).json({ error: 'Code requis' });
-    }
-
-    const { rows: [order] } = await db.query(`
-      SELECT id, reference, status,
-             pickup_secret_hash, pickup_secret_salt, pickup_secret_last4,
-             pickup_secret_expires_at,
-             pickup_secret_attempts, pickup_secret_blocked_until
-      FROM orders WHERE id = $1
-    `, [orderId]);
-
-    if (!order) {
-      return res.status(404).json({ error: 'Commande introuvable' });
-    }
-    if (!order.pickup_secret_hash) {
-      return res.status(400).json({ error: 'Cette commande n\'a pas encore de code (paiement non effectué ?)' });
-    }
-
-    // Rate limit : si bloqué, refuser
-    const now = new Date();
-    if (order.pickup_secret_blocked_until && new Date(order.pickup_secret_blocked_until) > now) {
-      const retryAfter = Math.ceil((new Date(order.pickup_secret_blocked_until) - now) / 1000 / 60);
-      return res.status(429).json({
-        error: `Trop de tentatives. Réessayez dans ${retryAfter} min.`,
-        blocked_until: order.pickup_secret_blocked_until,
-      });
-    }
-
-    // Expiration du code ?
-    if (order.pickup_secret_expires_at && new Date(order.pickup_secret_expires_at) < now) {
-      return res.status(410).json({ error: 'Code expiré. Escalade admin nécessaire.' });
-    }
-
-    // Vérifier le code : 2 modes selon la longueur saisie
-    // - 4 chars : compare avec pickup_secret_last4 (saisie rapide au guichet)
-    // - 8 chars (code complet) : compare avec le hash salé
-    const normalized = normalizeCode(code);
-    let matched = false;
-
-    if (normalized.length === 4) {
-      // Mode court : comparaison directe du last4 (non-sensible, unique par relais actif)
-      matched = !!(order.pickup_secret_last4 && normalized === order.pickup_secret_last4);
-    } else if (normalized.length === 8) {
-      // Mode complet : comparaison du hash
-      const testHash = hashCode(normalized, order.pickup_secret_salt);
-      matched = (testHash === order.pickup_secret_hash);
-    } else {
-      return res.status(400).json({ error: 'Code attendu : 4 caractères (raccourci) ou 8 caractères (complet)' });
-    }
-
-    if (!matched) {
-      // Incrémenter le compteur de tentatives
-      const attempts = (order.pickup_secret_attempts || 0) + 1;
-      let blockUntil = null;
-      if (attempts >= 3) {
-        blockUntil = new Date(now.getTime() + 15 * 60 * 1000); // +15 min
-      }
-      await db.query(`
-        UPDATE orders
-        SET pickup_secret_attempts     = $1,
-            pickup_secret_blocked_until = $2,
-            updated_at                 = NOW()
-        WHERE id = $3
-      `, [attempts, blockUntil, orderId]);
-
-      log.warn(`[PICKUP-SECRET] Tentative échouée ${attempts}/3 pour ${order.reference} agent=${agentId}`);
-
-      return res.status(401).json({
-        error: 'Code incorrect',
-        attempts,
-        remaining: Math.max(0, 3 - attempts),
-        blocked_until: blockUntil,
-      });
-    }
-
-    // Succès : reset compteur, ne pas marquer collected encore (séparation verify/collect)
-    await db.query(`
-      UPDATE orders
-      SET pickup_secret_attempts = 0,
-          pickup_secret_blocked_until = NULL,
-          updated_at = NOW()
-      WHERE id = $1
-    `, [orderId]);
-
-    log.info(`[PICKUP-SECRET] ✅ Code vérifié pour ${order.reference}`);
-
-    res.json({
-      success: true,
-      message: 'Code valide. Vous pouvez remettre le colis.',
-      order_ref: order.reference,
-    });
+    // Lot 2C : logique métier (rate limit, expiration, comparaison hash
+    // salé, compteurs) déléguée à pickup-secret-service.verifyPickupCode.
+    // Le routeur reste un adaptateur HTTP pur.
+    const result = await verifyPickupCode({ orderId, code, agentId });
+    res.status(result.status).json(result.body);
 
   } catch (err) { next(err); }
 });
@@ -355,70 +270,13 @@ router.post('/regenerate/:orderId', authenticate, requireAdmin, async (req, res,
     const adminId     = req.user.id;
     const { reason }  = req.body;
 
-    if (!reason || reason.trim().length < 5) {
-      return res.status(400).json({ error: 'Motif obligatoire (min 5 caractères)' });
-    }
-
-    const { rows: [order] } = await db.query(`
-      SELECT id, reference, pickup_secret_hash, relais_id FROM orders WHERE id = $1
-    `, [orderId]);
-
-    if (!order) {
-      return res.status(404).json({ error: 'Commande introuvable' });
-    }
-
-    // Génération anti-collision last4 (même logique que pay-cash)
-    let code, last4, hash;
-    const salt = crypto.randomBytes(16).toString('hex');
-    let attempts = 0;
-    const MAX_GEN_ATTEMPTS = 50;
-    while (attempts < MAX_GEN_ATTEMPTS) {
-      code  = generatePickupCode();
-      last4 = code.replace(/-/g, '').slice(-4);
-      const { rows: [dup] } = await db.query(`
-        SELECT id FROM orders
-        WHERE pickup_secret_last4 = $1
-          AND relais_id IS NOT DISTINCT FROM $2
-          AND id <> $3
-          AND status NOT IN ('collected', 'cancelled', 'refunded')
-          AND (pickup_secret_expires_at IS NULL OR pickup_secret_expires_at > NOW())
-        LIMIT 1
-      `, [last4, order.relais_id || null, orderId]);
-      if (!dup) break;
-      attempts++;
-    }
-    if (attempts >= MAX_GEN_ATTEMPTS) {
-      return res.status(500).json({ error: 'Génération du code impossible (saturation)' });
-    }
-    hash = hashCode(code, salt);
-    const now     = new Date();
-    const expires = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
-
-    await db.query(`
-      UPDATE orders
-      SET pickup_secret_hash        = $1,
-          pickup_secret_salt        = $2,
-          pickup_secret_last4       = $7,
-          pickup_secret_created_at  = $3,
-          pickup_secret_expires_at  = $4,
-          pickup_secret_attempts    = 0,
-          pickup_secret_blocked_until = NULL,
-          pickup_secret_regen_count = COALESCE(pickup_secret_regen_count, 0) + 1,
-          pickup_secret_regen_reason = $5,
-          updated_at = NOW()
-      WHERE id = $6
-    `, [hash, salt, now, expires, reason.trim(), orderId, last4]);
-
-    log.info(`[PICKUP-SECRET] 🔄 Régénéré pour ${order.reference} par admin ${adminId} motif="${reason}"`);
-
-    // Le nouveau code en clair est renvoyé à l'admin UNE SEULE FOIS
-    // L'admin est responsable de le transmettre par canal sécurisé à l'agent relais
-    res.json({
-      success: true,
-      message: 'Nouveau code généré. Transmettez-le par canal sécurisé à l\'agent relais.',
-      code,
-      order_ref: order.reference,
-    });
+    // Lot 2C : génération anti-collision, contrôle du motif et compteur de
+    // régénérations délégués à pickup-secret-service.regenerateCode. Le
+    // routeur reste un adaptateur HTTP pur — préserve exactement le
+    // contrôle admin, le motif obligatoire, la révélation unique du
+    // nouveau code, et l'absence de code dans les logs.
+    const result = await regenerateCode({ orderId, adminId, reason });
+    res.status(result.status).json(result.body);
 
   } catch (err) { next(err); }
 });

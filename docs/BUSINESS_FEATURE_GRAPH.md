@@ -1528,7 +1528,7 @@ Meta Graph monté : oui.
 | dashboard | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | infrastructure | static-code | 48 | **OBSERVED_UNDECLARED** |
-| dashboard | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| dashboard | logistics | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | dashboard | purchasing | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | decision-signals | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -1554,7 +1554,7 @@ Meta Graph monté : oui.
 | infrastructure | decision-signals | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | economic-engine | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | infrastructure | inventory | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| infrastructure | logistics | static-code | 20 | **DECLARED_AND_OBSERVED** |
+| infrastructure | logistics | static-code | 21 | **DECLARED_AND_OBSERVED** |
 | infrastructure | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | notifications | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
@@ -1594,7 +1594,7 @@ Meta Graph monté : oui.
 | orders | documents | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code | 60 | **OBSERVED_UNDECLARED** |
-| orders | logistics | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface | 15 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 9 | **OBSERVED_UNDECLARED** |
 | orders | payments | static-code | 5 | **DECLARED_AND_OBSERVED** |
@@ -1607,7 +1607,7 @@ Meta Graph monté : oui.
 | payments | business-rules | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | payments | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | payments | infrastructure | static-code, interface | 46 | **OBSERVED_UNDECLARED** |
-| payments | logistics | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
+| payments | logistics | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
 | payments | loyalty | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | payments | notifications | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | payments | orders | static-code, interface | 24 | **DECLARED_AND_OBSERVED** |
@@ -1648,7 +1648,7 @@ Meta Graph monté : oui.
 | shared-cart | customs | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | shared-cart | documents | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | shared-cart | infrastructure | static-code | 63 | **OBSERVED_UNDECLARED** |
-| shared-cart | logistics | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| shared-cart | logistics | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | shared-cart | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | shared-cart | notifications | static-code | 6 | **OBSERVED_UNDECLARED** |
 | shared-cart | orders | static-code | 14 | **DECLARED_AND_OBSERVED** |

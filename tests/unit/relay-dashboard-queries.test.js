@@ -177,7 +177,7 @@ describe('getOrders', () => {
 
 describe('getOrderDetail', () => {
   const BASE_ORDER = {
-    id: 100, reference: 'CMD-100', status: 'available', pickup_code: 'PICK1',
+    id: 100, reference: 'CMD-100', status: 'available', pickup_secret_last4: 'P1CK',
     created_at: '2026-06-01', updated_at: '2026-06-10',
     relais_id: 7, relais_nom: 'Relais Moroni', ile: 'Grande Comore',
     relais_adresse: 'Adresse', relais_phone: '+269000',
@@ -226,7 +226,7 @@ describe('getOrderDetail', () => {
     const result = await relayQueries.getOrderDetail(RELAY_USER, '100');
 
     expect(result.order).toEqual({
-      id: 100, reference: 'CMD-100', status: 'available', pickup_code: 'PICK1',
+      id: 100, reference: 'CMD-100', status: 'available', pickup_code: '•••-•P1-CK',
       created_at: '2026-06-01', updated_at: '2026-06-10',
       age_jours: 3, heures_attente: 12,
     });

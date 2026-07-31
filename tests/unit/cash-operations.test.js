@@ -103,6 +103,9 @@ describe('collectCash — nominal', () => {
       { rows: [{ relais_id: 'relais-1' }] }, // SELECT relais_id from users (agent check)
       { rows: [] },                  // SELECT cash_collections (doublon check)
       { rows: [collection] },        // INSERT cash_collections
+      { rows: [{}] },                // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
+      { rows: [] },                  // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
+      { rows: [] },                  // generateAndStoreSecret: UPDATE orders (stockage du secret)
     ]);
 
     mockConfirmPaymentCycle.mockResolvedValue({

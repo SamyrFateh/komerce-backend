@@ -393,6 +393,9 @@ describe('[LOT9-T5] convertSharedCartToOrder — solde restant fidèle', () => {
       { rows: [] }, // order_status_history
       { rows: [] }, // resolveFrozenClassification — customs_categories default
       { rows: [] }, // order_items (+ champs clf)
+      { rows: [{}] }, // ensureSecretGenerated: SELECT pickup_secret_hash/last4 (aucun existant)
+      { rows: [] }, // generateAndStoreSecret: SELECT id anti-collision (pas de doublon)
+      { rows: [] }, // generateAndStoreSecret: UPDATE orders (stockage du secret)
       { rows: [] }, // UPDATE shared_carts converted
       { rows: [] }, // event
       (sql, params) => ({ rows: [{ id: params[0], reference: 'KMR-TEST-0001', remaining_cash_kmf: 0 }] }),

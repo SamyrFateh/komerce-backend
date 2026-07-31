@@ -42,7 +42,7 @@ const BASE_ORDER = {
   payment_mode: 'cash',
   payment_status: 'paid',
   cash_ref_code: 'SECRET-CASH',
-  pickup_code: 'SECRET-PICKUP',
+  pickup_secret_last4: 'PICK',
   confection_type: null,
   module_type: null,
   module_size: null,
@@ -137,7 +137,7 @@ describe('GET /api/orders/:ref', () => {
     const res = await request(buildApp()).get('/api/orders/K12345');
 
     expect(res.body.cash_ref_code).toBe('SECRET-CASH');
-    expect(res.body.pickup_code).toBe('SECRET-PICKUP');
+    expect(res.body.pickup_code).toBe('•••-•PI-CK');
     expect(res.body.supplier_name).toBeUndefined();
   });
 
@@ -151,7 +151,7 @@ describe('GET /api/orders/:ref', () => {
     const res = await request(buildApp()).get('/api/orders/K12345');
 
     expect(res.body.cash_ref_code).toBe('SECRET-CASH');
-    expect(res.body.pickup_code).toBe('SECRET-PICKUP');
+    expect(res.body.pickup_code).toBe('•••-•PI-CK');
     expect(res.body.supplier_name).toBe('ACME');
     expect(res.body.supplier_invoice_url).toBe('https://supplier.example/inv.pdf');
   });
