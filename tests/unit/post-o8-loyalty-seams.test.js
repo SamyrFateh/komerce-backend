@@ -83,16 +83,28 @@ describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
     const { createUser, cleanup } = require('../integration/test-harness/seed-helpers');
     const TIER_LABEL = `itest-post-o8-tier-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let tierId;
+    let tierMinOrders;
     let relaisId;
     let user;
 
     beforeAll(async () => {
+      // Le dump de test contient déjà des paliers. recalculate_loyalty() trie
+      // uniquement par min_orders DESC : deux paliers au même seuil rendent
+      // le résultat indéterministe. On crée donc un seuil strictement supérieur
+      // à tous les seuils existants et exactement le nombre de commandes requis.
+      const { rows: [threshold] } = await db.query(
+        `SELECT (COALESCE(MAX(min_orders), 0) + 1)::int AS min_orders
+         FROM loyalty_tiers`
+      );
+      tierMinOrders = Number(threshold.min_orders);
+
       const { rows: [tier] } = await db.query(
         `INSERT INTO loyalty_tiers (label, badge, min_orders, discount_pct)
-         VALUES ($1, '★', 1, 5.00) RETURNING id`,
-        [TIER_LABEL]
+         VALUES ($1, '★', $2, 5.00) RETURNING id`,
+        [TIER_LABEL, tierMinOrders]
       );
       tierId = tier.id;
+
       const { rows: [relais] } = await db.query(
         `INSERT INTO relais (name, agent_name, phone, address, island)
          VALUES ($1, 'ITest Loyalty', $2, 'Adresse test loyalty', 'Anjouan')
@@ -101,13 +113,19 @@ describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
       );
       relaisId = relais.id;
       user = await createUser({ role: 'client' });
-      // One 'collected' order for this user — recalculate_loyalty() counts
-      // exactly this status (mission-relevant: a different lifecycle status
-      // than confirmPaymentCycle's 'confirmed'/'ordered').
+
+      // Une insertion ensembliste garde le test rapide même si plusieurs
+      // commandes sont nécessaires pour dépasser le plus haut palier existant.
       await db.query(
-        `INSERT INTO orders (reference, user_id, relais_id, total_kmf, total_eur, payment_mode, payment_status, status)
-         VALUES ($1, $2, $3, 10000, 20, 'cash_relais', 'paid', 'collected')`,
-        [`ITEST-LOYALTY-${Date.now()}`, user.id, relaisId]
+        `INSERT INTO orders
+           (reference, user_id, relais_id, total_kmf, total_eur,
+            payment_mode, payment_status, status)
+         SELECT
+           'ITEST-LOYALTY-' || gen_random_uuid()::text,
+           $1, $2, 10000, 20,
+           'cash_relais', 'paid', 'collected'
+         FROM generate_series(1, $3::int)`,
+        [user.id, relaisId, tierMinOrders]
       );
     });
 
@@ -124,7 +142,7 @@ describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
       const { rows: [row] } = await db.query(
         `SELECT orders_count, loyalty_tier_id FROM users WHERE id = $1`, [user.id]
       );
-      expect(row.orders_count).toBe(1);
+      expect(row.orders_count).toBe(tierMinOrders);
       expect(row.loyalty_tier_id).toBe(tierId);
 
       const { discountPct, discountLabel } = await getLoyaltyDiscount(db, user.id);
