@@ -535,6 +535,15 @@
     ],
     "boutiqueManifests": [
       {
+        "id": "boutique-manifest:account",
+        "name": "account",
+        "file": "boutique:features/account.feature.js",
+        "repo": "boutique",
+        "canonicalFeature": "auth-identity",
+        "sliceKind": "frontend-slice",
+        "governed": true
+      },
+      {
         "id": "boutique-manifest:auth",
         "name": "auth",
         "file": "boutique:features/auth.feature.js",
@@ -14119,6 +14128,11 @@
     "implementedIn": [
       {
         "canonicalFeature": "auth-identity",
+        "boutiqueManifest": "account",
+        "sliceKind": "frontend-slice"
+      },
+      {
+        "canonicalFeature": "auth-identity",
         "boutiqueManifest": "auth",
         "sliceKind": "frontend-slice"
       },
@@ -14174,6 +14188,30 @@
       }
     ],
     "boutiqueManifestImplementedBy": [
+      {
+        "boutiqueManifest": "account",
+        "category": "js",
+        "declared": "../js/b-komerce.js",
+        "resolvedPath": "public/boutique/js/b-komerce.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "account",
+        "category": "css",
+        "declared": "../css/komerce.css",
+        "resolvedPath": "public/boutique/css/komerce.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "account",
+        "category": "tests",
+        "declared": "../tests/unit/b-komerce.test.js",
+        "resolvedPath": "public/boutique/tests/unit/b-komerce.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
       {
         "boutiqueManifest": "auth",
         "category": "js",
@@ -16106,12 +16144,54 @@
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
+                "sourceFileId": "public/boutique/js/b-komerce.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/b-komerce.js",
+                "targetFile": "public/boutique/js/b-bus.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-komerce.test.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/b-identity.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
                 "sourceFileId": "public/boutique/tests/unit/b-identity.test.js",
                 "targetFile": "public/boutique/js/b-utils.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/b-komerce.js",
+                "targetFile": "public/boutique/js/b-wallet.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-komerce.test.js",
+                "targetFile": "public/boutique/js/b-wallet.js"
+              }
+            ]
+          },
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/wallet",
+                "routeFile": "routes/wallet.js",
+                "consumerFileId": "public/boutique/js/b-komerce.js"
               }
             ]
           }
@@ -21145,6 +21225,19 @@
         "to": "auth-identity",
         "channels": [
           {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "public/boutique/js/b-nav.js",
+                "targetFile": "public/boutique/js/b-komerce.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
+                "targetFile": "public/boutique/js/b-komerce.js"
+              }
+            ]
+          },
+          {
             "channel": "interface",
             "evidence": [
               {
@@ -21694,26 +21787,6 @@
         "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
-        "from": "platform-ops",
-        "to": "wallet",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "public/boutique/js/b-nav.js",
-                "targetFile": "public/boutique/js/b-wallet.js"
-              },
-              {
-                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
-                "targetFile": "public/boutique/js/b-wallet.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "OBSERVED_UNDECLARED"
-      },
-      {
         "from": "purchasing",
         "to": "auth",
         "channels": [
@@ -21830,6 +21903,10 @@
             "evidence": [
               {
                 "sourceFileId": "services/purchasing-receive-service.js",
+                "targetFile": "services/scan-operations.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchasing-receive-service.test.js",
                 "targetFile": "services/scan-operations.js"
               }
             ]
@@ -23283,7 +23360,7 @@
         "filesObserved": 820
       },
       "boutique": {
-        "filesObserved": 123,
+        "filesObserved": 125,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -23315,12 +23392,12 @@
     ],
     "familySummary": {
       "PROJECTION": 9,
-      "COMPOSITION_ROOT_WIRING": 14,
+      "COMPOSITION_ROOT_WIRING": 13,
       "NON_RUNTIME_TEST": 7,
       "TECHNICAL_PRIMITIVE": 29,
       "BUSINESS_TRANSVERSAL_SERVICE": 3,
       "CROSS_FEATURE_DIRECT_IMPORT": 3,
-      "BUSINESS_FEATURE_INTERFACE": 7,
+      "BUSINESS_FEATURE_INTERFACE": 8,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
     },
@@ -23551,6 +23628,22 @@
         "exceptionReasons": [
           "runtime-cycle"
         ]
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "family": "BUSINESS_FEATURE_INTERFACE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface",
+          "static-code"
+        ],
+        "couplingObserved": "mixed",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "catalog",
@@ -24058,11 +24151,12 @@
         "from": "platform-ops",
         "to": "auth-identity",
         "family": "BUSINESS_FEATURE_INTERFACE",
-        "evidenceRole": "RUNTIME_ONLY",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-transversal",
         "providerKind": "business-feature",
         "channels": [
-          "interface"
+          "interface",
+          "static-code"
         ],
         "couplingObserved": "interface",
         "policy": "business-dependency-declare-candidate",
@@ -24154,21 +24248,6 @@
       {
         "from": "platform-ops",
         "to": "shared-cart",
-        "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_AND_TEST",
-        "consumerKind": "technical-transversal",
-        "providerKind": "business-feature",
-        "channels": [
-          "static-code"
-        ],
-        "couplingObserved": "business-file-import",
-        "policy": "application-wiring-not-consumption",
-        "exceptionRequired": false,
-        "exceptionReasons": []
-      },
-      {
-        "from": "platform-ops",
-        "to": "wallet",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-transversal",
@@ -24438,6 +24517,7 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 11,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 2,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
@@ -24451,15 +24531,13 @@
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|mixed": 2,
       "BUSINESS_TRANSVERSAL_SERVICE|RUNTIME_AND_TEST|business-feature|business-transversal|business-file-import": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|mixed": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|technical-transversal|business-feature|interface": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 2,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|technical-transversal|business-feature|interface": 3,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|technical-transversal|technical-foundation|mixed": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 3,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1
     },
     "runtimeCycles": [
       {
@@ -26213,10 +26291,10 @@
         "note": "pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)"
       },
       "boutique": {
-        "manifestsDiscovered": 12,
-        "manifestsConnected": 12,
-        "technicalNodesTotal": 75,
-        "technicalNodesOwned": 75,
+        "manifestsDiscovered": 13,
+        "manifestsConnected": 13,
+        "technicalNodesTotal": 76,
+        "technicalNodesOwned": 76,
         "technicalOrphans": 0
       }
     },
@@ -26465,7 +26543,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> platform-ops",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "auth-identity -> wallet",
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"wallet\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26635,7 +26718,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> auth-identity",
-        "msg": "dépendance cross-feature observée (canal: interface, 3 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 5 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-identity\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26666,11 +26749,6 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> shared-cart",
         "msg": "dépendance cross-feature observée (canal: static-code, 10 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"shared-cart\""
-      },
-      {
-        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
-        "ref": "platform-ops -> wallet",
-        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"wallet\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

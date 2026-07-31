@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-31T13:51:14.509Z",
+  "generatedAt": "2026-07-31T18:57:42.899Z",
   "summary": {
     "modules": 75,
     "withHeader": 75,
-    "events": 21,
-    "declaredActive": 16,
+    "events": 22,
+    "declaredActive": 17,
     "declaredDead": 9,
     "cssBundles": 3,
     "endpoints": 52,
@@ -14,7 +14,7 @@
     "notFoundEndpoints": 0,
     "unprovenEndpoints": 30,
     "dynamicEndpoints": 24,
-    "ownedEvents": 3,
+    "ownedEvents": 0,
     "ownershipRed": 0,
     "ownershipOrange": 0
   },
@@ -837,21 +837,30 @@
       "depends": [
         "b-utils.js",
         "b-identity.js",
-        "b-wallet.js"
+        "b-wallet.js",
+        "b-bus.js"
       ],
       "usedBy": [
         "b-nav.js",
         "boutique.js"
       ],
-      "emits": [],
+      "emits": [
+        "komerce:show"
+      ],
       "listens": [],
       "imports": [
         "b-utils",
         "b-identity",
-        "b-wallet"
+        "b-wallet",
+        "b-bus"
       ],
       "bodyClasses": [],
-      "emitCalls": []
+      "emitCalls": [
+        {
+          "name": "komerce:show",
+          "hasArg": false
+        }
+      ]
     },
     {
       "file": "public/boutique/js/b-mini-cart.js",
@@ -1444,7 +1453,8 @@
       "listens": [
         "cart:update",
         "nav:goto-track",
-        "nav:goto-komerce-wallet"
+        "nav:goto-komerce-wallet",
+        "komerce:show"
       ],
       "imports": [
         "b-bus",
@@ -2573,6 +2583,14 @@
       ],
       "listeners": []
     },
+    "komerce:show": {
+      "emitters": [
+        "b-komerce"
+      ],
+      "listeners": [
+        "b-nav"
+      ]
+    },
     "modal:detail-ready": {
       "emitters": [
         "b-modal-product-detail-bootstrap"
@@ -2794,41 +2812,6 @@
       "module": "b-identity",
       "route": "/api/auth/otp/verify",
       "raw": "/api/auth/otp/verify",
-      "dynamic": false,
-      "contractStatus": "UNKNOWN"
-    },
-    {
-      "module": "b-komerce",
-      "route": "/api/auth/me",
-      "raw": "/api/auth/me",
-      "dynamic": false,
-      "contractStatus": "UNKNOWN"
-    },
-    {
-      "module": "b-komerce",
-      "route": "/api/wallet",
-      "raw": "/api/wallet",
-      "dynamic": false,
-      "contractStatus": "UNKNOWN"
-    },
-    {
-      "module": "b-komerce",
-      "route": "/api/auth/me",
-      "raw": "/api/auth/me",
-      "dynamic": false,
-      "contractStatus": "UNKNOWN"
-    },
-    {
-      "module": "b-komerce",
-      "route": "/api/auth/me",
-      "raw": "/api/auth/me",
-      "dynamic": false,
-      "contractStatus": "UNKNOWN"
-    },
-    {
-      "module": "b-komerce",
-      "route": "/api/auth/me",
-      "raw": "/api/auth/me",
       "dynamic": false,
       "contractStatus": "UNKNOWN"
     },
@@ -3302,6 +3285,7 @@
       "modal:suggestions-rendered",
       "modal:detail-ready",
       "nav:goto-track",
+      "komerce:show",
       "nav:goto-komerce-wallet",
       "modal:opened",
       "modal:closed",
@@ -3318,40 +3302,8 @@
       "supprim",
       "b-catalog"
     ],
-    "owned": {
-      "modal:opened": {
-        "owner": "modal-product",
-        "producer": "b-modal-core",
-        "payload": "value"
-      },
-      "modal:closed": {
-        "owner": "modal-product",
-        "producer": "b-modal-core",
-        "payload": "none"
-      },
-      "modal:composition-synced": {
-        "owner": "modal-product",
-        "producer": "b-modal-product-detail-bootstrap",
-        "payload": "none"
-      }
-    },
-    "consumers": {
-      "modal:opened": [
-        "b-modal-product-detail-bootstrap",
-        "boutique",
-        "b-pdp-curation-suggestions",
-        "b-pager",
-        "b-modal-desktop-enhancers"
-      ],
-      "modal:closed": [
-        "b-modal-product-detail-bootstrap",
-        "b-pager"
-      ],
-      "modal:composition-synced": [
-        "b-modal-desktop-enhancers",
-        "b-modal-core"
-      ]
-    }
+    "owned": {},
+    "consumers": {}
   },
   "diagnostics": {
     "orphanEmit": [
@@ -3432,88 +3384,8 @@
     "ownershipRed": [],
     "ownershipOrange": []
   },
-  "ownership": {
-    "modal:opened": {
-      "owner": "modal-product",
-      "declaredProducer": "b-modal-core",
-      "actualEmitters": [
-        "b-modal-core"
-      ],
-      "producerMissing": false,
-      "producerUnauthorized": [],
-      "declaredConsumers": [
-        "b-modal-product-detail-bootstrap",
-        "boutique",
-        "b-pdp-curation-suggestions",
-        "b-pager",
-        "b-modal-desktop-enhancers"
-      ],
-      "actualConsumers": [
-        "b-modal-desktop-enhancers",
-        "b-modal-product-detail-bootstrap",
-        "b-pager",
-        "b-pdp-curation-suggestions",
-        "boutique"
-      ],
-      "consumerUndeclared": [],
-      "payload": "value",
-      "payloadMismatches": []
-    },
-    "modal:closed": {
-      "owner": "modal-product",
-      "declaredProducer": "b-modal-core",
-      "actualEmitters": [
-        "b-modal-core"
-      ],
-      "producerMissing": false,
-      "producerUnauthorized": [],
-      "declaredConsumers": [
-        "b-modal-product-detail-bootstrap",
-        "b-pager"
-      ],
-      "actualConsumers": [
-        "b-modal-product-detail-bootstrap",
-        "b-pager"
-      ],
-      "consumerUndeclared": [],
-      "payload": "none",
-      "payloadMismatches": []
-    },
-    "modal:composition-synced": {
-      "owner": "modal-product",
-      "declaredProducer": "b-modal-product-detail-bootstrap",
-      "actualEmitters": [
-        "b-modal-product-detail-bootstrap"
-      ],
-      "producerMissing": false,
-      "producerUnauthorized": [],
-      "declaredConsumers": [
-        "b-modal-desktop-enhancers",
-        "b-modal-core"
-      ],
-      "actualConsumers": [
-        "b-modal-core",
-        "b-modal-desktop-enhancers"
-      ],
-      "consumerUndeclared": [],
-      "payload": "none",
-      "payloadMismatches": []
-    }
-  },
-  "ownershipStatus": {
-    "modal:opened": {
-      "level": "green",
-      "msg": "propriété saine"
-    },
-    "modal:closed": {
-      "level": "green",
-      "msg": "propriété saine"
-    },
-    "modal:composition-synced": {
-      "level": "green",
-      "msg": "propriété saine"
-    }
-  },
+  "ownership": {},
+  "ownershipStatus": {},
   "bodyClasses": {
     "static": [],
     "dynamic": {

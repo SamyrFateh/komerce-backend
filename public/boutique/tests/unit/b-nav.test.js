@@ -1,3 +1,16 @@
+/**
+ * @komerce-arch-lite
+ * @role          boutique-nav-tests
+ * @domain        boutique
+ * @layer         test
+ * @status        production
+ * @owner         public/boutique/tests/unit/b-nav.test.js
+ * @purpose       Tests unitaires de la navigation principale de la boutique
+ *                (switchView, setupBnav, deep-links). Vérifie que Mon Komerce
+ *                utilise openMonKomerce comme point d'entrée canonique (Lot 4B).
+ * @impact-areas  boutique-navigation, account
+ * @version       2026-07-lot4b
+ */
 'use strict';
 
 /**
@@ -43,7 +56,7 @@ jest.mock('../../js/b-catalog.js', () => ({
 }));
 jest.mock('../../js/b-favs.js', () => ({ renderFavView: jest.fn() }));
 jest.mock('../../js/b-tracking.js', () => ({ renderTrackView: jest.fn() }));
-jest.mock('../../js/b-komerce.js', () => ({ renderKomerceView: jest.fn() }));
+jest.mock('../../js/b-komerce.js', () => ({ openMonKomerce: jest.fn() }));
 jest.mock('../../js/b-group-view.js', () => ({
   renderGroupView: jest.fn(),
   detectParticipantToken: jest.fn(),
@@ -60,7 +73,7 @@ const { checkoutCart, closeOrderModal } = require('../../js/b-checkout.js');
 const { renderGrid } = require('../../js/b-catalog.js');
 const { renderFavView } = require('../../js/b-favs.js');
 const { renderTrackView } = require('../../js/b-tracking.js');
-const { renderKomerceView } = require('../../js/b-komerce.js');
+const { openMonKomerce } = require('../../js/b-komerce.js');
 const { renderGroupView, detectParticipantToken, stopPolling } = require('../../js/b-group-view.js');
 const { destroyMobilePager } = require('../../js/b-pager.js');
 const { scrollPageToTop } = require('../../js/b-scroll-owner.js');
@@ -343,7 +356,7 @@ describe('setupBnav', () => {
     mountNavButtons();
     setupBnav();
     document.querySelector('[data-tab="komerce"]').click();
-    expect(renderKomerceView).toHaveBeenCalled();
+    expect(openMonKomerce).toHaveBeenCalled();
   });
 
   test('active la classe "active" uniquement sur le bouton cliqué', () => {

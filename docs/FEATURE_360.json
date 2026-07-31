@@ -45,7 +45,7 @@
     "healthy": 6,
     "attention": 23,
     "blocked": 0,
-    "businessDependencies": 118,
+    "businessDependencies": 119,
     "directCrossFeatureImports": 3,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 65,
@@ -58,8 +58,8 @@
     "gateFindingsVersion": "GF-2.1",
     "gateSourcesTotal": 18,
     "gateSourcesFailed": 0,
-    "totalFindings": 20,
-    "attributedFindings": 20,
+    "totalFindings": 22,
+    "attributedFindings": 22,
     "unattributedFindingsCount": 0,
     "unattributedFindings": [],
     "unprojectableFiles": [],
@@ -1079,6 +1079,14 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "wallet",
+          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "channels": [
+            "interface",
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -1108,7 +1116,8 @@
           "consumer": "platform-ops",
           "disposition": "BUSINESS_FEATURE_INTERFACE",
           "channels": [
-            "interface"
+            "interface",
+            "static-code"
           ]
         },
         {
@@ -13809,7 +13818,8 @@
           "provider": "auth-identity",
           "disposition": "BUSINESS_FEATURE_INTERFACE",
           "channels": [
-            "interface"
+            "interface",
+            "static-code"
           ]
         },
         {
@@ -13874,7 +13884,7 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 1,
         "testOnlyRelations": 0,
-        "compositionRootRelations": 4,
+        "compositionRootRelations": 3,
         "details": [
           {
             "to": "infrastructure",
@@ -13890,10 +13900,6 @@
           },
           {
             "to": "shared-cart",
-            "family": "COMPOSITION_ROOT_WIRING"
-          },
-          {
-            "to": "wallet",
             "family": "COMPOSITION_ROOT_WIRING"
           }
         ]
@@ -13919,7 +13925,7 @@
       "gateHealth": {
         "status": "ATTENTION",
         "failCount": 0,
-        "warnCount": 4,
+        "warnCount": 6,
         "gatesReporting": [
           "check:body-classes"
         ],
@@ -13930,7 +13936,15 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "⚠ 0 erreur, 4 avertissement(s) — exit 0"
+            "message": "↳ Référencé en CSS : css\\cart.css:1989, css\\cart.css:2000 … — sélecteur legacy ou JS manquant"
+          },
+          {
+            "gate": "check:body-classes",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
+            "message": "⚠ 0 erreur, 5 avertissement(s) — exit 0"
           },
           {
             "gate": "check:body-classes",
@@ -13946,6 +13960,14 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
+            "message": "⚠ [B-2] Classe body 'k-view-komerce' retirée mais jamais ajoutée dans le JS ou HTML inline"
+          },
+          {
+            "gate": "check:body-classes",
+            "scope": "boutique",
+            "type": "TEXT-GATE-DIAGNOSTIC",
+            "verdict": "warn",
+            "file": null,
             "message": "⚠ [B-2] Classe body 'k-view-track' retirée mais jamais ajoutée dans le JS ou HTML inline"
           },
           {
@@ -13954,7 +13976,7 @@
             "type": "TEXT-GATE-DIAGNOSTIC",
             "verdict": "warn",
             "file": null,
-            "message": "⚠ [B-2] Classe body 'k-view-wallet' retirée mais jamais ajoutée dans le JS ou HTML inline"
+            "message": "⚠ [B-3] CSS utilise body.ck-is-me mais aucun JS ne gère cette classe"
           }
         ]
       },
@@ -17120,6 +17142,14 @@
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "auth-identity",
+          "disposition": "BUSINESS_FEATURE_INTERFACE",
+          "channels": [
+            "interface",
+            "static-code"
+          ]
+        },
         {
           "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",

@@ -22,7 +22,7 @@
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
-| `komerce.css` | 155 | 🔴 **ORPHELIN** |
+| `komerce.css` | 221 | 🔴 **ORPHELIN** |
 | `layout.css` | 1173 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
@@ -46,7 +46,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=156
- 2. /boutique/css/dist/components.css?v=367
+ 2. /boutique/css/dist/components.css?v=368
  3. /boutique/css/dist/desktop.css?v=85
 ```
 

@@ -1,7 +1,7 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-31T13:51:14.943Z.
+> Régénéré le 2026-07-31T18:57:43.187Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
@@ -33,7 +33,7 @@
 | `invoices` | 2 | 1 | 1 |
 | `order_items` | 6 | 3 | 4 |
 | `order_status_history` | 1 | 3 | 2 |
-| `orders` | 19 | 6 | 13 |
+| `orders` | 19 | 5 | 13 |
 | `parcel_items` | 4 | 1 | 3 |
 | `parcels` | 10 | 2 | 10 |
 | `product_skus` | 3 | 3 | 5 |

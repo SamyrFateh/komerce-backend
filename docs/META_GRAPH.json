@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31T13:51:14.943Z",
+  "generatedAt": "2026-07-31T18:57:43.187Z",
   "sources": {
     "backend": {
       "nodes": 793
@@ -71,7 +71,6 @@
     "/api/wallet": {
       "boutique": [
         "b-checkout",
-        "b-komerce",
         "b-wallet"
       ],
       "dashboards": [],
@@ -1652,7 +1651,6 @@
       ],
       "boutique": [
         "b-checkout",
-        "b-komerce",
         "b-paypal",
         "b-tracking",
         "b-wallet",
@@ -1711,7 +1709,6 @@
       ],
       "boutique": [
         "b-checkout",
-        "b-komerce",
         "b-wallet"
       ],
       "dashboards": []
@@ -1722,7 +1719,6 @@
       ],
       "boutique": [
         "b-checkout",
-        "b-komerce",
         "b-wallet"
       ],
       "dashboards": []
@@ -1733,7 +1729,6 @@
       ],
       "boutique": [
         "b-checkout",
-        "b-komerce",
         "b-wallet"
       ],
       "dashboards": []
@@ -1744,7 +1739,6 @@
       ],
       "boutique": [
         "b-checkout",
-        "b-komerce",
         "b-wallet"
       ],
       "dashboards": []

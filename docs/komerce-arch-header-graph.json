@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 793,
-    "edges": 4429,
+    "edges": 4430,
     "dbTables": 116,
     "doctrines": 161,
     "impactAreas": 131,
@@ -1969,7 +1969,8 @@
       "depends": [
         "b-utils.js",
         "b-identity.js",
-        "b-wallet.js"
+        "b-wallet.js",
+        "b-bus.js"
       ],
       "usedBy": [
         "b-nav.js",
@@ -1989,7 +1990,7 @@
         "wallet",
         "boutique-navigation"
       ],
-      "version": "2026-07"
+      "version": "2026-07-lot4b"
     },
     {
       "id": "public/boutique/js/b-mini-cart.js",
@@ -22935,6 +22936,12 @@
       "to": "public/boutique/js/b-wallet.js",
       "type": "depends",
       "label": "b-wallet.js"
+    },
+    {
+      "from": "public/boutique/js/b-komerce.js",
+      "to": "public/boutique/js/b-bus.js",
+      "type": "depends",
+      "label": "b-bus.js"
     },
     {
       "from": "public/boutique/js/b-nav.js",
@@ -47878,6 +47885,7 @@
         "public/boutique/js/b-desktop-sidebar.js",
         "public/boutique/js/b-group-view.js",
         "public/boutique/js/b-home-premium-v1.js",
+        "public/boutique/js/b-komerce.js",
         "public/boutique/js/b-mini-cart.js",
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-modal-desktop-enhancers.js",
@@ -48762,7 +48770,8 @@
       "directDependsOn": [
         "public/boutique/js/b-utils.js",
         "public/boutique/js/b-identity.js",
-        "public/boutique/js/b-wallet.js"
+        "public/boutique/js/b-wallet.js",
+        "public/boutique/js/b-bus.js"
       ],
       "directUsedBy": [
         "public/boutique/js/b-nav.js",
@@ -48789,6 +48798,7 @@
         "impact:account",
         "impact:boutique-navigation",
         "impact:wallet",
+        "public/boutique/js/b-bus.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-utils.js",

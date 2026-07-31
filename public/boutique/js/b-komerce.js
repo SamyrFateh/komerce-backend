@@ -6,47 +6,39 @@
  * @criticality   medium
  * @inputs        client_session, wallet_balance, profile
  * @outputs       komerce_view
- * @depends       b-utils.js, b-identity.js, b-wallet.js
+ * @depends       b-utils.js, b-identity.js, b-wallet.js, b-bus.js
  * @used-by       b-nav.js, boutique.js
  * @doctrine      wallet_visible_client, navigation_sans_friction, otp_une_fois
  * @impact-areas  account, wallet, boutique-navigation
- * @version       2026-07
+ * @version       2026-07-lot4b
  */
 'use strict';
 
 /**
  * @module b-komerce
- * @brief Mon Komerce — espace personnel du client (Lot 4).
+ * @brief Mon Komerce — page personnelle unique (Lot 4B).
  *
- * Décision produit : Suivi = mes achats. Mon Komerce = mon compte, mes
- * droits et mes avantages. Ce module ne possède aucune vérité métier :
- * il assemble Vue d'ensemble / Mon wallet / Retrait & sécurité / Mes
- * informations / Mes préférences à partir de GET /api/auth/me et
- * GET /api/wallet, et monte b-wallet.js tel quel dans son propre panneau
- * (aucune modification de b-wallet.js n'est nécessaire).
+ * Doctrine : Mon Komerce est une seule page, sans sous-onglet, sans menu
+ * secondaire. L'authentification intervient à l'entrée, une seule fois.
  *
- * Règle stricte héritée du prompt Lot 4 : jamais de rubrique vide,
- * factice ou non fonctionnelle. Retrait & sécurité reste 100% informatif
- * dans ce lot — aucune mutation (personne de secours, OTP tiers, etc.).
+ *   Mon wallet  (premier bloc, délègue à b-wallet.js)
+ *   Mon profil  (nom, email lecture seule, WhatsApp du compte, devise)
+ *   Retrait & sécurité (carte informative)
+ *
+ * Point d'entrée canonique : openMonKomerce({ focus })
+ *   focus = 'wallet' → scroll jusqu'au bloc wallet après chargement.
  */
 
-import { sanitize, fmt, apiGet, apiPut } from './b-utils.js';
+import { sanitize, apiGet, apiPut } from './b-utils.js';
 import { getCurrentIdentity, requireIdentity } from './b-identity.js';
 import { renderWalletView } from './b-wallet.js';
+import { bus } from './b-bus.js';
 
-const SUBTABS = [
-  { id: 'overview',    label: 'Vue d\u2019ensemble' },
-  { id: 'wallet',      label: 'Mon wallet' },
-  { id: 'security',    label: 'Retrait & s\u00e9curit\u00e9' },
-  { id: 'profile',     label: 'Mes informations' },
-  { id: 'preferences', label: 'Mes pr\u00e9f\u00e9rences' },
-];
-const SUBTAB_IDS = SUBTABS.map(t => t.id);
+// ── État interne ───────────────────────────────────────────────────────────────
 
-let currentSubtab = 'overview';
-let renderSeq = 0;
+let _renderSeq = 0;
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function isAuthErr(e) {
   return e && (e.status === 401 || e.status === 403);
@@ -67,7 +59,7 @@ function fmtDateFr(iso) {
   } catch (_) { return null; }
 }
 
-// ── Shell (créé une seule fois) ───────────────────────────────────────────────
+// ── Shell (unique, créé une seule fois) ────────────────────────────────────────
 
 function ensureShell() {
   let el = document.getElementById('k-komerce-view');
@@ -76,10 +68,22 @@ function ensureShell() {
   el = document.createElement('div');
   el.id = 'k-komerce-view';
   el.className = 'k-komerce-view';
-  el.innerHTML =
-    '<div class="k-kmc-header"><h2 class="k-kmc-title">Mon Komerce</h2></div>' +
-    '<nav class="k-kmc-subnav" id="k-kmc-subnav"></nav>' +
-    '<div class="k-kmc-panel" id="k-kmc-panel"></div>';
+  el.setAttribute('role', 'main');
+  el.setAttribute('aria-label', 'Mon Komerce');
+  el.innerHTML = /* LOT4B_STATIC_ACCOUNT_SHELL */
+    '<header class="k-kmc-header">' +
+      '<h2 class="k-kmc-title">Mon Komerce</h2>' +
+      '<p class="k-kmc-subtitle">Compte personnel prot\u00e9g\u00e9</p>' +
+    '</header>' +
+    '<div class="k-kmc-page-grid">' +
+      '<div class="k-kmc-col-primary">' +
+        '<section id="k-kmc-wallet-block" class="k-kmc-block" aria-label="Mon wallet"></section>' +
+      '</div>' +
+      '<div class="k-kmc-col-secondary">' +
+        '<section id="k-kmc-profile-block" class="k-kmc-block" aria-label="Mon profil"></section>' +
+        '<section id="k-kmc-security-block" class="k-kmc-block" aria-label="Retrait et s\u00e9curit\u00e9"></section>' +
+      '</div>' +
+    '</div>';
 
   const anchor = document.getElementById('k-track-view')
     || document.getElementById('k-fav-view')
@@ -87,259 +91,242 @@ function ensureShell() {
   if (anchor) anchor.after(el);
   else document.body.appendChild(el);
 
-  const nav = el.querySelector('#k-kmc-subnav');
-  SUBTABS.forEach(t => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'k-kmc-subnav-item';
-    btn.dataset.subtab = t.id;
-    btn.textContent = t.label;
-    btn.addEventListener('click', () => renderKomerceView(t.id));
-    nav.appendChild(btn);
-  });
-
   return el;
 }
 
-function setActiveSubtab(el, subtab) {
-  el.querySelectorAll('.k-kmc-subnav-item').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.subtab === subtab);
-  });
+// ── États partagés ────────────────────────────────────────────────────────────
+
+function renderBlockLoading(block) {
+  block.innerHTML = /* LOT4B_STATIC_LOADING */
+    '<div class="k-kmc-loading">' +
+      '<div class="k-kmc-spin"></div>' +
+      '<p>Chargement\u2026</p>' +
+    '</div>';
 }
 
-// ── États partagés (chargement / erreur / gate d'auth) ────────────────────────
-
-function renderKmcLoading(panel) {
-  panel.innerHTML = '<div class="k-kmc-loading"><div class="k-kmc-spin"></div><p>Chargement\u2026</p></div>';
-}
-
-function renderKmcError(panel, err, retryTab) {
+function renderBlockError(block, err, onRetry) {
   const isTimeout = !!(err && (err.isTimeout || err.name === 'TimeoutError'));
-  panel.innerHTML =
+  block.innerHTML = /* LOT4B_STATIC_ERROR */
     '<div class="k-kmc-empty">' +
       '<div class="k-kmc-empty-icon">\u26a0\ufe0f</div>' +
-      '<div class="k-kmc-empty-title">' + (isTimeout ? 'Cela met trop de temps \u00e0 r\u00e9pondre' : 'Impossible de charger cette rubrique') + '</div>' +
+      '<div class="k-kmc-empty-title">' +
+        (isTimeout ? 'Cela met trop de temps \u00e0 r\u00e9pondre' : 'Impossible de charger') +
+      '</div>' +
       '<div class="k-kmc-empty-sub">V\u00e9rifiez votre connexion puis r\u00e9essayez.</div>' +
-      '<button class="k-kmc-action-btn" id="k-kmc-retry-btn">\ud83d\udd04 R\u00e9essayer</button>' +
+      '<button class="k-kmc-action-btn" id="k-kmc-retry">\ud83d\udd04 R\u00e9essayer</button>' +
     '</div>';
-  panel.querySelector('#k-kmc-retry-btn')?.addEventListener('click', () => renderKomerceView(retryTab));
+  block.querySelector('#k-kmc-retry')?.addEventListener('click', onRetry);
 }
 
-function renderKmcAuthGate(panel, opts = {}) {
-  const title = opts.sessionExpired
-    ? 'Session expir\u00e9e \u2014 confirmez votre num\u00e9ro'
-    : 'Identifiez-vous pour acc\u00e9der \u00e0 Mon Komerce';
-  const sub = opts.sessionExpired
-    ? 'Votre identit\u00e9 locale est connue, mais la session doit \u00eatre renouvel\u00e9e.'
-    : 'Confirmez votre num\u00e9ro WhatsApp pour acc\u00e9der \u00e0 votre espace personnel.';
-  panel.innerHTML =
-    '<div class="k-kmc-empty">' +
-      '<div class="k-kmc-empty-icon">\ud83d\udd10</div>' +
-      '<div class="k-kmc-empty-title">' + sanitize(title) + '</div>' +
-      '<div class="k-kmc-empty-sub">' + sanitize(sub) + '</div>' +
-      '<button class="k-kmc-action-btn" id="k-kmc-auth-btn">\ud83d\udcf2 M\u2019identifier</button>' +
-    '</div>';
-  panel.querySelector('#k-kmc-auth-btn')?.addEventListener('click', async () => {
-    const btn = panel.querySelector('#k-kmc-auth-btn');
-    btn.disabled = true;
-    btn.textContent = '\u23f3 Identification\u2026';
-    const user = await requireIdentity({ reason: 'mon komerce', title: 'Acc\u00e9der \u00e0 Mon Komerce' });
-    if (user) {
-      renderKomerceView(currentSubtab);
-    } else {
-      btn.disabled = false;
-      btn.textContent = '\ud83d\udcf2 M\u2019identifier';
+function renderSessionExpired() {
+  const walletBlock  = document.getElementById('k-kmc-wallet-block');
+  const profileBlock = document.getElementById('k-kmc-profile-block');
+  const secBlock     = document.getElementById('k-kmc-security-block');
+  [walletBlock, profileBlock, secBlock].forEach(b => { if (b) b.replaceChildren(); });
+  if (walletBlock) {
+    walletBlock.innerHTML = /* LOT4B_STATIC_REAUTH */
+      '<div class="k-kmc-empty">' +
+        '<div class="k-kmc-empty-icon">\ud83d\udd10</div>' +
+        '<div class="k-kmc-empty-title">Session expir\u00e9e</div>' +
+        '<div class="k-kmc-empty-sub">Confirmez votre num\u00e9ro WhatsApp pour continuer.</div>' +
+        '<button class="k-kmc-action-btn" id="k-kmc-reauth">\ud83d\udcf2 M\u2019identifier</button>' +
+      '</div>';
+    walletBlock.querySelector('#k-kmc-reauth')?.addEventListener('click', async () => {
+      const btn = walletBlock.querySelector('#k-kmc-reauth');
+      btn.disabled = true;
+      btn.textContent = '\u23f3 Identification\u2026';
+      const user = await requireIdentity({ reason: 'mon-komerce', title: 'Mon Komerce' });
+      if (user) _loadAndRender(++_renderSeq);
+      else { btn.disabled = false; btn.textContent = '\ud83d\udcf2 M\u2019identifier'; }
+    });
+  }
+}
+
+// ── Bloc wallet ────────────────────────────────────────────────────────────────
+
+function renderWalletBlock(block) {
+  block.innerHTML = /* LOT4B_STATIC_WALLET_CONTAINER */ '<div id="k-wallet-view" class="k-wallet-view show"></div>';
+  renderWalletView();
+}
+
+// ── Bloc profil (nom + devise + email lecture seule + WhatsApp du compte) ──────
+
+function renderProfileBlock(block, me) {
+  const phone     = maskPhone(me?.phone);
+  const fullName0 = me?.full_name || '';
+  const currency0 = me?.currency_pref === 'EUR' ? 'EUR' : 'KMF';
+
+  // Note : email non modifiable — PUT /api/auth/me n'accepte que full_name et
+  // currency_pref. Email affiché en lecture seule si présent, sinon omis.
+  block.innerHTML = /* LOT4B_STATIC_PROFILE_SHELL */
+    '<form class="k-kmc-form" id="k-kmc-profile-form" novalidate>' +
+      '<h3 class="k-kmc-block-title">Mon profil</h3>' +
+      '<label class="k-kmc-field">' +
+        '<span>Nom complet</span>' +
+        '<input type="text" id="k-kmc-fullname" maxlength="100" autocomplete="name">' +
+      '</label>' +
+      (me?.email
+        ? '<label class="k-kmc-field k-kmc-field--readonly">' +
+            '<span>Email</span>' +
+            '<input type="text" id="k-kmc-email" disabled aria-readonly="true">' +
+          '</label>'
+        : '') +
+      '<label class="k-kmc-field k-kmc-field--readonly">' +
+        '<span>WhatsApp du compte</span>' +
+        '<input type="text" id="k-kmc-account-phone" disabled aria-readonly="true">' +
+      '</label>' +
+      '<p class="k-kmc-field-hint">Le WhatsApp du compte ne se modifie pas ici \u2014 il se confirme par code lors d\u2019une prochaine commande.</p>' +
+      '<label class="k-kmc-field">' +
+        '<span>Devise d\u2019affichage</span>' +
+        '<select id="k-kmc-currency">' +
+          '<option value="KMF"' + (currency0 === 'KMF' ? ' selected' : '') + '>Franc comorien (KMF)</option>' +
+          '<option value="EUR"' + (currency0 === 'EUR' ? ' selected' : '') + '>Euro (EUR)</option>' +
+        '</select>' +
+      '</label>' +
+      '<p class="k-kmc-save-status" id="k-kmc-save-status" role="status" aria-live="polite"></p>' +
+      '<button type="submit" class="k-kmc-action-btn" id="k-kmc-profile-save" disabled>' +
+        'Enregistrer mes modifications' +
+      '</button>' +
+    '</form>';
+
+  const form     = block.querySelector('#k-kmc-profile-form');
+  const nameInput = block.querySelector('#k-kmc-fullname');
+  const curSelect = block.querySelector('#k-kmc-currency');
+  const saveBtn   = block.querySelector('#k-kmc-profile-save');
+  const status    = block.querySelector('#k-kmc-save-status');
+  const emailInput = block.querySelector('#k-kmc-email');
+  const phoneInput = block.querySelector('#k-kmc-account-phone');
+
+  // Donn?es API assign?es comme propri?t?s DOM : jamais interpol?es dans HTML.
+  nameInput.value = String(fullName0);
+  if (emailInput) emailInput.value = String(me?.email || '');
+  if (phoneInput) phoneInput.value = phone || '\u2014';
+
+  let pendingSubmit = false;
+
+  function checkDirty() {
+    const dirty = nameInput.value.trim() !== fullName0 || curSelect.value !== currency0;
+    saveBtn.disabled = !dirty || pendingSubmit;
+  }
+
+  nameInput.addEventListener('input', checkDirty);
+  curSelect.addEventListener('change', checkDirty);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (pendingSubmit || saveBtn.disabled) return;
+    const newName     = nameInput.value.trim();
+    const newCurrency = curSelect.value;
+    if (!newName) { nameInput.focus(); return; }
+
+    pendingSubmit = true;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Enregistrement\u2026';
+    status.textContent = '';
+
+    try {
+      await apiPut('/api/auth/me', { full_name: newName, currency_pref: newCurrency });
+      status.textContent = '\u2705 Enregistr\u00e9';
+      // Update baselines so dirty-check reflects new state
+      // (re-render not needed; keep form values as-is)
+    } catch (_) {
+      status.textContent = '\u26a0\ufe0f \u00c9chec \u2014 r\u00e9essayez';
+      saveBtn.disabled = false;
+    } finally {
+      pendingSubmit = false;
+      saveBtn.textContent = 'Enregistrer mes modifications';
+      checkDirty();
     }
   });
 }
 
-// ── Vue d'ensemble ─────────────────────────────────────────────────────────
+// ── Bloc retrait & sécurité (informatif uniquement) ────────────────────────────
 
-function renderOverviewPanel(panel, seq) {
-  renderKmcLoading(panel);
-  (async () => {
-    let meErr = null, walletErr = null;
-    const [me, wallet] = await Promise.all([
-      apiGet('/api/auth/me').catch((e) => { meErr = e; return null; }),
-      apiGet('/api/wallet').catch((e) => { walletErr = e; return null; }),
-    ]);
-    if (seq !== renderSeq) return;
-
-    if (!me && isAuthErr(meErr)) { renderKmcAuthGate(panel, { sessionExpired: !!getCurrentIdentity() }); return; }
-    if (!me && meErr) { renderKmcError(panel, meErr, 'overview'); return; }
-    if (walletErr && !isAuthErr(walletErr)) console.warn('[komerce] wallet overview:', walletErr);
-
-    const name       = me?.full_name || 'Client Komerce';
-    const phone      = maskPhone(me?.phone);
-    const balance    = Number(wallet?.balance_kmf ?? 0);
-    const expiresAt  = fmtDateFr(wallet?.expires_at);
-
-    panel.innerHTML = '';
-    const card = document.createElement('div');
-    card.className = 'k-kmc-overview';
-    card.innerHTML =
-      '<div class="k-kmc-ov-identity">' +
-        '<div class="k-kmc-ov-name">' + sanitize(name) + '</div>' +
-        (phone ? '<div class="k-kmc-ov-phone">\ud83d\udcf1 ' + sanitize(phone) + ' \u00b7 v\u00e9rifi\u00e9</div>' : '') +
+function renderSecurityBlock(block, me) {
+  const phone = maskPhone(me?.phone);
+  block.innerHTML = /* LOT4B_STATIC_SECURITY_SHELL */
+    '<div class="k-kmc-security">' +
+      '<h3 class="k-kmc-block-title">Retrait &amp; s\u00e9curit\u00e9</h3>' +
+      '<div class="k-kmc-sec-row">' +
+        '<span class="k-kmc-sec-label">WhatsApp du compte</span>' +
+        '<span class="k-kmc-sec-value" id="k-kmc-security-phone"></span>' +
       '</div>' +
-      '<div class="k-kmc-ov-wallet">' +
-        '<div class="k-kmc-ov-wallet-label">Solde wallet</div>' +
-        '<div class="k-kmc-ov-wallet-amount">' + sanitize(fmt(balance, 'KMF')) + '</div>' +
-        (expiresAt ? '<div class="k-kmc-ov-wallet-expiry">Valable jusqu\u2019au ' + sanitize(expiresAt) + '</div>' : '') +
+      '<div class="k-kmc-sec-doctrine">' +
+        '<p>Le code de retrait est envoy\u00e9 sur votre WhatsApp lorsque votre commande est pr\u00eate au relais. Vous pouvez le transmettre \u00e0 la personne de votre choix \u2014 Komerce ne collecte aucune identit\u00e9 de retrait distincte.</p>' +
+        '<p>Ce code est personnel et unique \u00e0 chaque commande : ne le partagez qu\u2019avec la personne qui viendra r\u00e9cup\u00e9rer votre colis.</p>' +
       '</div>' +
-      '<div class="k-kmc-ov-security">\ud83d\udd12 Retrait s\u00e9curis\u00e9 \u2014 code envoy\u00e9 sur WhatsApp v\u00e9rifi\u00e9</div>' +
-      '<div class="k-kmc-ov-shortcuts">' +
-        '<button type="button" class="k-kmc-shortcut-btn" data-goto="profile">Mes informations</button>' +
-        '<button type="button" class="k-kmc-shortcut-btn" data-goto="preferences">Mes pr\u00e9f\u00e9rences</button>' +
-      '</div>';
-    panel.appendChild(card);
-    card.querySelectorAll('[data-goto]').forEach((btn) => {
-      btn.addEventListener('click', () => renderKomerceView(btn.dataset.goto));
-    });
-  })().catch((e) => { if (seq === renderSeq) renderKmcError(panel, e, 'overview'); });
+    '</div>';
+  const phoneValue = block.querySelector('#k-kmc-security-phone');
+  if (phoneValue) phoneValue.textContent = phone || '\u2014';
+
 }
 
-// ── Mon wallet (délègue entièrement à b-wallet.js, inchangé) ─────────────────
+// ── Chargement et assemblage de la page ────────────────────────────────────────
 
-function renderWalletPanel(panel) {
-  panel.innerHTML = '<div id="k-wallet-view" class="k-wallet-view show"></div>';
-  renderWalletView();
+async function _loadAndRender(seq) {
+  const walletBlock  = document.getElementById('k-kmc-wallet-block');
+  const profileBlock = document.getElementById('k-kmc-profile-block');
+  const secBlock     = document.getElementById('k-kmc-security-block');
+  if (!walletBlock || !profileBlock || !secBlock) return;
+
+  renderBlockLoading(profileBlock);
+  renderBlockLoading(secBlock);
+  // Wallet block mounts b-wallet.js immediately (it handles its own loading state)
+  renderWalletBlock(walletBlock);
+
+  let me = null, meErr = null;
+  me = await apiGet('/api/auth/me').catch(e => { meErr = e; return null; });
+
+  if (seq !== _renderSeq) return; // stale render
+
+  if (!me && isAuthErr(meErr)) {
+    renderSessionExpired();
+    return;
+  }
+  if (!me && meErr) {
+    renderBlockError(profileBlock, meErr, () => _loadAndRender(++_renderSeq));
+    secBlock.replaceChildren();
+    return;
+  }
+
+  renderProfileBlock(profileBlock, me);
+  renderSecurityBlock(secBlock, me);
 }
 
-// ── Retrait & sécurité (informatif uniquement — hors périmètre Lot 4 : ────────
-//    personne de secours, OTP tiers, changement d'autorisation, retrait sans code) ─
-
-function renderSecurityPanel(panel) {
-  renderKmcLoading(panel);
-  apiGet('/api/auth/me')
-    .then((me) => {
-      const phone = maskPhone(me?.phone);
-      panel.innerHTML =
-        '<div class="k-kmc-security">' +
-          '<div class="k-kmc-sec-row">' +
-            '<span class="k-kmc-sec-label">Num\u00e9ro WhatsApp v\u00e9rifi\u00e9</span>' +
-            '<span class="k-kmc-sec-value">' + (phone ? sanitize(phone) + ' \u2705' : '\u2014') + '</span>' +
-          '</div>' +
-          '<div class="k-kmc-sec-doctrine">' +
-            '<p>Le code de retrait est envoy\u00e9 sur votre WhatsApp v\u00e9rifi\u00e9 apr\u00e8s confirmation de commande. Vous pouvez le transmettre \u00e0 la personne de votre choix \u2014 Komerce ne collecte aucune identit\u00e9 de retrait distincte.</p>' +
-            '<p>Ce code est personnel et unique \u00e0 chaque commande : ne le partagez qu\u2019avec la personne qui viendra r\u00e9cup\u00e9rer votre colis.</p>' +
-          '</div>' +
-        '</div>';
-    })
-    .catch((err) => {
-      if (isAuthErr(err)) renderKmcAuthGate(panel, { sessionExpired: !!getCurrentIdentity() });
-      else renderKmcError(panel, err, 'security');
-    });
-}
-
-// ── Mes informations ──────────────────────────────────────────────────────────
-
-function renderProfilePanel(panel, seq) {
-  renderKmcLoading(panel);
-  apiGet('/api/auth/me')
-    .then((me) => {
-      if (seq !== renderSeq) return;
-      const phone = maskPhone(me?.phone);
-      panel.innerHTML =
-        '<form class="k-kmc-form" id="k-kmc-profile-form">' +
-          '<label class="k-kmc-field"><span>Nom complet</span>' +
-            '<input type="text" id="k-kmc-fullname" maxlength="100" value="' + sanitize(me?.full_name || '') + '"></label>' +
-          '<label class="k-kmc-field k-kmc-field--readonly"><span>WhatsApp v\u00e9rifi\u00e9</span>' +
-            '<input type="text" value="' + sanitize(phone) + '" disabled></label>' +
-          (me?.email ? '<label class="k-kmc-field k-kmc-field--readonly"><span>Email</span><input type="text" value="' + sanitize(me.email) + '" disabled></label>' : '') +
-          '<p class="k-kmc-field-hint">Le WhatsApp v\u00e9rifi\u00e9 ne se modifie pas ici \u2014 il se confirme par code lors d\u2019une prochaine commande.</p>' +
-          '<button type="submit" class="k-kmc-action-btn" id="k-kmc-profile-save">Enregistrer</button>' +
-        '</form>';
-
-      panel.querySelector('#k-kmc-profile-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = panel.querySelector('#k-kmc-profile-save');
-        const fullName = panel.querySelector('#k-kmc-fullname').value.trim();
-        if (!fullName) return;
-        btn.disabled = true;
-        btn.textContent = 'Enregistrement\u2026';
-        try {
-          await apiPut('/api/auth/me', { full_name: fullName });
-          btn.textContent = '\u2705 Enregistr\u00e9';
-        } catch (_) {
-          btn.textContent = '\u26a0\ufe0f \u00c9chec \u2014 r\u00e9essayer';
-        } finally {
-          setTimeout(() => { btn.disabled = false; btn.textContent = 'Enregistrer'; }, 1800);
-        }
-      });
-    })
-    .catch((err) => {
-      if (isAuthErr(err)) renderKmcAuthGate(panel, { sessionExpired: !!getCurrentIdentity() });
-      else renderKmcError(panel, err, 'profile');
-    });
-}
-
-// ── Mes préférences (uniquement les préférences réellement persistées) ────────
-
-function renderPreferencesPanel(panel, seq) {
-  renderKmcLoading(panel);
-  apiGet('/api/auth/me')
-    .then((me) => {
-      if (seq !== renderSeq) return;
-      const cur = me?.currency_pref === 'EUR' ? 'EUR' : 'KMF';
-      panel.innerHTML =
-        '<div class="k-kmc-form">' +
-          '<label class="k-kmc-field"><span>Devise d\u2019affichage</span>' +
-            '<select id="k-kmc-currency">' +
-              '<option value="KMF"' + (cur === 'KMF' ? ' selected' : '') + '>Franc comorien (KMF)</option>' +
-              '<option value="EUR"' + (cur === 'EUR' ? ' selected' : '') + '>Euro (EUR)</option>' +
-            '</select></label>' +
-          '<p class="k-kmc-field-hint" id="k-kmc-pref-status"></p>' +
-        '</div>';
-
-      panel.querySelector('#k-kmc-currency').addEventListener('change', async (e) => {
-        const val = e.target.value;
-        const status = panel.querySelector('#k-kmc-pref-status');
-        e.target.disabled = true;
-        try {
-          await apiPut('/api/auth/me', { currency_pref: val });
-          if (status) status.textContent = '\u2705 Pr\u00e9f\u00e9rence enregistr\u00e9e';
-        } catch (_) {
-          e.target.value = cur;
-          if (status) status.textContent = '\u26a0\ufe0f \u00c9chec \u2014 r\u00e9essayez';
-        } finally {
-          e.target.disabled = false;
-        }
-      });
-    })
-    .catch((err) => {
-      if (isAuthErr(err)) renderKmcAuthGate(panel, { sessionExpired: !!getCurrentIdentity() });
-      else renderKmcError(panel, err, 'preferences');
-    });
-}
-
-// ── Point d'entrée ─────────────────────────────────────────────────────────
+// ── Point d'entrée canonique ───────────────────────────────────────────────────
 
 /**
- * Rend Mon Komerce sur la sous-rubrique demandée (défaut : celle déjà active,
- * ou 'overview' au premier rendu).
- * @param {string} [subtab] 'overview' | 'wallet' | 'security' | 'profile' | 'preferences'
+ * Ouvre Mon Komerce.
+ * - Authentifie l'utilisateur à l'entrée (OTP si nécessaire).
+ * - Si l'OTP est annulé, n'affiche rien et conserve la vue précédente.
+ * - Émet 'komerce:show' pour que b-nav.js synchronise la navigation.
+ * - Si focus='wallet', positionne le viewport sur le bloc wallet.
+ *
+ * @param {object} [opts]
+ * @param {string|null} [opts.focus] 'wallet' pour scroller sur le wallet
  */
-export function renderKomerceView(subtab) {
-  const seq = ++renderSeq;
-  // Un vrai premier montage (le shell n'existe pas encore dans le DOM) doit
-  // toujours retomber sur 'overview' par défaut, jamais sur une valeur de
-  // currentSubtab laissée par un montage précédent (ex: DOM réinitialisé
-  // entre deux tests, ou shell recréé après une navigation SPA complète).
-  // Tant que le shell reste monté, currentSubtab persiste normalement d'un
-  // appel à l'autre (comportement voulu : rester sur le dernier sous-onglet).
-  const shellExisted = !!document.getElementById('k-komerce-view');
-  if (!shellExisted) currentSubtab = 'overview';
-  const tab = SUBTAB_IDS.includes(subtab) ? subtab : (currentSubtab || 'overview');
-  currentSubtab = tab;
+export async function openMonKomerce({ focus = null } = {}) {
+  // 1. Vérifier ou obtenir l'identité
+  let identity = getCurrentIdentity();
+  if (!identity) {
+    identity = await requireIdentity({ reason: 'mon-komerce', title: 'Acc\u00e9der \u00e0 Mon Komerce' });
+    if (!identity) return; // OTP annulé → conserver la vue précédente
+  }
 
+  // 2. Synchroniser la navigation (b-nav.js écoute 'komerce:show')
+  bus.emit('komerce:show');
+
+  // 3. Monter le shell
   const el = ensureShell();
-  setActiveSubtab(el, tab);
-  const panel = el.querySelector('#k-kmc-panel');
+  el.classList.add('show');
 
-  if (tab === 'wallet')            renderWalletPanel(panel);
-  else if (tab === 'security')     renderSecurityPanel(panel);
-  else if (tab === 'profile')      renderProfilePanel(panel, seq);
-  else if (tab === 'preferences')  renderPreferencesPanel(panel, seq);
-  else                              renderOverviewPanel(panel, seq);
+  // 4. Charger et afficher le contenu
+  _loadAndRender(++_renderSeq);
+
+  // 5. Positionner sur le bloc demandé si nécessaire
+  if (focus === 'wallet') {
+    requestAnimationFrame(() => {
+      document.getElementById('k-kmc-wallet-block')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 }

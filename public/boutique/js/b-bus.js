@@ -36,7 +36,8 @@
  *   modal:suggestions-rendered { product } — suggestions modal rendues, prêtes pour curation PDP
  *   modal:detail-ready —                  — Product Detail Contract résolu ; réconcilier l'état panier modal
  *   nav:goto-track   —                  — ouvrir l'onglet Suivi depuis la confirmation de commande [b-checkout.js → b-nav.js, FIX 2026-07-11]
- *   nav:goto-komerce-wallet —           — ouvrir Mon Komerce sur la vue wallet depuis le lien discret du panneau crédit de la commande [b-checkout.js → b-nav.js, LOT4]
+ *   komerce:show { focus } — ouvrir Mon Komerce après authentification ; focus=wallet depuis le checkout [b-checkout.js → b-nav.js/b-komerce.js, LOT4B]
+ *   nav:goto-komerce-wallet — ouvrir Mon Komerce focalisé sur le wallet depuis le checkout [b-checkout.js → b-nav.js, LOT4B]
  *   modal:opened     { product }        — fait : la modal vient de s'ouvrir sur ce produit (≠ modal:open, qui est la commande d'ouverture)
  *   modal:closed     —                  — fait : la modal vient de se fermer (≠ modal:close, qui est la commande de fermeture)
  *   modal:composition-synced —          — fait : la composition responsive de la modal ouverte vient d'être réconciliée après un resize

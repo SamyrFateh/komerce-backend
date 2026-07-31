@@ -30,7 +30,7 @@ import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
 import { renderTrackView }               from './b-tracking.js';
-import { renderKomerceView }             from './b-komerce.js';
+import { openMonKomerce }                  from './b-komerce.js';
 import { renderGroupView, detectParticipantToken, stopPolling } from './b-group-view.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
@@ -228,7 +228,8 @@ bus.on('nav:goto-track', () => { renderTrackView(); switchView('track'); });
 
 // Lot 4 — lien discret checkout → Mon Komerce > Mon wallet (§5 : le checkout
 // ne devient jamais l'écran de gestion du wallet, il ne fait que pointer).
-bus.on('nav:goto-komerce-wallet', () => { renderKomerceView('wallet'); switchView('komerce'); });
+bus.on('nav:goto-komerce-wallet', () => { openMonKomerce({ focus: 'wallet' }); });
+bus.on('komerce:show', () => { switchView('komerce'); });
 
 /**
  * Branche la bottom nav mobile + les boutons nav desktop.
@@ -244,7 +245,7 @@ export function setupBnav() {
       if (tab === 'fav')   { renderFavView(); switchView('fav'); return; }
       if (tab === 'track') { renderTrackView(); switchView('track'); return; }
       if (tab === 'group') { renderGroupView(); switchView('group'); return; }
-      if (tab === 'komerce') { renderKomerceView(); switchView('komerce'); return; }
+      if (tab === 'komerce') { openMonKomerce(); return; }
       switchView('shop');
     });
   });
@@ -309,7 +310,7 @@ function handleTabDeepLink() {
     if (resolvedTab === 'fav')     { renderFavView(); switchView('fav'); }
     if (resolvedTab === 'track')   { renderTrackView(); switchView('track'); }
     if (resolvedTab === 'group')   { renderGroupView(); switchView('group'); }
-    if (resolvedTab === 'komerce') { renderKomerceView(tab === 'wallet' ? 'wallet' : undefined); switchView('komerce'); }
+    if (resolvedTab === 'komerce') { openMonKomerce(tab === 'wallet' ? { focus: 'wallet' } : {}); }
   } catch (_) {}
 }
 

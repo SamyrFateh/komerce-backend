@@ -7,17 +7,14 @@
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
  * @registry      scripts/feature-registry-check.js
  *
- * Lot 4 (2026-07-31) — Manifeste niveau 0 pour "Mon Komerce" : l'espace
- * personnel du client (compte, droits, avantages), distinct de "Suivi"
- * (feature orders-client, achats). Ce manifeste ne possède aucune vérité
- * métier propre : il assemble et présente des données déjà possédées par
- * wallet (solde/mouvements) et auth-identity (profil, WhatsApp vérifié).
+ * Lot 4B (2026-07-31) — Manifeste niveau 0 de Mon Komerce.
  *
- * canonicalFeature: null — il n'existe pas de "compte" backend unique à
- * pointer ; Mon Komerce est une composition frontend de deux features
- * backend distinctes (wallet, auth-identity), au même titre que le
- * manifeste transversal "boutique". Documenté explicitement plutôt que
- * tranché silencieusement (cf. governance/business-graph-ontology-gaps.json).
+ * Mon Komerce est une page personnelle protégée unique, distincte de Suivi.
+ * Elle compose des vérités déjà détenues par wallet et auth-identity.
+ *
+ * Cette surface appartient canoniquement à auth-identity : elle porte le
+ * profil et l'accès protégé au compte. Le wallet reste une feature consommée,
+ * dont Mon Komerce compose seulement la présentation.
  */
 'use strict';
 
@@ -30,27 +27,28 @@ module.exports = {
   owner:    'boutique',
   doctrine: 'docs/doctrine/FEATURE_DOCTRINE.md',
 
-  canonicalFeature: null,
+  canonicalFeature: 'auth-identity',
   sliceKind: 'frontend-slice',
 
-  service: "Espace personnel du client — Mon Komerce : vue d'ensemble, wallet, " +
-           "sécurité du retrait (informatif), informations et préférences.",
+  service: "Espace personnel protégé Mon Komerce : page unique réunissant wallet, profil et information de retrait sécurisé.",
 
   perimeter: {
     in: [
-      "shell et sous-navigation de l'espace Mon Komerce",
-      "vue d'ensemble (identité masquée, solde, expiration, statut sécurité)",
-      "rubrique Mes informations (lecture + édition des champs profil déjà " +
-        "légitimes : nom, currency_pref — jamais le WhatsApp vérifié)",
-      "rubrique Mes préférences (uniquement les préférences réellement " +
-        "persistées : devise d'affichage)",
-      "rubrique Retrait & sécurité (informative uniquement, aucune mutation)",
+      "point d'entrée protégé de Mon Komerce avec restauration de la vue après authentification",
+      "page unique sans vue d'ensemble ni sous-navigation interne",
+      "bloc wallet utilisant la vérité canonique de la feature wallet",
+      "bloc profil limité aux champs réellement lisibles ou modifiables",
+      "WhatsApp du compte affiché en lecture seule sans statut de vérification inventé",
+      "devise d'affichage persistée avec le profil",
+      "carte Retrait & sécurité informative intégrée à la page",
+      "focalisation optionnelle du bloc wallet depuis le checkout",
     ],
     out: [
-      'solde et mouvements wallet eux-mêmes (feature wallet, boutique et backend)',
-      'authentification, OTP, session (feature auth-identity)',
-      "personne de secours, OTP tiers, retrait sans code — hors périmètre Lot 4",
-      'suivi de commandes (feature orders-client, reste un espace autonome)',
+      "solde et mouvements wallet eux-mêmes (feature wallet)",
+      "authentification, OTP et session (feature auth-identity)",
+      "personne de secours et OTP tiers (lots ultérieurs)",
+      "retrait sans code",
+      "suivi et historique de commandes (feature orders-client)",
     ],
   },
 
@@ -71,21 +69,25 @@ module.exports = {
   contract: {
     exposes: [],
     internalApi: [
-      'b-komerce.js / renderKomerceView(subtab)',
+      'b-komerce.js / openMonKomerce({ focus })',
     ],
     consumes: [
-      'auth — b-komerce.js importe b-identity.js (getCurrentIdentity, requireIdentity)',
-      'wallet — b-komerce.js monte b-wallet.js (renderWalletView) dans son propre panneau',
-      'boutique — b-komerce.js importe b-utils.js, b-bus.js',
+      'auth — b-komerce.js utilise b-identity.js pour la session et le gate OTP',
+      'wallet — b-komerce.js monte la vue wallet canonique',
+      'boutique — navigation et bus de la boutique',
     ],
   },
 
-  authority: 'boutique — tout changement de périmètre de ce domaine doit être reflété ici.',
+  authority: 'boutique — tout changement de périmètre de Mon Komerce doit être reflété ici.',
 
   invariants: [
-    "aucune rubrique de Mon Komerce n'affiche de bouton ou d'action non fonctionnelle",
-    "Retrait & sécurité ne déclenche jamais de mutation (personne de secours, OTP tiers, retrait sans code)",
-    "le WhatsApp vérifié n'est jamais affiché comme champ texte éditable",
+    "Mon Komerce est une page unique sans vue d'ensemble ni sous-navigation interne",
+    "aucun champ présenté comme éditable ne peut être dépourvu de persistance réelle",
+    "le WhatsApp du compte n'est jamais modifiable comme un champ texte ordinaire",
+    "aucun statut WhatsApp vérifié n'est affiché sans preuve canonique",
+    "Retrait & sécurité reste informatif tant que le lot personne de secours n'est pas livré",
+    "le code de retrait est annoncé lorsque la commande est prête au relais",
+    "Suivi reste un espace autonome consacré aux achats",
   ],
 
 };
