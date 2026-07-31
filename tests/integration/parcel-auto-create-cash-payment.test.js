@@ -44,6 +44,9 @@ describe('P3-A.1 confirmCashAndCreateParcel → payment-service', () => {
       { rows: [{ ...order, payment_status: 'paid', relais_id: null }] }, // 3. SELECT order (autoCreateParcel, relit l'état post-update)
       { rows: [] },                                          // 4. SELECT parcels WHERE order_id (pas de colis existant)
       { rows: [] },                                          // 5. SELECT order_items (aucun item → bail propre 'no_items')
+      { rows: [{ pickup_secret_hash: null, pickup_secret_last4: null }] }, // 6. ensureSecretGenerated — aucun secret existant
+      { rows: [] },                                          // 7. generateAndStoreSecret — aucune collision last4
+      { rows: [], rowCount: 1 },                             // 8. generateAndStoreSecret — UPDATE orders hash/salt
     ]);
     mockDb.getClient.mockResolvedValue(client);
 
