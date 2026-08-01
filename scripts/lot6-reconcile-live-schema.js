@@ -121,15 +121,28 @@ if (!exceptionsDoc.exceptions.some((entry) => entry.from === 'auth-identity' && 
 }
 
 if (process.env.LOT6_POST_CLEANUP === '1') {
+  const liveSchemaPath = path.join(root, 'docs', 'db', 'railway-live-schema.sql');
+  const liveSql = fs.readFileSync(liveSchemaPath, 'utf8');
+  const tables = new Set();
+  const tableRe = /CREATE TABLE (?:IF NOT EXISTS )?(?:public\.)?"?([a-zA-Z_][a-zA-Z0-9_]*)"?/gi;
+  let match;
+  while ((match = tableRe.exec(liveSql)) !== null) tables.add(match[1].toLowerCase());
+
+  for (const residue of ['outbox_events', 'pricing_matrices_audit_hidden']) {
+    if (tables.has(residue)) {
+      throw new Error(`Lot 6: résidu ${residue} encore présent dans le dump post-migration 122`);
+    }
+  }
+
   let target = fs.readFileSync(schemaPath, 'utf8');
   target = target
-    .replace('| Tables | 115 |', '| Tables | 113 |')
+    .replace(/\| Tables \| \d+ \|/, `| Tables | ${tables.size} |`)
     .replace('### 4.4 Paiements et finance (10 tables)', '### 4.4 Paiements et finance (9 tables)')
     .replace(`\n${outboxRow}`, '')
     .replace('### 4.8 Pricing et économie (18 tables)', '### 4.8 Pricing et économie (17 tables)')
     .replace(`\n${hiddenAuditRow}`, '');
   fs.writeFileSync(schemaPath, target, 'utf8');
-  console.log('Lot 6: projection post-migration 122 générée pour les gates.');
+  console.log(`Lot 6: projection post-migration 122 générée (${tables.size} tables).`);
 }
 
 console.log('Lot 6: schéma vivant, ownerships et disposition auth-identity→wallet réconciliés.');
