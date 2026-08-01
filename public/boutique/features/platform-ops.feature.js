@@ -45,6 +45,8 @@ module.exports = {
       '../js/anti-fouc.js',
       '../js/b-nav.js',
       '../js/boutique.js',
+      '../js/b-service-worker-refresh.js',
+      '../js/test-modal-view-model-redirect.js',
     ],
     css: [
       '../css/tokens.css',
@@ -55,6 +57,7 @@ module.exports = {
     ],
     assets: [
       '../index.html',
+      '../test-modal-view-model.html',
     ],
     tests: [
       '../tests/unit/b-bus.test.js',
