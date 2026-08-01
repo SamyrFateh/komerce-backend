@@ -114,4 +114,16 @@ if (!exceptionsDoc.exceptions.some((entry) => entry.from === 'auth-identity' && 
   fs.writeFileSync(exceptionsPath, `${JSON.stringify(exceptionsDoc, null, 2)}\n`, 'utf8');
 }
 
+if (process.env.LOT6_POST_CLEANUP === '1') {
+  let target = fs.readFileSync(schemaPath, 'utf8');
+  target = target
+    .replace('| Tables | 115 |', '| Tables | 113 |')
+    .replace('### 4.4 Paiements et finance (10 tables)', '### 4.4 Paiements et finance (9 tables)')
+    .replace(`\n${outboxRow}`, '')
+    .replace('### 4.8 Pricing et économie (18 tables)', '### 4.8 Pricing et économie (17 tables)')
+    .replace(`\n${hiddenAuditRow}`, '');
+  fs.writeFileSync(schemaPath, target, 'utf8');
+  console.log('Lot 6: projection post-migration 122 générée pour les gates.');
+}
+
 console.log('Lot 6: schéma vivant, ownerships et disposition auth-identity→wallet réconciliés.');
