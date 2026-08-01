@@ -1,0 +1,54 @@
+name: Lot 8 migration hash refresh once
+
+on:
+  push:
+    branches:
+      - test/lot8-pre-go-live-certification
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lot8-migration-hash-refresh-once
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/lot8-pre-go-live-certification
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Rebuild canonical migration hash snapshot
+        run: |
+          node <<'NODE'
+          const crypto = require('crypto');
+          const fs = require('fs');
+          const path = require('path');
+          const dir = 'migrations';
+          const hashes = {};
+          for (const file of fs.readdirSync(dir).filter((name) => name.endsWith('.sql')).sort()) {
+            const content = fs.readFileSync(path.join(dir, file), 'utf8');
+            hashes[file] = crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
+          }
+          fs.writeFileSync('governance/migration-hashes.json', JSON.stringify(hashes, null, 2) + '\n');
+          NODE
+          node scripts/predeploy-gate.js --skip-tests
+
+      - name: Remove one-shot workflow
+        run: rm -f .github/workflows/lot8-refresh-migration-hashes-once.yml
+
+      - name: Commit canonical snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add governance/migration-hashes.json .github/workflows/lot8-refresh-migration-hashes-once.yml
+          git diff --cached --check
+          git commit --no-verify -m "fix: reconcile migration hashes for Lot 8"
+          git push origin HEAD:test/lot8-pre-go-live-certification
