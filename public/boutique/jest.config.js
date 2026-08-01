@@ -8,6 +8,7 @@ module.exports = {
   },
   transformIgnorePatterns: ['/node_modules/'],
   setupFiles: ['./tests/unit/setup.js'],
+  setupFilesAfterEnv: ['./tests/unit/setup-after-env.js'],
   collectCoverageFrom: [
     'js/**/*.js',
     '!js/dist/**',
