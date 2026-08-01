@@ -1,162 +1,195 @@
 # Komerce — Panier partagé
 
-> **Version** : pré-2026 — non datée. Revue de conformité requise (audit 2026-07-01).
+> **Version** : 2026-08-01 — doctrine simplifiée.
 
 ## Doctrine intemporelle · Boutique First
 
-> **Chacun gère sa négo. Komerce sait matérialiser l'achat.**
+> **Une liste commune. Des achats indépendants. Un rattachement logique.**
 
-Ce document n'est pas une spécification. Les specs vieillissent, les routes changent, les statuts techniques se renomment. Ceci est la direction. Quand un choix se présente et qu'on hésite, on revient ici.
+Le panier partagé n'est ni une cagnotte, ni un checkout collectif, ni une commande financière commune.
+
+C'est une vue boutique partageable dans laquelle plusieurs personnes achètent des articles ordinaires. Chaque paiement confirmé crée immédiatement une commande unitaire réelle. Le panier partagé ne fait que rattacher symboliquement et logiquement ces commandes à une même liste.
+
+**La négociation appartient aux humains. L'achat appartient à Komerce.**
 
 ---
 
 ## 1. La phrase
 
-**Un panier partagé n'est pas un checkout partagé.**
+**Un panier partagé n'est pas une commande particulière. C'est une vue particulière sur des commandes ordinaires.**
 
-C'est une vue boutique partageable, avec un suivi minimum. Tout lien partagé ouvre d'abord la boutique. Le paiement n'est jamais le point d'entrée : il est une action possible *à l'intérieur* de la vue panier.
+Le lien ouvre la boutique. Le participant voit les articles encore disponibles. Il choisit un article, passe par le checkout canonique, paie et obtient une commande normale.
 
-**La négociation appartient aux humains. La matérialisation appartient à Komerce.**
-
-Qui paie, combien, pourquoi, avec quelle culpabilité ou quelle générosité, dans quel ordre, après quel coup de téléphone : c'est la famille, la diaspora, les liens qui existaient déjà avant nous. Komerce n'arbitre pas, ne relance pas, ne tient pas de cagnotte, ne gère pas de campagne. Komerce s'arrête là où commence l'intime, et reprend là où commence l'achat.
-
-Komerce sait faire une chose : **transformer une intention en un objet réel, visible, et livré.**
+Il n'existe pas de montant libre à réconcilier avec le panier. Il n'existe pas de paiement gardé en attente jusqu'à une clôture collective. Il n'existe pas de commande finale globale.
 
 ---
 
-## 2. Ce que c'est — et ce que ce n'est pas
-
-C'est une boutique qu'on partage avec ceux qui nous aiment.
-
-Ce n'est pas une plateforme de financement. Pas un portefeuille. Pas une cagnotte. Pas un transfert d'argent. Pas un arbitre des comptes familiaux.
-
-Le panier montre des choses vraies, à des prix vrais, qui arriveront vraiment. On ne paie pas un concept ni une promesse : on règle sa part d'un panier réel.
-
-Komerce ne collecte pas pour atteindre un objectif abstrait. Komerce encaisse une part d'un panier réel, plafonnée au reste dû.
-
----
-
-## 3. La personne au centre
-
-Tout se décide dans un seul instant.
-
-Quelqu'un qui n'a jamais entendu parler de Komerce ouvre un lien reçu par WhatsApp, sur un téléphone modeste, sur un réseau lent, et on lui demande de sortir de l'argent pour un pays à l'autre bout du monde.
-
-C'est le creuset. La confiance se gagne ou se perd là. Toute décision de design, de copie, d'architecture se juge à cette aune : **est-ce que ça rassure l'inconnu au moment où il s'apprête à payer ?**
-
-C'est pour cette personne qu'on ouvre la boutique en premier. On ne la met pas devant un formulaire de paiement : on la met devant un magasin. Le magasin est le mécanisme de confiance.
-
----
-
-## 4. Le voyage du lien
+## 2. Le voyage du participant
 
 Toujours le même chemin :
 
-1. **Le lien ouvre la boutique.** Une vraie vue, claire, rapide, rassurante.
-2. **La preuve.** On voit le créateur, les articles, les images, les prix, le total, et ce qui reste à régler.
-3. **La lecture seule.** On peut explorer, ouvrir les fiches produits, comprendre. On ne peut jamais casser ni modifier le panier partagé.
-4. **Régler ma part.** Une vérité simple sur un bouton. Le montant ne dépasse jamais le reste.
-5. **Le retour.** Après le paiement, retour dans la boutique, panier mis à jour, reste diminué, message clair. Jamais de page morte.
+1. **Le lien ouvre la liste dans la boutique.**
+2. **Le participant voit ce qui reste disponible.**
+3. **Il choisit un article ou une quantité.**
+4. **L'article est verrouillé uniquement pendant le checkout.**
+5. **Le paiement confirmé crée une commande unitaire.**
+6. **L'article est marqué acheté dans la liste.**
+7. **Le participant revient sur une confirmation claire.**
+
+La réservation longue n'existe pas. Une réservation sert uniquement à protéger le paiement en cours pendant quelques minutes. Si le paiement échoue ou est abandonné, l'article redevient disponible.
+
+> **Choisir sans payer ne bloque rien. Payer matérialise l'achat.**
 
 ---
 
-## 5. Les deux natures du panier
+## 3. Le rôle de l'organisateur
 
-Au moment de partager, le créateur répond à une question humaine :
+L'organisateur :
 
-**Ce panier est-il prêt à être payé ?**
+- crée la liste ;
+- choisit les articles ;
+- partage le lien ;
+- voit ce qui a été acheté et ce qui reste disponible ;
+- modifie les lignes non achetées ;
+- ferme la liste quand il le souhaite.
 
-- **Prêt à payer** — le panier est décidé, évident. Les proches consultent et règlent leur part tout de suite. C'est le choix par défaut.
-- **À valider ensemble** — le panier est important, cher, à mûrir. Les proches consultent, voient les articles et le total, mais ne paient pas encore. Le créateur ouvrira les paiements quand le panier sera confirmé.
+La date souhaitée de finalisation est un repère humain, pas une bombe à retardement transactionnelle.
 
-Deux natures. Aucune n'est un workflow. Le créateur choisit la nature de son geste, pas un état de machine.
-
----
-
-## 6. Flexibilité et invariants
-
-Boutique First ne veut pas dire rigide. Ça veut dire : flexible dans l'usage, strict dans les invariants.
-
-Flexible :
-
-- le créateur choisit `Prêt à payer` ou `À valider ensemble` ;
-- il choisit une date limite raisonnable ;
-- il peut ouvrir les paiements plus tard ;
-- il peut ajuster tant qu'aucun paiement n'a verrouillé le panier ;
-- le proche règle le montant qu'il veut, dans la limite du reste.
-
-Non négociable :
-
-- le lien ouvre toujours la boutique ;
-- le participant ne modifie jamais le panier partagé ;
-- le montant ne dépasse jamais le reste ;
-- le paiement n'est réussi qu'après confirmation bancaire ;
-- aucun statut technique ne remonte aux humains.
+Fermer la liste empêche seulement de nouveaux achats depuis cette liste. Les commandes déjà payées existent déjà et continuent leur cycle normal.
 
 ---
 
-## 7. Irréprochable
+## 4. Ce que Komerce ne gère pas
 
-Comme on ne fait qu'une seule chose, cette chose porte tout. Irréprochable ne veut pas dire tout faire. Ça veut dire, sans exception :
+Komerce ne gère pas :
 
-- aucun doute ;
-- aucune fausse promesse ;
-- aucun statut bizarre ;
-- aucun bouton mort ;
-- aucune surprise au paiement ;
-- aucun écran qui fait peur.
+- les promesses de participation ;
+- l'équité entre proches ;
+- les relances sociales ;
+- les tontines ;
+- les cagnottes ;
+- les dettes ou engagements familiaux ;
+- les montants libres à redistribuer ;
+- les paiements collectifs en attente ;
+- la décision de savoir qui doit aider qui.
 
-Net, fiable, premium, sans ambiguïté. Pas plus large, pas plus financier, pas plus ambitieux que nos moyens — mais parfaitement tenu.
+Komerce reprend la main uniquement lorsqu'un achat réel commence.
 
 ---
 
-## 8. Les invariants qui protègent
+## 5. Commandes unitaires et rattachement
 
-- On n'accepte un paiement que lorsque le panier est réellement payable.
-- On ne prélève jamais plus que le reste à couvrir.
-- Le panier est un instantané figé : son contenu et ses prix ne bougent plus une fois qu'un proche a commencé à payer.
-- Un paiement n'est tenu pour réussi qu'une fois confirmé par la banque.
-- Le participant ne modifie jamais le panier partagé.
-- Tout geste qui touche à l'argent laisse une trace.
+Chaque paiement confirmé produit une commande autonome avec :
+
+- son acheteur ;
+- son paiement ;
+- sa facture ;
+- ses lignes ;
+- son cycle logistique ;
+- son remboursement éventuel ;
+- son code de retrait.
+
+La commande conserve un contexte optionnel de panier partagé :
+
+- `shared_cart_id` ;
+- `shared_cart_item_id` ou un identifiant de ligne équivalent.
+
+Ce rattachement sert à la lecture, à la coordination et à la traçabilité. Il ne transforme jamais plusieurs commandes en une seule transaction.
+
+---
+
+## 6. Doctrine du checkout
+
+Le panier partagé utilise le checkout canonique de Komerce.
+
+Il ne rajoute aucune étape sociale ou financière.
+
+Le participant ne renseigne pas :
+
+- de bénéficiaire ;
+- de personne de retrait ;
+- de montant libre ;
+- de promesse ;
+- de date de paiement future.
+
+> **Le contexte de panier partagé ne doit pas contaminer le checkout.**
+
+---
+
+## 7. Doctrine du retrait
+
+Chaque commande unitaire conserve son propre code de sécurité.
+
+Pour une commande ordinaire, le destinataire initial du code reste l'acheteur vérifié.
+
+Pour une commande rattachée à un panier partagé, le destinataire initial du code est par défaut l'organisateur vérifié du panier.
+
+L'organisateur peut :
+
+- garder le code ;
+- transmettre un code à une autre personne ;
+- transmettre plusieurs codes à une même personne ;
+- répartir les codes entre plusieurs personnes.
+
+Cette transmission ne recrée pas de bénéficiaire. Elle change seulement le détenteur pratique d'un secret de retrait.
+
+Le code n'est jamais envoyé au checkout ni immédiatement après le paiement. Il est envoyé uniquement lorsque la commande atteint le jalon logistique prévu.
+
+> **Une commande, un code. Par défaut, l'organisateur reçoit les codes du panier partagé.**
+
+---
+
+## 8. Invariants
+
+- Le lien ouvre toujours la boutique.
+- Le participant ne modifie jamais la liste partagée.
+- Un article n'est bloqué que pendant un paiement actif et court.
+- Un paiement confirmé crée immédiatement une commande unitaire.
+- Aucun argent n'est conservé en attente d'une commande collective.
+- Aucune commande globale finale n'est créée.
+- Une fermeture de liste n'annule pas les commandes existantes.
+- Le checkout reste canonique et sans bénéficiaire.
+- Le destinataire initial du code est résolu côté serveur.
+- Un code reste lié à une seule commande et à une remise atomique.
+- Tout geste touchant au paiement, au code ou à la remise laisse une trace.
 
 ---
 
 ## 9. La langue qu'on parle aux humains
 
-Le produit visible ne raconte qu'une histoire :
+Le produit visible raconte seulement :
 
-> Voici le panier.  
+> Voici la liste.  
+> Voici ce qui reste disponible.  
+> Choisissez un article.  
+> Payez normalement.  
+> Merci, votre achat est confirmé.
+
+Côté organisateur :
+
+> Voici ce qui a été acheté.  
 > Voici ce qui reste.  
-> Tu peux régler ta part.  
-> Merci, c'est pris en compte.
+> Fermez la liste quand vous le souhaitez.  
+> Gérez les codes lorsqu'ils deviennent disponibles.
 
-Les seuls états qu'un humain voit sont :
-
-- **En préparation** — on peut consulter, pas encore payer.
-- **Ouvert au paiement** — on peut régler sa part.
-- **Fermé** — la période de paiement est passée.
-- **Finalisé** — la commande est faite.
-- **Annulé** — terminé, rien n'est dû.
-
-Toute la mécanique d'état qui vit sous le capot peut rester dans le moteur, mais **elle ne parle jamais aux humains**.
+Pas de jauge financière. Pas de solde à atteindre. Pas de statut de contribution. Pas de commande collective à déclencher.
 
 ---
 
 ## 10. La ligne à ne jamais franchir
 
-Komerce matérialise un achat. Komerce ne financiarise pas l'aide.
+Komerce matérialise des achats. Komerce ne financiarise pas l'aide.
 
-À l'instant où l'on se met à gérer des fonds collectifs vers un objectif, à arbitrer un financement incomplet, à détenir de l'argent en attente, à relancer des contributeurs, on cesse d'être un commerçant qui se fait payer pour devenir autre chose : un établissement de paiement.
+À l'instant où l'on détient des fonds collectifs, où l'on arbitre un financement incomplet, où l'on promet une commande future à partir de montants libres, on quitte le commerce pour devenir autre chose.
 
-Ce n'est pas notre métier, ce n'est pas à notre portée, et ce n'est pas ce dont nos clients ont besoin.
-
-Si un jour ce pari change — devenir le rail de la diaspora à grande échelle — il se décidera les yeux ouverts, avec un juriste dans la pièce et de quoi tenir. Pas par accumulation de petites décisions techniques. Jusque-là : **Boutique First.**
+Jusque-là : **Boutique First.**
 
 ---
 
 ## Le serment
 
-> La négociation est à eux. L'achat est à nous.  
-> On ouvre une boutique, pas un guichet.  
-> On montre du vrai, on plafonne au juste, on confirme avant de promettre.  
-> On ne fait qu'une chose — et on la tient parfaitement.
+> Une liste. Plusieurs acheteurs. Des commandes normales.  
+> Le paiement crée l'achat.  
+> Le panier partagé ne crée qu'un contexte.  
+> L'organisateur garde la main.  
+> Komerce reste commerçant.
