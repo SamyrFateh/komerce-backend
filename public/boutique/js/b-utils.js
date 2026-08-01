@@ -265,6 +265,18 @@ export function apiPut(path, body, options) {
   const retries = Number.isFinite(opts.retries) ? opts.retries : 0;
   return window.K.request(path, 'PUT', body || null, retries, opts);
 }
+/**
+ * DELETE via la couche centrale K.request.
+ * Lot 5 (retrait exceptionnel) : nécessaire pour
+ * DELETE /api/auth/me/pickup-authorization. Retries: 0 par défaut, même
+ * doctrine que apiPut — une DELETE mute un état serveur.
+ */
+export function apiDelete(path, options) {
+  _assertApi();
+  const opts = options || {};
+  const retries = Number.isFinite(opts.retries) ? opts.retries : 0;
+  return window.K.request(path, 'DELETE', null, retries, opts);
+}
 
 /* ── COMPAT LEGACY window.KUtils ─────────────────────────── */
 // Conservé pendant la migration pour tout code qui consomme window.KUtils

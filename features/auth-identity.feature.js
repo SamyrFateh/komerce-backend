@@ -53,6 +53,11 @@ module.exports = {
   files: {
     services: [
       'services/otp-test-mode.js',
+      // Lot 5 — autorisation nominative de retrait exceptionnel. Possède
+      // user_pickup_authorizations ; expose getActiveAuthorizationForUpdate/
+      // hasActiveAuthorization à logistics (jamais de requête directe côté
+      // logistics sur cette table, cf. features/logistics.feature.js contract.consumes).
+      'services/pickup-authorization-service.js',
       // services/authkey-client.js retiré (O7.1, REHOME_CONSUMER) — "AuthKey" est
       // le fournisseur tiers d'API WhatsApp (authkey.io), collision de nom avec
       // "auth". Le fichier n'a aucune logique d'authentification/identité ; c'est
@@ -72,12 +77,23 @@ module.exports = {
       'js/b-phone.js',
       'css/identity.css',
     ],
+    utils: [
+      // Lot 5 — partagé avec logistics (comparaison aveugle au retrait),
+      // domaine shared, listé ici car c'est auth-identity qui possède la
+      // comparaison de noms sur laquelle repose l'autorisation nominative.
+      'utils/name-normalize.js',
+    ],
+    migrations: [
+      'migrations/121_exceptional_pickup_authorization.sql',
+    ],
       tests: [
       'tests/integration/admin-authz-probe.test.js',
       'tests/integration/otp-no-guest.test.js',
       // tests/unit/authkey-client.test.js retiré (O7.1) — suit services/authkey-client.js vers notifications.
       'tests/unit/otp-test-mode.test.js',
       'tests/unit/client-auth.test.js',
+      'tests/unit/pickup-authorization-service.test.js',
+      'tests/unit/name-normalize.test.js',
     ],
   },
 
@@ -104,6 +120,7 @@ module.exports = {
       'relais: R',
       'revoked_tokens: W',
       'users: RW',   // OWNER (arbitrage A, 2026-07-29) — seule feature autorisée à muter, via l'API interne ci-dessous
+      'user_pickup_authorizations: RW',   // OWNER (Lot 5) — autorisation nominative de retrait exceptionnel
     ],
   },
 
@@ -137,6 +154,10 @@ module.exports = {
       'POST /api/client/magic-link',
       'GET /api/client/magic-link/validate',
       'GET /api/client/orders',
+      // Lot 5 — autorisation nominative de retrait exceptionnel (propriétaire du compte)
+      'GET /api/auth/me/pickup-authorization',
+      'PUT /api/auth/me/pickup-authorization',
+      'DELETE /api/auth/me/pickup-authorization',
     ],
     // O7.3 (provider auth-identity) : makeIntlPhoneInput (public/boutique/js/b-phone.js)
     // est consommé par shared-cart (b-share-cart.js) — corrigé depuis une
@@ -145,6 +166,10 @@ module.exports = {
     // docs/O7_3_BOUNDARY_ANALYSIS.md, provider payments (analyse de la paire).
     internalApi: [
       { fn: 'makeIntlPhoneInput', file: 'public/boutique/js/b-phone.js' },
+      // Lot 5 — seule API interne autorisée pour logistics : jamais de
+      // requête directe sur user_pickup_authorizations hors de ce fichier.
+      { fn: 'getActiveAuthorizationForUpdate', file: 'services/pickup-authorization-service.js' },
+      { fn: 'hasActiveAuthorization', file: 'services/pickup-authorization-service.js' },
     ],
     consumes: [
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, non des inversions :
@@ -181,6 +206,8 @@ module.exports = {
       test: 'tests/invariants/auth-identity.mutating-routes-guarded.test.js',
     },
     'les routes de ce manifeste s\'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc',
+    'une seule autorisation nominative active par utilisateur, consultée au moment exact de la remise — jamais figée par commande',
+    'le nom autorisé n\'est jamais exposé au relais : logistics ne reçoit que des champs normalisés via getActiveAuthorizationForUpdate, jamais authorized_given_names/authorized_family_name en clair',
   ],
 
 };

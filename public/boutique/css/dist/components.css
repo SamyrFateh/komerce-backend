@@ -11805,6 +11805,37 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 .k-kmc-sec-doctrine p:last-child { margin-bottom: 0; }
 
+/* ── Lot 5 : autorisation nominative de retrait exceptionnel ────── */
+.k-kmc-auth-block {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sand-dark);
+}
+.k-kmc-auth-title {
+  font-size: .84rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+.k-kmc-auth-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.k-kmc-auth-actions .k-kmc-action-btn {
+  margin-top: 0;
+  flex: 1;
+}
+.k-kmc-action-btn--secondary {
+  background: var(--sage-bg-pale);
+  color: var(--text);
+}
+.k-kmc-action-btn--danger {
+  background: var(--white);
+  color: #b3261e;
+  border: 1.5px solid #b3261e33;
+}
+
 /* ── Desktop 2 colonnes (≥ 900 px) ─────────────────────────────── */
 @media (min-width: 900px) {
   .k-komerce-view {

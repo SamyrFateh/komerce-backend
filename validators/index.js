@@ -73,6 +73,15 @@ const auth = {
       currency_pref: Joi.string().valid('KMF', 'EUR'),
     }).min(1),
   },
+  // Lot 5 — autorisation nominative de retrait exceptionnel. Les deux champs
+  // sont obligatoires : une autorisation active exige toujours prénoms + nom
+  // (invariant porté aussi en DB, migration 121).
+  pickupAuthorization: {
+    body: Joi.object({
+      given_names: safeStr(100).required(),
+      family_name: safeStr(100).required(),
+    }),
+  },
   guestCheckout: {
     body: Joi.object({
       full_name: safeStr(100).required(),
@@ -369,6 +378,29 @@ const scans = {
   verifyQr: { body: Joi.object({ token: safeStr(500).required(), order_id: uuid }) },
 };
 
+const pickup = {
+  exceptionalAvailability: {
+    params: Joi.object({
+      orderId: uuid.required(),
+    }),
+  },
+
+  exceptionalCollect: {
+    params: Joi.object({
+      orderId: uuid.required(),
+    }),
+
+    body: Joi.object({
+      given_names: safeStr(100).min(1).required(),
+      family_name: safeStr(100).min(1).required(),
+
+      // .strict() interdit la conversion automatique des chaînes
+      // "true"/"false" en booléens.
+      document_checked: Joi.boolean().strict().valid(true).required(),
+    }),
+  },
+};
+
 const modules = {
   calculatePrice: { body: Joi.object({ module_type: Joi.string().valid(...MODULE_TYPES).required(), fabric_id: uuid, fabric_type: safeStr(100), model_id: uuid, size: safeStr(20), qty_meters: posNum.max(1000), retouche: Joi.boolean().default(false), confection_type: Joi.string().valid(...CONFECTION_TYPES), accessories: Joi.array().items(safeStr(100)).max(10), quantity: posInt.max(100).default(1) }) },
   createFabric: { body: Joi.object({ name: safeStr(200).required(), type: safeStr(100).required(), price_per_m: posNum.required(), color: safeStr(50), origin: safeStr(50), stock_meters: Joi.number().min(0).max(99999), is_active: Joi.boolean().default(true) }) },
@@ -446,6 +478,7 @@ module.exports = {
   admin,
   baskets,
   scans,
+  pickup,
   modules,
   logistics,
   config,

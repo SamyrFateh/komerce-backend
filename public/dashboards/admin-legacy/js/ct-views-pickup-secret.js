@@ -453,6 +453,9 @@
 
       '<div style="text-align:center;margin-top:14px;font-size:12px;color:#64748b">' +
         'Code perdu ? <a href="#" id="pickup-lost-link" style="color:#2563eb">Procédure de perte</a>' +
+      '</div>' +
+      '<div style="text-align:center;margin-top:6px;font-size:12px;color:#64748b">' +
+        'Pas de code / pièce d\'identité ? <a href="#" id="pickup-exceptional-link" style="color:#2563eb">Autorisation nominative</a>' +
       '</div>';
 
     var modal = createModal('Remettre un colis', html, {
@@ -678,6 +681,13 @@
       openLostCodeDialog(orderRef, orderId);
     });
 
+    // ── Retrait exceptionnel par autorisation nominative (Lot 5) ─
+    document.getElementById('pickup-exceptional-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      stopScanning();
+      openExceptionalPickupFlow(orderRef, orderId);
+    });
+
     // ── Démarrer le scan automatiquement ─────────────────────────
     startScanning();
   }
@@ -802,6 +812,138 @@
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  // RETRAIT EXCEPTIONNEL PAR AUTORISATION NOMINATIVE (Lot 5)
+  // ══════════════════════════════════════════════════════════════════════════
+  //
+  // Substitution exceptionnelle au code secret — jamais le moyen normal.
+  // L'agent ne voit ni ne saisit le nom attendu : il saisit le nom présenté
+  // sur la pièce d'identité, la comparaison stricte se fait côté serveur
+  // (services/pickup-secret-service.js::collectByAuthorizedName). Doctrine :
+  //   - GET /exceptional-pickup/:orderId d'abord — ne révèle qu'un booléen +
+  //     une raison technique, jamais le nom attendu ni son existence détaillée
+  //   - la case "pièce contrôlée" est une attestation de l'agent, jamais
+  //     pré-cochée
+  //   - en cas de non-concordance (NAME_MISMATCH), le formulaire reste ouvert
+  //     pour une nouvelle tentative (compteur dédié, 3 max) — mais un blocage
+  //     (429) ou tout autre refus définitif ferme le formulaire
+
+  async function openExceptionalPickupFlow(orderRef, orderId) {
+    var avail;
+    try {
+      avail = await apiFetch('/api/pickup/exceptional-pickup/' + orderId);
+    } catch(e) {
+      return toast('❌ Impossible de vérifier la disponibilité : ' + e.message, 'error');
+    }
+
+    if (!avail.available) {
+      var reasonMsg = {
+        CROSS_RELAIS:             'Cette commande appartient à un autre relais.',
+        BLOCKED:                  'Trop de tentatives échouées sur cette commande — réessayez plus tard.',
+        NO_ACTIVE_AUTHORIZATION:  'Le client n\'a autorisé personne pour un retrait exceptionnel. Orientez-le vers Mon Komerce ou la procédure de perte de code.',
+      }[avail.reason] || 'Retrait exceptionnel indisponible pour cette commande.';
+      return toast('⚠ ' + reasonMsg, 'error');
+    }
+
+    var html =
+      '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.6">' +
+        '<strong>⚠ Retrait exceptionnel — ' + escapeHTML(orderRef) + '</strong><br>' +
+        '1. Demandez une pièce d\'identité à la personne présente<br>' +
+        '2. Comparez le nom saisi ci-dessous avec la pièce — le nom attendu ne vous est jamais communiqué à l\'avance<br>' +
+        '3. Cochez la case uniquement après avoir vérifié la pièce' +
+      '</div>' +
+
+      '<form id="pickup-exceptional-form">' +
+        '<label style="display:block;margin-bottom:12px">' +
+          '<span style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Prénom(s) — tel quel sur la pièce *</span>' +
+          '<input type="text" name="given_names" id="exceptional-given" required maxlength="100" autocomplete="off" ' +
+                 'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
+        '</label>' +
+        '<label style="display:block;margin-bottom:12px">' +
+          '<span style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Nom de famille — tel quel sur la pièce *</span>' +
+          '<input type="text" name="family_name" id="exceptional-family" required maxlength="100" autocomplete="off" ' +
+                 'style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px">' +
+        '</label>' +
+        '<label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:16px;font-size:13px;color:#334155">' +
+          '<input type="checkbox" name="document_checked" id="exceptional-doc-checked" required style="margin-top:2px">' +
+          '<span>Je certifie avoir contrôlé une pièce d\'identité correspondant à ce nom</span>' +
+        '</label>' +
+        '<div id="exceptional-error" style="display:none;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px"></div>' +
+        '<button type="submit" id="pickup-exceptional-submit" ' +
+                'style="width:100%;padding:14px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">' +
+          '📦 Vérifier et remettre le colis' +
+        '</button>' +
+      '</form>';
+
+    var modal   = createModal('Retrait exceptionnel — pièce d\'identité', html, { closeOnBackdrop: false });
+    var errorEl = document.getElementById('exceptional-error');
+
+    document.getElementById('pickup-exceptional-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var btn      = document.getElementById('pickup-exceptional-submit');
+      var givenEl  = document.getElementById('exceptional-given');
+      var familyEl = document.getElementById('exceptional-family');
+      var docEl    = document.getElementById('exceptional-doc-checked');
+
+      errorEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = '⏳ Vérification...';
+
+      try {
+        var resp = await apiFetch('/api/pickup/exceptional-pickup/' + orderId + '/collect', {
+          method: 'POST',
+          body: JSON.stringify({
+            given_names:      givenEl.value.trim(),
+            family_name:      familyEl.value.trim(),
+            document_checked: docEl.checked,
+          }),
+        });
+        modal.close();
+        toast('✅ ' + (resp.order_ref || orderRef) + ' remis (retrait exceptionnel)');
+        if (window.CT && window.CT.views && window.CT.views.relais) {
+          var mainEl = document.getElementById('ct-main');
+          if (mainEl) window.CT.views.relais(mainEl);
+        }
+      } catch(err) {
+        var d = err.data || {};
+        var terminal = false; // true = plus rien à tenter, on ferme le formulaire
+        var msg;
+
+        if (err.status === 401 && d.code === 'NAME_MISMATCH') {
+          msg = '❌ Le nom ne correspond pas à l\'autorisation enregistrée — ' + (d.remaining || 0) + ' tentative(s) restante(s).';
+        } else if (err.status === 429 || d.code === 'BLOCKED') {
+          msg = '🚫 Trop de tentatives — réessayez plus tard.';
+          terminal = true;
+        } else if (d.code === 'ALREADY_COLLECTED') {
+          msg = 'ℹ️ Cette commande est déjà marquée comme récupérée.';
+          terminal = true;
+        } else if (d.code === 'CROSS_RELAIS_BLOCKED') {
+          msg = '⛔ Cette commande appartient à un autre relais.';
+          terminal = true;
+        } else if (d.code === 'NO_ACTIVE_AUTHORIZATION') {
+          msg = '⚠ Aucune autorisation active — orientez le client vers Mon Komerce.';
+          terminal = true;
+        } else if (d.code === 'ORDER_NOT_FOUND') {
+          msg = '❌ Commande introuvable.';
+          terminal = true;
+        } else {
+          msg = '❌ ' + (err.message || 'Erreur inconnue');
+        }
+
+        if (terminal) {
+          modal.close();
+          toast(msg, 'error');
+          return;
+        }
+
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '📦 Vérifier et remettre le colis';
+      }
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   // GREFFE SUR LES BOUTONS EXISTANTS DE ct-views-hub-relais.js
   // ══════════════════════════════════════════════════════════════════════════
   //
@@ -870,6 +1012,7 @@
     openCashPayment: openCashPaymentFlow,
     openCollect: openCollectFlow,
     openLostCodeDialog: openLostCodeDialog,
+    openExceptionalPickup: openExceptionalPickupFlow,
   };
 
   console.log('✅ Komerce Pickup Secret module loaded (Western Union model)');

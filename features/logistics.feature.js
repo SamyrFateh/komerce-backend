@@ -51,6 +51,11 @@ module.exports = {
     migrations: [
       'migrations/095_value_density_foundation.sql',
       'migrations/096_quality_foundation.sql',
+      // Lot 5 : migrations/121_exceptional_pickup_authorization.sql ajoute
+      // exceptional_pickup_attempts/blocked_until + pickup_collected_via sur
+      // orders (logistics) MAIS crée aussi user_pickup_authorizations,
+      // propriété d'auth-identity — fichier possédé par une seule feature
+      // (doctrine multipropriété), déclaré dans features/auth-identity.feature.js.
     ],
     docs: [
       'docs/doctrine/DOCTRINE_DENSITE_VALEUR.md',
@@ -250,6 +255,9 @@ module.exports = {
       'GET /api/pickup/reveal-once/:orderId',
       'GET /api/pickup/status/:orderId',
       'POST /api/pickup/verify/:orderId',
+      // Lot 5 — retrait exceptionnel par autorisation nominative (substitution)
+      'GET /api/pickup/exceptional-pickup/:orderId',
+      'POST /api/pickup/exceptional-pickup/:orderId/collect',
       'GET /api/relais',
       'GET /api/relais/:id',
       'GET /api/relais/public',
@@ -291,6 +299,7 @@ module.exports = {
 'orders (commande rattachee au colis)',
       'customs (statut declaration)',
       'auth',
+      'auth-identity (autorisation nominative de retrait exceptionnel — services/pickup-authorization-service.js:getActiveAuthorizationForUpdate/hasActiveAuthorization, jamais de requête directe sur user_pickup_authorizations, Lot 5)',
       'catalog',
       'economic-engine',
       'notifications',
@@ -332,6 +341,8 @@ module.exports = {
     'le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)',
     'un colis ne change de statut que via une sequence de scan validee',
     'secret de retrait a usage unique',
+    'le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l\'agent relais — comparaison aveugle uniquement',
+    'le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l\'un ne bloque jamais l\'autre',
   ],
 
 };

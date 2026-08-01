@@ -30,7 +30,7 @@ module.exports = {
   canonicalFeature: 'auth-identity',
   sliceKind: 'frontend-slice',
 
-  service: "Espace personnel protégé Mon Komerce : page unique réunissant wallet, profil et information de retrait sécurisé.",
+  service: "Espace personnel protégé Mon Komerce : page unique réunissant wallet, profil, information de retrait sécurisé et autorisation nominative de retrait exceptionnel.",
 
   perimeter: {
     in: [
@@ -40,14 +40,13 @@ module.exports = {
       "bloc profil limité aux champs réellement lisibles ou modifiables",
       "WhatsApp du compte affiché en lecture seule sans statut de vérification inventé",
       "devise d'affichage persistée avec le profil",
-      "carte Retrait & sécurité informative intégrée à la page",
+      "carte Retrait & sécurité — code de retrait (informatif) et autorisation nominative de retrait exceptionnel (interactive, états NONE/ACTIVE, Lot 5)",
       "focalisation optionnelle du bloc wallet depuis le checkout",
     ],
     out: [
       "solde et mouvements wallet eux-mêmes (feature wallet)",
       "authentification, OTP et session (feature auth-identity)",
       "personne de secours et OTP tiers (lots ultérieurs)",
-      "retrait sans code",
       "suivi et historique de commandes (feature orders-client)",
     ],
   },
@@ -70,11 +69,13 @@ module.exports = {
     exposes: [],
     internalApi: [
       'b-komerce.js / openMonKomerce({ focus })',
+      'b-komerce.js / bloc Retrait & sécurité — GET/PUT/DELETE /api/auth/me/pickup-authorization (Lot 5)',
     ],
     consumes: [
       'auth — b-komerce.js utilise b-identity.js pour la session et le gate OTP',
       'wallet — b-komerce.js monte la vue wallet canonique',
       'boutique — navigation et bus de la boutique',
+      'auth-identity — autorisation nominative de retrait exceptionnel (user_pickup_authorizations, Lot 5)',
     ],
   },
 
@@ -85,7 +86,7 @@ module.exports = {
     "aucun champ présenté comme éditable ne peut être dépourvu de persistance réelle",
     "le WhatsApp du compte n'est jamais modifiable comme un champ texte ordinaire",
     "aucun statut WhatsApp vérifié n'est affiché sans preuve canonique",
-    "Retrait & sécurité reste informatif tant que le lot personne de secours n'est pas livré",
+    "le bloc autorisation de retrait exceptionnel n'affiche jamais un statut ACTIVE sans que l'utilisateur ait lui-même enregistré un nom",
     "le code de retrait est annoncé lorsque la commande est prête au relais",
     "Suivi reste un espace autonome consacré aux achats",
   ],

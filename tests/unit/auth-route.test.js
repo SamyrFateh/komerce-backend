@@ -45,6 +45,14 @@ jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
+// Lot 5 — /me/pickup-authorization délègue à pickup-authorization-service,
+// qui écrit dans `alerts` via createAlert(). Mocké ici pour ne pas dépendre
+// du schéma réel de la table dans ces tests de routeur.
+const mockCreateAlert = jest.fn(() => Promise.resolve());
+jest.mock('../../utils/alerts', () => ({
+  createAlert: (...args) => mockCreateAlert(...args),
+}));
+
 const bcrypt = require('bcryptjs');
 jest.mock('bcryptjs', () => ({
   hash: jest.fn(async () => 'hashed-pw'),
@@ -210,6 +218,103 @@ describe('PUT /api/auth/me', () => {
     const res = await request(app).put('/api/auth/me').send({ full_name: 'Nouveau nom' });
     expect(res.status).toBe(200);
     expect(res.body.full_name).toBe('Nouveau nom');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+describe('GET /api/auth/me/pickup-authorization', () => {
+  it('NONE si aucune autorisation', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).get('/api/auth/me/pickup-authorization');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'NONE' });
+  });
+
+  it('ACTIVE avec les champs du propriétaire authentifié', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        is_active: true,
+        authorized_given_names: 'Fatima',
+        authorized_family_name: 'Said',
+        version: 1,
+        updated_at: '2026-07-01T00:00:00Z',
+      }],
+    });
+    const res = await request(app).get('/api/auth/me/pickup-authorization');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      status: 'ACTIVE',
+      given_names: 'Fatima',
+      family_name: 'Said',
+      version: 1,
+      updated_at: '2026-07-01T00:00:00Z',
+    });
+  });
+
+  it('erreur DB → next(err) → 500', async () => {
+    db.query.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).get('/api/auth/me/pickup-authorization');
+    expect(res.status).toBe(500);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+describe('PUT /api/auth/me/pickup-authorization', () => {
+  it('création → 200, ACTIVE, audit émis', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ version: 1, updated_at: 't1' }] });
+    const res = await request(app)
+      .put('/api/auth/me/pickup-authorization')
+      .send({ given_names: 'Fatima', family_name: 'Said' });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      status: 'ACTIVE', given_names: 'Fatima', family_name: 'Said', version: 1, updated_at: 't1',
+    });
+    expect(mockCreateAlert).toHaveBeenCalled();
+  });
+
+  it('400 si given_names manquant (validation défensive du service)', async () => {
+    // `validate` est mocké no-op dans ce fichier — la garde du service
+    // (pickup-authorization-service._validateNamePair) doit rattraper.
+    const res = await request(app)
+      .put('/api/auth/me/pickup-authorization')
+      .send({ given_names: '', family_name: 'Said' });
+    expect(res.status).toBe(400);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('erreur DB → next(err) → 500', async () => {
+    db.query.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app)
+      .put('/api/auth/me/pickup-authorization')
+      .send({ given_names: 'Fatima', family_name: 'Said' });
+    expect(res.status).toBe(500);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+describe('DELETE /api/auth/me/pickup-authorization', () => {
+  it('supprime et audite quand une autorisation existait', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ version: 2 }] });
+    const res = await request(app).delete('/api/auth/me/pickup-authorization');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'NONE' });
+    expect(mockCreateAlert).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      type: 'PICKUP_AUTHORIZATION_REVOKED',
+      entityId: 'user-1',
+    }));
+  });
+
+  it('idempotent : aucune autorisation existante → 200 NONE sans erreur', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).delete('/api/auth/me/pickup-authorization');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'NONE' });
+  });
+
+  it('erreur DB → next(err) → 500', async () => {
+    db.query.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).delete('/api/auth/me/pickup-authorization');
+    expect(res.status).toBe(500);
   });
 });
 

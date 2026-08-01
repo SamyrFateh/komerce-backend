@@ -52,8 +52,8 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-image-ux.js` | 8 | 5 | 1/1 | Modal produit |
 | `b-subcat.js` | 4 | 9 | 0/0 | Carte produit, Grille produits, Header, Hero, Section catalogue |
 | `b-pdp-curation-suggestions.js` | 12 | 0 | 2/0 | Modal produit |
-| `b-komerce.js` | 11 | 0 | 0/1 | Section catalogue |
 | `boutique.js` | 0 | 11 | 3/0 | Modal produit, Grille produits, Chips catégories |
+| `b-komerce.js` | 9 | 0 | 0/1 | Section catalogue |
 | `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/2 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 2/0 | Modal produit |
 | `hero-bootstrap.js` | 0 | 9 | 0/0 | Grille produits, Hero, Section catalogue |

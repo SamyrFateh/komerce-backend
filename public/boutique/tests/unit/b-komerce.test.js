@@ -5,11 +5,13 @@
  * @layer         test
  * @status        production
  * @owner         public/boutique/tests/unit/b-komerce.test.js
- * @purpose       Tests unitaires de openMonKomerce (Lot 4B) : authentification
- *                à l'entrée, page unique sans sous-onglet, bloc wallet, profil
- *                (champs persistés uniquement), retrait & sécurité (informatif).
+ * @purpose       Tests unitaires de openMonKomerce (Lot 4B, étendu Lot 5) :
+ *                authentification à l'entrée, page unique sans sous-onglet,
+ *                bloc wallet, profil (champs persistés uniquement), retrait
+ *                & sécurité (code informatif + autorisation nominative de
+ *                retrait exceptionnel — états NONE/ACTIVE).
  * @impact-areas  account, wallet, boutique-navigation
- * @version       2026-07-lot4b
+ * @version       2026-07-lot5
  */
 'use strict';
 
@@ -32,10 +34,11 @@
  */
 
 jest.mock('../../js/b-utils.js', () => ({
-  sanitize: jest.fn((s) => String(s ?? '')),
-  fmt:      jest.fn((v) => v + ' KMF'),
-  apiGet:   jest.fn(),
-  apiPut:   jest.fn(),
+  sanitize:  jest.fn((s) => String(s ?? '')),
+  fmt:       jest.fn((v) => v + ' KMF'),
+  apiGet:    jest.fn(),
+  apiPut:    jest.fn(),
+  apiDelete: jest.fn(),
 }));
 jest.mock('../../js/b-identity.js', () => ({
   requireIdentity:   jest.fn(),
@@ -53,18 +56,26 @@ jest.mock('../../js/b-bus.js', () => {
   };
 });
 
-const { apiGet, apiPut }                 = require('../../js/b-utils.js');
+const { apiGet, apiPut, apiDelete }      = require('../../js/b-utils.js');
 const { requireIdentity, getCurrentIdentity } = require('../../js/b-identity.js');
 const { renderWalletView }               = require('../../js/b-wallet.js');
 const { openMonKomerce }                 = require('../../js/b-komerce.js');
-const { flush }                          = require('./helpers/boutiqueTestKit');
+const { flush, submitForm }               = require('./helpers/boutiqueTestKit');
+
+function mockApiGetDefaults({ me, auth } = {}) {
+  apiGet.mockImplementation((path) => {
+    if (path === '/api/auth/me') return Promise.resolve(me || { full_name: 'Fatima', phone: '+2691234567', currency_pref: 'KMF' });
+    if (path === '/api/auth/me/pickup-authorization') return Promise.resolve(auth || { status: 'NONE' });
+    return Promise.resolve(null);
+  });
+}
 
 beforeEach(() => {
   document.body.innerHTML = '';
   jest.clearAllMocks();
   getCurrentIdentity.mockReturnValue(null);
   requireIdentity.mockResolvedValue(null);
-  apiGet.mockResolvedValue({ full_name: 'Fatima', phone: '+2691234567', currency_pref: 'KMF' });
+  mockApiGetDefaults();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,11 +210,13 @@ describe('openMonKomerce — bloc wallet', () => {
 describe('openMonKomerce — bloc profil', () => {
   beforeEach(() => {
     getCurrentIdentity.mockReturnValue({ id: 1 });
-    apiGet.mockResolvedValue({
-      full_name: 'Fatima Ali',
-      phone: '+2691234567',
-      email: 'fatima@example.km',
-      currency_pref: 'KMF',
+    mockApiGetDefaults({
+      me: {
+        full_name: 'Fatima Ali',
+        phone: '+2691234567',
+        email: 'fatima@example.km',
+        currency_pref: 'KMF',
+      },
     });
   });
 
@@ -302,14 +315,7 @@ describe('openMonKomerce — bloc profil', () => {
 describe('openMonKomerce — bloc retrait & sécurité', () => {
   beforeEach(() => {
     getCurrentIdentity.mockReturnValue({ id: 1 });
-    apiGet.mockResolvedValue({ full_name: 'Fatima', phone: '+2691234567', currency_pref: 'KMF' });
-  });
-
-  it('aucun bouton de mutation (informatif uniquement)', async () => {
-    await openMonKomerce();
-    await flush();
-    const secBlock = document.getElementById('k-kmc-security-block');
-    expect(secBlock.querySelectorAll('button').length).toBe(0);
+    mockApiGetDefaults();
   });
 
   it('contient "lorsque votre commande est prête au relais"', async () => {
@@ -331,6 +337,131 @@ describe('openMonKomerce — bloc retrait & sécurité', () => {
     await flush();
     const secBlock = document.getElementById('k-kmc-security-block');
     expect(secBlock.textContent).not.toContain('apr\u00e8s cr\u00e9ation de commande');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bloc autorisation de retrait exceptionnel (Lot 5)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('openMonKomerce — autorisation de retrait exceptionnel (Lot 5)', () => {
+  beforeEach(() => {
+    getCurrentIdentity.mockReturnValue({ id: 1 });
+  });
+
+  it('état NONE : affiche un formulaire, bouton désactivé tant que les 2 champs ne sont pas remplis', async () => {
+    mockApiGetDefaults({ auth: { status: 'NONE' } });
+    await openMonKomerce();
+    await flush(6);
+    const authBlock = document.getElementById('k-kmc-auth-content');
+    const saveBtn = authBlock.querySelector('#k-kmc-auth-save');
+    expect(saveBtn).not.toBeNull();
+    expect(saveBtn.disabled).toBe(true);
+    // Aucun résumé de personne autorisée en état NONE
+    expect(authBlock.querySelector('#k-kmc-auth-name')).toBeNull();
+  });
+
+  it('état NONE : le bouton s\'active une fois les 2 champs remplis', async () => {
+    mockApiGetDefaults({ auth: { status: 'NONE' } });
+    await openMonKomerce();
+    await flush(6);
+    const authBlock = document.getElementById('k-kmc-auth-content');
+    const givenInput  = authBlock.querySelector('#k-kmc-auth-given');
+    const familyInput = authBlock.querySelector('#k-kmc-auth-family');
+    givenInput.value = 'Fatima';
+    givenInput.dispatchEvent(new Event('input'));
+    familyInput.value = 'Said';
+    familyInput.dispatchEvent(new Event('input'));
+    expect(authBlock.querySelector('#k-kmc-auth-save').disabled).toBe(false);
+  });
+
+  it('soumission du formulaire : PUT avec given_names/family_name, puis affiche l\'état ACTIVE', async () => {
+    mockApiGetDefaults({ auth: { status: 'NONE' } });
+    apiPut.mockResolvedValue({
+      status: 'ACTIVE', given_names: 'Fatima', family_name: 'Said',
+      version: 1, updated_at: '2026-07-01T00:00:00Z',
+    });
+    await openMonKomerce();
+    await flush(6);
+    const authBlock = document.getElementById('k-kmc-auth-content');
+    authBlock.querySelector('#k-kmc-auth-given').value = 'Fatima';
+    authBlock.querySelector('#k-kmc-auth-given').dispatchEvent(new Event('input'));
+    authBlock.querySelector('#k-kmc-auth-family').value = 'Said';
+    authBlock.querySelector('#k-kmc-auth-family').dispatchEvent(new Event('input'));
+
+    await submitForm(authBlock.querySelector('#k-kmc-auth-form'));
+    await flush();
+
+    expect(apiPut).toHaveBeenCalledWith('/api/auth/me/pickup-authorization', {
+      given_names: 'Fatima', family_name: 'Said',
+    });
+    expect(authBlock.querySelector('#k-kmc-auth-name').textContent).toBe('Fatima Said');
+    expect(authBlock.querySelector('#k-kmc-auth-save')).toBeNull();
+  });
+
+  it('état ACTIVE : affiche le nom autorisé, "Modifier" et "Supprimer", jamais le nom en HTML brut', async () => {
+    mockApiGetDefaults({
+      auth: { status: 'ACTIVE', given_names: 'Fatima', family_name: 'Said', version: 2, updated_at: '2026-07-01T00:00:00Z' },
+    });
+    await openMonKomerce();
+    await flush(6);
+    const authBlock = document.getElementById('k-kmc-auth-content');
+    expect(authBlock.querySelector('#k-kmc-auth-name').textContent).toBe('Fatima Said');
+    expect(authBlock.querySelector('#k-kmc-auth-edit')).not.toBeNull();
+    expect(authBlock.querySelector('#k-kmc-auth-delete')).not.toBeNull();
+    // Le nom n'apparaît jamais interpolé littéralement dans le HTML source
+    expect(authBlock.innerHTML).not.toContain('>Fatima Said<');
+  });
+
+  it('"Modifier" : ouvre le formulaire pré-rempli avec le nom actuel', async () => {
+    mockApiGetDefaults({
+      auth: { status: 'ACTIVE', given_names: 'Fatima', family_name: 'Said', version: 2, updated_at: '2026-07-01T00:00:00Z' },
+    });
+    await openMonKomerce();
+    await flush(6);
+    const authBlock = document.getElementById('k-kmc-auth-content');
+    authBlock.querySelector('#k-kmc-auth-edit').click();
+    await flush();
+    expect(authBlock.querySelector('#k-kmc-auth-given').value).toBe('Fatima');
+    expect(authBlock.querySelector('#k-kmc-auth-family').value).toBe('Said');
+    expect(authBlock.querySelector('#k-kmc-auth-cancel')).not.toBeNull();
+  });
+
+  it('"Supprimer" : demande confirmation, appelle DELETE, revient à l\'état NONE', async () => {
+    mockApiGetDefaults({
+      auth: { status: 'ACTIVE', given_names: 'Fatima', family_name: 'Said', version: 2, updated_at: '2026-07-01T00:00:00Z' },
+    });
+    apiDelete.mockResolvedValue({ status: 'NONE' });
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+    await openMonKomerce();
+    await flush(6);
+    const authBlock = document.getElementById('k-kmc-auth-content');
+    authBlock.querySelector('#k-kmc-auth-delete').click();
+    await flush();
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(apiDelete).toHaveBeenCalledWith('/api/auth/me/pickup-authorization');
+    expect(authBlock.querySelector('#k-kmc-auth-name')).toBeNull();
+    expect(authBlock.querySelector('#k-kmc-auth-save')).not.toBeNull();
+    confirmSpy.mockRestore();
+  });
+
+  it('"Supprimer" : n\'appelle pas DELETE si la confirmation est refusée', async () => {
+    mockApiGetDefaults({
+      auth: { status: 'ACTIVE', given_names: 'Fatima', family_name: 'Said', version: 2, updated_at: '2026-07-01T00:00:00Z' },
+    });
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+
+    await openMonKomerce();
+    await flush(6);
+    const authBlock = document.getElementById('k-kmc-auth-content');
+    authBlock.querySelector('#k-kmc-auth-delete').click();
+    await flush();
+
+    expect(apiDelete).not.toHaveBeenCalled();
+    expect(authBlock.querySelector('#k-kmc-auth-name')).not.toBeNull();
+    confirmSpy.mockRestore();
   });
 });
 
