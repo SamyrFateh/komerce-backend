@@ -3,7 +3,20 @@
 const fs = require('fs');
 const path = require('path');
 
-const schemaPath = path.join(__dirname, '..', 'docs', 'SCHEMA.md');
+const root = path.join(__dirname, '..');
+
+function replaceInFile(filePath, search, replacement, label) {
+  let content = fs.readFileSync(filePath, 'utf8');
+  if (!content.includes(search)) {
+    if (content.includes(replacement)) return false;
+    throw new Error(`Lot 6: marqueur introuvable pour ${label}`);
+  }
+  content = content.replace(search, replacement);
+  fs.writeFileSync(filePath, content, 'utf8');
+  return true;
+}
+
+const schemaPath = path.join(root, 'docs', 'SCHEMA.md');
 let doc = fs.readFileSync(schemaPath, 'utf8');
 
 function replaceRequired(search, replacement, label) {
@@ -54,4 +67,27 @@ if (!doc.includes(authorizationRow)) {
 }
 
 fs.writeFileSync(schemaPath, doc, 'utf8');
-console.log('Lot 6: docs/SCHEMA.md réconcilié avec le dump Railway vivant.');
+
+const platformOpsPath = path.join(root, 'features', 'platform-ops.feature.js');
+replaceInFile(
+  platformOpsPath,
+  "  files: {\n    compositionRoots:",
+  "  files: {\n    migrations: [\n      // Lot 6 : nettoyage conservatif de deux résidus DDL laissés par des\n      // preuves REAL_DB historiques ; aucune nouvelle capacité métier.\n      'migrations/122_cleanup_realdb_test_schema_residue.sql',\n    ],\n    compositionRoots:",
+  'ownership migration 122'
+);
+replaceInFile(
+  platformOpsPath,
+  "      tests: [\n      'tests/integration/api.test.js',",
+  "      tests: [\n      'tests/integration/r6-crash-window.test.js',\n      'tests/integration/api.test.js',",
+  'ownership test R6'
+);
+
+const economicPath = path.join(root, 'features', 'economic-engine.feature.js');
+replaceInFile(
+  economicPath,
+  "        tests: [\n      'tests/unit/admin-cost-components.test.js',",
+  "        tests: [\n      'tests/integration/txg01-pricing-matrices.test.js',\n      'tests/unit/admin-cost-components.test.js',",
+  'ownership test TXG-01'
+);
+
+console.log('Lot 6: schéma vivant et ownerships réconciliés.');
