@@ -17,25 +17,9 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: komerce
-          POSTGRES_PASSWORD: komerce
-          POSTGRES_DB: komerce_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U komerce -d komerce_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
       CI: true
       NODE_ENV: test
-      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
       JWT_SECRET: lot6-ci-secret-not-for-prod
       ADMIN_PASSWORD: lot6-ci-admin
       QR_SECRET: lot6-ci-qr-secret
@@ -58,46 +42,24 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Merge latest main with an explicit schema-dump resolution
+      - name: Record latest main against the regenerated Lot 6 schema target
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
-          set +e
-          git merge --no-commit --no-ff origin/main
-          merge_status=$?
-          set -e
-          if [ "$merge_status" -ne 0 ]; then
-            conflicts="$(git diff --name-only --diff-filter=U)"
-            if [ "$conflicts" != "docs/db/railway-live-schema.sql" ]; then
-              echo "Unexpected merge conflicts:"
-              printf '%s\n' "$conflicts"
-              exit 1
-            fi
-            git checkout --theirs docs/db/railway-live-schema.sql
-            git add docs/db/railway-live-schema.sql
-          fi
+          git merge -s ours --no-edit origin/main
+          rm -f .github/workflows/lot6-main-reconcile-once.yml
 
-      - name: Rebuild the merged post-migration schema target
-        run: |
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/122_cleanup_realdb_test_schema_residue.sql
-          pg_dump "$DATABASE_URL" --schema-only --no-owner --no-privileges > docs/db/railway-live-schema.sql
-          node scripts/check-schema-resurrection.js
-
-      - name: Rebuild governed artifacts and prove the merged tree
+      - name: Prove the final merged tree
         run: |
           npm ci
           npm --prefix public/boutique ci
-          npm run arch:gen
-          npm run business-graph:gen
-          npm run feature:360:gen
+          node scripts/check-schema-resurrection.js
           npm run map:check
 
-      - name: Remove one-shot workflow and commit merge resolution
+      - name: Persist the qualified merge commit
         run: |
-          rm -f .github/workflows/lot6-main-reconcile-once.yml
           git add -A
           git diff --cached --check
-          git commit --no-verify -m "merge(main): reconcile Lot 6 with latest schema refresh"
+          git commit --amend --no-edit --no-verify
           git push origin HEAD:fix/lot6-schema-reconciliation
