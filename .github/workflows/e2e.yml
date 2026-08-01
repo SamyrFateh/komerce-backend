@@ -112,18 +112,22 @@ jobs:
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Prove checked-out PR tree — ${{ matrix.project }}
-        if: github.event_name == 'pull_request' && steps.filter.outputs.skip != 'true'
+      - name: Prove checked-out PR tree locally
+        if: github.event_name == 'pull_request' && matrix.project == 'Desktop Chrome'
         run: |
           npx playwright test \
-            tests/contracts.spec.js \
             tests/e2e/csp-fronts.spec.js \
             tests/e2e/modal-geometry.spec.js \
             tests/e2e/modal-visual-regression.spec.js \
             tests/e2e/hero-geometry.spec.js \
             tests/e2e/modal-backtop-zindex.spec.js \
-            --project="${{ matrix.project }}" \
+            --project='Chromium Local-Only' \
             --workers=2 \
+            --retries=1
+          npx playwright test \
+            tests/e2e/modal-mdm9-gallery-layout.spec.js \
+            --project='Chromium MDM-9' \
+            --workers=1 \
             --retries=1
 
       - name: Run remote campaign — ${{ matrix.project }}
