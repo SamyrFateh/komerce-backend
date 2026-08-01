@@ -90,4 +90,28 @@ replaceInFile(
   'ownership test TXG-01'
 );
 
-console.log('Lot 6: schéma vivant et ownerships réconciliés.');
+const authIdentityPath = path.join(root, 'features', 'auth-identity.feature.js');
+replaceInFile(
+  authIdentityPath,
+  "      'notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)',\n",
+  "      'notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)',\n      'wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)',\n",
+  'déclaration auth-identity vers wallet'
+);
+
+const exceptionsPath = path.join(root, 'governance', 'feature-dependency-exceptions.json');
+const exceptionsDoc = JSON.parse(fs.readFileSync(exceptionsPath, 'utf8'));
+if (!exceptionsDoc.exceptions.some((entry) => entry.from === 'auth-identity' && entry.to === 'wallet')) {
+  exceptionsDoc.exceptions.push({
+    from: 'auth-identity',
+    to: 'wallet',
+    decision: 'accepted-dependency',
+    rationale: 'Mon Komerce est la surface frontend canonique du compte. Elle compose en lecture la vue wallet possédée par wallet via renderWalletView(), sans calculer le solde, modifier les lots ni déplacer l’autorité métier.',
+    scope: [
+      'public/boutique/js/b-komerce.js -> public/boutique/js/b-wallet.js / renderWalletView',
+    ],
+    reviewTrigger: 'Extraire un contrat frontend dédié si Mon Komerce commence à muter le wallet, à interpréter ses lots ou si plusieurs surfaces répliquent cette composition.',
+  });
+  fs.writeFileSync(exceptionsPath, `${JSON.stringify(exceptionsDoc, null, 2)}\n`, 'utf8');
+}
+
+console.log('Lot 6: schéma vivant, ownerships et disposition auth-identity→wallet réconciliés.');
