@@ -1,0 +1,58 @@
+name: Lot 8 registry repair once
+
+on:
+  push:
+    branches:
+      - test/lot8-pre-go-live-certification
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lot8-registry-repair-once
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/lot8-pre-go-live-certification
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Register business-rules canonically
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'docs/doctrine/APP_FEATURE_REGISTRY.md';
+          const row = '| 27 | `business-rules` | transversal (business) | backend | [`business-rules.feature.js`](../../features/business-rules.feature.js) | production | Référentiel versionné des règles métier paramétrables, consommé par les features décisionnaires sans décider à leur place |';
+          const lines = fs.readFileSync(path, 'utf8').split(/\r?\n/);
+          if (!lines.some((line) => line.includes('`business-rules`'))) {
+            const anchor = lines.findIndex((line) => line.startsWith('| 26 | `incident-management`'));
+            if (anchor < 0) throw new Error('Registry anchor not found');
+            lines.splice(anchor + 1, 0, row);
+            fs.writeFileSync(path, lines.join('\n'));
+          }
+          NODE
+          node scripts/registry-doc-check.js --strict
+
+      - name: Remove one-shot workflow
+        run: rm -f .github/workflows/lot8-fix-registry-once.yml
+
+      - name: Commit repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit --no-verify -m "fix: register business-rules for Lot 8 certification"
+          git push origin HEAD:test/lot8-pre-go-live-certification
