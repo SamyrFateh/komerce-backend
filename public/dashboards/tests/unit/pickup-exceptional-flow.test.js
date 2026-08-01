@@ -56,7 +56,8 @@ describe('Hub relais — retrait exceptionnel nominatif', () => {
     const modal = document.getElementById('pickup-modal');
     expect(modal).not.toBeNull();
     expect(modal.textContent).toContain('Retrait exceptionnel');
-    expect(modal.textContent).not.toMatch(/Fatima|Said|nom attendu/i);
+    expect(modal.textContent).toContain('le nom attendu ne vous est jamais communiqué');
+    expect(modal.textContent).not.toMatch(/Fatima|Amina|Said/i);
 
     const given = document.getElementById('exceptional-given');
     const family = document.getElementById('exceptional-family');
