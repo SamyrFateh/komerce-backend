@@ -1,6 +1,6 @@
 {
   "version": "O6-1.0",
-  "_comment": "Ledger d'EXCEPTIONS O6 — porte uniquement les paires O5 OBSERVED_UNDECLARED dont la politique de famille ne suffit pas à décider sans jugement humain. Une entrée dont la paire a disparu devient STALE et doit être supprimée ; l'historique appartient à Git. Une dépendance désormais déclarée n'a plus sa place dans ce ledger, qui ne sert jamais de journal historique. Chaque entrée doit correspondre à une paire encore observée. Aucune entrée n'est conservée pour mémoire ; toute suppression est traçable par Git.",
+  "_comment": "Ledger d'EXCEPTIONS O6 — porte uniquement les paires O5 OBSERVED_UNDECLARED dont la politique de famille ne suffit pas à décider sans jugement humain. Une entrée dont la paire a disparu devient STALE et doit être supprimée ; l'historique appartient à Git.",
   "exceptions": [
     {
       "from": "shared-cart",

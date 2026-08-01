@@ -4,11 +4,11 @@
  * tests/unit/admin-dashboard.test.js
  *
  * Couvre routes/admin-dashboard.js
- * Route volumineuse (5 endpoints agrégateurs + cache/clear) — tout le détail
+ * Route volumineuse (4 endpoints agrégateurs + cache/clear) — tout le détail
  * métier vit dans services/dashboard-metrics — on teste ici :
  *   - la garde auth admin (401/403)
  *   - le câblage nominal des endpoints principaux (control-tower, costing,
- *     logistics, event-workspaces, unified)
+ *     logistics, unified)
  *   - parseFilters / makeDataQuality via leur effet observable sur la réponse
  *   - POST /cache/clear
  *   - propagation d'erreur (next(err)) si un KPI échoue
@@ -84,7 +84,7 @@ beforeEach(() => {
 describe('admin-dashboard — accès', () => {
   it('non-admin → 403 sur chaque endpoint principal', async () => {
     currentUser = { id: 'u1', role: 'client' };
-    for (const path of ['/control-tower', '/costing', '/logistics', '/event-workspaces', '/unified']) {
+    for (const path of ['/control-tower', '/costing', '/logistics', '/unified']) {
       const res = await request(app).get('/api/admin/dashboard' + path);
       expect(res.status).toBe(403);
     }
@@ -163,21 +163,12 @@ describe('GET /logistics', () => {
   });
 });
 
-describe('GET /event-workspaces', () => {
-  it('nominal → 200 avec kpis et drilldown_links', async () => {
-    const res = await request(app).get('/api/admin/dashboard/event-workspaces');
-    expect(res.status).toBe(200);
-    expect(res.body.kpis).toHaveLength(8);
-    expect(res.body.drilldown_links.cmds_creees_workspace).toBe('/admin/orders-logistics?origin=workspace');
-  });
-});
-
 describe('GET /unified', () => {
-  it('nominal → 200 avec kpis_global, view_blocks (4 vues), economic_flow, principles', async () => {
+  it('nominal → 200 avec kpis_global, view_blocks (3 vues), economic_flow, principles', async () => {
     const res = await request(app).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(200);
-    expect(res.body.kpis_global).toHaveLength(6);
-    expect(res.body.view_blocks).toHaveLength(4);
+    expect(res.body.kpis_global).toHaveLength(5);
+    expect(res.body.view_blocks).toHaveLength(3);
     expect(res.body.economic_flow.stages.length).toBeGreaterThan(0);
     expect(res.body.principles.length).toBeGreaterThan(0);
     expect(Array.isArray(res.body.system_alerts)).toBe(true);

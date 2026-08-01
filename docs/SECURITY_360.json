@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-01T09:22:29.080Z",
+  "generatedAt": "2026-07-31T18:16:50.870Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 491,
-    "protected": 435,
+    "total": 486,
+    "protected": 430,
     "public": 5,
     "unprotected": 49,
     "admin_no_guard": 0,
@@ -1535,21 +1535,6 @@
       "roles": []
     },
     {
-      "key": "DELETE /api/auth/me/pickup-authorization",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "GET /api/auth/me/pickup-authorization",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "PUT /api/auth/me/pickup-authorization",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
       "key": "GET /api/auth/me",
       "level": "PROTECTED",
       "roles": []
@@ -2554,16 +2539,6 @@
     },
     {
       "key": "POST /api/pickup/collect/{orderId}",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "POST /api/pickup/exceptional-pickup/{orderId}/collect",
-      "level": "PROTECTED",
-      "roles": []
-    },
-    {
-      "key": "GET /api/pickup/exceptional-pickup/{orderId}",
       "level": "PROTECTED",
       "roles": []
     },

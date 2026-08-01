@@ -226,8 +226,8 @@
 }
 .k-kmc-action-btn--danger {
   background: var(--white);
-  color: var(--red-danger-text);
-  border: 1.5px solid var(--red-danger-border);
+  color: #b3261e;
+  border: 1.5px solid #b3261e33;
 }
 
 /* ── Desktop 2 colonnes (≥ 900 px) ─────────────────────────────── */

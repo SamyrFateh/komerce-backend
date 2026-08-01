@@ -106,7 +106,6 @@
   function getCostingProducts(params)        { return fetchJSON(apiUrl('/admin/costing/products', params)); }
   function getCostingRelais(params)          { return fetchJSON(apiUrl('/admin/costing/relais',   params)); }
   function getLogistics(filters, extra)      { return fetchJSON(dashboardUrl('logistics',        filters, extra)); }
-  function getEventWorkspaces(filters, extra){ return fetchJSON(dashboardUrl('event-workspaces', filters, extra)); }
   function getUnified(filters, extra)        { return fetchJSON(dashboardUrl('unified',          filters, extra)); }
 
   // ── Vague 1 — Domaines opérationnels ─────────────────────────────────────
@@ -623,7 +622,6 @@
     getCostingProducts,
     getCostingRelais,
     getLogistics,
-    getEventWorkspaces,
     getUnified,
     clearCache,
 

@@ -4,14 +4,10 @@ on:
   pull_request:
     paths:
       - 'public/boutique/**'
-      - 'bootstrap/security.js'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/e2e-boutique.yml'
   workflow_dispatch:
     inputs:
       base_url:
-        description: 'URL cible distante'
+        description: 'URL cible (défaut: prod Railway)'
         required: false
         default: 'https://komerce-backend-production.up.railway.app'
 
@@ -28,33 +24,17 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: |
-            package-lock.json
-            public/boutique/package-lock.json
+          cache-dependency-path: public/boutique/package-lock.json
 
-      - name: Install backend deps required by CSP contract imports
-        working-directory: .
-        run: npm ci
-
-      - name: Install Boutique deps
+      - name: Install deps
         run: npm ci
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Prove the checked-out PR tree locally
-        if: github.event_name == 'pull_request'
-        run: |
-          npx playwright test \
-            tests/e2e/modal-geometry.spec.js \
-            tests/e2e/hero-geometry.spec.js \
-            tests/e2e/modal-backtop-zindex.spec.js \
-            --project='Chromium Local-Only'
-
-      - name: Run the explicit remote campaign
-        if: github.event_name == 'workflow_dispatch'
+      - name: Run E2E (feature-first)
         env:
-          BASE_URL: ${{ github.event.inputs.base_url }}
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://komerce-backend-production.up.railway.app' }}
         run: npx playwright test
 
       - name: Upload report

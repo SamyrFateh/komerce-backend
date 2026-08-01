@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 10,
-    "total_routes": 441,
+    "unknown_responses": 5,
+    "total_routes": 438,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -283,68 +283,6 @@
                       "x-observed": true
                     }
                   }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/auth/me/pickup-authorization": {
-      "get": {
-        "summary": "GET /api/auth/me/pickup-authorization",
-        "x-route-file": "routes/auth.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      },
-      "put": {
-        "summary": "PUT /api/auth/me/pickup-authorization",
-        "x-route-file": "routes/auth.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      },
-      "delete": {
-        "summary": "DELETE /api/auth/me/pickup-authorization",
-        "x-route-file": "routes/auth.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
                 }
               }
             }
@@ -1528,6 +1466,13 @@
                   "stripe_payment_intent": {
                     "type": "string",
                     "maxLength": 200
+                  },
+                  "recipient_name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "recipient_phone": {
+                    "type": "string"
                   },
                   "tracking_phone": {
                     "type": "string"
@@ -12096,70 +12041,6 @@
                       "x-observed": true
                     }
                   }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/pickup/exceptional-pickup/{orderId}": {
-      "get": {
-        "summary": "GET /api/pickup/exceptional-pickup/{orderId}",
-        "x-route-file": "routes/pickup-secret.js",
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/pickup/exceptional-pickup/{orderId}/collect": {
-      "post": {
-        "summary": "POST /api/pickup/exceptional-pickup/{orderId}/collect",
-        "x-route-file": "routes/pickup-secret.js",
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
                 }
               }
             }

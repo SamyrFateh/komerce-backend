@@ -109,9 +109,6 @@ module.exports = {
       'migrations/067_finance_config_provision_risque.sql',
       'migrations/090_cost_benchmarks.sql',
       'migrations/103_cost_benchmarks.sql',
-      // Lot 6 : réparation conservative de la table d’audit pricing canonique ;
-      // le nettoyage accessoire d’un résidu de test ne déplace aucune autorité.
-      'migrations/122_cleanup_realdb_test_schema_residue.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -123,7 +120,6 @@ module.exports = {
       'dashboards/admin/js/views/EconomicFlowView.js',
     ],
         tests: [
-      'tests/integration/txg01-pricing-matrices.test.js',
       'tests/unit/admin-cost-components.test.js',
       'tests/unit/admin-costing.test.js',
       'tests/unit/admin-finance-config.test.js',

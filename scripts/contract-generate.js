@@ -523,9 +523,6 @@ const KNOWN_RESPONSES = {
   '/api/admin/dashboard/logistics': {
     get: { fields: ['parcels','relais','summary','generated_at'], source: 'route-read' }
   },
-  '/api/admin/dashboard/event-workspaces': {
-    get: { fields: ['workspaces','total'], source: 'route-read' }
-  },
   '/api/admin/dashboard/unified': {
     get: { fields: ['orders','parcels','metrics','generated_at'], source: 'route-read' }
   },

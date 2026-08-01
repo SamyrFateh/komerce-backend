@@ -35,7 +35,6 @@ module.exports = {
       'paiement carte/PayPal lui-même (feature payments)',
       'création de la commande finale (feature orders, consommée en sortie)',
       'crédit wallet (feature wallet, consommée en sortie)',
-      'tests/unit/collective-payment-orchestrator.test.js',
     ],
   },
 
@@ -60,29 +59,14 @@ module.exports = {
       'services/shared-cart-refund-queue.js',
       'services/shared-cart-v41-transitions.js',
       'services/cancel-shared-cart-with-refunds.js',
-    
-      'services/collective-close-order-service.js',
-      'services/collective-payment-orchestrator.js',
-      'services/collective-ready-to-order-orchestrator.js',
-      'services/collective-stock-reservation-service.js',
-      'services/collective-workspace-engine.js',        // barrel C4 2026-06-28
-      'services/collective-workspace-internals.js',     // CONFIG, _generateToken, _hashToken, logEvent
-      'services/collective-workspace-creation.js',      // createWorkspace
-      'services/collective-workspace-reads.js',         // getWorkspace*, getTokenInfo, deriveWorkspacePhase
-      'services/collective-workspace-items.js',         // addItem, updateItem, removeItem
-      'services/collective-workspace-contributions.js', // addContribution, cancelContribution*
-      'services/collective-workspace-lifecycle.js',     // finalizationReview, finalizeWorkspace, resumeWorkspace
-      'services/repair-collective-ready-to-capture.js',
-      'services/repair-collective-stock-reservations.js',],
+    ],
     routes: [
       'routes/shared-cart.js',
       'routes/shared-cart-cash.js',
       'routes/shared-cart-from-order.js',
       'routes/shared-cart-refund-admin.js',
     
-      'routes/admin-collective-repairs.js',
       'routes/baskets.js',
-      'routes/collective-workspaces.js',
       'routes/shares.js',],
     migrations: [
       'migrations/044_shared_cart.sql',
@@ -104,21 +88,7 @@ module.exports = {
       // E2E fonctionnel Feature First — shared-cart est PROPRIETAIRE ;
       // payments, auth-identity, catalog et logistics sont traversees.
       'tests/e2e-api/shared-cart.contribution-webhook.e2e.test.js',
-      'tests/unit/admin-collective-repairs.test.js',
       'tests/unit/baskets.test.js',
-      'tests/unit/collective-payment-orchestrator.test.js',
-      'tests/unit/collective-ready-to-order-orchestrator.test.js',
-      'tests/unit/collective-stock-reservation-service.test.js',
-      'tests/unit/collective-workspace-contributions.test.js',
-      'tests/unit/collective-workspace-creation.test.js',
-      'tests/unit/collective-workspace-engine.test.js',
-      'tests/unit/collective-workspace-internals.test.js',
-      'tests/unit/collective-workspace-items.test.js',
-      'tests/unit/collective-workspace-lifecycle.test.js',
-      'tests/unit/collective-workspace-reads.test.js',
-      'tests/unit/collective-workspaces.test.js',
-      'tests/unit/repair-collective-ready-to-capture.test.js',
-      'tests/unit/repair-collective-stock-reservations.test.js',
       'tests/unit/shared-cart-branches.test.js',
       'tests/unit/shared-cart-cash-route.test.js',
       'tests/unit/shared-cart-cash-service.test.js',
@@ -144,7 +114,6 @@ module.exports = {
       'tests/unit/shared-cart-lot9-business.test.js',
       'tests/unit/shared-cart-v4-2-creation.test.js',
       'tests/unit/shared-cart-v41-reconciliation.test.js',
-      'tests/unit/collective-close-order-service.test.js',
     ],
     boutique: [
       'js/b-group-cart-flow.js',
@@ -211,13 +180,6 @@ module.exports = {
       'baskets: RW',
       'cart_contributions: RW',
       'cart_shares: RW',
-      'collective_payment_sessions: RW',
-      'collective_payment_tokens: RW',
-      'collective_stock_reservations: RW',
-      'collective_workspace_contributions: RW',
-      'collective_workspace_events: W',
-      'collective_workspace_items: RW',
-      'collective_workspaces: RW',
       'finance_config: R',
       'order_items: RW',
       // order_status_history : W-via:order-status-machine (appendOrderHistoryNote — shared-cart-lifecycle.js)

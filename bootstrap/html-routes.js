@@ -87,7 +87,6 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/control-tower',
     '/admin/costing',
     '/admin/orders-logistics',
-    '/admin/event-workspaces',
     '/admin/sourcing',
     '/admin/sourcing-scanner',
     '/admin/pricing',

@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       ./_helpers, ./control-tower, ./costing, ./logistics, ./workspaces
+ * @depends       ./_helpers, ./control-tower, ./costing, ./logistics
  * @used-by       routes/admin-dashboard.js
- * @db-read       collective_payment_sessions, collective_workspace_contributions, collective_workspace_items, collective_workspaces, order_item_cost_imputations, order_item_real_cost_allocations, orders, parcels, scan_events, signals
+ * @db-read       order_item_cost_imputations, order_item_real_cost_allocations, orders, parcels, scan_events, signals
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -30,7 +30,6 @@
  *   INV-2 : cmds_actives identique sur Tour de controle et Logistique
  *   INV-3 : colis_transit identique
  *   INV-4 : taux_completude_couts coherent avec cmds_cout_incomplet
- *   INV-5 : cmds_creees_workspace ⊂ cmds_creees
  *   INV-6 : marge hierarchy : items_actual ≤ items_partial ≤ items_estimated
  *
  * ENUM cost_status (canonique Sprint 1) :
@@ -57,7 +56,6 @@
  *                       control-tower.js pour getCAVendu (alias INV-1)
  *   logistics.js      — 7 KPIs + 1 alias — dépend de control-tower.js pour
  *                       getColisTransit (alias INV-3)
- *   workspaces.js      — 8 KPIs (workspaces collectifs / panier partagé événementiel)
  *
  * Recoupement vérifié avant split (Lot B7) : aucun nom de fonction commun
  * avec services/dashboard-finance-metrics.js (domaine finance standalone,
@@ -70,7 +68,6 @@ const helpers = require('./_helpers');
 const controlTower = require('./control-tower');
 const costing = require('./costing');
 const logistics = require('./logistics');
-const workspaces = require('./workspaces');
 
 module.exports = {
   // Helpers
@@ -116,14 +113,4 @@ module.exports = {
   getRetardsCritiques: logistics.getRetardsCritiques,
   getTauxCollecteRelais: logistics.getTauxCollecteRelais,
   // getTauxCompletudeScans deja exporte (control-tower)
-
-  // Workspaces (8)
-  getWorkspacesActifs: workspaces.getWorkspacesActifs,
-  getSessionsOuvertes: workspaces.getSessionsOuvertes,
-  getTauxCompletion: workspaces.getTauxCompletion,
-  getMontantTotalEvenements: workspaces.getMontantTotalEvenements,
-  getSessionsSansCommande: workspaces.getSessionsSansCommande,
-  getCmdsCreeesWorkspace: workspaces.getCmdsCreeesWorkspace,
-  getPanierMoyEvenement: workspaces.getPanierMoyEvenement,
-  getParticipantsMoy: workspaces.getParticipantsMoy,
 };

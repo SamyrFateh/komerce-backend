@@ -776,13 +776,6 @@
       },
       {
         "feature": "auth-identity",
-        "category": "services",
-        "declared": "services/pickup-authorization-service.js",
-        "resolvedPath": "services/pickup-authorization-service.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "auth-identity",
         "category": "routes",
         "declared": "routes/client-auth.js",
         "resolvedPath": "routes/client-auth.js",
@@ -825,20 +818,6 @@
       },
       {
         "feature": "auth-identity",
-        "category": "utils",
-        "declared": "utils/name-normalize.js",
-        "resolvedPath": "utils/name-normalize.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "auth-identity",
-        "category": "migrations",
-        "declared": "migrations/121_exceptional_pickup_authorization.sql",
-        "resolvedPath": "migrations/121_exceptional_pickup_authorization.sql",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "auth-identity",
         "category": "tests",
         "declared": "tests/integration/admin-authz-probe.test.js",
         "resolvedPath": "tests/integration/admin-authz-probe.test.js",
@@ -863,20 +842,6 @@
         "category": "tests",
         "declared": "tests/unit/client-auth.test.js",
         "resolvedPath": "tests/unit/client-auth.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "auth-identity",
-        "category": "tests",
-        "declared": "tests/unit/pickup-authorization-service.test.js",
-        "resolvedPath": "tests/unit/pickup-authorization-service.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "auth-identity",
-        "category": "tests",
-        "declared": "tests/unit/name-normalize.test.js",
-        "resolvedPath": "tests/unit/name-normalize.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -3541,13 +3506,6 @@
       },
       {
         "feature": "economic-engine",
-        "category": "migrations",
-        "declared": "migrations/122_cleanup_realdb_test_schema_residue.sql",
-        "resolvedPath": "migrations/122_cleanup_realdb_test_schema_residue.sql",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "economic-engine",
         "category": "dash",
         "declared": "dashboards/admin/js/views/PricingView.js",
         "resolvedPath": "public/dashboards/admin/js/views/PricingView.js",
@@ -3586,13 +3544,6 @@
         "category": "dash",
         "declared": "dashboards/admin/js/views/EconomicFlowView.js",
         "resolvedPath": "public/dashboards/admin/js/views/EconomicFlowView.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "economic-engine",
-        "category": "tests",
-        "declared": "tests/integration/txg01-pricing-matrices.test.js",
-        "resolvedPath": "tests/integration/txg01-pricing-matrices.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7497,13 +7448,6 @@
       {
         "feature": "platform-ops",
         "category": "tests",
-        "declared": "tests/integration/r6-crash-window.test.js",
-        "resolvedPath": "tests/integration/r6-crash-window.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "platform-ops",
-        "category": "tests",
         "declared": "tests/integration/api.test.js",
         "resolvedPath": "tests/integration/api.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9488,30 +9432,6 @@
         "method": "GET",
         "path": "/api/client/orders",
         "routeFile": "routes/client-auth.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "auth-identity",
-        "entry": "GET /api/auth/me/pickup-authorization",
-        "method": "GET",
-        "path": "/api/auth/me/pickup-authorization",
-        "routeFile": "routes/auth.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "auth-identity",
-        "entry": "PUT /api/auth/me/pickup-authorization",
-        "method": "PUT",
-        "path": "/api/auth/me/pickup-authorization",
-        "routeFile": "routes/auth.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "auth-identity",
-        "entry": "DELETE /api/auth/me/pickup-authorization",
-        "method": "DELETE",
-        "path": "/api/auth/me/pickup-authorization",
-        "routeFile": "routes/auth.js",
         "status": "resolved-owned"
       },
       {
@@ -11532,22 +11452,6 @@
       },
       {
         "feature": "logistics",
-        "entry": "GET /api/pickup/exceptional-pickup/:orderId",
-        "method": "GET",
-        "path": "/api/pickup/exceptional-pickup/{id}",
-        "routeFile": "routes/pickup-secret.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "logistics",
-        "entry": "POST /api/pickup/exceptional-pickup/:orderId/collect",
-        "method": "POST",
-        "path": "/api/pickup/exceptional-pickup/{id}/collect",
-        "routeFile": "routes/pickup-secret.js",
-        "status": "resolved-owned"
-      },
-      {
-        "feature": "logistics",
         "entry": "GET /api/relais",
         "method": "GET",
         "path": "/api/relais",
@@ -13109,18 +13013,6 @@
         "status": "resolved"
       },
       {
-        "feature": "auth-identity",
-        "fn": "getActiveAuthorizationForUpdate",
-        "file": "services/pickup-authorization-service.js",
-        "status": "resolved"
-      },
-      {
-        "feature": "auth-identity",
-        "fn": "hasActiveAuthorization",
-        "file": "services/pickup-authorization-service.js",
-        "status": "resolved"
-      },
-      {
         "feature": "business-rules",
         "fn": "getRuleNumber",
         "file": "utils/rules.js",
@@ -13366,54 +13258,6 @@
         "from": "auth-identity",
         "to": "notifications",
         "raw": "notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)",
-        "resolved": true
-      },
-      {
-        "from": "auth-identity",
-        "to": "wallet",
-        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
-        "resolved": true
-      },
-      {
-        "from": "auth-identity",
-        "to": "wallet",
-        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
-        "resolved": true
-      },
-      {
-        "from": "auth-identity",
-        "to": "wallet",
-        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
-        "resolved": true
-      },
-      {
-        "from": "auth-identity",
-        "to": "wallet",
-        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
-        "resolved": true
-      },
-      {
-        "from": "auth-identity",
-        "to": "wallet",
-        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
-        "resolved": true
-      },
-      {
-        "from": "auth-identity",
-        "to": "wallet",
-        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
-        "resolved": true
-      },
-      {
-        "from": "auth-identity",
-        "to": "wallet",
-        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
-        "resolved": true
-      },
-      {
-        "from": "auth-identity",
-        "to": "wallet",
-        "raw": "wallet (composition frontend Mon Komerce uniquement — public/boutique/js/b-komerce.js délègue le rendu du bloc wallet à b-wallet.js, sans mutation ni ownership du solde)",
         "resolved": true
       },
       {
@@ -13780,12 +13624,6 @@
         "from": "logistics",
         "to": "auth",
         "raw": "auth",
-        "resolved": true
-      },
-      {
-        "from": "logistics",
-        "to": "auth-identity",
-        "raw": "auth-identity (autorisation nominative de retrait exceptionnel — services/pickup-authorization-service.js:getActiveAuthorizationForUpdate/hasActiveAuthorization, jamais de requête directe sur user_pickup_authorizations, Lot 5)",
         "resolved": true
       },
       {
@@ -15200,22 +15038,6 @@
       },
       {
         "boutiqueManifest": "platform-ops",
-        "category": "boutique",
-        "declared": "../js/b-service-worker-refresh.js",
-        "resolvedPath": "public/boutique/js/b-service-worker-refresh.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
-        "category": "boutique",
-        "declared": "../js/test-modal-view-model-redirect.js",
-        "resolvedPath": "public/boutique/js/test-modal-view-model-redirect.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
         "category": "css",
         "declared": "../css/tokens.css",
         "resolvedPath": "public/boutique/css/tokens.css",
@@ -15259,14 +15081,6 @@
         "category": "assets",
         "declared": "../index.html",
         "resolvedPath": "public/boutique/index.html",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "platform-ops",
-        "category": "assets",
-        "declared": "../test-modal-view-model.html",
-        "resolvedPath": "public/boutique/test-modal-view-model.html",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -16218,18 +16032,6 @@
             "channel": "static-code",
             "evidence": [
               {
-                "sourceFileId": "services/pickup-authorization-service.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/pickup-authorization-service.js",
-                "targetFile": "utils/alerts.js"
-              },
-              {
-                "sourceFileId": "services/pickup-authorization-service.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
                 "sourceFileId": "routes/client-auth.js",
                 "targetFile": "db.js"
               },
@@ -16382,9 +16184,19 @@
                 "targetFile": "public/boutique/js/b-wallet.js"
               }
             ]
+          },
+          {
+            "channel": "interface",
+            "evidence": [
+              {
+                "endpoint": "/api/wallet",
+                "routeFile": "routes/wallet.js",
+                "consumerFileId": "public/boutique/js/b-komerce.js"
+              }
+            ]
           }
         ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "business-rules",
@@ -19107,26 +18919,6 @@
       },
       {
         "from": "logistics",
-        "to": "auth-identity",
-        "channels": [
-          {
-            "channel": "static-code",
-            "evidence": [
-              {
-                "sourceFileId": "services/pickup-secret-service.js",
-                "targetFile": "utils/name-normalize.js"
-              },
-              {
-                "sourceFileId": "services/pickup-secret-service.js",
-                "targetFile": "services/pickup-authorization-service.js"
-              }
-            ]
-          }
-        ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
-      },
-      {
-        "from": "logistics",
         "to": "business-rules",
         "channels": [
           {
@@ -19358,14 +19150,6 @@
               },
               {
                 "sourceFileId": "routes/pickup-secret.js",
-                "targetFile": "middleware/validate.js"
-              },
-              {
-                "sourceFileId": "routes/pickup-secret.js",
-                "targetFile": "validators/index.js"
-              },
-              {
-                "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -19515,10 +19299,6 @@
               {
                 "sourceFileId": "services/scan-engine.js",
                 "targetFile": "services/notification-service.js"
-              },
-              {
-                "sourceFileId": "services/pickup-secret-service.js",
-                "targetFile": "services/notifications/notification-service.js"
               },
               {
                 "sourceFileId": "routes/parcel-api-v2/scans.js",
@@ -23499,11 +23279,6 @@
           "raw": "CSS_BUNDLES_PATH"
         },
         {
-          "sourceFileId": "tests/integration/txg01-pricing-matrices.test.js",
-          "kind": "require",
-          "raw": "TARGET"
-        },
-        {
           "sourceFileId": "scripts/boutique-ownership-full-check.js",
           "kind": "require",
           "raw": "path.join(abs, f"
@@ -23582,10 +23357,10 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 826
+        "filesObserved": 820
       },
       "boutique": {
-        "filesObserved": 127,
+        "filesObserved": 125,
         "nonCanonicalManifestFiles": 12
       },
       "dash": {
@@ -23622,7 +23397,7 @@
       "TECHNICAL_PRIMITIVE": 29,
       "BUSINESS_TRANSVERSAL_SERVICE": 3,
       "CROSS_FEATURE_DIRECT_IMPORT": 3,
-      "BUSINESS_FEATURE_INTERFACE": 7,
+      "BUSINESS_FEATURE_INTERFACE": 8,
       "PILOTING_CAPABILITY": 0,
       "UNCLASSIFIED": 0
     },
@@ -23853,6 +23628,22 @@
         "exceptionReasons": [
           "runtime-cycle"
         ]
+      },
+      {
+        "from": "auth-identity",
+        "to": "wallet",
+        "family": "BUSINESS_FEATURE_INTERFACE",
+        "evidenceRole": "RUNTIME_AND_TEST",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "interface",
+          "static-code"
+        ],
+        "couplingObserved": "mixed",
+        "policy": "business-dependency-declare-candidate",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       },
       {
         "from": "catalog",
@@ -24726,6 +24517,7 @@
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-foundation|technical-primitive": 11,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 4,
       "TECHNICAL_PRIMITIVE|RUNTIME_AND_TEST|business-feature|technical-transversal|business-file-import": 5,
+      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 2,
       "BUSINESS_FEATURE_INTERFACE|RUNTIME_ONLY|business-feature|business-feature|interface": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_AND_TEST|business-feature|business-feature|business-file-import": 1,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-foundation|technical-primitive": 3,
@@ -24745,8 +24537,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "CROSS_FEATURE_DIRECT_IMPORT|RUNTIME_ONLY|business-feature|business-feature|business-file-import": 2,
       "TECHNICAL_PRIMITIVE|RUNTIME_ONLY|business-feature|technical-transversal|business-file-import": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
-      "BUSINESS_FEATURE_INTERFACE|RUNTIME_AND_TEST|business-feature|business-feature|mixed": 1
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1
     },
     "runtimeCycles": [
       {
@@ -25127,17 +24918,6 @@
       ],
       "lifecycleOwner": null,
       "resolution": "ambiguous-multi-writer"
-    },
-    "user_pickup_authorizations": {
-      "writers": [
-        {
-          "feature": "auth-identity",
-          "mode": "RW"
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "auth-identity",
-      "resolution": "single-writer"
     },
     "business_rules": {
       "writers": [
@@ -26498,8 +26278,8 @@
       "backend": {
         "manifestsDiscovered": 25,
         "manifestsConnected": 25,
-        "technicalNodesTotal": 311,
-        "technicalNodesOwned": 311,
+        "technicalNodesTotal": 309,
+        "technicalNodesOwned": 309,
         "technicalOrphans": 0
       },
       "dash": {
@@ -26513,8 +26293,8 @@
       "boutique": {
         "manifestsDiscovered": 13,
         "manifestsConnected": 13,
-        "technicalNodesTotal": 78,
-        "technicalNodesOwned": 78,
+        "technicalNodesTotal": 76,
+        "technicalNodesOwned": 76,
         "technicalOrphans": 0
       }
     },
@@ -26668,7 +26448,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "17 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg01-pricing-matrices.test.js: TARGET | scripts/boutique-ownership-full-check.js: path.join(abs, f) — limitation du modèle statique O5, jamais inventé"
+        "msg": "16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
@@ -26753,7 +26533,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 16 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 13 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26764,6 +26544,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "auth-identity -> platform-ops",
         "msg": "dépendance cross-feature observée (canal: static-code, 7 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"platform-ops\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "auth-identity -> wallet",
+        "msg": "dépendance cross-feature observée (canal: interface+static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"auth-identity\" vers \"wallet\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -26888,7 +26673,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "logistics -> infrastructure",
-        "msg": "dépendance cross-feature observée (canal: static-code, 74 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 72 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"infrastructure\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

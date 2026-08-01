@@ -87,7 +87,6 @@ app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }
 app.use('/api/shared-carts/stripe/webhook', express.raw({ type: 'application/json' }));
 // PayPal webhook — raw body avant express.json (I-07). Migration 079.
 app.use('/api/payments/paypal/webhook', express.raw({ type: 'application/json' }));
-// /api/collective-payments/stripe/webhook supprimé — collective_workspaces démonté 2026-05-30
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -181,11 +180,6 @@ app.use('/api/shared-carts',       sharedCart.router);
 app.use('/api/admin/shared-carts', sharedCartRefundAdmin.router);
 app.use('/api/admin/shared-carts', sharedCart.adminRouter);
 
-// ═══ Panier Événement Collectif V1 — DÉMONTÉ ═══
-// collective-workspaces.js est un tombstone 410 depuis 2026-05-26.
-// Le module n'est plus chargé pour ne pas alourdir le démarrage.
-// Les tables collective_* restent en DB (données historiques).
-// Si un ancien client appelle ces routes → 404 (acceptable, le tombstone était déjà 410).
 mountApiRoutesAfterStripeOwnedBlocks(app);
 
 

@@ -77,7 +77,6 @@
     { path: '/admin/control-tower',    view: 'ControlTowerView',     label: 'Tour de contrôle',       icon: '🗼', shell: 'ct', section: 'PILOTAGE' },
     { path: '/admin/costing',          view: 'CostingView',          label: 'Coût rendu relais',      icon: '💰', shell: 'ct', section: 'PILOTAGE' },
     { path: '/admin/orders-logistics', view: 'OrdersLogisticsView',  label: 'Commandes & logistique', icon: '📦', shell: 'ct', section: 'PILOTAGE' },
-    { path: '/admin/event-workspaces', view: 'EventWorkspacesView',  label: 'Panier événement',       icon: '🎉', shell: 'ct', section: 'PILOTAGE' },
     { path: '/admin/sales',            view: 'SalesView',            label: 'Ventes',                 icon: '📈', shell: 'ct', section: 'PILOTAGE' },
     { path: '/admin/economic',         view: 'EconomicView',         label: 'Santé économique',       icon: '📊', shell: 'ct', section: 'PILOTAGE' },
     { path: '/admin/pilotage-fin',     view: 'PilotageFinView',      label: 'Projection & Mix',       icon: '💹', shell: 'ct', section: 'PILOTAGE' },

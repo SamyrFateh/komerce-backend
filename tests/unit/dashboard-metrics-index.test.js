@@ -12,8 +12,6 @@ describe('dashboard-metrics/index', () => {
       'getMargeConsolidee', 'getCmdsCoutIncompletCount', 'getCmdsCoutIncompletIds', 'getCoutMoyParCmd',
       'getCmdsAujourdhui', 'getPaiementsEnAttente', 'getColisPreparation', 'getColisTransit',
       'getDisponiblesRelais', 'getRetardsCritiques', 'getTauxCollecteRelais',
-      'getWorkspacesActifs', 'getSessionsOuvertes', 'getTauxCompletion', 'getMontantTotalEvenements',
-      'getSessionsSansCommande', 'getCmdsCreeesWorkspace', 'getPanierMoyEvenement', 'getParticipantsMoy',
     ].forEach((name) => expect(typeof metrics[name]).toBe('function'));
 
     expect(metrics.ACTIVE_ORDER_STATUSES).toContain('available');

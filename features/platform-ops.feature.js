@@ -68,7 +68,6 @@ module.exports = {
       'index.html',
     ],
       tests: [
-      'tests/integration/r6-crash-window.test.js',
       'tests/integration/api.test.js',
       'tests/integration/isweep-invariants.test.js',
       'tests/integration/isweep-services.test.js',
@@ -80,7 +79,6 @@ module.exports = {
       // Rapatriés depuis features/operations.feature.js (doublon supprimé,
       // audit 2026-07-06 §2c) — services/routes étaient déjà ici, seuls ces
       // tests traînaient encore dans l'ancien manifeste.
-      'tests/unit/collective-cleanup-tombstones.test.js',
       'tests/unit/config-route.test.js',
       'tests/unit/health.test.js',
       'tests/unit/journal.test.js',

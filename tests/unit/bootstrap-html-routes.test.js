@@ -238,7 +238,7 @@ describe('bootstrap/html-routes', () => {
   describe('routes dashboard admin', () => {
     const EXPECTED_ADMIN_PATHS = [
       '/admin/pilotage', '/admin/control-tower', '/admin/costing',
-      '/admin/orders-logistics', '/admin/event-workspaces', '/admin/sourcing',
+      '/admin/orders-logistics', '/admin/sourcing',
       '/admin/sourcing-scanner', '/admin/pricing', '/admin/pricing-workshop',
       '/admin/pricing-strategy', '/admin/customs', '/admin/suppliers',
       '/admin/alerts', '/admin/categories', '/admin/products', '/admin/sales',
@@ -253,7 +253,7 @@ describe('bootstrap/html-routes', () => {
       EXPECTED_ADMIN_PATHS.forEach(p => {
         expect(app._allRegistrations).toContain(p);
       });
-      expect(EXPECTED_ADMIN_PATHS).toHaveLength(30);
+      expect(EXPECTED_ADMIN_PATHS).toHaveLength(29);
     });
 
     test('chaque chemin admin sert dashboards/admin/index.html', () => {

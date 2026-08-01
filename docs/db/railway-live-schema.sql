@@ -2,10 +2,9 @@
 -- PostgreSQL database dump
 --
 
-\restrict XHTYlKPJZrEsokVgSRkN1SWBFZVtDZewWa035F7UG4gpaQhc9iE589VslAArFOI
 
--- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
--- Dumped by pg_dump version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
+-- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
+-- Dumped by pg_dump version 18.4 (Debian 18.4-1.pgdg13+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -44,17 +43,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 --
 
 COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
-
-
---
--- Name: air_eligibility_status; Type: TYPE; Schema: public; Owner: -
---
-
-CREATE TYPE public.air_eligibility_status AS ENUM (
-    'PENDING_REVIEW',
-    'ELIGIBLE',
-    'EXCLUDED'
-);
 
 
 --
@@ -881,7 +869,7 @@ CREATE TABLE public.catalog_enrichment_runs (
     duration_ms integer,
     error text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT catalog_enrichment_runs_status_check CHECK (((status)::text = ANY (ARRAY[('ok'::character varying)::text, ('low_confidence'::character varying)::text, ('invalid_output'::character varying)::text, ('failed'::character varying)::text])))
+    CONSTRAINT catalog_enrichment_runs_status_check CHECK (((status)::text = ANY ((ARRAY['ok'::character varying, 'low_confidence'::character varying, 'invalid_output'::character varying, 'failed'::character varying])::text[])))
 );
 
 
@@ -907,7 +895,7 @@ CREATE TABLE public.catalog_exclusions (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY (ARRAY[('absolute'::character varying)::text, ('restricted'::character varying)::text])))
+    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY ((ARRAY['absolute'::character varying, 'restricted'::character varying])::text[])))
 );
 
 
@@ -980,7 +968,7 @@ CREATE TABLE public.catalog_media (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT catalog_media_option_values_object CHECK (((option_values IS NULL) OR (jsonb_typeof(option_values) = 'object'::text))),
-    CONSTRAINT catalog_media_role_check CHECK (((role)::text = ANY (ARRAY[('PRODUCT'::character varying)::text, ('SCENE'::character varying)::text, ('DETAIL'::character varying)::text, ('SIZE_GUIDE'::character varying)::text, ('OTHER'::character varying)::text])))
+    CONSTRAINT catalog_media_role_check CHECK (((role)::text = ANY ((ARRAY['PRODUCT'::character varying, 'SCENE'::character varying, 'DETAIL'::character varying, 'SIZE_GUIDE'::character varying, 'OTHER'::character varying])::text[])))
 );
 
 
@@ -2078,7 +2066,7 @@ CREATE TABLE public.order_items (
     module_fabric_id uuid,
     module_fabric_type text,
     module_size character varying(8),
-    module_retouche boolean DEFAULT false NOT NULL,
+    module_retouche boolean DEFAULT false CONSTRAINT order_items_ceremony_retouche_not_null NOT NULL,
     module_qty_meters numeric(6,2),
     module_accessories jsonb,
     availability_status text DEFAULT 'pending'::text,
@@ -2098,12 +2086,8 @@ CREATE TABLE public.order_items (
     taxe_add_pct numeric(5,2),
     classification_defaulted boolean DEFAULT false NOT NULL,
     sku_id uuid,
-    delivery_mode text DEFAULT 'sea'::text NOT NULL,
-    requested_transport_rail text,
     CONSTRAINT chk_order_items_price CHECK ((price_kmf > 0)),
-    CONSTRAINT chk_order_items_qty CHECK ((quantity > 0)),
-    CONSTRAINT order_items_delivery_mode_check CHECK ((delivery_mode = ANY (ARRAY['sea'::text, 'air'::text]))),
-    CONSTRAINT order_items_requested_transport_rail_check CHECK ((requested_transport_rail = ANY (ARRAY['SEA_STANDARD'::text, 'AIR_EXPRESS'::text])))
+    CONSTRAINT chk_order_items_qty CHECK ((quantity > 0))
 );
 
 
@@ -2199,20 +2183,6 @@ COMMENT ON COLUMN public.order_items.sku_id IS 'FK vers product_skus (Lot 0). NU
 
 
 --
--- Name: COLUMN order_items.delivery_mode; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.order_items.delivery_mode IS 'DÉPRÉCIÉE — remplacée par requested_transport_rail (migration 117). À supprimer après vérification en production.';
-
-
---
--- Name: COLUMN order_items.requested_transport_rail; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.order_items.requested_transport_rail IS 'Code canonique du rail demandé par le client lors de la commande. NULL = aucun choix explicite (ne déduit pas SEA_STANDARD). Valeurs : SEA_STANDARD, AIR_EXPRESS. À distinguer de assigned_transport_rail (rail réellement exécuté par logistics).';
-
-
---
 -- Name: order_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -2261,6 +2231,7 @@ CREATE TABLE public.orders (
     cash_qr_data text,
     cash_paid_at timestamp with time zone,
     status public.order_status DEFAULT 'confirmed'::public.order_status NOT NULL,
+    pickup_code text,
     shipped_at timestamp with time zone,
     available_at timestamp with time zone,
     collected_at timestamp with time zone,
@@ -2291,7 +2262,7 @@ CREATE TABLE public.orders (
     module_fabric_id uuid,
     module_fabric_type text,
     module_size character varying(8),
-    module_retouche boolean DEFAULT false NOT NULL,
+    module_retouche boolean DEFAULT false CONSTRAINT orders_ceremony_retouche_not_null NOT NULL,
     module_qty_meters numeric(6,2),
     module_accessories jsonb,
     ordered_at timestamp with time zone,
@@ -2357,10 +2328,6 @@ CREATE TABLE public.orders (
     paypal_payer_email text,
     paypal_payer_id text,
     paypal_pay_in_4_used boolean DEFAULT false,
-    transport_price_kmf integer DEFAULT 0 NOT NULL,
-    exceptional_pickup_attempts integer DEFAULT 0 NOT NULL,
-    exceptional_pickup_blocked_until timestamp with time zone,
-    pickup_collected_via text,
     CONSTRAINT chk_orders_discount CHECK (((discount_pct >= (0)::numeric) AND (discount_pct <= (100)::numeric))),
     CONSTRAINT chk_orders_total CHECK ((total_kmf >= 0))
 );
@@ -2612,13 +2579,6 @@ COMMENT ON COLUMN public.orders.paypal_pay_in_4_used IS 'TRUE si le payeur a cho
 
 
 --
--- Name: COLUMN orders.transport_price_kmf; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.orders.transport_price_kmf IS 'Part du total (orders.total_kmf) facturée au transport, calculée par services/transport-pricing.js au moment de la commande. Distincte de cost_estimated_kmf (coût interne fret, jamais facturé tel quel). 0 pour les commandes créées avant la migration 118.';
-
-
---
 -- Name: otp_codes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2775,7 +2735,7 @@ CREATE TABLE public.parcels (
 CREATE TABLE public.partners (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     name text NOT NULL,
-    partner_type text NOT NULL,
+    partner_type text CONSTRAINT partners_type_not_null NOT NULL,
     location text,
     island text DEFAULT 'Anjouan'::text NOT NULL,
     country character(2) DEFAULT 'KM'::bpchar NOT NULL,
@@ -3064,7 +3024,7 @@ CREATE TABLE public.pricing_matrices_audit (
     changed_by uuid,
     change_reason text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT pricing_matrices_audit_matrix_type_check CHECK (((matrix_type)::text = ANY (ARRAY[('taxes'::character varying)::text, ('dims'::character varying)::text])))
+    CONSTRAINT pricing_matrices_audit_matrix_type_check CHECK (((matrix_type)::text = ANY ((ARRAY['taxes'::character varying, 'dims'::character varying])::text[])))
 );
 
 
@@ -3128,102 +3088,6 @@ CREATE TABLE public.pricing_strategy_history (
 
 
 --
--- Name: product_attributes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.product_attributes (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    product_id uuid NOT NULL,
-    kind character varying(20) NOT NULL,
-    group_key text DEFAULT ''::text NOT NULL,
-    attribute_key character varying(128) NOT NULL,
-    label text NOT NULL,
-    value_text text,
-    unit character varying(50),
-    display_order integer DEFAULT 0 NOT NULL,
-    source character varying(20) DEFAULT 'SUPPLIER'::character varying NOT NULL,
-    is_active boolean DEFAULT true NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT product_attributes_highlight_no_value CHECK ((((kind)::text <> 'HIGHLIGHT'::text) OR (value_text IS NULL))),
-    CONSTRAINT product_attributes_kind_check CHECK (((kind)::text = ANY (ARRAY[('HIGHLIGHT'::character varying)::text, ('SPECIFICATION'::character varying)::text]))),
-    CONSTRAINT product_attributes_source_check CHECK (((source)::text = ANY (ARRAY[('SUPPLIER'::character varying)::text, ('AI_ENRICHED'::character varying)::text, ('MANUAL'::character varying)::text])))
-);
-
-
---
--- Name: TABLE product_attributes; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.product_attributes IS 'Attributs structurés clé/label/valeur (fiche produit enrichie). kind=HIGHLIGHT alimente content.highlights (label seul, pas de valeur). kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). Ré-promotion idempotente via UNIQUE(product_id, kind, group_key, attribute_key).';
-
-
---
--- Name: product_content_profile; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.product_content_profile (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    product_id uuid NOT NULL,
-    brand text,
-    short_description text,
-    source character varying(20) DEFAULT 'SUPPLIER'::character varying NOT NULL,
-    enrichment_version text,
-    reviewed boolean DEFAULT false NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT product_content_profile_brand_len CHECK (((brand IS NULL) OR (char_length(brand) <= 200))),
-    CONSTRAINT product_content_profile_short_desc_len CHECK (((short_description IS NULL) OR (char_length(short_description) <= 500))),
-    CONSTRAINT product_content_profile_source_check CHECK (((source)::text = ANY (ARRAY[('SUPPLIER'::character varying)::text, ('AI_ENRICHED'::character varying)::text, ('MANUAL'::character varying)::text])))
-);
-
-
---
--- Name: TABLE product_content_profile; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.product_content_profile IS 'Profil éditorial 1:1 par produit (fiche produit enrichie). Porte brand, short_description et la provenance globale exposée par product_detail_v1.content.provenance. Cible de promotion depuis normalized_source_contract V2, jamais servi depuis le raw_payload.';
-
-
---
--- Name: product_content_sections; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.product_content_sections (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    product_id uuid NOT NULL,
-    section_key character varying(128) NOT NULL,
-    title text NOT NULL,
-    section_type character varying(20) NOT NULL,
-    content_json jsonb NOT NULL,
-    display_order integer DEFAULT 0 NOT NULL,
-    source character varying(20) DEFAULT 'SUPPLIER'::character varying NOT NULL,
-    enrichment_version text,
-    reviewed boolean DEFAULT false NOT NULL,
-    is_active boolean DEFAULT true NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT product_content_sections_content_json_object CHECK ((jsonb_typeof(content_json) = 'object'::text)),
-    CONSTRAINT product_content_sections_source_check CHECK (((source)::text = ANY (ARRAY[('SUPPLIER'::character varying)::text, ('AI_ENRICHED'::character varying)::text, ('MANUAL'::character varying)::text]))),
-    CONSTRAINT product_content_sections_type_check CHECK (((section_type)::text = ANY (ARRAY[('TEXT'::character varying)::text, ('BULLETS'::character varying)::text, ('KEY_VALUE'::character varying)::text])))
-);
-
-
---
--- Name: TABLE product_content_sections; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.product_content_sections IS 'Sections éditoriales structurées (fiche produit enrichie). section_key réservés MATERIALS/CARE/WARNINGS (toujours BULLETS) sont aplatis par buildContent() vers content.materials/care/warnings ; tout autre section_key alimente content.sections[]. Ré-promotion idempotente via la contrainte UNIQUE(product_id, section_key).';
-
-
---
--- Name: COLUMN product_content_sections.content_json; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.product_content_sections.content_json IS 'Forme dépendant de section_type : {"text": string} pour TEXT, {"items": string[]} pour BULLETS, {"entries": [{"label","value"}]} pour KEY_VALUE. Validé par le service de projection avant de traverser le contrat public — jamais rendu comme HTML brut.';
-
-
---
 -- Name: product_ref_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -3271,7 +3135,7 @@ CREATE TABLE public.product_skus (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     supplier_sku text,
     source character varying(20) DEFAULT 'MANUAL'::character varying NOT NULL,
-    CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY (ARRAY[('MANUAL'::character varying)::text, ('SUPPLIER'::character varying)::text]))),
+    CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY ((ARRAY['MANUAL'::character varying, 'SUPPLIER'::character varying])::text[]))),
     CONSTRAINT product_skus_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= 0))),
     CONSTRAINT product_skus_stock_non_negatif CHECK ((stock >= 0))
 );
@@ -3476,10 +3340,6 @@ CREATE TABLE public.products (
     needs_review boolean DEFAULT false NOT NULL,
     enrichment_confidence numeric(4,3),
     inventory_model text DEFAULT 'LEGACY_VARIANTS'::text NOT NULL,
-    series text,
-    air_excluded boolean DEFAULT false NOT NULL,
-    air_eligibility_status public.air_eligibility_status DEFAULT 'PENDING_REVIEW'::public.air_eligibility_status NOT NULL,
-    air_exclusion_reason text,
     CONSTRAINT chk_products_inventory_model CHECK ((inventory_model = ANY (ARRAY['LEGACY_VARIANTS'::text, 'SKU'::text]))),
     CONSTRAINT chk_products_price CHECK ((price_kmf > 0)),
     CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
@@ -3592,27 +3452,6 @@ COMMENT ON COLUMN public.products.enrichment_confidence IS 'Score de confiance (
 --
 
 COMMENT ON COLUMN public.products.inventory_model IS 'LEGACY_VARIANTS (défaut) = stock lu/écrit sur products.stock + product_variants.stock. SKU = stock lu/écrit exclusivement sur product_skus, aucune lecture/écriture legacy autorisée pour ce produit. Bascule atomique portée par le Lot 5 — jamais déduite de l''existence de lignes product_skus.';
-
-
---
--- Name: COLUMN products.air_excluded; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.products.air_excluded IS 'Opt-out livraison aérienne. false (défaut) = éligible AIR_EXPRESS. true = maritime uniquement (volume, matières dangereuses, fragile non-validé). Source unique pour buildDeliveryOptions() dans catalog-product-detail.js.';
-
-
---
--- Name: COLUMN products.air_eligibility_status; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.products.air_eligibility_status IS 'Qualification Air : PENDING_REVIEW (défaut, non sélectionnable), ELIGIBLE (approuvé pour fret aérien), EXCLUDED (interdit avec raison). Seul ELIGIBLE peut participer à AIR_EXPRESS quand le rail est PUBLIC.';
-
-
---
--- Name: COLUMN products.air_exclusion_reason; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.products.air_exclusion_reason IS 'Raison de l''exclusion Air (batteries lithium, aérosols, fragile, surpoids...). Null si ELIGIBLE ou PENDING_REVIEW.';
 
 
 --
@@ -3843,42 +3682,8 @@ CREATE TABLE public.scans (
     is_anomaly boolean DEFAULT false NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     parcel_id uuid,
-    pickup_method text,
-    authorization_version integer,
-    document_checked boolean DEFAULT false NOT NULL,
-    pickup_relais_id uuid,
-    CONSTRAINT chk_scans_exceptional_pickup_proof CHECK ((((pickup_method = 'AUTHORIZED_NAME_ID_CHECK'::text) AND (authorization_version IS NOT NULL) AND (authorization_version > 0) AND (document_checked = true) AND (pickup_relais_id IS NOT NULL)) OR ((pickup_method IS DISTINCT FROM 'AUTHORIZED_NAME_ID_CHECK'::text) AND (authorization_version IS NULL) AND (document_checked = false) AND ((pickup_method IS NULL) OR (pickup_relais_id IS NOT NULL))))),
-    CONSTRAINT chk_scans_pickup_method CHECK (((pickup_method IS NULL) OR (pickup_method = ANY (ARRAY['PICKUP_CODE'::text, 'AUTHORIZED_NAME_ID_CHECK'::text])))),
     CONSTRAINT scan_target CHECK (((order_id IS NOT NULL) OR (order_item_id IS NOT NULL)))
 );
-
-
---
--- Name: COLUMN scans.pickup_method; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.scans.pickup_method IS 'Méthode ayant authentifié la remise : PICKUP_CODE ou AUTHORIZED_NAME_ID_CHECK.';
-
-
---
--- Name: COLUMN scans.authorization_version; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.scans.authorization_version IS 'Version de l’autorisation nominative contrôlée lors d’un retrait exceptionnel. Aucun nom conservé.';
-
-
---
--- Name: COLUMN scans.document_checked; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.scans.document_checked IS 'Attestation de l’agent : pièce officielle avec photo contrôlée visuellement. Aucune copie conservée.';
-
-
---
--- Name: COLUMN scans.pickup_relais_id; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.scans.pickup_relais_id IS 'Relais dans lequel la remise physique a été enregistrée.';
 
 
 --
@@ -4184,32 +3989,6 @@ CREATE TABLE public.sourcing_candidate_events (
 
 
 --
--- Name: sourcing_candidate_observations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.sourcing_candidate_observations (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    candidate_id uuid,
-    import_id uuid NOT NULL,
-    supplier_name text NOT NULL,
-    supplier_product_id text NOT NULL,
-    source_index integer NOT NULL,
-    profile_id text NOT NULL,
-    profile_version integer NOT NULL,
-    profile_hash text NOT NULL,
-    connector_version text NOT NULL,
-    source_sha256 text NOT NULL,
-    source_row_sha256 text NOT NULL,
-    promotion_status text NOT NULL,
-    schema_version_used text,
-    contract jsonb,
-    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
-    raw_payload jsonb NOT NULL,
-    observed_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
 -- Name: sourcing_candidates; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4250,20 +4029,9 @@ CREATE TABLE public.sourcing_candidates (
     updated_by uuid,
     raw_payload jsonb,
     normalized_source_contract jsonb,
-    promotion_status text,
-    promotion_reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
-    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
-    profile_id text,
-    profile_version integer,
-    profile_hash text,
-    source_sha256 text,
-    source_row_sha256 text,
-    connector_version text,
-    observed_at timestamp with time zone,
     CONSTRAINT chk_sourcing_candidates_normalized_source_contract_object CHECK (((normalized_source_contract IS NULL) OR (jsonb_typeof(normalized_source_contract) = 'object'::text))),
     CONSTRAINT sourcing_candidates_confidence_check CHECK ((confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
-    CONSTRAINT sourcing_candidates_promotion_status_check CHECK (((promotion_status IS NULL) OR (promotion_status = ANY (ARRAY['READY_FOR_PROMOTION'::text, 'QUARANTINED_UNSUPPORTED_MEDIA'::text, 'QUARANTINED_LOSSY_MAPPING'::text, 'QUARANTINED_CURRENCY_POLICY'::text])))),
-    CONSTRAINT sourcing_candidates_state_check CHECK ((state = ANY (ARRAY['raw_imported'::text, 'normalized'::text, 'scanned'::text, 'test_ready'::text, 'watchlist'::text, 'imported_to_catalog'::text, 'quarantined'::text, 'rejected'::text, 'archived'::text])))
+    CONSTRAINT sourcing_candidates_state_check CHECK ((state = ANY (ARRAY['raw_imported'::text, 'normalized'::text, 'scanned'::text, 'test_ready'::text, 'watchlist'::text, 'imported_to_catalog'::text, 'rejected'::text, 'archived'::text])))
 );
 
 
@@ -4310,27 +4078,6 @@ CREATE TABLE public.stripe_events_processed (
 
 
 --
--- Name: supplier_catalog_import_rejections; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.supplier_catalog_import_rejections (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    import_id uuid NOT NULL,
-    supplier_name text NOT NULL,
-    supplier_product_id text,
-    source_index integer NOT NULL,
-    promotion_status text NOT NULL,
-    reason_code text NOT NULL,
-    reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
-    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
-    raw_payload jsonb NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT scir_promotion_status_check CHECK ((promotion_status = ANY (ARRAY['REJECTED_SOURCE_DATA_INVALID'::text, 'REJECTED_CONTRACT_INVALID'::text]))),
-    CONSTRAINT scir_reason_code_check CHECK ((reason_code = ANY (ARRAY['SOURCE_ROW_NOT_OBJECT'::text, 'MISSING_SUPPLIER_PRODUCT_ID'::text, 'DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH'::text, 'SOURCE_FIELD_TOO_LARGE'::text, 'SOURCE_PRODUCT_TOO_DEEP'::text, 'SOURCE_VALUE_UNPARSABLE'::text, 'CONTRACT_SCHEMA_INVALID'::text, 'SOURCE_WEIGHT_UNIT_UNKNOWN'::text, 'UNSUPPORTED_VIDEO_REJECTED_BY_POLICY'::text, 'LOSSY_MAPPING_REJECTED_BY_POLICY'::text])))
-);
-
-
---
 -- Name: supplier_catalog_imports; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4343,28 +4090,7 @@ CREATE TABLE public.supplier_catalog_imports (
     total_items integer DEFAULT 0 NOT NULL,
     imported_by uuid,
     imported_at timestamp with time zone DEFAULT now() NOT NULL,
-    profile_id text,
-    profile_version integer,
-    profile_hash text,
-    source_sha256 text,
-    source_bytes bigint,
-    connector_name text,
-    connector_version text,
-    connector_contract_version text,
-    pipeline_version text,
-    status text DEFAULT 'COMPLETED'::text NOT NULL,
-    ready_count integer DEFAULT 0 NOT NULL,
-    quarantined_count integer DEFAULT 0 NOT NULL,
-    rejected_count integer DEFAULT 0 NOT NULL,
-    invalid_pct numeric(5,2),
-    quarantined_pct numeric(5,2),
-    started_at timestamp with time zone,
-    finished_at timestamp with time zone,
-    error_code text,
-    error_detail text,
-    batch_findings jsonb DEFAULT '[]'::jsonb NOT NULL,
-    CONSTRAINT supplier_catalog_imports_source_type_check CHECK ((source_type = ANY (ARRAY['csv'::text, 'manual'::text, 'api'::text, 'json'::text]))),
-    CONSTRAINT supplier_catalog_imports_status_check CHECK ((status = ANY (ARRAY['PROCESSING'::text, 'COMPLETED'::text, 'COMPLETED_WITH_QUARANTINE'::text, 'BLOCKED_QUARANTINE_THRESHOLD'::text, 'BLOCKED_INVALID_THRESHOLD'::text, 'FAILED'::text])))
+    CONSTRAINT supplier_catalog_imports_source_type_check CHECK ((source_type = ANY (ARRAY['csv'::text, 'manual'::text, 'api'::text])))
 );
 
 
@@ -4502,32 +4228,6 @@ CREATE TABLE public.unsold_items (
 
 
 --
--- Name: user_pickup_authorizations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.user_pickup_authorizations (
-    user_id uuid NOT NULL,
-    authorized_given_names text,
-    authorized_family_name text,
-    normalized_given_names text,
-    normalized_family_name text,
-    version integer DEFAULT 0 NOT NULL,
-    is_active boolean DEFAULT false NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    revoked_at timestamp with time zone,
-    CONSTRAINT user_pickup_authorizations_active_names_required CHECK (((NOT is_active) OR ((authorized_given_names IS NOT NULL) AND (authorized_family_name IS NOT NULL) AND (normalized_given_names IS NOT NULL) AND (normalized_family_name IS NOT NULL))))
-);
-
-
---
--- Name: TABLE user_pickup_authorizations; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.user_pickup_authorizations IS 'Lot 5 — autorisation nominative de retrait exceptionnel. Préférence courante du compte (auth-identity), consultée au moment exact de la remise par services/pickup-secret-service.js (logistics). Ne stocke jamais de donnée de pièce d''identité (pas de copie, numéro, date d''expiration ou signature).';
-
-
---
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4552,6 +4252,7 @@ CREATE TABLE public.users (
     whatsapp_phone text,
     relais_id uuid,
     phone_payer character varying(20),
+    phone_beneficiary character varying(20),
     big_basket_count integer DEFAULT 0 NOT NULL,
     big_basket_last_notified_count integer DEFAULT 0 NOT NULL
 );
@@ -5069,7 +4770,7 @@ CREATE TABLE public.wallet_credit_lots (
     status character varying(20) DEFAULT 'active'::character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT wallet_credit_lots_remaining_kmf_check CHECK ((remaining_kmf >= 0)),
-    CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('used'::character varying)::text, ('expired'::character varying)::text, ('reversed'::character varying)::text])))
+    CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'used'::character varying, 'expired'::character varying, 'reversed'::character varying])::text[])))
 );
 
 
@@ -5103,7 +4804,7 @@ CREATE TABLE public.wallet_transactions (
     created_by uuid,
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT wallet_transactions_amount_kmf_check CHECK ((amount_kmf > 0)),
-    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY (ARRAY[('credit'::character varying)::text, ('debit'::character varying)::text, ('reversal'::character varying)::text, ('expiration'::character varying)::text])))
+    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY ((ARRAY['credit'::character varying, 'debit'::character varying, 'reversal'::character varying, 'expiration'::character varying])::text[])))
 );
 
 
@@ -5924,30 +5625,6 @@ ALTER TABLE ONLY public.pricing_strategy_history
 
 
 --
--- Name: product_attributes product_attributes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.product_attributes
-    ADD CONSTRAINT product_attributes_pkey PRIMARY KEY (id);
-
-
---
--- Name: product_content_profile product_content_profile_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.product_content_profile
-    ADD CONSTRAINT product_content_profile_pkey PRIMARY KEY (id);
-
-
---
--- Name: product_content_sections product_content_sections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.product_content_sections
-    ADD CONSTRAINT product_content_sections_pkey PRIMARY KEY (id);
-
-
---
 -- Name: product_sku_media product_sku_media_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6116,22 +5793,6 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: supplier_catalog_import_rejections scir_import_source_index_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.supplier_catalog_import_rejections
-    ADD CONSTRAINT scir_import_source_index_unique UNIQUE (import_id, source_index);
-
-
---
--- Name: sourcing_candidate_observations sco_import_source_index_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcing_candidate_observations
-    ADD CONSTRAINT sco_import_source_index_unique UNIQUE (import_id, source_index);
-
-
---
 -- Name: shared_cart_contributions shared_cart_contributions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6236,14 +5897,6 @@ ALTER TABLE ONLY public.sourcing_candidate_events
 
 
 --
--- Name: sourcing_candidate_observations sourcing_candidate_observations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcing_candidate_observations
-    ADD CONSTRAINT sourcing_candidate_observations_pkey PRIMARY KEY (id);
-
-
---
 -- Name: sourcing_candidates sourcing_candidates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6268,27 +5921,11 @@ ALTER TABLE ONLY public.stripe_events_processed
 
 
 --
--- Name: supplier_catalog_import_rejections supplier_catalog_import_rejections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.supplier_catalog_import_rejections
-    ADD CONSTRAINT supplier_catalog_import_rejections_pkey PRIMARY KEY (id);
-
-
---
 -- Name: supplier_catalog_imports supplier_catalog_imports_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.supplier_catalog_imports
     ADD CONSTRAINT supplier_catalog_imports_pkey PRIMARY KEY (id);
-
-
---
--- Name: supplier_catalog_imports supplier_catalog_imports_profile_traceability_check; Type: CHECK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE public.supplier_catalog_imports
-    ADD CONSTRAINT supplier_catalog_imports_profile_traceability_check CHECK (((source_type <> 'json'::text) OR ((profile_id IS NOT NULL) AND (profile_version IS NOT NULL) AND (profile_hash IS NOT NULL)))) NOT VALID;
 
 
 --
@@ -6345,14 +5982,6 @@ ALTER TABLE ONLY public.unsold_items
 
 ALTER TABLE ONLY public.orders
     ADD CONSTRAINT uq_orders_reference UNIQUE (reference);
-
-
---
--- Name: user_pickup_authorizations user_pickup_authorizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.user_pickup_authorizations
-    ADD CONSTRAINT user_pickup_authorizations_pkey PRIMARY KEY (user_id);
 
 
 --
@@ -7414,6 +7043,13 @@ CREATE INDEX idx_orders_pickup_channel ON public.orders USING btree (pickup_secr
 
 
 --
+-- Name: idx_orders_pickup_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_orders_pickup_code ON public.orders USING btree (pickup_code) WHERE (pickup_code IS NOT NULL);
+
+
+--
 -- Name: idx_orders_pickup_created; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7834,20 +7470,6 @@ CREATE UNIQUE INDEX idx_pricing_strategies_product_active ON public.pricing_stra
 
 
 --
--- Name: idx_product_attributes_product; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_product_attributes_product ON public.product_attributes USING btree (product_id, kind, display_order) WHERE (is_active = true);
-
-
---
--- Name: idx_product_content_sections_product; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_product_content_sections_product ON public.product_content_sections USING btree (product_id, display_order) WHERE (is_active = true);
-
-
---
 -- Name: idx_product_sku_media_media; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8191,73 +7813,10 @@ CREATE INDEX idx_sce_type ON public.sourcing_candidate_events USING btree (event
 
 
 --
--- Name: idx_sci_profile; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_sci_profile ON public.supplier_catalog_imports USING btree (profile_id, profile_version);
-
-
---
--- Name: idx_sci_source_sha256; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_sci_source_sha256 ON public.supplier_catalog_imports USING btree (source_sha256);
-
-
---
--- Name: idx_sci_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_sci_status ON public.supplier_catalog_imports USING btree (status, imported_at DESC);
-
-
---
 -- Name: idx_sci_supplier; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_sci_supplier ON public.supplier_catalog_imports USING btree (supplier_name, imported_at DESC);
-
-
---
--- Name: idx_scir_import; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_scir_import ON public.supplier_catalog_import_rejections USING btree (import_id);
-
-
---
--- Name: idx_scir_reason_code; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_scir_reason_code ON public.supplier_catalog_import_rejections USING btree (reason_code);
-
-
---
--- Name: idx_scir_supplier; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_scir_supplier ON public.supplier_catalog_import_rejections USING btree (supplier_name, supplier_product_id);
-
-
---
--- Name: idx_sco_identity; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_sco_identity ON public.sourcing_candidate_observations USING btree (supplier_name, supplier_product_id, observed_at DESC);
-
-
---
--- Name: idx_sco_import; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_sco_import ON public.sourcing_candidate_observations USING btree (import_id);
-
-
---
--- Name: idx_sco_row_hash; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_sco_row_hash ON public.sourcing_candidate_observations USING btree (source_row_sha256);
 
 
 --
@@ -8548,6 +8107,13 @@ CREATE INDEX idx_users_loyalty ON public.users USING btree (loyalty_tier_id);
 
 
 --
+-- Name: idx_users_phone_beneficiary; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_phone_beneficiary ON public.users USING btree (phone_beneficiary);
+
+
+--
 -- Name: idx_users_phone_payer; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8618,6 +8184,13 @@ CREATE UNIQUE INDEX uq_orders_cash_ref_active ON public.orders USING btree (cash
 
 
 --
+-- Name: uq_orders_pickup_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_orders_pickup_active ON public.orders USING btree (pickup_code) WHERE ((status = ANY (ARRAY['available'::public.order_status, 'confirmed'::public.order_status, 'shipped'::public.order_status])) AND (pickup_code IS NOT NULL));
+
+
+--
 -- Name: uq_orders_qr_token; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8643,27 +8216,6 @@ CREATE UNIQUE INDEX uq_users_email ON public.users USING btree (email) WHERE (em
 --
 
 CREATE UNIQUE INDEX ux_catalog_media_source_identity ON public.catalog_media USING btree (product_id, source_media_id) WHERE (source_media_id IS NOT NULL);
-
-
---
--- Name: ux_product_attributes_identity; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX ux_product_attributes_identity ON public.product_attributes USING btree (product_id, kind, group_key, attribute_key);
-
-
---
--- Name: ux_product_content_profile_product; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX ux_product_content_profile_product ON public.product_content_profile USING btree (product_id);
-
-
---
--- Name: ux_product_content_sections_key; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX ux_product_content_sections_key ON public.product_content_sections USING btree (product_id, section_key);
 
 
 --
@@ -8860,27 +8412,6 @@ CREATE TRIGGER trg_prevent_scan_event_delete BEFORE DELETE ON public.scan_events
 --
 
 CREATE TRIGGER trg_pricing_components_updated BEFORE UPDATE ON public.pricing_components FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-
---
--- Name: product_attributes trg_product_attributes_updated; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trg_product_attributes_updated BEFORE UPDATE ON public.product_attributes FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-
---
--- Name: product_content_profile trg_product_content_profile_updated; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trg_product_content_profile_updated BEFORE UPDATE ON public.product_content_profile FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-
---
--- Name: product_content_sections trg_product_content_sections_updated; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trg_product_content_sections_updated BEFORE UPDATE ON public.product_content_sections FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
@@ -9810,30 +9341,6 @@ ALTER TABLE ONLY public.pricing_strategy_history
 
 
 --
--- Name: product_attributes product_attributes_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.product_attributes
-    ADD CONSTRAINT product_attributes_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
-
-
---
--- Name: product_content_profile product_content_profile_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.product_content_profile
-    ADD CONSTRAINT product_content_profile_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
-
-
---
--- Name: product_content_sections product_content_sections_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.product_content_sections
-    ADD CONSTRAINT product_content_sections_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
-
-
---
 -- Name: product_sku_media product_sku_media_media_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9994,14 +9501,6 @@ ALTER TABLE ONLY public.scans
 
 
 --
--- Name: scans scans_pickup_relais_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.scans
-    ADD CONSTRAINT scans_pickup_relais_id_fkey FOREIGN KEY (pickup_relais_id) REFERENCES public.relais(id);
-
-
---
 -- Name: scans scans_scanned_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10130,22 +9629,6 @@ ALTER TABLE ONLY public.sourcing_candidate_events
 
 
 --
--- Name: sourcing_candidate_observations sourcing_candidate_observations_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcing_candidate_observations
-    ADD CONSTRAINT sourcing_candidate_observations_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.sourcing_candidates(id) ON DELETE SET NULL;
-
-
---
--- Name: sourcing_candidate_observations sourcing_candidate_observations_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcing_candidate_observations
-    ADD CONSTRAINT sourcing_candidate_observations_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE;
-
-
---
 -- Name: sourcing_candidates sourcing_candidates_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10183,14 +9666,6 @@ ALTER TABLE ONLY public.store_credits
 
 ALTER TABLE ONLY public.store_credits
     ADD CONSTRAINT store_credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
-
-
---
--- Name: supplier_catalog_import_rejections supplier_catalog_import_rejections_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.supplier_catalog_import_rejections
-    ADD CONSTRAINT supplier_catalog_import_rejections_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE;
 
 
 --
@@ -10247,14 +9722,6 @@ ALTER TABLE ONLY public.unsold_items
 
 ALTER TABLE ONLY public.unsold_items
     ADD CONSTRAINT unsold_items_reseller_id_fkey FOREIGN KEY (reseller_id) REFERENCES public.users(id);
-
-
---
--- Name: user_pickup_authorizations user_pickup_authorizations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.user_pickup_authorizations
-    ADD CONSTRAINT user_pickup_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -10325,5 +9792,56 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict XHTYlKPJZrEsokVgSRkN1SWBFZVtDZewWa035F7UG4gpaQhc9iE589VslAArFOI
+-- Migration 110 — ING-6 audit des rejets (appliquée au pilote production le 2026-07-16)
+CREATE TABLE public.supplier_catalog_import_rejections (
+    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
+    import_id uuid NOT NULL,
+    supplier_name text NOT NULL,
+    supplier_product_id text,
+    source_index integer NOT NULL,
+    promotion_status text NOT NULL,
+    reason_code text NOT NULL,
+    reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
+    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
+    raw_payload jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT scir_promotion_status_check CHECK ((promotion_status = ANY (ARRAY['REJECTED_SOURCE_DATA_INVALID'::text, 'REJECTED_CONTRACT_INVALID'::text]))),
+    CONSTRAINT scir_reason_code_check CHECK ((reason_code = ANY (ARRAY['SOURCE_ROW_NOT_OBJECT'::text, 'MISSING_SUPPLIER_PRODUCT_ID'::text, 'DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH'::text, 'SOURCE_FIELD_TOO_LARGE'::text, 'SOURCE_PRODUCT_TOO_DEEP'::text, 'SOURCE_VALUE_UNPARSABLE'::text, 'CONTRACT_SCHEMA_INVALID'::text, 'SOURCE_WEIGHT_UNIT_UNKNOWN'::text, 'UNSUPPORTED_VIDEO_REJECTED_BY_POLICY'::text, 'LOSSY_MAPPING_REJECTED_BY_POLICY'::text]))),
+    CONSTRAINT scir_import_source_index_unique UNIQUE (import_id, source_index),
+    CONSTRAINT supplier_catalog_import_rejections_pkey PRIMARY KEY (id),
+    CONSTRAINT supplier_catalog_import_rejections_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_scir_import ON public.supplier_catalog_import_rejections USING btree (import_id);
+CREATE INDEX idx_scir_supplier ON public.supplier_catalog_import_rejections USING btree (supplier_name, supplier_product_id);
+CREATE INDEX idx_scir_reason_code ON public.supplier_catalog_import_rejections USING btree (reason_code);
+
+
+-- Migration 110 — ING-6 historique des observations (appliquée au pilote production le 2026-07-16)
+CREATE TABLE public.sourcing_candidate_observations (
+    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
+    candidate_id uuid,
+    import_id uuid NOT NULL,
+    supplier_name text NOT NULL,
+    supplier_product_id text NOT NULL,
+    source_index integer NOT NULL,
+    profile_id text NOT NULL,
+    profile_version integer NOT NULL,
+    profile_hash text NOT NULL,
+    connector_version text NOT NULL,
+    source_sha256 text NOT NULL,
+    source_row_sha256 text NOT NULL,
+    promotion_status text NOT NULL,
+    schema_version_used text,
+    contract jsonb,
+    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
+    raw_payload jsonb NOT NULL,
+    observed_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sco_import_source_index_unique UNIQUE (import_id, source_index),
+    CONSTRAINT sourcing_candidate_observations_pkey PRIMARY KEY (id),
+    CONSTRAINT sourcing_candidate_observations_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.sourcing_candidates(id) ON DELETE SET NULL,
+    CONSTRAINT sourcing_candidate_observations_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_sco_identity ON public.sourcing_candidate_observations USING btree (supplier_name, supplier_product_id, observed_at DESC);
+CREATE INDEX idx_sco_import ON public.sourcing_candidate_observations USING btree (import_id);
+CREATE INDEX idx_sco_row_hash ON public.sourcing_candidate_observations USING btree (source_row_sha256);
 

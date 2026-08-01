@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       collective_workspaces, customs_shipments, order_item_cost_imputations, order_item_real_cost_allocations, orders, parcels, relais, signals
+ * @db-read       customs_shipments, order_item_cost_imputations, order_item_real_cost_allocations, orders, parcels, relais, signals
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -20,11 +20,10 @@
  * KOMERCE — Routes /api/admin/dashboard/* (Sprint 1)
  * ════════════════════════════════════════════════════════════════════════
  *
- * 5 endpoints agregateurs :
+ * 4 endpoints agregateurs :
  *   GET /control-tower
  *   GET /costing
  *   GET /logistics
- *   GET /event-workspaces
  *   GET /unified
  *
  * Plus :
@@ -281,62 +280,6 @@ router.get(
 );
 
 // ═══════════════════════════════════════════════════════════════════════
-// GET /api/admin/dashboard/event-workspaces
-// ═══════════════════════════════════════════════════════════════════════
-router.get(
-  '/event-workspaces',
-  authenticate, requireAdmin,
-  cache.cacheMiddleware('event-workspaces'),
-  async (req, res, next) => {
-    try {
-      const filters = parseFilters(req);
-
-      // PERF : KPIs + charts en parallele
-      const [
-        [
-          wsActifs, sessionsOuvertes, tauxComplete, montantTotal,
-          sessionsSansCmd, cmdsCreeesWs, panierMoy, participantsMoy,
-        ],
-        charts,
-      ] = await Promise.all([
-        Promise.all([
-          metrics.getWorkspacesActifs(filters),
-          metrics.getSessionsOuvertes(filters),
-          metrics.getTauxCompletion(filters),
-          metrics.getMontantTotalEvenements(filters),
-          metrics.getSessionsSansCommande(filters),
-          metrics.getCmdsCreeesWorkspace(filters),
-          metrics.getPanierMoyEvenement(filters),
-          metrics.getParticipantsMoy(filters),
-        ]),
-        _buildWorkspacesCharts(filters),
-      ]);
-
-      res.json({
-        kpis: [
-          wsActifs, sessionsOuvertes, tauxComplete, montantTotal,
-          sessionsSansCmd, cmdsCreeesWs, panierMoy, participantsMoy,
-        ],
-        charts,
-        tables: {},
-        alerts: [],
-        drilldown_links: {
-          cmds_creees_workspace: '/admin/orders-logistics?origin=workspace',
-        },
-        data_quality: makeDataQuality(filters, [
-          'collective_workspaces', 'collective_payment_sessions',
-          'collective_payment_tokens', 'collective_workspace_intentions',
-          'orders',
-        ]),
-      });
-    } catch (err) {
-      log.error('[admin-dashboard] /event-workspaces error:', err);
-      next(err);
-    }
-  }
-);
-
-// ═══════════════════════════════════════════════════════════════════════
 // GET /api/admin/dashboard/unified
 // ═══════════════════════════════════════════════════════════════════════
 router.get(
@@ -351,16 +294,14 @@ router.get(
       // Avant : 6 paralleles + 11 await sequentiels dans les array literals
       // Apres : 18 requetes 100% paralleles
       const [
-        ca, cmdsActives, margeConsolidee, wsActifs, alertesCritiques, tauxCouts,
+        ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts,
         coutReel, cmdsCoutIncomplet, coutMoyParCmd,
         cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
-        sessionsOuvertes, tauxCompletion, cmdsCreeesWorkspace,
         topAlerts,
       ] = await Promise.all([
         metrics.getCAEncaisse(filters),
         metrics.getCmdsActives(filters),
         metrics.getMargeConsolidee(filters),
-        metrics.getWorkspacesActifs(filters),
         metrics.getAlertesCritiques(filters),
         metrics.getTauxCompletudeCouts(filters),
         metrics.getCoutReel(filters),
@@ -371,9 +312,6 @@ router.get(
         metrics.getDisponiblesRelais(filters),
         metrics.getRetardsCritiques(filters),
         metrics.getTauxCompletudeScans(filters),
-        metrics.getSessionsOuvertes(filters),
-        metrics.getTauxCompletion(filters),
-        metrics.getCmdsCreeesWorkspace(filters),
         _fetchTopAlerts(10),
       ]);
 
@@ -400,13 +338,6 @@ router.get(
           url: '/admin/orders-logistics',
           kpis_summary: [cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans],
         },
-        {
-          view: 'event_workspaces',
-          title: 'Panier événement',
-          subtitle: 'Organiser la contribution familiale',
-          url: '/admin/event-workspaces',
-          kpis_summary: [wsActifs, sessionsOuvertes, tauxCompletion, cmdsCreeesWorkspace],
-        },
       ];
 
       const economic_flow = {
@@ -425,13 +356,12 @@ router.get(
         'Une seule source de vérité par KPI',
         'Pas de coût manquant à 0',
         'Pas de commande sans paiement sécurisé',
-        'Pas de retour order vers workspace',
         'cost_status visible : estimated, partial_real, actual, incomplete',
         'Le dashboard doit aider à décider',
       ];
 
       res.json({
-        kpis_global: [ca, cmdsActives, margeConsolidee, wsActifs, alertesCritiques, tauxCouts],
+        kpis_global: [ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts],
         view_blocks,
         economic_flow,
         principles,
@@ -740,29 +670,6 @@ async function _buildLogisticsCharts(filters) {
   return {
     ops_pipeline: { type: 'funnel', stages: r.rows },
     parcel_flow: { type: 'funnel', stages: pR.rows },
-  };
-}
-
-async function _buildWorkspacesCharts(filters) {
-  const params = [];
-  if (filters.from) params.push(filters.from);
-  if (filters.to)   params.push(filters.to);
-
-  const sql = `
-    SELECT status, COUNT(*)::int AS count
-    FROM collective_workspaces
-    WHERE 1=1
-      ${filters.from ? 'AND created_at >= $1' : ''}
-      ${filters.to ? `AND created_at <= $${filters.from ? 2 : 1}` : ''}
-    GROUP BY status
-  `;
-  const r = await db.query(sql, params);
-
-  return {
-    workspace_funnel: {
-      type: 'funnel',
-      stages: r.rows,
-    },
   };
 }
 

@@ -21,7 +21,6 @@
  *   2. Tour de contrôle (8 KPIs)
  *   3. Costing (8 KPIs)
  *   4. Logistics (7 KPIs, dont 1 alias)
- *   5. Workspaces collectifs (8 KPIs)
  */
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
@@ -37,9 +36,6 @@ const {
   getCmdsCoutIncompletCount, getCmdsCoutIncompletIds, getCoutMoyParCmd,
   getCmdsAujourdhui, getPaiementsEnAttente, getColisPreparation,
   getColisTransit, getDisponiblesRelais, getRetardsCritiques, getTauxCollecteRelais,
-  getWorkspacesActifs, getSessionsOuvertes, getTauxCompletion,
-  getMontantTotalEvenements, getSessionsSansCommande, getCmdsCreeesWorkspace,
-  getPanierMoyEvenement, getParticipantsMoy,
 } = require('../../services/dashboard-metrics');
 
 // ─── Helpers de mock ────────────────────────────────────────────────────
@@ -402,85 +398,5 @@ describe('getTauxCollecteRelais', () => {
     const k = await getTauxCollecteRelais({});
     expectKpi(k, { key: 'taux_collecte_relais', unit: '%' });
     expect(k.value).toBe(70);
-  });
-});
-
-// ══════════════════════════════════════════════════════════════════════
-// 5. WORKSPACES COLLECTIFS
-// ══════════════════════════════════════════════════════════════════════
-
-describe('getWorkspacesActifs', () => {
-  it('retourne un KPI workspaces_actifs en unit=count', async () => {
-    mockQuery([{ value: 2 }]);
-    const k = await getWorkspacesActifs({});
-    expectKpi(k, { key: 'workspaces_actifs', unit: 'count' });
-  });
-});
-
-describe('getSessionsOuvertes', () => {
-  it('retourne un KPI sessions_ouvertes en unit=count, ignore les filtres', async () => {
-    mockQuery([{ value: 3 }]);
-    const k = await getSessionsOuvertes({ from: '2026-01-01' });
-    expectKpi(k, { key: 'sessions_ouvertes', unit: 'count' });
-    expect(db.query).toHaveBeenCalledWith(expect.any(String));
-  });
-});
-
-describe('getTauxCompletion', () => {
-  it('retourne un KPI taux_completion en %, colonnes items_with_data/items_total', async () => {
-    mockQuery([{ items_with_data: 7, items_total: 10 }]);
-    const k = await getTauxCompletion({});
-    expectKpi(k, { key: 'taux_completion', unit: '%' });
-    expect(k.value).toBe(70);
-  });
-});
-
-describe('getMontantTotalEvenements', () => {
-  it('retourne un KPI montant_total_evenements en KMF', async () => {
-    mockQuery([{ value: '30000' }]);
-    const k = await getMontantTotalEvenements({});
-    expectKpi(k, { key: 'montant_total_evenements', unit: 'KMF' });
-  });
-});
-
-describe('getSessionsSansCommande', () => {
-  it('retourne un KPI sessions_sans_commande en unit=count', async () => {
-    mockQuery([{ value: 1 }]);
-    const k = await getSessionsSansCommande({});
-    expectKpi(k, { key: 'sessions_sans_commande', unit: 'count' });
-  });
-});
-
-describe('getCmdsCreeesWorkspace', () => {
-  it('retourne un KPI cmds_creees_workspace en unit=count', async () => {
-    mockQuery([{ value: 4 }]);
-    const k = await getCmdsCreeesWorkspace({});
-    expectKpi(k, { key: 'cmds_creees_workspace', unit: 'count' });
-  });
-});
-
-describe('getPanierMoyEvenement', () => {
-  it('retourne un KPI panier_moy_evenement en KMF, colonnes value/items_total', async () => {
-    mockQuery([{ value: '5000', items_total: 4 }]);
-    const k = await getPanierMoyEvenement({});
-    expectKpi(k, { key: 'panier_moy_evenement', unit: 'KMF' });
-    expect(k.value).toBe(5000);
-  });
-});
-
-describe('getParticipantsMoy', () => {
-  it('retourne un KPI participants_moy en unit=count, colonnes value/items_total', async () => {
-    mockQuery([{ value: '5.50', items_total: 4 }]);
-    const k = await getParticipantsMoy({});
-    expectKpi(k, { key: 'participants_moy', unit: 'count' });
-    expect(k.value).toBe(5.5);
-  });
-
-  it('fallback provisional si la requête échoue (table/colonne absente)', async () => {
-    db.query.mockRejectedValueOnce(new Error('column cwc.contributor_email does not exist'));
-    const k = await getParticipantsMoy({});
-    expect(k.value).toBeNull();
-    expect(k.data_quality.completeness).toBe('provisional');
-    expect(k.data_quality.warning).toMatch(/Donnees indisponibles/);
   });
 });
