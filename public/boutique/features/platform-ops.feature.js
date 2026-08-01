@@ -43,6 +43,8 @@ module.exports = {
       '../js/b-scroll-owner.js',
       '../js/b-boutique-wow-style.js',
       '../js/anti-fouc.js',
+      '../js/b-service-worker-refresh.js',
+      '../js/test-modal-view-model-redirect.js',
       '../js/b-nav.js',
       '../js/boutique.js',
     ],

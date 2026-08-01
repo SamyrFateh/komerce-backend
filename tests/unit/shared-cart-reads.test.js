@@ -7,83 +7,62 @@ const {
   getSharedCartForPublic,
   getSharedCartForOwner,
   listMySharedCarts,
-  incrementViewCount,
 } = require('../../services/shared-cart-reads');
 
-describe('shared-cart-reads', () => {
+describe('shared-cart-reads (Boutique First, domaine minimal)', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('getSharedCartForPublic retourne null si le token est inconnu', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
-
-    await expect(getSharedCartForPublic('missing-token')).resolves.toBeNull();
+    await expect(getSharedCartForPublic('missing')).resolves.toBeNull();
     expect(db.query).toHaveBeenCalledTimes(1);
   });
 
-  it('getSharedCartForPublic expose une vue publique sans UUID interne', async () => {
-    const cart = {
-      id: 'cart-001', token: 'token-001', beneficiary_name_snapshot: 'Creator',
-      title: 'Panier groupe', total_kmf_snapshot: 10000, contributed_kmf: 2500, remaining_kmf: 7500,
-      status: 'closed', view_count: 3,
-    };
-    const items = [{ name: 'Riz', quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000 }];
-    const contributions = [{ first_name: 'Ali', amount_kmf: 2500, message: 'ok' }];
-    const summary = { count: 2, total_estimated_kmf: 8000 };
-    db.query
-      .mockResolvedValueOnce({ rows: [cart] })
-      .mockResolvedValueOnce({ rows: items })
-      .mockResolvedValueOnce({ rows: contributions })
-      .mockResolvedValueOnce({ rows: [summary] });
+  it('getSharedCartForPublic calcule total_kmf/items_count/claimed_count et n\'expose aucune identité créateur', async () => {
+    const cart = { id: 'cart-1', token: 'tok-1', title: 'Liste', message: 'Merci', status: 'open', delivery_relay_id: 'r1', created_at: '2026-01-01' };
+    const items = [
+      { id: 'sci-1', name: 'Riz', image: null, category: 'epicerie', quantity: 2, unit_price_kmf: 1000, line_total_kmf: 2000, claimed: true },
+      { id: 'sci-2', name: 'Sucre', image: null, category: 'epicerie', quantity: 1, unit_price_kmf: 500, line_total_kmf: 500, claimed: false },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
 
-    const result = await getSharedCartForPublic('token-001');
+    const result = await getSharedCartForPublic('tok-1');
 
-    expect(result.cart.id).toBeUndefined();
-    expect(result.cart.token).toBe('token-001');
-    expect(result.items).toBe(items);
-    expect(result.contributions).toBe(contributions);
-    expect(result.estimations_summary).toBe(summary);
-    expect(db.query.mock.calls[2][0]).toContain("status = 'paid'");
+    expect(result.cart.token).toBe('tok-1');
+    // Boutique First : aucun nom/téléphone créateur exposé publiquement.
+    expect(result.cart.organizer_user_id).toBeUndefined();
+    expect(result.cart.beneficiary_name_snapshot).toBeUndefined();
+    expect(result.total_kmf).toBe(2500);
+    expect(result.items_count).toBe(2);
+    expect(result.claimed_count).toBe(1);
+    expect(result.items[0].claimed).toBe(true);
   });
 
-  it('getSharedCartForOwner retourne null si le panier ne correspond pas au createur', async () => {
+  it('getSharedCartForOwner retourne null si la liste ne correspond pas à l\'organisateur', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
-
-    await expect(getSharedCartForOwner('cart-001', 'user-001')).resolves.toBeNull();
-    expect(db.query).toHaveBeenCalledTimes(1);
+    await expect(getSharedCartForOwner('cart-1', 'user-1')).resolves.toBeNull();
+    expect(db.query.mock.calls[0][0]).toContain('organizer_user_id');
   });
 
-  it('getSharedCartForOwner retourne cart, items, contributions et estimations completes', async () => {
-    const cart = { id: 'cart-001', beneficiary_user_id: 'user-001' };
-    const items = [{ id: 'item-001' }];
-    const contributions = [{ id: 'contrib-001', contributor_email: 'ali@example.com' }];
-    const estimations = [{ id: 'estim-001', participant_phone: '+269000' }];
-    db.query
-      .mockResolvedValueOnce({ rows: [cart] })
-      .mockResolvedValueOnce({ rows: items })
-      .mockResolvedValueOnce({ rows: contributions })
-      .mockResolvedValueOnce({ rows: estimations });
+  it('getSharedCartForOwner expose claimed_by_order_id et total_kmf calculé', async () => {
+    const cart = { id: 'cart-1', organizer_user_id: 'user-1' };
+    const items = [
+      { id: 'sci-1', line_total_kmf_snapshot: 1000, claimed: true, claimed_by_order_id: 'order-1' },
+    ];
+    db.query.mockResolvedValueOnce({ rows: [cart] }).mockResolvedValueOnce({ rows: items });
 
-    await expect(getSharedCartForOwner('cart-001', 'user-001')).resolves.toEqual({
-      cart,
-      items,
-      contributions,
-      estimations,
-    });
+    const result = await getSharedCartForOwner('cart-1', 'user-1');
+
+    expect(result.cart.total_kmf).toBe(1000);
+    expect(result.items[0].claimed_by_order_id).toBe('order-1');
+    expect(result.claimed_count).toBe(1);
   });
 
-  it('listMySharedCarts retourne les paniers du beneficiaire', async () => {
-    const rows = [{ id: 'cart-001', contributors_count: 2 }];
+  it('listMySharedCarts agrège total_kmf/items_count/claimed_count par liste', async () => {
+    const rows = [{ id: 'cart-1', total_kmf: 3000, items_count: 2, claimed_count: 1 }];
     db.query.mockResolvedValueOnce({ rows });
 
-    await expect(listMySharedCarts('user-001')).resolves.toBe(rows);
-    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('WHERE beneficiary_user_id = $1'), ['user-001']);
-  });
-
-  it('incrementViewCount incremente par token', async () => {
-    db.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-
-    await incrementViewCount('token-001');
-
-    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('view_count = view_count + 1'), ['token-001']);
+    await expect(listMySharedCarts('user-1')).resolves.toBe(rows);
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('organizer_user_id = $1'), ['user-1']);
   });
 });

@@ -5,109 +5,91 @@ const { makeClient, expectTransactionCommitted, expectTransactionRolledBack } = 
 jest.mock('../../db', () => ({ getClient: jest.fn() }));
 
 const db = require('../../db');
-const {
-  updateOpenSharedCartItems,
-  adjustAwaitingCartItems,
-} = require('../../services/shared-cart-items-service');
 
-describe('shared-cart-items-service', () => {
+jest.mock('../../services/shared-cart-internals', () => {
+  const actual = jest.requireActual('../../services/shared-cart-internals');
+  return {
+    ...actual,
+    withTransaction: async (callback) => {
+      const dbMod = require('../../db');
+      const client = await dbMod.getClient();
+      try {
+        await client.query('BEGIN');
+        const result = await callback(client);
+        await client.query('COMMIT');
+        return result;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    },
+  };
+});
+
+const { updateOpenSharedCartItems } = require('../../services/shared-cart-items-service');
+
+describe('shared-cart-items-service (Boutique First, domaine minimal)', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('refuse un panier vide avant transaction', async () => {
-    await expect(updateOpenSharedCartItems('cart-001', 'user-001', [])).rejects.toMatchObject({
-      code: 'cart_items_required',
-      status: 400,
+  it('refuse cart_items vide avant transaction', async () => {
+    await expect(updateOpenSharedCartItems('cart-1', 'user-1', [])).rejects.toMatchObject({
+      code: 'cart_items_required', status: 400,
     });
     expect(db.getClient).not.toHaveBeenCalled();
   });
 
-  it('updateOpenSharedCartItems remplace le snapshot tant que le panier est open et sans paiement', async () => {
-    const cart = { id: 'cart-001', status: 'open', total_kmf_snapshot: 9000, contributed_kmf: 0 };
-    const product = {
-      id: 'prod-001', name: 'Riz', image_url: 'riz.jpg', category: 'food',
-      price_kmf: 1000, is_active: true, is_promo: false, promo_pct: 0, promo_until: null,
-    };
-    const inserted = { id: 'item-001', product_id: 'prod-001', quantity: 3, line_total_kmf_snapshot: 3000 };
-    const updatedCart = { ...cart, total_kmf_snapshot: 3000, remaining_kmf: 3000 };
+  it('met à jour les items d\'un panier open, calcule le total, ne vérifie aucun paiement', async () => {
+    const cart = { id: 'cart-1', status: 'open' };
+    const product = { id: 'p1', name: 'Riz', image_url: 'riz.jpg', category: 'food', price_kmf: 1000, is_active: true, is_promo: false, promo_pct: 0, promo_until: null };
+    const inserted = { id: 'item-1', product_id: 'p1', quantity: 3 };
+    const updatedCart = { id: 'cart-1', status: 'open', updated_at: '2026-08-01' };
     const client = makeClient([
-      { rows: [cart] },
-      { rows: [{ n: 0 }] },
-      { rows: [product] },
-      { rows: [], rowCount: 1 },
-      { rows: [inserted] },
-      { rows: [updatedCart] },
-      { rows: [], rowCount: 1 },
+      { rows: [cart] },          // SELECT ... FOR UPDATE
+      { rows: [product] },       // SELECT products
+      { rows: [], rowCount: 1 }, // DELETE shared_cart_items
+      { rows: [inserted] },      // INSERT shared_cart_items
+      { rows: [updatedCart] },   // UPDATE shared_carts RETURNING *
+      { rows: [], rowCount: 1 }, // addEvent
     ]);
     db.getClient.mockResolvedValue(client);
 
-    const result = await updateOpenSharedCartItems('cart-001', 'user-001', [
-      { product_id: 'prod-001', quantity: 1 },
-      { product_id: 'prod-001', quantity: 2 },
+    const result = await updateOpenSharedCartItems('cart-1', 'user-1', [
+      { product_id: 'p1', quantity: 1 }, { product_id: 'p1', quantity: 2 },
     ]);
 
-    expect(result).toEqual({ cart: updatedCart, items: [inserted] });
-    expect(client.calls.find(c => String(c.sql).includes('DELETE FROM shared_cart_items'))).toBeDefined();
-    expect(client.calls.find(c => String(c.sql).includes('INSERT INTO shared_cart_items')).params)
-      .toEqual(['cart-001', 'prod-001', 'Riz', 'riz.jpg', 'food', 3, 1000, 3000]);
-    expect(client.calls.find(c => c.params && c.params[1] === 'shared_cart_items_updated').params[4])
-      .toMatchObject({ previous_total_kmf: 9000, new_total_kmf: 3000, items_count: 1 });
+    expect(result.cart.total_kmf).toBe(3000);
+    expect(result.items).toEqual([inserted]);
+    expect(client.calls.some(c => String(c.sql).includes('shared_cart_contributions'))).toBe(false);
     expectTransactionCommitted(client);
   });
 
-  it('updateOpenSharedCartItems refuse un panier deja paye', async () => {
-    const client = makeClient([{ rows: [{ id: 'cart-001', status: 'open', contributed_kmf: 1 }] }]);
+  it('refuse si le panier n\'est plus open', async () => {
+    const client = makeClient([{ rows: [{ id: 'cart-1', status: 'closed' }] }]);
     db.getClient.mockResolvedValue(client);
 
-    await expect(updateOpenSharedCartItems('cart-001', 'user-001', [{ product_id: 'p1', quantity: 1 }]))
-      .rejects.toMatchObject({ code: 'paid_contributions_exist', status: 409 });
+    await expect(updateOpenSharedCartItems('cart-1', 'user-1', [{ product_id: 'p1', quantity: 1 }]))
+      .rejects.toMatchObject({ code: 'cart_not_editable', status: 409 });
     expectTransactionRolledBack(client);
   });
 
-  it('adjustAwaitingCartItems reduit le panier et relance une fenetre de paiement', async () => {
-    const cart = { id: 'cart-001', status: 'awaiting_choice', total_kmf_snapshot: 10000, contributed_kmf: 3000 };
-    const product = {
-      id: 'prod-001', name: 'Riz', image_url: 'riz.jpg', category: 'food',
-      price_kmf: 4000, is_active: true, is_promo: false, promo_pct: 0, promo_until: null,
-    };
-    const inserted = { id: 'item-001', product_id: 'prod-001', quantity: 1 };
-    const updatedCart = { ...cart, status: 'closed', total_kmf_snapshot: 4000, remaining_kmf: 1000 };
+  it('panier introuvable ou non autorisé → 404', async () => {
+    const client = makeClient([{ rows: [] }]);
+    db.getClient.mockResolvedValue(client);
+
+    await expect(updateOpenSharedCartItems('cart-1', 'user-1', [{ product_id: 'p1', quantity: 1 }]))
+      .rejects.toMatchObject({ code: 'shared_cart_not_found', status: 404 });
+  });
+
+  it('aucun produit actif valide → 400 no_active_items', async () => {
     const client = makeClient([
-      { rows: [cart] },
-      { rows: [product] },
-      { rows: [], rowCount: 1 },
-      { rows: [inserted] },
-      { rows: [updatedCart] },
-      { rows: [], rowCount: 1 },
+      { rows: [{ id: 'cart-1', status: 'open' }] },
+      { rows: [{ id: 'p1', name: 'X', price_kmf: 1000, is_active: false }] },
     ]);
     db.getClient.mockResolvedValue(client);
 
-    await expect(adjustAwaitingCartItems('cart-001', 'user-001', [{ product_id: 'prod-001', quantity: 1 }]))
-      .resolves.toEqual({ cart: updatedCart, items: [inserted] });
-    expect(client.calls.find(c => String(c.sql).includes("status = 'closed'"))).toBeDefined();
-    expect(client.calls.find(c => c.params && c.params[1] === 'cart_adjusted_reopened').params[4])
-      .toMatchObject({ previous_total_kmf: 10000, new_total_kmf: 4000, contributed_kmf: 3000, new_remaining_kmf: 1000 });
-    expectTransactionCommitted(client);
-  });
-
-  it('adjustAwaitingCartItems refuse daugmenter le total', async () => {
-    const cart = { id: 'cart-001', status: 'awaiting_choice', total_kmf_snapshot: 5000, contributed_kmf: 1000 };
-    const product = { id: 'prod-001', name: 'Riz', image_url: null, category: 'food', price_kmf: 6000, is_active: true };
-    const client = makeClient([{ rows: [cart] }, { rows: [product] }]);
-    db.getClient.mockResolvedValue(client);
-
-    await expect(adjustAwaitingCartItems('cart-001', 'user-001', [{ product_id: 'prod-001', quantity: 1 }]))
-      .rejects.toMatchObject({ code: 'adjustment_must_reduce', status: 400 });
-    expectTransactionRolledBack(client);
-  });
-
-  it('adjustAwaitingCartItems refuse un total inferieur aux paiements recus', async () => {
-    const cart = { id: 'cart-001', status: 'awaiting_choice', total_kmf_snapshot: 10000, contributed_kmf: 7000 };
-    const product = { id: 'prod-001', name: 'Riz', image_url: null, category: 'food', price_kmf: 6000, is_active: true };
-    const client = makeClient([{ rows: [cart] }, { rows: [product] }]);
-    db.getClient.mockResolvedValue(client);
-
-    await expect(adjustAwaitingCartItems('cart-001', 'user-001', [{ product_id: 'prod-001', quantity: 1 }]))
-      .rejects.toMatchObject({ code: 'adjustment_below_contributed', status: 400 });
-    expectTransactionRolledBack(client);
+    await expect(updateOpenSharedCartItems('cart-1', 'user-1', [{ product_id: 'p1', quantity: 1 }]))
+      .rejects.toMatchObject({ code: 'no_active_items', status: 400 });
   });
 });

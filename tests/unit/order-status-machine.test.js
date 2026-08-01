@@ -129,7 +129,6 @@ describe('isForwardTransition()', () => {
 describe('Constants integrity', () => {
   test('ORDER_STATUSES contains all expected statuses', () => {
     expect(ORDER_STATUSES).toContain('pending');
-    expect(ORDER_STATUSES).toContain('pending_group_payment');
     expect(ORDER_STATUSES).toContain('confirmed');
     expect(ORDER_STATUSES).toContain('ordered');
     expect(ORDER_STATUSES).toContain('preparation');
@@ -154,7 +153,6 @@ describe('Constants integrity', () => {
 
   test('STATUS_RANK is sequential', () => {
     expect(STATUS_RANK.pending).toBeLessThan(STATUS_RANK.confirmed);
-    expect(STATUS_RANK.pending_group_payment).toBe(STATUS_RANK.pending);
     expect(STATUS_RANK.confirmed).toBeLessThan(STATUS_RANK.ordered);
     expect(STATUS_RANK.ordered).toBeLessThan(STATUS_RANK.preparation);
     expect(STATUS_RANK.preparation).toBeLessThan(STATUS_RANK.shipped);
@@ -533,6 +531,7 @@ describe('transitionOrderStatus() — effets annulation : restauration stock', (
       .mockResolvedValueOnce({ rows: [{ ...mockOrder, status: 'pending' }] }) // SELECT order
       .mockResolvedValueOnce({ rows: [] }) // UPDATE orders SET status
       .mockResolvedValueOnce({ rows: [{ wallet_applied_kmf: 0, user_id: null, reference: 'KMC-PEND' }] }) // SELECT wallet
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // UPDATE order_items SET shared_cart_item_id = NULL (D2)
       .mockResolvedValueOnce({ rows: [] }); // INSERT history — PAS de SELECT order_items
 
     const result = await transitionOrderStatus({
@@ -541,7 +540,7 @@ describe('transitionOrderStatus() — effets annulation : restauration stock', (
     });
 
     expect(result.cancelEffects.stockItemsRestored).toBe(0);
-    expect(mockQuery).toHaveBeenCalledTimes(4); // SELECT, UPDATE, SELECT wallet, INSERT history — pas de SELECT items
+    expect(mockQuery).toHaveBeenCalledTimes(5); // SELECT, UPDATE, SELECT wallet, UPDATE claim release, INSERT history — pas de SELECT items
   });
 });
 

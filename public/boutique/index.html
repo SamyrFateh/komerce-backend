@@ -2,34 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(function(regs){
-    regs.forEach(function(r){r.update();});
-  });
-
-  navigator.serviceWorker.addEventListener('message', function(e){
-    if(e.data && e.data.type === 'sw-updated'){
-      /* Ne reload que si un SW contrôlait déjà la page au chargement (donc
-         une vraie mise à jour) — jamais lors d'une première activation.
-         Défensif : protège contre le même symptôme si register() est
-         réintroduit un jour (aucun register() n'existe actuellement). */
-      if (navigator.serviceWorker.controller) {
-        console.log('[SW] Nouvelle version', e.data.version, '→ reload auto');
-        location.reload();
-      }
-    }
-  });
-
-  if(window.caches){
-    caches.keys().then(function(names){
-      names.forEach(function(n){
-        if(n.indexOf('komerce-v334') === -1) caches.delete(n);
-      });
-    });
-  }
-}
-</script>
+<script src="/boutique/js/b-service-worker-refresh.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f0f5e6">
 <title>Komerce — Boutique en ligne</title>
@@ -65,8 +38,8 @@ if('serviceWorker' in navigator){
      Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=156">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=369">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=157">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=370">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=85">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
      embarqué dans base.css. Il était chargé en DERNIER, donc prioritaire en

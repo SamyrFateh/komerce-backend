@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-07-31T18:57:42.899Z",
+  "generatedAt": "2026-08-01T19:29:54.669Z",
   "summary": {
-    "modules": 75,
-    "withHeader": 75,
+    "modules": 77,
+    "withHeader": 77,
     "events": 22,
     "declaredActive": 17,
     "declaredDead": 9,
     "cssBundles": 3,
-    "endpoints": 52,
+    "endpoints": 53,
     "orphanEmit": 1,
     "orphanListen": 1,
     "undeclared": 5,
     "notFoundEndpoints": 0,
-    "unprovenEndpoints": 30,
+    "unprovenEndpoints": 31,
     "dynamicEndpoints": 24,
-    "ownedEvents": 0,
+    "ownedEvents": 3,
     "ownershipRed": 0,
     "ownershipOrange": 0
   },
@@ -1662,6 +1662,31 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/b-service-worker-refresh.js",
+      "id": "b-service-worker-refresh",
+      "hasHeader": true,
+      "role": "boutique-service-worker-refresh",
+      "domain": "boutique",
+      "layer": "ui-bootstrap",
+      "criticality": "medium",
+      "doctrine": [
+        "csp_no_inline_script",
+        "mise_a_jour_sans_boucle"
+      ],
+      "depends": [
+        "browser-service-worker-api",
+        "browser-cache-api"
+      ],
+      "usedBy": [
+        "public/boutique/index.html"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/b-share-cart.js",
       "id": "b-share-cart",
       "hasHeader": true,
@@ -2329,6 +2354,30 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/test-modal-view-model-redirect.js",
+      "id": "test-modal-view-model-redirect",
+      "hasHeader": true,
+      "role": "boutique-test-modal-redirect",
+      "domain": "boutique",
+      "layer": "ui-bootstrap",
+      "criticality": "low",
+      "doctrine": [
+        "csp_no_inline_script",
+        "legacy_entry_redirect_only"
+      ],
+      "depends": [
+        "browser-location-api"
+      ],
+      "usedBy": [
+        "public/boutique/test-modal-view-model.html"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/view-models/delivery-mode-model.js",
       "id": "delivery-mode-model",
       "hasHeader": true,
@@ -2824,6 +2873,27 @@
     },
     {
       "module": "b-komerce",
+      "route": "/api/auth/me/pickup-authorization",
+      "raw": "/api/auth/me/pickup-authorization",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
+      "route": "/api/auth/me/pickup-authorization",
+      "raw": "/api/auth/me/pickup-authorization",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
+      "route": "/api/auth/me/pickup-authorization",
+      "raw": "/api/auth/me/pickup-authorization",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-komerce",
       "route": "/api/auth/me",
       "raw": "/api/auth/me",
       "dynamic": false,
@@ -3302,8 +3372,40 @@
       "supprim",
       "b-catalog"
     ],
-    "owned": {},
-    "consumers": {}
+    "owned": {
+      "modal:opened": {
+        "owner": "modal-product",
+        "producer": "b-modal-core",
+        "payload": "value"
+      },
+      "modal:closed": {
+        "owner": "modal-product",
+        "producer": "b-modal-core",
+        "payload": "none"
+      },
+      "modal:composition-synced": {
+        "owner": "modal-product",
+        "producer": "b-modal-product-detail-bootstrap",
+        "payload": "none"
+      }
+    },
+    "consumers": {
+      "modal:opened": [
+        "b-modal-product-detail-bootstrap",
+        "boutique",
+        "b-pdp-curation-suggestions",
+        "b-pager",
+        "b-modal-desktop-enhancers"
+      ],
+      "modal:closed": [
+        "b-modal-product-detail-bootstrap",
+        "b-pager"
+      ],
+      "modal:composition-synced": [
+        "b-modal-desktop-enhancers",
+        "b-modal-core"
+      ]
+    }
   },
   "diagnostics": {
     "orphanEmit": [
@@ -3327,6 +3429,7 @@
       "/api/auth/login",
       "/api/auth/logout",
       "/api/auth/me",
+      "/api/auth/me/pickup-authorization",
       "/api/auth/otp/request",
       "/api/auth/otp/verify",
       "/api/boutique/suggestions",
@@ -3384,8 +3487,88 @@
     "ownershipRed": [],
     "ownershipOrange": []
   },
-  "ownership": {},
-  "ownershipStatus": {},
+  "ownership": {
+    "modal:opened": {
+      "owner": "modal-product",
+      "declaredProducer": "b-modal-core",
+      "actualEmitters": [
+        "b-modal-core"
+      ],
+      "producerMissing": false,
+      "producerUnauthorized": [],
+      "declaredConsumers": [
+        "b-modal-product-detail-bootstrap",
+        "boutique",
+        "b-pdp-curation-suggestions",
+        "b-pager",
+        "b-modal-desktop-enhancers"
+      ],
+      "actualConsumers": [
+        "b-modal-desktop-enhancers",
+        "b-modal-product-detail-bootstrap",
+        "b-pager",
+        "b-pdp-curation-suggestions",
+        "boutique"
+      ],
+      "consumerUndeclared": [],
+      "payload": "value",
+      "payloadMismatches": []
+    },
+    "modal:closed": {
+      "owner": "modal-product",
+      "declaredProducer": "b-modal-core",
+      "actualEmitters": [
+        "b-modal-core"
+      ],
+      "producerMissing": false,
+      "producerUnauthorized": [],
+      "declaredConsumers": [
+        "b-modal-product-detail-bootstrap",
+        "b-pager"
+      ],
+      "actualConsumers": [
+        "b-modal-product-detail-bootstrap",
+        "b-pager"
+      ],
+      "consumerUndeclared": [],
+      "payload": "none",
+      "payloadMismatches": []
+    },
+    "modal:composition-synced": {
+      "owner": "modal-product",
+      "declaredProducer": "b-modal-product-detail-bootstrap",
+      "actualEmitters": [
+        "b-modal-product-detail-bootstrap"
+      ],
+      "producerMissing": false,
+      "producerUnauthorized": [],
+      "declaredConsumers": [
+        "b-modal-desktop-enhancers",
+        "b-modal-core"
+      ],
+      "actualConsumers": [
+        "b-modal-core",
+        "b-modal-desktop-enhancers"
+      ],
+      "consumerUndeclared": [],
+      "payload": "none",
+      "payloadMismatches": []
+    }
+  },
+  "ownershipStatus": {
+    "modal:opened": {
+      "level": "green",
+      "msg": "propriété saine"
+    },
+    "modal:closed": {
+      "level": "green",
+      "msg": "propriété saine"
+    },
+    "modal:composition-synced": {
+      "level": "green",
+      "msg": "propriété saine"
+    }
+  },
   "bodyClasses": {
     "static": [],
     "dynamic": {
@@ -3430,6 +3613,7 @@
     "/api/auth/login",
     "/api/auth/logout",
     "/api/auth/me",
+    "/api/auth/me/pickup-authorization",
     "/api/auth/otp/request",
     "/api/auth/otp/verify",
     "/api/boutique/suggestions",

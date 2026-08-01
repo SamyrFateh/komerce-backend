@@ -19302,6 +19302,147 @@
           }
         }
       }
+    },
+    "/api/auth/me/pickup-authorization": {
+      "get": {
+        "summary": "GET /api/auth/me/pickup-authorization",
+        "x-route-file": "routes/auth.js",
+        "responses": {
+          "200": {
+            "description": "Succès — NONE si aucune autorisation active, ACTIVE avec le nom autorisé sinon.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "given_names": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "family_name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "version": {
+                      "type": "integer",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      },
+      "put": {
+        "summary": "PUT /api/auth/me/pickup-authorization",
+        "x-route-file": "routes/auth.js",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "given_names",
+                  "family_name"
+                ],
+                "properties": {
+                  "given_names": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "family_name": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Succès — autorisation créée ou remplacée (UPSERT, version incrémentée).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "given_names": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "family_name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "version": {
+                      "type": "integer",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Champs manquants ou trop longs"
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      },
+      "delete": {
+        "summary": "DELETE /api/auth/me/pickup-authorization",
+        "x-route-file": "routes/auth.js",
+        "responses": {
+          "200": {
+            "description": "Succès — autorisation révoquée.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      }
     }
   },
   "x-inventory-source": "runtime-introspection"

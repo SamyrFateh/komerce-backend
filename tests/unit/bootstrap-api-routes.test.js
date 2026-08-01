@@ -38,7 +38,6 @@ const ROUTE_MODULE_NAMES = [
   'transit-dashboard', 'transitaire-api', 'unsold', 'wallet',
 ];
 
-// shared-cart-cash a une forme spéciale : `require(...).router`.
 const mockMarkers = {};
 
 function registerRouteMocks() {
@@ -47,9 +46,6 @@ function registerRouteMocks() {
     mockMarkers[name] = marker;
     jest.doMock(`../../routes/${name}`, () => marker, { virtual: false });
   });
-  const sharedCartCashRouterMarker = { __mockRouter: 'shared-cart-cash' };
-  mockMarkers['shared-cart-cash'] = sharedCartCashRouterMarker;
-  jest.doMock('../../routes/shared-cart-cash', () => ({ router: sharedCartCashRouterMarker }));
 }
 
 function loadApiRoutes() {
@@ -156,14 +152,6 @@ describe('bootstrap/api-routes', () => {
       expect(idxPaypal).toBeGreaterThanOrEqual(0);
       expect(idxGeneric).toBeGreaterThanOrEqual(0);
       expect(idxPaypal).toBeLessThan(idxGeneric);
-    });
-
-    test('shared-cart-cash est monté via sa propriété .router', () => {
-      const apiRoutes = loadApiRoutes();
-      const app = fakeApp();
-      apiRoutes.mountApiRoutesAfterStripeOwnedBlocks(app);
-
-      expect(app.use).toHaveBeenCalledWith('/api/shared-carts', mockMarkers['shared-cart-cash']);
     });
 
     test('meta-whatsapp est monté en middleware global (sans path explicite)', () => {

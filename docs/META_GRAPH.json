@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-07-31T18:57:43.187Z",
+  "generatedAt": "2026-08-01T19:29:54.970Z",
   "sources": {
     "backend": {
-      "nodes": 793
+      "nodes": 761
     },
     "boutique": {
-      "modules": 75,
-      "endpoints": 52
+      "modules": 77,
+      "endpoints": 53
     },
     "dashboards": {
       "modules": 41,
       "callEdges": 112
     },
     "contract": {
-      "endpoints": 438
+      "endpoints": 439
     }
   },
   "summary": {
-    "endpointsConsumed": 85,
+    "endpointsConsumed": 86,
     "sharedEndpoints": 2,
     "phantomSeams": 0,
     "sharedTables": 14
@@ -190,6 +190,23 @@
         "users"
       ]
     },
+    "/api/auth/me/pickup-authorization": {
+      "boutique": [
+        "b-komerce"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/auth.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "loyalty_tiers",
+        "users",
+        "revoked_tokens"
+      ]
+    },
     "/api/boutique/suggestions": {
       "boutique": [
         "b-modal-core"
@@ -244,10 +261,7 @@
       "routeFile": "routes/shared-cart.js",
       "services": [
         "services/shared-cart-engine.js",
-        "services/shared-cart-estimation-service.js",
-        "services/shared-cart-financial-guard.js",
         "services/shared-cart-items-service.js",
-        "services/shared-cart-v41-transitions.js",
         "services/shared-cart-queries.js"
       ],
       "tables": []
@@ -263,10 +277,7 @@
       "routeFile": "routes/shared-cart.js",
       "services": [
         "services/shared-cart-engine.js",
-        "services/shared-cart-estimation-service.js",
-        "services/shared-cart-financial-guard.js",
         "services/shared-cart-items-service.js",
-        "services/shared-cart-v41-transitions.js",
         "services/shared-cart-queries.js"
       ],
       "tables": []
@@ -731,7 +742,6 @@
         "services/*"
       ],
       "tables": [
-        "collective_workspaces",
         "customs_shipments",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
@@ -767,7 +777,6 @@
         "services/*"
       ],
       "tables": [
-        "collective_workspaces",
         "customs_shipments",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
@@ -978,7 +987,6 @@
         "services/*"
       ],
       "tables": [
-        "collective_workspaces",
         "customs_shipments",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
@@ -1146,7 +1154,6 @@
         "services/*"
       ],
       "tables": [
-        "collective_workspaces",
         "customs_shipments",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
@@ -1194,7 +1201,6 @@
         "services/*"
       ],
       "tables": [
-        "collective_workspaces",
         "customs_shipments",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
@@ -2068,19 +2074,6 @@
       "boutique": [],
       "dashboards": [
         "ActionCenterView",
-        "ControlTowerView",
-        "CostingView",
-        "EventWorkspacesView",
-        "OrdersLogisticsView",
-        "PilotageView"
-      ]
-    },
-    "collective_workspaces": {
-      "routes": [
-        "routes/admin-dashboard.js"
-      ],
-      "boutique": [],
-      "dashboards": [
         "ControlTowerView",
         "CostingView",
         "EventWorkspacesView",

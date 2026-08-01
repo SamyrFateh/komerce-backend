@@ -22,7 +22,7 @@
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
-| `komerce.css` | 221 | 🔴 **ORPHELIN** |
+| `komerce.css` | 252 | 🔴 **ORPHELIN** |
 | `layout.css` | 1173 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
@@ -37,7 +37,7 @@
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 71 | 🔴 **ORPHELIN** |
 | `shared-followup.css` | 3 | 🔴 **ORPHELIN** |
-| `tokens.css` | 519 | 🔴 **ORPHELIN** |
+| `tokens.css` | 521 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -46,7 +46,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=156
- 2. /boutique/css/dist/components.css?v=368
+ 2. /boutique/css/dist/components.css?v=369
  3. /boutique/css/dist/desktop.css?v=85
 ```
 

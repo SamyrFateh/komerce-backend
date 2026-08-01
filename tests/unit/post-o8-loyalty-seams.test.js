@@ -157,14 +157,19 @@ describe('POST-O8 — Loyalty extraction seams (mission §12)', () => {
     // "construire une matrice explicite"), not assumed from the doctrine
     // comment alone. Runtime proof for stripe/cash/paypal lives in
     // post-o8-payments-seams.test.js; this only guards against silent
-    // removal of the call site in ALL five paths, including the two not
-    // covered by a REAL_DB seam yet (wallet-full, shared-cart).
+    // removal of the call site in the four paths that create or confirm
+    // orders directly.
+    //
+    // Boutique First — la ligne "Shared-cart confirmed" a été retirée :
+    // le panier partagé ne confirme plus ses propres commandes. Une
+    // commande issue d'une liste passe par routes/orders/create.js puis
+    // par l'un des trois chemins de confirmation ci-dessous (Stripe,
+    // Cash, PayPal), exactement comme toute autre commande.
     const expectedCallSites = [
       { flow: 'Stripe',            file: 'services/payment-stripe.js',      provenBy: 'REAL_DB seam (STRIPE-1/2/3/4)' },
       { flow: 'Cash',              file: 'services/payment-cash-confirm.js', provenBy: 'REAL_DB seam (CASH-4)' },
       { flow: 'PayPal',            file: 'services/payment-paypal.js',       provenBy: 'REAL_DB seam (PAYPAL-CAPTURE / PAYPAL-WEBHOOK-FALLBACK)' },
       { flow: 'Wallet full order', file: 'routes/orders/create.js',          provenBy: 'STATIC ONLY — no REAL_DB seam yet, see residual risks' },
-      { flow: 'Shared-cart confirmed', file: 'routes/shared-cart.js',        provenBy: 'STATIC ONLY — no REAL_DB seam yet, see residual risks' },
     ];
 
     it.each(expectedCallSites)(

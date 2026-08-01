@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-07-31T18:57:42.899Z.
+> Régénéré le 2026-08-01T19:29:54.669Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **75** (75 headés) · Événements bus : **22** · Bundles CSS : **3**
-- Endpoints appelés : **52** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 24 dynamiques
+- Modules JS : **77** (77 headés) · Événements bus : **22** · Bundles CSS : **3**
+- Endpoints appelés : **53** — 🔴 0 hors contrat · ⚪ 31 non prouvés · 🔵 24 dynamiques
 - Santé bus : 1 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 5 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -17,6 +17,7 @@
 | `/api/auth/login` | komerce-api | ⚪ non prouvé |
 | `/api/auth/logout` | komerce-api | ⚪ non prouvé |
 | `/api/auth/me` | b-greeting, b-komerce, komerce-api | ⚪ non prouvé |
+| `/api/auth/me/pickup-authorization` | b-komerce | ⚪ non prouvé |
 | `/api/auth/otp/request` | b-identity, b-tracking | ⚪ non prouvé |
 | `/api/auth/otp/verify` | b-identity, b-tracking | ⚪ non prouvé |
 | `/api/boutique/suggestions` | b-modal-core | ⚪ non prouvé |
@@ -80,11 +81,11 @@
 | `favorites:view-refresh` | b-catalog | b-favs | 🟡 non déclaré |
 | `komerce:show` | b-komerce | b-nav | 🟢 sain |
 | `modal:close` | b-cart, b-checkout | b-modal-core | 🟢 sain |
-| `modal:closed` | b-modal-core | b-modal-product-detail-bootstrap, b-pager | 🟢 sain |
-| `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers | 🟢 sain |
+| `modal:closed` | b-modal-core | b-modal-product-detail-bootstrap, b-pager | 🟢 sain (propriétaire: modal-product) |
+| `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers | 🟢 sain (propriétaire: modal-product) |
 | `modal:detail-ready` | b-modal-product-detail-bootstrap | b-modal-cart | 🟢 sain |
 | `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-product-open-contract | 🟢 sain |
-| `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟢 sain |
+| `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | 🟢 sain (propriétaire: modal-product) |
 | `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
 | `nav:goto-komerce-wallet` | b-checkout | b-nav | 🟢 sain |
@@ -147,6 +148,9 @@ graph LR
 
 | Événement | Propriétaire | Producteur(s) | Consommateurs | Payload | Verdict |
 |---|---|---|---|---|---|
+| `modal:opened` | modal-product | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pager, b-pdp-curation-suggestions, boutique | value | 🟢 propriété saine |
+| `modal:closed` | modal-product | b-modal-core | b-modal-product-detail-bootstrap, b-pager | none | 🟢 propriété saine |
+| `modal:composition-synced` | modal-product | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers | none | 🟢 propriété saine |
 
 ## 3. Bundles CSS
 

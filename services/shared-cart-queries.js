@@ -8,7 +8,7 @@
  * @outputs       shared_cart_records
  * @depends       db.js
  * @used-by       routes/shared-cart.js
- * @db-read       shared_cart_events, shared_cart_items, shared_carts, users
+ * @db-read       order_items, shared_cart_events, shared_cart_items, shared_carts, users
  * @db-write      shared_cart_events, shared_carts
  * @db-txn        centralized_lookup_no_mutation
  * @doctrine      domaine_minimal_boutique_first, backend_source_verite
