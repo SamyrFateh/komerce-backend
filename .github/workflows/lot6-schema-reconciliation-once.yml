@@ -1,0 +1,154 @@
+name: Lot 6 schema reconciliation once
+
+on:
+  push:
+    branches:
+      - fix/lot6-schema-reconciliation
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lot6-schema-reconciliation-once
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: lot6-ci-secret-not-for-prod
+      ADMIN_PASSWORD: lot6-ci-admin
+      QR_SECRET: lot6-ci-qr-secret
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+      KOMERCE_DISABLE_CRONS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Load canonical base schema
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+
+      - name: Simulate a baselined database before migration 121
+        run: |
+          mkdir -p /tmp/lot6
+          mv migrations/121_exceptional_pickup_authorization.sql /tmp/lot6/
+          node scripts/run-migrations.js --baseline
+          mv /tmp/lot6/121_exceptional_pickup_authorization.sql migrations/
+
+      - name: Apply migration 121 through the real runner
+        run: node scripts/run-migrations.js
+
+      - name: Prove runner idempotency
+        run: node scripts/run-migrations.js
+
+      - name: Assert Lot 5 schema objects
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF to_regclass('public.user_pickup_authorizations') IS NULL THEN
+              RAISE EXCEPTION 'missing user_pickup_authorizations';
+            END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='orders'
+                AND column_name='exceptional_pickup_attempts'
+            ) THEN RAISE EXCEPTION 'missing orders.exceptional_pickup_attempts'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='orders'
+                AND column_name='exceptional_pickup_blocked_until'
+            ) THEN RAISE EXCEPTION 'missing orders.exceptional_pickup_blocked_until'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='orders'
+                AND column_name='pickup_collected_via'
+            ) THEN RAISE EXCEPTION 'missing orders.pickup_collected_via'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='scans'
+                AND column_name='pickup_method'
+            ) THEN RAISE EXCEPTION 'missing scans.pickup_method'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='scans'
+                AND column_name='authorization_version'
+            ) THEN RAISE EXCEPTION 'missing scans.authorization_version'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='scans'
+                AND column_name='document_checked'
+            ) THEN RAISE EXCEPTION 'missing scans.document_checked'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='scans'
+                AND column_name='pickup_relais_id'
+            ) THEN RAISE EXCEPTION 'missing scans.pickup_relais_id'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_constraint
+              WHERE conname='chk_scans_pickup_method'
+                AND conrelid='public.scans'::regclass
+            ) THEN RAISE EXCEPTION 'missing chk_scans_pickup_method'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_constraint
+              WHERE conname='chk_scans_exceptional_pickup_proof'
+                AND conrelid='public.scans'::regclass
+            ) THEN RAISE EXCEPTION 'missing chk_scans_exceptional_pickup_proof'; END IF;
+          END
+          $$;
+          SQL
+
+      - name: Lot 5 unit proof
+        run: >-
+          npx jest
+          tests/unit/auth-route.test.js
+          tests/unit/name-normalize.test.js
+          tests/unit/pickup-authorization-service.test.js
+          tests/unit/pickup-secret-service.test.js
+          tests/unit/pickup-secret.test.js
+          --runInBand --forceExit --detectOpenHandles
+
+      - name: PostgreSQL race proof
+        run: >-
+          npx jest
+          tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js
+          --runInBand --forceExit --detectOpenHandles
+
+      - name: Observe current schema drift
+        run: node scripts/arch-schema-drift-check.js --report
+
+      - name: Observe current map gate
+        continue-on-error: true
+        run: npm run map:check
