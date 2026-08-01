@@ -1,0 +1,59 @@
+name: Lot 6 dump finalization once
+
+on:
+  push:
+    branches:
+      - fix/lot6-schema-reconciliation
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lot6-dump-finalization
+  cancel-in-progress: true
+
+jobs:
+  finalize-dump:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/lot6-schema-reconciliation
+          fetch-depth: 0
+
+      - name: Rebuild post-migration live schema dump
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/122_cleanup_realdb_test_schema_residue.sql
+          pg_dump "$DATABASE_URL" --schema-only --no-owner --no-privileges > docs/db/railway-live-schema.sql
+          node scripts/check-schema-resurrection.js
+
+      - name: Remove one-shot workflow and commit corrected dump
+        run: |
+          rm -f .github/workflows/lot6-dump-finalize-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit --no-verify -m "fix(db): persist post-migration Lot 6 schema dump"
+          git push origin HEAD:fix/lot6-schema-reconciliation
