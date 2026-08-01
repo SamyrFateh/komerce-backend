@@ -102,4 +102,34 @@ function replaceOnce(source, before, after, label) {
   fs.writeFileSync(path, source, 'utf8');
 }
 
-console.log('Lot 5 corrigé : identité acheteur, verrous orders, audit et contraintes bornées.');
+// 3) createCleanup dépile en LIFO. order_status_history référence scans :
+// l'historique doit donc être supprimé avant le scan lors du nettoyage.
+{
+  const path = 'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js';
+  let source = fs.readFileSync(path, 'utf8');
+
+  const before = `      cleanup.trackSql(
+        'DELETE FROM order_status_history WHERE order_id = $1',
+        [orderId]
+      );
+
+      cleanup.trackSql(
+        'DELETE FROM scans WHERE order_id = $1',
+        [orderId]
+      );`;
+
+  const after = `      cleanup.trackSql(
+        'DELETE FROM scans WHERE order_id = $1',
+        [orderId]
+      );
+
+      cleanup.trackSql(
+        'DELETE FROM order_status_history WHERE order_id = $1',
+        [orderId]
+      );`;
+
+  source = replaceOnce(source, before, after, 'ordre de nettoyage scan/historique');
+  fs.writeFileSync(path, source, 'utf8');
+}
+
+console.log('Lot 5 corrigé : identité acheteur, verrous orders, audit, contraintes et nettoyage E2E.');
