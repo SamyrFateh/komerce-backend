@@ -1,16 +1,16 @@
 name: Lot 5 final correction
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/lot5-final-correction
+      - main
 
 permissions:
   contents: write
 
 concurrency:
   group: lot5-final-correction
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   qualify:
