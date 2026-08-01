@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 371,
-    "filesWithFullHeaders": 343,
+    "scannedCodeFiles": 389,
+    "filesWithFullHeaders": 361,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 371,
+    "filesWithAnyHeaders": 389,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 774,
-    "edges": 4297,
-    "dbTables": 110,
-    "doctrines": 162,
-    "impactAreas": 131,
-    "unresolvedCodeEdges": 416,
+    "graphNodes": 807,
+    "edges": 4453,
+    "dbTables": 117,
+    "doctrines": 165,
+    "impactAreas": 136,
+    "unresolvedCodeEdges": 429,
     "dbWriteViaOverlapWarnings": 0,
-    "multiWriterTables": 63
+    "multiWriterTables": 69
   },
   "byDomain": {
     "infrastructure": 20,
@@ -35,10 +35,10 @@
     "notification": 16,
     "auth": 8,
     "logistics": 35,
-    "boutique": 18,
+    "boutique": 20,
     "catalog": 64,
     "checkout": 2,
-    "shared-cart": 29,
+    "shared-cart": 44,
     "account": 1,
     "shared-cart-modal": 7,
     "recommendations": 4,
@@ -47,7 +47,7 @@
     "wallet": 4,
     "economic-engine": 39,
     "customs": 6,
-    "dashboard": 26,
+    "dashboard": 27,
     "business-rules": 1,
     "orders": 24,
     "documents": 11,
@@ -70,7 +70,7 @@
     "composition-root": 1,
     "manual-test": 1,
     "middleware": 11,
-    "ui-bootstrap": 2,
+    "ui-bootstrap": 4,
     "ui-component": 36,
     "ui-enhancer": 3,
     "ui-renderer": 9,
@@ -88,9 +88,9 @@
     "api-client": 2,
     "state-store": 1,
     "schema": 1,
-    "route": 98,
+    "route": 100,
     "entrypoint": 1,
-    "service": 144,
+    "service": 158,
     "external-adapter": 2,
     "machine": 2,
     "policy": 1,
@@ -98,10 +98,10 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 63,
-    "medium": 105,
-    "high": 168,
-    "low": 35
+    "critical": 78,
+    "medium": 106,
+    "high": 169,
+    "low": 36
   },
   "nodes": [
     {
@@ -2879,6 +2879,47 @@
       "version": "2026-06"
     },
     {
+      "id": "public/boutique/js/b-service-worker-refresh.js",
+      "file": "public/boutique/js/b-service-worker-refresh.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "boutique-service-worker-refresh",
+      "domain": "boutique",
+      "layer": "ui-bootstrap",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "navigator.serviceWorker",
+        "CacheStorage"
+      ],
+      "outputs": [
+        "service-worker-update-check",
+        "stale-cache-cleanup"
+      ],
+      "depends": [
+        "browser-service-worker-api",
+        "browser-cache-api"
+      ],
+      "usedBy": [
+        "public/boutique/index.html"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "csp_no_inline_script",
+        "mise_a_jour_sans_boucle"
+      ],
+      "impactAreas": [
+        "boutique-bootstrap",
+        "cache",
+        "service-worker"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "public/boutique/js/b-share-cart.js",
       "file": "public/boutique/js/b-share-cart.js",
       "type": "file",
@@ -3842,6 +3883,42 @@
       "version": "2026-06"
     },
     {
+      "id": "public/boutique/js/test-modal-view-model-redirect.js",
+      "file": "public/boutique/js/test-modal-view-model-redirect.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "boutique-test-modal-redirect",
+      "domain": "boutique",
+      "layer": "ui-bootstrap",
+      "criticality": "low",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "legacy-test-modal-url"
+      ],
+      "outputs": [
+        "canonical-group-view-redirect"
+      ],
+      "depends": [
+        "browser-location-api"
+      ],
+      "usedBy": [
+        "public/boutique/test-modal-view-model.html"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "csp_no_inline_script",
+        "legacy_entry_redirect_only"
+      ],
+      "impactAreas": [
+        "boutique-test-entry"
+      ],
+      "version": "2026-08"
+    },
+    {
       "id": "public/boutique/js/view-models/delivery-mode-model.js",
       "file": "public/boutique/js/view-models/delivery-mode-model.js",
       "type": "file",
@@ -4099,6 +4176,48 @@
         "boutique-admin",
         "category-navigation",
         "product-discovery"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "routes/admin-collective-repairs.js",
+      "file": "routes/admin-collective-repairs.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-admin-collective-repairs",
+      "domain": "shared-cart",
+      "layer": "route",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db.js",
+        "middleware/auth.js",
+        "services/*"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "admin-dashboard"
       ],
       "version": "2026-06"
     },
@@ -5714,6 +5833,47 @@
       ],
       "impactAreas": [
         "logistics"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "routes/collective-workspaces.js",
+      "file": "routes/collective-workspaces.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-collective-workspaces",
+      "domain": "shared-cart",
+      "layer": "route",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db.js",
+        "middleware/auth.js",
+        "services/*"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
       ],
       "version": "2026-06"
     },
@@ -9818,6 +9978,510 @@
       "version": "2026-07"
     },
     {
+      "id": "services/collective-close-order-service.js",
+      "file": "services/collective-close-order-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-collective-close-order-service",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "checkout"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-payment-orchestrator.js",
+      "file": "services/collective-payment-orchestrator.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-collective-payment-orchestrator",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "services/repair-collective-ready-to-capture.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "checkout"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-ready-to-order-orchestrator.js",
+      "file": "services/collective-ready-to-order-orchestrator.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-collective-ready-to-order-orchestrator",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "checkout"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-stock-reservation-service.js",
+      "file": "services/collective-stock-reservation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-collective-stock-reservation-service",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "services/collective-workspace-engine.js"
+      ],
+      "usedBy": [
+        "services/repair-collective-stock-reservations.js"
+      ],
+      "dbRead": [
+        "collective_stock_reservations",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_stock_reservations"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-contributions.js",
+      "file": "services/collective-workspace-contributions.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-contributions",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "public_token",
+        "creator_token",
+        "payload",
+        "contribution_id"
+      ],
+      "outputs": [
+        "contribution",
+        "ok"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "dbRead": [
+        "collective_workspaces"
+      ],
+      "dbWrite": [
+        "collective_workspace_contributions",
+        "collective_workspace_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "required_for_state_transition"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-creation.js",
+      "file": "services/collective-workspace-creation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-creation",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "event_name",
+        "creator_name",
+        "creator_phone",
+        "recipient_name",
+        "relais_id"
+      ],
+      "outputs": [
+        "workspace",
+        "public_token",
+        "creator_token"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "collective_workspace_events",
+        "collective_workspaces"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "required_for_state_transition"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-engine.js",
+      "file": "services/collective-workspace-engine.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-collective-workspace-engine",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-reads.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "usedBy": [
+        "routes/collective-workspaces.js",
+        "services/collective-stock-reservation-service.js"
+      ],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "products",
+        "relais"
+      ],
+      "dbWrite": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_events",
+        "collective_workspace_items",
+        "collective_workspaces"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-internals.js",
+      "file": "services/collective-workspace-internals.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-internals",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [],
+      "outputs": [],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-reads.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [
+        "collective_workspace_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-items.js",
+      "file": "services/collective-workspace-items.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-items",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "creator_token",
+        "product_id",
+        "quantity",
+        "item_id"
+      ],
+      "outputs": [
+        "item",
+        "ok"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "dbRead": [
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_workspace_events",
+        "collective_workspace_items"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "required_for_state_transition"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-lifecycle.js",
+      "file": "services/collective-workspace-lifecycle.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-lifecycle",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "creator_token",
+        "duration_hours",
+        "idempotency_key"
+      ],
+      "outputs": [
+        "review_report",
+        "session_tokens",
+        "workspace_status"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-reads.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_events",
+        "collective_workspace_items",
+        "collective_workspaces"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "required_for_state_transition"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/collective-workspace-reads.js",
+      "file": "services/collective-workspace-reads.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "collective-workspace-reads",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "public_token",
+        "creator_token",
+        "raw_token",
+        "workspace",
+        "opts"
+      ],
+      "outputs": [
+        "workspace",
+        "items",
+        "contributions",
+        "session",
+        "token_info",
+        "phase"
+      ],
+      "depends": [
+        "services/collective-workspace-internals.js"
+      ],
+      "usedBy": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "relais"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
       "id": "services/confirm-pickup-cash-payment.js",
       "file": "services/confirm-pickup-cash-payment.js",
       "type": "file",
@@ -10621,6 +11285,54 @@
         "dashboard",
         "admin-dashboard",
         "orders-logistics"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/dashboard-metrics/workspaces.js",
+      "file": "services/dashboard-metrics/workspaces.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-metrics-workspaces",
+      "domain": "dashboard",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "_helpers"
+      ],
+      "usedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "@none"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard",
+        "event-workspaces"
       ],
       "version": "2026-06"
     },
@@ -14156,6 +14868,97 @@
       "impactAreas": [
         "dashboard",
         "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/repair-collective-ready-to-capture.js",
+      "file": "services/repair-collective-ready-to-capture.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-repair-collective-ready-to-capture",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "services/collective-payment-orchestrator.js"
+      ],
+      "usedBy": [
+        "routes/admin-collective-repairs.js"
+      ],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspaces"
+      ],
+      "dbWrite": [
+        "alerts"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/repair-collective-stock-reservations.js",
+      "file": "services/repair-collective-stock-reservations.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shared-cart-repair-collective-stock-reservations",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "services/collective-stock-reservation-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-collective-repairs.js"
+      ],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_stock_reservations",
+        "collective_workspaces"
+      ],
+      "dbWrite": [
+        "alerts"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
       ],
       "version": "2026-06"
     },
@@ -17919,6 +18722,41 @@
       "table": "product_content_sections"
     },
     {
+      "id": "db:collective_stock_reservations",
+      "type": "db-table",
+      "table": "collective_stock_reservations"
+    },
+    {
+      "id": "db:collective_workspace_items",
+      "type": "db-table",
+      "table": "collective_workspace_items"
+    },
+    {
+      "id": "db:collective_workspaces",
+      "type": "db-table",
+      "table": "collective_workspaces"
+    },
+    {
+      "id": "db:collective_workspace_contributions",
+      "type": "db-table",
+      "table": "collective_workspace_contributions"
+    },
+    {
+      "id": "db:collective_workspace_events",
+      "type": "db-table",
+      "table": "collective_workspace_events"
+    },
+    {
+      "id": "db:collective_payment_sessions",
+      "type": "db-table",
+      "table": "collective_payment_sessions"
+    },
+    {
+      "id": "db:collective_payment_tokens",
+      "type": "db-table",
+      "table": "collective_payment_tokens"
+    },
+    {
       "id": "db:customs_effective_rates",
       "type": "db-table",
       "table": "customs_effective_rates"
@@ -18209,6 +19047,16 @@
       "doctrine": "scroll_owner_unique"
     },
     {
+      "id": "doctrine:csp_no_inline_script",
+      "type": "doctrine",
+      "doctrine": "csp_no_inline_script"
+    },
+    {
+      "id": "doctrine:mise_a_jour_sans_boucle",
+      "type": "doctrine",
+      "doctrine": "mise_a_jour_sans_boucle"
+    },
+    {
       "id": "doctrine:partager_geste_natif",
       "type": "doctrine",
       "doctrine": "partager_geste_natif"
@@ -18312,6 +19160,11 @@
       "id": "doctrine:categories_sans_hardcode_metier",
       "type": "doctrine",
       "doctrine": "categories_sans_hardcode_metier"
+    },
+    {
+      "id": "doctrine:legacy_entry_redirect_only",
+      "type": "doctrine",
+      "doctrine": "legacy_entry_redirect_only"
     },
     {
       "id": "doctrine:categories_maj_sans_code",
@@ -19159,6 +20012,21 @@
       "area": "identity"
     },
     {
+      "id": "impact:boutique-bootstrap",
+      "type": "impact-area",
+      "area": "boutique-bootstrap"
+    },
+    {
+      "id": "impact:cache",
+      "type": "impact-area",
+      "area": "cache"
+    },
+    {
+      "id": "impact:service-worker",
+      "type": "impact-area",
+      "area": "service-worker"
+    },
+    {
       "id": "impact:shared-cart-creation",
       "type": "impact-area",
       "area": "shared-cart-creation"
@@ -19247,6 +20115,11 @@
       "id": "impact:admin-category-config",
       "type": "impact-area",
       "area": "admin-category-config"
+    },
+    {
+      "id": "impact:boutique-test-entry",
+      "type": "impact-area",
+      "area": "boutique-test-entry"
     },
     {
       "id": "impact:pricing",
@@ -19392,6 +20265,11 @@
       "id": "impact:orders-logistics",
       "type": "impact-area",
       "area": "orders-logistics"
+    },
+    {
+      "id": "impact:event-workspaces",
+      "type": "impact-area",
+      "area": "event-workspaces"
     },
     {
       "id": "impact:admin-economic",
@@ -23567,6 +24445,54 @@
       "label": "side-cart-layout"
     },
     {
+      "from": "public/boutique/js/b-service-worker-refresh.js",
+      "to": "browser-service-worker-api",
+      "type": "depends",
+      "label": "browser-service-worker-api"
+    },
+    {
+      "from": "public/boutique/js/b-service-worker-refresh.js",
+      "to": "browser-cache-api",
+      "type": "depends",
+      "label": "browser-cache-api"
+    },
+    {
+      "from": "public/boutique/index.html",
+      "to": "public/boutique/js/b-service-worker-refresh.js",
+      "type": "uses",
+      "label": "public/boutique/index.html"
+    },
+    {
+      "from": "public/boutique/js/b-service-worker-refresh.js",
+      "to": "doctrine:csp_no_inline_script",
+      "type": "doctrine",
+      "label": "csp_no_inline_script"
+    },
+    {
+      "from": "public/boutique/js/b-service-worker-refresh.js",
+      "to": "doctrine:mise_a_jour_sans_boucle",
+      "type": "doctrine",
+      "label": "mise_a_jour_sans_boucle"
+    },
+    {
+      "from": "public/boutique/js/b-service-worker-refresh.js",
+      "to": "impact:boutique-bootstrap",
+      "type": "impact",
+      "label": "boutique-bootstrap"
+    },
+    {
+      "from": "public/boutique/js/b-service-worker-refresh.js",
+      "to": "impact:cache",
+      "type": "impact",
+      "label": "cache"
+    },
+    {
+      "from": "public/boutique/js/b-service-worker-refresh.js",
+      "to": "impact:service-worker",
+      "type": "impact",
+      "label": "service-worker"
+    },
+    {
       "from": "public/boutique/js/b-share-cart.js",
       "to": "public/boutique/js/b-store.js",
       "type": "depends",
@@ -24881,6 +25807,36 @@
       "label": "catalog"
     },
     {
+      "from": "public/boutique/js/test-modal-view-model-redirect.js",
+      "to": "browser-location-api",
+      "type": "depends",
+      "label": "browser-location-api"
+    },
+    {
+      "from": "public/boutique/test-modal-view-model.html",
+      "to": "public/boutique/js/test-modal-view-model-redirect.js",
+      "type": "uses",
+      "label": "public/boutique/test-modal-view-model.html"
+    },
+    {
+      "from": "public/boutique/js/test-modal-view-model-redirect.js",
+      "to": "doctrine:csp_no_inline_script",
+      "type": "doctrine",
+      "label": "csp_no_inline_script"
+    },
+    {
+      "from": "public/boutique/js/test-modal-view-model-redirect.js",
+      "to": "doctrine:legacy_entry_redirect_only",
+      "type": "doctrine",
+      "label": "legacy_entry_redirect_only"
+    },
+    {
+      "from": "public/boutique/js/test-modal-view-model-redirect.js",
+      "to": "impact:boutique-test-entry",
+      "type": "impact",
+      "label": "boutique-test-entry"
+    },
+    {
       "from": "public/boutique/js/b-modal-desktop-product.js",
       "to": "public/boutique/js/view-models/delivery-mode-model.js",
       "type": "uses",
@@ -25191,6 +26147,48 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "services/*",
+      "type": "depends",
+      "label": "services/*"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-collective-repairs.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "routes/admin-cost-components.js",
@@ -27466,6 +28464,42 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "routes/collective-workspaces.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/collective-workspaces.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/collective-workspaces.js",
+      "to": "services/*",
+      "type": "depends",
+      "label": "services/*"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/collective-workspaces.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/collective-workspaces.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "routes/collective-workspaces.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
     },
     {
       "from": "routes/config.js",
@@ -33284,6 +34318,612 @@
       "label": "modal"
     },
     {
+      "from": "services/collective-close-order-service.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-close-order-service.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-close-order-service.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/collective-payment-orchestrator.js",
+      "to": "utils/logger.js",
+      "type": "depends",
+      "label": "utils/logger.js"
+    },
+    {
+      "from": "services/repair-collective-ready-to-capture.js",
+      "to": "services/collective-payment-orchestrator.js",
+      "type": "uses",
+      "label": "services/repair-collective-ready-to-capture.js"
+    },
+    {
+      "from": "services/collective-payment-orchestrator.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-payment-orchestrator.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-payment-orchestrator.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/collective-ready-to-order-orchestrator.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-ready-to-order-orchestrator.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-ready-to-order-orchestrator.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "services/collective-workspace-engine.js",
+      "type": "depends",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "services/collective-stock-reservation-service.js",
+      "type": "uses",
+      "label": "services/repair-collective-stock-reservations.js"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "db:collective_stock_reservations",
+      "type": "db-read",
+      "label": "collective_stock_reservations"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "db:collective_stock_reservations",
+      "type": "db-write",
+      "label": "collective_stock_reservations"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-contributions.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-write",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-creation.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "db:collective_workspaces",
+      "type": "db-write",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-creation.js",
+      "type": "depends",
+      "label": "services/collective-workspace-creation.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-reads.js",
+      "type": "depends",
+      "label": "services/collective-workspace-reads.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-items.js",
+      "type": "depends",
+      "label": "services/collective-workspace-items.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-contributions.js",
+      "type": "depends",
+      "label": "services/collective-workspace-contributions.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-lifecycle.js",
+      "type": "depends",
+      "label": "services/collective-workspace-lifecycle.js"
+    },
+    {
+      "from": "routes/collective-workspaces.js",
+      "to": "services/collective-workspace-engine.js",
+      "type": "uses",
+      "label": "routes/collective-workspaces.js"
+    },
+    {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "services/collective-workspace-engine.js",
+      "type": "uses",
+      "label": "services/collective-stock-reservation-service.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_payment_tokens",
+      "type": "db-read",
+      "label": "collective_payment_tokens"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-read",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-write",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_payment_tokens",
+      "type": "db-write",
+      "label": "collective_payment_tokens"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-write",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-write",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "db:collective_workspaces",
+      "type": "db-write",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/collective-workspace-creation.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-creation.js"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-reads.js"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-items.js"
+    },
+    {
+      "from": "services/collective-workspace-contributions.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-contributions.js"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "uses",
+      "label": "services/collective-workspace-lifecycle.js"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-items.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-write",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-items.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "services/collective-workspace-reads.js",
+      "type": "depends",
+      "label": "services/collective-workspace-reads.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-lifecycle.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-read",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-write",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_payment_tokens",
+      "type": "db-write",
+      "label": "collective_payment_tokens"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-write",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_events",
+      "type": "db-write",
+      "label": "collective_workspace_events"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-write",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "db:collective_workspaces",
+      "type": "db-write",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "services/collective-workspace-internals.js",
+      "type": "depends",
+      "label": "services/collective-workspace-internals.js"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
+      "to": "services/collective-workspace-reads.js",
+      "type": "uses",
+      "label": "services/collective-workspace-engine.js"
+    },
+    {
+      "from": "services/collective-workspace-lifecycle.js",
+      "to": "services/collective-workspace-reads.js",
+      "type": "uses",
+      "label": "services/collective-workspace-lifecycle.js"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_payment_tokens",
+      "type": "db-read",
+      "label": "collective_payment_tokens"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-read",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/collective-workspace-reads.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
       "from": "services/confirm-pickup-cash-payment.js",
       "to": "db",
       "type": "depends",
@@ -34476,6 +36116,78 @@
       "to": "impact:orders-logistics",
       "type": "impact",
       "label": "orders-logistics"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
+    },
+    {
+      "from": "services/dashboard-metrics/index.js",
+      "to": "services/dashboard-metrics/workspaces.js",
+      "type": "uses",
+      "label": "services/dashboard-metrics/index.js"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-read",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "impact:event-workspaces",
+      "type": "impact",
+      "label": "event-workspaces"
     },
     {
       "from": "services/dashboard-ops-queries.js",
@@ -39955,6 +41667,108 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/repair-collective-ready-to-capture.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/repair-collective-ready-to-capture.js",
+      "to": "services/collective-payment-orchestrator.js",
+      "type": "depends",
+      "label": "services/collective-payment-orchestrator.js"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "services/repair-collective-ready-to-capture.js",
+      "type": "uses",
+      "label": "routes/admin-collective-repairs.js"
+    },
+    {
+      "from": "services/repair-collective-ready-to-capture.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/repair-collective-ready-to-capture.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/repair-collective-ready-to-capture.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "services/repair-collective-ready-to-capture.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/repair-collective-ready-to-capture.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "services/collective-stock-reservation-service.js",
+      "type": "depends",
+      "label": "services/collective-stock-reservation-service.js"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "services/repair-collective-stock-reservations.js",
+      "type": "uses",
+      "label": "routes/admin-collective-repairs.js"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "db:collective_stock_reservations",
+      "type": "db-read",
+      "label": "collective_stock_reservations"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
       "from": "services/repair-ordered-purchasing.js",
       "to": "db",
       "type": "depends",
@@ -45322,6 +47136,7 @@
         "impact:product-detail",
         "impact:shared-cart",
         "routes/admin-boutique-categories.js",
+        "routes/admin-collective-repairs.js",
         "routes/admin-cost-components.js",
         "routes/admin-costing.js",
         "routes/admin-customs-categories.js",
@@ -45354,6 +47169,7 @@
         "routes/categories.js",
         "routes/client-auth.js",
         "routes/client-tracking.js",
+        "routes/collective-workspaces.js",
         "routes/config.js",
         "routes/dashboard-clients.js",
         "routes/dashboard-finance.js",
@@ -45899,6 +47715,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:auth",
         "routes/admin-boutique-categories.js",
+        "routes/admin-collective-repairs.js",
         "routes/admin-cost-components.js",
         "routes/admin-costing.js",
         "routes/admin-customs-categories.js",
@@ -45931,6 +47748,7 @@
         "routes/categories.js",
         "routes/client-auth.js",
         "routes/client-tracking.js",
+        "routes/collective-workspaces.js",
         "routes/config.js",
         "routes/dashboard-clients.js",
         "routes/dashboard-finance.js",
@@ -48244,6 +50062,41 @@
         "public/boutique/js/b-subcat.js"
       ]
     },
+    "public/boutique/js/b-service-worker-refresh.js": {
+      "role": "boutique-service-worker-refresh",
+      "domain": "boutique",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "browser-service-worker-api",
+        "browser-cache-api"
+      ],
+      "directUsedBy": [
+        "public/boutique/index.html"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "csp_no_inline_script",
+        "mise_a_jour_sans_boucle"
+      ],
+      "impactAreas": [
+        "boutique-bootstrap",
+        "cache",
+        "service-worker"
+      ],
+      "mustCheck": [
+        "doctrine:csp_no_inline_script",
+        "doctrine:mise_a_jour_sans_boucle",
+        "impact:boutique-bootstrap",
+        "impact:cache",
+        "impact:service-worker"
+      ]
+    },
     "public/boutique/js/b-share-cart.js": {
       "role": "shared-cart-creation-from-boutique",
       "domain": "shared-cart",
@@ -49234,6 +51087,36 @@
         "public/boutique/js/b-catalog.js"
       ]
     },
+    "public/boutique/js/test-modal-view-model-redirect.js": {
+      "role": "boutique-test-modal-redirect",
+      "domain": "boutique",
+      "criticality": "low",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "browser-location-api"
+      ],
+      "directUsedBy": [
+        "public/boutique/test-modal-view-model.html"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "csp_no_inline_script",
+        "legacy_entry_redirect_only"
+      ],
+      "impactAreas": [
+        "boutique-test-entry"
+      ],
+      "mustCheck": [
+        "doctrine:csp_no_inline_script",
+        "doctrine:legacy_entry_redirect_only",
+        "impact:boutique-test-entry"
+      ]
+    },
     "public/boutique/js/view-models/delivery-mode-model.js": {
       "role": "product-delivery-mode-model",
       "domain": "catalog",
@@ -49476,6 +51359,42 @@
         "impact:product-discovery",
         "middleware/auth.js",
         "utils/categories-cache.js"
+      ]
+    },
+    "routes/admin-collective-repairs.js": {
+      "role": "shared-cart-admin-collective-repairs",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "middleware/auth.js",
+        "services/*"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:shared-cart",
+        "middleware/auth.js",
+        "services/repair-collective-ready-to-capture.js",
+        "services/repair-collective-stock-reservations.js"
       ]
     },
     "routes/admin-cost-components.js": {
@@ -50982,6 +52901,40 @@
         "middleware/auth.js",
         "utils/logger.js",
         "utils/parcels.js"
+      ]
+    },
+    "routes/collective-workspaces.js": {
+      "role": "shared-cart-collective-workspaces",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "middleware/auth.js",
+        "services/*"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "middleware/auth.js",
+        "services/collective-workspace-engine.js",
+        "utils/logger.js"
       ]
     },
     "routes/config.js": {
@@ -54911,6 +56864,448 @@
         "routes/products.js"
       ]
     },
+    "services/collective-close-order-service.js": {
+      "role": "shared-cart-collective-close-order-service",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "checkout"
+      ],
+      "mustCheck": [
+        "doctrine:resolve_before_behavior_change",
+        "impact:checkout",
+        "impact:shared-cart"
+      ]
+    },
+    "services/collective-payment-orchestrator.js": {
+      "role": "shared-cart-collective-payment-orchestrator",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "utils/logger.js"
+      ],
+      "directUsedBy": [
+        "services/repair-collective-ready-to-capture.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "checkout"
+      ],
+      "mustCheck": [
+        "doctrine:resolve_before_behavior_change",
+        "impact:checkout",
+        "impact:shared-cart",
+        "services/repair-collective-ready-to-capture.js",
+        "utils/logger.js"
+      ]
+    },
+    "services/collective-ready-to-order-orchestrator.js": {
+      "role": "shared-cart-collective-ready-to-order-orchestrator",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart",
+        "checkout"
+      ],
+      "mustCheck": [
+        "doctrine:resolve_before_behavior_change",
+        "impact:checkout",
+        "impact:shared-cart"
+      ]
+    },
+    "services/collective-stock-reservation-service.js": {
+      "role": "shared-cart-collective-stock-reservation-service",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/collective-workspace-engine.js"
+      ],
+      "directUsedBy": [
+        "services/repair-collective-stock-reservations.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_stock_reservations",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_stock_reservations"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_stock_reservations",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:products",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/repair-collective-stock-reservations.js"
+      ]
+    },
+    "services/collective-workspace-contributions.js": {
+      "role": "collective-workspace-contributions",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_workspaces"
+      ],
+      "dbWrite": [
+        "collective_workspace_contributions",
+        "collective_workspace_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_events",
+        "db:collective_workspaces",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js"
+      ]
+    },
+    "services/collective-workspace-creation.js": {
+      "role": "collective-workspace-creation",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "collective_workspace_events",
+        "collective_workspaces"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_workspace_events",
+        "db:collective_workspaces",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js"
+      ]
+    },
+    "services/collective-workspace-engine.js": {
+      "role": "shared-cart-collective-workspace-engine",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-reads.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "directUsedBy": [
+        "routes/collective-workspaces.js",
+        "services/collective-stock-reservation-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "products",
+        "relais"
+      ],
+      "dbWrite": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_events",
+        "collective_workspace_items",
+        "collective_workspaces"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_payment_sessions",
+        "db:collective_payment_tokens",
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_events",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:products",
+        "db:relais",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "routes/collective-workspaces.js",
+        "services/collective-stock-reservation-service.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-lifecycle.js",
+        "services/collective-workspace-reads.js"
+      ]
+    },
+    "services/collective-workspace-internals.js": {
+      "role": "collective-workspace-internals",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-reads.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [
+        "collective_workspace_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_workspace_events",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-lifecycle.js",
+        "services/collective-workspace-reads.js"
+      ]
+    },
+    "services/collective-workspace-items.js": {
+      "role": "collective-workspace-items",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_workspace_events",
+        "collective_workspace_items"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_workspace_events",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:products",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js"
+      ]
+    },
+    "services/collective-workspace-lifecycle.js": {
+      "role": "collective-workspace-lifecycle",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-reads.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "products"
+      ],
+      "dbWrite": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_events",
+        "collective_workspace_items",
+        "collective_workspaces"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_payment_sessions",
+        "db:collective_payment_tokens",
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_events",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:products",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-reads.js"
+      ]
+    },
+    "services/collective-workspace-reads.js": {
+      "role": "collective-workspace-reads",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/collective-workspace-internals.js"
+      ],
+      "directUsedBy": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_payment_tokens",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "relais"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:collective_payment_sessions",
+        "db:collective_payment_tokens",
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:relais",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
     "services/confirm-pickup-cash-payment.js": {
       "role": "payment-confirm-pickup-cash-payment",
       "domain": "payment",
@@ -55630,7 +58025,8 @@
         "routes/admin-dashboard.js",
         "services/dashboard-metrics/control-tower.js",
         "services/dashboard-metrics/costing.js",
-        "services/dashboard-metrics/logistics.js"
+        "services/dashboard-metrics/logistics.js",
+        "services/dashboard-metrics/workspaces.js"
       ]
     },
     "services/dashboard-metrics/logistics.js": {
@@ -55671,6 +58067,51 @@
         "impact:admin-dashboard",
         "impact:dashboard",
         "impact:orders-logistics",
+        "services/dashboard-metrics/index.js"
+      ]
+    },
+    "services/dashboard-metrics/workspaces.js": {
+      "role": "dashboard-metrics-workspaces",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "_helpers"
+      ],
+      "directUsedBy": [
+        "services/dashboard-metrics/index.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "admin-dashboard",
+        "event-workspaces"
+      ],
+      "mustCheck": [
+        "db:collective_payment_sessions",
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:orders",
+        "doctrine:resolve_before_behavior_change",
+        "impact:admin-dashboard",
+        "impact:dashboard",
+        "impact:event-workspaces",
         "services/dashboard-metrics/index.js"
       ]
     },
@@ -59131,6 +61572,86 @@
         "utils/logger.js"
       ]
     },
+    "services/repair-collective-ready-to-capture.js": {
+      "role": "shared-cart-repair-collective-ready-to-capture",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/collective-payment-orchestrator.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-collective-repairs.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_workspaces"
+      ],
+      "dbWrite": [
+        "alerts"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:alerts",
+        "db:collective_payment_sessions",
+        "db:collective_workspaces",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "routes/admin-collective-repairs.js",
+        "services/collective-payment-orchestrator.js"
+      ]
+    },
+    "services/repair-collective-stock-reservations.js": {
+      "role": "shared-cart-repair-collective-stock-reservations",
+      "domain": "shared-cart",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/collective-stock-reservation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-collective-repairs.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "collective_payment_sessions",
+        "collective_stock_reservations",
+        "collective_workspaces"
+      ],
+      "dbWrite": [
+        "alerts"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "shared-cart"
+      ],
+      "mustCheck": [
+        "db:alerts",
+        "db:collective_payment_sessions",
+        "db:collective_stock_reservations",
+        "db:collective_workspaces",
+        "doctrine:resolve_before_behavior_change",
+        "impact:shared-cart",
+        "routes/admin-collective-repairs.js",
+        "services/collective-stock-reservation-service.js"
+      ]
+    },
     "services/repair-ordered-purchasing.js": {
       "role": "orders-repair-ordered-purchasing",
       "domain": "purchasing",
@@ -61686,6 +64207,7 @@
         "routes/cash.js",
         "routes/client-auth.js",
         "routes/client-tracking.js",
+        "routes/collective-workspaces.js",
         "routes/config.js",
         "routes/dashboard-clients.js",
         "routes/dashboard-hub.js",
@@ -61732,6 +64254,7 @@
         "services/cash-reminder-service.js",
         "services/catalog-approval.js",
         "services/catalog-enrichment.js",
+        "services/collective-payment-orchestrator.js",
         "services/confirm-pickup-cash-payment.js",
         "services/create-stripe-order-intent.js",
         "services/dashboard-clients-queries.js",
@@ -62419,7 +64942,7 @@
     },
     {
       "table": "alerts",
-      "writerCount": 19,
+      "writerCount": 21,
       "writers": [
         "services/admin-order-refund.js",
         "services/cancel-order-purchase-orders.js",
@@ -62436,6 +64959,8 @@
         "services/pickup-secret-service.js",
         "services/product-publication-guard.js",
         "services/purchasing-trigger-service.js",
+        "services/repair-collective-ready-to-capture.js",
+        "services/repair-collective-stock-reservations.js",
         "services/repair-ordered-without-purchase-orders.js",
         "services/scan-operations.js",
         "utils/alerts.js",
@@ -62636,6 +65161,18 @@
       ]
     },
     {
+      "table": "collective_workspace_events",
+      "writerCount": 6,
+      "writers": [
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-internals.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
       "table": "scan_events",
       "writerCount": 6,
       "writers": [
@@ -62759,6 +65296,33 @@
         "routes/admin/users.js",
         "routes/wallet.js",
         "services/wallet-service.js"
+      ]
+    },
+    {
+      "table": "collective_workspace_contributions",
+      "writerCount": 3,
+      "writers": [
+        "services/collective-workspace-contributions.js",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
+      "table": "collective_workspace_items",
+      "writerCount": 3,
+      "writers": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-items.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
+      "table": "collective_workspaces",
+      "writerCount": 3,
+      "writers": [
+        "services/collective-workspace-creation.js",
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
       ]
     },
     {
@@ -62905,6 +65469,22 @@
       "writers": [
         "bootstrap/startup-migrations.js",
         "services/economic-engine-queries.js"
+      ]
+    },
+    {
+      "table": "collective_payment_sessions",
+      "writerCount": 2,
+      "writers": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
+      ]
+    },
+    {
+      "table": "collective_payment_tokens",
+      "writerCount": 2,
+      "writers": [
+        "services/collective-workspace-engine.js",
+        "services/collective-workspace-lifecycle.js"
       ]
     },
     {
@@ -63190,6 +65770,24 @@
       "label": "desktop-enhancers"
     },
     {
+      "from": "public/boutique/js/b-service-worker-refresh.js",
+      "to": "browser-service-worker-api",
+      "type": "depends",
+      "label": "browser-service-worker-api"
+    },
+    {
+      "from": "public/boutique/js/b-service-worker-refresh.js",
+      "to": "browser-cache-api",
+      "type": "depends",
+      "label": "browser-cache-api"
+    },
+    {
+      "from": "public/boutique/index.html",
+      "to": "public/boutique/js/b-service-worker-refresh.js",
+      "type": "uses",
+      "label": "public/boutique/index.html"
+    },
+    {
       "from": "b-modal-approche-c-hybrid.js",
       "to": "public/boutique/js/b-share-cart.js",
       "type": "uses",
@@ -63286,6 +65884,18 @@
       "label": "renderers"
     },
     {
+      "from": "public/boutique/js/test-modal-view-model-redirect.js",
+      "to": "browser-location-api",
+      "type": "depends",
+      "label": "browser-location-api"
+    },
+    {
+      "from": "public/boutique/test-modal-view-model.html",
+      "to": "public/boutique/js/test-modal-view-model-redirect.js",
+      "type": "uses",
+      "label": "public/boutique/test-modal-view-model.html"
+    },
+    {
       "from": "future b-modal-core.js",
       "to": "public/boutique/js/view-models/modal-selection-model.js",
       "type": "uses",
@@ -63320,6 +65930,18 @@
       "to": "routes/admin-boutique-categories.js",
       "type": "uses",
       "label": "shop-schema-sync"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-collective-repairs.js",
+      "to": "services/*",
+      "type": "depends",
+      "label": "services/*"
     },
     {
       "from": "routes/admin-cost-components.js",
@@ -63713,6 +66335,18 @@
     },
     {
       "from": "routes/client-tracking.js",
+      "to": "services/*",
+      "type": "depends",
+      "label": "services/*"
+    },
+    {
+      "from": "routes/collective-workspaces.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/collective-workspaces.js",
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
@@ -64576,6 +67210,18 @@
       "label": "services/catalog-promotion.js (Lot 6)"
     },
     {
+      "from": "services/collective-stock-reservation-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/collective-workspace-internals.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/confirm-pickup-cash-payment.js",
       "to": "db",
       "type": "depends",
@@ -64754,6 +67400,18 @@
       "to": "INV-3)",
       "type": "depends",
       "label": "INV-3)"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-metrics/workspaces.js",
+      "to": "_helpers",
+      "type": "depends",
+      "label": "_helpers"
     },
     {
       "from": "services/dashboard-ops-queries.js",
@@ -65218,6 +67876,18 @@
       "label": "db"
     },
     {
+      "from": "services/repair-collective-ready-to-capture.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/repair-collective-stock-reservations.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
       "from": "services/repair-ordered-purchasing.js",
       "to": "db",
       "type": "depends",
@@ -65522,18 +68192,6 @@
       "to": "db",
       "type": "depends",
       "label": "db"
-    },
-    {
-      "from": "routes/collective-workspaces.js",
-      "to": "utils/logger.js",
-      "type": "uses",
-      "label": "routes/collective-workspaces.js"
-    },
-    {
-      "from": "services/collective-payment-orchestrator.js",
-      "to": "utils/logger.js",
-      "type": "uses",
-      "label": "services/collective-payment-orchestrator.js"
     },
     {
       "from": "utils/parcelSync.js",
