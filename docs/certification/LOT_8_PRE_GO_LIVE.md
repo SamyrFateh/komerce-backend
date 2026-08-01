@@ -41,6 +41,8 @@ Le manifeste `business-rules` est enregistré dans le registre canonique afin de
 
 Le snapshot d’intégrité des migrations est réconcilié avec les fichiers SQL canoniques présents sur le SHA certifié ; aucune migration historique n’est modifiée pendant l’exécution de la certification.
 
+La projection `docs/db/railway-live-schema.sql` est reconstruite après les migrations 121 et 122 puis soumise au drift bloquant, sans allowlist temporaire.
+
 ### PostgreSQL réel
 
 - chargement du dump Railway canonique ;
