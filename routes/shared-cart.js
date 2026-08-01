@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        public_token, auth_user, creator_actions
  * @outputs       shared_cart_api, admin_views
- * @depends       services/shared-cart-engine.js, services/shared-cart-items-service.js, services/shared-cart-queries.js
+ * @depends       services/shared-cart-engine.js, services/shared-cart-items-service.js, services/shared-cart-queries.js, middleware/soft-auth.js
  * @used-by       server.js, public/boutique/js/b-group-view.js, public/boutique/js/b-share-cart.js, public/boutique/js/b-cart.js
  * @db-read       none
  * @db-write      none
@@ -63,7 +63,8 @@ const express = require('express');
 const engine  = require('../services/shared-cart-engine');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
-const { updateOpenSharedCartItems } = require('../services/shared-cart-items-service');
+const { softAuthenticate } = require('../middleware/soft-auth');
+const { updateOpenSharedCartItems, addSharedCartItem, removeSharedCartItem } = require('../services/shared-cart-items-service');
 const log = require('../utils/logger').child({ module: 'shared-cart' });
 const { sendTemplateWhatsApp } = require('../services/whatsapp-meta');
 const queries = require('../services/shared-cart-queries');
@@ -76,9 +77,9 @@ const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
 // ═══════════════════════════════════════════════════════════════════════
 // ── PUBLIC : voir un panier partagé ────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════
-router.get('/public/:token', async (req, res, next) => {
+router.get('/public/:token', softAuthenticate, async (req, res, next) => {
   try {
-    const data = await engine.getSharedCartForPublic(req.params.token);
+    const data = await engine.getSharedCartForPublic(req.params.token, req.user?.id);
     if (!data) return res.status(404).json({ error: 'Panier introuvable' });
     res.json(data);
   } catch (err) { next(err); }
@@ -221,6 +222,9 @@ router.get('/:id/as-cart-items', authenticate, async (req, res, next) => {
 });
 
 // S2-06 — Modifier les articles du panier (statut OPEN uniquement)
+// Sémantique historique inchangée : remplace la liste entière. Conservé
+// tel quel — Contrat API §5 point 4, option A. Sera retiré quand il n'aura
+// plus d'utilité, pas réinterprété.
 router.put('/:id/items', authenticate, async (req, res, next) => {
   try {
     const { cart_items } = req.body;
@@ -230,6 +234,32 @@ router.put('/:id/items', authenticate, async (req, res, next) => {
 
     const { cart, items } = await updateOpenSharedCartItems(req.params.id, req.user.id, cart_items);
     res.json({ ok: true, cart, items, items_count: items.length });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
+});
+
+// Une intention, un appel, écriture immédiate (Invariant 20). Capacité
+// nouvelle, pas une réinterprétation de PUT /:id/items ci-dessus.
+router.post('/:id/items', authenticate, async (req, res, next) => {
+  try {
+    const { product_id, quantity } = req.body || {};
+    const { cart, item } = await addSharedCartItem(req.params.id, req.user.id, product_id, quantity);
+    res.json({ ok: true, cart, item });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
+});
+
+// Confirmation exigée côté client avant l'appel (Invariant 21) ; côté
+// serveur, exécution immédiate dès réception, sans confirmation
+// supplémentaire.
+router.delete('/:id/items/:itemId', authenticate, async (req, res, next) => {
+  try {
+    const { cart } = await removeSharedCartItem(req.params.id, req.user.id, req.params.itemId);
+    res.json({ ok: true, cart });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     next(err);

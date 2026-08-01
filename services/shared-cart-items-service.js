@@ -4,11 +4,11 @@
  * @domain        shared-cart
  * @layer         service
  * @criticality   high
- * @inputs        shared_cart_id, cart_items, actor_identity
+ * @inputs        shared_cart_id, cart_items, product_id, item_id, actor_identity
  * @outputs       updated_cart_items
  * @depends       db.js, services/shared-cart-internals.js
  * @used-by       routes/shared-cart.js, public/boutique/js/b-cart.js
- * @db-read       products, shared_cart_items, shared_carts
+ * @db-read       order_items, products, shared_cart_items, shared_carts
  * @db-write      shared_cart_events, shared_cart_items, shared_carts
  * @db-txn        open_cart_only
  * @doctrine      panier_ouvert_modifiable, domaine_minimal_boutique_first
@@ -33,12 +33,16 @@
  * ici contre une modification de liste par le créateur — c'est un choix
  * assumé : DELETE+INSERT recrée les lignes shared_cart_items avec de
  * nouveaux id, ce qui détacherait un item déjà réclamé de sa commande.
- * ASSUMPTION (à confirmer) : à valider côté produit avant d'exposer PUT
- * /:id/items sur un panier ayant déjà des réclamations actives — un
- * guard "aucun item réclamé" est probablement nécessaire avant merge en
- * prod, je ne l'ai pas ajouté sans confirmation explicite du comportement
- * voulu (bloquer entièrement, ou seulement empêcher de retirer les items
- * déjà réclamés).
+ * ASSUMPTION (toujours ouverte pour updateOpenSharedCartItems / PUT
+ * /:id/items) : cet endpoint garde sa sémantique historique inchangée par
+ * décision explicite (Contrat API §5 point 4, option A — un contrat
+ * existant ne se détourne jamais, on crée une nouvelle capacité à côté).
+ * Il reste donc sans garde-fou contre le détachement d'un item déjà
+ * réclamé, exactement comme avant.
+ *
+ * Ce risque est en revanche traité pour le retrait unitaire
+ * (removeSharedCartItem, ci-dessous) : un article déjà réclamé ne peut
+ * pas être retiré — 409 explicite plutôt qu'un détachement silencieux.
  */
 
 const db = require('../db');
@@ -170,6 +174,124 @@ async function updateOpenSharedCartItems(sharedCartId, userId, cartItems = []) {
   });
 }
 
+/**
+ * Ajout unitaire d'un article — Contrat API §2/§5 point 4. Une intention,
+ * un appel, écriture immédiate (Invariant 20). N'existait pas avant :
+ * PUT /:id/items (ci-dessus) reste inchangé, remplace toute la liste, et
+ * sert un autre usage — on ne détourne pas son contrat pour ce besoin.
+ */
+async function addSharedCartItem(sharedCartId, userId, productId, quantity = 1) {
+  if (!productId) throw httpError('product_id requis', 400, 'product_id_required');
+  const qty = r(quantity);
+  if (qty <= 0) throw httpError('Quantité invalide', 400, 'invalid_quantity');
+
+  return withTransaction(async (client) => {
+    const { rows: cartRows } = await client.query(
+      `SELECT * FROM shared_carts
+        WHERE id = $1 AND organizer_user_id = $2
+        FOR UPDATE`,
+      [sharedCartId, userId]
+    );
+    if (!cartRows.length) throw httpError('Panier partagé introuvable ou non autorisé', 404, 'shared_cart_not_found');
+    const cart = cartRows[0];
+
+    if (cart.status !== 'open') {
+      throw httpError(`Ce panier n'est plus modifiable (statut : ${cart.status})`, 409, 'cart_not_editable');
+    }
+
+    const { rows: productRows } = await client.query(
+      `SELECT id, name, image_url, category, price_kmf,
+              promo_pct, is_promo, promo_until, is_active
+         FROM products WHERE id = $1`,
+      [productId]
+    );
+    const p = productRows[0];
+    if (!p || !p.is_active) {
+      throw httpError('Produit introuvable ou inactif', 400, 'product_not_found');
+    }
+
+    const now = new Date();
+    const promoActive = p.is_promo && p.promo_pct > 0 && (!p.promo_until || new Date(p.promo_until) >= now);
+    const unitPrice = promoActive ? r(p.price_kmf * (1 - p.promo_pct / 100)) : r(p.price_kmf || 0);
+    if (unitPrice <= 0) throw httpError('Prix produit invalide', 400, 'invalid_price');
+
+    const lineTotal = unitPrice * qty;
+    const { rows: inserted } = await client.query(
+      `INSERT INTO shared_cart_items (
+         shared_cart_id, product_id,
+         product_name_snapshot, product_image_snapshot, product_category_snapshot,
+         quantity, unit_price_kmf_snapshot, line_total_kmf_snapshot
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [sharedCartId, p.id, p.name, p.image_url, p.category, qty, unitPrice, lineTotal]
+    );
+
+    await client.query(`UPDATE shared_carts SET updated_at = NOW() WHERE id = $1`, [sharedCartId]);
+
+    await addEvent(client, sharedCartId, 'shared_cart_item_added', { type: 'user', id: userId }, {
+      product_id: p.id, quantity: qty,
+    });
+
+    return { cart, item: inserted[0] };
+  });
+}
+
+/**
+ * Retrait unitaire d'un article — Contrat API §2/§5 point 4. Confirmation
+ * exigée côté client (Invariant 21) ; côté serveur, l'action s'exécute dès
+ * réception, sans confirmation supplémentaire.
+ *
+ * Garde-fou ajouté ici, non explicitement couvert par le contrat API mais
+ * nécessaire à la sécurité des données : un article déjà réclamé par une
+ * commande (order_items.shared_cart_item_id) ne peut pas être retiré. Sans
+ * ce garde-fou, la suppression détacherait silencieusement une commande
+ * déjà payée de sa liste (ON DELETE SET NULL) — l'ASSUMPTION documentée
+ * plus haut dans ce fichier pour updateOpenSharedCartItems, ici résolue
+ * dans le sens le plus sûr : on bloque plutôt que de casser une commande
+ * existante. À confirmer si un autre comportement était souhaité.
+ */
+async function removeSharedCartItem(sharedCartId, userId, itemId) {
+  if (!itemId) throw httpError('item_id requis', 400, 'item_id_required');
+
+  return withTransaction(async (client) => {
+    const { rows: cartRows } = await client.query(
+      `SELECT * FROM shared_carts
+        WHERE id = $1 AND organizer_user_id = $2
+        FOR UPDATE`,
+      [sharedCartId, userId]
+    );
+    if (!cartRows.length) throw httpError('Panier partagé introuvable ou non autorisé', 404, 'shared_cart_not_found');
+    const cart = cartRows[0];
+
+    if (cart.status !== 'open') {
+      throw httpError(`Ce panier n'est plus modifiable (statut : ${cart.status})`, 409, 'cart_not_editable');
+    }
+
+    const { rows: itemRows } = await client.query(
+      `SELECT sci.id, (oi.id IS NOT NULL) AS claimed
+         FROM shared_cart_items sci
+         LEFT JOIN order_items oi ON oi.shared_cart_item_id = sci.id
+        WHERE sci.id = $1 AND sci.shared_cart_id = $2`,
+      [itemId, sharedCartId]
+    );
+    if (!itemRows.length) throw httpError('Article introuvable', 404, 'item_not_found');
+    if (itemRows[0].claimed) {
+      throw httpError('Cet article a déjà été acheté, il ne peut plus être retiré', 409, 'item_already_claimed');
+    }
+
+    await client.query(`DELETE FROM shared_cart_items WHERE id = $1`, [itemId]);
+    await client.query(`UPDATE shared_carts SET updated_at = NOW() WHERE id = $1`, [sharedCartId]);
+
+    await addEvent(client, sharedCartId, 'shared_cart_item_removed', { type: 'user', id: userId }, {
+      item_id: itemId,
+    });
+
+    return { cart };
+  });
+}
+
 module.exports = {
   updateOpenSharedCartItems,
+  addSharedCartItem,
+  removeSharedCartItem,
 };

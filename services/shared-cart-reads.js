@@ -41,9 +41,9 @@
 
 const db = require('../db');
 
-async function getSharedCartForPublic(token) {
+async function getSharedCartForPublic(token, viewerUserId) {
   const { rows: cartRows } = await db.query(
-    `SELECT id, token, title, message, status, delivery_relay_id, created_at
+    `SELECT id, token, title, message, status, delivery_relay_id, created_at, organizer_user_id
        FROM shared_carts
       WHERE token = $1`,
     [token]
@@ -55,7 +55,6 @@ async function getSharedCartForPublic(token) {
     `SELECT sci.id,
             sci.product_name_snapshot AS name,
             sci.product_image_snapshot AS image,
-            sci.product_category_snapshot AS category,
             sci.quantity, sci.unit_price_kmf_snapshot AS unit_price_kmf,
             sci.line_total_kmf_snapshot AS line_total_kmf,
             (oi.id IS NOT NULL) AS claimed
@@ -66,8 +65,12 @@ async function getSharedCartForPublic(token) {
     [cart.id]
   );
 
-  const totalKmf = items.reduce((s, it) => s + Number(it.line_total_kmf || 0), 0);
   const claimedCount = items.filter(it => it.claimed).length;
+
+  // Contrat API §5 point 2 : organizer_user_id sert uniquement à la
+  // comparaison ci-dessous, jamais renvoyé tel quel dans la réponse.
+  // Le front ne reçoit que le booléen dérivé is_creator.
+  const isCreator = Boolean(viewerUserId) && viewerUserId === cart.organizer_user_id;
 
   return {
     cart: {
@@ -78,13 +81,13 @@ async function getSharedCartForPublic(token) {
       created_at: cart.created_at,
     },
     items: items.map(it => ({
-      name: it.name, image: it.image, category: it.category,
+      id: it.id, name: it.name, image: it.image,
       quantity: it.quantity, unit_price_kmf: it.unit_price_kmf,
       line_total_kmf: it.line_total_kmf, claimed: it.claimed,
     })),
-    total_kmf: totalKmf,
     items_count: items.length,
     claimed_count: claimedCount,
+    is_creator: isCreator,
   };
 }
 

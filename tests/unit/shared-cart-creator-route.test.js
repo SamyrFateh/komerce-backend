@@ -44,8 +44,18 @@ jest.mock('../../middleware/auth-guest', () => ({
   authenticateOrCreateGuest: (req, _res, next) => { req.user = req.user || { id: 'user-1' }; next(); },
 }));
 
+jest.mock('../../middleware/soft-auth', () => ({
+  softAuthenticate: (req, _res, next) => {
+    const testUserId = req.headers['x-test-user-id'];
+    if (testUserId) req.user = { id: testUserId };
+    next();
+  },
+}));
+
 jest.mock('../../services/shared-cart-items-service', () => ({
   updateOpenSharedCartItems: jest.fn(),
+  addSharedCartItem: jest.fn(),
+  removeSharedCartItem: jest.fn(),
 }));
 
 jest.mock('../../utils/logger', () => ({
@@ -243,6 +253,73 @@ describe('PUT /:id/items', () => {
       .send({ cart_items: [{ product_id: 'p1', quantity: 1 }] });
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('cart_not_editable');
+  });
+});
+
+// ── POST /:id/items (ajout unitaire — Contrat API §2/§5 point 4) ───────
+
+describe('POST /:id/items', () => {
+  it('succès → 200, transmet product_id/quantity du body au service', async () => {
+    itemsService.addSharedCartItem.mockResolvedValue({
+      cart: { id: 'cart-1' }, item: { id: 'sci-new', product_id: 'p1', quantity: 2 },
+    });
+    const res = await request(app).post('/api/shared-carts/cart-1/items')
+      .send({ product_id: 'p1', quantity: 2 });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.item.id).toBe('sci-new');
+    expect(itemsService.addSharedCartItem).toHaveBeenCalledWith('cart-1', 'user-1', 'p1', 2);
+  });
+
+  it('erreur avec status custom (ex : produit inactif) → propagée', async () => {
+    const err = new Error('Produit introuvable ou inactif');
+    err.status = 400; err.code = 'product_not_found';
+    itemsService.addSharedCartItem.mockRejectedValue(err);
+    const res = await request(app).post('/api/shared-carts/cart-1/items')
+      .send({ product_id: 'p-inconnu' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('product_not_found');
+  });
+
+  it('erreur inconnue (pas de .status) → next(err) → 500', async () => {
+    itemsService.addSharedCartItem.mockRejectedValue(new Error('boom'));
+    const res = await request(app).post('/api/shared-carts/cart-1/items').send({ product_id: 'p1' });
+    expect(res.status).toBe(500);
+  });
+});
+
+// ── DELETE /:id/items/:itemId (retrait unitaire — Contrat API §2/§5 point 4) ──
+
+describe('DELETE /:id/items/:itemId', () => {
+  it('succès → 200, transmet itemId au service', async () => {
+    itemsService.removeSharedCartItem.mockResolvedValue({ cart: { id: 'cart-1' } });
+    const res = await request(app).delete('/api/shared-carts/cart-1/items/sci-1');
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(itemsService.removeSharedCartItem).toHaveBeenCalledWith('cart-1', 'user-1', 'sci-1');
+  });
+
+  it('article déjà acheté → 409, code item_already_claimed propagé', async () => {
+    const err = new Error('Cet article a déjà été acheté, il ne peut plus être retiré');
+    err.status = 409; err.code = 'item_already_claimed';
+    itemsService.removeSharedCartItem.mockRejectedValue(err);
+    const res = await request(app).delete('/api/shared-carts/cart-1/items/sci-1');
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('item_already_claimed');
+  });
+
+  it('article introuvable → 404', async () => {
+    const err = new Error('Article introuvable');
+    err.status = 404; err.code = 'item_not_found';
+    itemsService.removeSharedCartItem.mockRejectedValue(err);
+    const res = await request(app).delete('/api/shared-carts/cart-1/items/sci-inconnu');
+    expect(res.status).toBe(404);
+  });
+
+  it('erreur inconnue (pas de .status) → next(err) → 500', async () => {
+    itemsService.removeSharedCartItem.mockRejectedValue(new Error('boom'));
+    const res = await request(app).delete('/api/shared-carts/cart-1/items/sci-1');
+    expect(res.status).toBe(500);
   });
 });
 

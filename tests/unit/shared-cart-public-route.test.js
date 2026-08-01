@@ -23,6 +23,16 @@ jest.mock('../../middleware/auth-guest', () => ({
   authenticateOrCreateGuest: (req, _res, next) => next(),
 }));
 
+jest.mock('../../middleware/soft-auth', () => ({
+  // Neutre par défaut (req.user reste undefined). Un test peut simuler un
+  // visiteur authentifié en envoyant l'en-tête `x-test-user-id`.
+  softAuthenticate: (req, _res, next) => {
+    const testUserId = req.headers['x-test-user-id'];
+    if (testUserId) req.user = { id: testUserId };
+    next();
+  },
+}));
+
 jest.mock('../../services/shared-cart-items-service', () => ({
   updateOpenSharedCartItems: jest.fn(),
 }));
@@ -88,6 +98,19 @@ describe('GET /public/:token', () => {
     engine.getSharedCartForPublic.mockRejectedValue(new Error('db down'));
     const res = await request(app).get('/api/shared-carts/public/tok1');
     expect(res.status).toBe(500);
+  });
+
+  it('Contrat API §5 point 2 : transmet req.user.id au service si le visiteur est authentifié', async () => {
+    engine.getSharedCartForPublic.mockResolvedValue({ cart: { token: 'tok1' }, items: [], is_creator: true });
+    await request(app).get('/api/shared-carts/public/tok1').set('x-test-user-id', 'user-organizer');
+    expect(engine.getSharedCartForPublic).toHaveBeenCalledWith('tok1', 'user-organizer');
+  });
+
+  it('Contrat API §5 point 2 : transmet undefined si le visiteur est anonyme (jamais bloquant)', async () => {
+    engine.getSharedCartForPublic.mockResolvedValue({ cart: { token: 'tok1' }, items: [], is_creator: false });
+    const res = await request(app).get('/api/shared-carts/public/tok1');
+    expect(res.status).toBe(200);
+    expect(engine.getSharedCartForPublic).toHaveBeenCalledWith('tok1', undefined);
   });
 });
 

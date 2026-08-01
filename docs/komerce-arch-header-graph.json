@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 761,
-    "edges": 4103,
+    "edges": 4105,
     "dbTables": 108,
     "doctrines": 157,
     "impactAreas": 133,
@@ -8168,7 +8168,8 @@
       "depends": [
         "services/shared-cart-engine.js",
         "services/shared-cart-items-service.js",
-        "services/shared-cart-queries.js"
+        "services/shared-cart-queries.js",
+        "middleware/soft-auth.js"
       ],
       "usedBy": [
         "server.js",
@@ -14451,6 +14452,8 @@
       "inputs": [
         "shared_cart_id",
         "cart_items",
+        "product_id",
+        "item_id",
         "actor_identity"
       ],
       "outputs": [
@@ -14465,6 +14468,7 @@
         "public/boutique/js/b-cart.js"
       ],
       "dbRead": [
+        "order_items",
         "products",
         "shared_cart_items",
         "shared_carts"
@@ -30309,6 +30313,12 @@
       "label": "services/shared-cart-queries.js"
     },
     {
+      "from": "routes/shared-cart.js",
+      "to": "middleware/soft-auth.js",
+      "type": "depends",
+      "label": "middleware/soft-auth.js"
+    },
+    {
       "from": "server.js",
       "to": "routes/shared-cart.js",
       "type": "uses",
@@ -39827,6 +39837,12 @@
     },
     {
       "from": "services/shared-cart-items-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/shared-cart-items-service.js",
       "to": "db:products",
       "type": "db-read",
       "label": "products"
@@ -44391,6 +44407,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:auth",
         "routes/orders/detail.js",
+        "routes/shared-cart.js",
         "utils/logger.js",
         "utils/user-cache.js"
       ]
@@ -51554,7 +51571,8 @@
       "directDependsOn": [
         "services/shared-cart-engine.js",
         "services/shared-cart-items-service.js",
-        "services/shared-cart-queries.js"
+        "services/shared-cart-queries.js",
+        "middleware/soft-auth.js"
       ],
       "directUsedBy": [
         "server.js",
@@ -51589,6 +51607,7 @@
         "impact:shared-cart",
         "middleware/auth-guest.js",
         "middleware/auth.js",
+        "middleware/soft-auth.js",
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-group-view.js",
         "public/boutique/js/b-share-cart.js",
@@ -57647,6 +57666,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "order_items",
         "products",
         "shared_cart_items",
         "shared_carts"
@@ -57666,6 +57686,7 @@
         "creator-flow"
       ],
       "mustCheck": [
+        "db:order_items",
         "db:products",
         "db:shared_cart_events",
         "db:shared_cart_items",

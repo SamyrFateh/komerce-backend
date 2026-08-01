@@ -37,7 +37,7 @@
 | `reset.css` | 83 | 🔴 **ORPHELIN** |
 | `share-cart.css` | 71 | 🔴 **ORPHELIN** |
 | `shared-followup.css` | 3 | 🔴 **ORPHELIN** |
-| `tokens.css` | 521 | 🔴 **ORPHELIN** |
+| `tokens.css` | 519 | 🔴 **ORPHELIN** |
 | `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -45,8 +45,8 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=156
- 2. /boutique/css/dist/components.css?v=369
+ 1. /boutique/css/dist/base.css?v=157
+ 2. /boutique/css/dist/components.css?v=370
  3. /boutique/css/dist/desktop.css?v=85
 ```
 
