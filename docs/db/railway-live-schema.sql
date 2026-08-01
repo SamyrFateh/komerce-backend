@@ -2,9 +2,10 @@
 -- PostgreSQL database dump
 --
 
+\restrict 4WXC5hcHk0XsdpLFtdzJ29gblS3NFUH4v5L6cgaRQ4LysrR6IX73WM1FFX1YmpL
 
--- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
--- Dumped by pg_dump version 18.4 (Debian 18.4-1.pgdg13+1)
+-- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
+-- Dumped by pg_dump version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -869,7 +870,7 @@ CREATE TABLE public.catalog_enrichment_runs (
     duration_ms integer,
     error text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT catalog_enrichment_runs_status_check CHECK (((status)::text = ANY ((ARRAY['ok'::character varying, 'low_confidence'::character varying, 'invalid_output'::character varying, 'failed'::character varying])::text[])))
+    CONSTRAINT catalog_enrichment_runs_status_check CHECK (((status)::text = ANY (ARRAY[('ok'::character varying)::text, ('low_confidence'::character varying)::text, ('invalid_output'::character varying)::text, ('failed'::character varying)::text])))
 );
 
 
@@ -895,7 +896,7 @@ CREATE TABLE public.catalog_exclusions (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY ((ARRAY['absolute'::character varying, 'restricted'::character varying])::text[])))
+    CONSTRAINT catalog_exclusions_layer_check CHECK (((layer)::text = ANY (ARRAY[('absolute'::character varying)::text, ('restricted'::character varying)::text])))
 );
 
 
@@ -968,7 +969,7 @@ CREATE TABLE public.catalog_media (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT catalog_media_option_values_object CHECK (((option_values IS NULL) OR (jsonb_typeof(option_values) = 'object'::text))),
-    CONSTRAINT catalog_media_role_check CHECK (((role)::text = ANY ((ARRAY['PRODUCT'::character varying, 'SCENE'::character varying, 'DETAIL'::character varying, 'SIZE_GUIDE'::character varying, 'OTHER'::character varying])::text[])))
+    CONSTRAINT catalog_media_role_check CHECK (((role)::text = ANY (ARRAY[('PRODUCT'::character varying)::text, ('SCENE'::character varying)::text, ('DETAIL'::character varying)::text, ('SIZE_GUIDE'::character varying)::text, ('OTHER'::character varying)::text])))
 );
 
 
@@ -2066,7 +2067,7 @@ CREATE TABLE public.order_items (
     module_fabric_id uuid,
     module_fabric_type text,
     module_size character varying(8),
-    module_retouche boolean DEFAULT false CONSTRAINT order_items_ceremony_retouche_not_null NOT NULL,
+    module_retouche boolean DEFAULT false NOT NULL,
     module_qty_meters numeric(6,2),
     module_accessories jsonb,
     availability_status text DEFAULT 'pending'::text,
@@ -2262,7 +2263,7 @@ CREATE TABLE public.orders (
     module_fabric_id uuid,
     module_fabric_type text,
     module_size character varying(8),
-    module_retouche boolean DEFAULT false CONSTRAINT orders_ceremony_retouche_not_null NOT NULL,
+    module_retouche boolean DEFAULT false NOT NULL,
     module_qty_meters numeric(6,2),
     module_accessories jsonb,
     ordered_at timestamp with time zone,
@@ -2735,7 +2736,7 @@ CREATE TABLE public.parcels (
 CREATE TABLE public.partners (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     name text NOT NULL,
-    partner_type text CONSTRAINT partners_type_not_null NOT NULL,
+    partner_type text NOT NULL,
     location text,
     island text DEFAULT 'Anjouan'::text NOT NULL,
     country character(2) DEFAULT 'KM'::bpchar NOT NULL,
@@ -3024,7 +3025,7 @@ CREATE TABLE public.pricing_matrices_audit (
     changed_by uuid,
     change_reason text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT pricing_matrices_audit_matrix_type_check CHECK (((matrix_type)::text = ANY ((ARRAY['taxes'::character varying, 'dims'::character varying])::text[])))
+    CONSTRAINT pricing_matrices_audit_matrix_type_check CHECK (((matrix_type)::text = ANY (ARRAY[('taxes'::character varying)::text, ('dims'::character varying)::text])))
 );
 
 
@@ -3135,7 +3136,7 @@ CREATE TABLE public.product_skus (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     supplier_sku text,
     source character varying(20) DEFAULT 'MANUAL'::character varying NOT NULL,
-    CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY ((ARRAY['MANUAL'::character varying, 'SUPPLIER'::character varying])::text[]))),
+    CONSTRAINT chk_product_skus_source CHECK (((source)::text = ANY (ARRAY[('MANUAL'::character varying)::text, ('SUPPLIER'::character varying)::text]))),
     CONSTRAINT product_skus_prix_non_negatif CHECK (((price_kmf IS NULL) OR (price_kmf >= 0))),
     CONSTRAINT product_skus_stock_non_negatif CHECK ((stock >= 0))
 );
@@ -3989,6 +3990,32 @@ CREATE TABLE public.sourcing_candidate_events (
 
 
 --
+-- Name: sourcing_candidate_observations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sourcing_candidate_observations (
+    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
+    candidate_id uuid,
+    import_id uuid NOT NULL,
+    supplier_name text NOT NULL,
+    supplier_product_id text NOT NULL,
+    source_index integer NOT NULL,
+    profile_id text NOT NULL,
+    profile_version integer NOT NULL,
+    profile_hash text NOT NULL,
+    connector_version text NOT NULL,
+    source_sha256 text NOT NULL,
+    source_row_sha256 text NOT NULL,
+    promotion_status text NOT NULL,
+    schema_version_used text,
+    contract jsonb,
+    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
+    raw_payload jsonb NOT NULL,
+    observed_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: sourcing_candidates; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4074,6 +4101,27 @@ CREATE TABLE public.stripe_events_processed (
     event_type text NOT NULL,
     processed_at timestamp with time zone DEFAULT now() NOT NULL,
     payload_summary jsonb DEFAULT '{}'::jsonb
+);
+
+
+--
+-- Name: supplier_catalog_import_rejections; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.supplier_catalog_import_rejections (
+    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
+    import_id uuid NOT NULL,
+    supplier_name text NOT NULL,
+    supplier_product_id text,
+    source_index integer NOT NULL,
+    promotion_status text NOT NULL,
+    reason_code text NOT NULL,
+    reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
+    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
+    raw_payload jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT scir_promotion_status_check CHECK ((promotion_status = ANY (ARRAY['REJECTED_SOURCE_DATA_INVALID'::text, 'REJECTED_CONTRACT_INVALID'::text]))),
+    CONSTRAINT scir_reason_code_check CHECK ((reason_code = ANY (ARRAY['SOURCE_ROW_NOT_OBJECT'::text, 'MISSING_SUPPLIER_PRODUCT_ID'::text, 'DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH'::text, 'SOURCE_FIELD_TOO_LARGE'::text, 'SOURCE_PRODUCT_TOO_DEEP'::text, 'SOURCE_VALUE_UNPARSABLE'::text, 'CONTRACT_SCHEMA_INVALID'::text, 'SOURCE_WEIGHT_UNIT_UNKNOWN'::text, 'UNSUPPORTED_VIDEO_REJECTED_BY_POLICY'::text, 'LOSSY_MAPPING_REJECTED_BY_POLICY'::text])))
 );
 
 
@@ -4770,7 +4818,7 @@ CREATE TABLE public.wallet_credit_lots (
     status character varying(20) DEFAULT 'active'::character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT wallet_credit_lots_remaining_kmf_check CHECK ((remaining_kmf >= 0)),
-    CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'used'::character varying, 'expired'::character varying, 'reversed'::character varying])::text[])))
+    CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('used'::character varying)::text, ('expired'::character varying)::text, ('reversed'::character varying)::text])))
 );
 
 
@@ -4804,7 +4852,7 @@ CREATE TABLE public.wallet_transactions (
     created_by uuid,
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT wallet_transactions_amount_kmf_check CHECK ((amount_kmf > 0)),
-    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY ((ARRAY['credit'::character varying, 'debit'::character varying, 'reversal'::character varying, 'expiration'::character varying])::text[])))
+    CONSTRAINT wallet_transactions_type_check CHECK (((type)::text = ANY (ARRAY[('credit'::character varying)::text, ('debit'::character varying)::text, ('reversal'::character varying)::text, ('expiration'::character varying)::text])))
 );
 
 
@@ -5793,6 +5841,22 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: supplier_catalog_import_rejections scir_import_source_index_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_catalog_import_rejections
+    ADD CONSTRAINT scir_import_source_index_unique UNIQUE (import_id, source_index);
+
+
+--
+-- Name: sourcing_candidate_observations sco_import_source_index_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_candidate_observations
+    ADD CONSTRAINT sco_import_source_index_unique UNIQUE (import_id, source_index);
+
+
+--
 -- Name: shared_cart_contributions shared_cart_contributions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5897,6 +5961,14 @@ ALTER TABLE ONLY public.sourcing_candidate_events
 
 
 --
+-- Name: sourcing_candidate_observations sourcing_candidate_observations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_candidate_observations
+    ADD CONSTRAINT sourcing_candidate_observations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: sourcing_candidates sourcing_candidates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5918,6 +5990,14 @@ ALTER TABLE ONLY public.store_credits
 
 ALTER TABLE ONLY public.stripe_events_processed
     ADD CONSTRAINT stripe_events_processed_pkey PRIMARY KEY (stripe_event_id);
+
+
+--
+-- Name: supplier_catalog_import_rejections supplier_catalog_import_rejections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_catalog_import_rejections
+    ADD CONSTRAINT supplier_catalog_import_rejections_pkey PRIMARY KEY (id);
 
 
 --
@@ -7820,6 +7900,48 @@ CREATE INDEX idx_sci_supplier ON public.supplier_catalog_imports USING btree (su
 
 
 --
+-- Name: idx_scir_import; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scir_import ON public.supplier_catalog_import_rejections USING btree (import_id);
+
+
+--
+-- Name: idx_scir_reason_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scir_reason_code ON public.supplier_catalog_import_rejections USING btree (reason_code);
+
+
+--
+-- Name: idx_scir_supplier; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scir_supplier ON public.supplier_catalog_import_rejections USING btree (supplier_name, supplier_product_id);
+
+
+--
+-- Name: idx_sco_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sco_identity ON public.sourcing_candidate_observations USING btree (supplier_name, supplier_product_id, observed_at DESC);
+
+
+--
+-- Name: idx_sco_import; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sco_import ON public.sourcing_candidate_observations USING btree (import_id);
+
+
+--
+-- Name: idx_sco_row_hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sco_row_hash ON public.sourcing_candidate_observations USING btree (source_row_sha256);
+
+
+--
 -- Name: idx_sep_processed_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9629,6 +9751,22 @@ ALTER TABLE ONLY public.sourcing_candidate_events
 
 
 --
+-- Name: sourcing_candidate_observations sourcing_candidate_observations_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_candidate_observations
+    ADD CONSTRAINT sourcing_candidate_observations_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.sourcing_candidates(id) ON DELETE SET NULL;
+
+
+--
+-- Name: sourcing_candidate_observations sourcing_candidate_observations_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sourcing_candidate_observations
+    ADD CONSTRAINT sourcing_candidate_observations_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE;
+
+
+--
 -- Name: sourcing_candidates sourcing_candidates_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9666,6 +9804,14 @@ ALTER TABLE ONLY public.store_credits
 
 ALTER TABLE ONLY public.store_credits
     ADD CONSTRAINT store_credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: supplier_catalog_import_rejections supplier_catalog_import_rejections_import_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.supplier_catalog_import_rejections
+    ADD CONSTRAINT supplier_catalog_import_rejections_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE;
 
 
 --
@@ -9792,56 +9938,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
--- Migration 110 — ING-6 audit des rejets (appliquée au pilote production le 2026-07-16)
-CREATE TABLE public.supplier_catalog_import_rejections (
-    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
-    import_id uuid NOT NULL,
-    supplier_name text NOT NULL,
-    supplier_product_id text,
-    source_index integer NOT NULL,
-    promotion_status text NOT NULL,
-    reason_code text NOT NULL,
-    reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
-    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
-    raw_payload jsonb NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT scir_promotion_status_check CHECK ((promotion_status = ANY (ARRAY['REJECTED_SOURCE_DATA_INVALID'::text, 'REJECTED_CONTRACT_INVALID'::text]))),
-    CONSTRAINT scir_reason_code_check CHECK ((reason_code = ANY (ARRAY['SOURCE_ROW_NOT_OBJECT'::text, 'MISSING_SUPPLIER_PRODUCT_ID'::text, 'DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH'::text, 'SOURCE_FIELD_TOO_LARGE'::text, 'SOURCE_PRODUCT_TOO_DEEP'::text, 'SOURCE_VALUE_UNPARSABLE'::text, 'CONTRACT_SCHEMA_INVALID'::text, 'SOURCE_WEIGHT_UNIT_UNKNOWN'::text, 'UNSUPPORTED_VIDEO_REJECTED_BY_POLICY'::text, 'LOSSY_MAPPING_REJECTED_BY_POLICY'::text]))),
-    CONSTRAINT scir_import_source_index_unique UNIQUE (import_id, source_index),
-    CONSTRAINT supplier_catalog_import_rejections_pkey PRIMARY KEY (id),
-    CONSTRAINT supplier_catalog_import_rejections_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_scir_import ON public.supplier_catalog_import_rejections USING btree (import_id);
-CREATE INDEX idx_scir_supplier ON public.supplier_catalog_import_rejections USING btree (supplier_name, supplier_product_id);
-CREATE INDEX idx_scir_reason_code ON public.supplier_catalog_import_rejections USING btree (reason_code);
-
-
--- Migration 110 — ING-6 historique des observations (appliquée au pilote production le 2026-07-16)
-CREATE TABLE public.sourcing_candidate_observations (
-    id uuid DEFAULT public.gen_random_uuid() NOT NULL,
-    candidate_id uuid,
-    import_id uuid NOT NULL,
-    supplier_name text NOT NULL,
-    supplier_product_id text NOT NULL,
-    source_index integer NOT NULL,
-    profile_id text NOT NULL,
-    profile_version integer NOT NULL,
-    profile_hash text NOT NULL,
-    connector_version text NOT NULL,
-    source_sha256 text NOT NULL,
-    source_row_sha256 text NOT NULL,
-    promotion_status text NOT NULL,
-    schema_version_used text,
-    contract jsonb,
-    findings jsonb DEFAULT '[]'::jsonb NOT NULL,
-    raw_payload jsonb NOT NULL,
-    observed_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT sco_import_source_index_unique UNIQUE (import_id, source_index),
-    CONSTRAINT sourcing_candidate_observations_pkey PRIMARY KEY (id),
-    CONSTRAINT sourcing_candidate_observations_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.sourcing_candidates(id) ON DELETE SET NULL,
-    CONSTRAINT sourcing_candidate_observations_import_id_fkey FOREIGN KEY (import_id) REFERENCES public.supplier_catalog_imports(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_sco_identity ON public.sourcing_candidate_observations USING btree (supplier_name, supplier_product_id, observed_at DESC);
-CREATE INDEX idx_sco_import ON public.sourcing_candidate_observations USING btree (import_id);
-CREATE INDEX idx_sco_row_hash ON public.sourcing_candidate_observations USING btree (source_row_sha256);
+\unrestrict 4WXC5hcHk0XsdpLFtdzJ29gblS3NFUH4v5L6cgaRQ4LysrR6IX73WM1FFX1YmpL
 
