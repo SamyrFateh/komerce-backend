@@ -72,7 +72,7 @@ jobs:
           pg_dump "$DATABASE_URL" --schema-only --no-owner --no-privileges > docs/db/railway-live-schema.sql
           node scripts/check-schema-resurrection.js
 
-      - name: Align SCHEMA.md with the post-migration target
+      - name: Align SCHEMA.md and remove the one-shot before governance generation
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -89,6 +89,7 @@ jobs:
           s = s.replace('### 4.8 Pricing et économie (18 tables)', '### 4.8 Pricing et économie (17 tables)')
           p.write_text(s, encoding='utf-8')
           PY
+          rm -f .github/workflows/lot6-final-schema-target-once.yml
 
       - name: Rebuild and prove all governed artifacts
         run: |
@@ -99,9 +100,8 @@ jobs:
           npm run feature:360:gen
           npm run map:check
 
-      - name: Remove one-shot workflow and persist the qualified target
+      - name: Persist the qualified target
         run: |
-          rm -f .github/workflows/lot6-final-schema-target-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
