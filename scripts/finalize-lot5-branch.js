@@ -41,8 +41,7 @@ function replaceOnce(source, before, after, label) {
   );
 
   // PostgreSQL refuse un FOR UPDATE non qualifié lorsqu'une requête contient
-  // un LEFT JOIN : il tenterait aussi de verrouiller le côté nullable. Seule
-  // la commande porte l'invariant de concurrence, donc on verrouille orders.
+  // un LEFT JOIN : seule la ligne orders porte l'invariant de concurrence.
   source = replaceOnce(
     source,
     "        AND o.status = 'available'\n      FOR UPDATE",
@@ -103,22 +102,4 @@ function replaceOnce(source, before, after, label) {
   fs.writeFileSync(path, source, 'utf8');
 }
 
-// 3) La migration 121 n'est pas encore dans le dump live Railway. Le mécanisme
-// canonique du dépôt est une allowlist nominative temporaire, auto-élaguée dès
-// que le dump post-déploiement contient la table.
-{
-  const path = 'scripts/arch-debt-budget.json';
-  const budget = JSON.parse(fs.readFileSync(path, 'utf8'));
-  const allowlist = budget.knownDriftAllowlist;
-
-  if (!allowlist || typeof allowlist !== 'object') {
-    throw new Error('knownDriftAllowlist absente du budget architecture');
-  }
-
-  allowlist.user_pickup_authorizations =
-    'Lot 5 — table définie par migrations/121_exceptional_pickup_authorization.sql et utilisée par auth-identity avant rafraîchissement du dump live Railway. Entrée nominative temporaire, auto-élaguée par arch-reconcile dès que la migration 121 est déployée et le dump live actualisé.';
-
-  fs.writeFileSync(path, JSON.stringify(budget, null, 2) + '\n', 'utf8');
-}
-
-console.log('Lot 5 finalisé : identité acheteur, verrous orders, contraintes bornées et drift pending documenté.');
+console.log('Lot 5 corrigé : identité acheteur, verrous orders, audit et contraintes bornées.');
