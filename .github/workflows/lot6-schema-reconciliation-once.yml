@@ -1,19 +1,45 @@
 name: Lot 6 schema reconciliation once
 
 on:
+  push:
+    branches:
+      - fix/lot6-schema-reconciliation
   pull_request:
     branches:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: lot6-schema-reconciliation-once-${{ github.event.pull_request.number }}
+  group: lot6-schema-reconciliation-once-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  apply-docs:
+    if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/lot6-schema-reconciliation
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reconcile SCHEMA.md with the verified live dump
+        run: node scripts/lot6-reconcile-live-schema.js
+      - name: Commit generated documentation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/SCHEMA.md
+          git diff --cached --check
+          git commit --no-verify -m "docs(db): reconcile verified live schema"
+          git push origin HEAD:fix/lot6-schema-reconciliation
+
   audit:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
     services:
