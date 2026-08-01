@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: 'URL cible (défaut: prod Railway)'
+        description: 'URL cible distante'
         required: false
         default: 'https://komerce-backend-production.up.railway.app'
 
@@ -42,9 +42,19 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E (feature-first)
+      - name: Prove the checked-out PR tree locally
+        if: github.event_name == 'pull_request'
+        run: |
+          npx playwright test \
+            tests/e2e/modal-geometry.spec.js \
+            tests/e2e/hero-geometry.spec.js \
+            tests/e2e/modal-backtop-zindex.spec.js \
+            --project='Chromium Local-Only'
+
+      - name: Run the explicit remote campaign
+        if: github.event_name == 'workflow_dispatch'
         env:
-          BASE_URL: ${{ github.event.inputs.base_url || 'https://komerce-backend-production.up.railway.app' }}
+          BASE_URL: ${{ github.event.inputs.base_url }}
         run: npx playwright test
 
       - name: Upload report

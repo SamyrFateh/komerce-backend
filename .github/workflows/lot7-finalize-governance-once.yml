@@ -1,0 +1,121 @@
+name: Lot 7 governance finalization once
+
+on:
+  push:
+    branches:
+      - test/lot7-staging-business-qualification
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lot7-governance-finalization
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: lot7-ci-secret-not-for-prod
+      ADMIN_PASSWORD: lot7-ci-admin
+      QR_SECRET: lot7-ci-qr-secret
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+      KOMERCE_DISABLE_CRONS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/lot7-staging-business-qualification
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            public/boutique/package-lock.json
+            public/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix public/boutique ci
+          npm --prefix public/dashboards ci
+
+      - name: Reconcile feature ownership and remove one-shot tools
+        run: |
+          node scripts/lot7-finalize-governance.js
+          rm -f scripts/lot7-finalize-governance.js
+          rm -f .github/workflows/lot7-finalize-governance-once.yml
+
+      - name: Load canonical schema and pending migrations
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+
+      - name: Prove the Lot 7 backend business flow
+        run: |
+          npx jest \
+            tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js \
+            tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js \
+            tests/unit/auth-route.test.js \
+            tests/unit/name-normalize.test.js \
+            tests/unit/pickup-authorization-service.test.js \
+            tests/unit/pickup-secret-service.test.js \
+            tests/unit/pickup-secret.test.js \
+            --runInBand --forceExit --detectOpenHandles
+
+      - name: Prove Mon Komerce
+        working-directory: public/boutique
+        run: |
+          npx jest \
+            tests/unit/b-komerce.test.js \
+            tests/unit/komerce-css-tokens.test.js \
+            --runInBand --forceExit
+
+      - name: Prove the relay operator flow
+        working-directory: public/dashboards
+        run: npx jest tests/unit/pickup-exceptional-flow.test.js --runInBand --forceExit
+
+      - name: Rebuild governed artifacts
+        run: |
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+          npm run map:check
+
+      - name: Persist the qualified Lot 7 tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit --no-verify -m "test(lot7): finalize staging business qualification"
+          git push origin HEAD:test/lot7-staging-business-qualification

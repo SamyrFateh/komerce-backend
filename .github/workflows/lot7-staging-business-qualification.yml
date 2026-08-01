@@ -1,0 +1,150 @@
+name: Lot 7 staging business qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'features/auth-identity.feature.js'
+      - 'features/logistics.feature.js'
+      - 'features/dashboard.feature.js'
+      - 'routes/auth.js'
+      - 'routes/pickup-secret.js'
+      - 'services/pickup-authorization-service.js'
+      - 'services/pickup-secret-service.js'
+      - 'utils/name-normalize.js'
+      - 'validators/index.js'
+      - 'tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js'
+      - 'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js'
+      - 'tests/unit/auth-route.test.js'
+      - 'tests/unit/name-normalize.test.js'
+      - 'tests/unit/pickup-authorization-service.test.js'
+      - 'tests/unit/pickup-secret-service.test.js'
+      - 'tests/unit/pickup-secret.test.js'
+      - 'public/boutique/js/b-komerce.js'
+      - 'public/boutique/css/komerce.css'
+      - 'public/boutique/tests/unit/b-komerce.test.js'
+      - 'public/boutique/tests/unit/komerce-css-tokens.test.js'
+      - 'public/dashboards/admin-legacy/js/ct-views-pickup-secret.js'
+      - 'public/dashboards/tests/unit/pickup-exceptional-flow.test.js'
+      - '.github/workflows/lot7-staging-business-qualification.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: lot7-staging-business-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-staging:
+    name: PostgreSQL business flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: lot7-ci-secret-not-for-prod
+      ADMIN_PASSWORD: lot7-ci-admin
+      QR_SECRET: lot7-ci-qr-secret
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+      KOMERCE_DISABLE_CRONS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Load the canonical schema and pending migrations
+        run: |
+          node scripts/check-schema-freshness.js
+          node scripts/check-schema-resurrection.js
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+
+      - name: Run the business qualification
+        run: |
+          npx jest \
+            tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js \
+            tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js \
+            tests/unit/auth-route.test.js \
+            tests/unit/name-normalize.test.js \
+            tests/unit/pickup-authorization-service.test.js \
+            tests/unit/pickup-secret-service.test.js \
+            tests/unit/pickup-secret.test.js \
+            --runInBand --forceExit --detectOpenHandles
+
+      - name: Prove the governed feature graph
+        run: npm run map:check
+
+  boutique-account:
+    name: Mon Komerce account flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: public/boutique
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - run: npm ci
+      - run: |
+          npx jest \
+            tests/unit/b-komerce.test.js \
+            tests/unit/komerce-css-tokens.test.js \
+            --runInBand --forceExit
+
+  relay-dashboard:
+    name: Relay operator flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: public/dashboards
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/dashboards/package-lock.json
+
+      - run: npm ci
+      - run: npx jest tests/unit/pickup-exceptional-flow.test.js --runInBand --forceExit
