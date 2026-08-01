@@ -29,12 +29,16 @@ jobs:
           node-version: '20'
       - name: Reconcile verified schema and feature ownership
         run: node scripts/lot6-reconcile-live-schema.js
-      - name: Commit generated reconciliation
+      - name: Commit generated reconciliation when needed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/SCHEMA.md features/platform-ops.feature.js features/economic-engine.feature.js
           git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "Generated reconciliation already current."
+            exit 0
+          fi
           git commit --no-verify -m "docs(db): reconcile verified live schema and ownership"
           git push origin HEAD:fix/lot6-schema-reconciliation
 
