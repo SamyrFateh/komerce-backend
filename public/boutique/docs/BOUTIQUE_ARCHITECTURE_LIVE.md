@@ -22,7 +22,7 @@
 | `hero.css` | 1022 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
 | `interactions.css` | 437 | 🔴 **ORPHELIN** |
-| `komerce.css` | 221 | 🔴 **ORPHELIN** |
+| `komerce.css` | 252 | 🔴 **ORPHELIN** |
 | `layout.css` | 1173 | 🔴 **ORPHELIN** |
 | `modal-cart-sku-guard.css` | 18 | 🔴 **ORPHELIN** |
 | `modal-enriched-content.css` | 223 | 🔴 **ORPHELIN** |
@@ -46,7 +46,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=156
- 2. /boutique/css/dist/components.css?v=368
+ 2. /boutique/css/dist/components.css?v=370
  3. /boutique/css/dist/desktop.css?v=85
 ```
 
@@ -101,11 +101,11 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×2) ⚠️ multi-owner |
-| `--pager-w` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--bnav-h` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
-| `--modal-scroll-y` | `js\b-modal-core.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--pager-top` | `js/b-pager.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×2) ⚠️ multi-owner |
+| `--pager-w` | `js/b-pager.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--bnav-h` | `js/b-pager.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--modal-scroll-y` | `js/b-modal-core.js` (×1)<br>`js/dist/chunks/chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 
