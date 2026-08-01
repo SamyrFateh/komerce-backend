@@ -24,16 +24,29 @@ jobs:
         with:
           ref: fix/lot6-schema-reconciliation
           fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Reconcile verified schema and feature ownership
         run: node scripts/lot6-reconcile-live-schema.js
+
+      - name: Rebuild governed artifacts
+        run: |
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+
       - name: Commit generated reconciliation when needed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/SCHEMA.md features/platform-ops.feature.js features/economic-engine.feature.js
+          git add -u
           git diff --cached --check
           if git diff --cached --quiet; then
             echo "Generated reconciliation already current."
@@ -219,8 +232,22 @@ jobs:
           tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js
           --runInBand --forceExit --detectOpenHandles
 
-      - name: Schema drift gate
+      - name: Current live schema drift gate
         run: node scripts/arch-schema-drift-check.js --report
 
-      - name: Map and governance gates
+      - name: Build the post-migration Railway target state
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/122_cleanup_realdb_test_schema_residue.sql
+          pg_dump "$DATABASE_URL" --schema-only --no-owner --no-privileges > docs/db/railway-live-schema.sql
+          LOT6_POST_CLEANUP=1 node scripts/lot6-reconcile-live-schema.js
+
+      - name: Rebuild governed artifacts for the target state
+        run: |
+          npm run arch:gen
+          npm run business-graph:gen
+          npm run feature:360:gen
+
+      - name: Post-migration map and governance gates
         run: npm run map:check
