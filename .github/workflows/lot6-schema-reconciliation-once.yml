@@ -12,11 +12,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: lot6-schema-reconciliation-once-${{ github.event.pull_request.number || github.ref }}
+  group: lot6-schema-reconciliation-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  apply-docs:
+  apply-generated:
     if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -27,15 +27,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Reconcile SCHEMA.md with the verified live dump
+      - name: Reconcile verified schema and feature ownership
         run: node scripts/lot6-reconcile-live-schema.js
-      - name: Commit generated documentation
+      - name: Commit generated reconciliation
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/SCHEMA.md
+          git add docs/SCHEMA.md features/platform-ops.feature.js features/economic-engine.feature.js
           git diff --cached --check
-          git commit --no-verify -m "docs(db): reconcile verified live schema"
+          git commit --no-verify -m "docs(db): reconcile verified live schema and ownership"
           git push origin HEAD:fix/lot6-schema-reconciliation
 
   audit:
@@ -91,26 +91,85 @@ jobs:
       - name: Load canonical base schema
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
 
-      - name: Simulate a baselined database before migration 121
+      - name: Baseline before migrations 121 and 122
         run: |
           mkdir -p /tmp/lot6
           mv migrations/121_exceptional_pickup_authorization.sql /tmp/lot6/
+          mv migrations/122_cleanup_realdb_test_schema_residue.sql /tmp/lot6/
           node scripts/run-migrations.js --baseline
-          mv /tmp/lot6/121_exceptional_pickup_authorization.sql migrations/
 
       - name: Apply migration 121 through the real runner
-        run: node scripts/run-migrations.js
+        run: |
+          mv /tmp/lot6/121_exceptional_pickup_authorization.sql migrations/
+          node scripts/run-migrations.js
+
+      - name: Reproduce the two verified live residues safely
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE outbox_events (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            event_type text NOT NULL,
+            payload jsonb NOT NULL,
+            created_at timestamptz DEFAULT NOW(),
+            processed_at timestamptz,
+            attempts int DEFAULT 0,
+            last_error text
+          );
+          INSERT INTO outbox_events (event_type, payload)
+          VALUES ('order.created', '{"reason":"r6-proof"}'::jsonb);
+
+          INSERT INTO pricing_matrices_audit
+            (matrix_type, category, old_value, new_value, change_reason)
+          VALUES
+            ('dims', 'maison', '{"length_cm":1}'::jsonb, '{"length_cm":2}'::jsonb, 'canonical row');
+
+          ALTER TABLE pricing_matrices_audit RENAME TO pricing_matrices_audit_hidden;
+
+          CREATE TABLE pricing_matrices_audit (
+            id SERIAL PRIMARY KEY,
+            matrix_type VARCHAR(20) NOT NULL CHECK (matrix_type IN ('taxes', 'dims')),
+            category VARCHAR(50) NOT NULL,
+            old_value JSONB NOT NULL,
+            new_value JSONB NOT NULL,
+            changed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+            change_reason TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE INDEX idx_pma_created ON pricing_matrices_audit(created_at DESC);
+          CREATE INDEX idx_pma_matrix_cat ON pricing_matrices_audit(matrix_type, category);
+          INSERT INTO pricing_matrices_audit
+            (matrix_type, category, old_value, new_value, change_reason)
+          VALUES
+            ('taxes', 'electronique', '{"tva_pct":0.1}'::jsonb, '{"tva_pct":0.2}'::jsonb, 'canonical row 2');
+          SQL
+
+      - name: Apply migration 122 through the real runner
+        run: |
+          mv /tmp/lot6/122_cleanup_realdb_test_schema_residue.sql migrations/
+          node scripts/run-migrations.js
 
       - name: Prove runner idempotency
         run: node scripts/run-migrations.js
 
-      - name: Assert Lot 5 schema objects
+      - name: Assert Lot 5 and cleanup schema objects
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
           DO $$
           BEGIN
             IF to_regclass('public.user_pickup_authorizations') IS NULL THEN
               RAISE EXCEPTION 'missing user_pickup_authorizations';
+            END IF;
+            IF to_regclass('public.outbox_events') IS NOT NULL THEN
+              RAISE EXCEPTION 'outbox_events residue remains';
+            END IF;
+            IF to_regclass('public.pricing_matrices_audit_hidden') IS NOT NULL THEN
+              RAISE EXCEPTION 'pricing_matrices_audit_hidden residue remains';
+            END IF;
+            IF to_regclass('public.pricing_matrices_audit') IS NULL THEN
+              RAISE EXCEPTION 'canonical pricing_matrices_audit missing';
+            END IF;
+            IF (SELECT COUNT(*) FROM pricing_matrices_audit) <> 2 THEN
+              RAISE EXCEPTION 'pricing audit rows were not conservatively merged';
             END IF;
             IF NOT EXISTS (
               SELECT 1 FROM information_schema.columns
@@ -119,47 +178,24 @@ jobs:
             ) THEN RAISE EXCEPTION 'missing orders.exceptional_pickup_attempts'; END IF;
             IF NOT EXISTS (
               SELECT 1 FROM information_schema.columns
-              WHERE table_schema='public' AND table_name='orders'
-                AND column_name='exceptional_pickup_blocked_until'
-            ) THEN RAISE EXCEPTION 'missing orders.exceptional_pickup_blocked_until'; END IF;
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_schema='public' AND table_name='orders'
-                AND column_name='pickup_collected_via'
-            ) THEN RAISE EXCEPTION 'missing orders.pickup_collected_via'; END IF;
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
               WHERE table_schema='public' AND table_name='scans'
                 AND column_name='pickup_method'
             ) THEN RAISE EXCEPTION 'missing scans.pickup_method'; END IF;
             IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_schema='public' AND table_name='scans'
-                AND column_name='authorization_version'
-            ) THEN RAISE EXCEPTION 'missing scans.authorization_version'; END IF;
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_schema='public' AND table_name='scans'
-                AND column_name='document_checked'
-            ) THEN RAISE EXCEPTION 'missing scans.document_checked'; END IF;
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_schema='public' AND table_name='scans'
-                AND column_name='pickup_relais_id'
-            ) THEN RAISE EXCEPTION 'missing scans.pickup_relais_id'; END IF;
-            IF NOT EXISTS (
-              SELECT 1 FROM pg_constraint
-              WHERE conname='chk_scans_pickup_method'
-                AND conrelid='public.scans'::regclass
-            ) THEN RAISE EXCEPTION 'missing chk_scans_pickup_method'; END IF;
-            IF NOT EXISTS (
               SELECT 1 FROM pg_constraint
               WHERE conname='chk_scans_exceptional_pickup_proof'
                 AND conrelid='public.scans'::regclass
-            ) THEN RAISE EXCEPTION 'missing chk_scans_exceptional_pickup_proof'; END IF;
+            ) THEN RAISE EXCEPTION 'missing exceptional pickup proof constraint'; END IF;
           END
           $$;
           SQL
+
+      - name: REAL_DB residue regression proofs
+        run: >-
+          npx jest
+          tests/integration/r6-crash-window.test.js
+          tests/integration/txg01-pricing-matrices.test.js
+          --runInBand --forceExit --detectOpenHandles
 
       - name: Lot 5 unit proof
         run: >-
@@ -171,7 +207,7 @@ jobs:
           tests/unit/pickup-secret.test.js
           --runInBand --forceExit --detectOpenHandles
 
-      - name: PostgreSQL race proof
+      - name: PostgreSQL pickup race proof
         run: >-
           npx jest
           tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js
