@@ -6,14 +6,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 389
-- Files with full headers: 361
+- Scanned code files: 390
+- Files with full headers: 362
 - Files with lite headers: 28
-- Files with any headers: 389
+- Files with any headers: 390
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 807
+- Graph nodes: 808
 - Edges: 4460
 - DB tables: 117
 - Doctrines: 165
@@ -54,6 +54,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared-cart-modal: 7
 - sourcing: 1
 - tracking: 1
+- unknown: 1
 - unsold-resolution: 1
 - wallet: 4
 
@@ -87,6 +88,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-renderer: 9
 - ui-service: 1
 - ui-state: 1
+- unknown: 1
 - util: 25
 - util-ui: 2
 - validators: 1

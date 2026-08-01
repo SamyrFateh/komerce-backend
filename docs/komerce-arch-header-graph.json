@@ -13,14 +13,14 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 389,
-    "filesWithFullHeaders": 361,
+    "scannedCodeFiles": 390,
+    "filesWithFullHeaders": 362,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 389,
+    "filesWithAnyHeaders": 390,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 807,
+    "graphNodes": 808,
     "edges": 4460,
     "dbTables": 117,
     "doctrines": 165,
@@ -61,6 +61,7 @@
     "unsold-resolution": 1,
     "incident-management": 1,
     "refunds": 2,
+    "unknown": 1,
     "shared": 1
   },
   "byLayer": {
@@ -94,6 +95,7 @@
     "external-adapter": 2,
     "machine": 2,
     "policy": 1,
+    "unknown": 1,
     "data-service": 1,
     "validators": 1
   },
@@ -101,7 +103,8 @@
     "critical": 78,
     "medium": 106,
     "high": 169,
-    "low": 36
+    "low": 36,
+    "unknown": 1
   },
   "nodes": [
     {
@@ -15774,6 +15777,29 @@
         "economic-engine"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/shared-cart-order-context.js",
+      "file": "services/shared-cart-order-context.js",
+      "type": "file",
+      "headerType": "full",
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "purpose": null,
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [],
+      "version": null
     },
     {
       "id": "services/shared-cart-queries.js",
@@ -62524,6 +62550,23 @@
         "utils/logger.js",
         "utils/rates.js"
       ]
+    },
+    "services/shared-cart-order-context.js": {
+      "role": null,
+      "domain": null,
+      "criticality": null,
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [],
+      "mustCheck": []
     },
     "services/shared-cart-queries.js": {
       "role": "shared-cart-db-query-service",
