@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict XHTYlKPJZrEsokVgSRkN1SWBFZVtDZewWa035F7UG4gpaQhc9iE589VslAArFOI
 
 -- Dumped from database version 16.14 (Debian 16.14-1.pgdg13+1)
 -- Dumped by pg_dump version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
@@ -10324,6 +10323,3 @@ ALTER TABLE ONLY public.wallets
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict XHTYlKPJZrEsokVgSRkN1SWBFZVtDZewWa035F7UG4gpaQhc9iE589VslAArFOI
-
