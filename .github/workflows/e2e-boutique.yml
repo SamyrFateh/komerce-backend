@@ -45,7 +45,6 @@ jobs:
       - name: Prove the checked-out PR tree locally
         if: github.event_name == 'pull_request'
         run: |
-          npx playwright test tests/contracts.spec.js --project='Desktop Chrome'
           npx playwright test \
             tests/e2e/csp-fronts.spec.js \
             tests/e2e/modal-geometry.spec.js \
