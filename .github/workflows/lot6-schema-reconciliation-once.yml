@@ -1,9 +1,6 @@
 name: Lot 6 schema reconciliation once
 
 on:
-  push:
-    branches:
-      - fix/lot6-schema-reconciliation
   pull_request:
     branches:
       - main
@@ -12,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: lot6-schema-reconciliation-once-${{ github.event.pull_request.number || github.ref }}
+  group: lot6-schema-reconciliation-once-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -51,6 +48,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch comparison base
+        run: git fetch origin main:refs/remotes/origin/main
 
       - uses: actions/setup-node@v4
         with:
@@ -149,9 +151,8 @@ jobs:
           tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js
           --runInBand --forceExit --detectOpenHandles
 
-      - name: Observe current schema drift
+      - name: Schema drift gate
         run: node scripts/arch-schema-drift-check.js --report
 
-      - name: Observe current map gate
-        continue-on-error: true
+      - name: Map and governance gates
         run: npm run map:check
