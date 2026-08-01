@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 807,
-    "edges": 4453,
+    "edges": 4455,
     "dbTables": 117,
     "doctrines": 165,
     "impactAreas": 136,
@@ -7064,7 +7064,8 @@
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "shared-cart"
       ],
       "version": "2026-06"
     },
@@ -12958,6 +12959,7 @@
         "products"
       ],
       "dbWrite": [
+        "order_items",
         "order_status_history",
         "orders"
       ],
@@ -30124,6 +30126,12 @@
       "label": "checkout"
     },
     {
+      "from": "routes/orders/create.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
       "from": "routes/orders/detail.js",
       "to": "db.js",
       "type": "depends",
@@ -38837,6 +38845,12 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/order-status-machine.js",
+      "to": "db:order_items",
+      "type": "db-write",
+      "label": "order_items"
     },
     {
       "from": "services/order-status-machine.js",
@@ -54034,7 +54048,8 @@
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "shared-cart"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
@@ -54050,6 +54065,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:orders",
+        "impact:shared-cart",
         "middleware/auth-guest.js",
         "middleware/auth.js",
         "middleware/validate.js",
@@ -59731,6 +59747,7 @@
         "products"
       ],
       "dbWrite": [
+        "order_items",
         "order_status_history",
         "orders"
       ],
@@ -65095,6 +65112,20 @@
       ]
     },
     {
+      "table": "order_items",
+      "writerCount": 8,
+      "writers": [
+        "routes/admin/delete-order-cascade.js",
+        "routes/admin/system.js",
+        "routes/orders/create.js",
+        "services/order-status-machine.js",
+        "services/parcel-operations.js",
+        "services/scan-engine.js",
+        "services/shared-cart-engine.js",
+        "services/shared-cart-lifecycle.js"
+      ]
+    },
+    {
       "table": "order_status_history",
       "writerCount": 8,
       "writers": [
@@ -65119,19 +65150,6 @@
         "services/incident-service.js",
         "services/reconciliation-service.js",
         "services/scan-engine.js"
-      ]
-    },
-    {
-      "table": "order_items",
-      "writerCount": 7,
-      "writers": [
-        "routes/admin/delete-order-cascade.js",
-        "routes/admin/system.js",
-        "routes/orders/create.js",
-        "services/parcel-operations.js",
-        "services/scan-engine.js",
-        "services/shared-cart-engine.js",
-        "services/shared-cart-lifecycle.js"
       ]
     },
     {
