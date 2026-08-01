@@ -39,6 +39,8 @@ Le merge du Lot 8 n’est autorisé que lorsque le workflow canonique
 
 Le manifeste `business-rules` est enregistré dans le registre canonique afin de préserver la bijection stricte entre les manifests présents sur disque et `APP_FEATURE_REGISTRY.md`.
 
+Le snapshot d’intégrité des migrations est réconcilié avec les fichiers SQL canoniques présents sur le SHA certifié ; aucune migration historique n’est modifiée pendant l’exécution de la certification.
+
 ### PostgreSQL réel
 
 - chargement du dump Railway canonique ;
