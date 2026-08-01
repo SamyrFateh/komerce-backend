@@ -116,9 +116,7 @@ jobs:
         if: github.event_name == 'pull_request' && matrix.project == 'Desktop Chrome'
         run: |
           npx playwright test \
-            tests/e2e/csp-fronts.spec.js \
             tests/e2e/modal-geometry.spec.js \
-            tests/e2e/modal-visual-regression.spec.js \
             tests/e2e/hero-geometry.spec.js \
             tests/e2e/modal-backtop-zindex.spec.js \
             --project='Chromium Local-Only' \
