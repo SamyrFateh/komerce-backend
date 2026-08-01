@@ -1,0 +1,238 @@
+name: Lot 8 pre-go-live certification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docs/certification/LOT_8_PRE_GO_LIVE.md'
+      - '.github/workflows/lot8-pre-go-live-certification.yml'
+      - 'features/**'
+      - 'routes/auth.js'
+      - 'routes/pickup-secret.js'
+      - 'services/pickup-authorization-service.js'
+      - 'services/pickup-secret-service.js'
+      - 'migrations/121_exceptional_pickup_authorization.sql'
+      - 'migrations/122_schema_reconciliation.sql'
+      - 'tests/e2e-api/**'
+      - 'tests/integration/**'
+      - 'tests/unit/**'
+      - 'public/boutique/**'
+      - 'public/dashboards/**'
+  workflow_dispatch:
+
+concurrency:
+  group: lot8-pre-go-live-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend-governance:
+    name: Backend, security and governance
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: true
+      NODE_ENV: test
+      JWT_SECRET: lot8-ci-secret-not-for-prod
+      ADMIN_PASSWORD: lot8-ci-admin
+      QR_SECRET: lot8-ci-qr-secret
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+      KOMERCE_DISABLE_CRONS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Schema and feature registry
+        run: |
+          npm run schema:check
+          npm run schema:check:resurrection
+          npm run feature:registry
+          npm run feature:registry-doc
+
+      - name: Quality, dependency and architecture audits
+        run: |
+          npm run quality:gate
+          npm run backend:audit
+          npm run audit:gate
+          npm run arch:gate
+          npm run security:360:check
+
+      - name: Full root unit coverage
+        run: npm run test:unit:coverage
+
+      - name: Contracts, invariants and global map
+        run: |
+          npm run gate:catalog-contract
+          npm run feature:check
+          npm run feature:invariant:check:strict
+          npm run map:check
+
+      - name: Production predeploy gate without duplicate Jest run
+        run: npm run predeploy:skip-tests
+
+  postgres-campaign:
+    name: PostgreSQL integration and Feature First E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: lot8-ci-secret-not-for-prod
+      ADMIN_PASSWORD: lot8-ci-admin
+      QR_SECRET: lot8-ci-qr-secret
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+      KOMERCE_DISABLE_CRONS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Rebuild the deployed schema
+        run: |
+          node scripts/check-schema-freshness.js
+          node scripts/check-schema-resurrection.js
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+
+      - name: Full PostgreSQL integration campaign
+        run: npm run test:integration
+
+      - name: Full Feature First API campaign
+        run: npm run test:e2e:features
+
+      - name: Reprove the critical withdrawal races
+        run: |
+          npx jest \
+            tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js \
+            tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js \
+            --runInBand --forceExit --detectOpenHandles
+
+  boutique-certification:
+    name: Boutique quality, coverage and deterministic Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: public/boutique
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - run: npm ci
+      - run: npm run audit:gate
+      - run: npm run check:fast
+      - run: npm run test:coverage
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Stable local UI contracts
+        run: |
+          npx playwright test \
+            tests/e2e/modal-geometry.spec.js \
+            tests/e2e/hero-geometry.spec.js \
+            tests/e2e/modal-backtop-zindex.spec.js \
+            --project='Chromium Local-Only'
+
+  dashboards-certification:
+    name: Dashboards and relay operator flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: public/dashboards
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/dashboards/package-lock.json
+
+      - run: npm ci
+      - run: npm run audit:gate
+      - run: npm run check:all
+      - run: npx jest tests/unit/pickup-exceptional-flow.test.js --runInBand --forceExit
+
+  certificate:
+    name: Lot 8 verdict
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - backend-governance
+      - postgres-campaign
+      - boutique-certification
+      - dashboards-certification
+
+    steps:
+      - name: Require every certification lane
+        env:
+          BACKEND: ${{ needs.backend-governance.result }}
+          POSTGRES: ${{ needs.postgres-campaign.result }}
+          BOUTIQUE: ${{ needs.boutique-certification.result }}
+          DASHBOARDS: ${{ needs.dashboards-certification.result }}
+        run: |
+          printf 'backend=%s\npostgres=%s\nboutique=%s\ndashboards=%s\n' \
+            "$BACKEND" "$POSTGRES" "$BOUTIQUE" "$DASHBOARDS"
+          test "$BACKEND" = success
+          test "$POSTGRES" = success
+          test "$BOUTIQUE" = success
+          test "$DASHBOARDS" = success
+          echo 'LOT_8_PRE_GO_LIVE=PASS'
