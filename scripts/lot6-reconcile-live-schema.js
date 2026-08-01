@@ -69,12 +69,12 @@ if (!doc.includes(authorizationRow)) {
 fs.writeFileSync(schemaPath, doc, 'utf8');
 
 const platformOpsPath = path.join(root, 'features', 'platform-ops.feature.js');
-replaceInFile(
-  platformOpsPath,
-  "  files: {\n    compositionRoots:",
-  "  files: {\n    migrations: [\n      // Lot 6 : nettoyage conservatif de deux résidus DDL laissés par des\n      // preuves REAL_DB historiques ; aucune nouvelle capacité métier.\n      'migrations/122_cleanup_realdb_test_schema_residue.sql',\n    ],\n    compositionRoots:",
-  'ownership migration 122'
-);
+const obsoletePlatformMigrationBlock = "    migrations: [\n      // Lot 6 : nettoyage conservatif de deux résidus DDL laissés par des\n      // preuves REAL_DB historiques ; aucune nouvelle capacité métier.\n      'migrations/122_cleanup_realdb_test_schema_residue.sql',\n    ],\n";
+let platformOps = fs.readFileSync(platformOpsPath, 'utf8');
+if (platformOps.includes(obsoletePlatformMigrationBlock)) {
+  platformOps = platformOps.replace(obsoletePlatformMigrationBlock, '');
+  fs.writeFileSync(platformOpsPath, platformOps, 'utf8');
+}
 replaceInFile(
   platformOpsPath,
   "      tests: [\n      'tests/integration/api.test.js',",
@@ -83,6 +83,12 @@ replaceInFile(
 );
 
 const economicPath = path.join(root, 'features', 'economic-engine.feature.js');
+replaceInFile(
+  economicPath,
+  "      'migrations/103_cost_benchmarks.sql',\n    ],",
+  "      'migrations/103_cost_benchmarks.sql',\n      // Lot 6 : réparation conservative de la table d’audit pricing canonique ;\n      // le nettoyage accessoire d’un résidu de test ne déplace aucune autorité.\n      'migrations/122_cleanup_realdb_test_schema_residue.sql',\n    ],",
+  'ownership migration 122 par economic-engine'
+);
 replaceInFile(
   economicPath,
   "        tests: [\n      'tests/unit/admin-cost-components.test.js',",
