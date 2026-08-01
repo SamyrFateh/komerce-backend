@@ -120,6 +120,7 @@ module.exports = {
       'dashboards/admin/js/views/EconomicFlowView.js',
     ],
         tests: [
+      'tests/integration/txg01-pricing-matrices.test.js',
       'tests/unit/admin-cost-components.test.js',
       'tests/unit/admin-costing.test.js',
       'tests/unit/admin-finance-config.test.js',
