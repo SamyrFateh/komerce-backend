@@ -1,0 +1,64 @@
+name: Lot 8 v2 sync main once
+
+on:
+  push:
+    branches:
+      - test/lot8-pre-go-live-certification-v2
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lot8-v2-sync-main-once
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/lot8-pre-go-live-certification-v2
+          fetch-depth: 0
+
+      - name: Preserve Lot 8 owned files
+        run: |
+          mkdir -p /tmp/lot8/.github/workflows /tmp/lot8/docs/certification /tmp/lot8/public/boutique/tests/unit /tmp/lot8/public/dashboards/tests/unit /tmp/lot8/public/boutique
+          cp .github/workflows/lot8-pre-go-live-certification.yml /tmp/lot8/.github/workflows/
+          cp docs/certification/LOT_8_PRE_GO_LIVE.md /tmp/lot8/docs/certification/
+          cp public/boutique/jest.config.js /tmp/lot8/public/boutique/
+          cp public/boutique/tests/unit/setup-after-env.js /tmp/lot8/public/boutique/tests/unit/
+          cp public/dashboards/tests/unit/pickup-exceptional-flow.test.js /tmp/lot8/public/dashboards/tests/unit/
+
+      - name: Merge current main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main || true
+          conflicts="$(git diff --name-only --diff-filter=U)"
+          if [ -n "$conflicts" ]; then
+            while IFS= read -r file; do
+              git checkout --theirs -- "$file"
+              git add "$file"
+            done <<< "$conflicts"
+          fi
+          test -z "$(git diff --name-only --diff-filter=U)"
+
+      - name: Restore Lot 8 files and verify
+        run: |
+          cp /tmp/lot8/.github/workflows/lot8-pre-go-live-certification.yml .github/workflows/
+          cp /tmp/lot8/docs/certification/LOT_8_PRE_GO_LIVE.md docs/certification/
+          cp /tmp/lot8/public/boutique/jest.config.js public/boutique/
+          cp /tmp/lot8/public/boutique/tests/unit/setup-after-env.js public/boutique/tests/unit/
+          cp /tmp/lot8/public/dashboards/tests/unit/pickup-exceptional-flow.test.js public/dashboards/tests/unit/
+          git add -A
+          git diff --cached --check
+
+      - name: Remove one-shot and push merge
+        run: |
+          rm -f .github/workflows/lot8-v2-sync-main-once.yml
+          git add -A
+          git commit --no-verify -m "merge: synchronize Lot 8 v2 with main"
+          git push origin HEAD:test/lot8-pre-go-live-certification-v2
