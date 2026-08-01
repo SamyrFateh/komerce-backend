@@ -40,6 +40,33 @@ function replaceOnce(source, before, after, label) {
     'collectByPickupCode: source canonique du destinataire'
   );
 
+  // PostgreSQL refuse un FOR UPDATE non qualifié lorsqu'une requête contient
+  // un LEFT JOIN : il tenterait aussi de verrouiller le côté nullable. Seule
+  // la commande porte l'invariant de concurrence, donc on verrouille orders.
+  source = replaceOnce(
+    source,
+    "        AND o.status = 'available'\n      FOR UPDATE",
+    "        AND o.status = 'available'\n      FOR UPDATE OF o",
+    'collectByPickupCode: verrou limité à orders'
+  );
+
+  const exceptionalLockBefore = `      LEFT JOIN relais r ON r.id = o.relais_id
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.id = $1
+      FOR UPDATE`;
+
+  const exceptionalLockAfter = `      LEFT JOIN relais r ON r.id = o.relais_id
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.id = $1
+      FOR UPDATE OF o`;
+
+  source = replaceOnce(
+    source,
+    exceptionalLockBefore,
+    exceptionalLockAfter,
+    'collectByAuthorizedName: verrou limité à orders'
+  );
+
   const oldAudit = '        description: `agent_id=${agentId} role=${role} attempts=${attempts}`,';
   const newAudit = '        description: `actor_id=${agentId} role=${role} order_id=${order.id} relais_id=${order.relais_id} method=AUTHORIZED_NAME_ID_CHECK authorization_version=${authorization.version} result=NAME_MISMATCH attempts=${attempts}`,';
 
@@ -94,4 +121,4 @@ function replaceOnce(source, before, after, label) {
   fs.writeFileSync(path, JSON.stringify(budget, null, 2) + '\n', 'utf8');
 }
 
-console.log('Lot 5 finalisé : source acheteur, contraintes bornées et drift pending documenté.');
+console.log('Lot 5 finalisé : identité acheteur, verrous orders, contraintes bornées et drift pending documenté.');
