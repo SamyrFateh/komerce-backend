@@ -139,8 +139,10 @@ jobs:
             change_reason TEXT,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
           );
-          CREATE INDEX idx_pma_created ON pricing_matrices_audit(created_at DESC);
-          CREATE INDEX idx_pma_matrix_cat ON pricing_matrices_audit(matrix_type, category);
+          CREATE INDEX IF NOT EXISTS idx_pma_created
+            ON pricing_matrices_audit(created_at DESC);
+          CREATE INDEX IF NOT EXISTS idx_pma_matrix_cat
+            ON pricing_matrices_audit(matrix_type, category);
           INSERT INTO pricing_matrices_audit
             (matrix_type, category, old_value, new_value, change_reason)
           VALUES
