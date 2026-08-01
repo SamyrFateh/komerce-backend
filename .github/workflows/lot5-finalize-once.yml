@@ -70,6 +70,8 @@ jobs:
           node --check routes/pickup-secret.js
           node --check routes/auth.js
           node --check validators/index.js
+          node --check public/boutique/js/b-service-worker-refresh.js
+          node --check public/boutique/js/test-modal-view-model-redirect.js
 
       - name: Load canonical schema and migration 121
         run: |
@@ -101,6 +103,8 @@ jobs:
       - name: Rebuild governed artifacts
         run: |
           node scripts/gen-route-registry.js
+          npm run contract:generate
+          npm run meta:graph:save
           npm run boutique:360:save
           npm run arch:gen
           npm run business-graph:gen
