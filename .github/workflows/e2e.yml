@@ -87,9 +87,16 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: public/boutique/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            public/boutique/package-lock.json
 
-      - run: npm ci
+      - name: Install backend deps required by CSP contract imports
+        working-directory: .
+        run: npm ci
+
+      - name: Install Boutique deps
+        run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
