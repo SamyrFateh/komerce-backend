@@ -11,6 +11,7 @@ Clôturer le déploiement de la migration `121_exceptional_pickup_authorization.
 - L’autorisation nominative reste un moyen exceptionnel consulté au moment de la remise.
 - Aucune donnée de pièce d’identité n’est conservée.
 - La migration 121 doit être appliquée par le runner Railway, être idempotente et échouer bruyamment en cas d’erreur SQL.
+- La migration 122 appartient à `economic-engine`, propriétaire de `pricing_matrices_audit`; le nettoyage du résidu R6 y reste accessoire et ne confère aucune autorité métier à `platform-ops`.
 - Aucun budget, seuil ou allowlist ne doit être élargi pour masquer un drift réel.
 
 ## Preuves requises
