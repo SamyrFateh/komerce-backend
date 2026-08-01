@@ -48,7 +48,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 115 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
+| Tables | 113 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
 | Vues | 18 | Préfixe `v_` ou `customs_*` |
 | ENUMs | 16 | Types métier critiques |
 | Index | 264 | Performance + contraintes uniques |
@@ -138,7 +138,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `services/wallet-service.js`.
 
-### 4.4 Paiements et finance (10 tables)
+### 4.4 Paiements et finance (9 tables)
 
 | Table | Rôle |
 |---|---|
@@ -151,7 +151,6 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `stripe_events_processed` | Idempotence webhooks Stripe (anti-double-traitement). |
 | `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
 | `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
-| `outbox_events` | **Résidu live vérifié, non canonique** créé par l’ancienne preuve d’intégration `r6-crash-window.test.js`. Aucun runtime ne le consomme. La migration 122 le supprime après confirmation d’absence d’usage et le test utilise désormais une table temporaire de session. |
 
 ### 4.5 Paniers et catalogue
 
@@ -205,7 +204,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 Source de vérité : `services/collective-workspace-engine.js` + `services/collective-payment-orchestrator.js`.
 
-### 4.8 Pricing et économie (18 tables)
+### 4.8 Pricing et économie (17 tables)
 
 | Table | Rôle |
 |---|---|
@@ -219,7 +218,6 @@ Source de vérité : `services/collective-workspace-engine.js` + `services/colle
 | `pricing_category_dims` | Dimensions catégorie. |
 | `pricing_category_taxes` | Taxes par catégorie. |
 | `pricing_matrices_audit` | Audit matrices. |
-| `pricing_matrices_audit_hidden` | **Résidu live vérifié, non canonique** laissé par l’ancienne preuve REAL_DB `txg01-pricing-matrices.test.js`, qui renommait la table publique. La migration 122 fusionne les éventuelles lignes dans `pricing_matrices_audit`, restaure les noms canoniques et supprime cette table. |
 | `cost_components` | Composantes de coûts. |
 | `cost_component_events` | Événements composantes coût. |
 | `risk_provisions` | Provisions risques. |
