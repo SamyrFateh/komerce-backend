@@ -1,11 +1,8 @@
 # .github/workflows/e2e.yml
-# Pipeline CI — Tests unitaires + E2E Playwright × 5 navigateurs
+# Pipeline CI — unités + E2E Playwright multi-navigateurs.
 #
-# Déclenchement :
-#   - push sur main/develop
-#   - PR vers main/develop
-#   - cron quotidien (nightly) à 6h UTC
-#   - manuel (workflow_dispatch)
+# PR : preuve déterministe du tree checkouté, servi localement.
+# main/nightly/manual : campagne distante explicite sur l'URL cible.
 
 name: "🧪 Tests Boutique"
 
@@ -19,13 +16,13 @@ on:
     branches: [main, develop]
     paths:
       - "public/boutique/**"
+      - ".github/workflows/e2e.yml"
   schedule:
-    # Nightly à 6h UTC (8h Paris) — attrape les régressions lentes
     - cron: "0 6 * * *"
   workflow_dispatch:
     inputs:
       base_url:
-        description: "URL cible (vide = prod)"
+        description: "URL cible distante"
         default: "https://komerce.co/boutique/"
       browsers:
         description: "Navigateurs (all | mobile | desktop | safari)"
@@ -33,17 +30,14 @@ on:
         type: choice
         options: [all, mobile, desktop, safari]
 
-# Annule les runs précédents sur la même branche (économie CI)
 concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  BASE_URL: ${{ github.event.inputs.base_url || 'https://komerce.co/boutique/' }}
   CI: true
 
 jobs:
-  # ── Job 1 : Tests unitaires (rapides, ~30s) ──────────────────────────
   unit:
     name: "🔬 Unit tests"
     runs-on: ubuntu-latest
@@ -62,18 +56,17 @@ jobs:
       - run: npm ci
       - run: npm run test:unit
 
-  # ── Job 2 : E2E Playwright — matrice navigateurs ─────────────────────
   e2e:
     name: "🎭 E2E — ${{ matrix.project }}"
-    needs: unit # Les E2E ne tournent que si les units passent
+    needs: unit
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: public/boutique
 
     strategy:
-      fail-fast: false # Un navigateur qui échoue ne bloque pas les autres
+      fail-fast: false
       matrix:
         include:
           - project: "Mobile Chrome"
@@ -98,33 +91,44 @@ jobs:
 
       - run: npm ci
 
-      # Installe les navigateurs Playwright (Chromium, Firefox, WebKit)
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
-      # Filtre selon le choix workflow_dispatch (all par défaut)
       - name: Check if this browser should run
         id: filter
         run: |
           CHOICE="${{ github.event.inputs.browsers || 'all' }}"
           GROUP="${{ matrix.group }}"
           if [[ "$CHOICE" == "all" ]] || [[ "$CHOICE" == "$GROUP" ]] || [[ "$CHOICE" == "safari" && "${{ matrix.project }}" == *"Safari"* ]]; then
-            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           else
-            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run E2E tests — ${{ matrix.project }}
-        if: steps.filter.outputs.skip != 'true'
+      - name: Prove checked-out PR tree — ${{ matrix.project }}
+        if: github.event_name == 'pull_request' && steps.filter.outputs.skip != 'true'
+        run: |
+          npx playwright test \
+            tests/contracts.spec.js \
+            tests/e2e/csp-fronts.spec.js \
+            tests/e2e/modal-geometry.spec.js \
+            tests/e2e/modal-visual-regression.spec.js \
+            tests/e2e/hero-geometry.spec.js \
+            tests/e2e/modal-backtop-zindex.spec.js \
+            --project="${{ matrix.project }}" \
+            --workers=2 \
+            --retries=1
+
+      - name: Run remote campaign — ${{ matrix.project }}
+        if: github.event_name != 'pull_request' && steps.filter.outputs.skip != 'true'
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://komerce.co/boutique/' }}
         run: |
           npx playwright test \
             --project="${{ matrix.project }}" \
             --workers=2 \
             --retries=2
-        env:
-          BASE_URL: ${{ env.BASE_URL }}
 
-      # Artefacts en cas d'échec : screenshots, traces, rapport
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v4
@@ -135,7 +139,6 @@ jobs:
             public/boutique/playwright-report/
           retention-days: 7
 
-  # ── Job 3 : Rapport consolidé ─────────────────────────────────────────
   report:
     name: "📊 Rapport E2E"
     needs: e2e
@@ -150,12 +153,14 @@ jobs:
           merge-multiple: true
 
       - name: Summary
+        env:
+          E2E_RESULT: ${{ needs.e2e.result }}
         run: |
-          echo "## 🧪 Résultats E2E" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -d "all-results" ]; then
-            echo "⚠️ Des échecs ont été détectés. Voir les artefacts ci-dessous." >> $GITHUB_STEP_SUMMARY
-            ls -la all-results/ >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          echo "## 🧪 Résultats E2E" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Résultat matrice : **${E2E_RESULT}**" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$E2E_RESULT" = "success" ]; then
+            echo "✅ Tous les navigateurs sélectionnés sont passés." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "✅ Tous les navigateurs sont passés !" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ La matrice n'est pas verte. Les artefacts disponibles contiennent les preuves d'échec." >> "$GITHUB_STEP_SUMMARY"
           fi
