@@ -79,16 +79,6 @@
         "public/boutique/js/komerce-api.js -> /api/products*|/api/categories*"
       ],
       "reviewTrigger": "Scinder le client API si des règles catalogue sont introduites dans platform-ops ou si plusieurs consommateurs nécessitent un contrat frontend autonome."
-    },
-    {
-      "from": "auth-identity",
-      "to": "wallet",
-      "decision": "accepted-dependency",
-      "rationale": "Mon Komerce est la surface frontend canonique du compte. Elle compose en lecture la vue wallet possédée par wallet via renderWalletView(), sans calculer le solde, modifier les lots ni déplacer l’autorité métier.",
-      "scope": [
-        "public/boutique/js/b-komerce.js -> public/boutique/js/b-wallet.js / renderWalletView"
-      ],
-      "reviewTrigger": "Extraire un contrat frontend dédié si Mon Komerce commence à muter le wallet, à interpréter ses lots ou si plusieurs surfaces répliquent cette composition."
     }
   ]
 }
