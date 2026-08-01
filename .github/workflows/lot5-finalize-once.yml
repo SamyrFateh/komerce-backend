@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/lot5-qualification
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -50,6 +53,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: fix/lot5-qualification
 
       - uses: actions/setup-node@v4
         with:
