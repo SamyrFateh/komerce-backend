@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 96 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
-| Vues | 16 | Préfixe `v_` ou `customs_*` |
-| ENUMs | 14 | Types métier critiques |
+| Tables | 115 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
+| Vues | 18 | Préfixe `v_` ou `customs_*` |
+| ENUMs | 16 | Types métier critiques |
 | Index | 264 | Performance + contraintes uniques |
 | Foreign keys | 147 | Cohérence relationnelle |
 | Fonctions | 46 | Triggers, helpers, idempotence |
-| Triggers | 31 | `set_updated_at`, guards anti-corruption |
+| Triggers | 37 | `set_updated_at`, guards anti-corruption |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -138,7 +138,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `services/wallet-service.js`.
 
-### 4.4 Paiements et finance (9 tables)
+### 4.4 Paiements et finance (10 tables)
 
 | Table | Rôle |
 |---|---|
@@ -151,6 +151,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `stripe_events_processed` | Idempotence webhooks Stripe (anti-double-traitement). |
 | `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
 | `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
+| `outbox_events` | **Résidu live vérifié, non canonique** créé par l’ancienne preuve d’intégration `r6-crash-window.test.js`. Aucun runtime ne le consomme. La migration 122 le supprime après confirmation d’absence d’usage et le test utilise désormais une table temporaire de session. |
 
 ### 4.5 Paniers et catalogue
 
@@ -171,30 +172,12 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `product_sku_media` | Association explicite SKU ↔ média canonique (PDC-8 Lot 5), source : `sellable_units[].media_refs` (V2). Les références explicites gagnent toujours sur un matching `option_values` heuristique. Table neuve au 2026-07-14, aucun writer avant le service de promotion (Lot 6). Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
 | `catalog_enrichment_runs` | Trace de chaque appel d'enrichissement IA (doctrine catalogue §8 : échecs tracés, coût par produit suivi en tokens). `status` : `ok` (appliqué), `low_confidence` (appliqué + needs_review), `invalid_output` (JSON hors schéma, rien appliqué), `failed` (erreur réseau/modèle, rien appliqué). Documentée le 2026-07-14 (drift live confirmé, aucun bloc `schema-pending` n'avait été posé). |
 
-<!-- schema-pending
-object: product_content_profile
-kind: table
-migration: 111
-section: ### 4.5 Paniers et catalogue
-role: Profil éditorial 1:1 par produit (fiche produit enrichie). brand, short_description, provenance globale (source/enrichment_version/reviewed) exposée par product_detail_v1.content.provenance. Cible de promotion depuis normalized_source_contract V2, jamais servi depuis le raw_payload.
--->
 
-<!-- schema-pending
-object: product_content_sections
-kind: table
-migration: 111
-section: ### 4.5 Paniers et catalogue
-role: Sections éditoriales structurées + materials/care/warnings via section_key réservés (MATERIALS/CARE/WARNINGS, toujours BULLETS). UNIQUE(product_id, section_key) pour ré-promotion idempotente. content_json validé par le service de projection avant de traverser le contrat public.
--->
 
-<!-- schema-pending
-object: product_attributes
-kind: table
-migration: 111
-section: ### 4.5 Paniers et catalogue
-role: Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.highlights, kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). UNIQUE(product_id, kind, group_key, attribute_key) pour idempotence.
--->
 
+| `product_content_profile` | Profil éditorial 1:1 par produit : marque, description courte et provenance globale. Migration 111, **vérifiée live le 2026-08-01**. Cible de promotion depuis `normalized_source_contract` V2, jamais depuis `raw_payload`. |
+| `product_content_sections` | Sections éditoriales structurées et blocs materials/care/warnings. UNIQUE(`product_id`, `section_key`) pour une ré-promotion idempotente. Migration 111, **vérifiée live le 2026-08-01**. |
+| `product_attributes` | Attributs structurés : highlights et specifications. UNIQUE(`product_id`, `kind`, `group_key`, `attribute_key`). Migration 111, **vérifiée live le 2026-08-01**. |
 
 ### 4.6 Paniers partagés (7 tables)
 
@@ -222,7 +205,7 @@ role: Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.h
 
 Source de vérité : `services/collective-workspace-engine.js` + `services/collective-payment-orchestrator.js`.
 
-### 4.8 Pricing et économie (14 tables)
+### 4.8 Pricing et économie (18 tables)
 
 | Table | Rôle |
 |---|---|
@@ -236,6 +219,7 @@ Source de vérité : `services/collective-workspace-engine.js` + `services/colle
 | `pricing_category_dims` | Dimensions catégorie. |
 | `pricing_category_taxes` | Taxes par catégorie. |
 | `pricing_matrices_audit` | Audit matrices. |
+| `pricing_matrices_audit_hidden` | **Résidu live vérifié, non canonique** laissé par l’ancienne preuve REAL_DB `txg01-pricing-matrices.test.js`, qui renommait la table publique. La migration 122 fusionne les éventuelles lignes dans `pricing_matrices_audit`, restaure les noms canoniques et supprime cette table. |
 | `cost_components` | Composantes de coûts. |
 | `cost_component_events` | Événements composantes coût. |
 | `risk_provisions` | Provisions risques. |
@@ -280,12 +264,13 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `inventory_items` | Inventaire hub. |
 | `carriers` | Transporteurs. |
 
-### 4.12 Utilisateurs et fidélité (6 tables)
+### 4.12 Utilisateurs et fidélité (7 tables)
 
 | Table | Rôle |
 |---|---|
 | `users` | Utilisateurs (rôle via ENUM `user_role`). |
 | `otp_codes` | Codes OTP. |
+| `user_pickup_authorizations` | Autorisation nominative exceptionnelle active du compte. Une ligne par utilisateur, versionnée et révocable ; consultée au moment exact de la remise. Ne contient aucune donnée de pièce d’identité. Migration 121, **vérifiée live le 2026-08-01**. |
 | `revoked_tokens` | Révocation JWT (logout) : `jti` révoqué, `expires_at` pour purge. Câblage : `routes/auth.js` insère au logout, `middleware/auth.js` vérifie, cron de purge dans `bootstrap/crons.js`. Migration 072. |
 | `recipients` | Destinataires (peuvent être ≠ user). |
 | `loyalty_tiers` | Niveaux fidélité. |
