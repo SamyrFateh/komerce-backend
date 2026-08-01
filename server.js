@@ -84,7 +84,6 @@ applySecurity(app);
 
 // ── Stripe webhook MUST receive raw body for signature verification ──────────
 app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
-app.use('/api/shared-carts/stripe/webhook', express.raw({ type: 'application/json' }));
 // PayPal webhook — raw body avant express.json (I-07). Migration 079.
 app.use('/api/payments/paypal/webhook', express.raw({ type: 'application/json' }));
 
@@ -165,19 +164,16 @@ const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
 const sharedCart = require('./routes/shared-cart');
-const sharedCartRefundAdmin = require('./routes/shared-cart-refund-admin');
-const sharedCartItemsService = require('./services/shared-cart-items-service');
 const { authenticate } = require('./middleware/auth');
 
 mountApiRoutesBeforeStripeOwnedBlocks(app);
 
-// ═══ Panier Partagé MVP (Niveau 1) ═══
-app.post('/api/shared-carts/stripe/webhook', sharedCart.stripeWebhookHandler);
-// FIX B2 — l'ancien app.put('/api/shared-carts/:id/items') inline a été SUPPRIMÉ ici.
-// Il masquait le handler complet du router (S2-06, avec notifs WhatsApp participants).
-// Le handler canonique est dans routes/shared-cart.js — sharedCart.router le couvre.
+// ═══ Panier Partagé (Boutique First, domaine minimal — migration 124) ═══
+// Plus de webhook Stripe ni de paiement groupé propre à la liste : chaque
+// participant réclame un article en achetant individuellement via
+// POST /api/orders (migration 123). sharedCart.router/.adminRouter
+// couvrent tout le domaine réduit (open/closed/cancelled).
 app.use('/api/shared-carts',       sharedCart.router);
-app.use('/api/admin/shared-carts', sharedCartRefundAdmin.router);
 app.use('/api/admin/shared-carts', sharedCart.adminRouter);
 
 mountApiRoutesAfterStripeOwnedBlocks(app);
