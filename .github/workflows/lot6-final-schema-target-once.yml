@@ -1,9 +1,13 @@
 name: Lot 6 final schema target once
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/lot6-schema-reconciliation
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 permissions:
   contents: write
@@ -14,7 +18,7 @@ concurrency:
 
 jobs:
   finalize:
-    if: github.actor != 'github-actions[bot]'
+    if: github.event.pull_request.head.ref == 'fix/lot6-schema-reconciliation' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     services:
