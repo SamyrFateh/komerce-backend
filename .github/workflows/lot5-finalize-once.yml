@@ -93,6 +93,11 @@ jobs:
           tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js
           --runInBand --forceExit --detectOpenHandles
 
+      - name: Remove one-shot tooling before governance generation
+        run: |
+          rm -f scripts/finalize-lot5-branch.js
+          rm -f .github/workflows/lot5-finalize-once.yml
+
       - name: Rebuild governed artifacts
         run: |
           npm run arch:gen
@@ -112,11 +117,6 @@ jobs:
           npx jest tests/unit/b-komerce.test.js --runInBand
           npm run check:inline-scripts:strict
           npm run check:no-injection
-
-      - name: Remove one-shot tooling
-        run: |
-          rm -f scripts/finalize-lot5-branch.js
-          rm -f .github/workflows/lot5-finalize-once.yml
 
       - name: Commit qualified corrections
         run: |
