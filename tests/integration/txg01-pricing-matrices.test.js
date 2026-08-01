@@ -18,10 +18,11 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const ADMIN_ID = '00000000-0000-0000-0000-000000000101';
 
 let testClient;
+let app;
 
 jest.setTimeout(30000);
 
-function loadRouter() {
+function buildApp() {
   jest.resetModules();
 
   const routeClient = {
@@ -44,16 +45,12 @@ function loadRouter() {
     invalidatePricingMatricesCache: jest.fn(),
   }));
 
-  return require(TARGET);
-}
-
-function buildApp() {
-  const router = loadRouter();
-  const app = express();
-  app.use(express.json());
-  app.use('/api/admin/pricing-matrices', router);
-  app.use((err, _req, res, _next) => res.status(500).json({ error: err.message }));
-  return app;
+  const router = require(TARGET);
+  const testApp = express();
+  testApp.use(express.json());
+  testApp.use('/api/admin/pricing-matrices', router);
+  testApp.use((err, _req, res, _next) => res.status(500).json({ error: err.message }));
+  return testApp;
 }
 
 async function seedPricingFixtures() {
@@ -105,6 +102,11 @@ beforeAll(async () => {
   `);
 
   await seedPricingFixtures();
+  app = buildApp();
+});
+
+beforeEach(async () => {
+  await seedPricingFixtures();
 });
 
 afterAll(async () => {
@@ -118,7 +120,6 @@ afterAll(async () => {
 
 describe('TXG-01 — dims route', () => {
   test('GREEN: UPDATE dims persiste, audit best-effort loggué malgré erreur PostgreSQL', async () => {
-    const app = buildApp();
     const res = await request(app)
       .put('/api/admin/pricing-matrices/dims/electronique')
       .send({ length_cm: 55, width_cm: 44, height_cm: 33, reason: 'green proof dims fixed' });
@@ -137,9 +138,8 @@ describe('TXG-01 — dims route', () => {
 
 describe('TXG-01b — taxes route', () => {
   test('GREEN: UPDATE taxes persiste malgré erreur PostgreSQL de l’audit', async () => {
-    const app = buildApp();
     const res = await request(app)
-      .put('/api/admin-pricing-matrices/taxes/electronique')
+      .put('/api/admin/pricing-matrices/taxes/electronique')
       .send({ douane_pct: 0.33, tva_pct: 0.22, taxe_add_pct: 0.01, reason: 'green proof taxes fixed' });
 
     expect(res.status).toBe(200);
