@@ -33,6 +33,11 @@
  *   POST /api/pickup/verify/:orderId     — Vérifier un code au retrait (rate-limited)
  *   POST /api/pickup/collect/:orderId    — Marquer comme récupéré (après verify OK)
  *   POST /api/pickup/regenerate/:orderId — Admin : régénérer un code (perte de reçu)
+ *
+ * Lot 5 — retrait exceptionnel par autorisation nominative (substitution,
+ * jamais le moyen normal) :
+ *   GET  /api/pickup/exceptional-pickup/:orderId         — Disponibilité (booléen, jamais le nom)
+ *   POST /api/pickup/exceptional-pickup/:orderId/collect — Remise après contrôle de pièce
  */
 
 'use strict';
@@ -42,6 +47,8 @@ const crypto  = require('crypto');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
+const { pickup } = require('../validators');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
 const log = require('../utils/logger').child({ module: 'pickup-secret' });
@@ -57,6 +64,7 @@ const { buildReceiptHTML, escapeHTML } = require('../utils/pickup-receipt-html')
 const {
   generateAndStoreSecret, cacheCodeForReveal,
   verifyPickupCode, regenerateCode,
+  getExceptionalPickupAvailability, collectByAuthorizedName,
 } = require('../services/pickup-secret-service');
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -280,6 +288,50 @@ router.post('/regenerate/:orderId', authenticate, requireAdmin, async (req, res,
 
   } catch (err) { next(err); }
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 5bis. Retrait exceptionnel par autorisation nominative (Lot 5)
+// ══════════════════════════════════════════════════════════════════════════════
+// Substitution exceptionnelle au code secret — jamais le moyen normal. Voir
+// services/pickup-secret-service.js pour la doctrine complète (§ du lot).
+// Le routeur reste un adaptateur HTTP pur, comme pour le reste du fichier.
+
+router.get(
+  '/exceptional-pickup/:orderId',
+  authenticate,
+  requireRelaisOrAdmin,
+  validate(pickup.exceptionalAvailability),
+  async (req, res, next) => {
+  try {
+    const result = await getExceptionalPickupAvailability({
+      orderId: req.params.orderId,
+      agentId: req.user.id,
+      role:    req.user.role,
+    });
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+  }
+);
+
+router.post(
+  '/exceptional-pickup/:orderId/collect',
+  authenticate,
+  requireRelaisOrAdmin,
+  validate(pickup.exceptionalCollect),
+  async (req, res, next) => {
+  try {
+    const result = await collectByAuthorizedName({
+      orderId:         req.params.orderId,
+      agentId:         req.user.id,
+      role:            req.user.role,
+      givenNames:      req.body.given_names,
+      familyName:      req.body.family_name,
+      documentChecked: req.body.document_checked,
+    });
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+  }
+);
 
 // ══════════════════════════════════════════════════════════════════════════════
 // 6. GET /status/:orderId — Status du code (pas le code clair, jamais)

@@ -176,6 +176,42 @@ router.put('/me', authenticate, validate(auth.updateProfile), async (req, res, n
   }
 });
 
+// ─── /api/auth/me/pickup-authorization — Lot 5 ────────────────────────────────
+// Autorisation nominative de retrait exceptionnel. Sous-ressource du profil,
+// propriétaire = auth-identity (services/pickup-authorization-service.js).
+// La session authentifiée existante suffit (§9 du lot — pas de nouvel OTP).
+
+const {
+  getMyAuthorization,
+  setMyAuthorization,
+  deleteMyAuthorization,
+} = require('../services/pickup-authorization-service');
+
+router.get('/me/pickup-authorization', authenticate, async (req, res, next) => {
+  try {
+    const result = await getMyAuthorization(req.user.id);
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
+router.put('/me/pickup-authorization', authenticate, validate(auth.pickupAuthorization), async (req, res, next) => {
+  try {
+    const result = await setMyAuthorization({
+      userId:      req.user.id,
+      givenNames:  req.body.given_names,
+      familyName:  req.body.family_name,
+    });
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
+router.delete('/me/pickup-authorization', authenticate, async (req, res, next) => {
+  try {
+    const result = await deleteMyAuthorization(req.user.id);
+    res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
 // ─── POST /api/auth/guest-checkout — SUPPRIMÉ (faille de sécurité) ───────────────
 // Cette route créait un compte (ou réutilisait un compte EXISTANT) et posait une
 // session SANS vérification OTP → prise de contrôle de compte possible en tapant

@@ -58,6 +58,21 @@ jest.mock('../../utils/pickup-receipt-html', () => ({
   escapeHTML: (s) => s,
 }));
 
+// Lot 5 — autorisation nominative de retrait exceptionnel. auth-identity
+// n'est consommée que via cette API interne, jamais de requête directe sur
+// user_pickup_authorizations (cf. features/auth-identity.feature.js).
+const mockGetActiveAuthorizationForUpdate = jest.fn();
+const mockHasActiveAuthorization          = jest.fn();
+jest.mock('../../services/pickup-authorization-service', () => ({
+  getActiveAuthorizationForUpdate: (...args) => mockGetActiveAuthorizationForUpdate(...args),
+  hasActiveAuthorization:          (...args) => mockHasActiveAuthorization(...args),
+}));
+
+const mockNotifyText = jest.fn(() => Promise.resolve({ ok: true }));
+jest.mock('../../services/notifications/notification-service', () => ({
+  notifyText: (...args) => mockNotifyText(...args),
+}));
+
 const db = require('../../db');
 
 const {
@@ -74,12 +89,36 @@ const {
   regenerateCode,
   getPickupStatus,
   revealOnce,
+  getExceptionalPickupAvailability,
+  collectByAuthorizedName,
 } = require('../../services/pickup-secret-service');
 
 beforeEach(() => {
+  // clearAllMocks ne vide pas les files mockResolvedValueOnce.
+  // Chaque test doit repartir avec un double SQL réellement vierge.
   jest.clearAllMocks();
-  mockSafeSyncScanToParcels.mockResolvedValue({ synced: true });
+
+  db.query.mockReset();
+
+  mockSafeSyncScanToParcels.mockReset();
+  mockSafeSyncScanToParcels.mockResolvedValue({
+    synced: true,
+    parcelsUpdated: 1,
+    orderStatus: 'collected',
+  });
+
+  mockCreateAlert.mockReset();
   mockCreateAlert.mockResolvedValue();
+
+  mockTransitionOrderStatus.mockReset();
+  mockGetActiveAuthorizationForUpdate.mockReset();
+  mockHasActiveAuthorization.mockReset();
+
+  mockNotifyText.mockReset();
+  mockNotifyText.mockResolvedValue({ ok: true });
+
+  mockBuildReceiptHTML.mockReset();
+  mockBuildReceiptHTML.mockReturnValue('<html>reçu</html>');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -664,6 +703,13 @@ describe('collectByPickupCode', () => {
     // scan_code doit être la référence de commande, jamais le secret saisi
     expect(insertCall[1]).toContain(order.reference);
     expect(insertCall[1]).not.toContain(CODE);
+
+    // Preuve minimale de la méthode normale.
+    expect(insertCall[1][4]).toBe('PICKUP_CODE');
+    expect(insertCall[1][5]).toBeNull();
+    expect(insertCall[1][6]).toBe(false);
+    expect(insertCall[1][7]).toBe(order.relais_id);
+
     // notes neutres, jamais le secret
     expect(insertCall[1].join(' ')).not.toMatch(new RegExp(CODE));
   });
@@ -765,7 +811,11 @@ describe('collectByPickupCode', () => {
   test('appelle transitionOrderStatus si le sync colis a échoué (synced=false)', async () => {
     const order = buildOrder();
     mockSafeSyncScanToParcels.mockResolvedValueOnce({ synced: false });
-    mockTransitionOrderStatus.mockResolvedValueOnce({ success: true });
+    mockTransitionOrderStatus.mockResolvedValueOnce({
+      success: true,
+      noop: false,
+      newStatus: 'collected',
+    });
     db.query
       .mockResolvedValueOnce({ rows: [order] })
       .mockResolvedValueOnce({ rows: [{ id: 's1' }] })
@@ -842,7 +892,486 @@ describe('collectByPickupCode', () => {
     await collectByPickupCode({ code: CODE, user: admin });
 
     const insertParams = db.query.mock.calls[1][1];
-    const notesValue = insertParams[insertParams.length - 1];
+    const notesValue = insertParams[3];
     expect(notesValue).not.toMatch(new RegExp(CODE));
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// getExceptionalPickupAvailability — Lot 5
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('getExceptionalPickupAvailability', () => {
+  const agent = { orderId: 'O1', agentId: 'u-agent', role: 'agent_relais' };
+
+  test('404 ORDER_NOT_FOUND si la commande n\'existe pas', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await getExceptionalPickupAvailability(agent);
+    expect(result).toEqual({ status: 404, body: { available: false, reason: 'ORDER_NOT_FOUND' } });
+    expect(mockHasActiveAuthorization).not.toHaveBeenCalled();
+  });
+
+  test('CROSS_RELAIS si l\'agent n\'appartient pas au relais de la commande', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'O1', status: 'available', relais_id: 'r1', user_id: 'u1', exceptional_pickup_blocked_until: null }] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r2' }] });
+    const result = await getExceptionalPickupAvailability(agent);
+    expect(result).toEqual({ status: 200, body: { available: false, reason: 'CROSS_RELAIS' } });
+    expect(mockHasActiveAuthorization).not.toHaveBeenCalled();
+  });
+
+  test('CROSS_RELAIS si l\'agent n\'a pas de relais_id configuré', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'O1', status: 'available', relais_id: 'r1', user_id: 'u1', exceptional_pickup_blocked_until: null }] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: null }] });
+    const result = await getExceptionalPickupAvailability(agent);
+    expect(result.body).toEqual({ available: false, reason: 'CROSS_RELAIS' });
+  });
+
+  test('admin ne subit pas le contrôle cross-relais (pas de requête agent)', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'O1', status: 'available', relais_id: 'r1', user_id: 'u1', exceptional_pickup_blocked_until: null }] });
+    mockHasActiveAuthorization.mockResolvedValueOnce(true);
+    const result = await getExceptionalPickupAvailability({ orderId: 'O1', agentId: 'admin1', role: 'admin' });
+    expect(result.body).toEqual({ available: true });
+    expect(db.query).toHaveBeenCalledTimes(1);
+  });
+
+  test('BLOCKED si exceptional_pickup_blocked_until est dans le futur', async () => {
+    const future = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'O1', status: 'available', relais_id: 'r1', user_id: 'u1', exceptional_pickup_blocked_until: future }] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] });
+    const result = await getExceptionalPickupAvailability(agent);
+    expect(result).toEqual({ status: 200, body: { available: false, reason: 'BLOCKED' } });
+    expect(mockHasActiveAuthorization).not.toHaveBeenCalled();
+  });
+
+  test('NO_ACTIVE_AUTHORIZATION — jamais de nom dans la réponse', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'O1', status: 'available', relais_id: 'r1', user_id: 'u1', exceptional_pickup_blocked_until: null }] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] });
+    mockHasActiveAuthorization.mockResolvedValueOnce(false);
+    const result = await getExceptionalPickupAvailability(agent);
+    expect(result).toEqual({ status: 200, body: { available: false, reason: 'NO_ACTIVE_AUTHORIZATION' } });
+  });
+
+  test('available:true — transmet bien user_id à hasActiveAuthorization', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'O1', status: 'available', relais_id: 'r1', user_id: 'u1', exceptional_pickup_blocked_until: null }] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] });
+    mockHasActiveAuthorization.mockResolvedValueOnce(true);
+    const result = await getExceptionalPickupAvailability(agent);
+    expect(result).toEqual({ status: 200, body: { available: true } });
+    expect(mockHasActiveAuthorization).toHaveBeenCalledWith('u1');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// collectByAuthorizedName — Lot 5
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('collectByAuthorizedName', () => {
+  const base = {
+    orderId: 'O1',
+    agentId: 'u-agent',
+    role: 'agent_relais',
+    givenNames: 'Fatima',
+    familyName: 'Said',
+    documentChecked: true,
+  };
+
+  function buildOrder(overrides) {
+    return Object.assign({
+      id: 'O1',
+      reference: 'ORD1',
+      status: 'available',
+      relais_id: 'r1',
+      user_id: 'u1',
+      exceptional_pickup_attempts: 0,
+      exceptional_pickup_blocked_until: null,
+      relais_name: 'Moroni Centre',
+      buyer_phone: '+269000000',
+    }, overrides || {});
+  }
+
+  function activeAuthorization(overrides) {
+    return Object.assign({
+      normalizedGivenNames: 'fatima',
+      normalizedFamilyName: 'said',
+      version: 1,
+    }, overrides || {});
+  }
+
+  function mockSuccessfulAgentCollection(order = buildOrder()) {
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: order.relais_id }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'scan-exceptional-1' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    mockGetActiveAuthorizationForUpdate.mockResolvedValueOnce(
+      activeAuthorization()
+    );
+  }
+
+  function mockSuccessfulAdminCollection(order = buildOrder()) {
+    db.query
+      .mockResolvedValueOnce({ rows: [order] })
+      .mockResolvedValueOnce({ rows: [{ id: 'scan-exceptional-admin' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    mockGetActiveAuthorizationForUpdate.mockResolvedValueOnce(
+      activeAuthorization()
+    );
+  }
+
+  test('404 ORDER_NOT_FOUND si la commande n\'existe pas', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result).toEqual({
+      status: 404,
+      body: {
+        error: 'Commande introuvable',
+        code: 'ORDER_NOT_FOUND',
+      },
+    });
+
+    expect(mockGetActiveAuthorizationForUpdate).not.toHaveBeenCalled();
+  });
+
+  test('403 CROSS_RELAIS_BLOCKED si l\'agent est d\'un autre relais', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [buildOrder()] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r-autre' }] });
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result.status).toBe(403);
+    expect(result.body.code).toBe('CROSS_RELAIS_BLOCKED');
+  });
+
+  test('admin ne subit pas le contrôle cross-relais', async () => {
+    mockSuccessfulAdminCollection();
+
+    const result = await collectByAuthorizedName({
+      ...base,
+      agentId: 'admin1',
+      role: 'admin',
+    });
+
+    expect(result.status).toBe(200);
+
+    const agentLookup = db.query.mock.calls.find(([sql]) =>
+      sql.includes('SELECT relais_id FROM users')
+    );
+
+    expect(agentLookup).toBeUndefined();
+  });
+
+  test('429 BLOCKED si exceptional_pickup_blocked_until est dans le futur', async () => {
+    const future = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    db.query
+      .mockResolvedValueOnce({
+        rows: [buildOrder({
+          exceptional_pickup_blocked_until: future,
+        })],
+      })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] });
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result.status).toBe(429);
+    expect(result.body.code).toBe('BLOCKED');
+    expect(result.body.blocked_until).toBe(future);
+  });
+
+  test('400 DOCUMENT_NOT_CHECKED si l\'attestation n\'est pas envoyée', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [buildOrder()] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] });
+
+    const result = await collectByAuthorizedName({
+      ...base,
+      documentChecked: false,
+    });
+
+    expect(result.status).toBe(400);
+    expect(result.body.code).toBe('DOCUMENT_NOT_CHECKED');
+    expect(mockGetActiveAuthorizationForUpdate).not.toHaveBeenCalled();
+  });
+
+  test('400 DOCUMENT_NOT_CHECKED pour la chaîne "false"', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [buildOrder()] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] });
+
+    const result = await collectByAuthorizedName({
+      ...base,
+      documentChecked: 'false',
+    });
+
+    expect(result.status).toBe(400);
+    expect(result.body.code).toBe('DOCUMENT_NOT_CHECKED');
+  });
+
+  test('409 ALREADY_COLLECTED si déjà remis', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [buildOrder({ status: 'collected' })],
+      })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] });
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result.status).toBe(409);
+    expect(result.body.code).toBe('ALREADY_COLLECTED');
+  });
+
+  test.each([
+    'pending',
+    'pending_group_payment',
+    'confirmed',
+    'ordered',
+    'preparation',
+    'shipped',
+    'in_transit',
+    'cancelled',
+    'refunded',
+  ])('409 ORDER_NOT_READY pour le statut %s', async (status) => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [buildOrder({ status })],
+      })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] });
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result.status).toBe(409);
+    expect(result.body.code).toBe('ORDER_NOT_READY');
+    expect(mockGetActiveAuthorizationForUpdate).not.toHaveBeenCalled();
+    expect(mockSafeSyncScanToParcels).not.toHaveBeenCalled();
+  });
+
+  test('404 NO_ACTIVE_AUTHORIZATION si aucune autorisation active', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [buildOrder()] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] });
+
+    mockGetActiveAuthorizationForUpdate.mockResolvedValueOnce(null);
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result.status).toBe(404);
+    expect(result.body.code).toBe('NO_ACTIVE_AUTHORIZATION');
+  });
+
+  test('401 NAME_MISMATCH — incrémente le compteur DÉDIÉ, jamais pickup_secret_attempts', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [buildOrder({ exceptional_pickup_attempts: 0 })],
+      })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    mockGetActiveAuthorizationForUpdate.mockResolvedValueOnce(
+      activeAuthorization({
+        normalizedGivenNames: 'autrenom',
+        normalizedFamilyName: 'autrefamille',
+      })
+    );
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result.status).toBe(401);
+    expect(result.body.code).toBe('NAME_MISMATCH');
+    expect(result.body.attempts).toBe(1);
+    expect(result.body.remaining).toBe(2);
+    expect(result.body.blocked_until).toBeNull();
+
+    const [sql, params] = db.query.mock.calls[2];
+
+    expect(sql).toContain('exceptional_pickup_attempts');
+    expect(sql).not.toContain('pickup_secret_attempts');
+    expect(params[0]).toBe(1);
+
+    expect(mockCreateAlert).toHaveBeenCalled();
+
+    const alertArg = mockCreateAlert.mock.calls[0][1];
+
+    expect(alertArg.description)
+      .not.toMatch(/Fatima|Said|autrenom|autrefamille/);
+  });
+
+  test('bloque à la 3e tentative échouée (compteur dédié)', async () => {
+    db.query
+      .mockResolvedValueOnce({
+        rows: [buildOrder({ exceptional_pickup_attempts: 2 })],
+      })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    mockGetActiveAuthorizationForUpdate.mockResolvedValueOnce(
+      activeAuthorization({
+        normalizedGivenNames: 'autrenom',
+        normalizedFamilyName: 'autrefamille',
+      })
+    );
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result.body.attempts).toBe(3);
+    expect(result.body.remaining).toBe(0);
+    expect(result.body.blocked_until).not.toBeNull();
+  });
+
+  test('tolère casse, accents et tirets après normalisation stricte', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [buildOrder()] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] })
+      .mockResolvedValueOnce({
+        rows: [{ id: 'scan-normalized-name' }],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+
+    mockGetActiveAuthorizationForUpdate.mockResolvedValueOnce(
+      activeAuthorization({
+        normalizedGivenNames: 'jean pierre',
+        normalizedFamilyName: 'ali',
+      })
+    );
+
+    const result = await collectByAuthorizedName({
+      ...base,
+      givenNames: 'JEAN-PIERRE',
+      familyName: 'ALI',
+    });
+
+    expect(result.status).toBe(200);
+  });
+
+  test('409 si transitionOrderStatus refuse le fallback sans colis', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [buildOrder()] })
+      .mockResolvedValueOnce({ rows: [{ relais_id: 'r1' }] })
+      .mockResolvedValueOnce({
+        rows: [{ id: 'scan-transition-refused' }],
+      });
+
+    mockGetActiveAuthorizationForUpdate.mockResolvedValueOnce(
+      activeAuthorization()
+    );
+
+    mockSafeSyncScanToParcels.mockResolvedValueOnce({
+      synced: false,
+      parcelsUpdated: 0,
+      orderStatus: null,
+    });
+
+    mockTransitionOrderStatus.mockResolvedValueOnce({
+      success: false,
+      noop: false,
+      error: 'Transition refusée',
+    });
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result).toEqual({
+      status: 409,
+      body: {
+        error: 'Transition refusée',
+        code: 'TRANSITION_REFUSED',
+      },
+    });
+  });
+
+  test('succès : scan canonique, preuve durable, reset et notification post-commit', async () => {
+    mockSuccessfulAgentCollection();
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result).toEqual({
+      status: 200,
+      body: {
+        success: true,
+        message: 'Colis remis. Commande marquée comme récupérée (retrait exceptionnel).',
+        order_ref: 'ORD1',
+      },
+    });
+
+    const [scanSql, scanParams] = db.query.mock.calls[2];
+
+    expect(scanSql).toContain('INSERT INTO scans');
+    expect(scanSql).toContain('pickup_method');
+    expect(scanSql).toContain('authorization_version');
+    expect(scanSql).toContain('document_checked');
+    expect(scanSql).toContain('pickup_relais_id');
+
+    expect(scanParams[0]).toBe('O1');
+    expect(scanParams[1]).toBe('ORD1');
+    expect(scanParams[2]).toBe('u-agent');
+    expect(scanParams[4]).toBe('AUTHORIZED_NAME_ID_CHECK');
+    expect(scanParams[5]).toBe(1);
+    expect(scanParams[6]).toBe(true);
+    expect(scanParams[7]).toBe('r1');
+
+    expect(scanParams.join(' '))
+      .not.toMatch(/Fatima|Said/);
+
+    expect(mockSafeSyncScanToParcels).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order_id: 'O1',
+        step: 'collected',
+        scan_id: 'scan-exceptional-1',
+        scanned_by: 'u-agent',
+      }),
+      expect.any(Object)
+    );
+
+    const [updateSql, updateParams] = db.query.mock.calls[3];
+
+    expect(updateSql).toContain('pickup_collected_via');
+    expect(updateSql).toContain('AUTHORIZED_NAME_ID_CHECK');
+    expect(updateSql).toContain('exceptional_pickup_attempts');
+    expect(updateParams).toEqual(['O1']);
+
+    await new Promise(process.nextTick);
+
+    expect(mockNotifyText).toHaveBeenCalledWith(
+      '+269000000',
+      expect.stringContaining('ORD1'),
+      'exceptional_pickup_collected',
+      'O1',
+    );
+  });
+
+  test('succès sans téléphone connu : pas de notification', async () => {
+    mockSuccessfulAgentCollection(
+      buildOrder({ buyer_phone: null })
+    );
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result.status).toBe(200);
+
+    await new Promise(process.nextTick);
+
+    expect(mockNotifyText).not.toHaveBeenCalled();
+  });
+
+  test('échec notifyText non bloquant après COMMIT', async () => {
+    mockSuccessfulAgentCollection();
+
+    mockNotifyText.mockRejectedValueOnce(
+      new Error('gateway down')
+    );
+
+    const result = await collectByAuthorizedName(base);
+
+    expect(result.status).toBe(200);
+
+    await new Promise(process.nextTick);
   });
 });

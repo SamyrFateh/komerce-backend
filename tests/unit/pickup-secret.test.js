@@ -52,6 +52,12 @@ jest.mock('../../services/order-status-machine', () => ({
   transitionOrderStatus: (...args) => mockTransitionOrderStatus(...args),
 }));
 
+const mockSafeSyncScanToParcels = jest.fn();
+jest.mock('../../utils/parcelSync', () => ({
+  safeSyncScanToParcels: (...args) =>
+    mockSafeSyncScanToParcels(...args),
+}));
+
 const mockBuildReceiptHTML = jest.fn().mockReturnValue('<html>reçu</html>');
 jest.mock('../../utils/pickup-receipt-html', () => ({
   buildReceiptHTML: (...args) => mockBuildReceiptHTML(...args),
@@ -81,16 +87,49 @@ jest.mock('../../db', () => {
   };
 });
 
+// Lot 5 — le routeur délègue à pickup-secret-service, qui consomme
+// auth-identity uniquement via cette API interne. Mockée ici comme dans
+// tests/unit/pickup-secret-service.test.js — le routeur ne teste que le
+// câblage HTTP, pas la logique métier (déjà couverte côté service).
+const mockGetActiveAuthorizationForUpdate = jest.fn();
+const mockHasActiveAuthorization = jest.fn();
+jest.mock('../../services/pickup-authorization-service', () => ({
+  getActiveAuthorizationForUpdate: (...args) => mockGetActiveAuthorizationForUpdate(...args),
+  hasActiveAuthorization: (...args) => mockHasActiveAuthorization(...args),
+}));
+
+const mockNotifyText = jest.fn().mockResolvedValue({ ok: true });
+jest.mock('../../services/notifications/notification-service', () => ({
+  notifyText: (...args) => mockNotifyText(...args),
+}));
+
 const express = require('express');
 const request = require('supertest');
 
 let app;
 
+const EXCEPTIONAL_ORDER_ID =
+  '11111111-1111-4111-8111-111111111111';
+
 beforeEach(() => {
   jest.clearAllMocks();
+
+  // clearAllMocks vide l'historique, mais pas la file des
+  // mockResolvedValueOnce. Une validation HTTP anticipée ne doit pas
+  // empoisonner les tests suivants.
+  mockQuery.mockReset();
+
+  mockSafeSyncScanToParcels.mockReset();
+  mockSafeSyncScanToParcels.mockResolvedValue({
+    synced: true,
+    parcelsUpdated: 1,
+    orderStatus: 'collected',
+  });
+
   mockBuildReceiptHTML.mockReturnValue('<html>reçu</html>');
   mockHandleOrderConfirmed.mockResolvedValue({ skipped: true });
   mockTriggerPurchasing.mockResolvedValue({});
+  mockNotifyText.mockResolvedValue({ ok: true });
 
   app = express();
   app.use(express.json());
@@ -291,6 +330,244 @@ describe('POST /api/pickup/collect/:orderId', () => {
     expect(res.body.success).toBe(true);
     const [, params] = mockQuery.mock.calls[1];
     expect(params).toEqual(['Fatima', 'O1']);
+  });
+});
+
+describe('GET /api/pickup/exceptional-pickup/:orderId', () => {
+  test('400 si orderId n\'est pas un UUID', async () => {
+    const res = await request(app)
+      .get('/api/pickup/exceptional-pickup/O1');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Données invalides');
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  test('404 si commande introuvable', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get(
+        `/api/pickup/exceptional-pickup/${EXCEPTIONAL_ORDER_ID}`
+      );
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({
+      available: false,
+      reason: 'ORDER_NOT_FOUND',
+    });
+  });
+
+  test('available:false NO_ACTIVE_AUTHORIZATION — jamais de nom dans la réponse', async () => {
+    mockQuery
+      .mockResolvedValueOnce({
+        rows: [{
+          id: EXCEPTIONAL_ORDER_ID,
+          status: 'available',
+          relais_id: 'r1',
+          user_id: 'u1',
+          exceptional_pickup_blocked_until: null,
+        }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ relais_id: 'r1' }],
+      });
+
+    mockHasActiveAuthorization.mockResolvedValueOnce(false);
+
+    const res = await request(app)
+      .get(
+        `/api/pickup/exceptional-pickup/${EXCEPTIONAL_ORDER_ID}`
+      );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      available: false,
+      reason: 'NO_ACTIVE_AUTHORIZATION',
+    });
+
+    expect(JSON.stringify(res.body))
+      .not.toMatch(/Fatima|Said/i);
+  });
+
+  test('available:true nominal — transmet bien le propriétaire à auth-identity', async () => {
+    mockQuery
+      .mockResolvedValueOnce({
+        rows: [{
+          id: EXCEPTIONAL_ORDER_ID,
+          status: 'available',
+          relais_id: 'r1',
+          user_id: 'u1',
+          exceptional_pickup_blocked_until: null,
+        }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ relais_id: 'r1' }],
+      });
+
+    mockHasActiveAuthorization.mockResolvedValueOnce(true);
+
+    const res = await request(app)
+      .get(
+        `/api/pickup/exceptional-pickup/${EXCEPTIONAL_ORDER_ID}`
+      );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ available: true });
+
+    expect(mockHasActiveAuthorization)
+      .toHaveBeenCalledWith('u1');
+  });
+});
+
+describe('POST /api/pickup/exceptional-pickup/:orderId/collect', () => {
+  test('400 si orderId n\'est pas un UUID', async () => {
+    const res = await request(app)
+      .post('/api/pickup/exceptional-pickup/O1/collect')
+      .send({
+        given_names: 'Fatima',
+        family_name: 'Said',
+        document_checked: true,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Données invalides');
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  test('404 si commande introuvable', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .post(
+        `/api/pickup/exceptional-pickup/${EXCEPTIONAL_ORDER_ID}/collect`
+      )
+      .send({
+        given_names: 'Fatima',
+        family_name: 'Said',
+        document_checked: true,
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('ORDER_NOT_FOUND');
+  });
+
+  test('400 Joi si document_checked est absent', async () => {
+    const res = await request(app)
+      .post(
+        `/api/pickup/exceptional-pickup/${EXCEPTIONAL_ORDER_ID}/collect`
+      )
+      .send({
+        given_names: 'Fatima',
+        family_name: 'Said',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Données invalides');
+
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'document_checked',
+        }),
+      ])
+    );
+
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  test('400 Joi si document_checked vaut la chaîne "false"', async () => {
+    const res = await request(app)
+      .post(
+        `/api/pickup/exceptional-pickup/${EXCEPTIONAL_ORDER_ID}/collect`
+      )
+      .send({
+        given_names: 'Fatima',
+        family_name: 'Said',
+        document_checked: 'false',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Données invalides');
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  test('succès : crée le scan canonique et notifie après COMMIT', async () => {
+    mockQuery
+      .mockResolvedValueOnce({
+        rows: [{
+          id: EXCEPTIONAL_ORDER_ID,
+          reference: 'ORD1',
+          status: 'available',
+          relais_id: 'r1',
+          user_id: 'u1',
+          exceptional_pickup_attempts: 0,
+          exceptional_pickup_blocked_until: null,
+          relais_name: 'Moroni Centre',
+          buyer_phone: '+269...',
+        }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ relais_id: 'r1' }],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ id: 'scan-http-exceptional' }],
+      })
+      .mockResolvedValueOnce({
+        rows: [],
+      });
+
+    mockGetActiveAuthorizationForUpdate
+      .mockResolvedValueOnce({
+        normalizedGivenNames: 'fatima',
+        normalizedFamilyName: 'said',
+        version: 1,
+      });
+
+    mockSafeSyncScanToParcels.mockResolvedValueOnce({
+      synced: true,
+      parcelsUpdated: 1,
+      orderStatus: 'collected',
+    });
+
+    const res = await request(app)
+      .post(
+        `/api/pickup/exceptional-pickup/${EXCEPTIONAL_ORDER_ID}/collect`
+      )
+      .send({
+        given_names: 'Fatima',
+        family_name: 'Said',
+        document_checked: true,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    const scanCall = mockQuery.mock.calls.find(([sql]) =>
+      sql.includes('INSERT INTO scans')
+    );
+
+    expect(scanCall).toBeDefined();
+
+    const [, scanParams] = scanCall;
+
+    expect(scanParams[0]).toBe(EXCEPTIONAL_ORDER_ID);
+    expect(scanParams[1]).toBe('ORD1');
+    expect(scanParams[2]).toBe('u-agent');
+    expect(scanParams[4])
+      .toBe('AUTHORIZED_NAME_ID_CHECK');
+    expect(scanParams[5]).toBe(1);
+    expect(scanParams[6]).toBe(true);
+    expect(scanParams[7]).toBe('r1');
+
+    await new Promise(process.nextTick);
+
+    expect(mockNotifyText).toHaveBeenCalledWith(
+      '+269...',
+      expect.stringContaining('ORD1'),
+      'exceptional_pickup_collected',
+      EXCEPTIONAL_ORDER_ID,
+    );
   });
 });
 

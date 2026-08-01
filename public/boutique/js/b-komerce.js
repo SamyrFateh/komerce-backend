@@ -10,26 +10,27 @@
  * @used-by       b-nav.js, boutique.js
  * @doctrine      wallet_visible_client, navigation_sans_friction, otp_une_fois
  * @impact-areas  account, wallet, boutique-navigation
- * @version       2026-07-lot4b
+ * @version       2026-07-lot5
  */
 'use strict';
 
 /**
  * @module b-komerce
- * @brief Mon Komerce — page personnelle unique (Lot 4B).
+ * @brief Mon Komerce — page personnelle unique (Lot 4B, étendue Lot 5).
  *
  * Doctrine : Mon Komerce est une seule page, sans sous-onglet, sans menu
  * secondaire. L'authentification intervient à l'entrée, une seule fois.
  *
  *   Mon wallet  (premier bloc, délègue à b-wallet.js)
  *   Mon profil  (nom, email lecture seule, WhatsApp du compte, devise)
- *   Retrait & sécurité (carte informative)
+ *   Retrait & sécurité (code de retrait informatif + autorisation
+ *     nominative de retrait exceptionnel — Lot 5, états NONE/ACTIVE)
  *
  * Point d'entrée canonique : openMonKomerce({ focus })
  *   focus = 'wallet' → scroll jusqu'au bloc wallet après chargement.
  */
 
-import { sanitize, apiGet, apiPut } from './b-utils.js';
+import { sanitize, apiGet, apiPut, apiDelete } from './b-utils.js';
 import { getCurrentIdentity, requireIdentity } from './b-identity.js';
 import { renderWalletView } from './b-wallet.js';
 import { bus } from './b-bus.js';
@@ -240,7 +241,7 @@ function renderProfileBlock(block, me) {
   });
 }
 
-// ── Bloc retrait & sécurité (informatif uniquement) ────────────────────────────
+// ── Bloc retrait & sécurité (code informatif + autorisation nominative Lot 5) ──
 
 function renderSecurityBlock(block, me) {
   const phone = maskPhone(me?.phone);
@@ -252,13 +253,148 @@ function renderSecurityBlock(block, me) {
         '<span class="k-kmc-sec-value" id="k-kmc-security-phone"></span>' +
       '</div>' +
       '<div class="k-kmc-sec-doctrine">' +
-        '<p>Le code de retrait est envoy\u00e9 sur votre WhatsApp lorsque votre commande est pr\u00eate au relais. Vous pouvez le transmettre \u00e0 la personne de votre choix \u2014 Komerce ne collecte aucune identit\u00e9 de retrait distincte.</p>' +
+        '<p>Le code de retrait est envoy\u00e9 sur votre WhatsApp lorsque votre commande est pr\u00eate au relais. Vous pouvez le transmettre \u00e0 la personne de votre choix.</p>' +
         '<p>Ce code est personnel et unique \u00e0 chaque commande : ne le partagez qu\u2019avec la personne qui viendra r\u00e9cup\u00e9rer votre colis.</p>' +
+      '</div>' +
+      '<div class="k-kmc-auth-block" id="k-kmc-auth-block">' +
+        '<h4 class="k-kmc-auth-title">Autorisation de retrait exceptionnel</h4>' +
+        '<p class="k-kmc-field-hint">Si le code n\u2019a pas \u00e9t\u00e9 re\u00e7u ou transmis, vous pouvez autoriser nomm\u00e9ment une personne \u2014 l\u2019agent relais contr\u00f4lera sa pi\u00e8ce d\u2019identit\u00e9 et comparera le nom, sans jamais conna\u00eetre \u00e0 l\u2019avance le nom attendu.</p>' +
+        '<div id="k-kmc-auth-content"></div>' +
       '</div>' +
     '</div>';
   const phoneValue = block.querySelector('#k-kmc-security-phone');
   if (phoneValue) phoneValue.textContent = phone || '\u2014';
 
+  _loadAuthSection(block.querySelector('#k-kmc-auth-content'));
+}
+
+// ── Sous-bloc autorisation nominative (Lot 5) ───────────────────────────────
+// États : NONE (aucune autorisation active) / ACTIVE (résumé + modifier/supprimer).
+// Jamais d'interpolation HTML des noms saisis/renvoyés — assignation via
+// .textContent / .value uniquement, même doctrine que le bloc profil.
+
+async function _loadAuthSection(container) {
+  if (!container) return;
+  renderBlockLoading(container);
+  let data = null, err = null;
+  try { data = await apiGet('/api/auth/me/pickup-authorization'); }
+  catch (e) { err = e; }
+
+  if (err) {
+    renderBlockError(container, err, () => _loadAuthSection(container));
+    return;
+  }
+
+  if (data && data.status === 'ACTIVE') _renderAuthActive(container, data);
+  else _renderAuthForm(container, null);
+}
+
+function _renderAuthActive(container, data) {
+  container.innerHTML = /* LOT5_STATIC_AUTH_ACTIVE */
+    '<div class="k-kmc-sec-row">' +
+      '<span class="k-kmc-sec-label">Personne autoris\u00e9e</span>' +
+      '<span class="k-kmc-sec-value" id="k-kmc-auth-name">' +
+        '<span id="k-kmc-auth-given"></span> <span id="k-kmc-auth-family"></span>' +
+      '</span>' +
+    '</div>' +
+    (fmtDateFr(data.updated_at)
+      ? '<p class="k-kmc-field-hint" id="k-kmc-auth-updated"></p>'
+      : '') +
+    '<p class="k-kmc-save-status" id="k-kmc-auth-status" role="status" aria-live="polite"></p>' +
+    '<div class="k-kmc-auth-actions">' +
+      '<button type="button" class="k-kmc-action-btn k-kmc-action-btn--secondary" id="k-kmc-auth-edit">Modifier</button>' +
+      '<button type="button" class="k-kmc-action-btn k-kmc-action-btn--danger" id="k-kmc-auth-delete">Supprimer</button>' +
+    '</div>';
+
+  const givenEl  = container.querySelector('#k-kmc-auth-given');
+  const familyEl = container.querySelector('#k-kmc-auth-family');
+  if (givenEl)  givenEl.textContent  = data.given_names;
+  if (familyEl) familyEl.textContent = data.family_name;
+  const updatedEl = container.querySelector('#k-kmc-auth-updated');
+  if (updatedEl) updatedEl.textContent = `Enregistr\u00e9e le ${fmtDateFr(data.updated_at)}.`;
+
+  container.querySelector('#k-kmc-auth-edit')?.addEventListener('click', () => {
+    _renderAuthForm(container, { given_names: data.given_names, family_name: data.family_name });
+  });
+
+  container.querySelector('#k-kmc-auth-delete')?.addEventListener('click', async () => {
+    const btn = container.querySelector('#k-kmc-auth-delete');
+    const status = container.querySelector('#k-kmc-auth-status');
+    if (!window.confirm('Supprimer cette autorisation de retrait exceptionnel ?')) return;
+    btn.disabled = true;
+    try {
+      await apiDelete('/api/auth/me/pickup-authorization');
+      _renderAuthForm(container, null);
+    } catch (_) {
+      btn.disabled = false;
+      if (status) status.textContent = '\u26a0\ufe0f \u00c9chec \u2014 r\u00e9essayez';
+    }
+  });
+}
+
+function _renderAuthForm(container, prefill) {
+  const isEdit = !!prefill;
+  container.innerHTML = /* LOT5_STATIC_AUTH_FORM */
+    '<form class="k-kmc-form" id="k-kmc-auth-form">' +
+      '<label class="k-kmc-field">' +
+        '<span>Pr\u00e9nom(s)</span>' +
+        '<input type="text" id="k-kmc-auth-given" maxlength="100" autocomplete="off">' +
+      '</label>' +
+      '<label class="k-kmc-field">' +
+        '<span>Nom de famille</span>' +
+        '<input type="text" id="k-kmc-auth-family" maxlength="100" autocomplete="off">' +
+      '</label>' +
+      '<p class="k-kmc-field-hint">Saisissez le nom exactement tel qu\u2019il figure sur la pi\u00e8ce d\u2019identit\u00e9 de la personne autoris\u00e9e.</p>' +
+      '<p class="k-kmc-save-status" id="k-kmc-auth-status" role="status" aria-live="polite"></p>' +
+      '<div class="k-kmc-auth-actions">' +
+        (isEdit ? '<button type="button" class="k-kmc-action-btn k-kmc-action-btn--secondary" id="k-kmc-auth-cancel">Annuler</button>' : '') +
+        '<button type="submit" class="k-kmc-action-btn" id="k-kmc-auth-save" disabled>' +
+          (isEdit ? 'Enregistrer les modifications' : 'Enregistrer l\u2019autorisation') +
+        '</button>' +
+      '</div>' +
+    '</form>';
+
+  const form      = container.querySelector('#k-kmc-auth-form');
+  const givenInput  = container.querySelector('#k-kmc-auth-given');
+  const familyInput = container.querySelector('#k-kmc-auth-family');
+  const saveBtn   = container.querySelector('#k-kmc-auth-save');
+  const status    = container.querySelector('#k-kmc-auth-status');
+
+  givenInput.value  = prefill ? String(prefill.given_names) : '';
+  familyInput.value = prefill ? String(prefill.family_name) : '';
+
+  function checkFilled() {
+    saveBtn.disabled = !givenInput.value.trim() || !familyInput.value.trim();
+  }
+  givenInput.addEventListener('input', checkFilled);
+  familyInput.addEventListener('input', checkFilled);
+  checkFilled();
+
+  container.querySelector('#k-kmc-auth-cancel')?.addEventListener('click', () => {
+    _loadAuthSection(container);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (saveBtn.disabled) return;
+    const givenNames = givenInput.value.trim();
+    const familyName  = familyInput.value.trim();
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Enregistrement\u2026';
+    status.textContent = '';
+
+    try {
+      const result = await apiPut('/api/auth/me/pickup-authorization', {
+        given_names: givenNames, family_name: familyName,
+      });
+      _renderAuthActive(container, result);
+    } catch (_) {
+      status.textContent = '\u26a0\ufe0f \u00c9chec \u2014 r\u00e9essayez';
+      saveBtn.disabled = false;
+      saveBtn.textContent = isEdit ? 'Enregistrer les modifications' : 'Enregistrer l\u2019autorisation';
+    }
+  });
 }
 
 // ── Chargement et assemblage de la page ────────────────────────────────────────

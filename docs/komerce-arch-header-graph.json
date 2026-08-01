@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 385,
-    "filesWithFullHeaders": 357,
+    "scannedCodeFiles": 387,
+    "filesWithFullHeaders": 359,
     "filesWithLiteHeaders": 28,
-    "filesWithAnyHeaders": 385,
+    "filesWithAnyHeaders": 387,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 793,
-    "edges": 4430,
-    "dbTables": 116,
-    "doctrines": 161,
-    "impactAreas": 131,
-    "unresolvedCodeEdges": 422,
+    "graphNodes": 798,
+    "edges": 4447,
+    "dbTables": 117,
+    "doctrines": 162,
+    "impactAreas": 132,
+    "unresolvedCodeEdges": 425,
     "dbWriteViaOverlapWarnings": 0,
     "multiWriterTables": 69
   },
@@ -51,7 +51,7 @@
     "business-rules": 1,
     "orders": 24,
     "documents": 11,
-    "auth-identity": 4,
+    "auth-identity": 5,
     "operations": 11,
     "inventory": 2,
     "loyalty": 2,
@@ -60,7 +60,8 @@
     "sourcing": 1,
     "unsold-resolution": 1,
     "incident-management": 1,
-    "refunds": 2
+    "refunds": 2,
+    "shared": 1
   },
   "byLayer": {
     "route-manifest": 1,
@@ -81,7 +82,7 @@
     "util-ui": 2,
     "ui-infrastructure": 1,
     "state": 1,
-    "util": 24,
+    "util": 25,
     "domain-helper": 1,
     "controller": 1,
     "api-client": 2,
@@ -89,7 +90,7 @@
     "schema": 1,
     "route": 100,
     "entrypoint": 1,
-    "service": 157,
+    "service": 158,
     "external-adapter": 2,
     "machine": 2,
     "policy": 1,
@@ -99,7 +100,7 @@
   "byCriticality": {
     "critical": 78,
     "medium": 105,
-    "high": 167,
+    "high": 169,
     "low": 35
   },
   "nodes": [
@@ -1990,7 +1991,7 @@
         "wallet",
         "boutique-navigation"
       ],
-      "version": "2026-07-lot4b"
+      "version": "2026-07-lot5"
     },
     {
       "id": "public/boutique/js/b-mini-cart.js",
@@ -13626,6 +13627,54 @@
       "version": "2026-06"
     },
     {
+      "id": "services/pickup-authorization-service.js",
+      "file": "services/pickup-authorization-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-authorization-service",
+      "domain": "auth-identity",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db.js",
+        "utils/name-normalize.js",
+        "utils/alerts.js"
+      ],
+      "usedBy": [
+        "routes/auth.js",
+        "services/pickup-secret-service.js (logistics",
+        "lecture verrouillée)"
+      ],
+      "dbRead": [
+        "user_pickup_authorizations"
+      ],
+      "dbWrite": [
+        "alerts",
+        "user_pickup_authorizations"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "exceptional_pickup_strict_normalized_match"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "logistics"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "services/pickup-secret-service.js",
       "file": "services/pickup-secret-service.js",
       "type": "file",
@@ -17521,6 +17570,42 @@
       "version": "2026-06"
     },
     {
+      "id": "utils/name-normalize.js",
+      "file": "utils/name-normalize.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "name-normalize",
+      "domain": "shared",
+      "layer": "util",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "raw_string"
+      ],
+      "outputs": [
+        "normalized_string",
+        "boolean"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/pickup-authorization-service.js",
+        "services/pickup-secret-service.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "exceptional_pickup_strict_normalized_match"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "logistics"
+      ],
+      "version": "2026-07"
+    },
+    {
       "id": "utils/orderParcelLinkRules.js",
       "file": "utils/orderParcelLinkRules.js",
       "type": "file",
@@ -18627,6 +18712,11 @@
       "table": "paypal_events_processed"
     },
     {
+      "id": "db:user_pickup_authorizations",
+      "type": "db-table",
+      "table": "user_pickup_authorizations"
+    },
+    {
       "id": "db:price_history",
       "type": "db-table",
       "table": "price_history"
@@ -19320,6 +19410,11 @@
       "id": "doctrine:wallet_non_modifie_ici",
       "type": "doctrine",
       "doctrine": "wallet_non_modifie_ici"
+    },
+    {
+      "id": "doctrine:exceptional_pickup_strict_normalized_match",
+      "type": "doctrine",
+      "doctrine": "exceptional_pickup_strict_normalized_match"
     },
     {
       "id": "doctrine:§7",
@@ -20095,6 +20190,11 @@
       "id": "impact:pickup",
       "type": "impact-area",
       "area": "pickup"
+    },
+    {
+      "id": "impact:auth-identity",
+      "type": "impact-area",
+      "area": "auth-identity"
     },
     {
       "id": "impact:purchasing",
@@ -39665,6 +39765,78 @@
       "label": "payment"
     },
     {
+      "from": "services/pickup-authorization-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-authorization-service.js",
+      "to": "utils/name-normalize.js",
+      "type": "depends",
+      "label": "utils/name-normalize.js"
+    },
+    {
+      "from": "services/pickup-authorization-service.js",
+      "to": "utils/alerts.js",
+      "type": "depends",
+      "label": "utils/alerts.js"
+    },
+    {
+      "from": "routes/auth.js",
+      "to": "services/pickup-authorization-service.js",
+      "type": "uses",
+      "label": "routes/auth.js"
+    },
+    {
+      "from": "services/pickup-secret-service.js (logistics",
+      "to": "services/pickup-authorization-service.js",
+      "type": "uses",
+      "label": "services/pickup-secret-service.js (logistics"
+    },
+    {
+      "from": "lecture verrouillée)",
+      "to": "services/pickup-authorization-service.js",
+      "type": "uses",
+      "label": "lecture verrouillée)"
+    },
+    {
+      "from": "services/pickup-authorization-service.js",
+      "to": "db:user_pickup_authorizations",
+      "type": "db-read",
+      "label": "user_pickup_authorizations"
+    },
+    {
+      "from": "services/pickup-authorization-service.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "services/pickup-authorization-service.js",
+      "to": "db:user_pickup_authorizations",
+      "type": "db-write",
+      "label": "user_pickup_authorizations"
+    },
+    {
+      "from": "services/pickup-authorization-service.js",
+      "to": "doctrine:exceptional_pickup_strict_normalized_match",
+      "type": "doctrine",
+      "label": "exceptional_pickup_strict_normalized_match"
+    },
+    {
+      "from": "services/pickup-authorization-service.js",
+      "to": "impact:auth-identity",
+      "type": "impact",
+      "label": "auth-identity"
+    },
+    {
+      "from": "services/pickup-authorization-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
       "from": "services/pickup-secret-service.js",
       "to": "db.js",
       "type": "depends",
@@ -45987,6 +46159,36 @@
       "label": "unknown"
     },
     {
+      "from": "services/pickup-authorization-service.js",
+      "to": "utils/name-normalize.js",
+      "type": "uses",
+      "label": "services/pickup-authorization-service.js"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "utils/name-normalize.js",
+      "type": "uses",
+      "label": "services/pickup-secret-service.js"
+    },
+    {
+      "from": "utils/name-normalize.js",
+      "to": "doctrine:exceptional_pickup_strict_normalized_match",
+      "type": "doctrine",
+      "label": "exceptional_pickup_strict_normalized_match"
+    },
+    {
+      "from": "utils/name-normalize.js",
+      "to": "impact:auth-identity",
+      "type": "impact",
+      "label": "auth-identity"
+    },
+    {
+      "from": "utils/name-normalize.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
       "from": "utils/orderParcelLinkRules.js",
       "to": "services/order-status-machine.js",
       "type": "depends",
@@ -52112,6 +52314,7 @@
         "impact:auth",
         "middleware/auth.js",
         "middleware/validate.js",
+        "services/pickup-authorization-service.js",
         "utils/logger.js"
       ]
     },
@@ -60063,6 +60266,50 @@
         "utils/logger.js"
       ]
     },
+    "services/pickup-authorization-service.js": {
+      "role": "pickup-authorization-service",
+      "domain": "auth-identity",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "utils/name-normalize.js",
+        "utils/alerts.js"
+      ],
+      "directUsedBy": [
+        "routes/auth.js",
+        "services/pickup-secret-service.js (logistics",
+        "lecture verrouillée)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "user_pickup_authorizations"
+      ],
+      "dbWrite": [
+        "alerts",
+        "user_pickup_authorizations"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "exceptional_pickup_strict_normalized_match"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "logistics"
+      ],
+      "mustCheck": [
+        "db:alerts",
+        "db:user_pickup_authorizations",
+        "doctrine:exceptional_pickup_strict_normalized_match",
+        "impact:auth-identity",
+        "impact:logistics",
+        "routes/auth.js",
+        "utils/alerts.js",
+        "utils/name-normalize.js"
+      ]
+    },
     "services/pickup-secret-service.js": {
       "role": "pickup-secret-service",
       "domain": "logistics",
@@ -60139,6 +60386,7 @@
         "services/scan-operations.js",
         "utils/alerts.js",
         "utils/logger.js",
+        "utils/name-normalize.js",
         "utils/parcelSync.js",
         "utils/pickup-receipt-html.js"
       ]
@@ -63318,6 +63566,7 @@
         "services/payment-cash-confirm.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
+        "services/pickup-authorization-service.js",
         "services/pickup-secret-service.js"
       ]
     },
@@ -63879,6 +64128,37 @@
         "utils/refunds.js",
         "utils/rules.js",
         "utils/store-credits.js"
+      ]
+    },
+    "utils/name-normalize.js": {
+      "role": "name-normalize",
+      "domain": "shared",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/pickup-authorization-service.js",
+        "services/pickup-secret-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "exceptional_pickup_strict_normalized_match"
+      ],
+      "impactAreas": [
+        "auth-identity",
+        "logistics"
+      ],
+      "mustCheck": [
+        "doctrine:exceptional_pickup_strict_normalized_match",
+        "impact:auth-identity",
+        "impact:logistics",
+        "services/pickup-authorization-service.js",
+        "services/pickup-secret-service.js"
       ]
     },
     "utils/orderParcelLinkRules.js": {
@@ -64468,7 +64748,7 @@
     },
     {
       "table": "alerts",
-      "writerCount": 20,
+      "writerCount": 21,
       "writers": [
         "services/admin-order-refund.js",
         "services/cancel-order-purchase-orders.js",
@@ -64481,6 +64761,7 @@
         "services/payment-cash-confirm.js",
         "services/payment-paypal.js",
         "services/payment-stripe.js",
+        "services/pickup-authorization-service.js",
         "services/pickup-secret-service.js",
         "services/product-publication-guard.js",
         "services/purchasing-trigger-service.js",
@@ -67237,6 +67518,24 @@
       "to": "services/payment-stripe.js",
       "type": "uses",
       "label": "stripe_webhooks"
+    },
+    {
+      "from": "services/pickup-authorization-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-secret-service.js (logistics",
+      "to": "services/pickup-authorization-service.js",
+      "type": "uses",
+      "label": "services/pickup-secret-service.js (logistics"
+    },
+    {
+      "from": "lecture verrouillée)",
+      "to": "services/pickup-authorization-service.js",
+      "type": "uses",
+      "label": "lecture verrouillée)"
     },
     {
       "from": "services/pickup-secret-service.js",

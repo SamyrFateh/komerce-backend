@@ -52,6 +52,12 @@ const { transitionOrderStatus }                    = require('./order-status-mac
 const { buildReceiptHTML }                         = require('../utils/pickup-receipt-html');
 const { safeSyncScanToParcels }                     = require('../utils/parcelSync');
 const { createAlert }                               = require('../utils/alerts');
+const { namesMatch }                                = require('../utils/name-normalize');
+const {
+  getActiveAuthorizationForUpdate,
+  hasActiveAuthorization,
+}                                                    = require('./pickup-authorization-service');
+const { notifyText }                                = require('./notifications/notification-service');
 const log = require('../utils/logger').child({ module: 'pickup-secret-service' });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -682,6 +688,237 @@ async function revealOnce({ orderId, userId }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// _recordCanonicalCollection
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// Une seule remise physique, quelle que soit la méthode d'authentification.
+//
+// Ce helper doit être appelé uniquement :
+//   - dans une transaction déjà ouverte ;
+//   - après verrouillage FOR UPDATE de la commande ;
+//   - après validation de la méthode d'authentification.
+//
+// Il possède :
+//   - la création du scan collected ;
+//   - la synchronisation des colis ;
+//   - le fallback de la machine d'état pour les commandes sans parcel ;
+//   - la preuve minimale de la méthode de retrait ;
+//   - l'invalidation atomique du secret et de ses caches en clair ;
+//   - la remise à zéro des compteurs de tentative.
+//
+// Toute erreur après la création du scan est levée afin que withTransaction
+// exécute un ROLLBACK complet. Aucun état partiel ne doit être commité.
+
+async function _recordCanonicalCollection({
+  client,
+  order,
+  agentId,
+  role,
+  pickupMethod,
+  notes,
+  authorizationVersion = null,
+  documentChecked = false,
+}) {
+  if (!client) {
+    throw new Error('_recordCanonicalCollection: client transactionnel requis');
+  }
+
+  if (!order || order.status !== 'available') {
+    throw new Error(
+      '_recordCanonicalCollection: commande non disponible au retrait'
+    );
+  }
+
+  const isExceptional =
+    pickupMethod === 'AUTHORIZED_NAME_ID_CHECK';
+
+  if (
+    pickupMethod !== 'PICKUP_CODE' &&
+    pickupMethod !== 'AUTHORIZED_NAME_ID_CHECK'
+  ) {
+    throw new Error(
+      '_recordCanonicalCollection: méthode de retrait inconnue'
+    );
+  }
+
+  if (
+    isExceptional &&
+    (
+      !Number.isInteger(authorizationVersion) ||
+      authorizationVersion <= 0 ||
+      documentChecked !== true
+    )
+  ) {
+    throw new Error(
+      '_recordCanonicalCollection: preuve nominative incomplète'
+    );
+  }
+
+  if (
+    !isExceptional &&
+    (
+      authorizationVersion !== null ||
+      documentChecked !== false
+    )
+  ) {
+    throw new Error(
+      '_recordCanonicalCollection: preuve code incohérente'
+    );
+  }
+
+  const { rows: [scan] } = await client.query(
+    `INSERT INTO scans (
+       order_id,
+       step,
+       scan_code,
+       scanned_by,
+       notes,
+       pickup_method,
+       authorization_version,
+       document_checked,
+       pickup_relais_id
+     )
+     VALUES (
+       $1,
+       'collected',
+       $2,
+       $3,
+       $4,
+       $5,
+       $6,
+       $7,
+       $8
+     )
+     RETURNING id`,
+    [
+      order.id,
+      order.reference,
+      agentId,
+      notes,
+      pickupMethod,
+      authorizationVersion,
+      documentChecked,
+      order.relais_id,
+    ]
+  );
+
+  const syncResult = await safeSyncScanToParcels({
+    order_id:   order.id,
+    step:       'collected',
+    scan_id:    scan.id,
+    scanned_by: agentId,
+    notes,
+  }, client);
+
+  if (!syncResult.synced) {
+    const transition = await transitionOrderStatus({
+      orderId:   order.id,
+      newStatus: 'collected',
+      actor:     { id: agentId, role },
+      source:    'scan',
+      scanId:    scan.id,
+      note:      notes + ' (fallback, pas de colis parcelSync)',
+      dbClient:  client,
+    });
+
+    if (
+      !transition.success ||
+      transition.noop ||
+      transition.newStatus !== 'collected'
+    ) {
+      const error = new Error(
+        transition.error ||
+        'La transition canonique vers collected a été refusée'
+      );
+
+      error.code = transition.noop
+        ? 'COLLECTION_CONFLICT'
+        : 'TRANSITION_REFUSED';
+
+      throw error;
+    }
+  } else if (syncResult.orderStatus !== 'collected') {
+    const error = new Error(
+      'La synchronisation des colis n’a pas produit le statut collected'
+    );
+
+    error.code = 'PARCEL_SYNC_INCOMPLETE';
+    throw error;
+  }
+
+  if (pickupMethod === 'PICKUP_CODE') {
+    await client.query(`
+      UPDATE orders
+      SET pickup_collected_via             = 'PICKUP_CODE',
+          pickup_secret_hash                = NULL,
+          pickup_secret_salt                = NULL,
+          pickup_secret_last4               = NULL,
+          pickup_secret_expires_at          = NULL,
+          pickup_secret_attempts            = 0,
+          pickup_secret_blocked_until       = NULL,
+          exceptional_pickup_attempts       = 0,
+          exceptional_pickup_blocked_until  = NULL,
+          updated_at                        = NOW()
+      WHERE id = $1
+    `, [order.id]);
+  } else {
+    await client.query(`
+      UPDATE orders
+      SET pickup_collected_via             = 'AUTHORIZED_NAME_ID_CHECK',
+          pickup_secret_hash                = NULL,
+          pickup_secret_salt                = NULL,
+          pickup_secret_last4               = NULL,
+          pickup_secret_expires_at          = NULL,
+          pickup_secret_attempts            = 0,
+          pickup_secret_blocked_until       = NULL,
+          exceptional_pickup_attempts       = 0,
+          exceptional_pickup_blocked_until  = NULL,
+          updated_at                        = NOW()
+      WHERE id = $1
+    `, [order.id]);
+  }
+
+  // Le code devient définitivement inutilisable dans la même transaction
+  // que la remise physique, quelle que soit la méthode gagnante.
+  //
+  // Les tables éphémères peuvent encore contenir le code en clair :
+  // elles sont donc purgées avant COMMIT, sans fenêtre post-remise.
+  await client.query(
+    'DELETE FROM pickup_reveal_codes WHERE order_id = $1',
+    [order.id]
+  );
+
+  await client.query(
+    'DELETE FROM pickup_print_tokens WHERE order_id = $1',
+    [order.id]
+  );
+
+  return {
+    scanId: scan.id,
+    collectedAt: new Date(),
+  };
+}
+
+function _mapCanonicalCollectionError(err) {
+  const statusByCode = {
+    COLLECTION_CONFLICT:   409,
+    TRANSITION_REFUSED:    409,
+    PARCEL_SYNC_INCOMPLETE: 409,
+  };
+
+  const status = err && statusByCode[err.code];
+  if (!status) return null;
+
+  return {
+    status,
+    body: {
+      error: err.message || 'La remise ne peut pas être enregistrée',
+      code: err.code,
+    },
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // collectByPickupCode (Lot 2C)
 // ══════════════════════════════════════════════════════════════════════════════
 //
@@ -716,7 +953,8 @@ async function collectByPickupCode({ code, user, ip = null, userAgent = null }) 
   const agentId = user?.id || null;
   const role    = user?.role || null;
 
-  return db.withTransaction(async (client) => {
+  try {
+    return await db.withTransaction(async (client) => {
     // FOR UPDATE dès la résolution : élimine la fenêtre check-then-act entre
     // la lecture de la commande candidate et sa remise (même doctrine que
     // collectOrder ci-dessus). last4 restreint le candidate set ; la
@@ -769,42 +1007,14 @@ async function collectByPickupCode({ code, user, ip = null, userAgent = null }) 
 
     const notes = 'Retrait confirmé — code secret vérifié au guichet relais';
 
-    const { rows: [scan] } = await client.query(
-      `INSERT INTO scans (order_id, step, scan_code, scanned_by, notes)
-       VALUES ($1, 'collected', $2, $3, $4)
-       RETURNING id`,
-      [order.id, order.reference, agentId, notes]
-    );
-
-    // FIX-004 : safeSyncScanToParcels appelé DANS la transaction (client en
-    // second argument) pour rester sous le même verrou FOR UPDATE.
-    const syncResult = await safeSyncScanToParcels({
-      order_id:   order.id,
-      step:       'collected',
-      scan_id:    scan.id,
-      scanned_by: agentId,
+    const collection = await _recordCanonicalCollection({
+      client,
+      order,
+      agentId,
+      role,
+      pickupMethod: 'PICKUP_CODE',
       notes,
-    }, client);
-
-    if (!syncResult.synced) {
-      await transitionOrderStatus({
-        orderId:   order.id,
-        newStatus: 'collected',
-        actor:     { id: agentId, role },
-        source:    'scan',
-        scanId:    scan.id,
-        note:      notes + ' (fallback, pas de colis parcelSync)',
-        dbClient:  client,
-      });
-    }
-
-    await client.query(`
-      UPDATE orders
-      SET pickup_secret_attempts      = 0,
-          pickup_secret_blocked_until = NULL,
-          updated_at                  = NOW()
-      WHERE id = $1
-    `, [order.id]);
+    });
 
     log.info(`[PICKUP-SECRET] 📦 Retrait aveugle confirmé pour ${order.reference} par agent=${agentId}`);
 
@@ -814,9 +1024,14 @@ async function collectByPickupCode({ code, user, ip = null, userAgent = null }) 
       reference:    order.reference,
       recipient:    order.recipient_name,
       relais:       order.relais_name,
-      collected_at: now.toISOString(),
+      collected_at: collection.collectedAt.toISOString(),
     }};
-  });
+    });
+  } catch (err) {
+    const mapped = _mapCanonicalCollectionError(err);
+    if (mapped) return mapped;
+    throw err;
+  }
 }
 
 /**
@@ -881,6 +1096,240 @@ async function _logSecurityAlert(client, { type, entityId, title, description })
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// getExceptionalPickupAvailability — Lot 5
+// ══════════════════════════════════════════════════════════════════════════════
+// Disponibilité de la procédure exceptionnelle pour un agent relais donné.
+// Ne révèle JAMAIS le nom attendu ni son existence détaillée — seulement un
+// booléen + une raison technique (§10 du lot : "ne jamais révéler le nom
+// attendu au relais"). Séparé du compteur/blocage du code secret : lit
+// exceptional_pickup_blocked_until, jamais pickup_secret_blocked_until.
+
+async function getExceptionalPickupAvailability({ orderId, agentId, role }) {
+  const { rows: [order] } = await db.query(`
+    SELECT id, status, relais_id, user_id, exceptional_pickup_blocked_until
+    FROM orders WHERE id = $1
+  `, [orderId]);
+
+  if (!order) {
+    return { status: 404, body: { available: false, reason: 'ORDER_NOT_FOUND' } };
+  }
+
+  // La procédure exceptionnelle n'est disponible que pour une commande
+  // physiquement prête au retrait. Elle ne doit jamais permettre de sauter
+  // les états logistiques intermédiaires.
+  if (order.status === 'collected') {
+    return { status: 200, body: { available: false, reason: 'ALREADY_COLLECTED' } };
+  }
+
+  if (order.status !== 'available') {
+    return { status: 200, body: { available: false, reason: 'ORDER_NOT_READY' } };
+  }
+
+  // I-10 — même doctrine cross-relais que le code secret (_crossRelaisCheck) :
+  // un agent ne voit la disponibilité que pour son propre relais.
+  if (role !== 'admin') {
+    const { rows: [agent] } = await db.query('SELECT relais_id FROM users WHERE id = $1', [agentId]);
+    const agentRelaisId = agent?.relais_id || null;
+    if (!agentRelaisId || String(agentRelaisId) !== String(order.relais_id)) {
+      return { status: 200, body: { available: false, reason: 'CROSS_RELAIS' } };
+    }
+  }
+
+  const now = new Date();
+  if (order.exceptional_pickup_blocked_until && new Date(order.exceptional_pickup_blocked_until) > now) {
+    return { status: 200, body: { available: false, reason: 'BLOCKED' } };
+  }
+
+  const hasAuth = await hasActiveAuthorization(order.user_id);
+  if (!hasAuth) {
+    return { status: 200, body: { available: false, reason: 'NO_ACTIVE_AUTHORIZATION' } };
+  }
+
+  return { status: 200, body: { available: true } };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// collectByAuthorizedName — Lot 5
+// ══════════════════════════════════════════════════════════════════════════════
+// Remise après contrôle visuel de pièce + comparaison nominative stricte.
+// Doctrine (migration 121, § du lot) :
+//   - compteur de tentatives DÉDIÉ (exceptional_pickup_attempts /
+//     exceptional_pickup_blocked_until) — jamais mélangé avec le code secret
+//   - autorisation consultée au moment exact de la remise, verrouillée
+//     FOR UPDATE dans la même transaction (getActiveAuthorizationForUpdate)
+//   - comparaison strictement normalisée (namesMatch) — jamais le nom
+//     autorisé en clair dans la réponse, les logs ou l'audit
+//   - méthode de remise tracée : orders.pickup_collected_via = 'AUTHORIZED_NAME_ID_CHECK'
+//   - notification post-commit fire-and-forget (même doctrine que les autres
+//     hooks de ce fichier — notification_non_bloquante)
+
+const EXCEPTIONAL_PICKUP_MAX_ATTEMPTS = 3;
+
+async function collectByAuthorizedName({
+  orderId, agentId, role, givenNames, familyName, documentChecked,
+}) {
+  let result;
+
+  try {
+    result = await db.withTransaction(async (client) => {
+    const { rows: [order] } = await client.query(`
+      SELECT o.id, o.reference, o.status, o.relais_id, o.user_id,
+             o.exceptional_pickup_attempts, o.exceptional_pickup_blocked_until,
+             r.name AS relais_name,
+             COALESCE(o.tracking_phone, u.phone) AS buyer_phone
+      FROM orders o
+      LEFT JOIN relais r ON r.id = o.relais_id
+      LEFT JOIN users u ON u.id = o.user_id
+      WHERE o.id = $1
+      FOR UPDATE
+    `, [orderId]);
+
+    if (!order) {
+      return { status: 404, body: { error: 'Commande introuvable', code: 'ORDER_NOT_FOUND' } };
+    }
+
+    // I-10 — même doctrine cross-relais que collectByPickupCode.
+    if (role !== 'admin') {
+      const { rows: [agent] } = await client.query('SELECT relais_id FROM users WHERE id = $1', [agentId]);
+      const agentRelaisId = agent?.relais_id || null;
+      if (!agentRelaisId || String(agentRelaisId) !== String(order.relais_id)) {
+        return { status: 403, body: {
+          error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider',
+          code: 'CROSS_RELAIS_BLOCKED',
+        }};
+      }
+    }
+
+    // La commande doit être prête au retrait au moment exact de la
+    // transaction. Le verrou FOR UPDATE empêche une remise concurrente.
+    if (order.status === 'collected') {
+      return {
+        status: 409,
+        body: {
+          error: 'Cette commande est déjà marquée comme récupérée',
+          code: 'ALREADY_COLLECTED',
+        },
+      };
+    }
+
+    if (order.status !== 'available') {
+      return {
+        status: 409,
+        body: {
+          error: 'Cette commande n’est pas disponible au retrait',
+          code: 'ORDER_NOT_READY',
+        },
+      };
+    }
+
+    const now = new Date();
+    if (order.exceptional_pickup_blocked_until && new Date(order.exceptional_pickup_blocked_until) > now) {
+      const retryAfter = Math.ceil((new Date(order.exceptional_pickup_blocked_until) - now) / 1000 / 60);
+      return { status: 429, body: {
+        error: `Trop de tentatives. Réessayez dans ${retryAfter} min.`,
+        code: 'BLOCKED',
+        blocked_until: order.exceptional_pickup_blocked_until,
+      }};
+    }
+
+    if (documentChecked !== true) {
+      return { status: 400, body: {
+        error: 'Contrôle de la pièce d\'identité requis avant remise',
+        code: 'DOCUMENT_NOT_CHECKED',
+      }};
+    }
+
+    // Lecture verrouillée de l'autorisation courante — au moment exact de la
+    // remise (§4 du lot), jamais figée. Seule API autorisée, jamais de
+    // requête directe sur user_pickup_authorizations ici (§9/§18).
+    const authorization = await getActiveAuthorizationForUpdate(client, order.user_id);
+    if (!authorization) {
+      return { status: 404, body: { error: 'Aucune autorisation active pour cette commande', code: 'NO_ACTIVE_AUTHORIZATION' } };
+    }
+
+    const matches = namesMatch(
+      { givenNames, familyName },
+      { givenNames: authorization.normalizedGivenNames, familyName: authorization.normalizedFamilyName },
+    );
+
+    if (!matches) {
+      const attempts = (order.exceptional_pickup_attempts || 0) + 1;
+      const blocked  = attempts >= EXCEPTIONAL_PICKUP_MAX_ATTEMPTS;
+      const blockUntil = blocked ? new Date(now.getTime() + 30 * 60 * 1000) : null;
+
+      await client.query(`
+        UPDATE orders
+        SET exceptional_pickup_attempts      = $1,
+            exceptional_pickup_blocked_until = $2,
+            updated_at                       = NOW()
+        WHERE id = $3
+      `, [attempts, blockUntil, orderId]);
+
+      log.warn(`[PICKUP-SECRET] Tentative nominative échouée ${attempts}/${EXCEPTIONAL_PICKUP_MAX_ATTEMPTS} pour ${order.reference} agent=${agentId}`);
+
+      // Jamais le nom saisi ni le nom attendu dans l'alerte (§18).
+      await _logSecurityAlert(client, {
+        type:        'exceptional_pickup_name_mismatch',
+        entityId:    order.id,
+        title:       `Retrait exceptionnel — nom non concordant (${order.reference})`,
+        description: `agent_id=${agentId} role=${role} attempts=${attempts}`,
+      });
+
+      return { status: 401, body: {
+        error: 'Le nom ne correspond pas à l\'autorisation enregistrée',
+        code: 'NAME_MISMATCH',
+        attempts,
+        remaining:     Math.max(0, EXCEPTIONAL_PICKUP_MAX_ATTEMPTS - attempts),
+        blocked_until: blockUntil,
+      }};
+    }
+
+    const collection = await _recordCanonicalCollection({
+      client,
+      order,
+      agentId,
+      role,
+      pickupMethod:        'AUTHORIZED_NAME_ID_CHECK',
+      notes:               'Colis remis après autorisation nominative (retrait exceptionnel, pièce contrôlée)',
+      authorizationVersion: authorization.version,
+      documentChecked:      true,
+    });
+
+    log.info(
+      `[PICKUP-SECRET] 📦 Retrait exceptionnel confirmé pour ${order.reference} par agent=${agentId} scan=${collection.scanId} authorization_version=${authorization.version}`
+    );
+
+    return {
+      status: 200,
+      body: {
+        success:   true,
+        message:   'Colis remis. Commande marquée comme récupérée (retrait exceptionnel).',
+        order_ref: order.reference,
+      },
+      _notify: { phone: order.buyer_phone || null, reference: order.reference },
+    };
+    });
+  } catch (err) {
+    const mapped = _mapCanonicalCollectionError(err);
+    if (mapped) return mapped;
+    throw err;
+  }
+
+  // Notification post-commit — fire-and-forget, hors transaction (même
+  // doctrine que les autres hooks non-bloquants de ce fichier).
+  if (result.status === 200 && result._notify && result._notify.phone) {
+    notifyText(
+      result._notify.phone,
+      `Votre colis ${result._notify.reference} a été remis (retrait exceptionnel autorisé).`,
+      'exceptional_pickup_collected',
+      orderId,
+    ).catch(e => log.warn({ err: e }, '[PICKUP-SECRET] notifyText exceptional_pickup_collected error'));
+  }
+
+  return { status: result.status, body: result.body };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // EXPORTS
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -902,4 +1351,7 @@ module.exports = {
   regenerateCode,
   getPickupStatus,
   revealOnce,
+  // Lot 5 — retrait exceptionnel par autorisation nominative
+  getExceptionalPickupAvailability,
+  collectByAuthorizedName,
 };
