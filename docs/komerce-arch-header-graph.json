@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 807,
-    "edges": 4455,
+    "graphNodes": 806,
+    "edges": 4452,
     "dbTables": 117,
-    "doctrines": 165,
+    "doctrines": 164,
     "impactAreas": 136,
     "unresolvedCodeEdges": 429,
     "dbWriteViaOverlapWarnings": 0,
@@ -213,7 +213,6 @@
       "depends": [
         "services/cash-reminder-service.js",
         "services/inventory-service.js",
-        "services/shared-cart-engine.js",
         "utils/rules.js"
       ],
       "usedBy": [
@@ -234,12 +233,10 @@
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "shared_cart_state_machine_v41",
         "idempotence_cron",
         "retention_snapshots"
       ],
       "impactAreas": [
-        "shared-cart",
         "cash-reminders",
         "inventory",
         "auth-security",
@@ -18844,11 +18841,6 @@
       "doctrine": "resolve_before_behavior_change"
     },
     {
-      "id": "doctrine:shared_cart_state_machine_v41",
-      "type": "doctrine",
-      "doctrine": "shared_cart_state_machine_v41"
-    },
-    {
       "id": "doctrine:idempotence_cron",
       "type": "doctrine",
       "doctrine": "idempotence_cron"
@@ -20482,12 +20474,6 @@
     },
     {
       "from": "bootstrap/crons.js",
-      "to": "services/shared-cart-engine.js",
-      "type": "depends",
-      "label": "services/shared-cart-engine.js"
-    },
-    {
-      "from": "bootstrap/crons.js",
       "to": "utils/rules.js",
       "type": "depends",
       "label": "utils/rules.js"
@@ -20548,12 +20534,6 @@
     },
     {
       "from": "bootstrap/crons.js",
-      "to": "doctrine:shared_cart_state_machine_v41",
-      "type": "doctrine",
-      "label": "shared_cart_state_machine_v41"
-    },
-    {
-      "from": "bootstrap/crons.js",
       "to": "doctrine:idempotence_cron",
       "type": "doctrine",
       "label": "idempotence_cron"
@@ -20563,12 +20543,6 @@
       "to": "doctrine:retention_snapshots",
       "type": "doctrine",
       "label": "retention_snapshots"
-    },
-    {
-      "from": "bootstrap/crons.js",
-      "to": "impact:shared-cart",
-      "type": "impact",
-      "label": "shared-cart"
     },
     {
       "from": "bootstrap/crons.js",
@@ -47286,7 +47260,6 @@
       "directDependsOn": [
         "services/cash-reminder-service.js",
         "services/inventory-service.js",
-        "services/shared-cart-engine.js",
         "utils/rules.js"
       ],
       "directUsedBy": [
@@ -47307,12 +47280,10 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "shared_cart_state_machine_v41",
         "idempotence_cron",
         "retention_snapshots"
       ],
       "impactAreas": [
-        "shared-cart",
         "cash-reminders",
         "inventory",
         "auth-security",
@@ -47325,12 +47296,10 @@
         "db:revoked_tokens",
         "doctrine:idempotence_cron",
         "doctrine:retention_snapshots",
-        "doctrine:shared_cart_state_machine_v41",
         "impact:auth-security",
         "impact:cash-reminders",
         "impact:economic-engine",
         "impact:inventory",
-        "impact:shared-cart",
         "server.js",
         "services/cash-reminder-service.js",
         "services/inventory-service.js",
