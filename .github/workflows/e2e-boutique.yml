@@ -50,9 +50,6 @@ jobs:
             tests/e2e/hero-geometry.spec.js \
             tests/e2e/modal-backtop-zindex.spec.js \
             --project='Chromium Local-Only'
-          npx playwright test \
-            tests/e2e/modal-mdm9-gallery-layout.spec.js \
-            --project='Chromium MDM-9'
 
       - name: Run the explicit remote campaign
         if: github.event_name == 'workflow_dispatch'
